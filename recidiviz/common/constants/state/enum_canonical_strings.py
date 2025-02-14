@@ -691,3 +691,10 @@ state_staff_caseload_type_domestic_violence = "DOMESTIC_VIOLENCE"
 state_staff_caseload_type_transitional = "TRANSITIONAL"
 state_staff_caseload_type_other = "OTHER"
 state_staff_caseload_type_general = "GENERAL"
+
+
+state_system_type_incarceration = "INCARCERATION"
+state_system_type_supervision = "SUPERVISION"
+
+state_person_staff_relationship_type_case_manager = "CASE_MANAGER"
+state_person_staff_relationship_type_supervising_officer = "SUPERVISING_OFFICER"

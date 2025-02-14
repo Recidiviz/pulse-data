@@ -28,6 +28,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
+    NormalizedStatePersonStaffRelationshipPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -183,6 +184,12 @@ def build_normalized_state_person(
         ),
     ).get_normalized_assessments()
 
+    # TODO(#38347): Add StatePersonStaffRelationshipPeriod normalization, for now, just
+    #  drop all relationship periods.
+    normalized_staff_relationship_periods: list[
+        NormalizedStatePersonStaffRelationshipPeriod
+    ] = []
+
     person_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "assessments": normalized_assessments,
         "incarceration_periods": normalized_incarceration_periods,
@@ -196,6 +203,7 @@ def build_normalized_state_person(
         "supervision_periods": normalized_supervision_periods,
         "supervision_sentences": normalized_supervision_sentences,
         "supervision_violations": normalized_violations,
+        "staff_relationship_periods": normalized_staff_relationship_periods,
     }
     return assert_type(
         build_normalized_root_entity(

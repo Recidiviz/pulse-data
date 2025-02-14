@@ -108,6 +108,7 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             state_entities.StateStaffSupervisorPeriod.__name__,
             state_entities.StateStaffLocationPeriod.__name__,
             state_entities.StateStaffCaseloadTypePeriod.__name__,
+            state_entities.StatePersonStaffRelationshipPeriod.__name__,
         ]
 
     # TODO(#10389): Remove this custom handling for legacy sentence association tables
@@ -182,6 +183,7 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
             normalized_entities.NormalizedStateStaffSupervisorPeriod.__name__,
             normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
             normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
+            normalized_entities.NormalizedStatePersonStaffRelationshipPeriod.__name__,
         ]
 
     # TODO(#10389): Remove this custom handling for legacy sentence association tables

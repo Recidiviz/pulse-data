@@ -40,6 +40,12 @@ class RootEntityUtilsTest(unittest.TestCase):
             entities.StateStaff,
             get_root_entity_class_for_entity(entities.StateStaffRolePeriod),
         )
+        self.assertEqual(
+            entities.StatePerson,
+            get_root_entity_class_for_entity(
+                entities.StatePersonStaffRelationshipPeriod
+            ),
+        )
 
     def test_get_root_entity_class_normalized(self) -> None:
         self.assertEqual(

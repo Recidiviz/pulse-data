@@ -27,10 +27,15 @@ from recidiviz.common.attr_utils import is_non_optional_enum
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
@@ -45,6 +50,7 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePersonAddressPeriod,
+    StatePersonStaffRelationshipPeriod,
     StateProgramAssignment,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -343,6 +349,110 @@ class TestStateEntities(TestCase):
                 f"00001 {COUNTY}",
             ]
         )
+
+
+class TestStatePersonStaffRelationshipPeriod(TestCase):
+    """Tests for the StatePersonStaffRelationshipPeriod entity."""
+
+    def test_simple(self) -> None:
+        # These are valid relationship periods and shouldn't crash
+        _ = StatePersonStaffRelationshipPeriod(
+            person_staff_relationship_period_id=123,
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=date(2021, 1, 1),
+            relationship_end_date_exclusive=None,
+            system_type=StateSystemType.INCARCERATION,
+            system_type_raw_text=None,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            relationship_type_raw_text=None,
+            associated_staff_external_id="EMP2",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_priority=None,
+            location_external_id=None,
+        )
+
+        _ = StatePersonStaffRelationshipPeriod(
+            person_staff_relationship_period_id=123,
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=date(2021, 1, 1),
+            relationship_end_date_exclusive=date(2023, 1, 1),
+            system_type=StateSystemType.INCARCERATION,
+            system_type_raw_text="CM",
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            relationship_type_raw_text="CM",
+            associated_staff_external_id="EMP2",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_priority=1,
+            location_external_id="UNIT 1",
+        )
+
+    def test_enforce_nonnull_positive_relationship_priority(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[relationship_priority\] on "
+            r"\[StatePersonStaffRelationshipPeriod\] must be a positive "
+            r"integer. Found value \[0\]",
+        ):
+            _ = StatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=date(2021, 1, 1),
+                relationship_end_date_exclusive=date(2023, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                relationship_priority=0,
+                location_external_id=None,
+            )
+
+    def test_zero_day_relationship_periods(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found StatePersonStaffRelationshipPeriod\("
+            r"person_staff_relationship_period_id=123\) with relationship_start_date "
+            r"datetime 2021-01-01 equal to relationship_end_date_exclusive datetime "
+            r"2021-01-01.",
+        ):
+            _ = StatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=date(2021, 1, 1),
+                relationship_end_date_exclusive=date(2021, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                relationship_priority=1,
+                location_external_id="UNIT 1",
+            )
+
+    def test_negative_day_relationship_periods(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found StatePersonStaffRelationshipPeriod\("
+            r"person_staff_relationship_period_id=123\) with relationship_start_date "
+            r"datetime 2022-01-01 after relationship_end_date_exclusive datetime "
+            r"2021-01-01.",
+        ):
+            _ = StatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=date(2022, 1, 1),
+                relationship_end_date_exclusive=date(2021, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                relationship_priority=1,
+                location_external_id="UNIT 1",
+            )
 
 
 class TestStateSchemaNamingConsistency(TestCase):

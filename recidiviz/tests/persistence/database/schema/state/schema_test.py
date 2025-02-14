@@ -31,6 +31,7 @@ from recidiviz.common.constants.state import (
     state_person_address_period,
     state_person_alias,
     state_person_housing_status_period,
+    state_person_staff_relationship_period,
     state_program_assignment,
     state_sentence,
     state_shared_enums,
@@ -42,6 +43,7 @@ from recidiviz.common.constants.state import (
     state_supervision_violated_condition,
     state_supervision_violation,
     state_supervision_violation_response,
+    state_system_type,
     state_task_deadline,
 )
 from recidiviz.common.constants.state.state_drug_screen import (
@@ -62,10 +64,21 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
+    is_association_table,
+)
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
 
 class TestStateSchema(unittest.TestCase):
+    """Tests for the schema defined in state/schema.py"""
+
     def test_schema_compiles(self) -> None:
         """Simple test that will crash if the state schema is defined in a way that can't be resolved by SQLAlchemy"""
 
@@ -76,6 +89,30 @@ class TestStateSchema(unittest.TestCase):
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
+
+    def test_schema_entities_module_parity(self) -> None:
+        sqlalchemy_tables = get_all_table_classes_in_schema(SchemaType.STATE)
+        sqlalchemy_tables_by_name = {t.name: t for t in sqlalchemy_tables}
+        bq_table_schemas = get_bq_schema_for_entities_module(entities)
+
+        for table_id, table_bq_schema in bq_table_schemas.items():
+            if table_id not in sqlalchemy_tables_by_name:
+                raise ValueError(f"No table {table_id} defined in state/schema.py")
+
+            bq_column_names = {f.name for f in table_bq_schema}
+            sqlalchemy_table = sqlalchemy_tables_by_name[table_id]
+
+            sqlalchemy_column_names = {c.name for c in sqlalchemy_table.columns}
+
+            if is_association_table(table_id):
+                # We don't expect SQLAlchemy association tables to have a state_code column
+                sqlalchemy_column_names.add("state_code")
+
+            if missing_columns := bq_column_names - sqlalchemy_column_names:
+                raise ValueError(
+                    f"Table [{table_id}] has missing these columns from the "
+                    f"state/schema.py definition: {missing_columns}"
+                )
 
 
 class TestStateSchemaEnums(TestSchemaEnums):
@@ -119,6 +156,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_person_address_type": state_person_address_period.StatePersonAddressType,
             "state_person_housing_status_type": state_person_housing_status_period.StatePersonHousingStatusType,
             "state_person_alias_type": state_person_alias.StatePersonAliasType,
+            "state_person_staff_relationship_type": state_person_staff_relationship_period.StatePersonStaffRelationshipType,
             "state_supervision_period_admission_reason": state_supervision_period.StateSupervisionPeriodAdmissionReason,
             "state_supervision_period_supervision_type": state_supervision_period.StateSupervisionPeriodSupervisionType,
             "state_supervision_period_termination_reason": state_supervision_period.StateSupervisionPeriodTerminationReason,
@@ -142,6 +180,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
+            "state_system_type": state_system_type.StateSystemType,
             "state_task_type": state_task_deadline.StateTaskType,
             "state_sentence_type": state_sentence.StateSentenceType,
             "state_charge_v2_classification_type": state_charge.StateChargeV2ClassificationType,
@@ -160,6 +199,13 @@ class TestStateSchemaEnums(TestSchemaEnums):
         external_unknown_exceptions = {
             # We expect the state to always know where a sentence originated.
             "state_sentencing_authority",
+            # We expect the state to always know what type of relationship a person has
+            # with a staff member  if they're telling us about the relationship.
+            "state_person_staff_relationship_type",
+            # The system is a Recidiviz-specific concept - we don't expect to be getting
+            # data from the state that indicates they don't know which system a piece of
+            # data belongs to.
+            "state_system_type",
         }
         for enum in self._get_all_sqlalchemy_enums_in_module(schema):
             self.assertIn(enum_canonical_strings.internal_unknown, enum.enums)

@@ -359,6 +359,35 @@ state_program_assignment:
     sequence_num: The ordinal position of this program assignment over the sequence of all program assignments for this person.
     referring_staff_id: StateStaff ID for the referring officer.
 
+state_person_staff_relationship_period:
+  fields:
+    system_type: >-
+      The top-level system that this relationship takes place in the context of (e.g. INCARCERATION or SUPERVISION).
+    system_type_raw_text: Raw text used to hydrate system_type.
+    relationship_type: The type of relationship the staff member has with this person.
+    relationship_type_raw_text: Raw text used to hydrate relationship_type.
+    relationship_start_date: The start date (inclusive) for this relationship.
+    relationship_end_date_exclusive: >-
+      The end date (exclusive) for this relationship. If null, this relationship is ongoing.
+    location_external_id: >-
+      If relevant, the location where this relationship takes place. For example, if an officer supervises someone out 
+      of a district, the location_external_id for that district should be added here. It’s possible for a person to be 
+      associated with a location but no staff member during a period of time or vice versa. That location-only 
+      relationship must be encoded elsewhere. This value must correspond to a value in the location_metadata BigQuery 
+      view.
+    relationship_priority: >-
+      When there are multiple overlapping relationships of the same type for a given person_id, determines sort order 
+      when determining which of those relationships is the “primary” of that type. Lower numbers are higher priority.
+      All relationship_priority values should be 1-indexed, meaning 1 is the smallest possible value.
+    associated_staff_external_id: >-
+      External ID of the staff member involved in this relationship. This field, along with the staff_external_id_type, 
+      must correspond to a valid ingested StateStaffExternalId entry.
+    associated_staff_external_id_type: >-
+      External ID type of the staff member involved in this relationship. This field, along with the staff_external_id,
+      must correspond to a valid ingested StateStaffExternalId entry.
+  normalization_only_fields:
+    associated_staff_id: StateStaff ID for the StateStaff involved in this relationship.
+
 state_sentence:
   fields:
     conditions: >-

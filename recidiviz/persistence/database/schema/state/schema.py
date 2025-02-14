@@ -830,6 +830,20 @@ state_staff_caseload_type = Enum(
     name="state_staff_caseload_type",
 )
 
+state_system_type = Enum(
+    state_enum_strings.state_system_type_incarceration,
+    state_enum_strings.state_system_type_supervision,
+    state_enum_strings.internal_unknown,
+    name="state_system_type",
+)
+
+state_person_staff_relationship_type = Enum(
+    state_enum_strings.state_person_staff_relationship_type_case_manager,
+    state_enum_strings.state_person_staff_relationship_type_supervising_officer,
+    state_enum_strings.internal_unknown,
+    name="state_person_staff_relationship_type",
+)
+
 # Association tables for many-to-many relationships.
 # See different examples of your use case with our version of SQLAlchemy here:
 # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
@@ -1084,6 +1098,9 @@ class StatePerson(StateBase):
     )
     sentence_groups = relationship(
         "StateSentenceGroup", backref="person", lazy="selectin"
+    )
+    staff_relationship_periods = relationship(
+        "StatePersonStaffRelationshipPeriod", backref="person", lazy="selectin"
     )
 
 
@@ -2222,3 +2239,40 @@ class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
+
+
+class StatePersonStaffRelationshipPeriod(
+    StateBase, _ReferencesStatePersonSharedColumns
+):
+    """The StatePersonStaffRelationshipPeriod object represents a period of time during
+    which a staff member has a defined relationships with a justice impacted individual.
+    """
+
+    __tablename__ = "state_person_staff_relationship_period"
+    __table_args__ = (
+        {
+            "comment": (
+                "Defines a period of time during which some staff member has a defined "
+                "relationship with a justice impacted individual."
+            )
+        },
+    )
+    person_staff_relationship_period_id = Column(Integer, primary_key=True)
+
+    state_code = Column(String(255), nullable=False, index=True)
+
+    system_type = Column(state_system_type, nullable=False)
+    system_type_raw_text = Column(String(255))
+
+    relationship_type = Column(state_person_staff_relationship_type, nullable=False)
+    relationship_type_raw_text = Column(String(255))
+
+    location_external_id = Column(String(255))
+
+    relationship_start_date = Column(Date, nullable=False)
+    relationship_end_date_exclusive = Column(Date)
+
+    associated_staff_external_id = Column(String(255), nullable=False)
+    associated_staff_external_id_type = Column(String(255), nullable=False)
+
+    relationship_priority = Column(Integer)

@@ -66,6 +66,9 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -109,7 +112,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -1179,5 +1184,28 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="US_XX",
             group_update_datetime=datetime.datetime(2023, 1, 1),
             sequence_num=None,
+        )
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StatePersonStaffRelationshipPeriod(self) -> None:
+        result = deserialize_entity_factories.StatePersonStaffRelationshipPeriodFactory.deserialize(
+            state_code="US_XX",
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive="2023-01-01",
+            system_type=StateSystemType.INCARCERATION,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            associated_staff_external_id="ABC123",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_priority=1,
+        )
+        expected_result = entities.StatePersonStaffRelationshipPeriod(
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+            system_type=StateSystemType.INCARCERATION,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            associated_staff_external_id="ABC123",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_priority=1,
         )
         self.assertEqual(expected_result, result)

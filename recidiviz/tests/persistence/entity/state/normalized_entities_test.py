@@ -34,17 +34,24 @@ from recidiviz.common.attr_utils import (
     is_optional_type,
 )
 from recidiviz.common.attr_validators import IsListOfValidator, IsOptionalValidator
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entity_field_validators import (
@@ -664,3 +671,138 @@ class TestSentencingEntities(unittest.TestCase):
         )
         dt_range = sentence.first_serving_status_to_terminating_status_dt_range
         assert dt_range is None
+
+
+class TestNormalizedStatePersonStaffRelationshipPeriod(unittest.TestCase):
+    """Tests for the NormalizedStatePersonStaffRelationshipPeriod entity."""
+
+    def test_simple(self) -> None:
+        # These are valid relationship periods and shouldn't crash
+        period = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+            person_staff_relationship_period_id=123,
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=None,
+            system_type=StateSystemType.INCARCERATION,
+            system_type_raw_text=None,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            relationship_type_raw_text=None,
+            associated_staff_external_id="EMP2",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            associated_staff_id=1,
+            relationship_priority=1,
+            location_external_id=None,
+        )
+        self.assertIsInstance(period.person_staff_relationship_period_id, int)
+        update_entity_with_globally_unique_id(root_entity_id=111, entity=period)
+        self.assertEqual(
+            9002845054915570502, period.person_staff_relationship_period_id
+        )
+
+        _ = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+            person_staff_relationship_period_id=123,
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+            system_type=StateSystemType.INCARCERATION,
+            system_type_raw_text="CM",
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            relationship_type_raw_text="CM",
+            associated_staff_external_id="EMP2",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            associated_staff_id=1,
+            relationship_priority=1,
+            location_external_id="UNIT 1",
+        )
+
+    def test_enforce_nonnull_positive_relationship_priority(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[relationship_priority\] on "
+            r"\[NormalizedStatePersonStaffRelationshipPeriod\] must be a positive "
+            r"integer. Found value \[0\]",
+        ):
+            _ = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                associated_staff_id=1,
+                relationship_priority=0,
+                location_external_id=None,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"'relationship_priority' must be <class 'int'> \(got None that is a "
+            r"<class 'NoneType'>\)",
+        ):
+            _ = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                associated_staff_id=1,
+                relationship_priority=None,  # type: ignore[arg-type]
+                location_external_id=None,
+            )
+
+    def test_zero_day_relationship_periods(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStatePersonStaffRelationshipPeriod\("
+            r"person_staff_relationship_period_id=123\) with "
+            r"relationship_start_date datetime 2021-01-01 equal to "
+            r"relationship_end_date_exclusive datetime 2021-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2021, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                associated_staff_id=1,
+                relationship_priority=1,
+                location_external_id="UNIT 1",
+            )
+
+    def test_negative_day_relationship_periods(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStatePersonStaffRelationshipPeriod\("
+            r"person_staff_relationship_period_id=123\) with "
+            r"relationship_start_date datetime 2022-01-01 after "
+            r"relationship_end_date_exclusive datetime 2021-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=datetime.date(2022, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2021, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                associated_staff_id=1,
+                relationship_priority=1,
+                location_external_id="UNIT 1",
+            )

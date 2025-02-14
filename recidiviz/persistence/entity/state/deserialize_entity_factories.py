@@ -566,3 +566,16 @@ class StateSentenceGroupLengthFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StatePersonStaffRelationshipPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StatePersonStaffRelationshipPeriod:
+        return entity_deserialize(
+            cls=entities.StatePersonStaffRelationshipPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

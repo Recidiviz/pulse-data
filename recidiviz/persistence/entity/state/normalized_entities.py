@@ -81,6 +81,9 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -127,6 +130,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
@@ -2675,6 +2679,101 @@ class NormalizedStateTaskDeadline(NormalizedStateEntity, LedgerEntityMixin, Enti
 
 
 @attr.s(eq=False, kw_only=True)
+class NormalizedStatePersonStaffRelationshipPeriod(
+    NormalizedStateEntity, Entity, DurationMixin
+):
+    """The StatePersonStaffRelationshipPeriod object represents a period of time during
+    which a staff member has a defined relationships with a justice impacted individual.
+
+    That relationship might take place in the context of a specific location, in which
+    case we can attribute a location to the relationship period as well.
+    """
+
+    # Type
+    system_type: StateSystemType = attr.ib(
+        validator=attr.validators.instance_of(StateSystemType),
+    )
+    system_type_raw_text: str | None = attr.ib(validator=attr_validators.is_opt_str)
+
+    relationship_type: StatePersonStaffRelationshipType = attr.ib(
+        validator=attr.validators.instance_of(StatePersonStaffRelationshipType),
+    )
+    relationship_type_raw_text: str | None = attr.ib(
+        validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    relationship_start_date: date = attr.ib(
+        validator=attr_validators.is_not_future_date
+    )
+    relationship_end_date_exclusive: date | None = attr.ib(
+        validator=attr_validators.is_opt_not_future_date
+    )
+
+    #   - Where
+    # The county where this person is being supervised
+    location_external_id: str | None = attr.ib(validator=attr_validators.is_opt_str)
+
+    #   - What
+    relationship_priority: int = attr.ib(validator=attr_validators.is_positive_int)
+
+    #   - Who
+    # See |person| in entity relationships below.
+
+    associated_staff_external_id: str = attr.ib(validator=attr_validators.is_str)
+    associated_staff_external_id_type: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key
+    person_staff_relationship_period_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # Cross-entity relationships
+    person: Optional["NormalizedStatePerson"] = attr.ib(
+        default=None, validator=IsNormalizedPersonBackedgeValidator()
+    )
+
+    # ~~~~~ FIELDS ADDED DURING NORMALIZATION ~~~~~ #
+
+    # StateStaff id foreign key for the supervising officer
+    associated_staff_id: int = attr.ib(validator=attr_validators.is_int)
+
+    # ~~~ END FIELDS ADDED DURING NORMALIZATION ~~~ #
+
+    @property
+    def duration(self) -> NonNegativeDateRange:
+        """Generates a DateRange for the days during which the relationship is valid.
+        Since DateRange is never open, if the relationship is still active, then the
+        exclusive upper bound of the range is set to tomorrow.
+        """
+        duration_unsafe = DateRange.from_maybe_open_range(
+            start_date=self.relationship_start_date,
+            end_date=self.relationship_end_date_exclusive,
+        )
+
+        return NonNegativeDateRange(
+            duration_unsafe.lower_bound_inclusive_date,
+            duration_unsafe.upper_bound_exclusive_date,
+        )
+
+    @property
+    def start_date_inclusive(self) -> date:
+        return self.relationship_start_date
+
+    @property
+    def end_date_exclusive(self) -> date | None:
+        return self.relationship_end_date_exclusive
+
+    def __attrs_post_init__(self) -> None:
+        # Disallow zero-day periods or periods where end date is before start date
+        self.assert_datetime_less_than(
+            before=self.relationship_start_date,
+            after=self.relationship_end_date_exclusive,
+            before_description="relationship_start_date",
+            after_description="relationship_end_date_exclusive",
+        )
+
+
+@attr.s(eq=False, kw_only=True)
 class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
     """A single StatePersonAddressPeriod entity represents a person's physical, mailing,
     or other address for a defined period of time.
@@ -2908,6 +3007,14 @@ class NormalizedStatePerson(
     sentence_imposed_groups: list["NormalizedStateSentenceImposedGroup"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceImposedGroup),
+    )
+    staff_relationship_periods: list[
+        "NormalizedStatePersonStaffRelationshipPeriod"
+    ] = attr.ib(
+        factory=list,
+        validator=attr_validators.is_list_of(
+            NormalizedStatePersonStaffRelationshipPeriod
+        ),
     )
 
     def get_external_ids(self) -> list["NormalizedStatePersonExternalId"]:

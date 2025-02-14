@@ -61,6 +61,9 @@ from recidiviz.common.constants.state.state_person_address_period import (
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -102,7 +105,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
@@ -875,6 +880,19 @@ def generate_full_graph_state_person(
     )
     person.housing_status_periods = [housing_status_period]
 
+    staff_relationship = entities.StatePersonStaffRelationshipPeriod(
+        state_code=StateCode.US_XX.value,
+        relationship_start_date=datetime.date(2021, 1, 1),
+        relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+        system_type=StateSystemType.INCARCERATION,
+        relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+        associated_staff_external_id="EMP2",
+        associated_staff_external_id_type="US_XX_STAFF_ID",
+        relationship_type_raw_text=None,
+        relationship_priority=1,
+    )
+    person.staff_relationship_periods = [staff_relationship]
+
     if set_back_edges:
         set_backedges(person, entities_module_context)
 
@@ -1553,6 +1571,23 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         employment_periods=[employment_period],
         address_periods=[address_period],
         housing_status_periods=[housing_status_period],
+        staff_relationship_periods=[
+            normalized_entities.NormalizedStatePersonStaffRelationshipPeriod(
+                person_staff_relationship_period_id=123,
+                state_code=StateCode.US_XX.value,
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+                system_type=StateSystemType.INCARCERATION,
+                system_type_raw_text="CM",
+                relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+                relationship_type_raw_text="CM",
+                associated_staff_external_id="EMP2",
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                associated_staff_id=1,
+                relationship_priority=1,
+                location_external_id=None,
+            )
+        ],
     )
 
     set_backedges(person, entities_module_context)

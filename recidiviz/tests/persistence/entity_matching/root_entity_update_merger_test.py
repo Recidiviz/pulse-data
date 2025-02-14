@@ -57,6 +57,9 @@ from recidiviz.common.constants.state.state_person_address_period import (
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -83,6 +86,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
@@ -328,6 +332,7 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
     state_entities.StateSupervisionViolationResponseDecisionEntry: [],
     state_entities.StateSupervisionViolationTypeEntry: [],
     state_entities.StateTaskDeadline: [],
+    state_entities.StatePersonStaffRelationshipPeriod: [],
 }
 
 _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
@@ -709,6 +714,30 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             eligible_date=datetime.date(2021, 1, 1),
             due_date=None,
             update_datetime=datetime.datetime.now(tz=pytz.UTC),
+        ),
+    ],
+    state_entities.StatePersonStaffRelationshipPeriod: [
+        state_entities.StatePersonStaffRelationshipPeriod(
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=None,
+            system_type=StateSystemType.INCARCERATION,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            associated_staff_external_id="ABC123",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_type_raw_text=None,
+            relationship_priority=1,
+        ),
+        state_entities.StatePersonStaffRelationshipPeriod(
+            state_code=StateCode.US_XX.value,
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=datetime.date(2023, 1, 1),
+            system_type=StateSystemType.INCARCERATION,
+            relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
+            associated_staff_external_id="ABC123",
+            associated_staff_external_id_type="US_XX_STAFF_ID",
+            relationship_type_raw_text=None,
+            relationship_priority=1,
         ),
     ],
 }
