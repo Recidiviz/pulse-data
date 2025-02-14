@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -331,11 +331,24 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
         then we aren't sure/aren't counting it as a negative. This is a more conservative definition of a negative test.
         This is true for approx 2% of tests that have is_positive_result_temp = FALSE but no relevant negative contact note
     */
-    SELECT * EXCEPT(is_positive_result_temp),
+    SELECT 
+        person_id,
+        state_code,
+        drug_screen_date,
+        sample_type,
         CASE WHEN is_positive_result_temp THEN TRUE
              WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') 
                 AND NOT is_positive_result_temp THEN FALSE
-             END AS is_positive_result,
+        END AS is_positive_result,
+        result_raw_text_primary,
+        result_raw_text,
+        substance_detected,
+        med_invalidate_flg,
+        is_inferred,
+        LEAST(
+            IFNULL(drugtest_date, '9999-01-01'), 
+            IFNULL(contacts_date, '9999-01-01')
+        ) AS earliest_drug_screen_date
     FROM (
         SELECT 
             person_id,

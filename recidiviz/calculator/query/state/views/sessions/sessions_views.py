@@ -318,6 +318,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_prepr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_population_metrics_preprocessed import (
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_ut.us_ut_drug_screens_preprocessed import (
+    US_UT_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.violation_responses import (
     VIOLATION_RESPONSES_VIEW_BUILDER,
 )
@@ -426,6 +429,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+    US_UT_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     VIOLATION_RESPONSES_VIEW_BUILDER,
     WORK_RELEASE_SESSIONS_VIEW_BUILDER,
 ]

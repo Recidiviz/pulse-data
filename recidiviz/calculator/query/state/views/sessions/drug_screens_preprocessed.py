@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,37 +28,11 @@ Preprocessed view of drug screen tests and results, unique on person, date, and 
 type"""
 
 DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
-
-SELECT 
-    person_id,
-    state_code,
-    drug_screen_date,
-    sample_type,
-    is_positive_result,
-    result_raw_text_primary,
-    result_raw_text,
-    substance_detected,
-    med_invalidate_flg,
-    is_inferred,
-    drug_screen_date AS earliest_drug_screen_date
-FROM `{project_id}.{sessions_dataset}.us_ix_drug_screens_preprocessed`
+SELECT * FROM `{project_id}.{sessions_dataset}.us_ix_drug_screens_preprocessed`
 UNION ALL
-SELECT
-    person_id,
-    state_code,
-    drug_screen_date,
-    sample_type,
-    is_positive_result,
-    result_raw_text_primary,
-    result_raw_text,
-    substance_detected,
-    med_invalidate_flg,
-    is_inferred,
-    LEAST(
-        IFNULL(drugtest_date, '9999-01-01'), 
-        IFNULL(contacts_date, '9999-01-01')
-    ) AS earliest_drug_screen_date
-FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
+SELECT * FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
+UNION ALL
+SELECT * FROM `{project_id}.{sessions_dataset}.us_ut_drug_screens_preprocessed`
 """
 
 DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
