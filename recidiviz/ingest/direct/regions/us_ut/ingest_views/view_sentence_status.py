@@ -62,6 +62,30 @@ SELECT
   END AS status,
   updt_dt
 FROM valid_sentences
+),
+-- Only keep rows that signify a change in sentence status. Also filter some rows
+-- where a case was erroneously reopened.
+changed_statuses_only AS (
+SELECT 
+  ofndr_num,
+  ofnse_id,
+  status,
+  updt_dt,
+  FROM (
+    SELECT *, 
+    LAG(status) OVER (partition by ofndr_num, ofnse_id ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as prev_status
+    FROM sentences_with_status
+  )
+WHERE 
+-- Status changed
+  status IS DISTINCT FROM prev_status
+-- 87 out of 591,669 cases have a crt_trmn_dt populated that later is unpopulated, making
+-- it appear that the case was completed and then being served again.
+-- It does not seem like the norm, and appears to be a data entry error. 
+-- This excludes cases that appear to have been reopened; revisit once we have
+-- more context from UT. TODO(#38008)
+AND 
+  (prev_status != 'COMPLETE' OR prev_status IS NULL)
 )
 SELECT 
   ofndr_num,
@@ -71,25 +95,14 @@ SELECT
   -- There are 6 sentences with multiple statuses entered into the UT database with the 
   -- exact same timestamp. Order these manually so that the SERVING status comes before
   -- the COMPLETE status.
-  ROW_NUMBER() OVER (PARTITION BY OFNDR_NUM, OFNSE_ID ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as sequence
-  FROM (
-    SELECT *, 
-    LAG(status) OVER (partition by ofndr_num, ofnse_id ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as prev_status
-    FROM sentences_with_status
+  ROW_NUMBER() OVER (PARTITION BY OFNDR_NUM, OFNSE_ID ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as sequence 
+FROM (
+  SELECT * ,
+  LAG(status) OVER (partition by ofndr_num, ofnse_id ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as prev_status
+  FROM changed_statuses_only
   )
-  WHERE 
-  -- Status changed
-    ((status != prev_status) 
-  -- Last status
-    OR (status IS NULL AND prev_status IS NOT NULL) 
-  -- First status
-    OR (status IS NOT NULL AND prev_status IS NULL))
-  AND 
-  -- This is the case in 87 out of 591,669 resulting rows. 
-  -- It does not seem like the norm, and appears to be a data entry error in a majority
-  -- of cases. Exclude these cases for the time being and revisit once we have
-  -- more context from UT. TODO(#38008)
-    (NOT (status = 'SERVING' AND prev_status = 'COMPLETE') OR prev_status IS NULL)
+WHERE 
+  (prev_status != 'COMPLETE' OR prev_status IS NULL)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
