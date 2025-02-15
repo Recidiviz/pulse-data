@@ -1,0 +1,217 @@
+## DEV DATAFLOW PIPELINE-SPECIFIC IGNORES
+
+# Ignore Jupyter notebooks
+*.ipynb
+
+# Ignore everything in the tests directory
+recidiviz/airflow/tests/
+recidiviz/tests/
+
+# Ignore all frontend code
+frontends/
+
+## GENERAL IGNORES
+
+## -- Keep everything below in sync with .dockerignore -- ##
+
+# git
+.git/
+
+# Gitbook
+docs/
+
+## -- Keep everything below in sync with .gitignore -- ##
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Emacs files
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Vim backup files
+*.sw[op]
+
+# Distribution / packaging
+.Python
+build/
+# with an exception for endpoint docs
+!docs/**/build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+.pytest_cache/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+lib/
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+coverage/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+.static_storage/
+.media/
+local_settings.py
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# R
+.Rhistory
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# PyCharm files
+.idea/
+
+# VSCode files
+.vscode/
+
+# Environments
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.firebase/
+.runtimeconfig.json
+service_account.json
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+# Local development
+local.yaml # keep in case any developers still have them
+secrets.yaml # keep in case any developers still have them
+/queue.yaml
+
+#pytest
+.pytest_cache/
+
+# Mac
+.DS_Store
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+# Used to store temporary files
+**/.tfout/*
+
+# Typescript
+**/node_modules
+.yalc
+yalc.lock
+*.tsbuildinfo
+
+# Stackdriver Traces
+traces
+
+# Local emulator files
+recidiviz/local/**/*
+
+# Local Case Triage files
+recidiviz/case_triage/local/**/*
+
+# Local Justice Counts files
+recidiviz/justice_counts/control_panel/local/**/*
+
+# Local Asset Generation files
+nodejs/asset-generation/local
+
+# ESLint Cache
+.eslintcache
+
+# Deployment artifacts
+recidiviz/tools/deploy/dist/
+recidiviz/tools/deploy/log/
+
+# Binaries
+recidiviz/tools/postgres/log/
+recidiviz/tools/postgres/vendor/
+
+# Test fixtures
+recidiviz/tests/big_query/fixtures/
+
+# Tool logs
+logs/
+get-pip.py
+*.code-workspace

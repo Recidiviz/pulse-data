@@ -52,6 +52,17 @@ def get_upload_pipeline_docker_image_cloud_build_config_path() -> str:
     return os.path.join(pipeline_root_path, cloudbuild_path)
 
 
+def get_upload_pipeline_docker_image_cloud_build_ignores_path() -> str:
+    """Returns the path to the ignores path for dataflow pipelines. Files ignored
+    by this ignore file will not be copied to the Docker image as part of the build
+    step.
+    """
+    pipeline_root_path = os.path.dirname(pipelines.__file__)
+    cloudbuild_path = "cloudbuild.pipelines.dev.gcloudignore"
+
+    return os.path.join(pipeline_root_path, cloudbuild_path)
+
+
 def get_sandbox_pipeline_username() -> str:
     """Returns a normalized username that can be associated with a given sandbox
     pipeline run.
@@ -106,6 +117,7 @@ def push_sandbox_dataflow_pipeline_docker_image(
     artifact_reg_image_path = sandbox_dataflow_docker_image_path(
         project_id=project_id, sandbox_username=sandbox_username
     )
+    ignore_file_path = get_upload_pipeline_docker_image_cloud_build_ignores_path()
 
     submit_build_start = time.time()
     environment = get_environment_for_project(project_id)
@@ -119,6 +131,7 @@ def push_sandbox_dataflow_pipeline_docker_image(
             gcloud builds submit \
             --project={project_id} \
             --config {cloud_build_config_path} \
+            --ignore-file {ignore_file_path} \
             --substitutions=_IMAGE_PATH={artifact_reg_image_path},_GOOGLE_CLOUD_PROJECT={project_id},_RECIDIVIZ_ENV={environment.value}
         """,
         timeout_sec=900,
