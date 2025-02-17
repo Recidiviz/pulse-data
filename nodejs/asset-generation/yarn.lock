@@ -1635,10 +1635,10 @@
   dependencies:
     google-gax "^4.0.3"
 
-"@google-cloud/storage@^7.15.0":
-  version "7.15.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-7.15.0.tgz#a9f26314f911a9e7f3d5b443f4bd2304936e80e9"
-  integrity sha512-/j/+8DFuEOo33fbdX0V5wjooOoFahEaMEdImHBmM2tH9MPHJYNtmXOf2sGUmZmiufSukmBEvdlzYgDkkgeBiVQ==
+"@google-cloud/storage@^7.15.1":
+  version "7.15.1"
+  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-7.15.1.tgz#b16fdc26c3c8d97385483c2814ce5dd4621b2454"
+  integrity sha512-2bOD6d2D8b0FCV/By/VVRSvtagTllXFcRAv6F/9XUDY3r54VMQ0gM/B1emMdqnuVDX5mWJrrxlelHBZ9u6r6CA==
   dependencies:
     "@google-cloud/paginator" "^5.0.0"
     "@google-cloud/projectify" "^4.0.0"
