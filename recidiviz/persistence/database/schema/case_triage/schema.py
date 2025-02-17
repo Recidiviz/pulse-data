@@ -19,7 +19,9 @@ application; now only defines tables for roster management of the dashboard appl
 
 """
 
-from sqlalchemy import Boolean, Column, DateTime, String
+from datetime import timezone
+
+from sqlalchemy import TIMESTAMP, Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql import func
@@ -83,12 +85,12 @@ class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
     blocked = Column(Boolean, nullable=True, default=False)
-    blocked_on = Column(DateTime, nullable=True)
+    blocked_on = Column(TIMESTAMP(timezone=True), nullable=True)
     user_hash = Column(String(255), nullable=False)
     pseudonymized_id = Column(String(255), nullable=True)
 
     def __repr__(self) -> str:
-        return f"UserOverride(state_code={self.state_code}, email_address={self.email_address}, external_id={self.external_id}, roles={self.roles}, district={self.district}, first_name={self.first_name}, last_name={self.last_name}, blocked={self.blocked}, blocked_on={self.blocked_on})"
+        return f"UserOverride(state_code={self.state_code}, email_address={self.email_address}, external_id={self.external_id}, roles={self.roles}, district={self.district}, first_name={self.first_name}, last_name={self.last_name}, blocked={self.blocked}, blocked_on={self.blocked_on.astimezone(timezone.utc).isoformat() if self.blocked_on is not None else self.blocked_on})"
 
 
 class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):

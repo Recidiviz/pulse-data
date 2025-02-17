@@ -26,6 +26,7 @@ from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
 import pandas as pd
 import sqlalchemy.orm.exc
+from dateutil.tz import tzlocal
 from flask import Blueprint, Response, jsonify, request
 from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
@@ -480,7 +481,7 @@ def get_auth_endpoint_blueprint(
                     if not (
                         override_user
                         and override_user.blocked_on is not None
-                        and override_user.blocked_on < datetime.now()
+                        and override_user.blocked_on < datetime.now(tzlocal())
                     )
                 ]
                 if len(users_with_access) > 0:
@@ -669,7 +670,7 @@ def get_auth_endpoint_blueprint(
                 )
                 if value := existing_override.first():
                     existing_override.update(
-                        {"blocked": True, "blocked_on": datetime.now()},
+                        {"blocked": True, "blocked_on": datetime.now(tzlocal())},
                         synchronize_session=False,
                     )
                     email = value.email_address
@@ -688,7 +689,7 @@ def get_auth_endpoint_blueprint(
                         state_code=roster_user.state_code,
                         email_address=roster_user.email_address,
                         blocked=True,
-                        blocked_on=datetime.now(),
+                        blocked_on=datetime.now(tzlocal()),
                         user_hash=roster_user.user_hash,
                     )
                     session.add(user_override)
@@ -847,7 +848,7 @@ def get_auth_endpoint_blueprint(
                 roster_users_as_dicts = [
                     {
                         **user.to_dict(),
-                        "blocked_on": datetime.now() + timedelta(weeks=1),
+                        "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1),
                     }
                     for user in roster_users_to_be_deleted
                 ]

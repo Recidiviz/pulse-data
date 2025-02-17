@@ -14,7 +14,7 @@ snapshots = Snapshot()
 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_add_user_overrides"] = [
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user1@testdomain.com, external_id=1234, roles=['leadership_role'], district=District 7, first_name=Test, last_name=User, blocked=True, blocked_on=2023-01-01 00:00:00)"
+        "UserOverride(state_code=US_XX, email_address=user1@testdomain.com, external_id=1234, roles=['leadership_role'], district=District 7, first_name=Test, last_name=User, blocked=True, blocked_on=2025-01-09T14:00:00+00:00)"
     ),
     GenericRepr(
         "UserOverride(state_code=US_XX, email_address=user2@testdomain.com, external_id=None, roles=['leadership_role'], district=None, first_name=None, last_name=None, blocked=False, blocked_on=None)"

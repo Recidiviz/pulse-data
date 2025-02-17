@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements tests for the script that prepares data to be ready for roster sync."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
@@ -535,7 +535,9 @@ class PrepRosterSyncTest(TestCase):
                 "last_name": "User",
                 "user_hash": "user1hash",
                 "blocked": True,
-                "blocked_on": datetime.fromisoformat("2023-01-01"),
+                "blocked_on": datetime.fromisoformat("2025-01-09T14:00:00").replace(
+                    tzinfo=timezone.utc
+                ),
             },
             {
                 "state_code": "US_XX",

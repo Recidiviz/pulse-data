@@ -16,6 +16,7 @@
 # =============================================================================
 """Marshmallow schemas for the auth api"""
 
+from datetime import timezone
 from typing import Any, Dict
 
 from flask_smorest.fields import Upload
@@ -64,6 +65,23 @@ class UserSchema(CamelCaseSchema):
 
         if external_id := data.get("external_id"):
             data["external_id"] = external_id.upper()
+
+        return data
+
+    @pre_dump
+    # pylint: disable=unused-argument
+    def process_output(
+        self, data: Dict | Row, **kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Process response before it gets serialized (converted from Python data types to
+        JSON).
+        """
+        if not isinstance(data, dict):
+            data = dict(data.__dict__)
+
+        if blocked_on := data.get("blocked_on"):
+            data["blocked_on"] = blocked_on.astimezone(timezone.utc)
 
         return data
 

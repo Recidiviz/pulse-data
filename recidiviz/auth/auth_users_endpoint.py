@@ -286,7 +286,13 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 user = UserOverride(**user_dict)
                 current_session.add(user)
                 current_session.commit()
-                return user
+
+                new_user = (
+                    current_session.query(UserOverride)
+                    .filter(UserOverride.email_address == user_dict["email_address"])
+                    .one()
+                )
+                return new_user
             except IntegrityError as e:
                 if isinstance(e.orig, UniqueViolation):
                     abort(

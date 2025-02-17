@@ -24,6 +24,7 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import flask
 import pytest
@@ -148,6 +149,10 @@ class AuthUsersEndpointTestCase(TestCase):
         )
 
         self.active_date1 = "2024-04-30T14:45:09.865Z"
+        self.eastern_timezone = ZoneInfo("America/New_York")
+        self.blocked_on_date = datetime.fromisoformat("2025-01-09T09:00:00").replace(
+            tzinfo=self.eastern_timezone
+        )
 
         with self.app.test_request_context():
             self.users = lambda state_code=None: flask.url_for(
@@ -206,7 +211,7 @@ class AuthUsersEndpointTestCase(TestCase):
             external_id="user_1_override.external_id",
             roles=["user_1_override.role"],
             blocked=True,
-            blocked_on=datetime.fromisoformat("2023-01-01"),
+            blocked_on=self.blocked_on_date,
             pseudonymized_id="hashed-user_1_override",
         )
         default_1 = generate_fake_default_permissions(
@@ -282,7 +287,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_ME",
             external_id="A1B2",
             blocked=True,
-            blocked_on=datetime.fromisoformat("2023-01-01"),
+            blocked_on=self.blocked_on_date,
         )
         default_1 = generate_fake_default_permissions(
             state="US_ME",

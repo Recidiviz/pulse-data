@@ -18,7 +18,7 @@
 """Tests for auth/auth_endpoint.py."""
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase
@@ -27,6 +27,7 @@ from unittest.mock import MagicMock, patch
 import flask
 import freezegun
 import pytest
+from dateutil.tz import tzlocal
 from flask import Flask
 from flask_smorest import Api
 
@@ -65,6 +66,10 @@ _FACILITIES_USER_HASH = "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo="
 LEADERSHIP_ROLE = "supervision_leadership"
 SUPERVISION_STAFF = "supervision_line_staff"
 FACILITIES_STAFF = "facilities_line_staff"
+
+BLOCKED_ON_DATE = datetime.fromisoformat("2025-01-09T09:00:00").replace(
+    tzinfo=tzlocal()
+)
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -501,7 +506,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, delete_permissions.status_code)
 
-    @freezegun.freeze_time(datetime(2025, 1, 9, 0, 0, 0, 0))
+    @freezegun.freeze_time(BLOCKED_ON_DATE)
     def test_delete_user_roster(self) -> None:
         user = generate_fake_rosters(
             email="parameter@testdomain.com",
@@ -530,7 +535,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "blockedOn": "2025-01-09T00:00:00",
+                    "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -546,7 +551,7 @@ class AuthEndpointTests(TestCase):
             ]
             self.assertEqual(expected_response, json.loads(response.data))
 
-    @freezegun.freeze_time(datetime(2025, 1, 9, 0, 0, 0, 0))
+    @freezegun.freeze_time(BLOCKED_ON_DATE)
     def test_delete_user_user_override(self) -> None:
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
@@ -579,7 +584,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "blockedOn": "2025-01-09T00:00:00",
+                    "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -920,14 +925,14 @@ class AuthEndpointTests(TestCase):
             email="parameter@testdomain.com",
             region_code="US_MO",
             blocked=True,
-            blocked_on=datetime.fromisoformat("2025-01-09"),
+            blocked_on=BLOCKED_ON_DATE,
         )
         override_only_delete = generate_fake_user_overrides(
             email="user@testdomain.com",
             region_code="US_MO",
             roles=[LEADERSHIP_ROLE],
             blocked=True,
-            blocked_on=datetime.fromisoformat("2025-01-09"),
+            blocked_on=BLOCKED_ON_DATE,
         )
         override_keep = generate_fake_user_overrides(
             email="supervision_staff_2@testdomain.com",
@@ -1078,7 +1083,7 @@ class AuthEndpointTests(TestCase):
 
             mock_task_manager.return_value.create_task.assert_not_called()
 
-    @freezegun.freeze_time(datetime.now())
+    @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
         "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
     )
@@ -1107,7 +1112,7 @@ class AuthEndpointTests(TestCase):
             email="leadership@testdomain.com",
             region_code="US_XX",
             first_name="override",
-            blocked_on=datetime.now()
+            blocked_on=datetime.now(tzlocal())
             + timedelta(days=5),  # This should be set to null with the new upload
         )
         # Create associated default permissions by role
@@ -1219,6 +1224,7 @@ class AuthEndpointTests(TestCase):
             ),
             content_type="text/csv",
         )
+
         roster_leadership_user = generate_fake_rosters(
             email="leadership@testdomain.com",
             region_code="US_XX",
@@ -1230,9 +1236,7 @@ class AuthEndpointTests(TestCase):
             email="leadership@testdomain.com",
             region_code="US_XX",
             first_name="override",
-            blocked_on=datetime.fromisoformat(
-                "2025-01-09"
-            ),  # This should stay the same with the new upload
+            blocked_on=BLOCKED_ON_DATE,  # This should stay the same with the new upload
         )
         # Create associated default permissions by role
         leadership_default = generate_fake_default_permissions(
@@ -1272,7 +1276,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "blockedOn": "2025-01-09T00:00:00",
+                    "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
                     "externalId": None,
@@ -1326,7 +1330,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(expected, json.loads(response.data))
 
-    @freezegun.freeze_time(datetime.now())
+    @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
         "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
     )
@@ -1406,9 +1410,9 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "blockedOn": datetime.isoformat(
-                        datetime.now() + timedelta(weeks=1)
-                    ),
+                    "blockedOn": (
+                        datetime.now(tz=timezone.utc) + timedelta(weeks=1)
+                    ).isoformat(),
                     "district": "",
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -1462,7 +1466,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(expected, json.loads(response.data))
 
-    @freezegun.freeze_time(datetime.now())
+    @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
         "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
     )
@@ -1538,9 +1542,9 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "blockedOn": datetime.isoformat(
-                        datetime.now() + timedelta(weeks=1)
-                    ),
+                    "blockedOn": (
+                        datetime.now(tz=timezone.utc) + timedelta(weeks=1)
+                    ).isoformat(),
                     "district": "District A",
                     "emailAddress": "facilities_staff@testdomain.com",
                     "externalId": None,
