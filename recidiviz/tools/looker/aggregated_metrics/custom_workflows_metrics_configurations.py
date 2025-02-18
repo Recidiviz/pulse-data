@@ -271,7 +271,7 @@ TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCo
     description="Number of task eligibility starts occurring while client is almost eligible for selected task type, "
     "occurring after an action was taken in the tool",
     event_selector=EventSelector(
-        event_type=EventType.TASK_COMPLETED,
+        event_type=EventType.TASK_ELIGIBILITY_START,
         event_conditions_dict={
             "after_tool_action": ["true"],
             "after_almost_eligible": ["true"],
