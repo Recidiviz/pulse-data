@@ -130,6 +130,29 @@ flat_sentence_flags AS (
     ORDER BY CAST(COALESCE(NULLIF(UPDT_DTM,'NULL'), NULLIF(CREATE_DTM,'NULL')) AS DATETIME) DESC) = 1
 ),
 
+-- Identify people who are ineligible for TPR or DTP because of a previous disqualifying 
+-- conviction from out of state.
+previous_conviction_flags AS (
+    SELECT DISTINCT
+        PERSON_ID, 
+        (tpr_elig.description = "Ineligible") AS TPR_ineligible, 
+        (dtp_elig.description = "Ineligible") AS DTP_ineligible
+    FROM valid_sentences
+    JOIN {{DOC_EPISODE}} 
+        USING(PERSON_ID)
+    LEFT JOIN {{AZ_DOC_TRANSITION_PRG_ELIG}} tpr
+        USING(DOC_ID)
+    LEFT JOIN {{AZ_DOC_DRUG_TRAN_PRG_ELIG}} dtp
+        USING(DOC_ID)
+    LEFT JOIN {{LOOKUPS}} tpr_elig
+        ON(tpr.ELIGIBILITY_STATUS_ID = tpr_elig.LOOKUP_ID)
+    LEFT JOIN {{LOOKUPS}} dtp_elig
+        ON(dtp.ELIGIBILITY_STATUS_ID = dtp_elig.LOOKUP_ID)    
+    -- Only keep the most recently assigned eligibility for each person, since this value
+    -- can change over time.
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY PERSON_ID ORDER BY CAST(tpr.CREATE_DTM AS DATETIME) DESC, CAST(dtp.CREATE_DTM AS DATETIME) DESC) = 1
+),
+
 -- Maps any sentence to its parent sentences if it is to be served
 -- consecutively. Note that a consecutive sentence may be in a
 -- separate 'commitment'
@@ -176,7 +199,9 @@ SELECT
     SEX_OFFENSE_FLAG,
     TPR_ELIGIBILITY_NOTE,
     OFFENSE_ID = FINAL_OFFENSE_ID AS is_controlling,
-    flat_sentence_flag
+    flat_sentence_flag,
+    previous_conviction_flags.TPR_ineligible,
+    previous_conviction_flags.DTP_ineligible
 FROM 
     valid_sentences
 JOIN
@@ -199,6 +224,10 @@ LEFT JOIN
     flat_sentence_flags
 USING  
     (OFFENSE_ID)
+LEFT JOIN 
+    previous_conviction_flags
+USING
+    (PERSON_ID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

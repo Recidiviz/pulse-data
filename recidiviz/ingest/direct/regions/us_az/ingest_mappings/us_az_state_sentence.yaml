@@ -25,6 +25,8 @@ input_columns:
   TPR_ELIGIBILITY_NOTE: STRING
   is_controlling: BOOLEAN
   flat_sentence_flag: STRING
+  TPR_ineligible: BOOLEAN
+  DTP_ineligible: BOOLEAN
 unused_columns:
   - parole_possible
 output:
@@ -107,3 +109,5 @@ output:
           sentence_metadata:
             $json_dict:
               flat_sentence: flat_sentence_flag
+              tpr_ineligible_from_previous_conviction: TPR_ineligible
+              dtp_ineligible_from_previous_conviction: DTP_ineligible
