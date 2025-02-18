@@ -23,7 +23,7 @@ Currently the script does the following:
 Usage:
 python -m recidiviz.tools.ingest.operations.ingest_stability_check \
     --project-id recidiviz-staging \
-    --state-code US_ME
+    --state-code US_ME 
 
 If you have made a change to a raw data config or ingest view and just want to validate
 that change, you can filter to only checks that category (either "raw_data" or
@@ -33,6 +33,15 @@ python -m recidiviz.tools.ingest.operations.ingest_stability_check \
     --project-id recidiviz-staging \
     --state-code US_OZ \
     --category ingest_view
+
+If you added a new raw data config and want to validate primary key's uniqueness, but
+have not yet deployed the YAML, you can specify a raw data sandbox. For example:
+
+python -m recidiviz.tools.ingest.operations.ingest_stability_check \
+    --project-id recidiviz-staging \
+    --state-code US_OZ \
+    --category raw_data \
+    --sandbox-raw-dataset-prefix my-sandbox-123
 """
 
 import argparse
@@ -104,8 +113,11 @@ def verify_raw_data_primary_keys(
     bq_client: BigQueryClient,
     state_code: StateCode,
     instance: DirectIngestInstance,
+    sandbox_dataset_prefix: str | None,
 ) -> Set[str]:
-    """Verifies that each of this state's raw files has a sufficient primary key defined
+    """Verifies that each of this state's raw files has a sufficient primary key defined.
+    If |sandbox_dataset_prefix| is provided, will only check the raw files that are
+    present in the sandbox dataset.
 
     The primary key is not sufficient if multiple rows are returned for a single primary
     key in a single file."""
@@ -113,11 +125,17 @@ def verify_raw_data_primary_keys(
     raw_table_dataset_id = raw_tables_dataset_for_region(
         state_code=state_code,
         instance=instance,
-        sandbox_dataset_prefix=None,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+    )
+
+    raw_file_tags_to_check = (
+        list(region_raw_file_config.raw_file_tags)
+        if sandbox_dataset_prefix is None
+        else [table.table_id for table in bq_client.list_tables(raw_table_dataset_id)]
     )
 
     progress = tqdm(
-        total=len(region_raw_file_config.raw_file_configs),
+        total=len(raw_file_tags_to_check),
         desc="Verifying raw data primary keys",
     )
 
@@ -153,11 +171,13 @@ def verify_raw_data_primary_keys(
 
         job_futures = {
             executor.submit(
-                query_raw_table, raw_file_tag, raw_file_config
+                query_raw_table,
+                raw_file_tag,
+                region_raw_file_config.raw_file_configs[raw_file_tag],
             ): raw_file_tag
-            for raw_file_tag, raw_file_config in region_raw_file_config.raw_file_configs.items()
+            for raw_file_tag in raw_file_tags_to_check
             # Don't run the query if there are no primary keys
-            if raw_file_config.primary_key_cols
+            if region_raw_file_config.raw_file_configs[raw_file_tag].primary_key_cols
         }
 
         bad_key_file_tags = set()
@@ -323,14 +343,20 @@ def main(
     state_code: StateCode,
     categories: Set[CheckCategory],
     ingest_instance: DirectIngestInstance,
+    sandbox_raw_dataset_prefix: str | None,
 ) -> int:
     """Runs the various ingest stability checks and reports the results."""
+    if sandbox_raw_dataset_prefix and categories != {CheckCategory.RAW_DATA}:
+        raise ValueError(
+            "sandbox_raw_dataset_prefix only valid with raw_data-only check"
+        )
+
     bq_client = BigQueryClientImpl()
 
     bad_key_file_tags = None
     if CheckCategory.RAW_DATA in categories:
         bad_key_file_tags = verify_raw_data_primary_keys(
-            bq_client, state_code, ingest_instance
+            bq_client, state_code, ingest_instance, sandbox_raw_dataset_prefix
         )
 
     determinism_result = None
@@ -406,6 +432,19 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
+    parser.add_argument(
+        "--sandbox-raw-dataset-prefix",
+        dest="sandbox_raw_dataset_prefix",
+        type=str,
+        required=False,
+        default=None,
+        help="If the raw data that you want to use as the basis of our ingest stability "
+        "check is in a sandbox, specify the same sandbox prefix you used for the "
+        "import_raw_files_to_sandbox script. If this argument is specified, this script "
+        "will only execute the raw_data check on the file tags that you have "
+        "present in your sandbox. Only valid when running a raw_data-only check.",
+    )
+
     return parser.parse_args()
 
 
@@ -417,5 +456,6 @@ if __name__ == "__main__":
                 StateCode(args.state_code),
                 {CheckCategory(category) for category in args.category},
                 ingest_instance=DirectIngestInstance(args.ingest_instance),
+                sandbox_raw_dataset_prefix=args.sandbox_raw_dataset_prefix,
             )
         )
