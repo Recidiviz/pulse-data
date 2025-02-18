@@ -36,7 +36,7 @@ US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         pei.person_id,
         pei.external_id as person_external_id,
         DATE(a.StartDate) AS start_date,
-        DATE_ADD(DATE(a.EndDate), INTERVAL 1 DAY) AS end_date_exclusive,
+        DATE(a.EndDate) AS end_date_exclusive,
         sei.staff_id AS incarceration_staff_assignment_id,
         -- This field is to maintain consistency with US_ME
         CAST(NULL AS STRING) AS incarceration_staff_assignment_external_id,
