@@ -23,30 +23,31 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#37219) Still need to do homeless periods by joining with addr hist -- though not
-# sure how accurate that will be.
 VIEW_QUERY_TEMPLATE = """
 SELECT
   ofndr_num,
-  ofndr_addr_hist_id,
+  ah.ofndr_addr_hist_id,
   addr_typ_cd,
   cmt,
   end_cmt,
-  -- If the comment contains the word "homeless" or "shelter", we consider the person to
-  -- be homeless.
-  (cmt IS NOT NULL AND (LOWER(cmt) LIKE '%homeless%' OR LOWER(cmt) like '%shelter%')) AS unhoused,
-  DATE(strt_dt) AS strt_dt,
-  DATE(end_dt) AS end_dt,
-  FROM {ofndr_addr_hist}
+  -- If the address is associated with a "homeless" attribute, or there is a comment
+  -- contains the word "homeless" or "shelter" we consider the person to be homeless.
+  (cmt IS NOT NULL AND (LOWER(cmt) LIKE '%homeless%' OR LOWER(cmt) like '%shelter%')) OR
+  (aac.title = 'HOMELESS / TRANSIENT') AS unhoused,
+  DATE(ah.strt_dt) AS strt_dt,
+  DATE(ah.end_dt) AS end_dt,
+  FROM {ofndr_addr_hist} ah
+  LEFT JOIN {ofndr_addr_attr} aa USING (ofndr_addr_hist_id)
+  LEFT JOIN {addr_attr_cd} aac USING (addr_attr_id)
   WHERE
     (
-        strt_dt IS NOT NULL 
+        ah.strt_dt IS NOT NULL 
         AND 
-        DATE(strt_dt) > DATE('1925-01-01')
+        DATE(ah.strt_dt) > DATE('1925-01-01')
         AND 
-        DATE(strt_dt) <= @update_timestamp
+        DATE(ah.strt_dt) <= @update_timestamp
         AND 
-        (end_dt IS NULL OR DATE(end_dt) <= @update_timestamp)
+        (ah.end_dt IS NULL OR DATE(ah.end_dt) <= @update_timestamp)
     )
 """
 
