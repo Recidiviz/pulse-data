@@ -32,6 +32,31 @@ variable "nat_ips" {
   default = []
 }
 
+# Determines whether existing port mappings can be used for the multiple connections
+# from the same internal to external IP. It's possible for endpoint independent conflicts
+# to arise in certain situations when this is set to true. For more info, see
+# https://cloud.google.com/nat/docs/ports-and-addresses#ports-reuse-endpoints
+variable "enable_endpoint_independent_mapping" {
+  type    = bool
+  default = true
+}
+
+variable "rules" {
+  description = "Specifies one or more rules associated with this NAT."
+  type = list(object({
+    description = string
+    match       = string
+    # rule_number determines the order in which the rules are checked. The lower the 
+    # number, the higher the priority. Valid value are between 1 and 65,000
+    rule_number = number
+    action = object({
+      source_nat_active_ips = list(string)
+    })
+  }))
+  default = []
+}
+
+
 resource "google_compute_router" "default" {
   name        = var.router_name
   region      = var.region
@@ -44,10 +69,24 @@ resource "google_compute_router_nat" "default" {
   region = var.region
   router = google_compute_router.default.name
 
-  nat_ip_allocate_option             = length(var.nat_ips) == 0 ? "AUTO_ONLY" : "MANUAL_ONLY"
-  nat_ips                            = var.nat_ips
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-  min_ports_per_vm                   = 64
+  nat_ip_allocate_option              = length(var.nat_ips) == 0 ? "AUTO_ONLY" : "MANUAL_ONLY"
+  nat_ips                             = var.nat_ips
+  source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  min_ports_per_vm                    = 64
+  enable_endpoint_independent_mapping = var.enable_endpoint_independent_mapping
+
+  dynamic "rules" {
+    for_each = var.rules
+    content {
+      rule_number = rules.value.rule_number
+      description = rules.value.description
+      match       = rules.value.match
+      action {
+        source_nat_active_ips = rules.value.action.source_nat_active_ips
+      }
+    }
+  }
+
 
   log_config {
     enable = true
