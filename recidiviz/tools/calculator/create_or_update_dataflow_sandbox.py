@@ -27,7 +27,7 @@ python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         [--state_code STATE_CODE] \
-        [--allow_overwrite] \
+        [--recreate] \
         --datasets_to_create metrics supplemental (must be last due to list)
 """
 import argparse
@@ -69,17 +69,23 @@ SANDBOX_TYPES = [
 ]
 
 
-def create_or_update_source_table_collections(
-    source_table_collections: list[SourceTableCollection], allow_overwrite: bool = False
+def _create_or_update_pipeline_output_datasets_from_collections(
+    *, source_table_collections: list[SourceTableCollection], recreate: bool
 ) -> None:
     bq_client = BigQueryClientImpl()
     for source_table_collection in source_table_collections:
         sandbox_dataset_id = source_table_collection.dataset_id
 
-        if bq_client.dataset_exists(sandbox_dataset_id) and not allow_overwrite:
-            raise ValueError(
-                f"Dataset {sandbox_dataset_id} already exists in project {bq_client.project_id}. To overwrite, set --allow_overwrite.",
+        if bq_client.dataset_exists(sandbox_dataset_id):
+            if not recreate:
+                raise ValueError(
+                    f"Dataset {sandbox_dataset_id} already exists in project {bq_client.project_id}. To re-create, set --recreate.",
+                )
+            logging.info(
+                "Deleting existing dataset [%s] before re-creating...",
+                sandbox_dataset_id,
             )
+            bq_client.delete_dataset(sandbox_dataset_id, delete_contents=True)
 
     if not all(
         source_table_collection.is_sandbox_collection
@@ -101,14 +107,18 @@ def create_or_update_source_table_collections(
 
 
 def create_or_update_dataflow_sandbox(
+    *,
     sandbox_dataset_prefix: str,
     pipelines: List[str],
-    allow_overwrite: bool,
+    recreate: bool,
     state_code_filter: StateCode | None = None,
 ) -> None:
     """Creates or updates a sandbox for all the pipelines specified, prefixing the
     dataset name with the given prefix. Creates one dataset per state_code that has
-    calculation pipelines regularly scheduled."""
+    calculation pipelines regularly scheduled. If |recreate| is true, will delete all
+    existing sandbox tables before re-creating them to avoid an expiration race
+    condition.
+    """
     dataflow_source_tables = SourceTableRepository(
         source_table_collections=get_dataflow_output_source_table_collections()
     )
@@ -140,14 +150,14 @@ def create_or_update_dataflow_sandbox(
 
         collections_to_create.extend(pipeline_collections)
 
-    create_or_update_source_table_collections(
+    _create_or_update_pipeline_output_datasets_from_collections(
         source_table_collections=[
             collection.as_sandbox_collection(
                 sandbox_dataset_prefix=sandbox_dataset_prefix
             )
             for collection in collections_to_create
         ],
-        allow_overwrite=allow_overwrite,
+        recreate=recreate,
     )
 
 
@@ -177,11 +187,11 @@ def parse_arguments() -> argparse.Namespace:
         "others to tell who created the dataset.",
     )
     parser.add_argument(
-        "--allow_overwrite",
-        dest="allow_overwrite",
+        "--recreate",
+        dest="recreate",
         action="store_true",
         default=False,
-        help="Allow existing datasets to be overwritten.",
+        help="Delete existing sandbox datasets and re-create them.",
     )
     parser.add_argument(
         "--datasets_to_create",
@@ -202,8 +212,8 @@ if __name__ == "__main__":
 
     with local_project_id_override(args.project_id):
         create_or_update_dataflow_sandbox(
-            args.sandbox_dataset_prefix,
-            args.datasets_to_create,
-            args.allow_overwrite,
-            args.state_code,
+            sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+            pipelines=args.datasets_to_create,
+            recreate=args.recreate,
+            state_code_filter=args.state_code,
         )

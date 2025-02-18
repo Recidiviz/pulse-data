@@ -451,7 +451,7 @@ def load_end_to_end_sandbox(
                     METRICS_PIPELINE_NAME,
                     SUPPLEMENTAL_PIPELINE_NAME,
                 ],
-                allow_overwrite=True,
+                recreate=True,
                 state_code_filter=state_code,
             )
 

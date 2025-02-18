@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests basic functionality of the create_or_update_dataflow_sandbox tool"""
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -87,7 +87,7 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             pipelines=[SUPPLEMENTAL_PIPELINE_NAME],
-            allow_overwrite=False,
+            recreate=False,
         )
 
         self.assertListEqual(
@@ -101,14 +101,14 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
                 pipelines=[SUPPLEMENTAL_PIPELINE_NAME],
-                allow_overwrite=False,
+                recreate=False,
             )
 
     def test_create_metrics(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             pipelines=[METRICS_PIPELINE_NAME],
-            allow_overwrite=False,
+            recreate=False,
         )
 
         self.assertListEqual(
@@ -122,14 +122,14 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
                 pipelines=[METRICS_PIPELINE_NAME],
-                allow_overwrite=False,
+                recreate=False,
             )
 
     def test_create_ingest(self) -> None:
         create_or_update_dataflow_sandbox(
             sandbox_dataset_prefix="sandboxed",
             pipelines=[INGEST_PIPELINE_NAME],
-            allow_overwrite=False,
+            recreate=False,
         )
 
         self.assertListEqual(
@@ -150,5 +150,54 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix="sandboxed",
                 pipelines=[INGEST_PIPELINE_NAME],
-                allow_overwrite=False,
+                recreate=False,
+            )
+
+    def test_recreate_ingest(self) -> None:
+        create_or_update_dataflow_sandbox(
+            sandbox_dataset_prefix="sandboxed",
+            pipelines=[INGEST_PIPELINE_NAME],
+            recreate=False,
+        )
+
+        self.assertListEqual(
+            sorted(dataset.dataset_id for dataset in self.bq_client.list_datasets()),
+            [
+                "sandboxed_us_xx_ingest_view_results",
+                "sandboxed_us_xx_normalized_state",
+                "sandboxed_us_xx_state",
+                "sandboxed_us_yy_ingest_view_results",
+                "sandboxed_us_yy_normalized_state",
+                "sandboxed_us_yy_state",
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"^Dataset sandboxed_.* already exists.*"
+        ):
+            create_or_update_dataflow_sandbox(
+                sandbox_dataset_prefix="sandboxed",
+                pipelines=[INGEST_PIPELINE_NAME],
+                recreate=False,
+            )
+
+        delete_dataset_mock = Mock(side_effect=self.bq_client.delete_dataset)
+        with patch.object(self.bq_client, "delete_dataset", delete_dataset_mock):
+
+            create_or_update_dataflow_sandbox(
+                sandbox_dataset_prefix="sandboxed",
+                pipelines=[INGEST_PIPELINE_NAME],
+                recreate=True,
+            )
+
+            delete_dataset_mock.assert_has_calls(
+                [
+                    call("sandboxed_us_xx_ingest_view_results", delete_contents=True),
+                    call("sandboxed_us_xx_normalized_state", delete_contents=True),
+                    call("sandboxed_us_xx_state", delete_contents=True),
+                    call("sandboxed_us_yy_ingest_view_results", delete_contents=True),
+                    call("sandboxed_us_yy_normalized_state", delete_contents=True),
+                    call("sandboxed_us_yy_state", delete_contents=True),
+                ],
+                any_order=True,
             )

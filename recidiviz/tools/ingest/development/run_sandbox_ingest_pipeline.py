@@ -306,7 +306,7 @@ def run_sandbox_ingest_pipeline(
     create_or_update_dataflow_sandbox(
         sandbox_dataset_prefix=output_sandbox_prefix,
         pipelines=[INGEST_PIPELINE_NAME],
-        allow_overwrite=True,
+        recreate=True,
         state_code_filter=StateCode(params.state_code),
     )
 
