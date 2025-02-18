@@ -84,6 +84,8 @@ resource "google_composer_environment" "default_v2" {
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
         "core-max_map_length"                       = 2000
+        # Allow up to active 48 tasks per DAG
+        "core-max_active_tasks_per_dag"             = 48
         "celery-worker_concurrency"                 = 16
         "email-email_backend"                       = "airflow.providers.sendgrid.utils.emailer.send_email"
         "email-email_conn_id"                       = "sendgrid_default"
