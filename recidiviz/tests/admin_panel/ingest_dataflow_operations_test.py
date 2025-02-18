@@ -60,7 +60,7 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east4"},
 )
 @pytest.mark.uses_db
 class IngestDataflowOperations(TestCase):

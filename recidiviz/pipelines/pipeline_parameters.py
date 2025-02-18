@@ -22,6 +22,7 @@ import json
 import logging
 import os.path
 import re
+from random import sample
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 import attr
@@ -60,6 +61,18 @@ PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
 PIPELINE_SANDBOX_USERNAME_ARG_NAME = "sandbox_username"
 
 PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
+
+# For machine architectures only available in certain regions / zones, specifies the regions and zones where that
+# architecture is available.
+ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS = {
+    "c4a": {
+        "us-central1": ["a", "b", "c"],
+        "us-west1": ["a"],
+        "us-east1": ["b", "c", "d"],
+        "us-east4": ["a", "b", "c"],
+        "us-east7": ["a"],
+    }
+}
 
 
 @attr.define(kw_only=True)
@@ -154,6 +167,7 @@ class PipelineParameters:
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
+    worker_zone: str | None = attr.ib(default=None)
     machine_type: str = attr.ib(
         default="c4a-highcpu-32", validator=attr_validators.is_str
     )
@@ -245,6 +259,16 @@ class PipelineParameters:
                 f"Found non-default values for these fields: "
                 f"{self._get_non_default_sandbox_indicator_parameters()}"
             )
+
+        architecture, _, _ = self.machine_type.split("-", 3)
+        if (
+            self.worker_zone is None
+            and architecture in ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS
+        ):
+            zone = sample(
+                ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS[architecture][self.region], 1
+            )[0]
+            self.worker_zone = f"{self.region}-{zone}"
 
     @staticmethod
     def _to_job_name_friendly(s: str) -> str:
@@ -405,7 +429,7 @@ class PipelineParameters:
             "--region",
             type=str,
             help="The Google Cloud region to run the job on (e.g. us-west1).",
-            default="us-east1-b",
+            default="us-east1",
         )
 
         parser.add_argument(
@@ -525,6 +549,7 @@ class PipelineParameters:
                     "additionalUserLabels": self.resource_labels,
                     "machineType": self.machine_type,
                     "diskSizeGb": self.disk_gb_size,
+                    "workerZone": self.worker_zone,
                     "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
                     "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
                     "additionalExperiments": [

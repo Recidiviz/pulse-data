@@ -23,9 +23,6 @@ import attr
 
 import recidiviz
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
-from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
@@ -38,6 +35,20 @@ ALL_PARAMETERS_SUBCLASSES: List[Type[PipelineParameters]] = [
     MetricsPipelineParameters,
     SupplementalPipelineParameters,
 ]
+
+C4A_MACHINE_TYPE_AVAILABILITY = {
+    "us-central1-a",
+    "us-central1-b",
+    "us-central1-c",
+    "us-west1-a",
+    "us-east1-b",
+    "us-east1-c",
+    "us-east1-d",
+    "us-east4-a",
+    "us-east4-b",
+    "us-east4-c",
+    "us-east7-a",
+}
 
 
 class TestValidPipelineParameters(unittest.TestCase):
@@ -60,7 +71,8 @@ class TestValidPipelineParameters(unittest.TestCase):
 
         for pipeline in metric_pipelines:
             d: dict[str, Any] = pipeline.get()
-            MetricsPipelineParameters(project=self.PROJECT_ID, **d)
+            parameters = MetricsPipelineParameters(project=self.PROJECT_ID, **d)
+            self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
 
     def test_supplemental_pipelines_for_valid_parameters(self) -> None:
         supplemental_pipelines = self.PIPELINE_CONFIG.pop_dicts(
@@ -69,7 +81,8 @@ class TestValidPipelineParameters(unittest.TestCase):
 
         for pipeline in supplemental_pipelines:
             d: dict[str, Any] = pipeline.get()
-            SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
+            parameters = SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
+            self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
 
     def test_valid_get_input_dataset_property_names(self) -> None:
         for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
@@ -134,32 +147,3 @@ class TestValidPipelineParameters(unittest.TestCase):
                         f"That field is not a parameter that can be passed to the class at "
                         f"instantiation time.",
                     )
-
-    def test_zonal_machine_type_availability(self) -> None:
-        c4a_machine_type_availability = {
-            "us-central1-a",
-            "us-central1-b",
-            "us-central1-c",
-            "us-west1-a",
-            "us-east1-b",
-            "us-east1-c",
-            "us-east1-d",
-            "us-east4-a",
-            "us-east4-b",
-            "us-east4-c",
-            "us-east7-a",
-        }
-        for pipelines in self.PIPELINE_CONFIG.get().values():
-            self.assertEqual(
-                set(),
-                {pipeline["region"] for pipeline in pipelines}  # type: ignore
-                - c4a_machine_type_availability,
-                msg="Found region that does not support c4a availability.",
-            )
-
-        self.assertEqual(
-            set(),
-            set(DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE.values())
-            - c4a_machine_type_availability,
-            msg="Found region that does not support c4a availability.",
-        )

@@ -150,7 +150,7 @@ class TestCheckForValidWatermarks(unittest.TestCase):
 
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-    values={StateCode.US_XX: "us-east1-test"},
+    values={StateCode.US_XX: "us-east1"},
 )
 class TestSingleIngestPipelineGroup(unittest.TestCase):
     """Tests for the single ingest pipeline group ."""
@@ -209,7 +209,7 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
             f"{task_group_id}.run_pipeline"
         )
 
-        self.assertEqual(task.location, "us-east1-test")
+        self.assertEqual(task.location, "us-east1")
         self.assertEqual(task.project_id, _PROJECT_ID)
         self.assertEqual(task.body.operator.task_id, f"{task_group_id}.create_flex_template")  # type: ignore
 
@@ -220,7 +220,7 @@ def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
 
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-    values={StateCode.US_XX: "us-east1-test"},
+    values={StateCode.US_XX: "us-east1"},
 )
 class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
     """Tests for the single ingest pipeline group ."""

@@ -731,6 +731,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             pipeline="program_metrics",
             metric_types="ALL",
             region="region",
+            worker_zone="zone",
             person_filter_ids=None,
             calculation_month_count=-1,
         )

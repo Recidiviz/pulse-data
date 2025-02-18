@@ -19,6 +19,7 @@ import json
 import unittest
 from typing import Dict, List, Type
 from unittest import mock
+from unittest.mock import ANY
 
 from apache_beam import Pipeline
 
@@ -213,6 +214,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
                 region="us-east1",
+                worker_zone=ANY,
                 metric_types="METRIC_2 METRIC_3",
                 calculation_month_count=24,
             ),
@@ -224,6 +226,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
                 region="us-east1",
+                worker_zone=ANY,
                 staging_only=True,
                 metric_types="METRIC_3",
                 calculation_month_count=36,
@@ -238,6 +241,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 # empty input overrides.
                 input_dataset_overrides_json=json.dumps({}),
                 region="us-east1",
+                worker_zone=ANY,
             ),
         ]
         self.assertEqual(expected_params, post_ingest_params)

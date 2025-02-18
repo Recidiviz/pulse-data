@@ -510,7 +510,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
 
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east4"},
 )
 class TestCalculationDagIntegration(AirflowIntegrationTest):
     """
@@ -537,7 +537,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.ingest_states_patcher.start()
         self.ingest_regions_patcher = patch.dict(
             DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-            values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+            values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east4"},
         )
         self.ingest_regions_patcher.start()
 
