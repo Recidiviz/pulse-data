@@ -26,6 +26,8 @@ from typing import Optional
 
 import attr
 
+from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.utils.string import StrictStringFormatter
 
 UI_CONFIG_TEMPLATE = """
@@ -44,6 +46,7 @@ class LookMLFilterUIType(Enum):
     DROPDOWN_MENU = "dropdown_menu"
     ADVANCED = "advanced"
     TAG_LIST = "tag_list"
+    CHECKBOXES = "checkboxes"
 
 
 class LookMLFilterUIDisplay(Enum):
@@ -97,6 +100,59 @@ class LookMLDashboardFilter:
             raise ValueError(
                 f"LookML filter {self.name} has the field {self.field}, but field names"
                 f"should be fully scoped: use view_name.field_name, not just field_name"
+            )
+
+    @staticmethod
+    def to_filter_name(field: str) -> str:
+        """Convert a fully scoped field name in the format `view_name.field_name`
+        to a filter name in the format `Field Name`"""
+
+        return snake_to_title(field.split(".")[1])
+
+    @classmethod
+    def for_field(
+        cls,
+        field: str,
+        default_value: Optional[str] = None,
+        required: bool = False,
+        allow_multiple_values: bool = False,
+        ui_config: Optional[LookMLFilterUIConfig] = None,
+        model: Optional[str] = None,
+        explore: Optional[str] = None,
+    ) -> "LookMLDashboardFilter":
+        """Create a LookMLDashboardFilter object for the provided field"""
+        field_name = cls.to_filter_name(field)
+        return cls(
+            name=field_name,
+            title=field_name,
+            type=LookMLFilterType.FIELD_FILTER,
+            default_value=default_value,
+            required=required,
+            allow_multiple_values=allow_multiple_values,
+            ui_config=ui_config,
+            model=model,
+            explore=explore,
+            field=field,
+        )
+
+    def validate_referenced_fields_exist_in_views(
+        self, views: list[LookMLView]
+    ) -> None:
+        """Ensures all referenced fields exist in the provided LookML views."""
+        if not self.field:
+            return
+
+        view_name_to_field_names: dict[str, set[str]] = {
+            view.view_name: view.field_names for view in views
+        }
+        view, field_name = self.field.split(".", 1)
+        if view not in view_name_to_field_names:
+            raise ValueError(
+                f"Filter field [{self.field}] references view [{view}] which is not defined."
+            )
+        if field_name not in view_name_to_field_names[view]:
+            raise ValueError(
+                f"Filter field [{self.field}] is not defined in view [{view}]."
             )
 
     def build(self) -> str:

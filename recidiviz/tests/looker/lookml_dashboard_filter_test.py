@@ -24,6 +24,8 @@ from recidiviz.looker.lookml_dashboard_filter import (
     LookMLFilterUIDisplay,
     LookMLFilterUIType,
 )
+from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.looker.lookml_view_field import DimensionLookMLViewField
 
 
 class LookMLDashboardFilterTest(unittest.TestCase):
@@ -67,3 +69,45 @@ class LookMLDashboardFilterTest(unittest.TestCase):
     explore: explore
     field: view_name.field_name"""
         self.assertEqual(filter_output, expected_result)
+
+    def test_validate_referenced_fields_exist_in_views_valid(self) -> None:
+        filter_instance = LookMLDashboardFilter(
+            name="test filter",
+            field="view_name.field_name",
+        )
+        views = [
+            LookMLView(
+                view_name="view_name",
+                fields=[
+                    DimensionLookMLViewField(field_name="field_name", parameters=[]),
+                    DimensionLookMLViewField(field_name="another_field", parameters=[]),
+                ],
+            ),
+        ]
+        try:
+            filter_instance.validate_referenced_fields_exist_in_views(views)
+        except ValueError:
+            self.fail(
+                "validate_referenced_fields_exist_in_views raised ValueError unexpectedly!"
+            )
+
+    def test_validate_referenced_fields_exist_in_views_invalid_field(self) -> None:
+        filter_instance = LookMLDashboardFilter(
+            name="test filter",
+            field="view_name.invalid_field",
+        )
+        views = [
+            LookMLView(
+                view_name="view_name",
+                fields=[
+                    DimensionLookMLViewField(field_name="field_name", parameters=[]),
+                    DimensionLookMLViewField(field_name="another_field", parameters=[]),
+                ],
+            ),
+        ]
+        with self.assertRaises(ValueError) as context:
+            filter_instance.validate_referenced_fields_exist_in_views(views)
+        self.assertIn(
+            "Filter field [view_name.invalid_field] is not defined in view [view_name]",
+            str(context.exception),
+        )

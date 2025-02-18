@@ -24,6 +24,7 @@ from recidiviz.looker.lookml_dashboard_element import LookMLDashboardElement
 from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
 from recidiviz.looker.lookml_dashboard_parameter import LookMLDashboardParameter
 from recidiviz.looker.lookml_utils import write_lookml_file
+from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.utils.string import StrictStringFormatter
 
 DASHBOARD_TEMPLATE = """- dashboard: {dashboard_name}
@@ -55,6 +56,30 @@ class LookMLDashboard:
     load_configuration_wait: bool = attr.field(default=False)
     extended_dashboard: Optional[str] = attr.field(default=None)
     extension_required: bool = attr.field(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        self._validate_listens_correspond_to_filters()
+
+    def _validate_listens_correspond_to_filters(self) -> None:
+        """Each element's listens must correspond to one of the dashboard's filters."""
+        for element in self.elements:
+            if not element.listens:
+                continue
+            for name, field in element.listens.items():
+                if not any((name, field) == (f.name, f.field) for f in self.filters):
+                    raise ValueError(
+                        f"LookML element [{element.name}] is listening to filter [{name}: {field}] that does not exist."
+                        f" Valid filters: [{self.filters}]"
+                    )
+
+    def validate_referenced_fields_exist_in_views(
+        self, views: list[LookMLView]
+    ) -> None:
+        """Ensures all referenced fields exist in the provided LookML views."""
+        for element in self.elements:
+            element.validate_referenced_fields_exist_in_views(views)
+        for filter_ in self.filters:
+            filter_.validate_referenced_fields_exist_in_views(views)
 
     def build(self) -> str:
         all_parameters = [param.build() for param in self.parameters]

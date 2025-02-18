@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates a LookMLView object and associated functions"""
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import attr
 
@@ -61,6 +61,11 @@ class LookMLView:
             ),
             fields=fields,
         )
+
+    @property
+    def field_names(self) -> Set[str]:
+        """Return a set of field names in this view"""
+        return {field.field_name for field in self.fields}
 
     def qualified_name_for_field(self, field_name: str) -> str:
         """Return a string with the format view_name.field_name

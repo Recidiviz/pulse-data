@@ -20,6 +20,8 @@ import unittest
 from recidiviz.looker.lookml_dashboard import LookMLDashboard
 from recidiviz.looker.lookml_dashboard_element import LookMLDashboardElement
 from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
+from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.looker.lookml_view_field import DimensionLookMLViewField
 
 
 class LookMLDashboardTest(unittest.TestCase):
@@ -101,3 +103,51 @@ class LookMLDashboardTest(unittest.TestCase):
   - name: test element 2
     title: test title"""
         self.assertEqual(dashboard.strip(), expected)
+
+    def test_validate_referenced_fields_exist_in_views_valid(self) -> None:
+        views = [
+            LookMLView(
+                view_name="view_name",
+                fields=[
+                    DimensionLookMLViewField(field_name="field_name", parameters=[]),
+                    DimensionLookMLViewField(field_name="another_field", parameters=[]),
+                ],
+            ),
+        ]
+        dashboard = LookMLDashboard(
+            dashboard_name="test_dashboard",
+            parameters=[],
+            filters=[
+                LookMLDashboardFilter(name="test filter", field="view_name.field_name")
+            ],
+            elements=[LookMLDashboardElement(name="test element")],
+        )
+        try:
+            dashboard.validate_referenced_fields_exist_in_views(views)
+        except ValueError:
+            self.fail(
+                "validate_referenced_fields_exist_in_views raised ValueError unexpectedly!"
+            )
+
+    def test_validate_referenced_fields_exist_in_views_invalid_filter(self) -> None:
+        views = [
+            LookMLView(
+                view_name="view_name",
+                fields=[
+                    DimensionLookMLViewField(field_name="field_name", parameters=[]),
+                    DimensionLookMLViewField(field_name="another_field", parameters=[]),
+                ],
+            ),
+        ]
+        dashboard = LookMLDashboard(
+            dashboard_name="test_dashboard",
+            parameters=[],
+            filters=[
+                LookMLDashboardFilter(
+                    name="test filter", field="view_name.invalid_field"
+                )
+            ],
+            elements=[LookMLDashboardElement(name="test element")],
+        )
+        with self.assertRaises(ValueError):
+            dashboard.validate_referenced_fields_exist_in_views(views)

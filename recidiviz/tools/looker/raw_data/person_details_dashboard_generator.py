@@ -34,6 +34,7 @@ from recidiviz.looker.lookml_dashboard_element import (
     LookMLElementType,
     LookMLListen,
     LookMLNoteDisplayType,
+    LookMLSort,
 )
 from recidiviz.looker.lookml_dashboard_filter import (
     LookMLDashboardFilter,
@@ -214,7 +215,7 @@ def _generate_filters_for_state(
 
 
 def _get_sort_cols(file_config: DirectIngestRawFileConfig) -> List[str]:
-    first_datetime_col: List[str] = []
+    """first_datetime_col: List[str] = []
     # Get the first datetime column with valid parsers
     for col in file_config.columns:
         if col.is_datetime and col.datetime_sql_parsers:
@@ -226,7 +227,10 @@ def _get_sort_cols(file_config: DirectIngestRawFileConfig) -> List[str]:
     if first_datetime_col:
         return first_datetime_col
 
-    # Otherwise the primary keys
+    # Otherwise the primary keys"""
+
+    # TODO(#23292) we don't actually include the datetime sort columns in the dashboard
+    # so just return the primary key columns for now
     return file_config.primary_key_cols
 
 
@@ -286,7 +290,8 @@ def _generate_elements_for_state(
         )
 
         sorts = [
-            view.qualified_name_for_field(col) for col in _get_sort_cols(file_config)
+            LookMLSort(view.qualified_name_for_field(col))
+            for col in _get_sort_cols(file_config)
         ]
         listen_dict = {
             VIEW_TYPE_FILTER_NAME: f"{explore.view_name}.{VIEW_TYPE_PARAM_NAME}",
