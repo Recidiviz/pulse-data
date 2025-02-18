@@ -538,6 +538,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
+        opportunity_type="usTnCompliantReporting2025Policy",
+        experiment_id="US_TN_COMPLIANT_REPORTING_2025_POLICY_WORKFLOWS",
+        opportunity_record_view_name="us_tn_transfer_to_compliant_reporting_2025_policy_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        source_filename="us_tn_transfer_to_compliant_reporting_2025_policy_record.json",
+        export_collection_name="usTnCompliantReporting2025PolicyReferrals",
+        opportunity_type_path_str="usTnCompliantReporting2025Policy",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_TN,
         opportunity_type="usTnCustodyLevelDowngrade",
         experiment_id="US_TN_CLASSIFICATION_WORKFLOWS",
         opportunity_record_view_name="us_tn_custody_level_downgrade_record_materialized",

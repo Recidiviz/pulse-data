@@ -169,6 +169,9 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.general.supervision_level_is_low_moderate_for_6_months import (
+    VIEW_BUILDER as SUPERVISION_LEVEL_IS_LOW_MODERATE_FOR_6_MONTHS,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
@@ -487,6 +490,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address: (
         "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
         "details (see looker#616) (Jenna Bellassai 11/18/2024)"
+    ),
+    SUPERVISION_LEVEL_IS_LOW_MODERATE_FOR_6_MONTHS.address: (
+        "This criteria will eventually be reworked and used in TN's revamped compliant reporting policy when new"
+        "supervision levels are rolled out. See #37898. (Damini Sharma, 2025-01-30"
     ),
 }
 
