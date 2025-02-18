@@ -4,4 +4,9 @@ region_code: US_NE
 dev_mode: False
 exclusions: []
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 12
+    override_reason:
+      Currently only 6 instances as of 02/14/25. These are data entry errors from
+      Nebraska and have been brought to their attention.

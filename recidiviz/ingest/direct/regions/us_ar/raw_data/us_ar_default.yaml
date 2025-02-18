@@ -1,6 +1,0 @@
-default_encoding: cp1252
-default_separator: "‡"
-default_ignore_quotes: True
-default_always_historical_export: True
-default_no_valid_primary_keys: False
-default_update_cadence: WEEKLY
