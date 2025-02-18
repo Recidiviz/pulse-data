@@ -1282,8 +1282,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         ]
         self.assertEqual(response_json, expected_response)
 
-    def test_add_and_update_vendor(self) -> None:
-        """Test adding a new vendor and then editing its name and URL."""
+    def test_add_update_and_delete_vendor_with_cleanup(self) -> None:
+        """Test adding, updating, and deleting a vendor, and cleaning up related MetricSettings."""
         self.load_users_and_agencies()
 
         # Step 1: Add a vendor
@@ -1296,8 +1296,23 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["name"], "Vendor A")
         self.assertEqual(response_json["url"], "https://vendor-a.com")
 
-        # Step 2: Update the vendor's name and URL
+        agency_A = self.test_schema_objects.test_agency_A
+        self.session.add(agency_A)
+        self.session.commit()
+        self.session.refresh(agency_A)
+
         vendor_id = response_json["id"]
+
+        # Step 2: Create a MetricSetting referencing the vendor
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency_A,
+            agency_metric_updates=MetricInterface(
+                key=prisons.readmissions.key, reporting_agency_id=vendor_id
+            ),
+        )
+
+        # Step 3: Update the vendor's name and URL
         update_payload = {
             "id": vendor_id,
             "name": "Updated Vendor A",
@@ -1311,17 +1326,33 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["name"], "Updated Vendor A")
         self.assertEqual(response_json["url"], "https://updated-vendor-a.com")
 
-        # Step 3: Validate that the database reflects the updated vendor information
+        # Validate that the database reflects the updated vendor information
         vendor = assert_type(
             AgencyInterface.get_vendor_by_id(session=self.session, vendor_id=vendor_id),
             schema.Vendor,
         )
-
         self.assertEqual(vendor.name, "Updated Vendor A")
-
-        agency_settings = {
-            setting.setting_type: setting.value for setting in vendor.agency_settings
-        }
+        self.assertEqual(len(vendor.agency_settings), 1)
         self.assertEqual(
-            agency_settings["HOMEPAGE_URL"], "https://updated-vendor-a.com"
+            vendor.agency_settings[0].value, "https://updated-vendor-a.com"
         )
+
+        # Step 4: Delete the vendor
+        response = self.client.delete(
+            f"/admin/vendors/{vendor_id}", json=update_payload
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Step 5: Verify that the MetricSetting referencing the deleted vendor was cleaned up
+        metric_setting = (
+            self.session.query(schema.MetricSetting)
+            .filter(
+                schema.MetricSetting.metric_definition_key == prisons.readmissions.key
+            )
+            .one()
+        )
+        metric_interface = MetricInterface.from_storage_json(
+            json=metric_setting.metric_interface
+        )
+        self.assertIsNone(metric_interface.reporting_agency_id)
+        self.assertIsNone(metric_interface.is_self_reported)

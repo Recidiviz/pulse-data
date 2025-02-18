@@ -30,10 +30,11 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 import enum
 from typing import Any, Dict, List, Optional, Set, TypeVar
 
-from sqlalchemy import BOOLEAN, ForeignKey
+from sqlalchemy import BOOLEAN, ForeignKey, event
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     DeclarativeMeta,
+    Session,
     backref,
     declarative_base,
     relationship,
@@ -515,6 +516,36 @@ class Vendor(Source):
     __mapper_args__ = {
         "polymorphic_identity": "vendor",
     }
+
+
+@event.listens_for(Session, "before_commit")
+def handle_agency_vendor_deletion(session: Session) -> None:
+    # Check if any deletions occurred in the current transaction
+    deleted_sources = [obj for obj in session.deleted if isinstance(obj, Source)]
+    if not deleted_sources:
+        return
+
+    # Loop through each deleted source to clean related metric settings
+    for deleted_source in deleted_sources:
+        metric_settings_with_deleted_agency = (
+            session.query(MetricSetting)
+            .filter(
+                MetricSetting.metric_interface["reporting_agency_id"].astext
+                == str(deleted_source.id)
+            )
+            .all()
+        )
+
+        # Nullify or modify the reporting_agency_id in the JSONB field
+        for metric_setting in metric_settings_with_deleted_agency:
+            metric_interface = metric_setting.metric_interface
+            metric_interface["reporting_agency_id"] = None
+            metric_interface["is_self_reported"] = None
+
+            # Apply the update
+            session.query(MetricSetting).filter(
+                MetricSetting.id == metric_setting.id
+            ).update({"metric_interface": metric_interface})
 
 
 class UserAccount(JusticeCountsBase):
