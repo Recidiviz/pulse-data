@@ -1103,6 +1103,28 @@ class OutliersQuerier:
 
             return supervisor
 
+    def get_supervision_officers_by_external_ids(
+        self, external_ids: List[str]
+    ) -> List[SupervisionOfficer]:
+        """Retrieve supervision officers by their external IDs."""
+        return (
+            self.insights_database_session()
+            .query(SupervisionOfficer)
+            .filter(SupervisionOfficer.external_id.in_(external_ids))
+            .all()
+        )
+
+    def get_supervision_officer_supervisors_by_external_ids(
+        self, external_ids: List[str]
+    ) -> List[SupervisionOfficerSupervisor]:
+        """Retrieve supervisors for supervision officers by their external IDs."""
+        return (
+            self.insights_database_session()
+            .query(SupervisionOfficerSupervisor)
+            .filter(SupervisionOfficerSupervisor.external_id.in_(external_ids))
+            .all()
+        )
+
     def _init_vitals_metrics_dict_for_query(self) -> Dict[str, VitalsMetric]:
         return {
             metric.metric_id: VitalsMetric(metric_id=metric.metric_id)

@@ -1215,6 +1215,56 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_all_supervision_officers_required_info_only"
         )
 
+    def test_get_supervision_officers_by_external_ids(self) -> None:
+
+        TEST_CASES = [
+            ("one valid external_id", ["01"], ["01"]),
+            ("one invalid external_id", ["some_bad_external_id"], []),
+            (
+                "one invalid external_id, one valid_external_id",
+                ["02", "bad_external_id"],
+                ["02"],
+            ),
+            ("all valid external_ids", ["01", "02"], ["01", "02"]),
+            ("no external_id", [], []),
+        ]
+
+        for (test_message, external_ids, expected_external_ids) in TEST_CASES:
+
+            with self.subTest(test_message):
+                actual = OutliersQuerier(
+                    StateCode.US_PA
+                ).get_supervision_officers_by_external_ids(external_ids=external_ids)
+                self.assertCountEqual(
+                    expected_external_ids, [o.external_id for o in actual]
+                )
+
+    def test_get_supervision_officer_supervisors_by_external_ids(self) -> None:
+
+        TEST_CASES = [
+            ("one valid external_id", ["101"], ["101"]),
+            ("one invalid external_id", ["some_bad_external_id"], []),
+            (
+                "one invalid external_id, one valid_external_id",
+                ["102", "bad_external_id"],
+                ["102"],
+            ),
+            ("all valid external_ids", ["101", "102"], ["101", "102"]),
+            ("no external_id", [], []),
+        ]
+
+        for (test_message, external_ids, expected_external_ids) in TEST_CASES:
+
+            with self.subTest(test_message):
+                actual = OutliersQuerier(
+                    StateCode.US_PA
+                ).get_supervision_officer_supervisors_by_external_ids(
+                    external_ids=external_ids
+                )
+                self.assertCountEqual(
+                    expected_external_ids, [o.external_id for o in actual]
+                )
+
     @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
