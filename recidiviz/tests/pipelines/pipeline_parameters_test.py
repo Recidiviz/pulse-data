@@ -23,6 +23,9 @@ import attr
 
 import recidiviz
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
@@ -131,3 +134,32 @@ class TestValidPipelineParameters(unittest.TestCase):
                         f"That field is not a parameter that can be passed to the class at "
                         f"instantiation time.",
                     )
+
+    def test_zonal_machine_type_availability(self) -> None:
+        c4a_machine_type_availability = {
+            "us-central1-a",
+            "us-central1-b",
+            "us-central1-c",
+            "us-west1-a",
+            "us-east1-b",
+            "us-east1-c",
+            "us-east1-d",
+            "us-east4-a",
+            "us-east4-b",
+            "us-east4-c",
+            "us-east7-a",
+        }
+        for pipelines in self.PIPELINE_CONFIG.get().values():
+            self.assertEqual(
+                set(),
+                {pipeline["region"] for pipeline in pipelines}  # type: ignore
+                - c4a_machine_type_availability,
+                msg="Found region that does not support c4a availability.",
+            )
+
+        self.assertEqual(
+            set(),
+            set(DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE.values())
+            - c4a_machine_type_availability,
+            msg="Found region that does not support c4a availability.",
+        )

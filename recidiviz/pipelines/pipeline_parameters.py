@@ -405,7 +405,7 @@ class PipelineParameters:
             "--region",
             type=str,
             help="The Google Cloud region to run the job on (e.g. us-west1).",
-            default="us-east1",
+            default="us-east1-b",
         )
 
         parser.add_argument(

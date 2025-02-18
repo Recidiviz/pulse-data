@@ -19,27 +19,43 @@ from typing import Dict
 
 from recidiviz.common.constants.states import StateCode
 
-# The compute region (e.g. "us-east1") Dataflow pipelines for a given state should be
-#  run in.
+# The compute region (e.g. "us-east1") Dataflow pipelines for a given state should be run in.
+
+# NOTE: Machine Type zonal availability can vary, and there is no guarantee that a machine is available across
+# all zones within a region depending on Google Cloud's rollout
+
+# To find what zones have availability for a given machine, run:
+# $ gcloud compute machine-types list --filter="name=c4a-highcpu-32" | grep "us-"
+# c4a-highcpu-32  us-central1-a      32    64.00
+# c4a-highcpu-32  us-central1-b      32    64.00
+# c4a-highcpu-32  us-central1-c      32    64.00
+# c4a-highcpu-32  us-west1-a         32    64.00
+# c4a-highcpu-32  us-east1-b         32    64.00
+# c4a-highcpu-32  us-east1-c         32    64.00
+# c4a-highcpu-32  us-east1-d         32    64.00
+# c4a-highcpu-32  us-east4-a         32    64.00
+# c4a-highcpu-32  us-east4-b         32    64.00
+# c4a-highcpu-32  us-east4-c         32    64.00
+# c4a-highcpu-32  us-east7-a         32    64.00
 DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
-    StateCode.US_AR: "us-east1",
-    StateCode.US_CA: "us-east1",
-    StateCode.US_CO: "us-east4",
-    StateCode.US_IA: "us-east4",
-    StateCode.US_ID: "us-east4",
-    StateCode.US_IX: "us-east4",
-    StateCode.US_MI: "us-central1",
-    StateCode.US_MA: "us-central1",
-    StateCode.US_ME: "us-east1",
-    StateCode.US_MO: "us-central1",
-    StateCode.US_NE: "us-east1",
-    StateCode.US_NC: "us-east1",
-    StateCode.US_ND: "us-east1",
-    StateCode.US_OZ: "us-east4",
-    StateCode.US_OR: "us-east4",
-    StateCode.US_PA: "us-east4",
-    StateCode.US_AZ: "us-central1",
-    StateCode.US_TN: "us-central1",
-    StateCode.US_TX: "us-central1",
-    StateCode.US_UT: "us-east1",
+    StateCode.US_AR: "us-east1-b",
+    StateCode.US_CA: "us-east1-c",
+    StateCode.US_CO: "us-east4-a",
+    StateCode.US_IA: "us-east4-b",
+    StateCode.US_ID: "us-east4-c",
+    StateCode.US_IX: "us-east4-a",
+    StateCode.US_MI: "us-central1-a",
+    StateCode.US_MA: "us-central1-b",
+    StateCode.US_ME: "us-east1-d",
+    StateCode.US_MO: "us-central1-c",
+    StateCode.US_NE: "us-east1-b",
+    StateCode.US_NC: "us-east1-c",
+    StateCode.US_ND: "us-east1-d",
+    StateCode.US_OZ: "us-east4-a",
+    StateCode.US_OR: "us-east4-b",
+    StateCode.US_PA: "us-east4-c",
+    StateCode.US_AZ: "us-central1-a",
+    StateCode.US_TN: "us-central1-b",
+    StateCode.US_TX: "us-central1-c",
+    StateCode.US_UT: "us-east7-a",
 }
