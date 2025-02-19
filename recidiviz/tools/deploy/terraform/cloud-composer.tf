@@ -83,9 +83,13 @@ resource "google_composer_environment" "default_v2" {
         "core-execute_tasks_new_python_interpreter" = "True"
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
-        "core-max_map_length"                       = 2000
+        "core-max_map_length" = 2000
         # Allow up to active 48 tasks per DAG
-        "core-max_active_tasks_per_dag"             = 48
+        "core-max_active_tasks_per_dag" = 48
+        # Default execution timeout for all tasks, in seconds, set to 1 day. If a task 
+        # instance runs longer than this value, it will be marked as failed. Setting this
+        # ensures tasks that are zombie'd but still running do not run indefinitely.
+        "core-default_task_execution_timeout"       = 86400
         "celery-worker_concurrency"                 = 16
         "email-email_backend"                       = "airflow.providers.sendgrid.utils.emailer.send_email"
         "email-email_conn_id"                       = "sendgrid_default"
