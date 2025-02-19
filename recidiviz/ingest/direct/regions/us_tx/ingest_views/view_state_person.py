@@ -26,16 +26,24 @@ WITH
 -- Cleans the names of all of the rows in ClientData
 clean_name_cte AS
     (SELECT DISTINCT
-        TRIM(SPLIT(full_name, ',')[OFFSET(0)]) AS LastName,
-        TRIM(SPLIT(SPLIT(full_name, ',')[OFFSET(1)], ' ')[OFFSET(0)]) AS FirstName,
         CASE 
-            WHEN ARRAY_LENGTH(SPLIT(SPLIT(full_name, ',')[OFFSET(1)], ' ')) > 1 
-                THEN TRIM(SPLIT(SPLIT(full_name, ',')[OFFSET(1)], ' ')[OFFSET(1)])
+            WHEN ARRAY_LENGTH(SPLIT(full_name, ',')) > 0  -- Ensure there's at least one part before splitting by comma
+                THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])  -- Take the first part as LastName
+            ELSE TRIM(full_name)  -- If no comma, treat full_name as the last name
+        END AS LastName,
+        CASE 
+            WHEN ARRAY_LENGTH(SPLIT(full_name, ',')) > 1  -- Ensure there's a second part after splitting by comma
+                THEN TRIM(SPLIT(SPLIT(full_name, ',')[SAFE_OFFSET(1)], ' ')[SAFE_OFFSET(0)])  -- Take the first part as FirstName
+            ELSE NULL
+        END AS FirstName,
+        CASE 
+            WHEN ARRAY_LENGTH(SPLIT(full_name, ',')) > 1  -- Ensure there's a second part after splitting by comma
+                THEN TRIM(SPLIT(SPLIT(full_name, ',')[SAFE_OFFSET(1)], ' ')[SAFE_OFFSET(1)])  -- Take the second part as MiddleName
             ELSE NULL
         END AS MiddleName,
         CASE 
-            WHEN ARRAY_LENGTH(SPLIT(SPLIT(full_name, ',')[OFFSET(1)], ' ')) > 2
-                THEN TRIM(SPLIT(SPLIT(full_name, ',')[OFFSET(1)], ' ')[OFFSET(2)])
+            WHEN ARRAY_LENGTH(SPLIT(full_name, ',')) > 1  -- Ensure there's a second part after splitting by comma
+                THEN TRIM(SPLIT(SPLIT(full_name, ',')[SAFE_OFFSET(1)], ' ')[SAFE_OFFSET(2)])  -- Take the third part as Suffix
             ELSE NULL
         END AS Suffix,
         Address,
