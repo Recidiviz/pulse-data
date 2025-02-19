@@ -266,6 +266,9 @@ US_IX:
   RECIDIVIZ_REFERENCE_incarceration_location_names_map:
     reference_views.incarceration_location_ids_to_names: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_mandatory_minimums:
+    sentencing_views.sentencing_charge_record: |-
+      Used to provide mandatory minimum data for the sentencing client. 02/17/25
   RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings:
     workflows_views.us_ix_resident_metadata: |-
       Used to map release facility to crc facility. 07/23/2024.

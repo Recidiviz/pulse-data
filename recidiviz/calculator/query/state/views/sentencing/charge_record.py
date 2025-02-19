@@ -25,6 +25,9 @@ from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_charge_t
 from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_charge_template import (
     US_ND_SENTENCING_CHARGE_TEMPLATE,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -56,9 +59,19 @@ SENTENCING_CHARGE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SENTENCING_CHARGE_RECORD_VIEW_NAME,
     dataset_id=dataset_config.SENTENCING_OUTPUT_DATASET,
     view_query_template=SENTENCING_CHARGE_RECORD_QUERY_TEMPLATE,
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
     description=SENTENCING_CHARGE_RECORD_DESCRIPTION,
     should_materialize=True,
-    columns=["state_code", "charge", "is_sex_offense", "is_violent", "frequency"],
+    columns=[
+        "state_code",
+        "charge",
+        "is_sex_offense",
+        "is_violent",
+        "frequency",
+        "mandatory_minimums",
+    ],
 )
 
 if __name__ == "__main__":
