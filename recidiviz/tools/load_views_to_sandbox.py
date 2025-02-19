@@ -92,6 +92,7 @@ To view more info on arguments that can be used with any particular sub-command,
    python -m recidiviz.tools.load_views_to_sandbox manual --help
 """
 import argparse
+import datetime
 import logging
 import sys
 import textwrap
@@ -99,7 +100,10 @@ from enum import Enum
 from typing import Dict, List, Optional, Set
 
 import attr
+import pytz
+import tzlocal  # type: ignore[import-untyped]
 from google.api_core import exceptions
+from more_itertools import one
 from tabulate import tabulate
 
 from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
@@ -127,7 +131,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import (
-    get_hash_of_deployed_commit,
+    get_hash_of_data_platform_version,
     is_commit_in_current_branch,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -149,6 +153,9 @@ from recidiviz.view_registry.deployed_address_schema_utils import (
     get_source_tables_to_pseudocolumns,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
+from recidiviz.view_registry.execute_update_all_managed_views import (
+    PER_VIEW_UPDATE_STATS_TABLE_ADDRESS,
+)
 
 
 def load_all_views_to_sandbox(
@@ -402,15 +409,81 @@ def _get_changed_views_to_load_to_sandbox(
     return set(address_to_change_type) - ignored_changed_addresses
 
 
-def confirm_rebased_on_latest_deploy() -> None:
-    last_deployed_commit = get_hash_of_deployed_commit(project_id())
-    logging.info("Last deployed commit: %s", last_deployed_commit)
+def _check_latest_view_update() -> str:
+    """Gets information about the latest deployed view update and prompts to notify
+    users if the update happened more than 24 hours ago (indicating something is
+    broken).
 
-    if not is_commit_in_current_branch(last_deployed_commit):
+    Returns the commit hash used in the most recent successful view update.
+    """
+    bq_client = BigQueryClientImpl()
+
+    update_stats_address = (
+        PER_VIEW_UPDATE_STATS_TABLE_ADDRESS.to_project_specific_address(
+            metadata.project_id()
+        )
+    )
+
+    query = f"""
+    SELECT success_timestamp, data_platform_version
+    FROM {update_stats_address.format_address_for_query()}
+    QUALIFY RANK() OVER (ORDER BY success_timestamp DESC) = 1
+    LIMIT 1
+    """
+
+    row = one(bq_client.run_query_async(query_str=query, use_query_cache=False))
+
+    last_view_update_success_dt = assert_type(
+        row["success_timestamp"], datetime.datetime
+    )
+    latest_view_update_data_platform_version = assert_type(
+        row["data_platform_version"], str
+    )
+
+    commit_for_last_view_update = get_hash_of_data_platform_version(
+        latest_view_update_data_platform_version
+    )
+
+    # Format the success timestamp to a string that shows the time (using 12 hour time)
+    # in the local timezone.
+    formatted_view_update_success_dt = last_view_update_success_dt.astimezone(
+        tzlocal.get_localzone()
+    ).strftime("%Y-%m-%d %I:%M:%S %p %Z")
+    logging.info(
+        "The last successful view update in [%s] completed at %s. Views were updated "
+        "to match code version %s (%s).",
+        metadata.project_id(),
+        formatted_view_update_success_dt,
+        latest_view_update_data_platform_version,
+        commit_for_last_view_update,
+    )
+
+    seconds_since_last_update_success = (
+        datetime.datetime.now(tz=pytz.UTC) - last_view_update_success_dt
+    ).total_seconds()
+    if seconds_since_last_update_success > (24 * 3600):
+        prompt = textwrap.fill(
+            "‼️The view update has not successfully completed in over 24 hours. This "
+            "may mean that auto mode detects some unexpected changes in views which "
+            "should have been updated by the latest deploy but have not yet "
+            "successfully updated. Continue?",
+            width=88,
+        )
+
+        prompt_for_confirmation(prompt)
+
+    return commit_for_last_view_update
+
+
+def confirm_rebased_on_latest_view_update_version() -> None:
+    last_view_update_commit_hash = _check_latest_view_update()
+
+    if not is_commit_in_current_branch(last_view_update_commit_hash):
         logging.error(
-            "Cannot find commit [%s] in the current branch, which is the commit last "
-            "deployed to [%s]. You must rebase this branch before using `auto` mode.",
-            last_deployed_commit,
+            "Cannot find commit [%s] in the current branch, which is the code version "
+            "used in the most recent view update for [%s]. You must rebase this branch "
+            "before using `auto` mode.",
+            last_view_update_commit_hash,
             project_id(),
         )
         sys.exit(1)
@@ -767,7 +840,7 @@ def collect_changed_views_and_descendants_to_load(
             "--load_up_to_addresses or --load_up_to_datasets."
         )
 
-    confirm_rebased_on_latest_deploy()
+    confirm_rebased_on_latest_view_update_version()
 
     logging.info("Constructing DAG with all known views...")
     view_builders_in_full_dag = deployed_view_builders()
