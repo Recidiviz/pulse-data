@@ -9,6 +9,8 @@
 # NOTE: Machine Type zonal availability can vary, and there is no guarantee that a machine is available across
 # all zones within a region depending on Google Cloud's rollout
 
+# NOTE: us-east7 does not seem to be a zone that we can use, yet
+
 # To find what regions have availability, run:
 # $ gcloud compute machine-types list --filter="name=c4a-highcpu-32" | grep "us-"
 # c4a-highcpu-32  us-central1-a      32    64.00

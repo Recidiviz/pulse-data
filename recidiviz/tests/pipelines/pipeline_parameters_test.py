@@ -47,7 +47,6 @@ C4A_MACHINE_TYPE_AVAILABILITY = {
     "us-east4-a",
     "us-east4-b",
     "us-east4-c",
-    "us-east7-a",
 }
 
 

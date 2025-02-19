@@ -24,6 +24,8 @@ from recidiviz.common.constants.states import StateCode
 # NOTE: Machine Type zonal availability can vary, and there is no guarantee that a machine is available across
 # all zones within a region depending on Google Cloud's rollout
 
+# NOTE: us-east7 does not seem to be a zone that we can use, yet
+
 # To find what zones have availability for a given machine, run:
 # $ gcloud compute machine-types list --filter="name=c4a-highcpu-32" | grep "us-"
 # c4a-highcpu-32  us-central1-a      32    64.00
@@ -36,7 +38,6 @@ from recidiviz.common.constants.states import StateCode
 # c4a-highcpu-32  us-east4-a         32    64.00
 # c4a-highcpu-32  us-east4-b         32    64.00
 # c4a-highcpu-32  us-east4-c         32    64.00
-# c4a-highcpu-32  us-east7-a         32    64.00
 DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AR: "us-east1",
     StateCode.US_CA: "us-east1",
@@ -57,5 +58,5 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AZ: "us-central1",
     StateCode.US_TN: "us-central1",
     StateCode.US_TX: "us-central1",
-    StateCode.US_UT: "us-east7",
+    StateCode.US_UT: "us-east1",
 }
