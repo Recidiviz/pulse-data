@@ -53,10 +53,11 @@ output:
                     $raw_text: Assessment_Level
                     $mappings:
                       StateAssessmentLevel.LOW:
-                        - "Low"
+                        - L
                       StateAssessmentLevel.LOW_MODERATE:
-                        - "Low-Moderate"
+                        - LM
                       StateAssessmentLevel.MODERATE:
-                        - "Moderate"
+                        - M
                       StateAssessmentLevel.HIGH:
-                        - "High"
+                        - H
+                        - MH

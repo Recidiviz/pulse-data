@@ -30,7 +30,7 @@ SELECT
     Assessment_Class,
     ASSESSMENT_DATE
 FROM {Assessment}
-WHERE Deleted_Flag = "Active"
+WHERE UPPER(Deleted_Flag) = "ACTIVE"
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

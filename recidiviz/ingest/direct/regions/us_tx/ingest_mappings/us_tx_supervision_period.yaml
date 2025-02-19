@@ -63,16 +63,12 @@ output:
                     $mappings:
                       StateSupervisionLevel.MINIMUM:
                         - L
-                        - Low
                       StateSupervisionLevel.MEDIUM:
-                        - Low-Moderate
                         - LM
                       StateSupervisionLevel.HIGH:
-                        - Moderate
                         - M
                       StateSupervisionLevel.MAXIMUM:
                         - MH
-                        - High
                         - H
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
