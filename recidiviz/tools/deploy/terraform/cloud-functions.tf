@@ -52,14 +52,16 @@ resource "google_cloudfunctions2_function" "trigger_calculation_dag" {
     environment_variables = {
       # This is an output variable from the composer environment, relevant docs:
       # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-      "GCP_PROJECT" = var.project_id
+      "AIRFLOW_URI"      = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT"      = var.project_id
+      "LOG_EXECUTION_ID" = true
     }
   }
 
   event_trigger {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
   }
 }
 
@@ -92,14 +94,16 @@ resource "google_cloudfunctions2_function" "trigger_hourly_monitoring_dag" {
     environment_variables = {
       # This is an output variable from the composer environment, relevant docs:
       # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-      "GCP_PROJECT" = var.project_id
+      "AIRFLOW_URI"      = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT"      = var.project_id
+      "LOG_EXECUTION_ID" = true
     }
   }
 
   event_trigger {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = "projects/${var.project_id}/topics/v1.airflow_monitoring.trigger_hourly_monitoring_dag"
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
   }
 }
 
@@ -129,6 +133,7 @@ resource "google_cloudfunctions2_function" "trigger_sftp_dag" {
   event_trigger {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = google_pubsub_topic.sftp_pubsub_topic.id
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
   }
 
   service_config {
@@ -137,8 +142,9 @@ resource "google_cloudfunctions2_function" "trigger_sftp_dag" {
     environment_variables = {
       # This is an output variable from the composer environment, relevant docs:
       # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-      "GCP_PROJECT" = var.project_id
+      "AIRFLOW_URI"      = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT"      = var.project_id
+      "LOG_EXECUTION_ID" = true
     }
   }
 }
@@ -172,14 +178,16 @@ resource "google_cloudfunctions2_function" "trigger_raw_data_import_dag" {
     environment_variables = {
       # This is an output variable from the composer environment, relevant docs:
       # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-      "GCP_PROJECT" = var.project_id
+      "AIRFLOW_URI"      = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT"      = var.project_id
+      "LOG_EXECUTION_ID" = true
     }
   }
 
   event_trigger {
     event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
   }
 }
 
@@ -211,8 +219,9 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
     available_memory   = "8G"
     timeout_seconds    = 540
     environment_variables = {
-      PYTHONPATH = "/workspace"
-      PROJECT_ID = var.project_id
+      PYTHONPATH       = "/workspace"
+      PROJECT_ID       = var.project_id
+      LOG_EXECUTION_ID = true
     }
     ingress_settings = "ALLOW_INTERNAL_ONLY"
   }
@@ -260,6 +269,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
       PYTHONPATH                   = "/workspace" # directory recidiviz/ lives in
       ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
       PROJECT_ID                   = var.project_id
+      LOG_EXECUTION_ID             = true
     }
     ingress_settings              = "ALLOW_INTERNAL_ONLY"
     vpc_connector                 = google_vpc_access_connector.cloud_function_vpc_connector.name

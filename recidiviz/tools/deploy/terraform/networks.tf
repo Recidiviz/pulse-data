@@ -64,8 +64,11 @@ resource "google_vpc_access_connector" "cloud_function_vpc_connector" {
   region        = "us-central1"
   ip_cidr_range = data.google_secret_manager_secret_version.vpc_access_connector_cf_cidr.secret_data
   network       = "default"
-  min_instances = 2
-  max_instances = 10
+  # Only one of max_throughput and max_instances can be specified and
+  # the use of max_throughput is discouraged in favor of max_instances according to documentation
+  # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/vpc_access_connector
+  # but only specifying max_instances causes the vpc connector to be recreated on every deploy
+  max_throughput = 1000
 }
 
 
