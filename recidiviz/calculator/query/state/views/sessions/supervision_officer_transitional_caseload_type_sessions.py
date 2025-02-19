@@ -44,7 +44,8 @@ parole commission.
 
 For these officers, we often want to know the most recent officer they were assigned to for purposes
 of tracking events by officer, so when we see clients assigned to a transitional officer, we extend the session of the
-previous officer to encompass the time spent assigned to the transitional officer. 
+previous officer to encompass the time spent assigned to the transitional officer, and don't include
+the session with the transitional officer.
 
 Officer sessions are unique on person_id, and officer_id, and may be overlapping.
 """
@@ -99,7 +100,7 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
     ),
     all_spans AS (    
     /* This cte unions all supervision officer sessions from the lookback cte above, and then joins an additional duplicate
-     session for any supervision officer session where the officer has a  "TRANSITIONAL" specialized caseload type at 
+     session for any supervision officer session where the officer has a "TRANSITIONAL" specialized caseload type at 
      the start of the supervision officer session, for each supervision officer/person pair, and assigns the officer_id
      to be the previous officer id identified in the supervision_officer_lookback_cte. 
      
@@ -132,6 +133,25 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         INNER JOIN supervision_officer_sessions_lookback
             USING (state_code, person_id, start_date, officer_id)
         WHERE COALESCE(specialized_caseload_type_primary, "UNKNOWN") = "TRANSITIONAL"
+    ),
+    remove_overlapping_transitional AS (
+        -- If we have spans with the same end_date (indicative of carry forward logic) where one is
+        -- transitional and others are not, remove the transitional one so we only have the
+        -- non-transitional spans for that person_id and time period.
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+            supervising_officer_external_id
+        FROM
+            all_spans
+        -- Use RANK instead of ROW_NUMBER because there can be overlapping officer spans that aren't
+        -- because of the transitional carry-forward logic.
+        QUALIFY RANK() OVER (
+            PARTITION BY state_code, person_id, end_date_exclusive
+            ORDER BY is_transitional -- false comes before true
+        ) = 1
     )
     SELECT 
         state_code, 
@@ -140,11 +160,10 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         start_date, 
         end_date_exclusive,
         supervising_officer_external_id,
-        is_transitional,
     FROM
-    ({aggregate_adjacent_spans(table_name='all_spans', 
+    ({aggregate_adjacent_spans(table_name='remove_overlapping_transitional', 
                                 end_date_field_name = 'end_date_exclusive',
-                                attribute=['supervising_officer_external_id', 'is_transitional'],
+                                attribute=['supervising_officer_external_id'],
                                 session_id_output_name = 'supervising_officer_session_id')})
     """
 
