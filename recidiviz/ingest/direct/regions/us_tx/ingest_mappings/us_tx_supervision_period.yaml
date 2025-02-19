@@ -92,6 +92,8 @@ output:
                         - Administrative
                         - Annual
                         - Non-reporting
+                        - Other
+                        - SRC (25 TO 1)
                       StateSupervisionCaseType.EXTERNAL_UNKNOWN:
                         - Unknown
                       StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY:
