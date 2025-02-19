@@ -32,32 +32,78 @@ WITH
 -- SUPVTIMELINE. Therefore, we can start with the same fragment used for supervision sentence
 -- lengths to get the IDs for each supervision sentence being ingested, and join onto SUPVTIMELINE
 -- to get the critical dates and the status on those dates. 
-SELECT
-    *,
-    ROW_NUMBER() OVER (
-        PARTITION BY 
-            OFFENDERID,
-            COMMITMENTPREFIX,
-            SENTENCECOMPONENT,
-            sentence_type
-        ORDER BY SUPVPERIODBEGINDATE
-    ) AS seq_num
+
+-- Some sentences have statuses that should map to COMPLETED/VACATED, but are followed by
+-- other statuses. To avoid ingest errors, these cases are handled in one of two ways:
+-- 1. If a COMPLETED/VACATED status is followed by other non-COMPLETED/VACATED statuses,
+-- then the COMPLETED/VACATED is assumed to be in error and set to 'MARKED_COMPLETE_TOO_EARLY',
+-- so that the status will be mapped to INTERNAL_UNKNOWN instead of COMPLETE/VACATED.
+-- 2. If a COMPLETED/VACATED is followed by other COMPLETED/VACATED statuses, then only the
+-- first COMPLETED/VACATED status is kept and the others are dropped using the QUALIFY at the
+-- end of this query. Because we set statuses to MARKED_COMPLETE_TOO_EARLY before this step,
+-- this won't filter out any non-COMPLETED/VACATED statuses.
+
+-- TODO(#38496): Investigate these erroneous-looking COMPLETED/VACATED statuses and determine if
+-- this approach makes sense.
+SELECT *
 FROM (
-    SELECT 
-        sentence_ids.*,
-        timeline.SUPVPERIODBEGINDATE,
-        timeline.SUPVTIMESTATUSFLAG
+    SELECT
+        OFFENDERID,
+        COMMITMENTPREFIX,
+        SENTENCECOMPONENT,
+        sentence_type,
+        SUPVPERIODBEGINDATE,
+        CASE 
+            WHEN SUPVTIMESTATUSFLAG IN ('9','V') AND NOT only_followed_by_completions 
+            THEN 'MARKED_COMPLETE_TOO_EARLY' 
+            ELSE SUPVTIMESTATUSFLAG 
+        END AS SUPVTIMESTATUSFLAG,
+        seq_num
     FROM (
-        SELECT DISTINCT
-            OFFENDERID,
-            COMMITMENTPREFIX,
-            SENTENCECOMPONENT,
-            sentence_type
-        FROM sentence_lengths_pp
-    ) sentence_ids
-    LEFT JOIN st_cleaned timeline
-    USING(OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT)
+        SELECT 
+            *,
+            LOGICAL_AND(SUPVTIMESTATUSFLAG IN ('9','V')) 
+                OVER (
+                    PARTITION BY OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT,sentence_type
+                    ORDER BY seq_num 
+                    ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+                ) AS only_followed_by_completions
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY 
+                        OFFENDERID,
+                        COMMITMENTPREFIX,
+                        SENTENCECOMPONENT,
+                        sentence_type
+                    ORDER BY SUPVPERIODBEGINDATE
+                ) AS seq_num
+            FROM (
+                SELECT 
+                    sentence_ids.*,
+                    timeline.SUPVPERIODBEGINDATE,
+                    timeline.SUPVTIMESTATUSFLAG
+                FROM (
+                    SELECT DISTINCT
+                        OFFENDERID,
+                        COMMITMENTPREFIX,
+                        SENTENCECOMPONENT,
+                        sentence_type
+                    FROM sentence_lengths_pp
+                ) sentence_ids
+                LEFT JOIN st_cleaned timeline
+                USING(OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT)
+            )
+        )
+    )
 )
+QUALIFY COALESCE(LAG(SUPVTIMESTATUSFLAG) OVER (
+    PARTITION BY OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT,sentence_type
+    ORDER BY seq_num
+    ),
+    'NA'
+) NOT IN ('9','V')
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

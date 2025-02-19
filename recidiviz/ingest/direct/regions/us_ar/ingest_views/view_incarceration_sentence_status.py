@@ -136,35 +136,102 @@ unioned_statuses AS (
 -- from multiple sources, we need to dedup to ensure sentences only have one status per date.
 -- We do this by ranking the sources; the bounding statuses are given higher priority over
 -- the intermediate statuses in RELEASEDATECHANGE.
-SELECT 
-    *,
-    ROW_NUMBER() OVER (
-        PARTITION BY 
-            OFFENDERID,
-            COMMITMENTPREFIX,
-            SENTENCECOUNT
-        ORDER BY rd_update_datetime
-    ) AS seq_num
+
+-- Some sentences have statuses that should map to COMPLETED/VACATED, but are followed by
+-- other statuses. To avoid ingest errors, these cases are handled in one of two ways:
+-- 1. If a COMPLETED/VACATED status is followed by other non-COMPLETED/VACATED statuses,
+-- then the COMPLETED/VACATED is assumed to be in error and set to 'MARKED_COMPLETE_TOO_EARLY',
+-- so that the status will be mapped to INTERNAL_UNKNOWN instead of COMPLETE/VACATED.
+-- 2. If a COMPLETED/VACATED is followed by other COMPLETED/VACATED statuses, then only the
+-- first COMPLETED/VACATED status is kept and the others are dropped using the QUALIFY at the
+-- end of this query. Because we set statuses to MARKED_COMPLETE_TOO_EARLY before this step,
+-- this won't filter out any non-COMPLETED/VACATED statuses.
+
+-- TODO(#38496): Investigate these erroneous-looking COMPLETED/VACATED statuses and determine if
+-- this approach makes sense.
+SELECT *
 FROM (
-    SELECT *
-    FROM unioned_statuses
-    QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY 
+    SELECT 
         OFFENDERID,
         COMMITMENTPREFIX,
         SENTENCECOUNT,
-        rd_update_datetime
-    ORDER BY 
+        rd_update_datetime,
         CASE 
-            WHEN SENTENCESTATUSFLAG LIKE 'SUPVTIMELINE%' THEN 0
-            -- The most relevant part of the ranking is that SENTENCECOMPONENT_BEGIN is
-            -- higher priority than SENTENCECOMPONENT_IMPOSED, since SENTENCECOMPONENT_BEGIN
-            -- statuses are used to identify when a sentence started being served. The dates
-            -- for these two statuses are often the same.
-            WHEN SENTENCESTATUSFLAG='SENTENCECOMPONENT_BEGIN' THEN 1
-            WHEN SENTENCESTATUSFLAG='SENTENCECOMPONENT_IMPOSED' THEN 2
-        ELSE 3 END
-    ) = 1
+            WHEN SENTENCESTATUSFLAG IN (
+                '2',
+                '8',
+                'SUPVTIMELINE_9',
+                '7',
+                '9',
+                'SUPVTIMELINE_V'
+                ) AND NOT only_followed_by_completions 
+            THEN 'MARKED_COMPLETE_TOO_EARLY' 
+            ELSE SENTENCESTATUSFLAG 
+        END AS SENTENCESTATUSFLAG,
+        seq_num
+    FROM (
+        SELECT 
+            *,
+            LOGICAL_AND(SENTENCESTATUSFLAG IN (
+                    '2',
+                    '8',
+                    'SUPVTIMELINE_9',
+                    '7',
+                    '9',
+                    'SUPVTIMELINE_V'
+                )
+            ) 
+            OVER (
+                PARTITION BY OFFENDERID,COMMITMENTPREFIX,SENTENCECOUNT 
+                ORDER BY seq_num 
+                ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+            ) AS only_followed_by_completions
+        FROM (
+            SELECT 
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY 
+                        OFFENDERID,
+                        COMMITMENTPREFIX,
+                        SENTENCECOUNT
+                    ORDER BY rd_update_datetime
+                ) AS seq_num
+            FROM (
+                SELECT *
+                FROM unioned_statuses
+                QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY 
+                    OFFENDERID,
+                    COMMITMENTPREFIX,
+                    SENTENCECOUNT,
+                    rd_update_datetime
+                ORDER BY 
+                    CASE 
+                        WHEN SENTENCESTATUSFLAG LIKE 'SUPVTIMELINE%' THEN 0
+                        -- The most relevant part of the ranking is that SENTENCECOMPONENT_BEGIN is
+                        -- higher priority than SENTENCECOMPONENT_IMPOSED, since SENTENCECOMPONENT_BEGIN
+                        -- statuses are used to identify when a sentence started being served. The dates
+                        -- for these two statuses are often the same.
+                        WHEN SENTENCESTATUSFLAG='SENTENCECOMPONENT_BEGIN' THEN 1
+                        WHEN SENTENCESTATUSFLAG='SENTENCECOMPONENT_IMPOSED' THEN 2
+                    ELSE 3 END
+                ) = 1
+            )
+        ) 
+    ) 
+)
+QUALIFY COALESCE(LAG(SENTENCESTATUSFLAG) OVER (
+    PARTITION BY OFFENDERID,COMMITMENTPREFIX,SENTENCECOUNT 
+    ORDER BY seq_num
+    ),
+    'NA'
+) NOT IN (
+    '2',
+    '8',
+    'SUPVTIMELINE_9',
+    '7',
+    '9',
+    'SUPVTIMELINE_V'
 )
 """
 

@@ -56,3 +56,5 @@ output:
                         - "9" # Complete
                       StateSentenceStatus.VACATED:
                         - V # Vacated
+                      StateSentenceStatus.INTERNAL_UNKNOWN:
+                        - MARKED_COMPLETE_TOO_EARLY

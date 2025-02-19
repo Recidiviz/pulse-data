@@ -55,3 +55,5 @@ output:
                         # was imposed. If the imposition date occurs before the sentence
                         # actually started being served, the sentence's status is PRESENT_WITHOUT_INFO
                         # until the sentence starts being served.
+                      StateSentenceStatus.INTERNAL_UNKNOWN:
+                        - MARKED_COMPLETE_TOO_EARLY
