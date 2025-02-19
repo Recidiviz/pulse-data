@@ -178,6 +178,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
                 region="us-west1",
+                worker_zone=ANY,
                 metric_types="METRIC_1",
             ),
             MetricsPipelineParameters(
@@ -188,6 +189,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
                 region="us-east1",
+                worker_zone=ANY,
                 metric_types="METRIC_2 METRIC_3",
                 calculation_month_count=36,
             ),
