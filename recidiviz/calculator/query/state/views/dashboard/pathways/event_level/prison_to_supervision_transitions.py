@@ -138,7 +138,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         formatted_name=get_person_full_name("person.full_name"),
-        state_id_type=state_specific_query_strings.state_specific_external_id_type(
+        state_id_type=state_specific_query_strings.state_specific_incarceration_external_id_type(
             "sessions_data"
         ),
         inferred_period_filter=state_specific_query_strings.state_specific_facility_type_inclusion_filter(),

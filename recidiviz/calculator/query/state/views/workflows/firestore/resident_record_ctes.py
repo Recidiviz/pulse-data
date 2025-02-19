@@ -217,6 +217,7 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON cl.CIS_100_CLIENT_ID = pei.person_external_id
             AND pei.state_code = "US_ME"
+            AND pei.system_type = "INCARCERATION"
         WHERE TRUE
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
@@ -232,6 +233,7 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON BL_DOC = pei.person_external_id
             AND pei.state_code = "US_MO"
+            AND pei.system_type = "INCARCERATION"
         -- We want to keep the latest Custody Assessment date. When there are two assessments on the same day,
         -- we deduplicate using CNO which is part of the primary key. Finally, there's still a very small number of
         -- duplicates where the same person has the same BL_IC and BL_CNO, but different cycle numbers, so we further

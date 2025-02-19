@@ -46,6 +46,7 @@ US_CA_MOST_RECENT_CLIENT_DATA = """
     LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` b
       ON a.OffenderId = b.person_external_id
       AND b.state_code = 'US_CA'
+      AND b.system_type = "SUPERVISION"
     WHERE BadgeNumber IS NOT NULL
     QUALIFY file_id = FIRST_VALUE(file_id) OVER (
       ORDER BY update_datetime DESC

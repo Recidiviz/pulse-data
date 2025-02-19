@@ -44,12 +44,6 @@ max_allowed_error_overrides:
     override_reason:
       Given the very small size of the staff and population in ND, this
       is actually a very strict threshold.
-  - validation_name: client_and_resident_record_percent_change_in_eligibility_exceeded
-    hard_max_allowed_error_override: .95
-    override_reason:
-      Supervision uses SID and facilities use ELITE ids. Our resident record
-      archive view queries person_id_to_external_id which only uses SID. We need to
-      support EIDs as well, at least for residents. #TODO(#33349)
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 120

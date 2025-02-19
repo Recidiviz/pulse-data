@@ -43,15 +43,19 @@ CURRENT_IMPACT_FUNNEL_STATUS_QUERY_TEMPLATE = f"""
 WITH eligibility AS (
   -- Query the current eligibility status (remaining criteria needed) for each opportunity
   SELECT
-    state_code,
+    tes.state_code,
     pei.person_external_id,
     completion_event_type,
     ARRAY_LENGTH(ineligible_criteria) AS remaining_criteria_needed,
   FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
   INNER JOIN `{{project_id}}.{{reference_views_dataset}}.task_to_completion_event` tce
     USING (state_code, task_name)
+  INNER JOIN `{{project_id}}.{{reference_views_dataset}}.workflows_opportunity_configs_materialized` woc
+    USING (state_code, completion_event_type)
   INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
-    USING (state_code, person_id)
+    ON pei.state_code = woc.state_code
+    AND pei.person_id = tes.person_id
+    AND pei.system_type = IF(woc.person_record_type = "CLIENT", "SUPERVISION", "INCARCERATION")
   WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
 )
 SELECT

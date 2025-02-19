@@ -24,7 +24,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
-    state_specific_external_id_type,
+    state_specific_supervision_external_id_type,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
@@ -70,7 +70,7 @@ SUPERVISION_CLIENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
     should_materialize=True,
-    state_id_type=state_specific_external_id_type("id"),
+    state_id_type=state_specific_supervision_external_id_type("id"),
     columns=[
         "state_code",
         "client_id",

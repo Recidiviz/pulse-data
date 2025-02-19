@@ -19,7 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
-    state_specific_external_id_type,
+    state_specific_incarceration_external_id_type,
+    state_specific_supervision_external_id_type,
 )
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -37,8 +38,19 @@ PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = """
         external_id AS person_external_id,
         person_id,
         state_code,
+        "SUPERVISION" AS system_type,
     FROM `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-    WHERE id_type = {state_id_type}
+    WHERE id_type = {supervision_state_id_type}
+
+    UNION ALL
+
+    SELECT
+        external_id AS person_external_id,
+        person_id,
+        state_code,
+        "INCARCERATION" AS system_type,
+    FROM `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+    WHERE id_type = {incarceration_state_id_type}
 """
 
 PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -48,7 +60,8 @@ PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PERSON_ID_TO_EXTERNAL_ID_DESCRIPTION,
     should_materialize=True,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    state_id_type=state_specific_external_id_type("pei"),
+    supervision_state_id_type=state_specific_supervision_external_id_type("pei"),
+    incarceration_state_id_type=state_specific_incarceration_external_id_type("pei"),
 )
 
 if __name__ == "__main__":

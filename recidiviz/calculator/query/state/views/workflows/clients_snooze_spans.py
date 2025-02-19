@@ -19,6 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     EXPORT_ARCHIVES_DATASET,
+    REFERENCE_VIEWS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -83,9 +84,12 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
                 max(as_of),
                 null) as end_date_actual
         FROM `{{project_id}}.{{export_archives_dataset}}.workflows_snooze_status_archive` a
+        LEFT JOIN `{{project_id}}.{{reference_dataset}}.workflows_opportunity_configs_materialized` config
+            USING (state_code, opportunity_type)
         LEFT JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON pei.state_code = IF(a.state_code = "US_ID", "US_IX", a.state_code)
             AND UPPER(pei.person_external_id) = UPPER(a.person_external_id)
+            AND pei.system_type = IF(config.person_record_type = "CLIENT", "SUPERVISION", "INCARCERATION")
         GROUP BY person_id, state_code, person_external_id, opportunity_type, start_date
     ),
     -- event_snooze_spans captures snoozes that were set by users after the snooze feature was released (i.e. not migrated denials)
@@ -207,6 +211,7 @@ CLIENTS_SNOOZE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     workflows_dataset=WORKFLOWS_VIEWS_DATASET,
+    reference_dataset=REFERENCE_VIEWS_DATASET,
     first_snooze_archive_date="2024-03-27",
 )
 

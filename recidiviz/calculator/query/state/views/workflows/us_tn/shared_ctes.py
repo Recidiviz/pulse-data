@@ -522,7 +522,8 @@ def us_tn_fines_fees_info() -> str:
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             USING (person_id)
         -- This line helps specify which fee_type we're getting in TN
-        WHERE ff.state_code != "US_TN" OR fee_type = "SUPERVISION_FEES"
+        WHERE (ff.state_code != "US_TN" OR fee_type = "SUPERVISION_FEES")
+            AND pei.system_type = "SUPERVISION"
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_external_id, state_code ORDER BY start_date DESC) = 1
     ),
     """

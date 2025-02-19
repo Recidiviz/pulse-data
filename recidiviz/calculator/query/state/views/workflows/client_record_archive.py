@@ -39,6 +39,7 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         SELECT
             *,
             SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
+            "SUPERVISION" AS system_type,
         FROM `{project_id}.{export_archives_dataset}.workflows_client_record_archive`
         -- exclude temp files we may have inadvertently archived
         WHERE _FILE_NAME NOT LIKE "%/staging/%"
@@ -56,10 +57,10 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     )
     SELECT
         person_id,
-        records_by_state_by_date.*,
+        records_by_state_by_date.* EXCEPT (system_type),
     FROM records_by_state_by_date
     LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` 
-        USING (state_code, person_external_id)
+        USING (state_code, system_type, person_external_id)
 """
 
 CLIENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(

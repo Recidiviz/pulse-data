@@ -60,6 +60,7 @@ FROM `{project_id}.{export_archives_dataset}.workflows_snooze_status_archive` a
 LEFT JOIN `{project_id}.{workflows_views_dataset}.person_id_to_external_id_materialized` pei
     ON pei.state_code = a.state_code 
     AND UPPER(pei.person_external_id) = UPPER(a.person_external_id)
+    AND pei.system_type = "SUPERVISION"
 WHERE a.state_code = 'US_PA'
     AND opportunity_type = 'usPaAdminSupervision'
     AND 'FINES & FEES' NOT IN UNNEST(denial_reasons) 

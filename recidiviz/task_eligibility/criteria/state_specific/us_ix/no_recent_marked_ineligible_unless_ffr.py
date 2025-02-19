@@ -48,6 +48,7 @@ WITH denial_reasons_spans AS (
   INNER JOIN `{project_id}.workflows_views.person_id_to_external_id_materialized` pei
     ON pei.state_code = 'US_IX'
     AND UPPER(pei.person_external_id) = UPPER(a.person_external_id)
+    AND pei.system_type = "SUPERVISION"
   WHERE a.state_code = 'US_ID'
     AND opportunity_type = 'LSU'
   GROUP BY 1,2,3

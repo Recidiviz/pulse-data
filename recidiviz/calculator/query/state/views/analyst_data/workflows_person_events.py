@@ -121,6 +121,7 @@ WITH usage_events AS (
     ON
         JSON_EXTRACT_SCALAR(a.event_attributes, "$.person_external_id") = b.person_external_id
         AND a.state_code = b.state_code
+        AND JSON_EXTRACT_SCALAR(a.event_attributes, "$.system_type") = b.system_type
     INNER JOIN
         `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` c
     ON

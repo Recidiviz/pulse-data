@@ -24,7 +24,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
-    state_specific_external_id_type,
+    state_specific_supervision_external_id_type,
 )
 from recidiviz.calculator.query.state.views.outliers.utils import (
     format_state_specific_person_events_filters,
@@ -421,7 +421,7 @@ SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
     should_materialize=True,
-    state_id_type=state_specific_external_id_type("pid"),
+    state_id_type=state_specific_supervision_external_id_type("pid"),
     columns=[
         "state_code",
         "metric_id",

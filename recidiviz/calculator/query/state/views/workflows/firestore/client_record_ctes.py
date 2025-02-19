@@ -93,6 +93,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
+            AND pei.system_type = "SUPERVISION"
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
             ON sessions.state_code = projected_end.state_code
             AND sessions.person_id = projected_end.person_id
@@ -230,6 +231,7 @@ _CLIENT_RECORD_DISPLAY_IDS_CTE = """
             ON person_external_id=ca_pp.OffenderId
         WHERE
             state_code IN ({workflows_supervision_states})
+            AND pei.system_type = "SUPERVISION"
     ),
 """
 
@@ -242,7 +244,9 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
             doc.PHONE AS phone_number
         FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` doc
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-        ON doc.SID = pei.person_external_id AND pei.state_code = "US_ND"
+        ON doc.SID = pei.person_external_id
+        AND pei.state_code = "US_ND"
+        AND pei.system_type = "SUPERVISION"
 
         UNION ALL
 
@@ -256,6 +260,7 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
         WHERE
             sp.state_code IN ({workflows_supervision_states})
             AND sp.state_code NOT IN ("US_ND")
+            AND pei.system_type = "SUPERVISION"
     ),
 """
 
@@ -270,6 +275,7 @@ _CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
             USING (person_id)
         WHERE
             sp.state_code IN ({workflows_supervision_states})
+            AND pei.system_type = "SUPERVISION"
     ),
 """
 
@@ -287,6 +293,7 @@ _CLIENT_RECORD_LAST_PAYMENT_INFO_CTE = """
         FROM `{project_id}.{analyst_dataset}.payments_preprocessed_materialized` pp
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             USING (person_id)
+        WHERE pei.system_type = "SUPERVISION"
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY payment_date DESC) = 1
     ),
 """
@@ -310,6 +317,7 @@ _CLIENT_RECORD_SPECIAL_CONDITIONS_CTE = """
         )
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             USING (person_id)
+        WHERE pei.system_type = "SUPERVISION"
         GROUP BY
             1,2
     ),
@@ -329,6 +337,7 @@ _CLIENT_RECORD_BOARD_CONDITIONS_CTE = """
             INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
                 USING (person_id)
             WHERE ss.state_code = 'US_TN' 
+                AND pei.system_type = "SUPERVISION"
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1
         ),
         unpivot_board_conditions AS (
@@ -774,6 +783,7 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             ON tn_raw.OffenderID = pei.person_external_id
             AND pei.state_code = "US_TN"
+            AND pei.system_type = "SUPERVISION"
     
         UNION ALL
     
@@ -784,6 +794,7 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             ON mi_raw.offender_number = pei.person_external_id
             AND pei.state_code = "US_MI"
+            AND pei.system_type = "SUPERVISION"
         
         UNION ALL
         

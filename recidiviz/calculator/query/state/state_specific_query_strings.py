@@ -222,7 +222,7 @@ def state_specific_facility_exclusion(optional_prefix: Optional[str] = None) -> 
       ({prefix}state_code != 'US_ND' OR {prefix}facility not in ('OOS', 'CPP'))"""
 
 
-def state_specific_external_id_type(state_code_table_prefix: str) -> str:
+def state_specific_supervision_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE 
           WHEN {state_code_table_prefix}.state_code = 'US_AZ'
@@ -241,6 +241,37 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
           THEN 'US_MO_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_ND'
           THEN 'US_ND_SID'
+          WHEN {state_code_table_prefix}.state_code = 'US_OR'
+          THEN 'US_OR_ID'
+          WHEN {state_code_table_prefix}.state_code = 'US_PA'
+          THEN 'US_PA_PBPP'
+          WHEN {state_code_table_prefix}.state_code = 'US_TN'
+          THEN 'US_TN_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_TX'
+          THEN 'US_TX_SID'
+        END
+    """
+
+
+def state_specific_incarceration_external_id_type(state_code_table_prefix: str) -> str:
+    return f"""
+        CASE
+          WHEN {state_code_table_prefix}.state_code = 'US_AZ'
+          THEN 'US_AZ_PERSON_ID'
+          WHEN {state_code_table_prefix}.state_code = 'US_CA'
+          THEN 'US_CA_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_ID'
+          THEN 'US_ID_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_IX'
+          THEN 'US_IX_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_ME'
+          THEN 'US_ME_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_MI'
+          THEN 'US_MI_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_MO'
+          THEN 'US_MO_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_ND'
+          THEN 'US_ND_ELITE'
           WHEN {state_code_table_prefix}.state_code = 'US_OR'
           THEN 'US_OR_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_PA'
