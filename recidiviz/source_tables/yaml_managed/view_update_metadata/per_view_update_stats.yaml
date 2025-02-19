@@ -32,6 +32,25 @@ schema:
     mode: REQUIRED
     description: >-
       How long (in seconds) it took to update this specific view (and materialize it, if relevant).
+  - name: view_query_signature
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      A hash of the view query used for this view update. This value can be used to tell if a view has changed between
+      deploys or if a local version of a view has changed since the last deploy. This value is not hydrated for older
+      rows but should always be nonnull for more recent runs.
+  - name: clustering_fields_string
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      A serialized list of the clustering fields used when materializing this view into a table. Only nonnull when 
+      was_materialized is True and there were clustering fields defined for this view.
+  - name: time_partitioning_string
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      A stable, serialized representation of the time_partitioning configuration used when materializing this view into
+      a table. Only nonnull when was_materialized is True and there was time partitioning defined for this view.
 
   # Materialization scale
   - name: materialized_table_num_rows

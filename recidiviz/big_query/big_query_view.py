@@ -16,6 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
+import hashlib
 from typing import Any, Callable, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
@@ -110,6 +111,8 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         except ValueError as e:
             raise ValueError(f"Unable to format view query for {self.address}") from e
 
+        self._view_query_signature: str | None = None
+
         if materialized_address == self.address:
             raise ValueError(
                 f"Materialized address [{materialized_address}] cannot be same as view "
@@ -190,6 +193,17 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
     @property
     def view_query(self) -> str:
         return self._view_query
+
+    @property
+    def view_query_signature(self) -> str:
+        """Returns the SHA256 hash of this view's view_query. Can be used to determine
+        if a view query has changed across view update runs.
+        """
+        if not self._view_query_signature:
+            self._view_query_signature = hashlib.sha256(
+                self.view_query.encode("utf-8")
+            ).hexdigest()
+        return self._view_query_signature
 
     @property
     def view_query_template(self) -> str:

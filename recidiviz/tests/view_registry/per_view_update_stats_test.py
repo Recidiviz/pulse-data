@@ -104,6 +104,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
                 WHERE state_code = 'US_XX'
             )
             USING (col)""",
+        clustering_fields=["foo", "bar"],
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_4",
@@ -113,6 +114,9 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         # Query complexity: 1
         view_query_template="""
             SELECT *, c + d AS e FROM `{project_id}.dataset_3.table_3_materialized`""",
+        time_partitioning=bigquery.TimePartitioning(
+            field="partition_field", type_=bigquery.TimePartitioningType.DAY
+        ),
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_5",
@@ -209,6 +213,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "table_id": "my_view",
             "was_materialized": False,
             "update_runtime_sec": 15.5,
+            "view_query_signature": "cdc996837491e7716d35d3c73be265c236f5f6c9ded04f88874ee3bc0718d707",
+            "clustering_fields_string": None,
+            "time_partitioning_string": None,
             "materialized_table_num_rows": None,
             "materialized_table_size_bytes": None,
             "slot_millis": None,
@@ -283,6 +290,9 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "table_id": "my_view",
             "was_materialized": True,
             "update_runtime_sec": 15.5,
+            "view_query_signature": "cdc996837491e7716d35d3c73be265c236f5f6c9ded04f88874ee3bc0718d707",
+            "clustering_fields_string": None,
+            "time_partitioning_string": None,
             "materialized_table_num_rows": 100,
             "materialized_table_size_bytes": 3000,
             "slot_millis": 123,
@@ -433,6 +443,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_1",
                 "table_id": "table_1_us_yy",
+                "view_query_signature": "bb7e62b212044f5944712fcd5bb052c541d7019c0bd453bc07b13ceb57896667",
+                "clustering_fields_string": None,
+                "time_partitioning_string": None,
                 "complexity_score_2025": 1,
                 "composite_complexity_score_2025": 1,
                 "post_infra_library_composite_complexity_score_2025": 1,
@@ -456,6 +469,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_2",
                 "table_id": "table_2_us_xx",
+                "view_query_signature": "07b207f7fcdea521507c0041cd25579fb5736ceb2d908bc2948662b6268402a0",
+                "clustering_fields_string": None,
+                "time_partitioning_string": None,
                 "complexity_score_2025": 11,
                 "composite_complexity_score_2025": 11,
                 "post_infra_library_composite_complexity_score_2025": 11,
@@ -479,6 +495,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_3",
                 "table_id": "table_3",
+                "view_query_signature": "dd3dc013a592a0c038d3cb8290e432ba162b25a9233cdc5a00f4c57ed3a6ba8c",
+                "clustering_fields_string": "foo,bar",
+                "time_partitioning_string": None,
                 "complexity_score_2025": 20,
                 "composite_complexity_score_2025": 32,
                 "post_infra_library_composite_complexity_score_2025": 32,
@@ -505,6 +524,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_4",
                 "table_id": "table_4",
+                "view_query_signature": "8434a01d21c51adca8af9f90a4efdb919c65f62b781cda17bce96dab0478283c",
+                "clustering_fields_string": None,
+                "time_partitioning_string": '{"field": "partition_field", "type": "DAY"}',
                 "complexity_score_2025": 1,
                 "composite_complexity_score_2025": 33,
                 # Post-infra complexity score resets here because dataset_3 is a "library" dataset
@@ -529,6 +551,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_5",
                 "table_id": "table_5",
+                "view_query_signature": "520b874d0882be60a2b43250645ed04b63802667fbfd4b9d4bca8dcc02283ea7",
+                "clustering_fields_string": None,
+                "time_partitioning_string": None,
                 "complexity_score_2025": 4,
                 "composite_complexity_score_2025": 36,
                 # Post-infra complexity score resets here because dataset_3 is a "library" dataset
@@ -553,6 +578,9 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
                 "dataset_id": "dataset_6",
                 "table_id": "table_6",
+                "view_query_signature": "5c73fee77db98c5f0709b78e6f4092e9354c4f3b7260686b5b015d1b89ce544a",
+                "clustering_fields_string": None,
+                "time_partitioning_string": None,
                 "complexity_score_2025": 2,
                 "composite_complexity_score_2025": 71,
                 "post_infra_library_composite_complexity_score_2025": 7,

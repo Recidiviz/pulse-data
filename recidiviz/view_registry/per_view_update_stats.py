@@ -18,6 +18,7 @@
 update.
 """
 import datetime
+import json
 from typing import Any
 
 import attr
@@ -87,6 +88,28 @@ class PerViewUpdateStats:
     @property
     def update_runtime_sec(self) -> float:
         return self.view_processing_metadata.view_processing_runtime_sec
+
+    @property
+    def view_query_signature(self) -> str:
+        return self.create_or_update_result.view.view_query_signature
+
+    @property
+    def clustering_fields_string(self) -> str | None:
+        if not (
+            clustering_fields := self.create_or_update_result.view.clustering_fields
+        ):
+            return None
+        return ",".join(clustering_fields)
+
+    @property
+    def time_partitioning_string(self) -> str | None:
+        if not (
+            time_partitioning := self.create_or_update_result.view.time_partitioning
+        ):
+            return None
+
+        time_partitioning_dict = time_partitioning.to_api_repr()
+        return json.dumps(time_partitioning_dict, sort_keys=True)
 
     @property
     def materialized_table_num_rows(self) -> int | None:
@@ -189,6 +212,9 @@ class PerViewUpdateStats:
             "table_id": self.table_id,
             "was_materialized": self.was_materialized,
             "update_runtime_sec": self.update_runtime_sec,
+            "view_query_signature": self.view_query_signature,
+            "clustering_fields_string": self.clustering_fields_string,
+            "time_partitioning_string": self.time_partitioning_string,
             "materialized_table_num_rows": self.materialized_table_num_rows,
             "materialized_table_size_bytes": self.materialized_table_size_bytes,
             "slot_millis": self.slot_millis,
