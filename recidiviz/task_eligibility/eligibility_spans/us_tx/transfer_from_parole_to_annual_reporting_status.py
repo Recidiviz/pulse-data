@@ -29,6 +29,9 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     on_minimum_supervision_at_least_1_year,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
+    not_convicted_of_ineligible_offense_for_ars,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -48,6 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_minimum_supervision_at_least_1_year.VIEW_BUILDER,
+        not_convicted_of_ineligible_offense_for_ars.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
