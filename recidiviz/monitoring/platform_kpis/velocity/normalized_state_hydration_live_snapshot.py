@@ -79,8 +79,10 @@ def get_normalized_state_hydration_live_snapshot_view_builder() -> BigQueryViewB
     all_normalized_state_tables = get_bq_schema_for_entities_module(normalized_entities)
 
     view_query = "\nUNION ALL\n".join(
-        _build_query_for_table(table_name=table_name, table_fields=table_fields)
-        for table_name, table_fields in all_normalized_state_tables.items()
+        _build_query_for_table(
+            table_name=table_name, table_fields=all_normalized_state_tables[table_name]
+        )
+        for table_name in sorted(all_normalized_state_tables)
     )
 
     return SimpleBigQueryViewBuilder(
