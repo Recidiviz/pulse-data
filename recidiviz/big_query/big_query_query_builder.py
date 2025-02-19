@@ -104,7 +104,6 @@ class BigQueryQueryBuilder:
                 for key, value in query_format_kwargs.items()
             },
         }
-
         return _QUERY_FORMATTER.format(query_template, **query_format_kwargs)
 
     @staticmethod

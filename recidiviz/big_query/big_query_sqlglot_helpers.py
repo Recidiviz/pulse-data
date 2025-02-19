@@ -84,9 +84,5 @@ def get_undocumented_ctes(query: str) -> set[str]:
     if not isinstance(tree, expr.Query):
         raise ValueError("Non-Query SQL expression built from ViewBuilder")
     return {
-        cte.alias
-        for cte in tree.ctes
-        # TODO(#29272) Update DirectIngestViewQueryBuilder to self document generated views
-        if "generated_view" not in cte.alias
-        and not does_cte_expression_have_docstring(cte)
+        cte.alias for cte in tree.ctes if not does_cte_expression_have_docstring(cte)
     }

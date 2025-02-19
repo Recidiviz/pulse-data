@@ -151,7 +151,7 @@ class GenerateIngestViewResults(beam.PTransform):
         tables."""
         view_query = (
             view_builder.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
                 )

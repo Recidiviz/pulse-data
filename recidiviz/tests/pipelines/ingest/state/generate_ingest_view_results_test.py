@@ -159,6 +159,7 @@ class TestGenerateIngestViewQuery(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id = "recidiviz-456"
         self.mock_project_id_fn.return_value = self.mock_project_id
+        self.maxDiff = None
 
         query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
 
@@ -183,6 +184,7 @@ class TestGenerateIngestViewQuery(unittest.TestCase):
         expected_query = """
 WITH view_results AS (
     WITH
+-- Pulls the latest data from file_tag_first received on or before 2020-07-20 01:02:03.000004
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -203,6 +205,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls the latest data from tagFullHistoricalExport received on or before 2020-07-20 01:02:03.000004
 tagFullHistoricalExport_generated_view AS (
     WITH max_update_datetime AS (
         SELECT
@@ -251,6 +254,7 @@ FROM view_results;
         expected_query = """
 WITH view_results AS (
     WITH
+-- Pulls the latest data from file_tag_first received on or before 2020-07-20 01:02:03.000004
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -271,6 +275,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls the latest data from tagFullHistoricalExport received on or before 2020-07-20 01:02:03.000004
 tagFullHistoricalExport_generated_view AS (
     WITH max_update_datetime AS (
         SELECT

@@ -206,7 +206,7 @@ def _materialize_twice_and_return_num_different_rows(
     current_datetime = datetime.datetime.now()
 
     view_query = ingest_view_query_builder.build_query(
-        config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+        query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_datetime_upper_bound=current_datetime,
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
         )

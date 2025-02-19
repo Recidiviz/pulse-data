@@ -47,6 +47,7 @@ class DirectIngestViewQueryBuilderTest(unittest.TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.PROJECT_ID
+        self.maxDiff = None
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
@@ -69,9 +70,11 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 ),
+-- Pulls the latest data from file_tag_second
 file_tag_second_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
 )
@@ -81,10 +84,11 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -105,6 +109,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls the latest data from file_tag_second received on or before 2000-01-02 03:04:05.000006
 file_tag_second_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -131,7 +136,7 @@ USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
@@ -150,11 +155,11 @@ USING (col1);"""
             r"^Cannot use undocumented raw file \[tagColumnsMissing\] as a dependency "
             r"in an ingest view.$",
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         view_query_template = """SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
+LEFT OUTER JOIN `{project_id}.reference_tables.my_table`
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
@@ -170,6 +175,7 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 )
@@ -179,10 +185,27 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
+        )
+
+        star = "*"
+        view_query_template_but_inside_an_f_string = f"""SELECT {star} FROM {{file_tag_first}}
+LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
+USING (col1);"""
+
+        view = DirectIngestViewQueryBuilder(
+            region="us_xx",
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template_but_inside_an_f_string,
+            region_module=fake_regions_module,
+        )
+        self.assertEqual(
+            expected_view_query,
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_date_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -209,7 +232,7 @@ USING (col1);"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
@@ -230,6 +253,7 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 )
@@ -239,7 +263,7 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
@@ -262,9 +286,11 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 ),
+-- Pulls the latest data from file_tag_second
 file_tag_second_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
 ),
@@ -275,10 +301,11 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -299,6 +326,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls the latest data from file_tag_second received on or before 2000-01-02 03:04:05.000006
 file_tag_second_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -326,10 +354,10 @@ USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
-        # Also check that appending whitespace before the WITH prefix produces the same results
+        # Also check that appending whitespace on or before the WITH prefix produces the same results
         view_query_template = "\n " + view_query_template
 
         view = DirectIngestViewQueryBuilder(
@@ -346,11 +374,11 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
@@ -368,7 +396,7 @@ USING (col1);"""
         with self.assertRaisesRegex(
             ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(
         self,
@@ -421,6 +449,7 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 )
@@ -429,10 +458,11 @@ SELECT * FROM file_tag_first_generated_view
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -458,7 +488,7 @@ SELECT * FROM file_tag_first_generated_view
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
@@ -499,9 +529,11 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 ),
+-- Pulls all rows from file_tag_second
 file_tag_second__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
@@ -517,10 +549,11 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -541,6 +574,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls all rows from file_tag_second received on or before 2000-01-02 03:04:05.000006
 file_tag_second__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
@@ -556,7 +590,7 @@ USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_all_rows_dependency_mixed_with_latest_same_table(self) -> None:
@@ -585,9 +619,11 @@ USING (col1);"""
         )
 
         expected_view_query = """WITH
+-- Pulls the latest data from file_tag_first
 file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 ),
+-- Pulls all rows from file_tag_first
 file_tag_first__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
@@ -603,10 +639,11 @@ USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
+-- Pulls the latest data from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first_generated_view AS (
     WITH filtered_rows AS (
         SELECT
@@ -627,6 +664,7 @@ file_tag_first_generated_view AS (
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
 ),
+-- Pulls all rows from file_tag_first received on or before 2000-01-02 03:04:05.000006
 file_tag_first__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
@@ -642,7 +680,7 @@ USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(query_structure_config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_invalid_raw_table_dependency(self) -> None:

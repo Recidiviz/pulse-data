@@ -195,7 +195,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
     ) -> None:
         """Does advanced checks of ingest view queries for efficiency and documentation."""
         query = ingest_view.build_query(
-            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=query_run_dt,
             )
@@ -236,7 +236,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
         ingest view tests.
         """
         view_query = ingest_view.build_query(
-            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=query_run_dt,
             )
