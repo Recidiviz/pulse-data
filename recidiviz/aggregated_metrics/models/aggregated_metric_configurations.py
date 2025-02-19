@@ -31,6 +31,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventCountMetric,
     EventValueMetric,
     MiscAggregatedMetric,
+    SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
@@ -2199,3 +2200,40 @@ VIOLATION_RESPONSES_BY_TYPE_METRICS = [
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
+
+WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_eligible_and_actionable",
+    display_name="Distinct Population: Eligible And Actionable",
+    description="Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+        },
+    ),
+)
+
+WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS = EventCountMetric(
+    name="workflows_primary_user_active_usage_events",
+    display_name="Total Active Usage Events, Primary Workflows Users",
+    description="Total number of actions taken by primary Workflows users",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["event_type", "task_type", "person_external_id"],
+)
+
+WORKFLOWS_PRIMARY_USER_LOGINS = EventCountMetric(
+    name="workflows_primary_user_logins",
+    display_name="Logins, Primary Workflows Users",
+    description="Number of logins performed by primary Workflows users",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)

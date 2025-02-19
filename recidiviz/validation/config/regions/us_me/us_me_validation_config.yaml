@@ -54,6 +54,11 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.10
     override_reason: >-
       P2 Not relevant to currently launched products
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
+    hard_max_allowed_error_override: 0.30
+    override_reason: >-
+      Needs investigation before launching Usage by User report for ME. Worst failing row as of 1/20/25 is 20%.
+      #TODO(#37570)
 num_allowed_rows_overrides:
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000

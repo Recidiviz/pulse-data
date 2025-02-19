@@ -280,6 +280,18 @@ from recidiviz.validation.views.state.supervision_termination_reason_no_date imp
 from recidiviz.validation.views.state.supervisor_roster_exclusions import (
     SUPERVISOR_ROSTER_EXCLUSION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_actions_without_logins import (
+    OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_duplicate_rows import (
+    OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_vs_impact_report_active_users_supervision import (
+    OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_ACTIVE_USERS_SUPERVISION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_vs_impact_report_registered_users_supervision import (
+    OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.client_and_resident_record_percent_change_in_eligibility_exceeded import (
     CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
 )
@@ -553,6 +565,14 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
@@ -1000,6 +1020,31 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_ACTIVE_USERS_SUPERVISION_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "officer_monthly_usage_report_active_users_supervision",
+                "impact_report_active_users_supervision",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            hard_max_allowed_error=0.05,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "officer_monthly_usage_report_registered_users_supervision",
+                "impact_report_registered_users_supervision",
+                "impact_report_registered_users_supervision_by_district",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            hard_max_allowed_error=0.05,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VALIDATION_VIEW_BUILDER,

@@ -71,6 +71,9 @@ from recidiviz.calculator.query.state.views.sessions.sessions_views import (
 from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views import (
     SHARED_METRIC_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.user_metrics.user_metrics_views import (
+    USAGE_REPORTS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import (
     VITALS_REPORT_VIEW_BUILDERS,
 )
@@ -101,6 +104,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             SENTENCE_SESSIONS_VIEW_BUILDERS,
             SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
             JII_TEXTING_VIEW_BUILDERS,
+            USAGE_REPORTS_VIEW_BUILDERS,
         )
     )
 )

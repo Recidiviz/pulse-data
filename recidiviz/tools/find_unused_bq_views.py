@@ -134,6 +134,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
+    OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
 )
@@ -494,6 +497,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     SUPERVISION_LEVEL_IS_LOW_MODERATE_FOR_6_MONTHS.address: (
         "This criteria will eventually be reworked and used in TN's revamped compliant reporting policy when new"
         "supervision levels are rolled out. See #37898. (Damini Sharma, 2025-01-30"
+    ),
+    OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER.address: (
+        "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
+        " (Justine Kunz 12/03/2024)"
     ),
 }
 
