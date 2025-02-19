@@ -21,7 +21,7 @@ import unittest
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
-    ENUM_PARSING_FIXTURES_ROOT,
+    ENUM_PARSING_FIXTURE_SUBDIR,
     DirectIngestTestFixturePath,
 )
 
@@ -29,7 +29,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 class TestDirectIngestTestFixturePath(unittest.TestCase):
     def test_all_paths_parse(self) -> None:
         for path, _directory_names, file_names in os.walk(DIRECT_INGEST_FIXTURES_ROOT):
-            if path.startswith(ENUM_PARSING_FIXTURES_ROOT):
+            if ENUM_PARSING_FIXTURE_SUBDIR in path:
                 continue
             for file_name in file_names:
                 if file_name == "__init__.py" or not is_valid_code_path(file_name):

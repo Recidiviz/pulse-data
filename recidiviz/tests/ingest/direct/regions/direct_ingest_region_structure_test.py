@@ -39,7 +39,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
-from recidiviz.common.file_system import is_non_empty_code_directory, is_valid_code_path
+from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
 from recidiviz.ingest.direct.controllers import (
@@ -96,11 +96,14 @@ from recidiviz.tests.common.constants.state.external_id_types_test import (
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.tests.ingest.direct import regions as regions_tests_module
 from recidiviz.tests.ingest.direct.fixture_util import (
+    DIRECT_INGEST_FIXTURES_ROOT,
+    ENUM_PARSING_FIXTURE_SUBDIR,
     DirectIngestFixtureDataFileType,
     DirectIngestTestFixturePath,
 )
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
     IngestViewEmulatorQueryTestCase,
+    StateIngestViewTestCase,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
@@ -720,8 +723,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                         f"[{project}]",
                     )
 
-    # TODO(#38323): Migrate functionality of this test to
-    # test_ingest_view_and_mapping_structure
+    # TODO(#15801): Update integration test fixtures
     def test_integration_test_ingest_view_result_fixture_files_have_corresponding_yaml(
         self,
     ) -> None:
@@ -766,52 +768,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     f"in [{fixtures_directory}] even though there are ingest views for "
                     f"this state - is this test looking in the right place?"
                 )
-
-    # TODO(#38323): Migrate functionality of this test to
-    # test_ingest_view_and_mapping_structure
-    def test_ingest_view_fixture_files_is_subset_of_ingest_mappings(self) -> None:
-        for region_code in get_existing_direct_ingest_states():
-            region = direct_ingest_regions.get_direct_ingest_region(
-                region_code=region_code.value
-            )
-            ingest_view_manifest_collector = IngestViewManifestCollector(
-                region=region,
-                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-            )
-            region_fixtures_directory = os.path.join(
-                os.path.dirname(direct_ingest_fixtures.__file__),
-                region_code.value.lower(),
-            )
-            ingest_view_fixture_directories = [
-                directory
-                for directory in os.listdir(
-                    os.path.join(region_fixtures_directory, "ingest_view")
-                )
-                if os.path.isdir(
-                    os.path.join(region_fixtures_directory, "ingest_view", directory)
-                )
-                and is_non_empty_code_directory(
-                    os.path.join(region_fixtures_directory, "ingest_view", directory)
-                )
-            ]
-            set_of_ingest_view_fixture_directories = set(
-                ingest_view_fixture_directories
-            )
-            set_of_ingest_views = set(
-                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
-            )
-
-            extra_fixture_directories = (
-                set_of_ingest_view_fixture_directories - set_of_ingest_views
-            )
-
-            self.assertSetEqual(
-                extra_fixture_directories,
-                set(),
-                f"Found fixtures directories in {region_fixtures_directory} with "
-                f"no corresponding ingest mappings (candidates for cleanup): "
-                f"{extra_fixture_directories}",
-            )
 
     def _get_ingest_view_to_ingest_view_test_names(
         self, state_code: StateCode
@@ -898,6 +854,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 state_code.value.lower()
             )
         ):
+            if ENUM_PARSING_FIXTURE_SUBDIR in path:
+                continue
             for file_name in file_names:
                 if file_name == "__init__.py" or not is_valid_code_path(path):
                     continue
@@ -909,23 +867,10 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
         return fixture_paths_by_type
 
-    # TODO(#38323): Migrate functionality of this test to
-    # test_ingest_view_and_mapping_structure
+    # TODO(#22059): Migrate functionality of this test to the state-specific structure test
     def test_ingest_view_test_fixtures_match_existing_ingest_view_tests(self) -> None:
         for region_code in get_existing_direct_ingest_states():
             fixtures_by_type = self._get_fixture_file_paths_by_fixture_type(region_code)
-
-            ingest_view_results_fixtures = fixtures_by_type[
-                DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS
-            ]
-
-            ingest_view_results_fixtures_by_ingest_view: Dict[
-                str, List[DirectIngestTestFixturePath]
-            ] = defaultdict(list)
-            for fixture in ingest_view_results_fixtures:
-                ingest_view_results_fixtures_by_ingest_view[
-                    fixture.ingest_view_name()
-                ].append(fixture)
 
             ingest_view_to_existing_ingest_view_test_names = (
                 self._get_ingest_view_to_ingest_view_test_names(region_code)
@@ -934,39 +879,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             ingest_views_with_tests = set(
                 ingest_view_to_existing_ingest_view_test_names
             )
-            ingest_views_with_ingest_view_test_result_fixtures = set()
-            for (
-                ingest_view,
-                results_fixtures,
-            ) in ingest_view_results_fixtures_by_ingest_view.items():
-                if any(
-                    f
-                    for f in results_fixtures
-                    if f.test_name() != PIPELINE_INTEGRATION_TEST_NAME
-                ):
-                    ingest_views_with_ingest_view_test_result_fixtures.add(ingest_view)
-
-            if ingest_views_with_fixtures_no_test := (
-                ingest_views_with_ingest_view_test_result_fixtures
-                - ingest_views_with_tests
-            ):
-                raise ValueError(
-                    f"Found ingest view result fixture files for these ingest views "
-                    f"but no associated tests for these views: "
-                    f"{ingest_views_with_fixtures_no_test}. Either you added fixtures "
-                    f"and forgot to write the test, or the test is in an incorrect "
-                    f"directory, or these are old fixtures which need to be deleted."
-                )
-
-            if ingest_views_with_test_no_fixtures := (
-                ingest_views_with_tests
-                - ingest_views_with_ingest_view_test_result_fixtures
-            ):
-                raise ValueError(
-                    f"Found tests for these ingest views but no associated fixture "
-                    f"files (i.e. you have an ingest view test crashing): "
-                    f"{ingest_views_with_test_no_fixtures}"
-                )
 
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
@@ -987,30 +899,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 ingest_view_name,
                 existing_ingest_view_test_names,
             ) in ingest_view_to_existing_ingest_view_test_names.items():
-                ingest_view_results_fixtures = (
-                    ingest_view_results_fixtures_by_ingest_view[ingest_view_name]
-                )
-                fixture_ingest_view_test_names = {
-                    f.test_name()
-                    for f in ingest_view_results_fixtures
-                    if f.test_name() != PIPELINE_INTEGRATION_TEST_NAME
-                }
-                if (
-                    extra_fixture_names := fixture_ingest_view_test_names
-                    - existing_ingest_view_test_names
-                ):
-                    unused_fixture_paths = {
-                        f.full_path()
-                        for f in ingest_view_results_fixtures
-                        if f.test_name() in extra_fixture_names
-                    }
-
-                    raise ValueError(
-                        f"Found ingest view result paths for ingest view "
-                        f"[{ingest_view_name}] that are not used by any ingest view "
-                        f"test: {unused_fixture_paths}"
-                    )
-
                 for (
                     raw_data_dependency
                 ) in view_collector.get_query_builder_by_view_name(
@@ -1082,24 +970,24 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
 def get_all_ingest_tests_for_state(
     state_code: StateCode,
 ) -> tuple[
-    dict[str, IngestViewEmulatorQueryTestCase],
-    # TODO(#38322) Update this with the type for the new V2 ingest view test
-    dict[str, Any],
-    set[str],
+    dict[str, type[IngestViewEmulatorQueryTestCase] | type[StateIngestViewTestCase]],
     set[str],
 ]:
     """
     This helper function gathers all ingest view and mapping tests for the given state code.
     """
 
-    def _test_class_from_module(module: ModuleType, parent_class: Any) -> Any:
+    def _test_class_from_module(module: ModuleType, parent_class: Any) -> Any | None:
         """Pulls the single given test class for the given module."""
-        return one(
-            test_class
-            for _cls_name, test_class in inspect.getmembers(module, inspect.isclass)
-            if issubclass(test_class, parent_class)
-            and _cls_name != parent_class.__name__
-        )
+        try:
+            return one(
+                test_class
+                for _cls_name, test_class in inspect.getmembers(module, inspect.isclass)
+                if issubclass(test_class, parent_class)
+                and _cls_name != parent_class.__name__
+            )
+        except ValueError:
+            return None
 
     state_test_module = ModuleCollectorMixin.get_relative_module(
         regions_tests_module, [state_code.value.lower()]
@@ -1107,24 +995,40 @@ def get_all_ingest_tests_for_state(
     ingest_view_test_module = ModuleCollectorMixin.get_relative_module(
         state_test_module, ["ingest_views"]
     )
-    v1_ingest_view_tests: dict[str, IngestViewEmulatorQueryTestCase] = {}
-    # TODO(#38322) Update this with the type for the new V2 ingest view test
-    v2_ingest_view_tests: dict[str, Any] = {}
-    v2_ingest_mapping_tests: set[str] = set()
+    ingest_view_tests: dict[
+        str, type[IngestViewEmulatorQueryTestCase] | type[StateIngestViewTestCase]
+    ] = {}
     for ingest_view_test_file_module in ModuleCollectorMixin.get_submodules(
         ingest_view_test_module, submodule_name_prefix_filter=None
     ):
-        test_class = _test_class_from_module(
+        # TODO(#38322) Drop v1 entirely
+        # TODO(#15801) V2 Ingest Mapping test class
+        v1_test_class = _test_class_from_module(
             ingest_view_test_file_module, IngestViewEmulatorQueryTestCase
         )
-        # TODO(#38322) Update this to use the V2 ingest view test
-        v1_ingest_view_tests[
-            assert_type(test_class.ingest_view_name(), str)
-        ] = test_class
-        # TODO(#15801) V2 Ingest Mapping test class
+        v2_test_class = _test_class_from_module(
+            ingest_view_test_file_module, StateIngestViewTestCase
+        )
+        if not v1_test_class or v2_test_class:
+            raise ValueError(
+                f"{ingest_view_test_file_module} should have either an IngestViewEmulatorQueryTestCase or StateIngestViewTestCase"
+            )
+        if v1_test_class and v2_test_class:
+            raise ValueError(
+                f"{ingest_view_test_file_module} should NOT have both an IngestViewEmulatorQueryTestCase and StateIngestViewTestCase"
+            )
+
+        if v1_test_class:
+            ingest_view_tests[
+                assert_type(v1_test_class.ingest_view_name(), str)
+            ] = v1_test_class
+        if v2_test_class:
+            ingest_view_tests[
+                assert_type(v2_test_class.ingest_view_name(), str)
+            ] = v2_test_class
 
     # TODO(#38321) Remove v1 mapping tests
-    v1_ingest_mapping_tests: set[str] = set()
+    ingest_mapping_tests: set[str] = set()
     v1_mapping_test = _test_class_from_module(
         ModuleCollectorMixin.get_relative_module(
             state_test_module,
@@ -1136,16 +1040,9 @@ def get_all_ingest_tests_for_state(
     )
     for method in dir(v1_mapping_test):
         if method.startswith("test_parse"):
-            v1_ingest_mapping_tests.add(method.removeprefix("test_parse_"))
+            ingest_mapping_tests.add(method.removeprefix("test_parse_"))
 
-    return (
-        # TODO(#38322) Remove v1 ingest view tests
-        v1_ingest_view_tests,
-        v2_ingest_view_tests,
-        # TODO(#38321) Remove v1 mapping tests
-        v1_ingest_mapping_tests,
-        v2_ingest_mapping_tests,
-    )
+    return (ingest_view_tests, ingest_mapping_tests)
 
 
 @pytest.mark.parametrize("state_code", get_existing_direct_ingest_states())
@@ -1156,8 +1053,8 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         - Every ingest mapping has an ingest view
         - Every ingest view has an ingest view query test
         - Every ingest view has an ingest mapping test
-
-    # TODO(#38323): Test every test fixture belongs to an existing test
+        - Every ingest view results fixture has a defined test
+        - TODO(#38322) Every mapping fixture has a defined test
 
     # TODO(#15801) When V2 Ingest mapping tests exists, check that
     # every ingest view test method has a corresponding mapping test method.
@@ -1177,7 +1074,7 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
     all_ingest_view_names = {vb.ingest_view_name for vb in all_view_builders}
     all_ingest_view_names_with_mapping = set(mapping_collector.ingest_view_to_manifest)
 
-    ### TEST: Check every ingest view has an ingest mapping
+    ### TEST: An ingest view exists if and only if an ingest mapping by the same name exists
     if (
         views_with_no_mapping := all_ingest_view_names
         - all_ingest_view_names_with_mapping
@@ -1186,24 +1083,19 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
             f"Found ingest views in {state_code} with no ingest mapping: {views_with_no_mapping}"
         )
 
-    ### TEST: Check every ingest mapping has an ingest view
+    ### TEST: An ingest mapping exists if and only if an ingest view by the same name exists
     if mappings_w_no_view := all_ingest_view_names_with_mapping - all_ingest_view_names:
         raise ValueError(
             f"Found ingest mappings in {state_code} with no ingest view (candidates for cleanup): {mappings_w_no_view}"
         )
 
     ### SETUP: Get all ingest view and mapping tests
-    (
-        v1_ingest_view_tests,
-        v2_ingest_view_tests,
-        v1_ingest_mapping_tests,
-        v2_ingest_mapping_tests,
-    ) = get_all_ingest_tests_for_state(state_code)
+    ingest_view_tests, ingest_mapping_tests = get_all_ingest_tests_for_state(state_code)
 
     exemptions = UNTESTED_INGEST_VIEWS.get(state_code, set())
 
-    ### TEST: Check every ingest view has an ingest view test
-    tested_ingest_view_names = set(v1_ingest_view_tests) | set(v2_ingest_view_tests)
+    ### TEST: An ingest view exists if and only if there are corresponding ingest view test(s)
+    tested_ingest_view_names = set(ingest_view_tests)
     if untested := all_ingest_view_names - tested_ingest_view_names - exemptions:
         raise ValueError(
             f"Found the following ingest views for [{state_code.value}] which "
@@ -1215,9 +1107,64 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
             "these can now be removed from UNTESTED_INGEST_VIEWS exemption list."
         )
 
-    ### TEST: Check every ingest view has an ingest mapping test
-    tested_ingest_mappings = v1_ingest_mapping_tests | v2_ingest_mapping_tests
-    if untested := all_ingest_view_names - tested_ingest_mappings - exemptions:
+    ### TEST: An ingest mapping exists if and only if there are corresponding ingest mapping test(s)
+    if untested := all_ingest_view_names - ingest_mapping_tests - exemptions:
         raise ValueError(
-            f"Found ingest views in [{state_code.value}] with no ingest mapping test {untested}"
+            f"Found ingest views/mappings in [{state_code.value}] with no ingest mapping test {untested}"
         )
+
+    ### TODO(#38322) Drop v1 entirely
+    v1_result_fixture_paths = os.walk(
+        os.path.join(
+            DIRECT_INGEST_FIXTURES_ROOT, state_code.value.lower(), "ingest_view"
+        )
+    )
+    v2_result_fixture_paths = os.walk(
+        os.path.join(
+            DIRECT_INGEST_FIXTURES_ROOT,
+            state_code.value.lower(),
+            f"{state_code.value.lower()}_ingest_view_results",
+        )
+    )
+
+    ### SETUP: Gather all ingest view results fixtures
+    all_ingest_view_result_fixture_paths = set()
+    for path, _, file_names in list(v1_result_fixture_paths) + list(
+        v2_result_fixture_paths
+    ):
+        for file_name in file_names:
+            if file_name in ("__init__.py", f"{PIPELINE_INTEGRATION_TEST_NAME}.csv"):
+                continue
+            fixture_path = os.path.join(path, file_name)
+            if is_valid_code_path(fixture_path):
+                all_ingest_view_result_fixture_paths.add(fixture_path)
+
+    used_ingest_view_result_fixture_paths = set()
+    for ingest_view_test in ingest_view_tests.values():
+        for method in dir(ingest_view_test):
+            if method.startswith("test_"):
+                ### TODO(#38322) Drop v1 entirely
+                if issubclass(ingest_view_test, IngestViewEmulatorQueryTestCase):
+                    fixture_path = DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
+                        region_code=state_code.value.lower(),
+                        ingest_view_name=ingest_view_test.ingest_view_name(),
+                        file_name=f"{method.removeprefix('test_')}.csv",
+                    ).full_path()
+                    used_ingest_view_result_fixture_paths.add(fixture_path)
+                elif issubclass(ingest_view_test, StateIngestViewTestCase):
+                    # TODO(#38322) Remove v2 result fixture paths here
+                    pass
+    ### TEST: An ingest view test fixture exists if and only if there are tests referencing that fixture file.
+    if (
+        unused_fixtures := all_ingest_view_result_fixture_paths
+        - used_ingest_view_result_fixture_paths
+    ):
+        raise ValueError(
+            f"Found unused ingest view results fixtures: {unused_fixtures}"
+        )
+
+    ### TEST: An ingest mapping fixture exists if and only if there are tests referencing that fixture file
+    ### TODO(#38322) Test V2
+    # all_v2_ingest_view_results_fixtures = set()
+
+    ### TODO(#38321) Check all v2 ingest mapping output fixtures

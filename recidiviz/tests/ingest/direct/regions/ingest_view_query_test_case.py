@@ -295,3 +295,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                     f"Query {ingest_view_name} has all CTEs documented - please remove "
                     f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
                 )
+
+
+class StateIngestViewTestCase:
+    """TODO(#38322) Implement this class"""

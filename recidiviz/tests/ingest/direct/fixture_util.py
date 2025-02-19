@@ -24,6 +24,7 @@ import attr
 import numpy as np
 import pandas as pd
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -43,12 +44,52 @@ from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.utils.types import assert_type
 
 DIRECT_INGEST_FIXTURES_ROOT = os.path.dirname(direct_ingest_fixtures.__file__)
-ENUM_PARSING_FIXTURES_ROOT = os.path.join(DIRECT_INGEST_FIXTURES_ROOT, "enum_parsing")
+ENUM_PARSING_FIXTURE_SUBDIR = "__enum_parsing_test_fixtures__"
+INGEST_MAPPING_OUTPUT_SUBDIR = "__ingest_mapping_output_fixtures__"
 
 
 def enum_parsing_fixture_path(state_code: StateCode, file_tag: str) -> str:
-    """Returns the fixture file path for the given StateCode and file tag."""
-    return os.path.join(ENUM_PARSING_FIXTURES_ROOT, state_code.value, f"{file_tag}.csv")
+    return os.path.join(
+        DIRECT_INGEST_FIXTURES_ROOT,
+        state_code.value.lower(),
+        ENUM_PARSING_FIXTURE_SUBDIR,
+        f"{file_tag}.csv",
+    )
+
+
+def ingest_mapping_output_fixture(
+    state_code: StateCode, ingest_view_name: str, characteristic: str
+) -> str:
+    return os.path.join(
+        DIRECT_INGEST_FIXTURES_ROOT,
+        state_code.value.lower(),
+        INGEST_MAPPING_OUTPUT_SUBDIR,
+        ingest_view_name,
+        f"{characteristic}.txt",
+    )
+
+
+def fixture_path_for_address(
+    state_code: StateCode, address: BigQueryAddress, file_name: str
+) -> str:
+    """
+    Returns the fixture file path for the given BigQueryAddress and fixute file name.
+    The file name is either the test characteristic or raw data persona, depending
+    on the context in which this is called.
+    """
+    if state_code != address.state_code_for_address():
+        raise ValueError(
+            f"Invalid [{state_code.value}] address [{address.to_str()}]. "
+            "Ingest fixtures for a given state must correspond to a valid "
+            "state-specific dataset for that state (e.g. us_xx_state)."
+        )
+    return os.path.join(
+        DIRECT_INGEST_FIXTURES_ROOT,
+        state_code.value.lower(),
+        address.dataset_id,
+        address.table_id,
+        f"{file_name}.json",
+    )
 
 
 def _direct_ingest_raw_file_path(
