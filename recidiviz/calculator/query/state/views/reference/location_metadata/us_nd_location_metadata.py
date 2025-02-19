@@ -72,6 +72,21 @@ SELECT
       )
     ) AS location_metadata,
 FROM `{{project_id}}.{{external_reference_dataset}}.us_nd_incarceration_facility_names`
+
+UNION ALL
+
+SELECT 
+    'US_ND' AS state_code,
+    countyName AS location_external_id,
+    countyName AS location_name,
+    'CITY_COUNTY' AS location_type,
+    TO_JSON(
+      STRUCT(
+        district AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+        district AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
+      )
+    ) AS location_metadata,
+FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_county_to_district_mapping_latest`
 """
 
 US_ND_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(

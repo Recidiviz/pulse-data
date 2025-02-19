@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_counties_and_districts_template import (
     US_IX_SENTENCING_COUNTIES_AND_DISTRICTS_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_counties_and_districts_template import (
+    US_ND_SENTENCING_COUNTIES_AND_DISTRICTS_TEMPLATE,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -31,27 +34,31 @@ SENTENCING_COUNTIES_AND_DISTRICTS_DESCRIPTION = """
     Counties and their districts to be exported to frontend to power PSI tools.
     """
 
-SENTENCING_STAFF_RECORD_QUERY_TEMPLATE = f"""
-   WITH 
-        ix_counties AS ({US_IX_SENTENCING_COUNTIES_AND_DISTRICTS_TEMPLATE}),
-        -- full_query serves as a template for when PSI expands to other states and we union other views
-        full_query AS 
-        (
-            SELECT * FROM ix_counties
-            -- TODO(#38109): add in ND once we have its data hydrated
-            -- UNION ALL
-            -- SELECT * FROM nd_counties
-        )
-         
-    SELECT
-        {{columns}}
-    FROM full_query
+SENTENCING_COUNTIES_AND_DISTRICTS_QUERY_TEMPLATE = f"""
+WITH
+  ix_counties AS ({US_IX_SENTENCING_COUNTIES_AND_DISTRICTS_TEMPLATE}),
+  nd_counties AS ({US_ND_SENTENCING_COUNTIES_AND_DISTRICTS_TEMPLATE}),
+  -- full_query serves as a template for when PSI expands to other states and we union other views
+  full_query AS (
+  SELECT
+    *
+  FROM
+    ix_counties
+  UNION ALL
+  SELECT
+    *
+  FROM
+    nd_counties )
+SELECT
+  {{columns}}
+FROM
+  full_query
 """
 
 SENTENCING_COUNTIES_AND_DISTRICTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SENTENCING_COUNTIES_AND_DISTRICTS_VIEW_NAME,
     dataset_id=dataset_config.SENTENCING_OUTPUT_DATASET,
-    view_query_template=SENTENCING_STAFF_RECORD_QUERY_TEMPLATE,
+    view_query_template=SENTENCING_COUNTIES_AND_DISTRICTS_QUERY_TEMPLATE,
     description=SENTENCING_COUNTIES_AND_DISTRICTS_DESCRIPTION,
     should_materialize=True,
     columns=["state_code", "county", "district"],

@@ -1237,6 +1237,9 @@ US_ND:
   RECIDIVIZ_REFERENCE_community_opportunities:
     sentencing_views.sentencing_community_opportunity_record: |-
       Used to grab PSI information on community opportunities. 01/22/25
+  RECIDIVIZ_REFERENCE_county_to_district_mapping:
+    reference_views.us_nd_location_metadata: |-
+      Used to map counties to their respective districts
   RECIDIVIZ_REFERENCE_state_attorney:
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
