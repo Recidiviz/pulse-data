@@ -26,7 +26,6 @@ from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
@@ -125,14 +124,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         cls.project_id_patcher.start().return_value = "recidiviz-456"
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column:
-            mock_table_has_column.return_value = True
 
-            cls.all_views = [
-                view_builder.build() for view_builder in deployed_view_builders()
-            ]
+        cls.all_views = [
+            view_builder.build() for view_builder in deployed_view_builders()
+        ]
 
         cls.x_shaped_dag_views_list = [
             b.build() for b in X_SHAPED_DAG_VIEW_BUILDERS_LIST

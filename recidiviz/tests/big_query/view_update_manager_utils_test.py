@@ -24,7 +24,6 @@ from google.cloud import bigquery
 from mock import call, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager_utils import (
@@ -42,14 +41,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
 
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column:
-            mock_table_has_column.return_value = True
-
-            self.all_views = [
-                view_builder.build() for view_builder in all_deployed_view_builders()
-            ]
+        self.all_views = [
+            view_builder.build() for view_builder in all_deployed_view_builders()
+        ]
         self.empty_view_list: List[BigQueryView] = []
         self.one_view_list = [
             BigQueryView(

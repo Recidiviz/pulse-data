@@ -22,7 +22,6 @@ Its results are split by state and by whether it is a placeholder object.
 # TODO(#26022): Remove placeholder references in admin panel state table views
 from typing import List
 
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import (
@@ -105,7 +104,6 @@ class StatePersonBigQueryViewCollector(
     enums on the StatePerson* tables."""
 
     def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
-        table_column_checker = BigQueryTableChecker("state", STATE_PERSON_TABLE_NAME)
         entity = get_state_database_entity_with_name(STATE_PERSON_ENTITY_NAME)
         builders = [
             SimpleBigQueryViewBuilder(
@@ -116,9 +114,6 @@ class StatePersonBigQueryViewCollector(
                 ),
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
                 column_name=col,
-                should_deploy_predicate=table_column_checker.get_has_column_predicate(
-                    col
-                ),
                 base_dataset=NORMALIZED_STATE_DATASET,
             )
             for col in get_enum_property_names(entity)
@@ -134,9 +129,6 @@ class StatePersonBigQueryViewCollector(
                     ),
                     view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
                     column_name=col,
-                    should_deploy_predicate=table_column_checker.get_has_column_predicate(
-                        col
-                    ),
                     base_dataset=NORMALIZED_STATE_DATASET,
                 )
                 for col in get_non_enum_property_names(entity)

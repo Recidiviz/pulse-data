@@ -22,7 +22,6 @@ Its results are split by state and by whether it is a placeholder object.
 # TODO(#26022): Remove placeholder references in admin panel state table views
 from typing import List
 
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import (
@@ -80,7 +79,6 @@ class StateTableEnumCounterBigQueryViewCollector(
             if table_name in METADATA_TABLES_WITH_CUSTOM_COUNTERS:
                 continue
             has_placeholders = "external_id" in entity.get_column_property_names()
-            table_column_checker = BigQueryTableChecker("state", table_name)
             for col in get_enum_property_names(entity):
                 if col in METADATA_EXCLUDED_PROPERTIES:
                     continue
@@ -101,10 +99,6 @@ class StateTableEnumCounterBigQueryViewCollector(
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
-                        # TODO(#11251): Setup predicates to respect dataset overrides.
-                        should_deploy_predicate=table_column_checker.get_has_column_predicate(
-                            col
-                        ),
                         base_dataset=NORMALIZED_STATE_DATASET,
                     )
                 )

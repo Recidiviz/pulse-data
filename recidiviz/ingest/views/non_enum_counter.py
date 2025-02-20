@@ -27,7 +27,6 @@ max dates in their ranges. Enums have already been split accordingly.
 # TODO(#26022): Remove placeholder references in admin panel state table views
 from typing import List
 
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import (
@@ -98,7 +97,6 @@ class StateTableNonEnumCounterBigQueryViewCollector(
             if table_name in METADATA_TABLES_WITH_CUSTOM_COUNTERS:
                 continue
             has_placeholders = "external_id" in entity.get_column_property_names()
-            table_column_checker = BigQueryTableChecker("state", table_name)
             for col in get_non_enum_property_names(entity):
                 if col in METADATA_EXCLUDED_PROPERTIES:
                     continue
@@ -118,9 +116,6 @@ class StateTableNonEnumCounterBigQueryViewCollector(
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
-                        should_deploy_predicate=table_column_checker.get_has_column_predicate(
-                            col
-                        ),
                         base_dataset=NORMALIZED_STATE_DATASET,
                     )
                 )

@@ -27,7 +27,6 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
@@ -85,18 +84,12 @@ class ViewManagerTest(unittest.TestCase):
             fake_materialize_view_to_table
         )
 
-        self.client_patcher_2 = mock.patch(
-            "recidiviz.big_query.big_query_table_checker.BigQueryClientImpl"
-        )
-        self.client_patcher_2.start()
-
         self.view_source_table_datasets = get_source_table_datasets(
             metadata.project_id()
         )
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
-        self.client_patcher_2.stop()
         self.metadata_patcher.stop()
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_simple(
@@ -663,13 +656,9 @@ class ViewManagerTest(unittest.TestCase):
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_no_duplicate_views_in_update_list(self) -> None:
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column:
-            mock_table_has_column.return_value = True
-            all_views = [
-                view_builder.build() for view_builder in all_deployed_view_builders()
-            ]
+        all_views = [
+            view_builder.build() for view_builder in all_deployed_view_builders()
+        ]
 
         expected_keys: Set[Tuple[str, str]] = set()
         for view in all_views:
@@ -689,27 +678,21 @@ class ViewManagerTest(unittest.TestCase):
     def test_all_cross_project_views_in_cross_project_view_builders(self) -> None:
         """Tests that all views that query from both production and staging
         environments are only deployed to production."""
+        for view_builder in all_deployed_view_builders():
+            view_query = view_builder.build().view_query
 
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column:
-            mock_table_has_column.return_value = True
-
-            for view_builder in all_deployed_view_builders():
-                view_query = view_builder.build().view_query
-
-                if (
-                    GCP_PROJECT_STAGING in view_query
-                    and GCP_PROJECT_PRODUCTION in view_query
-                ):
-                    self.assertFalse(
-                        view_builder.should_deploy_in_project(GCP_PROJECT_STAGING),
-                        f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
-                        "that queries from both production and staging projects and is "
-                        "deployed in staging. This view should only be deployed in "
-                        "production, as staging cannot have access to production "
-                        "BigQuery.",
-                    )
+            if (
+                GCP_PROJECT_STAGING in view_query
+                and GCP_PROJECT_PRODUCTION in view_query
+            ):
+                self.assertFalse(
+                    view_builder.should_deploy_in_project(GCP_PROJECT_STAGING),
+                    f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
+                    "that queries from both production and staging projects and is "
+                    "deployed in staging. This view should only be deployed in "
+                    "production, as staging cannot have access to production "
+                    "BigQuery.",
+                )
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_unmanaged_views_in_multiple_ds(
         self,
@@ -828,13 +811,9 @@ class ViewManagerTest(unittest.TestCase):
         )
 
     def test_all_deployed_datasets_registered_as_managed(self) -> None:
-        with patch.object(
-            BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column:
-            mock_table_has_column.return_value = True
-            all_views = [
-                view_builder.build() for view_builder in all_deployed_view_builders()
-            ]
+        all_views = [
+            view_builder.build() for view_builder in all_deployed_view_builders()
+        ]
 
         for view in all_views:
             self.assertIn(

@@ -27,7 +27,6 @@ max dates in their ranges.
 
 from typing import List
 
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -73,9 +72,6 @@ class ValidationTableColumnCounterBigQueryViewCollector(
         for table in self.schema_config.tables:
             table_name = table.table_name
 
-            table_column_checker = BigQueryTableChecker(
-                self.schema_config.dataset, table_name
-            )
             for col in table.columns:
                 if col in METADATA_EXCLUDED_PROPERTIES:
                     continue
@@ -88,9 +84,6 @@ class ValidationTableColumnCounterBigQueryViewCollector(
                         validation_dataset=self.schema_config.dataset,
                         table_name=table_name,
                         column_name=col,
-                        should_deploy_predicate=table_column_checker.get_has_column_predicate(
-                            col
-                        ),
                     )
                 )
         return builders
