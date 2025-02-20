@@ -43,22 +43,17 @@ class UsCaSftpDownloadDelegate(BaseSftpDownloadDelegate):
         """File names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/"""
         path_obj = Path(path)
 
-        # Directory names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/*.txt
+        # Directory names must match "/<Month day, Year> Data/"
         folder = path_obj.name
-        parent_folder = path_obj.parent.name  # e.g., "August 8, 2024 Data"
 
         # Checks the "<Month day, Year> Data" part
-        if parent_folder.endswith(self.POST_FIX):
-            datetime_str = parent_folder.removesuffix(self.POST_FIX)
+        if folder.endswith(self.POST_FIX):
+            datetime_str = folder.removesuffix(self.POST_FIX)
             try:
                 datetime.strptime(datetime_str, self.TIMESTAMP_FORMAT)
             except ValueError:
                 return False
         else:
-            return False
-
-        # Checks the "{PAROLE,INCUSTODY,Delta}" part
-        if folder not in self.SECOND_LEVEL_DIRS_TO_DOWNLOAD:
             return False
 
         return True
