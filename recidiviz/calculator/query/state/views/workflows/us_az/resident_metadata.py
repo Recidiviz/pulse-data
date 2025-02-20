@@ -68,6 +68,7 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
         projected_tpr_date,
         acis_dtp_date,
         projected_dtp_date,
+        csed_date,
     FROM sed_dates
     LEFT JOIN `{project_id}.{analyst_data_dataset}.us_az_projected_dates_materialized`
     USING (state_code, person_id)
