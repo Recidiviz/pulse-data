@@ -22,11 +22,13 @@ import threading
 from collections import defaultdict
 from enum import Enum
 from multiprocessing.pool import ThreadPool
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
+import attr
 from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.common import attr_validators
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_cp,
     gsutil_get_storage_subdirs_containing_raw_files,
@@ -44,28 +46,12 @@ class IngestFilesOperationType(Enum):
         return self.value.rstrip("E") + "ING"
 
 
+@attr.define
 class OperateOnStorageRawFilesController:
     """Class with functionality to copy or move raw files consumed by ingest from
-    storage buckets across different paths."""
+    storage buckets across different paths.
 
-    def __init__(
-        self,
-        *,
-        region_code: str,
-        operation_type: IngestFilesOperationType,
-        source_region_storage_dir_path: GcsfsDirectoryPath,
-        destination_region_storage_dir_path: GcsfsDirectoryPath,
-        start_date_bound: Optional[str],
-        end_date_bound: Optional[str],
-        file_tag_filters: List[str],
-        file_tag_regex: Optional[str],
-        dry_run: bool,
-    ):
-        """Creates a controller responsible for copying or moving ingest files from
-        storage buckets across different paths.
-
-        Args:
-        region_code - region code where this is run (only used in the output log)
+    Attributes:
         operation_type - Whether to perform a copy or to fully move the files.
         source_region_storage_dir_path - root path where the files to be copied/moved
             live. Critically, this must be an ingest storage buckets, e.g.
@@ -78,29 +64,84 @@ class OperateOnStorageRawFilesController:
         start_date_bound - optional start date in the format 1901-02-28
         end_date_bound - optional end date in the format 1901-02-28
         dry_run - whether or not to run in dry-run mode
-        """
-        self.operation_type = operation_type
-        self.source_region_storage_dir_path = source_region_storage_dir_path
-        self.destination_region_storage_dir_path = destination_region_storage_dir_path
-        self.dry_run = dry_run
-        self.start_date_bound = start_date_bound
-        self.end_date_bound = end_date_bound
-        assert not (
-            file_tag_regex and file_tag_filters
-        ), "Cannot have both file_tag_regex and file_tag_filters"
-        self.file_tag_filters = file_tag_filters
-        self.file_tag_regex = file_tag_regex
 
-        self.log_output_path = make_log_output_path(
-            operation_name=f"{self.operation_type.value.lower()}_storage_raw_files",
+        mutex - lock to ensure thread safety
+        operations_list - list of tuples representing the from_path and to_path of the operations
+        file_operation_progress - progress bar to show progress of file operations
+    """
+
+    operation_type: IngestFilesOperationType = attr.field(
+        validator=attr.validators.instance_of(IngestFilesOperationType)
+    )
+    source_region_storage_dir_path: GcsfsDirectoryPath = attr.field(
+        validator=attr.validators.instance_of(GcsfsDirectoryPath)
+    )
+    destination_region_storage_dir_path: GcsfsDirectoryPath = attr.field(
+        validator=attr.validators.instance_of(GcsfsDirectoryPath)
+    )
+    start_date_bound: Optional[str] = attr.field(validator=attr_validators.is_opt_str)
+    end_date_bound: Optional[str] = attr.field(validator=attr_validators.is_opt_str)
+    file_tag_filters: Optional[List[str]] = attr.field(
+        validator=attr_validators.is_opt_list
+    )
+    file_tag_regex: Optional[str] = attr.field(validator=attr_validators.is_opt_str)
+    log_output_path: str = attr.field(validator=attr_validators.is_str)
+    dry_run: bool = attr.field(validator=attr_validators.is_bool)
+
+    mutex: threading.Lock = attr.ib(factory=threading.Lock, init=False)
+    operations_list: List[Tuple[str, str]] = attr.ib(factory=list, init=False)
+    file_operation_progress: Optional[Bar] = attr.ib(default=None, init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.file_tag_filters and self.file_tag_regex:
+            raise ValueError("Cannot have both file_tag_filter and file_tag_regex")
+
+    @classmethod
+    def create_controller(
+        cls,
+        *,
+        region_code: str,
+        operation_type: IngestFilesOperationType,
+        source_region_storage_dir_path: GcsfsDirectoryPath,
+        destination_region_storage_dir_path: GcsfsDirectoryPath,
+        dry_run: bool,
+        start_date_bound: Optional[str] = None,
+        end_date_bound: Optional[str] = None,
+        file_tags: Optional[List[str]] = None,
+        file_tag_regex: Optional[str] = None,
+    ) -> "OperateOnStorageRawFilesController":
+        """Creates a controller responsible for copying or moving ingest files from
+        storage buckets across different paths."""
+        file_tag_filters = (
+            [f"*_{file_tag}[.]*" for file_tag in file_tags] if file_tags else None
+        )
+        file_tag_regex = f"*{file_tag_regex.strip('*')}*" if file_tag_regex else None
+
+        log_output_path = make_log_output_path(
+            operation_name=f"{operation_type.value.lower()}_storage_raw_files",
             region_code=region_code,
             date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
             dry_run=dry_run,
         )
-        self.mutex = threading.Lock()
-        # List of (from_path, to_path) tuples for each copy or move operation
-        self.operations_list: List[Tuple[str, str]] = []
-        self.file_operation_progress: Optional[Bar] = None
+        return cls(
+            operation_type=operation_type,
+            source_region_storage_dir_path=source_region_storage_dir_path,
+            destination_region_storage_dir_path=destination_region_storage_dir_path,
+            start_date_bound=start_date_bound,
+            end_date_bound=end_date_bound,
+            file_tag_filters=file_tag_filters,
+            file_tag_regex=file_tag_regex,
+            log_output_path=log_output_path,
+            dry_run=dry_run,
+        )
+
+    @property
+    def file_operation_fn(self) -> Callable:
+        if self.operation_type == IngestFilesOperationType.COPY:
+            return gsutil_cp
+        if self.operation_type == IngestFilesOperationType.MOVE:
+            return gsutil_mv
+        raise ValueError(f"Unsupported operation type: {self.operation_type}")
 
     def run(self) -> None:
         """Main function that will execute the copy/move."""
@@ -116,6 +157,12 @@ class OperateOnStorageRawFilesController:
             "Collecting subdirectories to %s...", self.operation_type.value.lower()
         )
         subdirs_to_operate_on = self._get_subdirs_to_operate_on()
+        if not subdirs_to_operate_on:
+            logging.info(
+                "No subdirectories found to %s.", self.operation_type.value.lower()
+            )
+            return
+
         prompt_for_confirmation(
             f"Found [{len(subdirs_to_operate_on)}] subdirectories to "
             f"{self.operation_type.value.lower()} - continue?",
@@ -158,8 +205,9 @@ class OperateOnStorageRawFilesController:
             storage_bucket_path=self.source_region_storage_dir_path,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
-            file_tag_filters=self.file_tag_filters,
-            file_tag_regex=self.file_tag_regex,
+            file_filters=(
+                [self.file_tag_regex] if self.file_tag_regex else self.file_tag_filters
+            ),
         )
 
     def _write_copies_to_log_file(self) -> None:
@@ -176,22 +224,23 @@ class OperateOnStorageRawFilesController:
             )
 
     def _do_file_operation(self, operation_paths: Tuple[str, str]) -> None:
-        from_path = operation_paths[0]
-        to_path = operation_paths[1]
         # If we're filtering for certain tags, it's expected that we might find some
         # directories with no results.
-        allow_empty = bool(self.file_tag_filters or self.file_tag_regex)
+        allow_empty = bool(self.file_tag_filters)
         if not self.dry_run:
-            if self.operation_type == IngestFilesOperationType.COPY:
-                logging.debug("COPYING FROM %s TO %s", from_path, to_path)
-                gsutil_cp(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
-            elif self.operation_type == IngestFilesOperationType.MOVE:
-                logging.debug("MOVING FROM %s TO %s", from_path, to_path)
-                gsutil_mv(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
-            else:
-                raise ValueError(f"Unexpected operation type [{self.operation_type}] ")
+            from_path, to_path = operation_paths
+            logging.debug(
+                "%s FROM %s TO %s",
+                self.operation_type.gerund().capitalize(),
+                from_path,
+                to_path,
+            )
+            self.file_operation_fn(
+                from_path=from_path, to_path=to_path, allow_empty=allow_empty
+            )
+
         with self.mutex:
-            self.operations_list.append((from_path, to_path))
+            self.operations_list.append(operation_paths)
             if self.file_operation_progress:
                 self.file_operation_progress.next()
 
@@ -201,7 +250,7 @@ class OperateOnStorageRawFilesController:
         """
         subdir_path = GcsfsDirectoryPath.from_absolute_path(subdir_path_str)
 
-        from_path = subdir_path.uri() + "*"
+        from_path = subdir_path.uri()
         relative_to_source = os.path.relpath(
             subdir_path.uri(), self.source_region_storage_dir_path.uri()
         )
@@ -211,23 +260,19 @@ class OperateOnStorageRawFilesController:
             relative_to_source,
         ).uri()
 
-        if not (self.file_tag_filters or self.file_tag_regex):
-            return [(from_path, to_path)]
-
         if self.file_tag_regex:
-            return [(from_path.rstrip("*") + f"*{self.file_tag_regex}*", to_path)]
+            return [(from_path + self.file_tag_regex, to_path)]
 
-        operations = []
-        for file_tag in self.file_tag_filters:
-            # In all other files, the split file is followed by the extension.
-            tag_filter = f"*_{file_tag}[.]*"
-            operations.append(
+        if self.file_tag_filters:
+            return [
                 (
-                    from_path.rstrip("*") + tag_filter,
+                    from_path + file_tag_filter,
                     to_path,
                 )
-            )
-        return operations
+                for file_tag_filter in self.file_tag_filters
+            ]
+
+        return [(from_path + "*", to_path)]
 
     def _execute_file_operations(self, subdirs_to_operate_on: List[str]) -> None:
         thread_pool = ThreadPool(processes=12)

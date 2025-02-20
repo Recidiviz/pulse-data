@@ -28,6 +28,7 @@ Script for deprecating imported raw data. This script will :
 
 When run in dry-run mode (the default), will log the move of each file, but will not execute them.
 You can use EITHER --file-tag-filters OR --file-tag-regex, but NOT BOTH.
+Note that --file-tag-regex is not a traditional regex, and needs to adhere to https://cloud.google.com/storage/docs/wildcards.
 
 Example usage (run from `pipenv shell`):
 
@@ -175,14 +176,14 @@ class MoveFilesToDeprecatedController:
                     file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids
                 )
 
-        OperateOnStorageRawFilesController(
+        OperateOnStorageRawFilesController.create_controller(
             region_code=self.region_code,
             operation_type=IngestFilesOperationType.MOVE,
             source_region_storage_dir_path=self.region_storage_dir_path,
             destination_region_storage_dir_path=self.deprecated_region_storage_dir_path,
             start_date_bound=self.start_date_bound,
             end_date_bound=self.end_date_bound,
-            file_tag_filters=self.file_tag_filters,
+            file_tags=self.file_tag_filters,
             file_tag_regex=self.file_tag_regex,
             dry_run=self.dry_run,
         ).run()
@@ -231,14 +232,17 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
         default=[],
         nargs="+",
-        help="List of file tags to filter for. If not set, will move all files.",
+        help="Space-separated list of file tags to filter for. "
+        "If neither file-tag-filters or file-tag-regex is set, will move all files.",
     )
 
     parser.add_argument(
         "--file-tag-regex",
         required=False,
         default=None,
-        help="A single pattern to match against file tags. If not set, will move all files.",
+        help="A pattern to match against file tags. Note that this is not a traditional regex, "
+        "and needs to adhere to https://cloud.google.com/storage/docs/wildcards. "
+        "If neither file-tag-filters or file-tag-regex is set, will move all files.",
     )
 
     parser.add_argument(

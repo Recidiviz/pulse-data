@@ -99,12 +99,9 @@ def gsutil_cp(from_path: str, to_path: str, allow_empty: bool = False) -> None:
             command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
         )
     except RuntimeError as e:
-        if (
-            not allow_empty
-            or not is_empty_response(e)
-            or isinstance(e, RunCommandUnsuccessful)
-        ):
-            raise e
+        if allow_empty and is_empty_response(e):
+            return
+        raise e
 
 
 def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
@@ -122,12 +119,9 @@ def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
         )
     except RuntimeError as e:
         logging.debug(str(e))
-        if (
-            not allow_empty
-            or not is_empty_response(e)
-            or isinstance(e, RunCommandUnsuccessful)
-        ):
-            raise e
+        if allow_empty and is_empty_response(e):
+            return
+        raise e
 
 
 def gcloud_storage_rm(
@@ -215,27 +209,33 @@ def gsutil_get_storage_subdirs_containing_raw_files(
     storage_bucket_path: GcsfsDirectoryPath,
     upper_bound_date: Optional[str],
     lower_bound_date: Optional[str],
-    file_tag_filters: Optional[List[str]] = None,
-    file_tag_regex: Optional[str] = None,
+    file_filters: Optional[List[str]] = None,
 ) -> List[str]:
     """Returns all subdirs containing files in the provided |storage_bucket_path| for a given
-    region."""
+    region.
+
+    Args:
+        storage_bucket_path: The GCS path to the storage bucket to search for subdirectories.
+        upper_bound_date: The upper bound date to search for subdirectories, inclusive.
+        lower_bound_date: The lower bound date to search for subdirectories, inclusive.
+        file_filters: A list of filters to search for in the subdirectories. Must adhere to URI
+            wildcard conventions https://cloud.google.com/storage/docs/wildcards.
+    """
     # We search with a double wildcard and then filter in python because it is much
     # faster than doing `gs://{storage_bucket_path}/raw/*/*/*/`
-    filters = _get_filters(file_tag_filters, file_tag_regex)
     raw_data_path = GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket_path, "raw")
     subdirs_in_date_range = _get_subdirs_in_date_range(
         raw_data_path, upper_bound_date, lower_bound_date
     )
     # We return all subdirectories in the date range if there are no filters for file tags.
-    if not any(filters):
+    if not file_filters or not any(file_filters):
         return sorted(list(subdirs_in_date_range))
 
     subdirs_to_search = subdirs_in_date_range
     subdirs_containing_files: Set[str] = set()
     thread_pool = ThreadPool(processes=16)
 
-    for file_tag_filter in filters:
+    for file_tag_filter in file_filters:
         progress = tqdm(
             desc=f"Searching for [{file_tag_filter}] in [{len(subdirs_to_search)}] subdirs...",
             total=len(subdirs_to_search),
@@ -265,7 +265,7 @@ def gsutil_get_storage_subdirs_containing_raw_files(
 
 def _parallel_get_storage_subdirs(args: Tuple[str, str, Set[str], tqdm]) -> None:
     subdir, file_filter, subdirs_containing_files, progress = args
-    path = subdir + f"/*{file_filter}*"
+    path = subdir + f"/{file_filter}"
     results = gsutil_ls(path, allow_empty=True)
     # if we find any results, add them to |args.subdirs_containing_files|
     if results:
