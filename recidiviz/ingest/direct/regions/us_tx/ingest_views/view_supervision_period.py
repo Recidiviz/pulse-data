@@ -229,11 +229,23 @@ period_info_agg AS (
         index_columns=['Period_ID_Number','SID_Number']
     )}
 ),
+-- Gather all of the officer IDs so that we only hydrate the field for officers
+-- received in the officer data. 
+officer_cte AS (
+    SELECT
+        Staff_ID_Number
+    FROM `{{StaffData}}`
+),
 -- Assign row numbers for period external id
 final_periods AS (SELECT
     SID_Number,
     Period_ID_Number,
-    Supervision_Officer,
+    CASE 
+        WHEN Staff_ID_Number IS NULL
+            THEN NULL
+        ELSE 
+            Supervision_Officer
+    END AS Supervision_Officer,
     Custodial_Authority,
     Special_Conditions,
     Case_Type,
@@ -241,7 +253,9 @@ final_periods AS (SELECT
     end_date,
     assessment_level,
     ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number ORDER BY start_date) AS rn
-FROM period_info_agg)
+FROM period_info_agg
+LEFT JOIN officer_cte
+    ON Supervision_Officer = Staff_ID_Number)
 SELECT 
     *
 FROM final_periods
