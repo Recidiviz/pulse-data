@@ -154,6 +154,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ar_state.state_supervision_violation_type_entry",
     "us_ar_state.state_task_deadline",
     "us_az_ingest_view_results.assessment",
+    "us_az_ingest_view_results.ccrra_assessment",
     "us_az_ingest_view_results.incarceration_incidents",
     "us_az_ingest_view_results.incarceration_periods",
     "us_az_ingest_view_results.mh_assessment",

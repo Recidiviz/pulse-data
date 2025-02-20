@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `ccrra_assessment`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  RISK_ASSESSMENT_ID: STRING
+  PERSON_ID: STRING
+  DATE_ASSESSMENT: DATETIME
+  TOTAL_POINTS: STRING
+  LEVEL: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id: RISK_ASSESSMENT_ID
+          assessment_date: DATE_ASSESSMENT
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          # This is a community corrections risk release assessment
+          assessment_type: $literal_enum(StateAssessmentType.CCRRA)
+          assessment_score: TOTAL_POINTS
+          assessment_metadata:
+            $json_dict:
+              level: LEVEL
