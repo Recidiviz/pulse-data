@@ -76,6 +76,13 @@ special_conditions_aggregation AS (
     WHERE ConditionsOnDate is not NULL
     GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber
 ),
+-- sometimes the data has changed without the LastUpdateDate changing properly, adding this
+-- to make sure we only have one task expiration date per LastUpdateDate
+ clean_Sentence_updatedates AS (
+    SELECT * FROM 
+    {{Sentence@ALL}} 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY OffenderId, CaseYear, CaseNumber, CountNumber, LastUpdateDate ORDER BY update_datetime DESC) =1
+),
 cleaned_Sentence_view AS (
     SELECT 
         Sentence.OffenderID AS OffenderID,
@@ -108,7 +115,7 @@ cleaned_Sentence_view AS (
         Sentence.ReleaseEligibilityDate as ReleaseEligibilityDate,
         'SENTENCE' AS sentence_source,
         JOSentence.LifetimeSupervision AS CSL_Flag,
-    FROM {{Sentence@ALL}} Sentence
+    FROM clean_Sentence_updatedates Sentence
     LEFT JOIN {{JOCharge}} JOCharge
     USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
     LEFT JOIN {{JOSentence}} JOSentence
