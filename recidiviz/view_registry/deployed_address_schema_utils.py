@@ -198,7 +198,7 @@ def state_specific_deployed_views_without_state_code_columns(
                 c.name
                 for c in assert_type(
                     latest_view_builder, DirectIngestRawDataTableLatestViewBuilder
-                ).raw_file_config.columns
+                ).raw_file_config.current_columns
             }
         )
     }

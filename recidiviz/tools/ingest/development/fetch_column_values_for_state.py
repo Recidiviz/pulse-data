@@ -129,7 +129,7 @@ def _update_enum_known_values(
             default_description,
             sandbox_dataset_prefix,
         )
-        for column in original_config.columns
+        for column in original_config.current_columns
     ]
 
     return DirectIngestRawFileConfig(

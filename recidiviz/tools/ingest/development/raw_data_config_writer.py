@@ -154,7 +154,7 @@ class RawDataConfigWriter:
         config += (
             "primary_key_cols:"
             f"{self._get_primary_key_config_string(raw_file_config)}\n"
-            f"{self._generate_columns_string(raw_file_config.columns)}\n"
+            f"{self._generate_columns_string(raw_file_config.all_columns)}\n"
         )
         if raw_file_config.is_primary_person_table:
             config += "is_primary_person_table: True\n"

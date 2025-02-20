@@ -125,7 +125,7 @@ def read_and_convert_excel_to_csv(
     )
     # Confirm that columns of this dataframe match columns in raw data config for TDPOP file
     region_config = DirectIngestRegionRawFileConfig(region_code="us_tn")
-    expected_columns = region_config.raw_file_configs["TDPOP"].columns
+    expected_columns = region_config.raw_file_configs["TDPOP"].current_columns
     tdpop_column_list = np.array([o.name for o in expected_columns])
     actual_columns = np.array(df.columns)
     matching = (actual_columns == tdpop_column_list).all()

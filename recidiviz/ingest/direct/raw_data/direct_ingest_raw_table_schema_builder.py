@@ -79,7 +79,8 @@ class RawDataTableBigQuerySchemaBuilder:
         raw_file_config: DirectIngestRawFileConfig, columns: List[str]
     ) -> Dict[str, str]:
         config_columns_to_descr = {
-            column.name: column.description or "" for column in raw_file_config.columns
+            column.name: column.description or ""
+            for column in raw_file_config.current_columns
         }
 
         return {col: config_columns_to_descr.get(col, "") for col in columns}

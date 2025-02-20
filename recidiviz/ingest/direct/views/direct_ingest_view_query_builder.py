@@ -91,8 +91,8 @@ class DirectIngestViewRawFileDependency:
         return self.raw_file_config.file_tag
 
     @property
-    def columns(self) -> List[RawTableColumnInfo]:
-        return self.raw_file_config.columns
+    def current_columns(self) -> List[RawTableColumnInfo]:
+        return self.raw_file_config.current_columns
 
     @property
     def filter_to_latest(self) -> bool:

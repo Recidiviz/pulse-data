@@ -343,7 +343,7 @@ class DirectIngestRegionDirStructureBase:
                 # Assert that normalized column names in the config match the output of
                 # the column name normalizer function
                 external_id_type_categories: Dict[str, RawTableColumnFieldType] = {}
-                for column in config.columns:
+                for column in config.current_columns:
                     normalized_column_name = normalize_column_name_for_bq(column.name)
                     self.test.assertEqual(column.name, normalized_column_name)
 
@@ -494,7 +494,7 @@ class DirectIngestRegionDirStructureBase:
         self, file_tag: str, col_name: str, raw_file_config: DirectIngestRawFileConfig
     ) -> None:
         documented_column_names = {
-            c.name for c in raw_file_config.columns if c.description
+            c.name for c in raw_file_config.current_columns if c.description
         }
         self.test.assertTrue(
             col_name in documented_column_names,

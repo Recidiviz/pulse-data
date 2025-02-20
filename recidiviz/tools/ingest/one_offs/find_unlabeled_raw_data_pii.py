@@ -110,7 +110,7 @@ def check_for_marked_pii(
             logging.warning("SKIPPING FILE [%s] WITH NO RAW DATA CONFIG", file_tag)
             continue
 
-        columns = region_raw_file_config.raw_file_configs[file_tag].columns
+        columns = region_raw_file_config.raw_file_configs[file_tag].current_columns
         columns_marked_as_pii = {c.name for c in columns if c.is_pii}
         missing = columns_with_pii - columns_marked_as_pii
         if missing:

@@ -205,7 +205,7 @@ def _get_dimensions_for_raw_file_view(
     )
 
     # Add one dimension per column
-    for column in config.columns:
+    for column in config.current_columns:
         # Add an additional dimension group for datetime columns
         if column.is_datetime:
             dimensions.append(_get_datetime_dimension_group(column))
@@ -351,12 +351,12 @@ def _generate_raw_file_view(
     if config.primary_key_cols:
         cols_to_concat = [
             _label_name_for_column(col)
-            for col in config.columns
+            for col in config.current_columns
             if col.name in config.primary_key_cols
         ]
         drill_fields_cols = cols_to_concat
     else:
-        cols_to_concat = [_label_name_for_column(col) for col in config.columns]
+        cols_to_concat = [_label_name_for_column(col) for col in config.current_columns]
         drill_fields_cols = []
     all_primary_keys = [FILE_ID_COL_NAME] + cols_to_concat
     primary_key_string = ", ".join(

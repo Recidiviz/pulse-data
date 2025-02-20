@@ -560,9 +560,12 @@ class DirectIngestRawFileConfig:
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
     # A list of names and descriptions for each column in a file
-    # TODO(#33695) make private and enforce all access through a current_columns property
-    # or columns_at_datetime method
-    columns: List[RawTableColumnInfo] = attr.ib()
+    # because the list of columns may contain deleted columns, this information should be accessed
+    # through the current_columns property, all_columns property, or columns_at_datetime method.
+    # Adding alias "columns" to use in intialization ex DirectIngestRawFileConfig(columns=...)
+    # while keeping access to the attribute private. this is the default behavior of attrs, but
+    # I'm adding the redundant alias to make the intended use explicit.
+    _columns: List[RawTableColumnInfo] = attr.ib(alias="columns")
 
     # An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date
     # row to pick among all rows that have the same primary key.
@@ -651,13 +654,13 @@ class DirectIngestRawFileConfig:
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
 
-        column_names = [column.name for column in self.columns]
+        column_names = [column.name for column in self._columns]
         if len(column_names) != len(set(column_names)):
             raise ValueError(f"Found duplicate columns in raw_file [{self.file_tag}]")
 
         external_id_types = [
             column.external_id_type
-            for column in self.columns
+            for column in self._columns
             if column.external_id_type
         ]
         if len(external_id_types) != len(set(external_id_types)):
@@ -666,12 +669,13 @@ class DirectIngestRawFileConfig:
             )
 
         missing_columns = set(self.primary_key_cols) - {
-            column.name for column in self.columns
+            column.name for column in self.current_columns
         }
         if missing_columns:
             raise ValueError(
-                f"Column(s) marked as primary keys not listed in"
-                f" columns list for file [{self.file_tag}]: {missing_columns}"
+                "Column(s) marked as primary keys not listed in"
+                " columns list or is marked as deleted for file"
+                f" [{self.file_tag}]: {missing_columns}"
             )
 
         for i, relationship in enumerate(self.table_relationships):
@@ -712,20 +716,24 @@ class DirectIngestRawFileConfig:
 
     @property
     def has_primary_external_id_col(self) -> bool:
-        return any(column.is_primary_for_external_id_type for column in self.columns)
+        return any(
+            column.is_primary_for_external_id_type for column in self.current_columns
+        )
 
     @property
     def has_primary_person_external_id_col(self) -> bool:
         return any(
             column.is_primary_for_external_id_type
             and column.field_type == RawTableColumnFieldType.PERSON_EXTERNAL_ID
-            for column in self.columns
+            for column in self.current_columns
         )
 
     def get_primary_external_id_cols(self) -> List[RawTableColumnInfo]:
         """Return a list of all the columns that are primary for some external id type"""
         return [
-            column for column in self.columns if column.is_primary_for_external_id_type
+            column
+            for column in self.current_columns
+            if column.is_primary_for_external_id_type
         ]
 
     def _validate_primary_keys(self) -> None:
@@ -763,7 +771,7 @@ class DirectIngestRawFileConfig:
         """Returns information about the column with the provided |column_name|. Throws
         if that column does not exist in the table.
         """
-        infos = [c for c in self.columns if c.name == column_name]
+        infos = [c for c in self._columns if c.name == column_name]
         if len(infos) != 1:
             raise ValueError(
                 f"Expected to find exactly one entry for column [{column_name}], "
@@ -772,11 +780,17 @@ class DirectIngestRawFileConfig:
         return one(infos)
 
     @property
+    def all_columns(self) -> List[RawTableColumnInfo]:
+        """Returns all columns in the raw file config, including those that have been
+        marked as deleted."""
+        return self._columns
+
+    @property
     def current_columns(self) -> List[RawTableColumnInfo]:
         """Returns the columns that currently exist in the raw file config. This is
         necessary because a column in self.columns may have been marked as deleted."""
         now = datetime.now(timezone.utc)
-        return [column for column in self.columns if column.exists_at_datetime(now)]
+        return [column for column in self._columns if column.exists_at_datetime(now)]
 
     @property
     def current_documented_columns(self) -> List[RawTableColumnInfo]:
@@ -784,10 +798,10 @@ class DirectIngestRawFileConfig:
         return [column for column in self.current_columns if column.description]
 
     @property
-    def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
+    def current_datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
         return [
             (column.name, column.datetime_sql_parsers)
-            for column in self.columns
+            for column in self.current_columns
             if column.is_datetime
         ]
 
@@ -795,7 +809,7 @@ class DirectIngestRawFileConfig:
     def has_enums(self) -> bool:
         """If true, columns with enum values exist within this raw file, and this config is eligible to be refreshed
         with the for the fetch_column_values_for_state script."""
-        return bool([column.name for column in self.columns if column.is_enum])
+        return bool([column.name for column in self.current_columns if column.is_enum])
 
     @property
     def is_undocumented(self) -> bool:
@@ -818,7 +832,7 @@ class DirectIngestRawFileConfig:
         returns the proper capitalization of the column, as listed in the configuration
         file.
         """
-        for registered_col in self.columns:
+        for registered_col in self._columns:
             if registered_col.name.lower() == col_name.lower():
                 return registered_col.name
         return None
@@ -920,7 +934,7 @@ class DirectIngestRawFileConfig:
         """
         return [
             col_name
-            for column in self.columns
+            for column in self._columns
             if (col_name := column.name_at_datetime(dt)) is not None
         ]
 
@@ -929,7 +943,9 @@ class DirectIngestRawFileConfig:
         Returns a list of column info objects that existed at the given datetime.
         """
         return [
-            column for column in self.columns if column.name_at_datetime(dt) is not None
+            column
+            for column in self._columns
+            if column.name_at_datetime(dt) is not None
         ]
 
     def column_mapping_from_datetime_to_current(self, dt: datetime) -> Dict[str, str]:
@@ -941,7 +957,7 @@ class DirectIngestRawFileConfig:
         now = datetime.now(tz=timezone.utc)
         return {
             col_name_at_dt: current_col_name
-            for column in self.columns
+            for column in self._columns
             if (col_name_at_dt := column.name_at_datetime(dt)) is not None
             and (current_col_name := column.name_at_datetime(now)) is not None
         }
@@ -1225,7 +1241,7 @@ class DirectIngestRegionRawFileConfig:
         columns_with_external_id_types = [
             column
             for config in configs
-            for column in config.columns
+            for column in config.current_columns
             if column.external_id_type
         ]
         for col in columns_with_external_id_types:
@@ -1317,7 +1333,7 @@ class DirectIngestRegionRawFileConfig:
         """
         all_parsers = set()
         for config in self.raw_file_configs.values():
-            for _, parsers in config.datetime_cols:
+            for _, parsers in config.current_datetime_cols:
                 if parsers:
                     for parser in parsers:
                         all_parsers.add(parser)
@@ -1427,11 +1443,13 @@ class DirectIngestRegionRawFileConfig:
                 for join_clause in table_relationship.join_clauses:
                     for column in join_clause.get_referenced_columns():
                         column_config = raw_file_configs[column.file_tag]
-                        if column.column not in [c.name for c in column_config.columns]:
+                        if column.column not in [
+                            c.name for c in column_config.current_columns
+                        ]:
                             raise ValueError(
                                 f"Found column [{column}] referenced in join clause "
                                 f"[{join_clause.to_sql()}] which is not defined in "
-                                f"the config for [{column.file_tag}]"
+                                f"or is marked as deleted in the config for [{column.file_tag}]"
                             )
 
                 tables_key = table_relationship.get_referenced_tables()

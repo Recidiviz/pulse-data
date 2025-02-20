@@ -217,7 +217,7 @@ def _generate_filters_for_state(
 def _get_sort_cols(file_config: DirectIngestRawFileConfig) -> List[str]:
     """first_datetime_col: List[str] = []
     # Get the first datetime column with valid parsers
-    for col in file_config.columns:
+    for col in file_config.current_columns:
         if col.is_datetime and col.datetime_sql_parsers:
             return [col.name]
         if not first_datetime_col and col.is_datetime:

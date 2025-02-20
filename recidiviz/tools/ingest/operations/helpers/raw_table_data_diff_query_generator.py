@@ -206,7 +206,7 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
         self, file_config: DirectIngestRawFileConfig
     ) -> List[str]:
         primary_key_cols = file_config.primary_key_cols or [
-            column.name for column in file_config.columns
+            column.name for column in file_config.current_columns
         ]
         primary_key_cols.append(UPDATE_DATETIME_COL_NAME)
 

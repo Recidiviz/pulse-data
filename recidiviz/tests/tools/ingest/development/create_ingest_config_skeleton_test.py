@@ -76,11 +76,11 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         self.assertEqual(table_config.file_tag, INPUT_TABLE)
         self.assertEqual(table_config.data_classification, RawDataClassification.SOURCE)
         self.assertEqual(
-            [field.name for field in table_config.columns],
+            [field.name for field in table_config.current_columns],
             ["field1", "field2", "field3", "field_4"],
         )
         self.assertEqual(
-            [field.description for field in table_config.columns],
+            [field.description for field in table_config.current_columns],
             [None, None, None, None],
         )
 
@@ -103,7 +103,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         self.assertIsNotNone(config)
 
         self.assertEqual(
-            [field.description for field in table_config.columns],
+            [field.description for field in table_config.current_columns],
             [
                 PLACEHOLDER_TO_DO_STRING,
                 PLACEHOLDER_TO_DO_STRING,

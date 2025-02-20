@@ -243,12 +243,12 @@ class DirectIngestDocumentationGenerator:
 
         has_exemptions = any(
             column.import_blocking_column_validation_exemptions
-            for column in raw_file_config.columns
+            for column in raw_file_config.current_columns
         )
 
         table_matrix = [
             _get_raw_data_column_row(column, has_exemptions)
-            for column in raw_file_config.columns
+            for column in raw_file_config.current_columns
         ]
         headers = [
             "Column",

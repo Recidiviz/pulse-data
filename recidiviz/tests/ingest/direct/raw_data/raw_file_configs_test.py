@@ -642,7 +642,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual("", config.primary_key_str)
         self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
         self.assertEqual([], config.current_documented_columns)
-        self.assertEqual([], config.datetime_cols)
+        self.assertEqual([], config.current_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
         self.assertEqual(None, config.caps_normalized_col("some_random_column_name"))
@@ -690,7 +690,9 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual(
             ["Col1", "Col3"], [c.name for c in config.current_documented_columns]
         )
-        self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
+        self.assertEqual(
+            ["Col3", "Col4"], [name for name, _ in config.current_datetime_cols]
+        )
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
         self.assertEqual("Col1", config.caps_normalized_col("col1"))
@@ -702,7 +704,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         config = attr.evolve(
             config,
             columns=[
-                *config.columns,
+                *config.all_columns,
                 RawTableColumnInfo(
                     name="Col5",
                     state_code=StateCode.US_XX,
@@ -721,7 +723,9 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             ["Col1", "Col3", "Col5"],
             [c.name for c in config.current_documented_columns],
         )
-        self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
+        self.assertEqual(
+            ["Col3", "Col4"], [name for name, _ in config.current_datetime_cols]
+        )
         self.assertTrue(config.has_enums)
 
     def test_encodings_to_try(self) -> None:
@@ -883,7 +887,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Column\(s\) marked as primary keys not listed in columns list"
-            r" for file \[myFile\]: \{'Col2'\}$",
+            r" or is marked as deleted for file \[myFile\]: \{'Col2'\}$",
         ):
             _ = attr.evolve(
                 self.sparse_config,
@@ -1495,7 +1499,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 description=None,
             ),
         ]
-        self.assertEqual(expected_columns_config_1, config_1.columns)
+        self.assertEqual(expected_columns_config_1, config_1.current_columns)
         expected_config_1_config_2_relationship = RawTableRelationshipInfo(
             file_tag="file_tag_first",
             foreign_table="file_tag_second",
@@ -1574,7 +1578,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     description="column description",
                 )
             ],
-            config_2.columns,
+            config_2.current_columns,
         )
         self.assertEqual(
             # This relationship gets added even though it isn't defined reciprocally in
@@ -1822,8 +1826,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"Found column \[myFile2.col2\] referenced in join clause "
-            r"\[myFile1.col1 = myFile2.col2\] which is not defined in the config for "
-            r"\[myFile2\]",
+            r"\[myFile1.col1 = myFile2.col2\] which is not defined in or is marked as deleted "
+            r"in the config for \[myFile2\]",
         ):
             InMemoryDirectIngestRegionRawFileConfig(region_code="us_xx")
 

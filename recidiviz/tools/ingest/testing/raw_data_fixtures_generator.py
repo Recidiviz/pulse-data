@@ -140,14 +140,14 @@ class RawDataFixturesGenerator:
         self.columns_to_randomize = [
             column
             for raw_config in self.ingest_view_raw_table_dependency_configs
-            for column in raw_config.columns
+            for column in raw_config.current_columns
             if column.is_pii or column.name in columns_to_randomize
         ]
 
         self.columns_to_randomize_by_table = {
             raw_config.file_tag: [
                 column
-                for column in raw_config.columns
+                for column in raw_config.current_columns
                 if column.is_pii or column.name in columns_to_randomize
             ]
             for raw_config in self.ingest_view_raw_table_dependency_configs
@@ -373,7 +373,7 @@ class RawDataFixturesGenerator:
         ) in self.ingest_view_raw_table_dependency_configs:
             root_entity_external_id_columns = [
                 column.name
-                for column in raw_table_dependency_config.columns
+                for column in raw_table_dependency_config.current_columns
                 if column.name in self.root_entity_external_id_columns
             ]
 
@@ -436,7 +436,7 @@ class RawDataFixturesGenerator:
             # Get all person external ID columns present in this raw table config
             root_entity_external_id_columns = [
                 column.name
-                for column in raw_table_dependency_config.columns
+                for column in raw_table_dependency_config.current_columns
                 if column.name in self.root_entity_external_id_columns
             ]
 

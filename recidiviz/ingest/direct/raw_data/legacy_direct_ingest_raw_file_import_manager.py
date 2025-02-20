@@ -135,7 +135,9 @@ class DirectIngestRawFileReader:
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
 
-        columns_from_file_config = [column.name for column in file_config.columns]
+        columns_from_file_config = [
+            column.name for column in file_config.current_columns
+        ]
 
         if file_config.infer_columns_from_config:
             if len(columns_from_file_config) != len(df.columns):
@@ -170,7 +172,7 @@ class DirectIngestRawFileReader:
 
             # If the capitalization of the column name doesn't match the capitalization
             # listed in the file config, update the capitalization.
-            if column_name not in file_config.columns:
+            if column_name not in file_config.current_columns:
                 caps_normalized_col = file_config.caps_normalized_col(column_name)
                 if caps_normalized_col:
                     column_name = caps_normalized_col
@@ -186,7 +188,7 @@ class DirectIngestRawFileReader:
             # A single-column file is almost always indicative of a parsing error. If
             # this column name is not registered in the file config, we throw.
             column = one(normalized_csv_columns)
-            if column not in file_config.columns:
+            if column not in file_config.current_columns:
                 raise ValueError(
                     f"Found only one column: [{column}]. Columns likely did not "
                     f"parse properly. Are you using the correct separator and encoding "
@@ -622,7 +624,7 @@ def check_found_columns_are_subset_of_config(
 
     # BQ is case-agnostic when evaluating column names so we can be as well.
     columns_from_file_config_lower = {
-        column.name.lower() for column in raw_file_config.columns
+        column.name.lower() for column in raw_file_config.current_columns
     }
     found_columns_lower = set(c.lower() for c in found_columns)
 
@@ -635,7 +637,7 @@ def check_found_columns_are_subset_of_config(
         extra_columns = found_columns_lower.difference(columns_from_file_config_lower)
         raise ValueError(
             f"Found columns in raw file {sorted(extra_columns)} that are not "
-            f"defined in the raw data configuration for "
+            f"defined or are marked as deleted in the raw data configuration for "
             f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
             f"are defined in the raw data configuration."
         )

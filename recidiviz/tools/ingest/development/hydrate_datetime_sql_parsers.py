@@ -134,7 +134,7 @@ def update_parsers_in_region(
         region_config.raw_file_configs.values()
     )
     datetime_configs = [
-        config for config in all_raw_file_configs if config.datetime_cols
+        config for config in all_raw_file_configs if config.current_datetime_cols
     ]
     configs_to_update = [] if file_tags else datetime_configs
     for file_tag in file_tags:
@@ -184,9 +184,9 @@ def update_parsers_in_region(
                     parsers_to_try,
                 )
             )
-            for column in original_config.columns
+            for column in original_config.current_columns
         ]
-        if original_config.columns != new_columns:
+        if original_config.current_columns != new_columns:
             updated_config = attr.evolve(original_config, columns=new_columns)
             raw_data_config_writer.output_to_file(
                 raw_file_config=updated_config,

@@ -214,7 +214,9 @@ def get_column_configs(state_code: StateCode) -> list[DirectIngestRawFileConfig]
         region_config.raw_file_configs.values()
     )
     configs_with_datetimes = [
-        config for config in all_raw_file_configs if config.datetime_cols is not None
+        config
+        for config in all_raw_file_configs
+        if config.current_datetime_cols is not None
     ]
 
     return configs_with_datetimes
@@ -227,7 +229,7 @@ def get_datetime_columns_from_config(
     Get all datetime columns for a particular raw data table
     """
 
-    return [column for column in config.columns if column.is_datetime]
+    return [column for column in config.current_columns if column.is_datetime]
 
 
 def main() -> None:

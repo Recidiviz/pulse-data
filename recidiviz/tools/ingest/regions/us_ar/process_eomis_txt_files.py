@@ -320,7 +320,9 @@ def _update_config_using_sheet(
     )
 
     bad_pks = [
-        pk for pk in pks if pk not in [col.name for col in original_config.columns]
+        pk
+        for pk in pks
+        if pk not in [col.name for col in original_config.current_columns]
     ]
 
     if len(bad_pks) != 0:
@@ -332,7 +334,7 @@ def _update_config_using_sheet(
 
     new_columns = [
         _get_col_details_from_ref_sheet(column, original_config.file_tag, metadata_dfs)
-        for column in original_config.columns
+        for column in original_config.current_columns
     ]
 
     return DirectIngestRawFileConfig(
