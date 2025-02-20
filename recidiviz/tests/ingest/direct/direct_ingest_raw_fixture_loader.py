@@ -93,6 +93,7 @@ class DirectIngestRawDataFixtureLoader:
     ):
         self.state_code = state_code
         self.bq_client = emulator_test.bq_client
+        self.emulator_test = emulator_test
         self.raw_tables_dataset_id = raw_tables_dataset_for_region(
             state_code=self.state_code, instance=DirectIngestInstance.PRIMARY
         )
@@ -114,6 +115,7 @@ class DirectIngestRawDataFixtureLoader:
         self,
         ingest_views: List[DirectIngestViewQueryBuilder],
         ingest_test_identifier: str,
+        create_tables: bool,
     ) -> None:
         """
         Loads raw data tables to the emulator for the given ingest views.
@@ -131,7 +133,11 @@ class DirectIngestRawDataFixtureLoader:
             max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
         ) as executor:
             create_table_futures = [
-                executor.submit(self._load_fixture_to_emulator, fixture=fixture)
+                executor.submit(
+                    self._load_fixture_to_emulator,
+                    fixture=fixture,
+                    create_tables=create_tables,
+                )
                 for fixture in self._generate_raw_data_fixtures(
                     ingest_views, ingest_test_identifier
                 )
@@ -139,7 +145,11 @@ class DirectIngestRawDataFixtureLoader:
         for future in futures.as_completed(create_table_futures):
             future.result()
 
-    def _load_fixture_to_emulator(self, fixture: RawDataFixture) -> None:
+    def _load_fixture_to_emulator(
+        self, fixture: RawDataFixture, create_tables: bool
+    ) -> None:
+        if create_tables:
+            self.emulator_test.create_mock_table(fixture.address, fixture.schema)
         self.bq_client.stream_into_table(
             fixture.address,
             rows=fixture.fixture_data_df.to_dict("records"),

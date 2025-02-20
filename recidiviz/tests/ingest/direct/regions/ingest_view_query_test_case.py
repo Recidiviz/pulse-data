@@ -26,7 +26,6 @@ from types import ModuleType
 from typing import Optional, Tuple
 
 import pandas as pd
-import pytz
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -53,23 +52,27 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestTestFixturePath,
+    fixture_path_for_address,
+)
+from recidiviz.tests.ingest.direct.regions.base_ingest_test_cases import (
+    BaseStateIngestTestCase,
+)
 from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
     THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
 )
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
+from recidiviz.utils.environment import in_ci
 
-# we need file_update_dt to have a pytz.UTC timezone, but the query_run_dt to be
-# timzone naive for bq
-DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(
-    days=1
-)
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
-
-class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
+# TODO(#38322): Migrate all states and remove this class
+class LegacyIngestViewEmulatorQueryTestCase(
+    BigQueryEmulatorTestCase, IngestRegionTestMixin
+):
     """An extension of BigQueryEmulatorTestCase with functionality specific to testing
     ingest view queries.
 
@@ -130,6 +133,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
 
     def setUp(self) -> None:
         super().setUp()
+        # Is replaced in some downstream tests
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
             self.state_code(), emulator_test=self
@@ -163,7 +167,9 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                 f"[{fixtures_files_name}]. Found [{self._testMethodName}]"
             )
         self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
-            [self.ingest_view()], fixtures_files_name
+            [self.ingest_view()],
+            fixtures_files_name,
+            create_tables=False,
         )
 
         expected_output_fixture_path = (
@@ -183,32 +189,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
             create_expected=create_expected,
             expect_missing_fixtures_on_empty_results=False,
         )
-        self.lint_ingest_view_query(
-            self.ingest_view(), self.query_run_dt, self.state_code()
-        )
-
-    def lint_ingest_view_query(
-        self,
-        ingest_view: DirectIngestViewQueryBuilder,
-        query_run_dt: datetime.datetime,
-        state_code: StateCode,
-    ) -> None:
-        """Does advanced checks of ingest view queries for efficiency and documentation."""
-        query = ingest_view.build_query(
-            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=query_run_dt,
-            )
-        )
-        self.check_ingest_view_ctes_are_documented(query, ingest_view, state_code)
-        try:
-            check_query_is_not_ordered_outside_of_windows(query)
-        except ValueError as ve:
-            msg = (
-                f"Found unnecessary ORDER BY statement in ingest view '{ingest_view.ingest_view_name}'\n"
-                "Ingest view queries with ordered results are unnecessarily inefficient."
-            )
-            raise ValueError(msg) from ve
+        lint_ingest_view_query(self.ingest_view(), self.query_run_dt, self.state_code())
 
     @staticmethod
     def columns_from_raw_file_config(
@@ -260,42 +241,169 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
         )
         return results
 
-    def check_ingest_view_ctes_are_documented(
+
+def lint_ingest_view_query(
+    ingest_view: DirectIngestViewQueryBuilder,
+    query_run_dt: datetime.datetime,
+    state_code: StateCode,
+) -> None:
+    """Does advanced checks of ingest view queries for efficiency and documentation."""
+    query = ingest_view.build_query(
+        query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_data_datetime_upper_bound=query_run_dt,
+        )
+    )
+    check_ingest_view_ctes_are_documented(query, ingest_view, state_code)
+    try:
+        check_query_is_not_ordered_outside_of_windows(query)
+    except ValueError as ve:
+        msg = (
+            f"Found unnecessary ORDER BY statement in ingest view '{ingest_view.ingest_view_name}'\n"
+            "Ingest view queries with ordered results are unnecessarily inefficient."
+        )
+        raise ValueError(msg) from ve
+
+
+def check_ingest_view_ctes_are_documented(
+    query: str,
+    ingest_view: DirectIngestViewQueryBuilder,
+    state_code: StateCode,
+) -> None:
+    """Throws if the view has CTEs that are not properly documented with a comment,
+    or if CTEs that are now documented are still listed in the exemptions list.
+    """
+    undocumented_ctes = get_undocumented_ctes(query)
+    ingest_view_name = ingest_view.ingest_view_name
+
+    view_exemptions = THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES.get(state_code, {})
+    allowed_undocumented_ctes = set(view_exemptions.get(ingest_view_name, []))
+
+    unexpected_undocumented_ctes = undocumented_ctes - allowed_undocumented_ctes
+    if unexpected_undocumented_ctes:
+        undocumented_ctes_str = ", ".join(unexpected_undocumented_ctes)
+        raise ValueError(
+            f"Query {ingest_view_name} has undocumented CTEs: "
+            f"{undocumented_ctes_str}"
+        )
+    exempt_ctes_that_are_documented = allowed_undocumented_ctes - undocumented_ctes
+    if exempt_ctes_that_are_documented:
+        raise ValueError(
+            f"Found CTEs for query {ingest_view_name} that are now "
+            f"documented: {sorted(exempt_ctes_that_are_documented)}. Please remove "
+            f"these from the THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES list."
+        )
+    if ingest_view_name in view_exemptions:
+        if not view_exemptions[ingest_view_name]:
+            raise ValueError(
+                f"Query {ingest_view_name} has all CTEs documented - please remove "
+                f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
+            )
+
+
+class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase):
+    """
+    Base class for ingest view tests, where we test a query of
+    raw data against expected results.
+    """
+
+    @classmethod
+    def state_code(cls) -> StateCode:
+        raise NotImplementedError("Ingest tests must have a StateCode!")
+
+    @classmethod
+    def ingest_view_builder(cls) -> DirectIngestViewQueryBuilder:
+        raise NotImplementedError(
+            "Ingest view tests must declare their DirectIngestViewQueryBuilder!"
+        )
+
+    def setUp(self) -> None:
+        super().setUp()
+        # Is replaced in some downstream tests
+        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
+        self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
+            self.state_code(), emulator_test=self
+        )
+
+    def run_ingest_view_test(
         self,
-        query: str,
-        ingest_view: DirectIngestViewQueryBuilder,
-        state_code: StateCode,
+        create_expected_output: bool = False,
     ) -> None:
-        """Throws if the view has CTEs that are not properly documented with a comment,
-        or if CTEs that are now documented are still listed in the exemptions list.
-        """
-        undocumented_ctes = get_undocumented_ctes(query)
-        ingest_view_name = ingest_view.ingest_view_name
+        """Runs the ingest view query for this test's IngestViewBuilder and compares against expected results."""
+        if in_ci() and create_expected_output:
+            raise ValueError("Cannot have create_expected_output=True in the CI.")
+        expected_ingest_view_name = self.ingest_view_builder().ingest_view_name
 
-        view_exemptions = THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES.get(state_code, {})
-        allowed_undocumented_ctes = set(view_exemptions.get(ingest_view_name, []))
+        # self.id() is from unittest.TestCase
+        # https://docs.python.org/3/library/unittest.html#unittest.TestCase.id
+        *_, file_name, _class_name, test_name = self.id().split(".")
 
-        unexpected_undocumented_ctes = undocumented_ctes - allowed_undocumented_ctes
-        if unexpected_undocumented_ctes:
-            undocumented_ctes_str = ", ".join(unexpected_undocumented_ctes)
+        if file_name != f"view_{expected_ingest_view_name}_test":
             raise ValueError(
-                f"Query {ingest_view_name} has undocumented CTEs: "
-                f"{undocumented_ctes_str}"
+                f"Ingest view test is in an unexpected file. Expected 'view_{expected_ingest_view_name}_test.py'"
             )
-        exempt_ctes_that_are_documented = allowed_undocumented_ctes - undocumented_ctes
-        if exempt_ctes_that_are_documented:
-            raise ValueError(
-                f"Found CTEs for query {ingest_view_name} that are now "
-                f"documented: {sorted(exempt_ctes_that_are_documented)}. Please remove "
-                f"these from the THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES list."
+
+        (
+            ingest_view_name,
+            characteristic,
+        ) = self.get_ingest_view_name_and_characteristic(test_name)
+
+        if ingest_view_name != expected_ingest_view_name:
+            self.fail(f"Test must begin with `test_{expected_ingest_view_name}`")
+
+        lint_ingest_view_query(
+            self.ingest_view_builder(), self.query_run_dt, self.state_code()
+        )
+
+        self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
+            [self.ingest_view_builder()],
+            f"{characteristic}.csv",
+            create_tables=True,
+        )
+        results = self._run_ingest_view_query()
+
+        expected_output_fixture_path = fixture_path_for_address(
+            self.state_code(),
+            BigQueryAddress(
+                dataset_id=f"{self.state_code().value.lower()}_ingest_view_results",
+                table_id=ingest_view_name,
+            ),
+            characteristic,
+        )
+        if create_expected_output:
+            self.create_directory_for_characteristic_level_fixtures(
+                expected_output_fixture_path, characteristic
             )
-        if ingest_view_name in view_exemptions:
-            if not view_exemptions[ingest_view_name]:
-                raise ValueError(
-                    f"Query {ingest_view_name} has all CTEs documented - please remove "
-                    f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
-                )
+        self.compare_results_to_fixture(
+            results,
+            expected_output_fixture_path,
+            create_expected=create_expected_output,
+            expect_missing_fixtures_on_empty_results=False,
+        )
 
+    def _run_ingest_view_query(self) -> pd.DataFrame:
+        """Uses the ingest view query run by Dataflow pipelines to query raw data."""
+        view_query = self.ingest_view_builder().build_query(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_datetime_upper_bound=self.query_run_dt,
+            )
+        )
+        query_job = self.bq_client.run_query_async(
+            query_str=view_query, use_query_cache=False
+        )
 
-class StateIngestViewTestCase:
-    """TODO(#38322) Implement this class"""
+        # TODO(#33979), TODO(#26259): Once the emulator properly returns the schemas
+        #  for views and query results, verify that the query schema matches the schema
+        #  defined in the manifest input_columns. Also enforce that ingest views do not
+        #  produce REPEATED mode columns (i.e. array type columns) because we don't have
+        #  a way to represent that in YAMLs.
+        results = query_job.result().to_dataframe()
+
+        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
+        logging.debug(
+            "Results for `%s`:\n%s",
+            self.ingest_view_builder().ingest_view_name,
+            results.to_string(),
+        )
+        return results

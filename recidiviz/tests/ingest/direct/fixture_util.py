@@ -88,7 +88,7 @@ def fixture_path_for_address(
         state_code.value.lower(),
         address.dataset_id,
         address.table_id,
-        f"{file_name}.json",
+        f"{file_name}.csv",
     )
 
 
