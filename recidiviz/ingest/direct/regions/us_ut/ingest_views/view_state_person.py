@@ -80,14 +80,14 @@ emails AS (
 phones AS (
     SELECT
         ofndr_num,
-        TRIM(area_cd) || '-' || TRIM(phone_num) AS phone_num,
+        TRIM(area_cd) || REPLACE(TRIM(phone_num),'-','') AS phone_num,
     FROM {ofndr_phone}
     WHERE phone_typ_cd IN ('C', 'H') -- C: Cell, H: Home
         -- basic validity checks
         AND REGEXP_CONTAINS(TRIM(area_cd), r'^\\d\\d\\d$')
         AND TRIM(area_cd) != '000'
 
-        AND REGEXP_CONTAINS(TRIM(phone_num), r'^\\d\\d\\d-\\d\\d\\d\\d$')
+        AND REGEXP_CONTAINS(TRIM(phone_num), r'^\\d\\d\\d-?\\d\\d\\d\\d$')
         AND LEFT(TRIM(phone_num), 3) != '000'
 
     QUALIFY ROW_NUMBER() OVER (
