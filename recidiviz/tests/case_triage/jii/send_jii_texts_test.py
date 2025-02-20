@@ -24,16 +24,16 @@ import freezegun
 import pytest
 from twilio.rest.api.v2010.account.message import MessageInstance
 
+from recidiviz.case_triage.jii.helpers import (
+    construct_eligibility_text_body,
+    construct_initial_text_body,
+)
 from recidiviz.case_triage.jii.send_jii_texts import (
     attempt_to_send_text,
     get_initial_and_eligibility_doc_ids,
     get_opt_out_document_ids,
     store_batch_id,
     update_statuses_from_previous_batch,
-)
-from recidiviz.case_triage.jii.helpers import (
-    construct_eligibility_text_body,
-    construct_initial_text_body,
 )
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
