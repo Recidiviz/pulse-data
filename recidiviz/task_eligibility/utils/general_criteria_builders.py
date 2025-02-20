@@ -704,6 +704,7 @@ def incarceration_incidents_within_time_interval_criteria_builder(
     Returns a TES criterion view builder that has spans of time where incidents that
     meet certain conditions set by the user have occurred within some specified window
     of time (e.g., within the past 6 months).
+
     Args:
         criteria_name (str): Name of the criterion.
         description (str): Description of the criterion.
@@ -716,6 +717,7 @@ def incarceration_incidents_within_time_interval_criteria_builder(
             to None.
         incident_date_name_in_reason_blob (str, optional): Name of the `incident_date`
             field in the reason blob. Defaults to "latest_incidents".
+
     Returns:
         StateAgnosticTaskCriteriaBigQueryViewBuilder: View builder for a state-agnostic
             TES criterion view that shows the spans of time where the incidents that
@@ -766,16 +768,11 @@ def incarceration_incidents_within_time_interval_criteria_builder(
         /* Drop incidents with excluded `outcome_type` values. Note that not all
         incidents necessarily have outcomes (and even those that do may have a NULL
         `outcome_type`). We exclude any incidents where every non-null `outcome_type` is
-        either 'DISMISSED' or 'NOT_GUILTY'. We use COALESCE in the statement below to
-        ensure that we don't accidentally drop incidents that have no recorded
-        outcome(s) (type[s]), as the LOGICAL_AND will return NULL if `outcome_type` is
-        NULL for every row going into the aggregation. */
-        /* TODO(#35258): Ensure that we're correctly handling incidents with multiple
-        outcome types. ND currently has incidents with multiple non-null outcome types
-        where at least one of the types is 'DISMISSED' or 'NOT_GUILTY'. Note that these
-        incidents will still be considered disqualifying for now. We may want to change
-        this after learning more about whether these particular ND incidents should be
-        considered wholly dismissed or not-guilty. */
+        either 'DISMISSED' or 'NOT_GUILTY'. (Note that any incidents with at least one
+        other `outcome_type` will therefore be considered disqualifying for a resident.)
+        We use COALESCE in the statement below to ensure that we don't accidentally drop
+        incidents that have no recorded outcome(s) (type[s]), as the LOGICAL_AND will
+        return NULL if `outcome_type` is NULL for every row going into aggregation. */
         HAVING (NOT COALESCE(LOGICAL_AND(siio.outcome_type IN ('DISMISSED', 'NOT_GUILTY')), FALSE))
     ),
     incarceration_incident_ineligibility_spans AS (
