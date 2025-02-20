@@ -183,6 +183,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ut_early_termination_from_supervision_request_record import (
+    US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
+)
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
@@ -240,4 +243,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
+    US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 ]

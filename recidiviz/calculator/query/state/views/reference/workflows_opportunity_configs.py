@@ -602,6 +602,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="annualReclassification",
         person_record_type=PersonRecordType.RESIDENT,
     ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_UT,
+        opportunity_type="usUtEarlyTermination",
+        experiment_id="US_UT_EARLY_TERMINATION_FROM_SUPERVISION_WORKFLOWS",
+        opportunity_record_view_name="us_ut_early_termination_from_supervision_request_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_ut_early_termination_from_supervision_request_record.json",
+        export_collection_name="US_UT-earlyTerminationReferrals",
+        opportunity_type_path_str="EarlyTermination",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
 ]
 
 WORKFLOWS_OPPORTUNITY_CONFIG_MAP = {

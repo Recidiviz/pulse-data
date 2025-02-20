@@ -253,7 +253,7 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
         SELECT
             sp.state_code,
             pei.person_external_id,
-            sp.current_phone_number
+            REPLACE(sp.current_phone_number, '-', '') AS phone_number
         FROM `{project_id}.{normalized_state_dataset}.state_person` sp
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             USING (person_id)
