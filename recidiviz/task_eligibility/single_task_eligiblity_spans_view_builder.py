@@ -379,7 +379,6 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
-            should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
         )

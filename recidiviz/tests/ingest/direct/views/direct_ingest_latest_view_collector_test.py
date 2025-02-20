@@ -182,7 +182,6 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
             view.select_query,
         )
-        self.assertTrue(view.should_deploy())
 
     def test_build_latest_view_with_undocumented(self) -> None:
         view = DirectIngestRawDataTableLatestViewBuilder(
@@ -206,7 +205,6 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
             view.select_query,
         )
-        self.assertTrue(view.should_deploy())
 
     def test_build_historical_file_latest_view(self) -> None:
         raw_file_config = attr.evolve(
@@ -230,7 +228,6 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
             view.select_query,
         )
-        self.assertTrue(view.should_deploy())
 
     def test_build_no_primary_keys_no_throw(self) -> None:
         for no_valid_primary_keys in (True, False):

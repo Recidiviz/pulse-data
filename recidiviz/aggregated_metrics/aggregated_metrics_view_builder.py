@@ -260,5 +260,4 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             sandbox_context=sandbox_context,
-            should_deploy_predicate=None,
         )

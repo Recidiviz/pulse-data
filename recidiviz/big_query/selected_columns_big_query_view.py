@@ -60,7 +60,6 @@ class SelectedColumnsBigQueryView(BigQueryView):
             sandbox_context=sandbox_context,
             clustering_fields=clustering_fields,
             time_partitioning=None,
-            should_deploy_predicate=None,
             materialized_table_schema=None,
             **query_format_kwargs,
         )

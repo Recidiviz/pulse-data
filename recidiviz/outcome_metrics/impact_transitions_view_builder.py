@@ -86,7 +86,6 @@ FROM ({query_template})
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
-            should_deploy_predicate=None,
             clustering_fields=None,
         )
         self.weight_factor = weight_factor

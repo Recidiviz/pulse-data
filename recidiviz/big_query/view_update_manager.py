@@ -24,7 +24,6 @@ import attr
 from google.cloud import exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_address_formatter import (
     BigQueryAddressFormatterProvider,
 )
@@ -329,30 +328,6 @@ def _create_or_update_view_and_materialize_if_necessary(
     a table when appropriate. Returns a CreateOrUpdateViewResult object containing
     metadata about the update.
     """
-    if not view.should_deploy():
-        logging.info(
-            "Skipping creation of view [%s.%s] which cannot be deployed.",
-            view.dataset_id,
-            view.view_id,
-        )
-        return CreateOrUpdateViewResult(
-            view=view,
-            status=CreateOrUpdateViewStatus.SKIPPED,
-            materialization_result=None,
-        )
-
-    skipped_parents = [
-        parent_result.view.address
-        for parent_result in parent_results.values()
-        if parent_result.status == CreateOrUpdateViewStatus.SKIPPED
-    ]
-    if skipped_parents:
-        raise ValueError(
-            f"Found view [{view.address}] that has skipped parents - cannot deploy. "
-            f"This means that the should_deploy() on these parent views returned False. "
-            f"Skipped parents: {BigQueryAddress.addresses_to_str(skipped_parents)}"
-        )
-
     parent_statuses = {
         parent_result.status for parent_result in parent_results.values()
     }

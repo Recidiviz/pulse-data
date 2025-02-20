@@ -322,9 +322,6 @@ def _get_all_views_changed_on_branch(
         try:
             t = bq_client.get_table(v.address)
         except exceptions.NotFound:
-            if not v.should_deploy():
-                return None
-
             return ViewChangeType.ADDED
 
         if t.view_query != v.view_query:

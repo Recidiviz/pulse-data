@@ -1299,11 +1299,6 @@ class BigQueryClientImpl(BigQueryClient):
     def create_or_update_view(
         self, view: BigQueryView, *, might_exist: bool = True
     ) -> bigquery.Table:
-        if not view.should_deploy():
-            raise ValueError(
-                f"Cannot create / update view [{view.address}] - should_deploy() is "
-                f"False."
-            )
         bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
         bq_view.description = view.bq_description
