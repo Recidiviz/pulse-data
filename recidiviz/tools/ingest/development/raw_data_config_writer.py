@@ -129,7 +129,7 @@ class RawDataConfigWriter:
         default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
         default_update_cadence: Optional[RawDataFileUpdateCadence],
-        default_infer_columns_from_config: Optional[bool],
+        default_infer_columns_from_config: bool,
         default_import_blocking_validation_exemptions: Optional[
             List[ImportBlockingValidationExemption]
         ],
@@ -161,10 +161,9 @@ class RawDataConfigWriter:
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
 
-        # TODO(#35391) Align raw file config and default config default values for infer_columns_from_config
-        # If the field is missing all together default config defaults to None and raw file config defaults to False
-        if bool(raw_file_config.infer_columns_from_config) != bool(
-            default_infer_columns_from_config
+        if (
+            raw_file_config.infer_columns_from_config
+            != default_infer_columns_from_config
         ):
             config += f"infer_columns_from_config: {raw_file_config.infer_columns_from_config}\n"
         # If an encoding is not the default, we need to include it in the config

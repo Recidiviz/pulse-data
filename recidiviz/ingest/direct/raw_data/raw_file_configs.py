@@ -515,16 +515,13 @@ class DirectIngestRawFileDefaultConfig:
     default_update_cadence: RawDataFileUpdateCadence = attr.ib(
         validator=attr.validators.instance_of(RawDataFileUpdateCadence),
     )
+    # The default setting of inferring columns from headers
+    default_infer_columns_from_config: bool = attr.ib(validator=attr_validators.is_bool)
     # The default line terminator for raw files from this region
     default_line_terminator: Optional[str] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_str,
     )
-    # The default setting of inferring columns from headers
-    default_infer_columns_from_config: Optional[bool] = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-
     # Import-blocking validation exemptions that are applied to all tables in this region
     # Can include table-level validation exemptions and/or column-level exemptions to apply
     # to all relevant columns in the region
@@ -976,7 +973,7 @@ class DirectIngestRawFileConfig:
         default_ignore_quotes: bool,
         default_always_historical_export: bool,
         default_no_valid_primary_keys: bool,
-        default_infer_columns_from_config: Optional[bool],
+        default_infer_columns_from_config: bool,
         default_import_blocking_validation_exemptions: Optional[
             List[ImportBlockingValidationExemption]
         ],
@@ -1183,11 +1180,7 @@ class DirectIngestRawFileConfig:
             infer_columns_from_config=(
                 infer_columns_from_config
                 if infer_columns_from_config is not None
-                else (
-                    default_infer_columns_from_config
-                    if default_infer_columns_from_config is not None
-                    else False
-                )
+                else default_infer_columns_from_config
             ),
             table_relationships=table_relationships,
             is_primary_person_table=is_primary_person_table,
@@ -1295,7 +1288,7 @@ class DirectIngestRegionRawFileConfig:
         default_no_valid_primary_keys = default_contents.pop(
             "default_no_valid_primary_keys", bool
         )
-        default_infer_columns_from_config = default_contents.pop_optional(
+        default_infer_columns_from_config = default_contents.pop(
             "default_infer_columns_from_config", bool
         )
         default_import_blocking_validation_exemptions = None

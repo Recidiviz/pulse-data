@@ -79,6 +79,8 @@ def initialize_state_directories(state_code: str) -> None:
                 "default_always_historical_export: False\n",
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_no_valid_primary_keys value\n",
                 "default_no_valid_primary_keys: False\n",
+                f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_infer_columns_from_config value\n",
+                "default_infer_columns_from_config: False\n",
             ]
         )
 
