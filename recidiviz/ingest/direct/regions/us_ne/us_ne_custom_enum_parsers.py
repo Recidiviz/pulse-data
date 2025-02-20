@@ -28,7 +28,10 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentencingAuthority,
+)
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 
 
@@ -128,3 +131,26 @@ def parse_employment_endReason(
         return StateEmploymentPeriodEndReason.NEW_JOB
 
     return StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN
+
+
+def parse_sentence_status(
+    raw_text: str,
+) -> StateSentenceStatus:
+    """
+    Determine sentence status based on end date of last period.
+    We expect a lot of end_reason to be null because they are only populated if the persons
+    """
+    end_date, end_reason = raw_text.split("@@")
+
+    # Our schema considers ammended as still serving, so only mapping as ammended when
+    # sentence is still ongoing
+    if (end_date is None or end_date == "NONE") and end_reason == "SENTENCE AMENDED":
+        return StateSentenceStatus.AMENDED
+
+    if end_date is None or end_date == "NONE":
+        return StateSentenceStatus.SERVING
+
+    if end_reason in ("SENTENCE VACATED", "CASE DISMISSED"):
+        return StateSentenceStatus.VACATED
+
+    return StateSentenceStatus.COMPLETED

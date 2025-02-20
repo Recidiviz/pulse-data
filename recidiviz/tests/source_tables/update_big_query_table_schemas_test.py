@@ -1362,6 +1362,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ne_ingest_view_results.person_external_ids",
     "us_ne_ingest_view_results.sentence_group_length",
     "us_ne_ingest_view_results.sentence_length",
+    "us_ne_ingest_view_results.sentence_status_snapshot",
     "us_ne_ingest_view_results.sentences_and_charges",
     "us_ne_ingest_view_results.state_person",
     "us_ne_ingest_view_results.supervision_periods",

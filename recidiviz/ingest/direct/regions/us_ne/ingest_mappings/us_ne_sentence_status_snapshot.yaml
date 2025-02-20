@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status_snapshot` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  pkAggregateSentenceId: STRING
+  pkOffenseId: STRING
+  LOCT_RELEASE_DT: DATETIME
+  INST_RLSE_TYPE_DSC: STRING
+  sequenceNum: STRING
+  LAST_ACTIVITY_TS: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - pkAggregateSentenceId
+                - pkOffenseId
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: LAST_ACTIVITY_TS
+                sequence_num: sequenceNum
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - LOCT_RELEASE_DT # Release date, if any
+                          - INST_RLSE_TYPE_DSC # Release reason, if any
+                    $custom_parser: us_ne_custom_enum_parsers.parse_sentence_status
