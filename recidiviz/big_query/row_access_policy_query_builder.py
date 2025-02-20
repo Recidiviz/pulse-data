@@ -27,7 +27,7 @@ from recidiviz.common.constants.states import StateCode
 RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
     StateCode.US_OZ: "s-oz-data@recidiviz.org",
     StateCode.US_MI: "s-mi-data@recidiviz.org",
-    # TODO(#20823) "US_PA": "s-pa-data@recidiviz.org",
+    StateCode.US_PA: "s-pa-data@recidiviz.org",
 }
 
 RESTRICTED_ACCESS_FIELDS = ["state_code", "region_code"]
