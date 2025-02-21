@@ -17,7 +17,7 @@
 """An officer-level view of the task eligibility sessions person spans, used to identify
 the sessions when an officer had any clients considered eligible or almost eligible.
 """
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_intersection_spans,
@@ -67,9 +67,16 @@ task_eligibility_sessions AS (
         person_id,
         start_date,
         end_date AS end_date_exclusive,
-        {list_to_query_string(_OFFICER_SPAN_ATTRIBUTE_COLUMNS)},
+        task_name,
+        is_eligible,
+        is_almost_eligible,
     FROM
         `{{project_id}}.observations__person_span.task_eligibility_session_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        -- Optimize this query by dropping eligibility spans from more than 10 years ago
+        -- since that eligibility & officer data is likely not very relevant/accurate
+        AND {nonnull_end_date_clause("end_date")} >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 10 YEAR)
 )
 ,
 -- Use `supervision_officer_sessions` for the person <> supervision officer mapping view
@@ -86,7 +93,7 @@ person_officer_eligibility_sessions AS (
     table_1_name="task_eligibility_sessions",
     table_2_name="client_officer_assignments",
     index_columns=["state_code", "person_id"],
-    table_1_columns=[list_to_query_string(_OFFICER_SPAN_ATTRIBUTE_COLUMNS)],
+    table_1_columns=["task_name", "is_eligible", "is_almost_eligible"],
     table_2_columns=["supervising_officer_external_id"],
     include_zero_day_intersections=True,
 )}
@@ -108,7 +115,7 @@ distinct_officer_task_eligibility_sessions AS (
         supervising_officer_external_id AS officer_id,
         start_date,
         end_date_exclusive,
-        {list_to_query_string(_TASK_TYPE_ATTRIBUTE_COLUMNS)},
+        task_name,
         -- Set the eligibility flags to TRUE if at least 1 client
         -- falls into that category during the span
         LOGICAL_OR(is_eligible = "true") AS is_eligible,
@@ -120,15 +127,15 @@ distinct_officer_task_eligibility_sessions AS (
         supervising_officer_external_id,
         start_date,
         end_date_exclusive,
-        {list_to_query_string(_TASK_TYPE_ATTRIBUTE_COLUMNS)}
+        task_name
 ),
 -- Aggregate any adjacent spans that share the same eligibility attributes
 -- for the same task type
 aggregated_spans AS (
 {aggregate_adjacent_spans(
     table_name="distinct_officer_task_eligibility_sessions",
-    index_columns=["state_code", "officer_id"] + _TASK_TYPE_ATTRIBUTE_COLUMNS,
-    attribute=_OFFICER_LEVEL_AGGREGATION_COLUMNS,
+    index_columns=["state_code", "officer_id", "task_name"],
+    attribute=["is_eligible", "is_almost_eligible", "is_eligible_or_almost_eligible"],
     end_date_field_name="end_date_exclusive",
 )}
 )
@@ -137,8 +144,30 @@ SELECT
     officer_id,
     start_date,
     end_date_exclusive,
-    {list_to_query_string(_TASK_TYPE_ATTRIBUTE_COLUMNS + _OFFICER_LEVEL_AGGREGATION_COLUMNS)}
+    task_name,
+    completion_event_type AS task_type,
+    system_type,
+    decarceral_impact_type,
+    is_jii_decarceral_transition,
+    has_mandatory_due_date,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
+    is_eligible,
+    is_almost_eligible,
+    is_eligible_or_almost_eligible
 FROM aggregated_spans
+INNER JOIN
+    `{{project_id}}.reference_views.task_to_completion_event`
+USING
+    (state_code, task_name)
+INNER JOIN
+    `{{project_id}}.reference_views.completion_event_type_metadata_materialized` metadata
+USING
+    (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
