@@ -23,7 +23,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT * 
+SELECT 
+    ROOT_OFFENDER_ID,
+    ALIAS_NAME_TYPE,
+    FIRST_NAME,
+    LAST_NAME,
+    SUFFIX,
+    MIDDLE_NAME,
+    RACE_CODE,
 FROM {elite_alias}
 """
 

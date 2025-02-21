@@ -23,7 +23,20 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT * 
+SELECT 
+    OFFENDER_BOOK_ID,
+    ROOT_OFFENDER_ID,
+    BOOKING_NO,
+    AGY_LOC_ID,
+    LIVING_UNIT_ID,
+    IN_OUT_STATUS,
+    ACTIVE_FLAG,
+    BOOKING_STATUS,
+    BOOKING_TYPE,
+    BOOKING_BEGIN_DATE,
+    BOOKING_END_DATE,
+    CREATE_DATETIME,
+    MODIFY_DATETIME
 FROM {elite_offenderbookingstable}
 WHERE OFFENDER_BOOK_ID IS NOT NULL AND ROOT_OFFENDER_ID IS NOT NULL
 """

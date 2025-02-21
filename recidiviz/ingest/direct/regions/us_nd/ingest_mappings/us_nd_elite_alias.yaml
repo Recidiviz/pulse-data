@@ -4,24 +4,13 @@
 manifest_language: 1.0.0
 input_columns:
   ROOT_OFFENDER_ID: STRING
-  ALIAS_NAME_TYPE: STRING
-  ALIAS_OFFENDER_ID: STRING
   FIRST_NAME: STRING
   LAST_NAME: STRING
+  ALIAS_NAME_TYPE: STRING
   SUFFIX: STRING
   MIDDLE_NAME: STRING
-  OFFENDER_ID: STRING
   RACE_CODE: STRING
-  SEX_CODE: STRING
-  CREATE_DATETIME: STRING
-  MODIFY_DATETIME: STRING
-unused_columns:
-  - SEX_CODE # We no longer use elite_alias as the source of truth for gender
-  - OFFENDER_ID # This particular id appears unused elsewhere
-  - ALIAS_OFFENDER_ID # This particular id appears unused elsewhere
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
-
+unused_columns: []
 output:
   StatePerson:
     external_ids:

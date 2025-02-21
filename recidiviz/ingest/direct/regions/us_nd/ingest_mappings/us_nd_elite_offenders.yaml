@@ -7,17 +7,9 @@ input_columns:
   LAST_NAME: STRING
   FIRST_NAME: STRING
   SEX_CODE: STRING
-  ALIAS_NAME_TYPE: STRING
   RACE_CODE: STRING
   BIRTH_DATE: STRING
-  CREATE_DATETIME: STRING
-  MODIFY_DATETIME: STRING
-  ModifyDate: STRING
-unused_columns:
-  - ALIAS_NAME_TYPE
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
-  - ModifyDate
+unused_columns: []
 output:
   StatePerson:
     external_ids:
