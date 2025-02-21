@@ -115,7 +115,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import NormalizedJSON
+from recidiviz.common.str_field_utils import (
+    NormalizedSerializableJSON,
+    SerializableJSON,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_entity_factory_classes_in_module,
@@ -172,7 +175,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="us_xx",
             gender=StateGender.MALE,
             gender_raw_text="MALE",
-            full_name=NormalizedJSON(full_name="full NAME"),
+            full_name=NormalizedSerializableJSON(full_name="full NAME"),
             birthdate="12-31-1999",
             current_address="NNN\n  STREET \t ZIP",
             residency_status=StateResidencyStatus.PERMANENT,
@@ -317,7 +320,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             program_id="PROGRAM_ID",
             program_location_id="LOCATION_ID",
             state_code="us_xx",
-            referral_metadata=NormalizedJSON(key1="val1", key2="val2"),
+            referral_metadata=SerializableJSON(key1="val1", key2="val2"),
         )
 
         # Assert
@@ -331,7 +334,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             program_id="PROGRAM_ID",
             program_location_id="LOCATION_ID",
             state_code="US_XX",
-            referral_metadata='{"key1": "VAL1", "key2": "VAL2"}',
+            referral_metadata='{"key1": "val1", "key2": "val2"}',
         )
 
         self.assertEqual(expected_result, result)
@@ -476,7 +479,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             assessment_score="17",
             assessment_level=StateAssessmentLevel.MEDIUM,
             assessment_level_raw_text="MED",
-            assessment_metadata=NormalizedJSON(high_score_domains='["a", "c", "q"]'),
+            assessment_metadata=NormalizedSerializableJSON(
+                high_score_domains='["a", "c", "q"]'
+            ),
         )
 
         # Assert
@@ -809,7 +814,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
                 state_code="us_xx",
                 facility="Alcatraz",
                 location_within_facility="13B",
-                incident_details=NormalizedJSON(
+                incident_details=NormalizedSerializableJSON(
                     notes="Inmate was told to be quiet and would not comply",
                 ),
             )
@@ -834,7 +839,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="us_xx",
             alias_type=StatePersonAliasType.GIVEN_NAME,
             alias_type_raw_text="G",
-            full_name=NormalizedJSON(full_name="full NAME"),
+            full_name=NormalizedSerializableJSON(full_name="full NAME"),
         )
 
         # Assert
@@ -917,7 +922,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             task_type=StateTaskType.DRUG_SCREEN,
             task_type_raw_text="DRU",
             task_subtype="MY_SUBTYPE",
-            task_metadata=NormalizedJSON(sentence_external_id="a123"),
+            task_metadata=NormalizedSerializableJSON(sentence_external_id="a123"),
         )
 
         # Assert
@@ -962,7 +967,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
     def test_deserialize_StateStaff(self) -> None:
         result = deserialize_entity_factories.StateStaffFactory.deserialize(
             state_code="us_xx",
-            full_name=NormalizedJSON(full_name="full NAME"),
+            full_name=NormalizedSerializableJSON(full_name="full NAME"),
             email="Full.Name@domain.org",
         )
 

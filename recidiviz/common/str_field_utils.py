@@ -25,7 +25,7 @@ import locale
 import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import dateparser
 from dateutil.relativedelta import relativedelta
@@ -462,22 +462,37 @@ def join_with_conjunction(items: List[str], conjunction: str = "and") -> str:
     return last
 
 
-class NormalizedJSON:
-    """A wrapper object around a dictionary that can be serialized as normalized JSON."""
+class SerializableJSON:
+    """A wrapper object around a dictionary that can be deterministically serialized
+    JSON.
+    """
 
-    def __init__(self, **kwargs: Optional[str]):
-        self.json: Dict[str, Optional[str]] = kwargs
+    def __init__(self, **kwargs: Any | None):
+        self._json: Dict[str, Any | None] = kwargs
 
-    @property
-    def normalized_value(self) -> str:
-        """Returns a JSON string where the values are normalized, but their keys remain intact.
+    def serialize(self) -> str:
+        """Returns a JSON string representation of this class' dictionary values."""
+        return json.dumps(self._json, sort_keys=True)
+
+
+class NormalizedSerializableJSON(SerializableJSON):
+    """A wrapper object around a dictionary that can be deterministically serialized
+    JSON with normalized values.
+    """
+
+    def __init__(self, **kwargs: str | None):
+        super().__init__(**kwargs)
+
+    def serialize(self) -> str:
+        """Returns a JSON string representation of this class' dictionary values where
+        the values are normalized, but their keys remain intact.
 
         NOTE: This only supports un-nested JSON where all values are optional strings. Throws if values have a
         non-string type.
         """
 
         normalized_values_dict = {}
-        for k, v in self.json.items():
+        for k, v in self._json.items():
             normalized_value = None
             if v is not None:
                 if not isinstance(v, str):

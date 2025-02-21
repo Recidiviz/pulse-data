@@ -19,7 +19,8 @@ import datetime
 from unittest import TestCase
 
 from recidiviz.common.str_field_utils import (
-    NormalizedJSON,
+    NormalizedSerializableJSON,
+    SerializableJSON,
     join_with_conjunction,
     parse_bool,
     parse_date,
@@ -240,29 +241,47 @@ class TestStrFieldUtils(TestCase):
         with self.assertRaises(ValueError):
             parse_datetime("ABC")
 
-    def test_parseJSON(self) -> None:
-        self.assertEqual("{}", NormalizedJSON().normalized_value)
+    def test_SerializableJSON(self) -> None:
+        self.assertEqual("{}", SerializableJSON().serialize())
+        self.assertEqual('{"foo": "hello"}', SerializableJSON(foo="hello").serialize())
         self.assertEqual(
-            '{"foo": "HELLO"}', NormalizedJSON(foo="hello").normalized_value
+            '{"bar": "123", "foo": "hello"}',
+            SerializableJSON(foo="hello", bar="123").serialize(),
+        )
+        self.assertEqual(
+            '{"bar": "123", "foo": "hello"}',
+            SerializableJSON(bar="123", foo="hello").serialize(),
+        )
+        self.assertEqual(
+            '{"foo": "a    &&& "}', SerializableJSON(foo="a    &&& ").serialize()
+        )
+        self.assertEqual('{"foo": null}', SerializableJSON(foo=None).serialize())
+
+    def test_NormalizedSerializableJSON(self) -> None:
+        self.assertEqual("{}", NormalizedSerializableJSON().serialize())
+        self.assertEqual(
+            '{"foo": "HELLO"}', NormalizedSerializableJSON(foo="hello").serialize()
         )
         self.assertEqual(
             '{"bar": "123", "foo": "HELLO"}',
-            NormalizedJSON(foo="hello", bar="123").normalized_value,
+            NormalizedSerializableJSON(foo="hello", bar="123").serialize(),
         )
         self.assertEqual(
             '{"bar": "123", "foo": "HELLO"}',
-            NormalizedJSON(bar="123", foo="hello").normalized_value,
+            NormalizedSerializableJSON(bar="123", foo="hello").serialize(),
         )
         self.assertEqual(
-            '{"foo": "A &&&"}', NormalizedJSON(foo="a    &&& ").normalized_value
+            '{"foo": "A &&&"}', NormalizedSerializableJSON(foo="a    &&& ").serialize()
         )
-        self.assertEqual('{"foo": ""}', NormalizedJSON(foo=None).normalized_value)
+        self.assertEqual(
+            '{"foo": ""}', NormalizedSerializableJSON(foo=None).serialize()
+        )
 
     def test_parseJSON_NotFlatStringJSON(self) -> None:
         with self.assertRaises(ValueError):
-            _ = NormalizedJSON(foo="hello", bar=123).normalized_value  # type: ignore[arg-type]
+            _ = NormalizedSerializableJSON(foo="hello", bar=123).serialize()  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
-            _ = NormalizedJSON(foo="hello", bar=[]).normalized_value  # type: ignore[arg-type]
+            _ = NormalizedSerializableJSON(foo="hello", bar=[]).serialize()  # type: ignore[arg-type]
 
     def test_roman_numeral_uppercase(self) -> None:
         self.assertEqual(roman_numeral_uppercase("iii"), "III")

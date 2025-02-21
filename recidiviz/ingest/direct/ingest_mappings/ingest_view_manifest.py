@@ -48,7 +48,10 @@ from recidiviz.common.attr_mixins import (
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_parser import EnumParser, EnumT
-from recidiviz.common.str_field_utils import NormalizedJSON
+from recidiviz.common.str_field_utils import (
+    NormalizedSerializableJSON,
+    SerializableJSON,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -351,7 +354,7 @@ class EntityTreeManifestFactory:
                     field_type == BuildableAttrFieldType.STRING
                     and delegate.is_json_field(entity_cls, field_name)
                 ):
-                    expected_result_type: Type = NormalizedJSON
+                    expected_result_type: Type = SerializableJSON
                 else:
                     expected_result_type = str
                 if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
@@ -1148,30 +1151,38 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
 
 
 @attr.s(kw_only=True)
-class SerializedJSONDictFieldManifest(ManifestNode[NormalizedJSON]):
+class SerializedJSONDictFieldManifest(ManifestNode[SerializableJSON]):
     """Manifest describing the value for a flat field that will be hydrated with
     serialized JSON, derived from the values in 1 or more columns.
     """
 
-    # Function name used to identify raw manifests of this type.
+    # Function name used to identify raw manifests for SerializableJSON
+    # TODO(#38554): Add support for $json_dict key
+    JSON_DICT_KEY = "$json_dict"
+
+    # Function name used to identify raw manifests for NormalizedSerializableJSON
     NORMALIZED_VALUES_JSON_DICT_KEY = "$normalized_values_json_dict"
 
     # Maps JSON dict keys to values they should be hydrated with
     key_to_manifest_map: Dict[str, ManifestNode[str]] = attr.ib()
 
+    # If True, JSON values are normalized (uppercased, whitespace normalized to single
+    # spaces).
+    normalize_values: bool = attr.ib(default=False)
+
     # If all the dictionary values are empty, return None instead of serialized JSON.
     drop_all_empty: bool = attr.ib(default=False)
 
     @property
-    def result_type(self) -> Type[NormalizedJSON]:
-        return NormalizedJSON
+    def result_type(self) -> Type[SerializableJSON]:
+        return SerializableJSON
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {}
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[NormalizedJSON]:
+    ) -> Optional[SerializableJSON]:
         result_dict = {
             key: manifest.build_from_row(row, context)
             for key, manifest in self.key_to_manifest_map.items()
@@ -1180,7 +1191,11 @@ class SerializedJSONDictFieldManifest(ManifestNode[NormalizedJSON]):
             has_non_empty_value = any(value for value in result_dict.values())
             if not has_non_empty_value:
                 return None
-        return NormalizedJSON(**result_dict)
+        return (
+            NormalizedSerializableJSON(**result_dict)
+            if self.normalize_values
+            else SerializableJSON(**result_dict)
+        )
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return list(self.key_to_manifest_map.values())
@@ -1432,7 +1447,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
 
 
 @attr.s(kw_only=True)
-class PersonNameManifest(ManifestNode[NormalizedJSON]):
+class PersonNameManifest(ManifestNode[SerializableJSON]):
     """Manifest node for building a JSON-serialized person name."""
 
     PERSON_NAME_KEY = "$person_name"
@@ -1469,15 +1484,15 @@ class PersonNameManifest(ManifestNode[NormalizedJSON]):
     }
 
     @property
-    def result_type(self) -> Type[NormalizedJSON]:
-        return NormalizedJSON
+    def result_type(self) -> Type[SerializableJSON]:
+        return SerializableJSON
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {}
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[NormalizedJSON]:
+    ) -> Optional[SerializableJSON]:
         return self.name_json_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
@@ -1534,7 +1549,9 @@ class PersonNameManifest(ManifestNode[NormalizedJSON]):
 
         return PersonNameManifest(
             name_json_manifest=SerializedJSONDictFieldManifest(
-                key_to_manifest_map=name_parts_to_manifest, drop_all_empty=True
+                key_to_manifest_map=name_parts_to_manifest,
+                drop_all_empty=True,
+                normalize_values=True,
             )
         )
 
@@ -2197,8 +2214,10 @@ def build_manifest_from_raw(
                         variable_manifests=variable_manifests,
                     )
                     for key in function_arguments.keys()
-                }
+                },
+                normalize_values=True,
             )
+        # TODO(#38554): Add support for $json_dict key with non-normalized values here
         if manifest_node_name == JSONExtractKeyManifest.JSON_EXTRACT_KEY:
             return JSONExtractKeyManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),

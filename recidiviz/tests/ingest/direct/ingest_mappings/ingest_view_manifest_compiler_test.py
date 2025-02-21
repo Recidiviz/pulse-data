@@ -1242,7 +1242,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(
             ValueError,
-            r"Unexpected manifest node type: \[<class 'recidiviz.common.str_field_utils.NormalizedJSON'>\]\. "
+            r"Unexpected manifest node type: \[<class 'recidiviz.common.str_field_utils.SerializableJSON'>\]\. "
             r"Expected result_type: \[<class 'str'>\]\.",
         ):
             _ = self.compiler.compile_manifest(ingest_view_name="nested_json")

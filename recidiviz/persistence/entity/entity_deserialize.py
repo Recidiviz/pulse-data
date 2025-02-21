@@ -28,7 +28,7 @@ from recidiviz.common.attr_mixins import (
 )
 from recidiviz.common.attr_utils import is_attr_decorated
 from recidiviz.common.str_field_utils import (
-    NormalizedJSON,
+    SerializableJSON,
     normalize,
     parse_bool,
     parse_date,
@@ -46,7 +46,7 @@ DeserializableEntityFieldValue = Optional[
         int,
         datetime.date,
         datetime.datetime,
-        NormalizedJSON,
+        SerializableJSON,
     ]
 ]
 
@@ -54,7 +54,7 @@ DeserializableEntityFieldValue = Optional[
 @attr.s
 class EntityFieldConverter(Generic[T]):
     field_type: Type[T] = attr.ib(
-        validator=attr.validators.in_({str, Enum, NormalizedJSON})
+        validator=attr.validators.in_({str, Enum, SerializableJSON})
     )
     conversion_function: Callable[[T], Any] = attr.ib()
 
@@ -112,9 +112,9 @@ def entity_deserialize(
                 )
             return converter.convert(field_value)
 
-        if isinstance(field_value, NormalizedJSON):
+        if isinstance(field_value, SerializableJSON):
             if field_type == BuildableAttrFieldType.STRING:
-                return field_value.normalized_value
+                return field_value.serialize()
 
         if isinstance(field_value, str):
             if field_type == BuildableAttrFieldType.STRING:
