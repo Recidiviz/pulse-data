@@ -36,5 +36,5 @@ output:
           assessment_score: mh_code_simplified
           assessment_metadata:
             $json_dict:
-              code_description: mh_score_description
-              full_code: mh_code
+              CODE_DESCRIPTION: mh_score_description
+              FULL_CODE: mh_code

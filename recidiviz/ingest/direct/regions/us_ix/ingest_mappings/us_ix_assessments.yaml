@@ -128,4 +128,4 @@ output:
           assessment_score: OverallScore
           assessment_metadata:
             $json_dict:
-              ResultNote: ResultNote
+              RESULTNOTE: ResultNote

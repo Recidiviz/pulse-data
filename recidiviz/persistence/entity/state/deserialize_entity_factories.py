@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
-import json
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -23,7 +22,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import NormalizedJSON, normalize, parse_days
+from recidiviz.common.str_field_utils import parse_days
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
@@ -113,13 +112,7 @@ class StateAssessmentFactory(EntityFactory):
     ) -> entities.StateAssessment:
         return entity_deserialize(
             cls=entities.StateAssessment,
-            converter_overrides={
-                # TODO(#18203): Remove once we can parse all assessment_metadata JSON properly
-                "assessment_metadata": EntityFieldConverter(
-                    NormalizedJSON,
-                    lambda x: normalize(json.dumps(x.json, sort_keys=True)),
-                ),
-            },
+            converter_overrides={},
             defaults={},
             **kwargs,
         )

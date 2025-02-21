@@ -58,29 +58,29 @@ output:
           assessment_type: $literal_enum(StateAssessmentType.LSIR)
           assessment_metadata:
             $json_dict:
-              domain_criminal_history: CHtotal
-              domain_education_employment: EETotal
-              domain_financial: FnclTotal
-              domain_family_marital: FMTotal
-              domain_accommodation: AccomTotal
-              domain_leisure_recreation: LRTotal
-              domain_companions: Cptotal
-              domain_alcohol_drug_problems: AdTotal
-              domain_emotional_personal: EPTotal
-              domain_attitudes_orientation: AOTotal
-              question_18: Q18value
-              question_19: Q19value
-              question_20: Q20value
-              question_21: Q21value
-              question_23: Q23Value
-              question_24: Q24Value
-              question_25: Q25Value
-              question_27: Q27Value
-              question_31: Q31Value
-              question_39: Q39Value
-              question_40: Q40Value
-              question_51: Q51value
-              question_52: Q52Value
+              DOMAIN_CRIMINAL_HISTORY: CHtotal
+              DOMAIN_EDUCATION_EMPLOYMENT: EETotal
+              DOMAIN_FINANCIAL: FnclTotal
+              DOMAIN_FAMILY_MARITAL: FMTotal
+              DOMAIN_ACCOMMODATION: AccomTotal
+              DOMAIN_LEISURE_RECREATION: LRTotal
+              DOMAIN_COMPANIONS: Cptotal
+              DOMAIN_ALCOHOL_DRUG_PROBLEMS: AdTotal
+              DOMAIN_EMOTIONAL_PERSONAL: EPTotal
+              DOMAIN_ATTITUDES_ORIENTATION: AOTotal
+              QUESTION_18: Q18value
+              QUESTION_19: Q19value
+              QUESTION_20: Q20value
+              QUESTION_21: Q21value
+              QUESTION_23: Q23Value
+              QUESTION_24: Q24Value
+              QUESTION_25: Q25Value
+              QUESTION_27: Q27Value
+              QUESTION_31: Q31Value
+              QUESTION_39: Q39Value
+              QUESTION_40: Q40Value
+              QUESTION_51: Q51value
+              QUESTION_52: Q52Value
           assessment_score:
             $custom:
               $function: us_nd_custom_parsers.get_score_sum

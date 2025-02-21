@@ -491,9 +491,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             assessment_date=date(year=2111, month=1, day=2),
             state_code="US_XX",
             assessment_score=17,
-            # TODO(#18203): The behavior here should change once we're properly
-            #  normalizing assessment_metadata.
-            assessment_metadata='{"HIGH_SCORE_DOMAINS": "[\\"A\\", \\"C\\", \\"Q\\"]"}',
+            assessment_metadata='{"high_score_domains": "[\\"A\\", \\"C\\", \\"Q\\"]"}',
         )
 
         self.assertEqual(expected_result, result)

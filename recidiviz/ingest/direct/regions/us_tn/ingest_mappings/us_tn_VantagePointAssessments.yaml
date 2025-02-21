@@ -49,15 +49,15 @@ output:
                   - HVPD # High Violent, Property, and Drug Felony Risk
           assessment_metadata:
             $json_dict:
-              friends_need_level: FriendsNeedLevel
-              attitude_behavior_need_level: AttitudeBehaviorNeedLevel
-              aggression_need_level: AggressionNeedLevel
-              mental_health_need_level: MentalHealthNeedLevel
-              alcohol_drug_need_level: AlcoholDrugNeedLevel
-              resident_need_level: ResidentNeedLevel
-              family_need_level: FamilyNeedLevel
-              employment_need_level: EmploymentNeedLevel
-              education_need_level: EducationNeedLevel
+              FRIENDS_NEED_LEVEL: FriendsNeedLevel
+              ATTITUDE_BEHAVIOR_NEED_LEVEL: AttitudeBehaviorNeedLevel
+              AGGRESSION_NEED_LEVEL: AggressionNeedLevel
+              MENTAL_HEALTH_NEED_LEVEL: MentalHealthNeedLevel
+              ALCOHOL_DRUG_NEED_LEVEL: AlcoholDrugNeedLevel
+              RESIDENT_NEED_LEVEL: ResidentNeedLevel
+              FAMILY_NEED_LEVEL: FamilyNeedLevel
+              EMPLOYMENT_NEED_LEVEL: EmploymentNeedLevel
+              EDUCATION_NEED_LEVEL: EducationNeedLevel
           conducting_staff_external_id: ConductingStaffID
           conducting_staff_external_id_type:
             $conditional:

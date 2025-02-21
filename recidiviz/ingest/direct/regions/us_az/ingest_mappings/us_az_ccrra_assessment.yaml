@@ -29,4 +29,4 @@ output:
           assessment_score: TOTAL_POINTS
           assessment_metadata:
             $json_dict:
-              level: LEVEL
+              LEVEL: LEVEL

@@ -68,7 +68,7 @@ output:
                         - Test_Desc
                 $then:
                   $json_dict:
-                    latest_version:
+                    LATEST_VERSION:
                       $conditional:
                         - $if:
                             $in:

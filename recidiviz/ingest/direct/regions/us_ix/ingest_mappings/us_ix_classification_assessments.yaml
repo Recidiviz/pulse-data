@@ -35,7 +35,7 @@ output:
           assessment_score: score
           assessment_metadata:
             $json_dict:
-              ClassificationType: ClassificationTypeDesc
-              SectionOneScore: section_one_score
-              SectionTwoScore: section_two_score
-              SectionThreeScore: section_three_score
+              CLASSIFICATIONTYPE: ClassificationTypeDesc
+              SECTIONONESCORE: section_one_score
+              SECTIONTWOSCORE: section_two_score
+              SECTIONTHREESCORE: section_three_score

@@ -121,9 +121,9 @@ output:
                   - Maximum
           assessment_metadata:
             $json_dict:
-              lsi_rating_approved: Lsi_Rating_Approved
-              lsi_rating_override: Lsi_Rating_Override
-              lsi_rating: Lsi_Rating
+              LSI_RATING_APPROVED: Lsi_Rating_Approved
+              LSI_RATING_OVERRIDE: Lsi_Rating_Override
+              LSI_RATING: Lsi_Rating
           conducting_staff_external_id: Conductor_Id
           conducting_staff_external_id_type:
             $conditional:

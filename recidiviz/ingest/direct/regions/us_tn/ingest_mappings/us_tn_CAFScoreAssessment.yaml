@@ -55,20 +55,20 @@ output:
                   - "MAX"
           assessment_metadata:
             $json_dict:
-              Question1: Question1
-              Question2: Question2
-              Question3: Question3
-              Question4: Question4
-              Question5: Question5
-              Question6: Question6
-              Question7: Question7
-              Question8: Question8
-              Question9: Question9
-              ScheduleAScore: ScheduleAScore
-              ScheduleBScore: ScheduleBScore
-              CAFScore: CAFScore
-              CAFSite: CAFSiteID
-              ClassificationDate: ClassificationDate
-              ClassificationDecisionDate: ClassificationDecisionDate
-              OverrideReason: OverrideReason
-              ClassificationDecision: ClassificationDecision
+              QUESTION1: Question1
+              QUESTION2: Question2
+              QUESTION3: Question3
+              QUESTION4: Question4
+              QUESTION5: Question5
+              QUESTION6: Question6
+              QUESTION7: Question7
+              QUESTION8: Question8
+              QUESTION9: Question9
+              SCHEDULEASCORE: ScheduleAScore
+              SCHEDULEBSCORE: ScheduleBScore
+              CAFSCORE: CAFScore
+              CAFSITE: CAFSiteID
+              CLASSIFICATIONDATE: ClassificationDate
+              CLASSIFICATIONDECISIONDATE: ClassificationDecisionDate
+              OVERRIDEREASON: OverrideReason
+              CLASSIFICATIONDECISION: ClassificationDecision

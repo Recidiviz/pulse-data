@@ -44,5 +44,5 @@ output:
                   - Very High
           assessment_metadata:
             $json_dict:
-              override_reason: overrideReasonCode
-              supervision_level_override: supervisionLevelOverrideCode
+              OVERRIDE_REASON: overrideReasonCode
+              SUPERVISION_LEVEL_OVERRIDE: supervisionLevelOverrideCode

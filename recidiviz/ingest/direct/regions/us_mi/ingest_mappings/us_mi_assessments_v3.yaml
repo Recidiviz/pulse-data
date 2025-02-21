@@ -301,9 +301,9 @@ output:
                   - "0"
           assessment_metadata:
             $json_dict:
-              scale_set: corfscaleset_name
-              scale: cosyscale_name
-              recommended_level: FKCoSyRecSupervisionLevel
+              SCALE_SET: corfscaleset_name
+              SCALE: cosyscale_name
+              RECOMMENDED_LEVEL: FKCoSyRecSupervisionLevel
           conducting_staff_external_id: FkShUserScreener
           conducting_staff_external_id_type:
             $conditional:
