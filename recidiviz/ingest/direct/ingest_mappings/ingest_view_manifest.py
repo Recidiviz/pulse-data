@@ -1157,7 +1157,6 @@ class SerializedJSONDictFieldManifest(ManifestNode[SerializableJSON]):
     """
 
     # Function name used to identify raw manifests for SerializableJSON
-    # TODO(#38554): Add support for $json_dict key
     JSON_DICT_KEY = "$json_dict"
 
     # Function name used to identify raw manifests for NormalizedSerializableJSON
@@ -2217,7 +2216,23 @@ def build_manifest_from_raw(
                 },
                 normalize_values=True,
             )
-        # TODO(#38554): Add support for $json_dict key with non-normalized values here
+        if manifest_node_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
+            function_arguments = raw_field_manifest.pop_dict(manifest_node_name)
+            return SerializedJSONDictFieldManifest(
+                key_to_manifest_map={
+                    key: build_manifest_from_raw(
+                        raw_field_manifest=pop_raw_flat_field_manifest(
+                            key, function_arguments
+                        ),
+                        delegate=delegate,
+                        variable_manifests=variable_manifests,
+                        # Allow json values of any type
+                        expected_result_type=object,
+                    )
+                    for key in function_arguments.keys()
+                },
+                normalize_values=False,
+            )
         if manifest_node_name == JSONExtractKeyManifest.JSON_EXTRACT_KEY:
             return JSONExtractKeyManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),

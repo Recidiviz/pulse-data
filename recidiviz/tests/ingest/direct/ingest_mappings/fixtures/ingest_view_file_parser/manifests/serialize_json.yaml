@@ -16,3 +16,8 @@ output:
             $normalized_values_json_dict:
               GivenNames: FIRSTNAME
               Surname: LASTNAME
+      - FakePersonAlias:
+          full_name:
+            $json_dict:
+              GivenNames: FIRSTNAME
+              Surname: LASTNAME

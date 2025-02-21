@@ -15,10 +15,13 @@
       "$ref": "iter_item_reference.json"
     },
     {
-      "$ref": "normalized_values_json_dict.json"
+      "$ref": "json_dict.json"
     },
     {
       "$ref": "json_extract.json"
+    },
+    {
+      "$ref": "normalized_values_json_dict.json"
     },
     {
       "$ref": "person_name.json"

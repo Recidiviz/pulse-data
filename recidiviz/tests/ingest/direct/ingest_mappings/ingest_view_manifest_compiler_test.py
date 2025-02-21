@@ -1135,7 +1135,11 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name='{"GivenNames": "JERRY", "Surname": "SEINFELD"}',
-                    )
+                    ),
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GivenNames": "Jerry", "Surname": "Seinfeld"}',
+                    ),
                 ],
             ),
             FakePerson(
@@ -1149,7 +1153,11 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name='{"GivenNames": "ELAINE", "Surname": "BENES"}',
-                    )
+                    ),
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GivenNames": "Elaine", "Surname": "Benes"}',
+                    ),
                 ],
             ),
             FakePerson(
@@ -1163,7 +1171,12 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name='{"GivenNames": "", "Surname": "KRAMER"}',
-                    )
+                    ),
+                    # KRAMER is capitalized in the source data
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GivenNames": "", "Surname": "KRAMER"}',
+                    ),
                 ],
             ),
         ]

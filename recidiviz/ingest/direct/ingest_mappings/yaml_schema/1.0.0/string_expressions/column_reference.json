@@ -19,7 +19,7 @@
       }
     },
     {
-      "$normalized_values_json_dict": {
+      "$json_dict": {
         "my_json_key": "MY_COL",
         "my_json_key_2": "MY_COL_2"
       }
