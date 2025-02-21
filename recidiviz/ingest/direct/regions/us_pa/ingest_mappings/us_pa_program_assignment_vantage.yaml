@@ -63,5 +63,5 @@ output:
           start_date: start_date
           discharge_date: discharge_date
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               PROGRAM_NAME: ProgramName

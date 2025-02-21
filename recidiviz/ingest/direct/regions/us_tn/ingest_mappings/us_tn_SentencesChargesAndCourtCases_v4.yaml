@@ -112,7 +112,7 @@ variables:
           - CountNumber
           - sentence_source
   - sentence_metadata:
-      $json_dict:
+      $normalized_values_json_dict:
         # The id of the sentence that this sentence is consecutive to, if applicable.
         CONSECUTIVE_SENTENCE_ID:
           $conditional:
@@ -311,7 +311,7 @@ output:
                         $json: $iter_item
                         $key: LastUpdateDate
                     task_metadata:
-                      $json_dict:
+                      $normalized_values_json_dict:
                         external_id: $variable(sentence_external_id)
                         sentence_type: $literal("INCARCERATION")
               - $else_if:
@@ -333,6 +333,6 @@ output:
                         $json: $iter_item
                         $key: LastUpdateDate
                     task_metadata:
-                      $json_dict:
+                      $normalized_values_json_dict:
                         external_id: $variable(sentence_external_id)
                         sentence_type: $literal("SUPERVISION")

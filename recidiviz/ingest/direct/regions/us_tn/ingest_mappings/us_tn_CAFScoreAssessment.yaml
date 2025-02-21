@@ -54,7 +54,7 @@ output:
                 StateAssessmentLevel.MAXIMUM:
                   - "MAX"
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               QUESTION1: Question1
               QUESTION2: Question2
               QUESTION3: Question3

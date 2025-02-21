@@ -153,7 +153,7 @@ output:
                         $key: ImposedDate
                         $json: $iter_item
                     violation_response_metadata:
-                      $json_dict:
+                      $normalized_values_json_dict:
                         SanctionLevel:
                           $json_extract:
                             $key: SanctionLevel

@@ -70,7 +70,7 @@ output:
                     - $literal("Discharged")
                 $then: STATUS_DATE
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               PREFERRED_PROVIDER_ID: PREFERRED_PROVIDER_ID
               PREFERRED_LOCATION_ID: PREFERRED_LOCATION_ID
               STRENGTHS: STRENGTHS

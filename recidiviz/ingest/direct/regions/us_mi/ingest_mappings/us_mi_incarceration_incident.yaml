@@ -31,7 +31,7 @@ output:
               $raw_text: _offense_description_list
               $custom_parser: us_mi_custom_enum_parsers.map_incident_type
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               NONBONDABLE_OFFENSES:
                 $custom:
                   $function: us_mi_custom_parsers.nonbondable_offenses

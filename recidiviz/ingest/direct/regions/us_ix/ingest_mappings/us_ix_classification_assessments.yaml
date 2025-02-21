@@ -34,7 +34,7 @@ output:
           assessment_type: $literal_enum(StateAssessmentType.RSLS)
           assessment_score: score
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CLASSIFICATIONTYPE: ClassificationTypeDesc
               SECTIONONESCORE: section_one_score
               SECTIONTWOSCORE: section_two_score

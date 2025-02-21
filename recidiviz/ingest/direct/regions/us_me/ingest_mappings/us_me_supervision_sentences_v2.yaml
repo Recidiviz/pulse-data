@@ -91,7 +91,7 @@ output:
                 days: Prob_Days_Num
                 start_date: Sentence_Start_Date
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CONSECUTIVE_SENTENCE_ID: Consecutive_Court_Order_Id
               TERM_STATUS: E_Term_Status_Desc
               TERM_INTAKE_DATE: Term_Intake_Date

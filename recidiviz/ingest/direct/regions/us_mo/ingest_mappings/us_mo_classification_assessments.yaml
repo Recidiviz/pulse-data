@@ -75,7 +75,7 @@ output:
                   - "CLASSIFICATION-M"
           assessment_score: assessment_score
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               ASSESSMENT_ID: assessment_id
               CLASSIFICATION_CATEGORY_CODE: assessment_type
               SCORE_TYPE_VALUE: score_type_value

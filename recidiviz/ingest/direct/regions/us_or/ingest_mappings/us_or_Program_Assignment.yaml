@@ -58,5 +58,5 @@ output:
           program_location_id: LOCATION
           discharge_date: EXIT_DATE
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               EXIT_CODE: EXIT_CODE

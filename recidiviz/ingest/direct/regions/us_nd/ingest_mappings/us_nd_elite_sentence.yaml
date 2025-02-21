@@ -92,7 +92,7 @@ output:
                     $custom_parser: us_nd_custom_enum_parsers.parse_sentencing_authority
               - $else: $literal_enum(StateSentencingAuthority.PRESENT_WITHOUT_INFO)
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               COURT_CASE_ID: COURT_INFO_ID
           # There is a maximum of one other sentence external ID included in parent_sentence_external_id_array.
           # The array can accommodate more than one, but the data never contains more than one.

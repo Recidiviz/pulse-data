@@ -43,6 +43,6 @@ output:
                 StateAssessmentLevel.VERY_HIGH:
                   - Very High
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               OVERRIDE_REASON: overrideReasonCode
               SUPERVISION_LEVEL_OVERRIDE: supervisionLevelOverrideCode

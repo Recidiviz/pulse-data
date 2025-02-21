@@ -57,7 +57,7 @@ output:
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type: $literal_enum(StateAssessmentType.LSIR)
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               DOMAIN_CRIMINAL_HISTORY: CHtotal
               DOMAIN_EDUCATION_EMPLOYMENT: EETotal
               DOMAIN_FINANCIAL: FnclTotal

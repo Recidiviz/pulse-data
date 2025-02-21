@@ -25,7 +25,7 @@ output:
                 - ContactNoteDate
           violation_date: ContactNoteDate
           violation_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               ViolationType: ContactNoteType
           supervision_violation_types:
             - StateSupervisionViolationTypeEntry:

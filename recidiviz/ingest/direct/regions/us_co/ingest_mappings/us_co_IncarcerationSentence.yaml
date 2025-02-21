@@ -119,7 +119,7 @@ output:
           good_time_days: GOOD_TIME_DAYS #CREDITDEBITDAYS where SENTCREDITDEBITTYPE=12
           earned_time_days: EARNEDTIME
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CC_CS_SENTENCE: HOWSERVEDSUMMARY
           charges:
             - StateCharge:

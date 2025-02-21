@@ -35,6 +35,6 @@ output:
                 $then: $literal("US_AZ_PERSON_ID")
           assessment_score: mh_code_simplified
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CODE_DESCRIPTION: mh_score_description
               FULL_CODE: mh_code

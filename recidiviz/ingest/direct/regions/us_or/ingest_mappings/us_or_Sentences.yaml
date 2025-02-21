@@ -115,7 +115,7 @@ output:
                     - LIFE_OR_DEATH
                     - $literal("L") # Life sentence
                 sentence_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     PPS_SENTENCE_DAYS: PPS_SENTENCE_DAYS
                     PPS_SENTENCE_MONTHS: PPS_SENTENCE_MONTHS
                     PPS_SENTENCE_YEARS: PPS_SENTENCE_YEARS
@@ -261,7 +261,7 @@ output:
                 good_time_days: STATUTORY_GOOD_TIME
                 earned_time_days: EARNED_TIME_DAYS
                 sentence_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     PPS_SENTENCE_DAYS: PPS_SENTENCE_DAYS
                     PPS_SENTENCE_MONTHS: PPS_SENTENCE_MONTHS
                     PPS_SENTENCE_YEARS: PPS_SENTENCE_YEARS

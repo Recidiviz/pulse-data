@@ -83,7 +83,7 @@ output:
       - StateSupervisionSentence:
           external_id: $variable(sentence_external_id)
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               BS_CCI: BS_CCI # Sentence Concurrent/Consecutive Ind
               BS_CRQ: BS_CRQ # Sentence Concurrent/Consecutive Xref
               SENTENCE_FLAG: SENT_FLAG # 120 Day Sentence Flag

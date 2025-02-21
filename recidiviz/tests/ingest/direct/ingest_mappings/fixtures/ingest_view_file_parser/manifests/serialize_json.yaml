@@ -13,6 +13,6 @@ output:
     aliases:
       - FakePersonAlias:
           full_name:
-            $json_dict:
+            $normalized_values_json_dict:
               GivenNames: FIRSTNAME
               Surname: LASTNAME

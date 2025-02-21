@@ -107,7 +107,7 @@ output:
                 judge_external_id: JUDGE_ID
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               flat_sentence: flat_sentence_flag
               tpr_ineligible_from_previous_conviction: TPR_ineligible
               dtp_ineligible_from_previous_conviction: DTP_ineligible

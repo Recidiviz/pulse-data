@@ -85,6 +85,6 @@ output:
                 - TrtEndDateDay
               $include_nulls: False
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               PROGRAM_CODE: TrtProgramCode
               PROGRAM_NAME: TrtProgramDescription

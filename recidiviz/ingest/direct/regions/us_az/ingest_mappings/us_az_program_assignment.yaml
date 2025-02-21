@@ -76,7 +76,7 @@ output:
                     - $else: COMPLETION_DATE
               - $else: PARTICIPATION_END_DATE
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               # A Y/N flag indicating whether a person successfully completed the program.
               COMPLETION_FLAG: COMPLETION_PR_FLAG
               EXEMPTION: EXEMPTION

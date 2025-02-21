@@ -45,6 +45,6 @@ output:
               $raw_text: CHRONO_TYPE
               $custom_parser: us_or_custom_enum_parsers.supervision_contact_location
           supervision_contact_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               MEASURABLE: MEASURABLE
               KEYWORD: CHRONO_WHAT

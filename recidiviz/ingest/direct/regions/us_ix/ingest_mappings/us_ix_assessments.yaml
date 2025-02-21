@@ -127,5 +127,5 @@ output:
                         - "High Risk"
           assessment_score: OverallScore
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               RESULTNOTE: ResultNote

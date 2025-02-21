@@ -2,16 +2,16 @@
   "$schema": "http://json-schema.org/draft-07/schema",
   "description": "Function that serializes multiple (key, value) pairs into a single JSON string.",
   "type": "object",
-  "required": ["$json_dict"],
+  "required": ["$normalized_values_json_dict"],
   "additionalProperties": false,
   "properties": {
-    "$json_dict": {
+    "$normalized_values_json_dict": {
       "type": "object",
       "additionalProperties": false,
       "minProperties": 1,
       "patternProperties": {
         ".*": {
-          "description": "A single entry in the serialized JSON dictionary. The key may have any name. The value expression for a given key will be evaluated and the result will be serialized into the JSON.",
+          "description": "A single entry in the serialized JSON dictionary. The key may have any name. The value expression for a given key will be evaluated, normalized so values are uppercase and all blocks of contiguous whitespace is converted to a single space, then the result will be serialized into the JSON.",
           "$ref": "index.json"
         }
       }
@@ -19,13 +19,13 @@
   },
   "examples": [
     {
-      "$json_dict": {
+      "$normalized_values_json_dict": {
         "my_json_key": "MY_COL",
         "my_json_key_2": "MY_COL_2"
       }
     },
     {
-      "$json_dict": {
+      "$normalized_values_json_dict": {
         "category_1": "ctgory_of_chrgs_1",
         "category_2": "ctgory_of_chrgs_2",
         "category_3": "ctgory_of_chrgs_3",
@@ -39,7 +39,7 @@
       "StateIncarcerationIncident": {
         "external_id": "misconduct_number",
         "incident_details":     {
-          "$json_dict": {
+          "$normalized_values_json_dict": {
             "category_1": "ctgory_of_chrgs_1",
             "category_2": "ctgory_of_chrgs_2",
             "category_3": "ctgory_of_chrgs_3",

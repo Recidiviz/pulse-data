@@ -109,7 +109,7 @@ output:
                       months_str: SegmentMonths
                       days_str: SegmentDays
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               sentence_event_type: SentenceOrderEventTypeName
               sentence_sequence:
                 $concat:

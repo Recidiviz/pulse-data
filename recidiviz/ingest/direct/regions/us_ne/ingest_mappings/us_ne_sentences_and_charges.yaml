@@ -100,7 +100,7 @@ output:
               - $else: $literal_enum(StateSentencingAuthority.PRESENT_WITHOUT_INFO)
           initial_time_served_days: jailTimeDays
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               offensetype_num: fkOffenseTypeCode
           charges:
             - StateChargeV2:

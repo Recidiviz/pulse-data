@@ -48,7 +48,7 @@ output:
                   - HV # High Violent Felony Risk
                   - HVPD # High Violent, Property, and Drug Felony Risk
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               FRIENDS_NEED_LEVEL: FriendsNeedLevel
               ATTITUDE_BEHAVIOR_NEED_LEVEL: AttitudeBehaviorNeedLevel
               AGGRESSION_NEED_LEVEL: AggressionNeedLevel

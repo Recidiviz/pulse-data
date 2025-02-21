@@ -28,5 +28,5 @@ output:
           assessment_type: $literal_enum(StateAssessmentType.CCRRA)
           assessment_score: TOTAL_POINTS
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               LEVEL: LEVEL

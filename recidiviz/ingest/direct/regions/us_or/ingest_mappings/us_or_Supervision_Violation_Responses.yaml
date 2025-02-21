@@ -338,7 +338,7 @@ output:
                                   - Forest Camp-Permanent Bed Fac.
                                   - Admin Return For Leave Cases
                     violation_response_metadata:
-                      $json_dict:
+                      $normalized_values_json_dict:
                         SANCTION_OR_INTERVENTION:
                           $json_extract:
                             $key: SANCTION_TYPE

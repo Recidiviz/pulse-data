@@ -138,7 +138,7 @@ output:
                 StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
                   - "Not Specified"
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               FINDING: RULE_FINDING
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:

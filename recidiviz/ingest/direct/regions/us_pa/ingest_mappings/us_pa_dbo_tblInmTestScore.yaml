@@ -67,7 +67,7 @@ output:
                         - $literal("RST")
                         - Test_Desc
                 $then:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     LATEST_VERSION:
                       $conditional:
                         - $if:

@@ -47,7 +47,7 @@ output:
               $raw_text: DorOffenseTypeDesc
               $custom_parser: us_ix_custom_enum_parsers.map_incident_type
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               ProcedureStatus: DAProcedureStatusDesc
               TermId: TermId
               OffenseCode: DorOffenseCode

@@ -60,6 +60,6 @@ output:
                   - P
                   - M
           drug_screen_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               medical_exemption: med_invalidate_flg
               substance: sbstnc_sbstnc_desc

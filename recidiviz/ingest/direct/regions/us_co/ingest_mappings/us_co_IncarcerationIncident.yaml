@@ -172,7 +172,7 @@ output:
                   - Sexual Abuse
           incident_details: summary
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               COPD_TYPE: copd_flag
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:

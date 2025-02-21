@@ -15,7 +15,7 @@
       "$ref": "iter_item_reference.json"
     },
     {
-      "$ref": "json_dict.json"
+      "$ref": "normalized_values_json_dict.json"
     },
     {
       "$ref": "json_extract.json"

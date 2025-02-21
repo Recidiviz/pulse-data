@@ -26,7 +26,7 @@ output:
           external_id: rim_violation_rove_id
           violation_date: violation_dt
           violation_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               violation_level: rim_level_id
               sanction_level: sanction_level
               # TODO(#37772) -- this could possibly be parsed into violated conditions

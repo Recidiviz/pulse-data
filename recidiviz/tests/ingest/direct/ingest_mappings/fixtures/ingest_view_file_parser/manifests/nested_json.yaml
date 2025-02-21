@@ -15,10 +15,10 @@ output:
     aliases:
       - FakePersonAlias:
           full_name:
-            $json_dict:
+            $normalized_values_json_dict:
               GivenNames: FIRSTNAME
               MiddleNames:
-                $json_dict:
+                $normalized_values_json_dict:
                   Middle1: MIDDLE1
                   Middle2: MIDDLE2
               Surname: LASTNAME

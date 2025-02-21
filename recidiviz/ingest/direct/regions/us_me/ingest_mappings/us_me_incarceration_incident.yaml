@@ -249,5 +249,5 @@ output:
                         - "7" # Found Guitly (After Failure to Admit) (Juvenile)
                         - "9" # Informal Resolution (Juvenile)
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               DISCIPLINARY_ACTION_FORMAL_IND: DISCIPLINARY_ACTION_FORMAL_IND

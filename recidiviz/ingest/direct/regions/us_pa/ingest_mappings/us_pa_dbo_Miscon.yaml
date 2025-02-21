@@ -47,7 +47,7 @@ output:
                 $then: $literal_enum(StateIncarcerationIncidentType.CONTRABAND)
               - $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CATEGORY_1: ctgory_of_chrgs_1
               CATEGORY_2: ctgory_of_chrgs_2
               CATEGORY_3: ctgory_of_chrgs_3

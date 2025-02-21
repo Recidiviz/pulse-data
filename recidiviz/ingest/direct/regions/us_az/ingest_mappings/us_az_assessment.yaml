@@ -47,5 +47,5 @@ output:
                 StateAssessmentLevel.INTENSE:
                   - "High (Intense)"
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               SMI: SMI

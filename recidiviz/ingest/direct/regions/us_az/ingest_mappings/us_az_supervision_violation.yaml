@@ -93,7 +93,7 @@ output:
                       $then: $literal_bool(True)
                     - $else: $literal_bool(False)
                 violation_response_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     reporting_staff: reporting_staff
                 supervision_violation_response_decisions:
                   - StateSupervisionViolationResponseDecisionEntry:

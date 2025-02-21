@@ -21,7 +21,7 @@ output:
           update_datetime: UpdateDate
           task_subtype: type
           task_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               external_id:
                 $concat:
                   $values:

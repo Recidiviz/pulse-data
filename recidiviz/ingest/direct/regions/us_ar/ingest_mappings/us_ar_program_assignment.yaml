@@ -82,7 +82,7 @@ output:
               - $if: $variable(is_valid_id)
                 $then: $literal("US_AR_PARTYID")
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               PROGRAM_TYPE:
                 $custom:
                   $function: us_ar_custom_parsers.parse_program_type

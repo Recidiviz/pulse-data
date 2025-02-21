@@ -120,7 +120,7 @@ output:
                 StateAssessmentLevel.MAXIMUM:
                   - Maximum
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               LSI_RATING_APPROVED: Lsi_Rating_Approved
               LSI_RATING_OVERRIDE: Lsi_Rating_Override
               LSI_RATING: Lsi_Rating

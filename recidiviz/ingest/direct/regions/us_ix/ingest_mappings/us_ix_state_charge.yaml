@@ -55,7 +55,7 @@ output:
                 counts: Count
                 judge_external_id: JudgeLegistId
                 judge_full_name:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     given_names: FirstName
                     middle_name: MiddleName
                     surname: LastName

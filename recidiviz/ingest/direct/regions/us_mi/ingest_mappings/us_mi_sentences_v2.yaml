@@ -293,7 +293,7 @@ output:
                             months_str: max_length_months
                             days_str: max_length_days
                 sentence_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     ORIGINAL_SENTENCE_ID: original_offender_sentence_id
                 conditions: special_condition_id_list
     incarceration_sentences:
@@ -497,6 +497,6 @@ output:
                 initial_time_served_days: jail_credit_days
                 # MI doesn't do good time or earned time
                 sentence_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     ORIGINAL_SENTENCE_ID: original_offender_sentence_id
                 conditions: special_condition_id_list

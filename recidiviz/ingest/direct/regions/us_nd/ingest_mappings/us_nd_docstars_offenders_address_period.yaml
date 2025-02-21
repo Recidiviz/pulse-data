@@ -35,5 +35,5 @@ output:
                 county_code: COUNTY_CODE
           address_zip: ZIP
           address_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               state_residence: STATE

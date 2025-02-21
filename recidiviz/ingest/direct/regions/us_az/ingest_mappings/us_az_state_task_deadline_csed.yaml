@@ -22,7 +22,7 @@ output:
           task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
           task_subtype: task_subtype
           task_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               DOC_ID: DOC_ID
               sentence_external_id: FINAL_OFFENSE_ID
               sentence_group_external_id: SC_EPISODE_ID

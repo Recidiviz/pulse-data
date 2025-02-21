@@ -151,7 +151,7 @@ output:
                 days_lost: Adj_Days_Lost_Num
                 days_restored: Adj_Days_Restored_Num
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               CONSECUTIVE_SENTENCE_ID: Consecutive_Court_Order_Id
               TERM_STATUS: E_Term_Status_Desc
               TERM_INTAKE_DATE: Term_Intake_Date

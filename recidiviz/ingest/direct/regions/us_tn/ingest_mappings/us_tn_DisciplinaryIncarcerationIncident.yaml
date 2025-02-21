@@ -315,7 +315,7 @@ output:
 
           incident_details: OffenderAccount
           incident_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               Class: DisciplinaryClass
               Disposition: Disposition
               InjuryLevel: InjuryLevel

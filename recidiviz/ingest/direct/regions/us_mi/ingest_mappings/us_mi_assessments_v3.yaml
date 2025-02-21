@@ -300,7 +300,7 @@ output:
                   - "No Potential Faking Concern"
                   - "0"
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               SCALE_SET: corfscaleset_name
               SCALE: cosyscale_name
               RECOMMENDED_LEVEL: FKCoSyRecSupervisionLevel

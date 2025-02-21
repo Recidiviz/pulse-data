@@ -114,7 +114,7 @@ output:
                     $args:
                       proj_completion_date: $variable(proj_completion_date_var)
           sentence_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               sentence_event_type: SentenceOrderEventTypeName
               sentence_sequence:
                 $concat:

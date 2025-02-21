@@ -39,5 +39,5 @@ output:
                 StateAssessmentLevel.HIGH:
                   - HI
           assessment_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               ACTUAL_COMMUNITY_SUPER_LEVEL: COMMUNITY_SUPER_LVL

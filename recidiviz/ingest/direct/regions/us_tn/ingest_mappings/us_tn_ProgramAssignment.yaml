@@ -39,5 +39,5 @@ output:
           start_date: StartDate
           discharge_date: EndDate
           referral_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               RECOMMENDATION: Recommendation

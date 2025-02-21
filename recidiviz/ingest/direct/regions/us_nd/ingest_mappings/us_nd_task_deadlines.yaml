@@ -42,6 +42,6 @@ output:
                       StateTaskType.DISCHARGE_FROM_SUPERVISION:
                         - SUPERVISION
                 task_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     external_id: sentence_external_id
                     sentence_type: sentence_type

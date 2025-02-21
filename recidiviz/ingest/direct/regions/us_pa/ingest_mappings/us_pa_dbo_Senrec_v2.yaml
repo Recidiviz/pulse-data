@@ -40,7 +40,7 @@ output:
                 eligible_date: max_expir_date
                 update_datetime: sig_date
                 task_metadata:
-                  $json_dict:
+                  $normalized_values_json_dict:
                     external_id:
                       $concat:
                         $values:

@@ -18,7 +18,7 @@ output:
           eligible_date: EndDate
           update_datetime: update_datetime
           task_metadata:
-            $json_dict:
+            $normalized_values_json_dict:
               external_id:
                 $concat:
                   $values:
