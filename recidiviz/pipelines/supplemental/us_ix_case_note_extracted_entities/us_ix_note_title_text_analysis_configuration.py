@@ -273,12 +273,22 @@ class UsIxNoteTitleTextEntity(TextEntity):
     ]
 
 
-NOTE_TITLE_TEXT_ANALYZER = TextAnalyzer(
-    TextMatchingConfiguration(
-        stop_words_to_remove={"in", "out"},
-        text_entities=list(UsIxNoteTitleTextEntity),
-    )
-)
+_note_title_text_analyzer: TextAnalyzer | None = None
+
+
+def get_note_title_text_analyzer() -> TextAnalyzer:
+    global _note_title_text_analyzer
+
+    if not _note_title_text_analyzer:
+        _note_title_text_analyzer = TextAnalyzer(
+            TextMatchingConfiguration(
+                stop_words_to_remove={"in", "out"},
+                text_entities=list(UsIxNoteTitleTextEntity),
+            )
+        )
+
+    return _note_title_text_analyzer
+
 
 if __name__ == "__main__":
-    NOTE_TITLE_TEXT_ANALYZER.run_and_print()
+    get_note_title_text_analyzer().run_and_print()

@@ -25,13 +25,7 @@ from enum import Enum, EnumMeta
 from typing import Callable, List, Optional, Set, Tuple
 
 import attr
-from nltk import data
-from nltk.corpus import stopwords
-from nltk.stem.snowball import SnowballStemmer
-from nltk.tokenize import ToktokTokenizer
 from thefuzz import fuzz
-
-from recidiviz.common.data_sets import nltk_data
 
 Normalizer = Tuple[str, str]
 
@@ -57,10 +51,6 @@ TEXT_NORMALIZERS: List[Normalizer] = [
     # multiple whitespaces
     REMOVE_MULTIPLE_WHITESPACES,
 ]
-
-_nltk_path = os.path.dirname(nltk_data.__file__)
-if not _nltk_path in data.path:
-    data.path.append(_nltk_path)
 
 
 @attr.s(kw_only=True)
@@ -151,6 +141,20 @@ class TextAnalyzer:
     """
 
     def __init__(self, configuration: TextMatchingConfiguration) -> None:
+        # Lazily import these packages which take .7 seconds to import to improve
+        # top-level import time.
+        # pylint: disable=import-outside-toplevel
+        from nltk import data
+        from nltk.corpus import stopwords
+        from nltk.stem.snowball import SnowballStemmer
+        from nltk.tokenize import ToktokTokenizer
+
+        from recidiviz.common.data_sets import nltk_data
+
+        _nltk_path = os.path.dirname(nltk_data.__file__)
+        if not _nltk_path in data.path:
+            data.path.append(_nltk_path)
+
         self.configuration = configuration
         self.stop_words = {
             self._clean_text(word) for word in stopwords.words("english")

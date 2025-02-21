@@ -44,12 +44,12 @@ from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_c
     get_us_ix_case_update_info_query_provider,
 )
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
-    NOTE_CONTENT_TEXT_ANALYZER,
     UsIxNoteContentTextEntity,
+    get_note_content_text_analyzer,
 )
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
-    NOTE_TITLE_TEXT_ANALYZER,
     UsIxNoteTitleTextEntity,
+    get_note_title_text_analyzer,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     ReadFromBigQuery,
@@ -93,11 +93,11 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
 
     @property
     def note_title_text_analyzer(self) -> TextAnalyzer:
-        return NOTE_TITLE_TEXT_ANALYZER
+        return get_note_title_text_analyzer()
 
     @property
     def note_content_text_analyzer(self) -> TextAnalyzer:
-        return NOTE_CONTENT_TEXT_ANALYZER
+        return get_note_content_text_analyzer()
 
     def extract_text_entities(self, row: TableRow) -> TableRow:
         """Runs the entities through extraction."""

@@ -271,9 +271,19 @@ class UsIxNoteContentTextEntity(TextEntity):
     ]
 
 
-NOTE_CONTENT_TEXT_ANALYZER = TextAnalyzer(
-    TextMatchingConfiguration(text_entities=list(UsIxNoteContentTextEntity))
-)
+_note_content_text_analyzer: TextAnalyzer | None = None
+
+
+def get_note_content_text_analyzer() -> TextAnalyzer:
+    global _note_content_text_analyzer
+
+    if not _note_content_text_analyzer:
+        _note_content_text_analyzer = TextAnalyzer(
+            TextMatchingConfiguration(text_entities=list(UsIxNoteContentTextEntity))
+        )
+
+    return _note_content_text_analyzer
+
 
 if __name__ == "__main__":
-    NOTE_CONTENT_TEXT_ANALYZER.run_and_print()
+    get_note_content_text_analyzer().run_and_print()
