@@ -77,8 +77,8 @@ YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
 
 DEFAULT_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
 
-
-class StateIngestViewParserTestBase:
+# TODO(#38321) Migrate all states away from this test
+class LegacyStateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
 
     @classmethod
@@ -132,7 +132,6 @@ class StateIngestViewParserTestBase:
             This can be used in cases where the csv.DictReader "smartly" auto-converts
             values to a different type (e.g. an integer) that is incorrect.
         """
-        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory.
         self._check_test_matches_file_tag(ingest_view_name)
 
         in_gcp_staging = project == GCP_PROJECT_STAGING
@@ -227,14 +226,6 @@ class StateIngestViewParserTestBase:
         for manifest in collector.ingest_view_to_manifest.values():
             manifest_ast = manifest.output
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
-
-    def test_all_ingest_view_manifests_are_tested(self) -> None:
-        if self.state_code() == StateCode.US_XX:
-            # Skip template region
-            return
-
-        for manifest_path in self._ingest_view_manifest_paths():
-            self._check_manifest_has_parser_test(manifest_path)
 
     def test_all_ingest_view_manifests_define_schema_pragma(self) -> None:
         if self.state_code() == StateCode.US_XX:

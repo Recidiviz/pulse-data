@@ -19,11 +19,11 @@ import unittest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    StateIngestViewParserTestBase,
+    LegacyStateIngestViewParserTestBase,
 )
 
 
-class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
+class UsXxIngestViewParserTest(LegacyStateIngestViewParserTestBase, unittest.TestCase):
     """Parser unit tests for each US_XX ingest view query results to be ingested."""
 
     @classmethod

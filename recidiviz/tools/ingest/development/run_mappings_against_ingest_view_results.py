@@ -167,7 +167,9 @@ def parse_results(
                     file=logfile,
                 )
             elif isinstance(result, Entity) and write_results:
-                print_entity_tree(result, entities_module_context, file=results_file)
+                print_entity_tree(
+                    result, entities_module_context, file_or_buffer=results_file
+                )
             progress.update()
 
         manifest_compiler.compile_manifest(

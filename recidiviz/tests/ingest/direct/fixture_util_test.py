@@ -22,6 +22,7 @@ from recidiviz.common.file_system import is_non_empty_code_directory, is_valid_c
 from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     ENUM_PARSING_FIXTURE_SUBDIR,
+    INGEST_MAPPING_OUTPUT_SUBDIR,
     DirectIngestTestFixturePath,
 )
 
@@ -31,6 +32,7 @@ class TestDirectIngestTestFixturePath(unittest.TestCase):
         for path, _directory_names, file_names in os.walk(DIRECT_INGEST_FIXTURES_ROOT):
             if (
                 ENUM_PARSING_FIXTURE_SUBDIR in path
+                or INGEST_MAPPING_OUTPUT_SUBDIR in path
                 or "_ingest_view_results" in path
                 or not is_non_empty_code_directory(path)
             ):

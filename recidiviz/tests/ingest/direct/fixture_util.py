@@ -57,7 +57,7 @@ def enum_parsing_fixture_path(state_code: StateCode, file_tag: str) -> str:
     )
 
 
-def ingest_mapping_output_fixture(
+def ingest_mapping_output_fixture_path(
     state_code: StateCode, ingest_view_name: str, characteristic: str
 ) -> str:
     return os.path.join(
@@ -182,9 +182,8 @@ class DirectIngestFixtureDataFileType(Enum):
     INGEST_VIEW_RESULTS = "ingest_view"
 
     # Fixture files that contain ingest view results in CSV form that are used as inputs
-    # to parser and ingest pipeline integration tests.
-    # TODO(#15801): Move the fixture files used by parser / integration tests to ingest
-    #  view subdir and delete this enum?
+    # ingest pipeline integration tests.
+    # TODO(#22059): Have ingest pipeline integration tests use raw fixtures
     EXTRACT_AND_MERGE_INPUT = "extract_and_merge_input"
 
     # Fixture files that contain data in the format of the `us_xx_state`/`state` dataset

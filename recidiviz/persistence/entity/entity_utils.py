@@ -22,9 +22,9 @@ import json
 import re
 from enum import Enum
 from functools import cache
-from io import TextIOWrapper
 from types import ModuleType
 from typing import (
+    IO,
     Any,
     Callable,
     Dict,
@@ -189,7 +189,7 @@ def get_flat_fields_json_str(
     return json.dumps(flat_fields_dict, sort_keys=True)
 
 
-def _print_indented(s: str, indent: int, file: Optional[TextIOWrapper] = None) -> None:
+def _print_indented(s: str, indent: int, file: Optional[IO] = None) -> None:
     print(f'{" " * indent}{s}', file=file)
 
 
@@ -202,7 +202,7 @@ def _obj_id_str(entity: Entity, id_mapping: Dict[int, int]) -> str:
     else:
         fake_id = id_mapping[python_obj_id]
 
-    return f"{entity.get_entity_name()} ({fake_id})"
+    return f"{entity.__class__.__name__} ({fake_id})"
 
 
 def write_entity_tree_to_file(
@@ -221,7 +221,7 @@ def write_entity_tree_to_file(
             root_entities,
             entities_module_context=entities_module_context,
             print_tree_structure_only=print_tree_structure_only,
-            file=actual_output_file,
+            file_or_buffer=actual_output_file,
         )
 
     return filepath
@@ -233,7 +233,7 @@ def print_entity_trees(
     *,
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
-    file: Optional[TextIOWrapper] = None,
+    file_or_buffer: Optional[IO] = None,
 ) -> None:
     """Recursively prints out all objects in the trees below the given list of
     entities. Each time we encounter a new object, we assign a new fake id (an
@@ -260,7 +260,7 @@ def print_entity_trees(
             entities_module_context=entities_module_context,
             print_tree_structure_only=print_tree_structure_only,
             python_id_to_fake_id=python_id_to_fake_id,
-            file=file,
+            file_or_buffer=file_or_buffer,
         )
 
 
@@ -271,7 +271,7 @@ def print_entity_tree(
     print_tree_structure_only: bool = False,
     indent: int = 0,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
-    file: Optional[TextIOWrapper] = None,
+    file_or_buffer: Optional[IO] = None,
 ) -> None:
     """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
     assign a new fake id (an auto-incrementing count) and print that with the object.
@@ -287,27 +287,29 @@ def print_entity_tree(
         python_id_to_fake_id = {}
         _sort_based_on_flat_fields([entity], entities_module_context)
 
-    _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file)
+    _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file_or_buffer)
 
     indent = indent + 2
-    for field in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FLAT_FIELD
+    for field in sorted(
+        field_index.get_fields_with_non_empty_values(entity, EntityFieldType.FLAT_FIELD)
     ):
         if field == "external_id" or not print_tree_structure_only:
             val = entity.get_field(field)
-            _print_indented(f"{field}: {str(val)}", indent, file)
+            _print_indented(f"{field}: {str(val)}", indent, file_or_buffer)
 
-    for child_field in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FORWARD_EDGE
+    for child_field in sorted(
+        field_index.get_fields_with_non_empty_values(
+            entity, EntityFieldType.FORWARD_EDGE
+        )
     ):
         child = entity.get_field(child_field)
 
         if child is not None:
             if isinstance(child, list):
                 if not child:
-                    _print_indented(f"{child_field}: []", indent, file)
+                    _print_indented(f"{child_field}: []", indent, file_or_buffer)
                 else:
-                    _print_indented(f"{child_field}: [", indent, file)
+                    _print_indented(f"{child_field}: [", indent, file_or_buffer)
                     for c in child:
                         print_entity_tree(
                             c,
@@ -315,25 +317,25 @@ def print_entity_tree(
                             print_tree_structure_only=print_tree_structure_only,
                             indent=indent + 2,
                             python_id_to_fake_id=python_id_to_fake_id,
-                            file=file,
+                            file_or_buffer=file_or_buffer,
                         )
-                    _print_indented("]", indent, file)
+                    _print_indented("]", indent, file_or_buffer)
 
             else:
-                _print_indented(f"{child_field}:", indent, file)
+                _print_indented(f"{child_field}:", indent, file_or_buffer)
                 print_entity_tree(
                     child,
                     entities_module_context,
                     print_tree_structure_only=print_tree_structure_only,
                     indent=indent + 2,
                     python_id_to_fake_id=python_id_to_fake_id,
-                    file=file,
+                    file_or_buffer=file_or_buffer,
                 )
         else:
-            _print_indented(f"{child_field}: None", indent, file)
+            _print_indented(f"{child_field}: None", indent, file_or_buffer)
 
-    for child_field in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.BACK_EDGE
+    for child_field in sorted(
+        field_index.get_fields_with_non_empty_values(entity, EntityFieldType.BACK_EDGE)
     ):
         child = entity.get_field(child_field)
         if not child:
@@ -353,11 +355,13 @@ def print_entity_tree(
             _print_indented(
                 f"{child_field} ({len_str}): [{id_str}{ellipsis_str}] - backedge",
                 indent,
-                file,
+                file_or_buffer,
             )
         else:
             id_str = _obj_id_str(child, python_id_to_fake_id)
-            _print_indented(f"{child_field}: {id_str} - backedge", indent, file)
+            _print_indented(
+                f"{child_field}: {id_str} - backedge", indent, file_or_buffer
+            )
 
 
 def get_all_entities_from_tree(
