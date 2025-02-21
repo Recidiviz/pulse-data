@@ -128,6 +128,7 @@ from recidiviz.big_query.view_update_manager import (
     BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
+from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import (
@@ -308,102 +309,107 @@ class ViewChangeType(Enum):
     UPDATED = "UPDATED"
 
 
+@attr.define
+class DeployedViewSignature:
+    view_address: BigQueryAddress = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddress)
+    )
+    view_query_signature: str = attr.ib(validator=attr_validators.is_str)
+    clustering_fields_string: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    time_partitioning_string: str | None = attr.ib(validator=attr_validators.is_opt_str)
+
+    def matches_local_view(self, local_view: BigQueryView) -> bool:
+        if local_view.address != self.view_address:
+            raise ValueError(
+                f"Cannot compare local view [{local_view.address.to_str()}] to "
+                f"deployed view with different address [{self.view_address.to_str()}]"
+            )
+
+        return (
+            local_view.view_query_signature == self.view_query_signature
+            and local_view.clustering_fields_string == self.clustering_fields_string
+            and local_view.time_partitioning_string == self.time_partitioning_string
+        )
+
+
+def _get_deployed_view_signatures_by_address() -> dict[
+    BigQueryAddress, DeployedViewSignature
+]:
+    """Queries the per_view_update_stats table to return information about each view
+    updated by the last deployed view update.
+    """
+    logging.info("Downloading deployed view information...")
+    bq_client = BigQueryClientImpl()
+
+    update_stats_address = (
+        PER_VIEW_UPDATE_STATS_TABLE_ADDRESS.to_project_specific_address(
+            metadata.project_id()
+        )
+    )
+    signatures_query = f"""
+    SELECT
+        success_timestamp,
+        dataset_id,
+        table_id,
+        view_query_signature,
+        clustering_fields_string,
+        time_partitioning_string
+    FROM {update_stats_address.format_address_for_query()}
+    QUALIFY RANK() OVER (ORDER BY success_timestamp DESC) = 1
+    """
+    deployed_view_signatures_by_address = {}
+
+    results = bq_client.run_query_async(
+        query_str=signatures_query, use_query_cache=False
+    )
+
+    for row in results:
+        address = BigQueryAddress(
+            dataset_id=row["dataset_id"], table_id=row["table_id"]
+        )
+        if address in deployed_view_signatures_by_address:
+            success_timestamp = row["success_timestamp"]
+            raise ValueError(
+                f"Found duplicate entries in the {update_stats_address.to_str()} table "
+                f"for [{address.to_str()}] with success_timestamp [{success_timestamp}]"
+            )
+        deployed_view_signatures_by_address[address] = DeployedViewSignature(
+            view_address=address,
+            view_query_signature=row["view_query_signature"],
+            clustering_fields_string=row["clustering_fields_string"],
+            time_partitioning_string=row["time_partitioning_string"],
+        )
+    logging.info("Completed deployed view information download.")
+    return deployed_view_signatures_by_address
+
+
 def _get_all_views_changed_on_branch(
     full_dag_walker: BigQueryViewDagWalker,
 ) -> Dict[BigQueryAddress, ViewChangeType]:
     """Finds all views that have changed (or been added) as compared to their currently
     deployed versions.
     """
-    bq_client = BigQueryClientImpl()
+    deployed_view_signatures_by_address = _get_deployed_view_signatures_by_address()
 
-    def check_for_change(
-        v: BigQueryView, _parent_results: Dict[BigQueryView, Optional[ViewChangeType]]
-    ) -> Optional[ViewChangeType]:
-        try:
-            t = bq_client.get_table(v.address)
-        except exceptions.NotFound:
-            return ViewChangeType.ADDED
+    view_address_to_change_type = {}
+    for local_view_address in full_dag_walker.nodes_by_address:
+        local_view = full_dag_walker.view_for_address(local_view_address)
 
-        if t.view_query != v.view_query:
-            return ViewChangeType.UPDATED
+        if local_view_address not in deployed_view_signatures_by_address:
+            view_address_to_change_type[local_view_address] = ViewChangeType.ADDED
+            continue
 
-        if v.materialized_address:
-            try:
-                materialized_t = bq_client.get_table(v.materialized_address)
-            except exceptions.NotFound:
-                return ViewChangeType.UPDATED
-            old_clustering_fields = materialized_t.clustering_fields or []
-            new_clustering_fields = v.clustering_fields or []
-            if (
-                old_clustering_fields != new_clustering_fields
-                or materialized_t.time_partitioning != v.time_partitioning
-            ):
-                return ViewChangeType.UPDATED
+        deployed_view_signature = deployed_view_signatures_by_address[
+            local_view_address
+        ]
 
-        return None
+        if deployed_view_signature.matches_local_view(local_view):
+            # No change found
+            continue
 
-    results = full_dag_walker.process_dag(check_for_change, synchronous=False)
-    return {
-        view.address: change_type
-        for view, change_type in results.view_results.items()
-        if change_type
-    }
+        view_address_to_change_type[local_view_address] = ViewChangeType.UPDATED
 
-
-def _get_changed_views_to_load_to_sandbox(
-    *,
-    address_to_change_type: Dict[BigQueryAddress, ViewChangeType],
-    changed_datasets_to_include: Optional[List[str]],
-    changed_datasets_to_ignore: Optional[List[str]],
-) -> Set[BigQueryAddress]:
-    """Returns addresses for all views that have been added / updated since the last
-    deploy and whose dataset is not in |changed_datasets_to_ignore|.
-    """
-    if changed_datasets_to_include and changed_datasets_to_ignore:
-        raise ValueError(
-            "Can only set changed_datasets_to_include or "
-            "changed_datasets_to_ignore, but not both."
-        )
-
-    added_view_addresses = set()
-    updated_view_addresses = set()
-    ignored_changed_addresses = set()
-    for address, change_type in address_to_change_type.items():
-        if (
-            changed_datasets_to_ignore
-            and address.dataset_id in changed_datasets_to_ignore
-        ) or (
-            changed_datasets_to_include
-            and address.dataset_id not in changed_datasets_to_include
-        ):
-            ignored_changed_addresses.add(address)
-
-        if change_type == ViewChangeType.ADDED:
-            added_view_addresses.add(address)
-        elif change_type == ViewChangeType.UPDATED:
-            updated_view_addresses.add(address)
-        else:
-            raise ValueError(
-                f"Unexpected change_type [{change_type}] for view [{address}]"
-            )
-
-    if added_view_addresses:
-        logging.info(
-            "Found the following view(s) which have been ADDED \n%s",
-            BigQueryAddress.addresses_to_str(added_view_addresses, indent_level=2),
-        )
-    if updated_view_addresses:
-        logging.info(
-            "Found the following view(s) which have been UPDATED \n%s",
-            BigQueryAddress.addresses_to_str(updated_view_addresses, indent_level=2),
-        )
-    if ignored_changed_addresses:
-        logging.info(
-            "IGNORING changes to the following view(s) \n%s",
-            BigQueryAddress.addresses_to_str(ignored_changed_addresses, indent_level=2),
-        )
-
-    return set(address_to_change_type) - ignored_changed_addresses
+    return view_address_to_change_type
 
 
 def _check_latest_view_update() -> str:
@@ -856,6 +862,7 @@ def collect_changed_views_and_descendants_to_load(
         changed_datasets_to_include=changed_datasets_to_include,
         state_code_filter=state_code_filter,
     )
+    logging.info("Found all changes on local branch. Collecting all related views...")
 
     if not changed_addresses_info.has_changes_to_load:
         print(

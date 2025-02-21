@@ -17,6 +17,7 @@
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
 import hashlib
+import json
 from typing import Any, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
@@ -246,8 +247,29 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         return self._clustering_fields
 
     @property
+    def clustering_fields_string(self) -> str | None:
+        """String representation of clustering_fields which can be easily saved as a
+        STRING BigQuery value.
+        """
+        if not self._clustering_fields:
+            return None
+
+        return ",".join(self._clustering_fields)
+
+    @property
     def time_partitioning(self) -> bigquery.TimePartitioning | None:
         return self._time_partitioning
+
+    @property
+    def time_partitioning_string(self) -> str | None:
+        """String representation of time_partitioning which can be easily saved as a
+        STRING BigQuery value.
+        """
+        if not self._time_partitioning:
+            return None
+
+        time_partitioning_dict = self._time_partitioning.to_api_repr()
+        return json.dumps(time_partitioning_dict, sort_keys=True)
 
 
 BigQueryViewType = TypeVar("BigQueryViewType", bound=BigQueryView)

@@ -18,7 +18,6 @@
 update.
 """
 import datetime
-import json
 from typing import Any
 
 import attr
@@ -95,21 +94,11 @@ class PerViewUpdateStats:
 
     @property
     def clustering_fields_string(self) -> str | None:
-        if not (
-            clustering_fields := self.create_or_update_result.view.clustering_fields
-        ):
-            return None
-        return ",".join(clustering_fields)
+        return self.create_or_update_result.view.clustering_fields_string
 
     @property
     def time_partitioning_string(self) -> str | None:
-        if not (
-            time_partitioning := self.create_or_update_result.view.time_partitioning
-        ):
-            return None
-
-        time_partitioning_dict = time_partitioning.to_api_repr()
-        return json.dumps(time_partitioning_dict, sort_keys=True)
+        return self.create_or_update_result.view.time_partitioning_string
 
     @property
     def materialized_table_num_rows(self) -> int | None:
