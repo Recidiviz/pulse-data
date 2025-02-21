@@ -137,6 +137,9 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_snooze_notes import (
+    INVALID_SNOOZE_NOTES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.location_ids_to_names_unique_ids import (
     LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
 )
@@ -565,6 +568,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INVALID_SNOOZE_NOTES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
