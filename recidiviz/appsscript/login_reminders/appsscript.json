@@ -9,6 +9,13 @@
         "libraryId": "1UssATcjlfLLkltIvPvU2_EpgySyUaJZ6PXxlQZiUyyGDBDUrBFDvc0rL",
         "version": "2"
       }
+    ],
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "BigQuery",
+        "version": "v2",
+        "serviceId": "bigquery"
+      }
     ]
   }
 }

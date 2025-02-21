@@ -28,10 +28,11 @@
 function checkLoginStatus() {
   const authToken = getAuth0Token();
 
-  // The last two sheets by getSheets() are the rightmost in viewing order.
+  // The first two sheets returned by getSheets() are the leftmost in viewing order.
   // We assume these were the most recently added by sending email reminders
-  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(-2);
+  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(0, 2);
   for (const sheet of sheets) {
+    console.log(`Getting login statuses for sheet "${sheet.getName()}"`);
     writeLoginStatusToSheet_(sheet, authToken);
   }
 }
@@ -42,34 +43,39 @@ function checkLoginStatus() {
  * @param {string} authToken  an auth0 Management API Token
  */
 function writeLoginStatusToSheet_(sheet, authToken) {
-  // Get all the emails and email sent timestamp, which we assume are in column 3 and 5
+  // Ignoring the first row, get all the emails and email sent timestamps,
+  // which we assume are in columns 3 and 5
   const emailData = sheet.getDataRange();
   const emailToRow = Object.fromEntries(
-    emailData.getValues().map((row, i) => [
-      row[2].toLowerCase(), // email address
-      {
-        rowIndex: i,
-        emailSentTimestamp: row[4],
-      },
-    ])
+    emailData
+      .getValues()
+      .slice(1)
+      .map((row, i) => [
+        row[2].toLowerCase(), // email address
+        {
+          rowIndex: i,
+          emailSentTimestamp: row[4],
+        },
+      ])
   );
 
   // Query auth0 for login data for all users who were emailed
-  const allEmails = emailToRow.keys();
+  const allEmails = Object.keys(emailToRow);
   const loginInfo = getUserLoginInfo(allEmails, authToken);
   let loginsAfterEmailSent = 0;
-  for (const [email, lastLogin] of loginInfo.entries()) {
+  const colToWrite = emailData.getValues()[0].length + 1;
+  for (const [email, lastLogin] of Object.entries(loginInfo)) {
     const { rowIndex, emailSentTimestamp } = emailToRow[email];
     if (lastLogin > new Date(emailSentTimestamp)) {
       loginsAfterEmailSent++;
       // Write the login time to the 6th column of the sheet
       // (rows and columns for getRange are 1-indexed)
       const formattedDateTime = lastLogin.toISOString();
-      emailSheet.getRange(rowIndex + 1, 7).setValue(formattedDateTime);
+      sheet.getRange(rowIndex + 1, colToWrite).setValue(formattedDateTime);
     }
   }
 
-  // Print summary
+  // Print summary and write header to sheet
   const formattedToday = new Date().toLocaleDateString("en-US", {
     timeZone: "America/New_York",
     timeZoneName: "short",
@@ -80,6 +86,9 @@ function writeLoginStatusToSheet_(sheet, authToken) {
     hour: "2-digit",
     minute: "2-digit",
   });
+  sheet
+    .getRange(1, colToWrite)
+    .setValue(`Most Recent Login as of ${formattedToday}`);
   const numEmailsSent = emailData.getNumRows();
   const loginSummary = `As of ${formattedToday}, ${loginsAfterEmailSent} out of ${numEmailsSent} emailed users in "${sheet.getName()}" had logged in after the reminder email was sent to them.`;
   console.log(loginSummary);

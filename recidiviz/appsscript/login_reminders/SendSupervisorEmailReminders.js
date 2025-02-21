@@ -29,10 +29,13 @@ const SUPERVISOR_SETTINGS = {
 
 const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
 
-function sendSupervisorEmailReminders() {
-  // comma-separated list of state codes as strings
-  const statesForQuery = SUPERVISOR_INCLUDED_STATES.map((s) => `"${s}"`).join();
-  const supervisorQuery = `WITH supervisors AS (
+// =============================================================================
+
+// comma-separated list of state codes as strings
+const supervisorStatesForQuery = SUPERVISOR_INCLUDED_STATES.map(
+  (s) => `"${s}"`
+).join();
+const SUPERVISOR_QUERY = `WITH supervisors AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervisors.state_code, 
@@ -43,22 +46,6 @@ function sendSupervisorEmailReminders() {
     FROM \`recidiviz-123.outliers_views.supervision_officer_supervisors_materialized\` supervisors
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, supervisor_external_id
     ORDER BY district IS NULL, email IS NULL) = 1
-)
-, supervisor_latest_logins AS (
--- TODO(#35752): Remove this sub-query once the auth0 API is called directly.
-    SELECT
-        supervisors.state_code,
-        supervisors.supervisor_external_id,
-        supervisors.supervisor_name,
-        supervisors.supervisor_email,
-        supervisors.district,
-        MAX(logins.timestamp) AS most_recent_login,
-        CAST(DATE_TRUNC(MAX(logins.timestamp), MONTH) AS DATE) AS login_month,
-    FROM \`recidiviz-123.auth0_prod_action_logs.success_login\` logins
-    INNER JOIN supervisors
-        ON LOWER(logins.email) = LOWER(supervisors.supervisor_email)
-    WHERE CAST(DATE_TRUNC(logins.timestamp, MONTH) AS DATE) = DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH)
-    GROUP BY 1, 2, 3, 4, 5
 ),
 latest_outliers AS (
   SELECT
@@ -93,24 +80,31 @@ latest_eligible_opportunities AS (
       AND COALESCE(DATE_SUB(eligible_population.end_date, INTERVAL 1 DAY), "9999-12-31")
   GROUP BY 1, 2
 )
+-- Note: If the order of the columns changes, we must account for the change within EmailReminderHelpers
 SELECT
     supervisors.state_code,
     supervisors.supervisor_external_id,
     supervisors.supervisor_name,
     supervisors.supervisor_email,
     supervisors.district,
-    supervisor_latest_logins.most_recent_login,
-    latest_outliers.total_outliers,
-    latest_eligible_opportunities.total_opportunities,
+    COALESCE(latest_eligible_opportunities.total_opportunities, 0) AS total_opportunities,
+    COALESCE(latest_outliers.total_outliers, 0) AS total_outliers,
 FROM supervisors
-LEFT JOIN supervisor_latest_logins
-  ON LOWER(supervisor_latest_logins.supervisor_email) = LOWER(supervisors.supervisor_email)
 LEFT JOIN latest_eligible_opportunities
   ON LOWER(latest_eligible_opportunities.supervisor_email) = LOWER(supervisors.supervisor_email)
 LEFT JOIN latest_outliers
   ON  supervisors.state_code = latest_outliers.state_code
   AND supervisors.supervisor_external_id = latest_outliers.supervisor_external_id
-WHERE supervisors.state_code IN ( ${statesForQuery} )`;
+WHERE
+-- We only want to email people who have eligible opportunities or outliers in the tool
+  (latest_eligible_opportunities.total_opportunities IS NOT NULL OR latest_outliers.total_outliers IS NOT NULL)
+  AND supervisors.state_code IN ( ${supervisorStatesForQuery} )`;
 
-  sendAllLoginReminders(true, supervisorQuery, SUPERVISOR_SETTINGS);
+function sendSupervisorEmailReminders() {
+  sendAllLoginReminders(
+    true,
+    SUPERVISOR_QUERY,
+    SUPERVISOR_SETTINGS,
+    SUPERVISOR_INCLUDED_STATES
+  );
 }

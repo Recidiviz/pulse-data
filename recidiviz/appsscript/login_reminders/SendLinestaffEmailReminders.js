@@ -29,10 +29,13 @@ const LINESTAFF_SETTINGS = {
 
 const LINESTAFF_INCLUDED_STATES = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
 
-function sendLinestaffEmailReminders() {
-  // comma-separated list of state codes as strings
-  const statesForQuery = LINESTAFF_INCLUDED_STATES.map((s) => `"${s}"`).join();
-  const linestaffQuery = `WITH officers AS (
+// =============================================================================
+
+// comma-separated list of state codes as strings
+const linestaffStatesForQuery = LINESTAFF_INCLUDED_STATES.map(
+  (s) => `"${s}"`
+).join();
+const LINESTAFF_QUERY = `WITH officers AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervision_staff.state_code, 
@@ -61,31 +64,11 @@ function sendLinestaffEmailReminders() {
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, officer_external_id
     ORDER BY district IS NULL, email IS NULL) = 1
-)
-, officer_latest_logins AS (
--- TODO(#35752): Remove this sub-query once the auth0 API is called directly.
-    SELECT
-        officers.state_code,
-        officers.officer_external_id,
-        officers.officer_name,
-        officers.officer_email,
-        officers.district,
-        MAX(logins.timestamp) AS most_recent_login,
-        CAST(DATE_TRUNC(MAX(logins.timestamp), MONTH) AS DATE) AS login_month,
-    FROM \`recidiviz-123.auth0_prod_action_logs.success_login\` logins
-    INNER JOIN officers
-        ON LOWER(logins.email) = LOWER(officers.officer_email)
-    WHERE CAST(DATE_TRUNC(logins.timestamp, MONTH) AS DATE) = DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH)
-    GROUP BY 1, 2, 3, 4, 5
 ),
 latest_eligible_opportunities AS (
     SELECT
         surfaceable_population.state_code,
         staff.email AS officer_email,
-        STRING_AGG(
-            DISTINCT INITCAP(REPLACE(completion_event_type, "_", "  "))
-            ORDER BY INITCAP(REPLACE(completion_event_type, "_", "  "))
-        ) AS eligible_opportunity_types,
         COUNT(DISTINCT CONCAT(surfaceable_population.person_id, completion_event_type)) AS total_opportunities
     FROM
         \`recidiviz-123.analyst_data.workflows_record_archive_surfaceable_person_sessions_materialized\` surfaceable_population
@@ -121,21 +104,27 @@ latest_eligible_opportunities AS (
         AND launches.is_fully_launched
     GROUP BY 1, 2
 )
+-- Note: If the order of the columns changes, we must account for the change within EmailReminderHelpers
 SELECT
     officers.state_code,
     officers.officer_external_id,
     officers.officer_name,
     officers.officer_email,
     officers.district,
-    officer_latest_logins.most_recent_login,
-    latest_eligible_opportunities.eligible_opportunity_types,
     latest_eligible_opportunities.total_opportunities,
 FROM officers
-LEFT JOIN officer_latest_logins
-  ON LOWER(officer_latest_logins.officer_email) = LOWER(officers.officer_email)
 LEFT JOIN latest_eligible_opportunities
   ON LOWER(latest_eligible_opportunities.officer_email) = LOWER(officers.officer_email)
-WHERE officers.state_code IN ( ${statesForQuery} )`;
+WHERE 
+-- We only want to email people who have eligible opportunities in the tool
+  latest_eligible_opportunities.total_opportunities IS NOT NULL
+  AND officers.state_code IN ( ${linestaffStatesForQuery} )`;
 
-  sendAllLoginReminders(false, linestaffQuery, LINESTAFF_SETTINGS);
+function sendLinestaffEmailReminders() {
+  sendAllLoginReminders(
+    false,
+    LINESTAFF_QUERY,
+    LINESTAFF_SETTINGS,
+    LINESTAFF_INCLUDED_STATES
+  );
 }

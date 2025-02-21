@@ -17,35 +17,54 @@
 /* Tests sending email reminders - each of these functions will send the emails 
    to DESTINATION_EMAIL and write to a new sheet in the connected spreadsheet. */
 
-const STATE_CODES_TO_TEST = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
-
-const DESTINATION_EMAIL = Session.getActiveUser().getEmail();
+// Testing emails will be sent to the currently logged-in user.
+const TEST_DESTINATION_EMAIL = Session.getActiveUser().getEmail();
 
 const TESTING_NAME = "Firstname Lastname";
 const TESTING_DISTRICT = "Fake District";
-const NUM_OUTLIERS = 123;
-const NUM_OPPORTUNITIES = 456;
+const TEST_NUM_OUTLIERS = 123;
+const TEST_NUM_OPPORTUNITIES = 456;
 
 const BASE_INFO = {
   name: TESTING_NAME,
-  emailAddress: DESTINATION_EMAIL,
+  emailAddress: TEST_DESTINATION_EMAIL,
   district: TESTING_DISTRICT,
   lastLogin: null,
-  outliers: NUM_OUTLIERS,
-  opportunities: NUM_OPPORTUNITIES,
+  outliers: TEST_NUM_OUTLIERS,
+  opportunities: TEST_NUM_OPPORTUNITIES,
 };
 
-function sendTestLinestaffEmails() {
-  sendTestEmails_("[TESTING] Sent Emails to Linestaff", LINESTAFF_SETTINGS);
+function testSendLinestaffEmails() {
+  sendTestEmails_(
+    "[TESTING] Sent Emails to Linestaff",
+    LINESTAFF_SETTINGS,
+    LINESTAFF_INCLUDED_STATES,
+    false
+  );
 }
 
-function sendTestSupervisorEmails() {
-  sendTestEmails_("[TESTING] Sent Emails to Supervisors", SUPERVISOR_SETTINGS);
+function testSendSupervisorEmails() {
+  sendTestEmails_(
+    "[TESTING] Sent Emails to Supervisors",
+    SUPERVISOR_SETTINGS,
+    SUPERVISOR_INCLUDED_STATES,
+    true
+  );
 }
 
-// The underscore indicates this is a private function, to remove
-// the option to run it from the Apps Script UI
-function sendTestEmails_(sheetName, settings) {
+function testRunLinestaffQuery() {
+  testQuery_(LINESTAFF_QUERY);
+}
+
+function testRunSupervisorQuery() {
+  testQuery_(SUPERVISOR_QUERY);
+}
+
+// =============================================================================
+// Private functions, indicated by the underscore at the end of the name, will not
+// show up in the Apps Script UI.
+
+function sendTestEmails_(sheetName, settings, stateCodesToTest, isSupervisors) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet();
   let sentEmailsSheet = sheet.getSheetByName(sheetName);
   if (!sentEmailsSheet) {
@@ -53,13 +72,31 @@ function sendTestEmails_(sheetName, settings) {
       SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName);
   }
 
-  for (stateCode of STATE_CODES_TO_TEST) {
+  for (stateCode of stateCodesToTest) {
     const testSettings = {
       ...settings,
       EMAIL_SUBJECT: `[TESTING ${stateCode}] ${settings.EMAIL_SUBJECT}`,
     };
     const info = { ...BASE_INFO, stateCode };
-    const body = buildLoginReminderBody(info, testSettings);
+    const body = buildLoginReminderBody(info, isSupervisors, testSettings);
     sendLoginReminder(info, body, sentEmailsSheet, testSettings);
   }
+  console.log(
+    `Sent test emails to ${TEST_DESTINATION_EMAIL} and logged sent emails in spreadsheet "${sheetName}"`
+  );
+}
+
+function testQuery_(query) {
+  console.log("Query: ");
+  console.log(query);
+  console.log("Running query...");
+  const data = RecidivizHelpers.runQuery(query);
+  if (!data) {
+    console.log("Found no data.");
+    return;
+  }
+  console.log(
+    `Found ${data.length} users with opportunities/outliers. Sample:`
+  );
+  console.log(data.slice(0, 20));
 }

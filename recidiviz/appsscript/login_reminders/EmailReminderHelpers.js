@@ -78,16 +78,9 @@ function stateSpecificText(stateCode, totalOpportunities, totalOutliers) {
 }
 
 /**
- * @returns the provided text formatted in a <li> tag if not empty, or the empty string
- */
-function textToBulletPoint(text) {
-  return text ? `<li>${text}</li>` : "";
-}
-
-/**
  * @returns the HTML body of the email to be sent to the person described in `info`
  */
-function buildLoginReminderBody(info, settings) {
+function buildLoginReminderBody(info, isSupervisors, settings) {
   const { stateCode, name, outliers, opportunities } = info;
   const { RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL } = settings;
 
@@ -109,13 +102,22 @@ function buildLoginReminderBody(info, settings) {
     month: "long",
   });
 
+  const opportunitiesBulletPoint =
+    opportunitiesText && opportunities > 0
+      ? `<li>${opportunitiesText}</li>`
+      : "";
+  const outliersBulletPoint =
+    outliersText && isSupervisors && outliers > 0
+      ? `<li>${outliersText}</li>`
+      : "";
+
   return (
     `Hi ${name},<br><br>` +
     `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>` +
     `As of ${formattedDate}:<br>` +
     "<ul>" +
-    textToBulletPoint(outliersText) +
-    textToBulletPoint(opportunitiesText) +
+    outliersBulletPoint +
+    opportunitiesBulletPoint +
     "</ul>" +
     `<a href="${RECIDIVIZ_LINK}">${RECIDIVIZ_LINK_TEXT}</a><br><br>` +
     "Thank you for your dedication, and we look forward to seeing you back on Recidiviz soon!<br><br>" +
@@ -184,7 +186,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
  *                          contains RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL,
  *                          EMAIL_SUBJECT, EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
  */
-function sendAllLoginReminders(isSupervisors, query, settings) {
+function sendAllLoginReminders(isSupervisors, query, settings, stateCodes) {
   const users = isSupervisors ? "Supervisors" : "Linestaff";
 
   console.log(`Getting list of all ${users} from BigQuery...`);
@@ -195,14 +197,28 @@ function sendAllLoginReminders(isSupervisors, query, settings) {
   }
   console.log(`Found ${data.length} ${users}.`);
 
+  // Make the sheet to log sent emails in if it doesn't already exist, and extract any
+  // addresses we already sent to so that we don't re-email anyone
   const currentMonthYear = new Date().toLocaleString("en-US", {
     timeZone: "America/New_York",
     month: "long",
     year: "numeric",
   });
-  const sentEmailsSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(
-    `${currentMonthYear} Sent Emails to ${users}`
-  );
+  const sheetName = `${currentMonthYear} Sent Emails to ${users}`;
+  const activeSheet = SpreadsheetApp.getActiveSpreadsheet();
+  let sentEmailsSheet = activeSheet.getSheetByName(sheetName);
+  if (!sentEmailsSheet) {
+    sentEmailsSheet = activeSheet.insertSheet(sheetName);
+    sentEmailsSheet.appendRow([
+      "State Code",
+      "Name",
+      "Email",
+      "District",
+      "Email Sent At",
+    ]);
+  }
+  const emailData = sentEmailsSheet.getDataRange();
+  const emailsAlreadySent = emailData.getValues().map((row) => row[2]);
 
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
@@ -213,16 +229,22 @@ function sendAllLoginReminders(isSupervisors, query, settings) {
       {
         stateCode: row[0],
         name: row[2],
+        emailAddress: row[3].toLowerCase(),
         district: row[4],
-        outliers: row[6],
-        opportunities: row[7],
+        opportunities: parseInt(row[5]),
+        outliers: isSupervisors ? parseInt(row[6]) : 0,
       },
     ])
   );
   const emails = Object.keys(dataByEmail);
+  const hasOutliersTextConfigured = Object.fromEntries(
+    stateCodes.map((stateCode) => [
+      stateCode,
+      !!stateSpecificText(stateCode, -1, -1).outliersText,
+    ])
+  );
 
-  // last day of the previous month, 11:59pm local time
-  const cutoffDate = new Date();
+  const cutoffDate = new Date(); // last day of the previous month, 11:59pm local time
   cutoffDate.setDate(0);
   cutoffDate.setHours(23, 59);
 
@@ -231,15 +253,26 @@ function sendAllLoginReminders(isSupervisors, query, settings) {
   const userLoginInfo = getUserLoginInfo(emails, authToken);
 
   console.log("Sending emails...");
-  for (const [email, lastLogin] of userLoginInfo.entries()) {
+
+  for (const [email, lastLogin] of Object.entries(userLoginInfo)) {
+    if (emailsAlreadySent.includes(email)) {
+      console.log("Skipping person we already emailed:", email);
+      continue;
+    }
     if (lastLogin < cutoffDate) {
       const emailInfo = dataByEmail[email];
-      if (shouldSendLoginReminder(emailInfo, isSupervisors, settings)) {
-        const body = buildLoginReminderBody(emailInfo, settings);
+      const shouldCheckOutliers =
+        isSupervisors && hasOutliersTextConfigured[emailInfo.stateCode];
+      if (shouldSendLoginReminder(emailInfo, shouldCheckOutliers, settings)) {
+        const body = buildLoginReminderBody(emailInfo, isSupervisors, settings);
         sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
       }
     }
   }
+
+  console.log(
+    `Done! Emails sent were written to the spreadsheet "${sheetName}".`
+  );
 }
 
 /**
