@@ -27,14 +27,10 @@ from recidiviz.case_triage.pathways.metrics.query_builders.person_level_metric_q
 from recidiviz.case_triage.pathways.metrics.query_builders.population_projection_metric_query_builder import (
     PopulationProjectionMetricQueryBuilder,
 )
-from recidiviz.case_triage.pathways.metrics.query_builders.workflows_impact_metric_query_builder import (
-    WorkflowsImpactMetricQueryBuilder,
-)
 
 ALL_METRIC_QUERY_BUILDERS = [
     CountByDimensionMetricQueryBuilder,
     OverTimeMetricQueryBuilder,
     PersonLevelMetricQueryBuilder,
     PopulationProjectionMetricQueryBuilder,
-    WorkflowsImpactMetricQueryBuilder,
 ]

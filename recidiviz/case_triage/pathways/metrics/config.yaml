@@ -256,10 +256,3 @@ SupervisionToPrisonTransitionsOverTime:
     supervising_officer: FILTER
     supervision_type: FILTER
     time_period: FILTER
-
-UsTnCompliantReportingWorkflowsImpact:
-  database_entity: UsTnCompliantReportingWorkflowsImpact
-  query_builder_class: WorkflowsImpactMetricQueryBuilder
-  dimension_mappings:
-    supervision_district: FILTER
-    start_date: FILTER
