@@ -29,11 +29,11 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_NAME = (
-    "supervision_officer_transitional_caseload_type_sessions"
+SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_NAME = (
+    "supervision_officer_or_previous_if_transitional_sessions"
 )
 
-SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_DESCRIPTION = """
+SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_DESCRIPTION = """
 Sessionized view of each individual on supervision. Session defined as continuous time on the caseload of a given 
 supervising officer, including for non-transitional officers, adjacent sessions where a clients is supervised by
 a transitional officer.
@@ -50,7 +50,7 @@ the session with the transitional officer.
 Officer sessions are unique on person_id, and officer_id, and may be overlapping.
 """
 
-SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
+SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_QUERY_TEMPLATE = f"""
     WITH prioritized_supervision_sessions AS (
         SELECT * FROM `{{project_id}}.sessions.prioritized_supervision_sessions_materialized`
     )
@@ -167,15 +167,15 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
                                 session_id_output_name = 'supervising_officer_session_id')})
     """
 
-SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_NAME,
-    view_query_template=SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE,
-    description=SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_DESCRIPTION,
+    view_id=SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_NAME,
+    view_query_template=SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_QUERY_TEMPLATE,
+    description=SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_DESCRIPTION,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER.build_and_print()
+        SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL_SESSIONS_VIEW_BUILDER.build_and_print()

@@ -63,7 +63,7 @@ FROM `{project_id}.sessions.supervision_officer_sessions_materialized`
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """
 SELECT *, supervising_officer_external_id AS officer_id
-FROM `{project_id}.sessions.supervision_officer_transitional_caseload_type_sessions_materialized`
+FROM `{project_id}.sessions.supervision_officer_or_previous_if_transitional_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.PERSON_ID,
