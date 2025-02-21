@@ -115,7 +115,7 @@ all_inc_charges AS (
         SubCategory, 
         history.Grade AS Grade_Category,
         history.Grade
-    FROM {Criminal_History} history
+    FROM {Criminal_History_OLD} history
     LEFT JOIN {offense_codes} offense_codes
         ON REPLACE(REPLACE(history.Code, ".", ""), "*", "") = REPLACE(REPLACE(offense_codes.Code, ".", ""), "*", "")
     WHERE history.grade IS DISTINCT FROM 'NOGRD' AND history.grade IS DISTINCT FROM 'S'
