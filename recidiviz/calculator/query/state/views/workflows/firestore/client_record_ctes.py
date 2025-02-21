@@ -808,6 +808,9 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
     ),
     """
 
+# TODO(#38551): Change the SAFE_CAST below (for phone numbers) back to CAST once we
+# enforce in ingest that phone numbers in the data are actually shaped like phone
+# numbers.
 _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
     join_clients AS (
         SELECT DISTINCT
@@ -817,7 +820,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           did.display_id,
           sp.full_name as person_name,
           sp.current_address as address,
-          CAST(ph.phone_number AS INT64) AS phone_number,
+          SAFE_CAST(ph.phone_number AS INT64) AS phone_number,
           LOWER(ea.email_address) AS email_address,
           sc.supervision_type,
           sc.officer_id,
