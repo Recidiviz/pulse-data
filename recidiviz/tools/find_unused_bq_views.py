@@ -502,6 +502,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
         " (Justine Kunz 12/03/2024)"
     ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_tx",
+        table_id="meets_risk_assessment_standards",
+    ): (
+        "This criteria view will eventually be referenced by Texas tasks (Sophie 02/13/2024)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
