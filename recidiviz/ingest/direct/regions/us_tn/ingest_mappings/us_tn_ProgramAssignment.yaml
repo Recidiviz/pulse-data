@@ -40,4 +40,4 @@ output:
           discharge_date: EndDate
           referral_metadata:
             $json_dict:
-              Recommendation: Recommendation
+              RECOMMENDATION: Recommendation

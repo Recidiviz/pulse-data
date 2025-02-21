@@ -64,4 +64,4 @@ output:
           discharge_date: discharge_date
           referral_metadata:
             $json_dict:
-              program_name: ProgramName
+              PROGRAM_NAME: ProgramName

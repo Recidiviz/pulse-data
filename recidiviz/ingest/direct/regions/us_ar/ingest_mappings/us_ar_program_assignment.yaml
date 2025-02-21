@@ -83,7 +83,7 @@ output:
                 $then: $literal("US_AR_PARTYID")
           referral_metadata:
             $json_dict:
-              program_type:
+              PROGRAM_TYPE:
                 $custom:
                   $function: us_ar_custom_parsers.parse_program_type
                   $args:

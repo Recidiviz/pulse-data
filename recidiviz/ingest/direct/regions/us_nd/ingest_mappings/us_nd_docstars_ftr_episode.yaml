@@ -71,16 +71,16 @@ output:
                 $then: STATUS_DATE
           referral_metadata:
             $json_dict:
-              preferred_provider_id: PREFERRED_PROVIDER_ID
-              preferred_location_id: PREFERRED_LOCATION_ID
-              strengths: STRENGTHS
-              needs: NEEDS
-              is_clinical_assessment: IS_CLINICAL_ASSESSMENT
-              current_needs: CURRENT_NEEDS
-              assessment_location: ASSESSMENT_LOCATION
-              referral_reason: REFERRAL_REASON
-              specialist_first_name: SPECIALIST_FIRST_NAME
-              specialist_last_name: SPECIALIST_LAST_NAME
-              specialist_initial: SPECIALIST_INITIAL
-              submitted_by: SUBMITTED_BY
-              submitted_by_name: SUBMITTED_BY_NAME
+              PREFERRED_PROVIDER_ID: PREFERRED_PROVIDER_ID
+              PREFERRED_LOCATION_ID: PREFERRED_LOCATION_ID
+              STRENGTHS: STRENGTHS
+              NEEDS: NEEDS
+              IS_CLINICAL_ASSESSMENT: IS_CLINICAL_ASSESSMENT
+              CURRENT_NEEDS: CURRENT_NEEDS
+              ASSESSMENT_LOCATION: ASSESSMENT_LOCATION
+              REFERRAL_REASON: REFERRAL_REASON
+              SPECIALIST_FIRST_NAME: SPECIALIST_FIRST_NAME
+              SPECIALIST_LAST_NAME: SPECIALIST_LAST_NAME
+              SPECIALIST_INITIAL: SPECIALIST_INITIAL
+              SUBMITTED_BY: SUBMITTED_BY
+              SUBMITTED_BY_NAME: SUBMITTED_BY_NAME

@@ -78,7 +78,7 @@ output:
           referral_metadata:
             $json_dict:
               # A Y/N flag indicating whether a person successfully completed the program.
-              completion_flag: COMPLETION_PR_FLAG
-              exemption: EXEMPTION
-              exemption_comments: EXEMPTION_COMMENTS
-              exemption_removed_date: EXEMPTION_REMOVED_DATE
+              COMPLETION_FLAG: COMPLETION_PR_FLAG
+              EXEMPTION: EXEMPTION
+              EXEMPTION_COMMENTS: EXEMPTION_COMMENTS
+              EXEMPTION_REMOVED_DATE: EXEMPTION_REMOVED_DATE

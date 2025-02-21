@@ -236,13 +236,7 @@ class StateProgramAssignmentFactory(EntityFactory):
     ) -> entities.StateProgramAssignment:
         return entity_deserialize(
             cls=entities.StateProgramAssignment,
-            converter_overrides={
-                # TODO(#18208): Remove once we can parse all referral_metadata JSON properly
-                "referral_metadata": EntityFieldConverter(
-                    NormalizedJSON,
-                    lambda x: normalize(json.dumps(x.json, sort_keys=True)),
-                ),
-            },
+            converter_overrides={},
             defaults={
                 "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
             },

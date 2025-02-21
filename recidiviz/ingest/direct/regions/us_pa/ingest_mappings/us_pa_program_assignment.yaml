@@ -86,5 +86,5 @@ output:
               $include_nulls: False
           referral_metadata:
             $json_dict:
-              program_code: TrtProgramCode
-              program_name: TrtProgramDescription
+              PROGRAM_CODE: TrtProgramCode
+              PROGRAM_NAME: TrtProgramDescription

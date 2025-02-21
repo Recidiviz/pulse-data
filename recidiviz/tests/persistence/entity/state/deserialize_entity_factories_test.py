@@ -331,9 +331,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             program_id="PROGRAM_ID",
             program_location_id="LOCATION_ID",
             state_code="US_XX",
-            # TODO(#18208): The behavior here should change once we're properly
-            #  normalizing assessment_metadata.
-            referral_metadata='{"KEY1": "VAL1", "KEY2": "VAL2"}',
+            referral_metadata='{"key1": "VAL1", "key2": "VAL2"}',
         )
 
         self.assertEqual(expected_result, result)
