@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
 )
 from recidiviz.ingest.direct.sftp.metadata import (
     DISABLED_ALGORITHMS_KWARG,
+    MAX_CONCURRENT_READ_THREADS,
     SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
@@ -73,4 +74,16 @@ class UsNeSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}
 
     def get_read_kwargs(self) -> Dict[str, Any]:
-        return {}
+        """Limits the number of parallel read threads after SFTP in Nebraska was hanging
+        while transferring files
+
+        From the paramiko docs --
+            :param int max_concurrent_prefetch_requests:
+                The maximum number of concurrent read requests to prefetch.
+                When this is ``None`` (the default), do not limit the number of
+                concurrent prefetch requests. Note: OpenSSH's sftp internally
+                imposes a limit of 64 concurrent requests, while Paramiko imposes
+                no limit by default; consider setting a limit if a file can be
+                successfully received with sftp but hangs with Paramiko.
+        """
+        return {MAX_CONCURRENT_READ_THREADS: 1}
