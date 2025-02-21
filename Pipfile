@@ -17,7 +17,7 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = { extras = ["gcp", "test"], version = "==2.58.1" }
+apache-beam = { extras = ["gcp", "test"], version = "==2.62.0" }
 debugpy = "*"
 fakeredis = "*"
 freezegun = "*"
