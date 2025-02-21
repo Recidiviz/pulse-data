@@ -16,7 +16,6 @@
 # =============================================================================
 """Class containing logic for how US_TX SFTP downloads are handled."""
 import re
-from datetime import datetime
 from typing import Any, Dict, List
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -40,16 +39,11 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     file_extension: str = "csv"
 
     def _matches(self, path: str) -> bool:
-        """Only accept files that match the pattern: Recidiviz_<name>_<today's_date>_<timestamp>.csv
+        """Only accept files that match the pattern: Recidiviz_<name>_<date>_<timestamp>.csv
         eg. /Recidiviz_File_2024_12_27_01_01_01.csv"""
 
-        # Get today's date in the format YYYY_MM_DD
-        today_date = datetime.today().strftime("%Y_%m_%d")
-
-        # Regex pattern to match the desired filename format with today's date
-        pattern = (
-            "^/Recidiviz_[A-Za-z0-9_]+_" + today_date + r"_\d{2}_\d{2}_\d{2}\.csv$"
-        )
+        # Regex pattern to match the desired filename format with a date
+        pattern = r"^Recidiviz_([^_]+)(_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})?\.csv$"
 
         # Check if the file matches the pattern
         if path and re.match(pattern, path):
