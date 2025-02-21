@@ -19,7 +19,11 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     assessments:
       - StateAssessment:
-          external_id: MENTAL_HEALTH_ACTION_ID
+          external_id:
+            $concat:
+              $values:
+                - MENTAL_HEALTH_ACTION_ID
+                - $literal("MENTAL HEALTH")
           assessment_date: RECORD_DATE
           assessment_class: $literal_enum(StateAssessmentClass.MENTAL_HEALTH)
           assessment_type: $literal_enum(StateAssessmentType.INTERNAL_UNKNOWN)

@@ -17,7 +17,11 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     assessments:
       - StateAssessment:
-          external_id: RISK_ASSESSMENT_ID
+          external_id:
+            $concat:
+              $values:
+                - RISK_ASSESSMENT_ID
+                - $literal("CCRRA")
           assessment_date: DATE_ASSESSMENT
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
           # This is a community corrections risk release assessment

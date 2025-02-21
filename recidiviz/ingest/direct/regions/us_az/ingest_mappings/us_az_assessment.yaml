@@ -19,7 +19,11 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     assessments:
       - StateAssessment:
-          external_id: ACCAT_ID
+          external_id:
+            $concat:
+              $values:
+                - ACCAT_ID
+                - $literal("ACCAT")
           assessment_date: DATE_ASSESSMENT
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type: $literal_enum(StateAssessmentType.ACCAT)
