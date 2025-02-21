@@ -355,21 +355,34 @@ def parse_supervision_level(
 def parse_custody_level(
     raw_text: str,
 ) -> Optional[StateIncarcerationPeriodCustodyLevel]:
-    level = raw_text.split("-")[1].upper()
-    if level == "INTAKE":
-        return StateIncarcerationPeriodCustodyLevel.INTAKE
-    if level == "MINIMUM":
-        return StateIncarcerationPeriodCustodyLevel.MINIMUM
-    if level == "MEDIUM":
-        return StateIncarcerationPeriodCustodyLevel.MEDIUM
-    if level == "MAXIMUM":
-        return StateIncarcerationPeriodCustodyLevel.MAXIMUM
-    if level == "CLOSE":
-        return StateIncarcerationPeriodCustodyLevel.CLOSE
-    if level == "DETENTION":
-        return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
-    if level == "UNKNOWN":
-        return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
+    """Parse custody level given classification assessment results and current facility."""
+    # If there is any custody level information, this is the correct way to separate the
+    # raw text value.
+    if len(raw_text.split("-")) == 3:
+        level = raw_text.split("-")[1].upper()
+        prison = raw_text.split("-")[2].upper()
+        # Override all custody level assignments to be INTAKE when a person is housed
+        # in an intake facility.
+        if level == "INTAKE" or prison in ("PERRYVILLE", "PHOENIX"):
+            return StateIncarcerationPeriodCustodyLevel.INTAKE
+        if level == "MINIMUM":
+            return StateIncarcerationPeriodCustodyLevel.MINIMUM
+        if level == "MEDIUM":
+            return StateIncarcerationPeriodCustodyLevel.MEDIUM
+        if level == "MAXIMUM":
+            return StateIncarcerationPeriodCustodyLevel.MAXIMUM
+        if level == "CLOSE":
+            return StateIncarcerationPeriodCustodyLevel.CLOSE
+        if level == "DETENTION":
+            return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
+        if level == "UNKNOWN":
+            return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
+    # If there is no custody level information, raw text will be in the form NONE-[Facility Name].
+    if len(raw_text.split("-")) == 2:
+        prison = raw_text.split("-")[1].upper()
+        # Set custody level to INTAKE any time a person is housed in an intake facility.
+        if prison in ("PERRYVILLE", "PHOENIX"):
+            return StateIncarcerationPeriodCustodyLevel.INTAKE
     return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
 
 
