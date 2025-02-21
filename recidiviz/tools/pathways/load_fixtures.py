@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
-    IMPACT_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.pathways_database_manager import (
@@ -93,9 +90,6 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
     for pathways_view_builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS:
         if pathways_view_builder.view_id == table.__tablename__:
             view_builder_columns = pathways_view_builder.delegate.columns
-    for impact_view_builder in IMPACT_DASHBOARD_VIEW_BUILDERS:
-        if impact_view_builder.view_id == table.__tablename__:
-            view_builder_columns = impact_view_builder.columns
     if not view_builder_columns:
         raise ValueError(f"missing view builder {table.__tablename__}")
     return view_builder_columns

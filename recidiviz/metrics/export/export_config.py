@@ -41,9 +41,6 @@ from recidiviz.calculator.query.state.views.dashboard.population_projections.pop
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
-    IMPACT_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
     JII_TEXTING_VIEW_BUILDERS,
 )
@@ -368,15 +365,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="INSIGHTS",
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
-    # Impact Views
-    ExportViewCollectionConfig(
-        view_builders_to_export=IMPACT_DASHBOARD_VIEW_BUILDERS,
-        output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="IMPACT",
-        export_output_formats_and_validations={
-            ExportOutputFormatType.HEADERLESS_CSV: []
-        },
     ),
     # Product failed logins monthly view
     ExportViewCollectionConfig(

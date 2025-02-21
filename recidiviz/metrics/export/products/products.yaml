@@ -142,13 +142,6 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
-  - name: IMPACT
-    description: Impact is a tracking product web tool to share impact metrics with partners.
-    exports:
-      - IMPACT
-    states:
-      - state_code: US_TN
-        environment: staging
   - name: Product failed logins
     description: Tracks the failed logins from the dashboard product over the last 30 days to enhance our user support
     is_state_agnostic: True

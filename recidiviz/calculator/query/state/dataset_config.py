@@ -26,9 +26,6 @@ DATAFLOW_METRICS_DATASET: str = "dataflow_metrics"
 # Where the most recent metrics that Dataflow jobs produce live
 DATAFLOW_METRICS_MATERIALIZED_DATASET: str = "dataflow_metrics_materialized"
 
-# Where the metrics that the impact dashboard uses live
-IMPACT_DASHBOARD_DATASET: str = "impact_dashboard"
-
 # Where static reference tables live
 STATIC_REFERENCE_TABLES_DATASET: str = "static_reference_tables"
 

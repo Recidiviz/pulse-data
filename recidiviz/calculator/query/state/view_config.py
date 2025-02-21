@@ -34,9 +34,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.datafl
 from recidiviz.calculator.query.state.views.external_reference.external_reference_views import (
     EXTERNAL_REFERENCE_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
-    IMPACT_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
     JII_TEXTING_VIEW_BUILDERS,
 )
@@ -97,7 +94,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             SHARED_METRIC_VIEW_BUILDERS,
             VITALS_REPORT_VIEW_BUILDERS,
             OUTLIERS_VIEW_BUILDERS,
-            IMPACT_DASHBOARD_VIEW_BUILDERS,
             CASE_INSIGHTS_VIEW_BUILDERS,
             SENTENCING_VIEW_BUILDERS,
             CASE_NOTE_SEARCH_VIEW_BUILDERS,

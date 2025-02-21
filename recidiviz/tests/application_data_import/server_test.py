@@ -49,7 +49,6 @@ from recidiviz.persistence.database.schema.insights.schema import (
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
-    UsTnCompliantReportingWorkflowsImpact,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -80,15 +79,10 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
         self.client = self.app.test_client()
         self.bucket = "test-project-dashboard-event-level-data"
         self.pathways_view = "liberty_to_prison_transitions"
-        self.impact_view = "us_tn_compliant_reporting_workflows_impact"
-        self.impact_metric = "UsTnCompliantReportingWorkflowsImpact"
         self.metric = "LibertyToPrisonTransitions"
         self.state_code = "US_XX"
         self.columns = [
             col.name for col in LibertyToPrisonTransitions.__table__.columns
-        ]
-        self.impact_columns = [
-            col.name for col in UsTnCompliantReportingWorkflowsImpact.__table__.columns
         ]
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
@@ -221,46 +215,6 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
-    @patch(
-        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
-        autospec=True,
-    )
-    @patch(
-        "recidiviz.case_triage.pathways.metric_cache.PathwaysMetricCache", autospec=True
-    )
-    @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
-        return_value=FakeRedis(),
-    )
-    def test_import_impact_successful(
-        self,
-        mock_redis: MagicMock,
-        mock_metric_cache: MagicMock,
-        mock_import_csv: MagicMock,
-    ) -> None:
-        with self.app.test_request_context():
-            response = self.client.post(
-                f"/import/pathways/{self.state_code}/{self.impact_view}.csv",
-            )
-            mock_import_csv.assert_called_with(
-                database_key=SQLAlchemyDatabaseKey(
-                    schema_type=SchemaType.PATHWAYS, db_name="us_xx"
-                ),
-                model=UsTnCompliantReportingWorkflowsImpact,
-                gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
-                    self.bucket, f"{self.state_code}/{self.impact_view}.csv"
-                ),
-                columns=self.impact_columns,
-            )
-            mock_redis.assert_called()
-            mock_metric_cache.assert_called_with(
-                state_code=StateCode.US_XX, metric_fetcher=ANY, redis=ANY
-            )
-            mock_metric_cache.return_value.reset_cache.assert_called_with(
-                ALL_METRICS_BY_NAME["UsTnCompliantReportingWorkflowsImpact"]
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-
     def test_import_pathways_invalid_state(self) -> None:
         with self.app.test_request_context():
             response = self.client.post(
@@ -281,7 +235,7 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
                 HTTPStatus.BAD_REQUEST, response.status_code, response.data
             )
             self.assertEqual(
-                b"Invalid filename unknown_file.csv, must match a Pathways event-level view or impact dashboard view",
+                b"Invalid filename unknown_file.csv, must match a Pathways event-level view",
                 response.data,
             )
 

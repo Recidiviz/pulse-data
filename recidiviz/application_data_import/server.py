@@ -32,9 +32,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
-    IMPACT_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -136,13 +133,9 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         if f"{pathways_view_builder.view_id}.csv" == filename:
             view_builder = pathways_view_builder.delegate
             view_id = pathways_view_builder.view_id
-    for impact_view_builder in IMPACT_DASHBOARD_VIEW_BUILDERS:
-        if f"{impact_view_builder.view_id}.csv" == filename:
-            view_builder = impact_view_builder
-            view_id = impact_view_builder.view_id
     if not view_builder and not view_id:
         return (
-            f"Invalid filename {filename}, must match a Pathways event-level view or impact dashboard view",
+            f"Invalid filename {filename}, must match a Pathways event-level view",
             HTTPStatus.BAD_REQUEST,
         )
     if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
