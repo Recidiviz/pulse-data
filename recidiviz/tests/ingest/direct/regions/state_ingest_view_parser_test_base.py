@@ -35,7 +35,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
-    EnumMappingManifest,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -54,10 +53,7 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestTestFixturePath,
-    enum_parsing_fixture_path,
-)
+from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
     ingest_mappingest_json_schema_path,
 )
@@ -285,37 +281,4 @@ class LegacyStateIngestViewParserTestBase:
             self.test.fail(
                 f"Unexpected test name [{actual_test_name}] for file_tag "
                 f"[{file_tag}]. Expected [{expected_test_name}]."
-            )
-
-
-class EnumManifestParsingTestCase(unittest.TestCase):
-    """This TestCase serves as the base for testing complex parsing of enums from raw text."""
-
-    @property
-    def state_code(self) -> StateCode:
-        raise NotImplementedError("Ensure your subclass has a StateCode defined!")
-
-    @property
-    def _manifest_compiler(self) -> IngestViewManifestCompiler:
-        return IngestViewManifestCompiler(
-            delegate=StateSchemaIngestViewManifestCompilerDelegate(
-                region=get_direct_ingest_region(self.state_code.value)
-            )
-        )
-
-    def parse_manifest(self, ingest_view_name: str) -> EntityTreeManifest:
-        manifest = self._manifest_compiler.compile_manifest(
-            ingest_view_name=ingest_view_name
-        )
-        return manifest.output
-
-    def run_enum_manifest_parsing_test(
-        self, file_tag: str, enum_parser_manifest: EnumMappingManifest
-    ) -> None:
-        fixture_path = enum_parsing_fixture_path(self.state_code, file_tag)
-        contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
-        for row in csv.DictReader(contents_handle.get_contents_iterator()):
-            _ = enum_parser_manifest.build_from_row(
-                row,
-                context=IngestViewContentsContext.build_for_tests(),
             )
