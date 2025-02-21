@@ -28,7 +28,12 @@ from recidiviz.common.constants.state.state_charge import (
 from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -92,3 +97,36 @@ def parse_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionTy
             return StateSupervisionPeriodSupervisionType.PAROLE
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+
+def parse_incarceration_type(raw_text: str) -> StateIncarcerationType:
+    if raw_text:
+        if "CO JAIL" in raw_text:
+            return StateIncarcerationType.COUNTY_JAIL
+        return StateIncarcerationType.STATE_PRISON
+    return StateIncarcerationType.INTERNAL_UNKNOWN
+
+
+def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
+    if raw_text:
+        if "CO JAIL" in raw_text:
+            return StateCustodialAuthority.COUNTY
+        return StateCustodialAuthority.STATE_PRISON
+    return StateCustodialAuthority.INTERNAL_UNKNOWN
+
+
+def parse_specialized_pfi(raw_text: str) -> StateSpecializedPurposeForIncarceration:
+    if raw_text:
+        start_reason, end_reason, legal_status = raw_text.split("@@")
+        if "72 HOUR HOLD" in start_reason or "SANCTION" in start_reason:
+            return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+        # If a person was arrested while on probation and then immediately released,
+        # we can assume that is a period of temporary custody.
+        if (
+            start_reason == "ARRESTED"
+            and end_reason == "JAIL RELEASE"
+            and (legal_status == "PLEA IN ABEYANCE" or "PROBATION" in legal_status)
+        ):
+            return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+        return StateSpecializedPurposeForIncarceration.GENERAL
+    return StateSpecializedPurposeForIncarceration.GENERAL

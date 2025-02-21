@@ -1,0 +1,267 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  start_reason: STRING
+  end_reason: STRING
+  lgl_stat_desc: STRING
+  body_loc_desc: STRING
+  period_id: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - ofndr_num
+                - period_id
+          admission_date: start_date
+          release_date: end_date
+          facility: body_loc_desc
+          admission_reason:
+            $enum_mapping:
+              $raw_text: start_reason
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - APPEAL AFFIRMED
+                  - APPEAL FILED/CASE PENDING
+                  - APPEAL REVERSED
+                  - APPEAL-AFFIRMED ORIGINAL ORDER
+                  - APPEAL-REVERSED ORIGINAL ORDER
+                  - CASE DISMISSED BY COURT
+                  - FAILED TO APPEAR AT SENTENCING
+                  - WARRANT RECALLED
+                  - EXPIRATION TO HOLD
+                  - INVESTIGATION NOT COMPLETED
+                  - NOT SUPVSD AFTER APPEAL
+                  - NOT SUPVSD AFTER INVESTIGATION
+                  - OBSCIS LEGAL STATUS CHANGE
+                  - FACILITY NAME CHANGE
+                  # These represent legal status changes that occur while a person is incarcerated.
+                  # They are typically released not long afterward.
+                  - PAROLE
+                  - PAROLE CONTINUED
+                  - PAROLE HALFWAY OUT
+                  - PAROLE RESTARTED
+                  - PAROLE TO CUSTODY
+                  - PAROLE/HALFWAY OUT
+                  - EXPIRATION OF SENTENCE
+                  - PROBATION CONTINUED
+                  - PROBATION REINSTATED
+                  - PROBATION RESTARTED
+                  - PROBATION START
+                  - PLEA IN ABEYANCE EXTENDED
+                  - PLEA IN ABEYANCE RESTARTED
+                  - PLEA IN ABEYANCE START
+                  - COMMUTATION OF SENTENCE
+                  - JAIL RELEASE
+                  - REVERSED COURT ORDER
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - PAROLE REVOKED
+                  - PAROLE VIOLATOR PROGRAM
+                  - COMP RET TO OTHER/NOT COMPLETE
+                  - COMP RET TO UTAH/NOT COMPLETE
+                  - NEW COMMITMENT/PROB VIOLATION
+                  - PROBATION REVOKED
+                  - RET PRSN FROM OUT COUNT
+                  - RET PRSN/PAR REVOKED
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - ESCAPE RETURNED
+                  - FUGITIVE LOCATED
+                  - WALKAWAY RETURNED
+                  - AWOL RETURNED
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - ABSCOND
+                  - AWOL
+                  - ESCAPE
+                  - WALKAWAY
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - COMPACT OUT/UTAH TO OTHR STATE
+                  - EXTRADITION
+                  - DEPORTED/NOT TERMINATED
+                  - MOVE/CCC HOUSING
+                  - MOVE/FEDERAL FACILITY
+                  - MOVE/MEDICAL
+                  - MOVE/OTHER STATE JAIL
+                  - MOVE/OTHER STATE PRISON
+                  - MOVE/PRISON HOUSING
+                  - MOVE/PRISON TEMP HOUSING
+                  - MOVE/STATE HOSPITAL
+                  - MOVE/UTAH JAIL
+                  - OBSCIS LOCATION CHANGE
+                  - FIELD OP TRANSFER
+                  - BODY LOCATION CHANGE
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - COLLECTION ONLY START
+                  - COMPACT IN START
+                  - DIAGNOSTIC START
+                  - DIVERSION START
+                  - INMATE COURTESY HOLD
+                  - JAIL ENTRY
+                  - NEW COMMITMENT
+                  - NEW DIAGNOSTIC REFERRAL
+                  - NEW REFERRAL
+                  - RET PRSN/REV PEND
+                  - RET PRSN/REV PENDING
+                  - ARRESTED
+                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                  - JAIL ENTRY-72 HOUR HOLD
+                  - JAIL-RIM SANCTION (1-3 DAY)
+                  - RET PRSN/REV PEND/72 HOUR HOLD
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - COMPACT DENIED
+                  - DENIED FIELD OP TRANSFR/OBSCIS
+                  - HALFWAY BACK
+                  - WARRANT ISSUED
+          release_reason:
+            $enum_mapping:
+              $raw_text: end_reason
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - COMMUTATION OF SENTENCE
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - DIVERSION START
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                  - CASE DISMISSED BY COURT
+                  - INMATE COURT ORDER RELEASE
+                  - REVERSED COURT ORDER
+                  - WARRANT RECALLED
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - DIED
+                  - DIED/ACCIDENTAL
+                  - DIED/EXECUTION
+                  - DIED/KILLED
+                  - DIED/NATURAL CAUSES
+                  - DIED/SUICIDE
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - ABSCOND
+                  - ESCAPE
+                  - WALKAWAY
+                  - AWOL
+                  - DISCHARGED/ABSCOND
+                StateIncarcerationPeriodReleaseReason.PARDONED:
+                  - PARDON
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+                  - NOT SUPVSD AFTER APPEAL
+                  - NOT SUPVSD AFTER INVESTIGATION
+                  - NOT SUPVSD AFTER SCREENING
+                  - INMATE COURTESY RELEASE
+                  - COLLECTION ONLY RELEASED
+                  - JAIL RELEASE
+                  - DISCHARGED/HOLD
+                  - DIAGNOSTIC RELEASE
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - PAROLE
+                  - PAROLE CONT/RELEASE FROM PRISN
+                  - PAROLE CONTINUED
+                  - PAROLE HALFWAY OUT
+                  - PAROLE RESTARTED
+                  - PAROLE REVOKED
+                  - PAROLE TO CUSTODY
+                  - PAROLE VIOLATOR PROGRAM
+                  - PAROLE/HALFWAY OUT
+                  - PROBATION CONTINUED
+                  - PROBATION REINSTATED
+                  - PROBATION RESTARTED
+                  - PROBATION REVOKED
+                  - PROBATION START
+                  - HALFWAY BACK
+                  - PLEA IN ABEYANCE EXTENDED
+                  - PLEA IN ABEYANCE RESTARTED
+                  - PLEA IN ABEYANCE START
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - ESCAPE RETURNED
+                  - AWOL RETURNED
+                  - FUGITIVE LOCATED
+                  - WALKAWAY RETURNED
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - DISCHARGED/SUCCESSFUL
+                  - EXPIRATION OF SENTENCE
+                  - EXPIRATION TO HOLD
+                  - REL FM HALFWAY BACK
+                  - REL FM HALFWAY OUT
+                  - DISCHARGED/INMATE CASE
+                  - CCC RELEASE
+                  - DISCHARGED/OBSCIS DOWNLOAD
+                  - DISCHARGED TO PSRB
+                  - DISCHARGED/UNSUCCESSFUL
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - APPEAL AFFIRMED
+                  - APPEAL FILED/CASE PENDING
+                  - APPEAL REVERSED
+                  - APPEAL-AFFIRMED ORIGINAL ORDER
+                  - APPEAL-REVERSED ORIGINAL ORDER
+                  - ARRESTED
+                  - RET PRSN FROM OUT COUNT
+                  - RET PRSN/PAR REVOKED
+                  - RET PRSN/REV PEND
+                  - RET PRSN/REV PEND/72 HOUR HOLD
+                  - RET PRSN/REV PENDING
+                  - COMP RET TO OTHER/NOT COMPLETE
+                  - COMP RET TO UTAH/NOT COMPLETE
+                  - INMATE COURTESY HOLD
+                  - JAIL ENTRY
+                  - JAIL ENTRY-72 HOUR HOLD
+                  - JAIL-RIM SANCTION (1-3 DAY)
+                  - NEW COMMITMENT
+                  - NEW COMMITMENT/PROB VIOLATION
+                  - NEW DIAGNOSTIC REFERRAL
+                  - NEW REFERRAL
+                  - OBSCIS LEGAL STATUS CHANGE
+                  - WARRANT ISSUED
+                  - COMPACT DENIED
+                  - COLLECTION ONLY START
+                  - DENIED FIELD OP TRANSFR/OBSCIS
+                  - FACILITY NAME CHANGE
+                  - INVESTIGATION NOT COMPLETED
+                  - FAILED TO APPEAR AT SENTENCING
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - BODY LOCATION CHANGE
+                  - COMPACT IN START
+                  - MOVE/CCC HOUSING
+                  - MOVE/MEDICAL
+                  - MOVE/PRISON HOUSING
+                  - MOVE/PRISON TEMP HOUSING
+                  - MOVE/STATE HOSPITAL
+                  - MOVE/UTAH JAIL
+                  - OBSCIS LOCATION CHANGE
+                  - FIELD OP TRANSFER
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - COMPACT OUT/UTAH TO OTHR STATE
+                  - DEPORTED/NOT TERMINATED
+                  - MOVE/FEDERAL FACILITY
+                  - MOVE/OTHER STATE PRISON
+                  - MOVE/OTHER STATE JAIL
+                  - EXTRADITION
+                  - DISCHARGED/DEPORTED
+                  - DISCHARGED/OTHER JURISDICTION
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - DIAGNOSTIC START
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: body_loc_desc
+              $custom_parser: us_ut_custom_enum_parsers.parse_incarceration_type
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: body_loc_desc
+              $custom_parser: us_ut_custom_enum_parsers.parse_custodial_authority
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - start_reason
+                    - end_reason
+                    - lgl_stat_desc
+                  $separator: "@@"
+              $custom_parser: us_ut_custom_enum_parsers.parse_specialized_pfi
