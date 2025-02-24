@@ -115,6 +115,12 @@ class ExportViewCollectionConfig:
     # results to.
     output_project_by_data_project: Dict[str, str] | None = attr.ib(default=None)
 
+    # If set to True, emit a Pub/Sub message to a topic in the project the views are
+    # exported to, i.e. the output project, where the topic name has the format
+    # <lowercase export_name>_export_success. there is a Terraform-managed topic that
+    # already exists with that name before setting this to True for a given export.
+    publish_success_pubsub_message: bool = attr.ib(default=False)
+
     @property
     def output_directory(self) -> GcsfsDirectoryPath:
         output_directory_project_id = (
@@ -127,6 +133,16 @@ class ExportViewCollectionConfig:
             self.output_directory_uri_template, project_id=output_directory_project_id
         )
         return GcsfsDirectoryPath.from_absolute_path(output_directory_uri)
+
+    @property
+    def pubsub_topic_name(self) -> str | None:
+        """The Pub/Sub topic name that the message will be published to if
+        publish_success_pubsub_message is set to True"""
+        return (
+            f"{self.export_name.lower()}_export_success"
+            if self.publish_success_pubsub_message
+            else None
+        )
 
     def export_configs_for_views_to_export(
         self,
@@ -403,6 +419,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
         },
+        publish_success_pubsub_message=True,
     ),
 ]
 

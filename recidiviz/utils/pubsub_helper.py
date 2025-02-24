@@ -19,7 +19,7 @@
 
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import google.cloud.pubsub_v1 as pubsub
 
@@ -49,12 +49,17 @@ def clear_publisher() -> None:
     _publisher = None
 
 
-def publish_message_to_topic(message: str, topic: str) -> None:
+def publish_message_to_topic(
+    message: str, topic: str, destination_project_id: Optional[str] = None
+) -> None:
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
     if not message:
         raise ValueError("Message cannot be empty.")
     publisher = get_publisher()
-    topic_path = publisher.topic_path(metadata.project_id(), topic)
+    topic_path = publisher.topic_path(
+        destination_project_id if destination_project_id else metadata.project_id(),
+        topic,
+    )
     future = publisher.publish(topic=topic_path, data=message.encode("utf-8"))
     logging.info("Pubsub publish response: %s", future.result())
 

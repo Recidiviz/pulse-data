@@ -16,6 +16,7 @@
 # =============================================================================
 """Export data from BigQuery metric views to configurable locations."""
 import datetime
+import json
 import logging
 from typing import Dict, List, Optional, Sequence
 
@@ -68,7 +69,7 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
     build_source_table_repository_for_yaml_managed_tables,
 )
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
-from recidiviz.utils import metadata
+from recidiviz.utils import metadata, pubsub_helper
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -182,6 +183,40 @@ def execute_metric_view_data_export(
         runtime_sec=runtime_sec,
     )
     logging.info("Finished saving success record to database.")
+
+    export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
+        export_job_name.upper()
+    )
+
+    if not export_collection:
+        raise ValueError(
+            f"No export configs matching export name: [{export_job_name.upper()}]"
+        )
+
+    if (
+        export_collection.publish_success_pubsub_message
+        and export_collection.pubsub_topic_name
+    ):
+        # If the export has a specified output project, publish the Pub/Sub message in
+        # that same output project.
+        output_project_by_data_project = (
+            export_collection.output_project_by_data_project
+        )
+        pubsub_project_id = (
+            output_project_by_data_project[metadata.project_id()]
+            if output_project_by_data_project
+            else metadata.project_id()
+        )
+
+        pubsub_helper.publish_message_to_topic(
+            destination_project_id=pubsub_project_id,
+            topic=export_collection.pubsub_topic_name,
+            message=json.dumps(
+                {
+                    "state_code": state_code.value if state_code else None,
+                }
+            ),
+        )
 
 
 def get_configs_for_export_name(
