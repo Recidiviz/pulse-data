@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a client has a permanent exemption from paying fines/fees"""
+"""Describes the spans of time when a client has a permanent exemption from paying
+fines/fees.
+"""
 
 from google.cloud import bigquery
 
@@ -28,8 +30,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_PERMANENT_FINES_FEES_EXEMPTION"
 
-_DESCRIPTION = """Describes the spans of time when a client has a permanent exemption from paying fines/fees"""
-
 _QUERY_TEMPLATE = """
     SELECT 
         state_code,
@@ -41,19 +41,18 @@ _QUERY_TEMPLATE = """
         permanent_exemption_reasons AS current_exemptions,
     FROM
         `{project_id}.{analyst_dataset}.permanent_exemptions_preprocessed_materialized`
-
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     reasons_fields=[
         ReasonsField(
             name="current_exemptions",
-            type=bigquery.enums.StandardSqlTypeNames.STRING,
-            description="Lists all of the reasons that a client has a permanent exception from paying fines/fees",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Reasons that a client has a permanent exemption from paying fines/fees",
         ),
     ],
 )
