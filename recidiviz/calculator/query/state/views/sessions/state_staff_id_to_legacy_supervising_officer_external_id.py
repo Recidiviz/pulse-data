@@ -46,6 +46,7 @@ WITH state_to_legacy_supervising_officer_external_id_type AS (
         supervising_officer_staff_external_id IS NOT NULL
 )
 SELECT
+    state_code,
     staff_id,
     external_id,
 FROM

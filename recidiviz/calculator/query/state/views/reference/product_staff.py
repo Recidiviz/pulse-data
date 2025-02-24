@@ -17,10 +17,7 @@
 """View containing attributes of staff members in a state."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    get_pseudonymized_id_query_str,
-    today_between_start_date_and_nullable_end_date_clause,
-)
+from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,6 +27,23 @@ PRODUCT_STAFF_VIEW_NAME = "product_staff"
 PRODUCT_STAFF_DESCRIPTION = (
     """View containing attributes of staff members in a state."""
 )
+
+location_columns = [
+    "supervision_district_id",
+    "supervision_district_id_inferred",
+    "supervision_district_name",
+    "supervision_office_name",
+    "supervision_office_name_inferred",
+]
+
+attribute_columns = [
+    *location_columns,
+    "role_subtype_primary",
+    "role_subtype_array",
+    "role_type_array",
+    "supervisor_staff_external_id_primary",
+    "supervisor_staff_external_id_array",
+]
 
 PRODUCT_STAFF_QUERY_TEMPLATE = f"""
     WITH attribute_sessions_mapped_ids AS (
@@ -76,35 +90,14 @@ PRODUCT_STAFF_QUERY_TEMPLATE = f"""
         attrs.role_subtype_primary,
         attrs.supervisor_staff_external_id_primary AS supervisor_external_id,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
-        officer_sessions.supervising_officer_external_id IS NOT NULL AS is_supervision_officer,
-        supervisors_of_officers.supervisor_staff_external_id IS NOT NULL AS is_supervision_officer_supervisor,
+        IFNULL(attrs.is_supervision_officer, FALSE) AS is_supervision_officer,
+        IFNULL(attrs.is_supervision_officer_supervisor, FALSE) AS is_supervision_officer_supervisor,
         {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || attrs.officer_id")} AS pseudonymized_id,
         attrs.start_date,
         attrs.end_date_exclusive
-    FROM `{{project_id}}.normalized_state.state_staff` ss
-    LEFT JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
+    FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
+    INNER JOIN `{{project_id}}.normalized_state.state_staff` ss
         USING (staff_id)
-    LEFT JOIN (
-        SELECT DISTINCT state_code, supervising_officer_external_id
-        FROM `{{project_id}}.sessions.supervision_officer_sessions_materialized`
-        WHERE {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
-    ) officer_sessions
-        ON ss.state_code = officer_sessions.state_code
-        AND attrs.officer_id = officer_sessions.supervising_officer_external_id
-    LEFT JOIN (
-        SELECT DISTINCT sp.state_code, supervisor_staff_external_id
-        FROM `{{project_id}}.normalized_state.state_staff_supervisor_period` sp
-        INNER JOIN `{{project_id}}.normalized_state.state_staff_external_id` sid
-            USING (state_code, staff_id)
-        INNER JOIN `{{project_id}}.sessions.supervision_officer_sessions_materialized` os
-            ON sid.state_code = os.state_code
-            AND sid.external_id = os.supervising_officer_external_id
-        WHERE
-            {today_between_start_date_and_nullable_end_date_clause("sp.start_date", "sp.end_date")}
-            AND {today_between_start_date_and_nullable_end_date_clause("os.start_date", "os.end_date")}
-    ) supervisors_of_officers
-        ON ss.state_code = supervisors_of_officers.state_code
-        AND attrs.officer_id = supervisors_of_officers.supervisor_staff_external_id
     WHERE
         -- Only include users who we can identify as likely supervision staff so we don't end up
         -- with completely irrelevant users in the admin panel or our product DBs. We don't
@@ -115,8 +108,8 @@ PRODUCT_STAFF_QUERY_TEMPLATE = f"""
         (
             "SUPERVISION_OFFICER" IN UNNEST(attrs.role_type_array)
             OR (SELECT COUNT(1) FROM (SELECT * FROM UNNEST(attrs.role_subtype_array) INTERSECT DISTINCT SELECT * FROM UNNEST(ARRAY["SUPERVISION_OFFICER", "SUPERVISION_OFFICER_SUPERVISOR", "SUPERVISION_DISTRICT_MANAGER", "SUPERVISION_REGIONAL_MANAGER", "SUPERVISION_STATE_LEADERSHIP"]))) >= 1
-            OR officer_sessions.supervising_officer_external_id IS NOT NULL -- is_supervision_officer
-            OR supervisors_of_officers.supervisor_staff_external_id IS NOT NULL -- is_supervision_officer_supervisor
+            OR attrs.is_supervision_officer
+            OR attrs.is_supervision_officer_supervisor
         )
 """
 

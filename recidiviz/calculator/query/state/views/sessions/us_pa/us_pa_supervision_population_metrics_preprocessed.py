@@ -46,7 +46,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         start_date_inclusive AS start_date,
         end_date_exclusive,
         metric_type AS metric_source,
-        state_code,
+        s.state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
         supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
@@ -69,7 +69,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
     ON
         s.supervising_officer_staff_id = staff.staff_id
-    WHERE state_code = 'US_PA'
+    WHERE s.state_code = 'US_PA'
 
     UNION ALL
 

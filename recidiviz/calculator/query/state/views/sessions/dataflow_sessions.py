@@ -133,7 +133,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         start_date_inclusive AS start_date,
         end_date_exclusive,
         metric_type AS metric_source,
-        state_code,
+        metrics.state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
         supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
@@ -157,7 +157,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
     ON
         metrics.supervising_officer_staff_id = staff.staff_id
-    WHERE state_code NOT IN ('{{supervision_special_states}}')
+    WHERE metrics.state_code NOT IN ('{{supervision_special_states}}')
 
     UNION ALL
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings

@@ -35,7 +35,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION = """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE = """
     SELECT
-      person_id, state_code, year, month,
+      person_id, metrics.state_code, year, month,
       supervision_type,
       IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
       staff.external_id AS officer_external_id,

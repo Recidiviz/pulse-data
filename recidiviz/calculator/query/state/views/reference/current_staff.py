@@ -31,7 +31,7 @@ CURRENT_STAFF_DESCRIPTION = (
 )
 
 CURRENT_STAFF_QUERY_TEMPLATE = f"""
-    SELECT *
+    SELECT * EXCEPT (start_date, end_date_exclusive)
     FROM `{{project_id}}.reference_views.product_staff_materialized` os
     WHERE {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}
 """

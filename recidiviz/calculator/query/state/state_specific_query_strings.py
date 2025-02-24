@@ -160,23 +160,28 @@ def state_specific_most_severe_violation_type_subtype_grouping() -> str:
             END AS violation_type"""
 
 
-def state_specific_recommended_for_revocation() -> str:
-    return f"""(({state_specific_officer_recommendation('most_severe_response_decision', False)}) = 'REVOCATION')
+def state_specific_recommended_for_revocation(
+    optional_prefix: Optional[str] = None,
+) -> str:
+    return f"""(({state_specific_officer_recommendation('most_severe_response_decision', False, optional_prefix)}) = 'REVOCATION')
             AS recommended_for_revocation"""
 
 
 def state_specific_officer_recommendation(
-    input_col: str, include_col_declaration: bool = True
+    input_col: str,
+    include_col_declaration: bool = True,
+    optional_prefix: Optional[str] = None,
 ) -> str:
-    return f"""CASE WHEN state_code = 'US_MO' THEN
-                CASE WHEN {input_col} = 'SHOCK_INCARCERATION' THEN 'CODS'
-                WHEN {input_col} = 'WARRANT_ISSUED' THEN 'CAPIAS'
-                ELSE {input_col} END
-           WHEN state_code = 'US_PA' THEN
+    prefix = f"{optional_prefix}." if optional_prefix else ""
+    return f"""CASE WHEN {prefix}state_code = 'US_MO' THEN
+                CASE WHEN {prefix}{input_col} = 'SHOCK_INCARCERATION' THEN 'CODS'
+                WHEN {prefix}{input_col} = 'WARRANT_ISSUED' THEN 'CAPIAS'
+                ELSE {prefix}{input_col} END
+           WHEN {prefix}state_code = 'US_PA' THEN
                 -- TODO(#3596): Remove this once we differentiate returns from true revocations 
-                CASE WHEN {input_col} = 'REVOCATION' THEN 'PLACEMENT_IN_DOC_FACILITY'
-                ELSE {input_col} END
-           ELSE {input_col}
+                CASE WHEN {prefix}{input_col} = 'REVOCATION' THEN 'PLACEMENT_IN_DOC_FACILITY'
+                ELSE {prefix}{input_col} END
+           ELSE {prefix}{input_col}
       END {"AS officer_recommendation" if include_col_declaration else ""}"""
 
 
@@ -332,27 +337,33 @@ def state_specific_supervision_type_groupings(
         END AS supervision_type"""
 
 
-def state_specific_admission_type_inclusion_filter() -> str:
+def state_specific_admission_type_inclusion_filter(
+    optional_prefix: Optional[str] = None,
+) -> str:
     """State-specific admission_type inclusions"""
-    return """
+    prefix = f"{optional_prefix}." if optional_prefix else ""
+    return f"""
     -- US_MO only includes Legal Revocation admissions
-    (state_code != 'US_MO' OR specialized_purpose_for_incarceration = 'GENERAL')
+    ({prefix}state_code != 'US_MO' OR {prefix}specialized_purpose_for_incarceration = 'GENERAL')
     -- US_PA includes Legal Revocation and Shock Incarceration admissions
-    AND (state_code != 'US_PA' OR specialized_purpose_for_incarceration IN ('GENERAL', 'SHOCK_INCARCERATION'))"""
+    AND ({prefix}state_code != 'US_PA' OR {prefix}specialized_purpose_for_incarceration IN ('GENERAL', 'SHOCK_INCARCERATION'))"""
 
 
-def state_specific_admission_type() -> str:
-    return """CASE WHEN specialized_purpose_for_incarceration = 'GENERAL' THEN 'LEGAL_REVOCATION'
-             WHEN state_code = 'US_PA' THEN
-                 CASE WHEN specialized_purpose_for_incarceration = 'SHOCK_INCARCERATION' THEN
-                         CASE WHEN purpose_for_incarceration_subtype = 'PVC' THEN 'SHOCK_INCARCERATION_PVC'
-                              WHEN purpose_for_incarceration_subtype = 'RESCR' THEN 'SHOCK_INCARCERATION_0_TO_6_MONTHS'
-                              WHEN purpose_for_incarceration_subtype = 'RESCR6' THEN 'SHOCK_INCARCERATION_6_MONTHS'
-                              WHEN purpose_for_incarceration_subtype = 'RESCR9' THEN 'SHOCK_INCARCERATION_9_MONTHS'
-                              WHEN purpose_for_incarceration_subtype = 'RESCR12' THEN 'SHOCK_INCARCERATION_12_MONTHS'
+def state_specific_admission_type(
+    optional_prefix: Optional[str] = None,
+) -> str:
+    prefix = f"{optional_prefix}." if optional_prefix else ""
+    return f"""CASE WHEN {prefix}specialized_purpose_for_incarceration = 'GENERAL' THEN 'LEGAL_REVOCATION'
+             WHEN {prefix}state_code = 'US_PA' THEN
+                 CASE WHEN {prefix}specialized_purpose_for_incarceration = 'SHOCK_INCARCERATION' THEN
+                         CASE WHEN {prefix}purpose_for_incarceration_subtype = 'PVC' THEN 'SHOCK_INCARCERATION_PVC'
+                              WHEN {prefix}purpose_for_incarceration_subtype = 'RESCR' THEN 'SHOCK_INCARCERATION_0_TO_6_MONTHS'
+                              WHEN {prefix}purpose_for_incarceration_subtype = 'RESCR6' THEN 'SHOCK_INCARCERATION_6_MONTHS'
+                              WHEN {prefix}purpose_for_incarceration_subtype = 'RESCR9' THEN 'SHOCK_INCARCERATION_9_MONTHS'
+                              WHEN {prefix}purpose_for_incarceration_subtype = 'RESCR12' THEN 'SHOCK_INCARCERATION_12_MONTHS'
                          END
                   END
-             ELSE specialized_purpose_for_incarceration
+             ELSE {prefix}specialized_purpose_for_incarceration
         END AS admission_type"""
 
 

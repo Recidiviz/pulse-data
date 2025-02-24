@@ -61,7 +61,7 @@ dataflow_metrics AS (
     /* This CTE creates a view for the current supervision population
     unique on person_id by selecting non null judicial and supervising_officer_external_id fields*/
   SELECT
-      state_code,
+      dataflow.state_code,
       person_id,
       staff.external_id AS supervising_officer_external_id,
       full_name
@@ -74,7 +74,7 @@ dataflow_metrics AS (
     probation_officer
   ON
     staff.external_id = probation_officer.supervising_officer_external_id
-  WHERE state_code = 'US_ND' AND dataflow.included_in_state_population
+  WHERE dataflow.state_code = 'US_ND' AND dataflow.included_in_state_population
     AND dataflow.end_date_exclusive IS NULL
   --choose only one judicial district per individual since individuals with overlapping supervision sentences
   --will have multiple rows in dataflow

@@ -27,7 +27,7 @@ STATE_STAFF_WITH_NAMES_VIEW_DESCRIPTION = """View that parses and formats state 
 STATE_STAFF_WITH_NAMES_QUERY_TEMPLATE = """
 WITH staff_names_base AS (
     SELECT
-        state_code,
+        s.state_code,
         staff_id,
         full_name_json,
         given_names,

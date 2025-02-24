@@ -99,9 +99,6 @@ from recidiviz.calculator.query.state.views.sessions.custody_level_dedup_priorit
 from recidiviz.calculator.query.state.views.sessions.release_termination_reason_dedup_priority import (
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.state_staff_id_to_legacy_supervising_officer_external_id import (
-    STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.state_staff_role_subtype_dedup_priority import (
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER,
 )
@@ -238,9 +235,6 @@ def state_agnostic_deployed_views_without_state_code_column(
     """
     missing_state_code_col_addresses = {
         *STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS,
-        # TODO(#21702): Deprecate this view when legacy supervision officer external ids
-        #  have been deprecated.
-        STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER.address,
         # These views produce inputs to Spark population projection modeling, which
         # expects a certain input schema
         *{vb.address for vb in POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS},

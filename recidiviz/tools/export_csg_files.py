@@ -146,7 +146,7 @@ def generate_metric_export_configs(
 
     supervision_query = f"""
       SELECT
-        DISTINCT state_code,
+        DISTINCT metrics.state_code,
         year,
         month,
         supervision_type,
@@ -186,7 +186,7 @@ def generate_metric_export_configs(
 
     commitment_query = f"""
       SELECT
-        DISTINCT state_code,
+        DISTINCT metrics.state_code,
         year,
         month,
         supervision_type,

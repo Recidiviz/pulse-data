@@ -35,7 +35,7 @@ Event based commitment from supervision admissions to support various matrix vie
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
     WITH metrics AS (
         SELECT
-            state_code,
+            metrics.state_code,
             year,
             month,
             {state_specific_admission_type},
@@ -92,11 +92,17 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQuer
     description=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_most_recent_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(
-        input_col="most_recent_response_decision"
+        input_col="most_recent_response_decision", optional_prefix="metrics"
     ),
-    state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
-    state_specific_admission_type_inclusion_filter=state_specific_query_strings.state_specific_admission_type_inclusion_filter(),
-    state_specific_admission_type=state_specific_query_strings.state_specific_admission_type(),
+    state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(
+        optional_prefix="metrics"
+    ),
+    state_specific_admission_type_inclusion_filter=state_specific_query_strings.state_specific_admission_type_inclusion_filter(
+        optional_prefix="metrics"
+    ),
+    state_specific_admission_type=state_specific_query_strings.state_specific_admission_type(
+        optional_prefix="metrics"
+    ),
     age_bucket=age_bucket_grouping(),
 )
 
