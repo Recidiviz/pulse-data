@@ -399,12 +399,14 @@ US_IX:
       Notes are not ingested and we surface them in the case notes prototypes.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_resident_metadata: |-
+      Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
   ind_EmploymentHistory:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -413,34 +415,40 @@ US_IX:
       Notes are not ingested and we surface them in the case notes prototypes.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_resident_metadata: |-
+      Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
   ind_OffenderNoteInfo:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_resident_metadata: |-
+      Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
   ind_OffenderNoteInfo_ContactMode:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_resident_metadata: |-
+      Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Case notes for crc workflows. Grandfathered in 04/18/2024.
   ind_OffenderNoteStatus:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
@@ -518,6 +526,8 @@ US_IX:
   ref_NoteType:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
+    workflows_views.us_ix_resident_metadata: |-
+      Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-

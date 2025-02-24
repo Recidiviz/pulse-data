@@ -18,10 +18,12 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -30,6 +32,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.utils.us_ix_query_fragments import ix_general_case_notes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -60,15 +63,47 @@ WITH xcrc_facility AS (
         AND (is_eligible OR is_almost_eligible)
     GROUP BY 1
 ),
+case_notes_cte AS (
+{ix_general_case_notes(where_clause_addition="AND ContactModeDesc lIKE '%CRC Request%'", 
+                           criteria_str="CRC Release District case note")}
+),
+crc_release_district_notes AS (
+/* for all residents NOT eligible for xcrc, pull their CRC Release District note if it occurs during the current
+ incarceration compartment_level_1 super session. */
+    SELECT
+        sess.person_id,
+        CONCAT('DISTRICT ', REGEXP_EXTRACT(note_title, r'\\d+')) AS release_district
+    FROM case_notes_cte c
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON c.external_id = pei.external_id
+        AND pei.id_type = "US_IX_DOC"
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` sess
+        ON sess.person_id = pei.person_id 
+        AND c.event_date BETWEEN sess.start_date AND {nonnull_end_date_exclusive_clause("sess.end_date_exclusive")}
+        AND sess.compartment_level_1 = 'INCARCERATION'
+    LEFT JOIN xcrc_facility xc
+        ON xc.person_id = sess.person_id
+    WHERE --exclude residents eligible for xcrc
+        xc.person_id IS NULL
+        AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="sess.start_date",
+            end_date_column="sess.end_date_exclusive"
+        )}
+    --choose the most recent note during an incarceration compartment_level_1 super session
+    QUALIFY ROW_NUMBER() OVER ( PARTITION BY sess.person_id ORDER BY event_date DESC ) = 1 
+),
 release_district AS (
-/* join all residents NOT eligible for xcrc, and pull in their gender and release district */
+/* for all residents NOT eligible for xcrc, and pull in their gender and release district if they don't have a 
+ CRC Release District note */
     SELECT
         cs.person_id,
         facility,
         --proofing for if we get a value for gender that is not `MALE` or `FEMALE`. If we see `EXTERNAL_UNKNOWN` assume `MALE`
         IF(sp.gender LIKE '%FEMALE', 'FEMALE', 'MALE') AS gender,
-        COALESCE(JSON_VALUE(ref.location_metadata, '$.supervision_district_name'), 'UNKNOWN') AS release_district
+        COALESCE(c.release_district, JSON_VALUE(ref.location_metadata, '$.supervision_district_name'), 'UNKNOWN') AS release_district
     FROM `{{project_id}}.sessions.compartment_sessions_materialized` cs
+    LEFT JOIN crc_release_district_notes c
+        ON cs.person_id = c.person_id
     LEFT JOIN `{{project_id}}.normalized_state.state_person` sp
         ON cs.person_id = sp.person_id 
     LEFT JOIN `{{project_id}}.normalized_state.state_incarceration_period` ip
@@ -102,7 +137,7 @@ crc_facility AS (
             rd.person_id,
             r.CRC_FACILITY AS crc_facility
         FROM release_district rd
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
+        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
             ON rd.RELEASE_DISTRICT = r.RELEASE_DISTRICT
             AND rd.gender = r.gender
         WHERE r.CRC_FACILITY IS NOT NULL
@@ -140,13 +175,14 @@ WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
 
 US_IX_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=WORKFLOWS_VIEWS_DATASET,
-    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX,
         instance=DirectIngestInstance.PRIMARY,
     ),
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_IX
     ),
+    sessions_dataset=SESSIONS_DATASET,
     view_id=US_IX_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_IX_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_IX_RESIDENT_METADATA_VIEW_DESCRIPTION,

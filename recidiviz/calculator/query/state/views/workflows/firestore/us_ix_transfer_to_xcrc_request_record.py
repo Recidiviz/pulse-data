@@ -91,13 +91,15 @@ WITH eligible_and_almost_eligible AS (
         -- Institutional Behavior Notes
             -- Corrective Action
     {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Corrective Action'", 
-                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+                           in_the_past_x_months=6)}
         
         UNION ALL
         
         -- Positive [behavior notes]
     {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Positive'", 
-                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+                           in_the_past_x_months=6)}
 
         UNION ALL
 

@@ -17,7 +17,7 @@
 """
 Helper SQL queries for Idaho
 """
-from typing import List
+from typing import List, Optional
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -253,7 +253,7 @@ MEDICAL_CLEARANCE_TX_REGEX = "|".join(["MEDICALLY CLEAR", "MEDICAL CLEAR"])
 def ix_general_case_notes(
     criteria_str: str,
     where_clause_addition: str = "",
-    in_the_past_x_months: int = 6,
+    in_the_past_x_months: Optional[int] = None,
 ) -> str:
     """
     Returns a SQL query that returns case notes for a specified contact mode in Idaho.
@@ -266,8 +266,14 @@ def ix_general_case_notes(
     Returns:
         str: SQL query as a string.
     """
-
-    return f"""    SELECT *
+    date_filter_clause = ""
+    if in_the_past_x_months is not None:
+        date_filter_clause = f"""
+            WHERE DATE_DIFF(CURRENT_DATE('US/Pacific'), event_date, MONTH)
+            - IF(EXTRACT(DAY FROM event_date) > EXTRACT(DAY FROM CURRENT_DATE('US/Pacific')), 1, 0)
+            <= {in_the_past_x_months}"""
+    return f"""
+        SELECT *
         FROM (
             SELECT
                 info.OffenderId AS external_id,
@@ -288,9 +294,7 @@ def ix_general_case_notes(
                 {where_clause_addition}
             GROUP BY 1,2,3,4,5
         )
-        WHERE (DATE_DIFF(CURRENT_DATE('US/Pacific'), event_date, MONTH)
-                        - IF(EXTRACT(DAY FROM event_date) > EXTRACT(DAY FROM CURRENT_DATE('US/Pacific')),
-                            1, 0)) <= {in_the_past_x_months}"""
+        {date_filter_clause}"""
 
 
 NOTE_TITLE_REGEX = "r'^{{note_title:(.*?)}}'"
