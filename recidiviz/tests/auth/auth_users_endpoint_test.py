@@ -19,7 +19,7 @@
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
@@ -27,6 +27,7 @@ from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
 
 import flask
+import freezegun
 import pytest
 from flask import Flask
 from flask_smorest import Api
@@ -41,7 +42,7 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
-from recidiviz.tests.auth.auth_endpoint_test import _FIXTURE_PATH
+from recidiviz.tests.auth.auth_endpoint_test import _FIXTURE_PATH, BLOCKED_ON_DATE
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
     generate_fake_default_permissions,
@@ -160,6 +161,10 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             self.user = flask.url_for(
                 "users.UsersByHashAPI",
+                user_hash=_PARAMETER_USER_HASH,
+            )
+            self.user_permissions = flask.url_for(
+                "users.UserPermissionsAPI",
                 user_hash=_PARAMETER_USER_HASH,
             )
             self.import_ingested_users = flask.url_for(
@@ -637,6 +642,428 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             error_message = "User parameter@testdomain.com must have at least one of the following roles:"
             self.assertIn(error_message, json.loads(response.data)["message"])
+
+    ########
+    # DELETE /users/...
+    ########
+
+    @freezegun.freeze_time(BLOCKED_ON_DATE)
+    def test_delete_user_roster(self) -> None:
+        user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_ID",
+            roles=[LEADERSHIP_ROLE],
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            delete = self.client.delete(
+                self.user,
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, delete.status_code)
+            self.assertReasonLog(
+                log.output, "blocking user parameter@testdomain.com with reason: test"
+            )
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
+                    "district": None,
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [LEADERSHIP_ROLE],
+                    "routes": {},
+                    "featureVariants": {},
+                    "stateCode": "US_ID",
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    @freezegun.freeze_time(BLOCKED_ON_DATE)
+    def test_delete_user_user_override(self) -> None:
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.users(),
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "emailAddress": "parameter@testdomain.com",
+                    "roles": [SUPERVISION_STAFF],
+                    "reason": "test",
+                },
+            )
+            delete = self.client.delete(
+                self.user,
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, delete.status_code)
+            self.assertReasonLog(
+                log.output, "blocking user parameter@testdomain.com with reason: test"
+            )
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
+                    "district": None,
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [SUPERVISION_STAFF],
+                    "routes": {},
+                    "featureVariants": {},
+                    "stateCode": "US_TN",
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_nonexistent_user(self) -> None:
+        with self.app.test_request_context():
+            delete = self.client.delete(
+                self.user,
+                headers=self.headers,
+                json={},
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, delete.status_code)
+
+    ########
+    # PUT /users/.../permissions
+    ########
+
+    def test_update_user_permissions_roster(self) -> None:
+        user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            roles=[SUPERVISION_STAFF],
+        )
+        default_co = generate_fake_default_permissions(
+            state="US_CO",
+            role=SUPERVISION_STAFF,
+            routes={"A": True},
+        )
+        add_entity_to_database_session(self.database_key, [user, default_co])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            update_routes = self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": {
+                        "system_prisonToSupervision": True,
+                        "community_practices": False,
+                    },
+                    "featureVariants": {
+                        "variant1": "true",
+                    },
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, update_routes.status_code)
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user parameter@testdomain.com with reason: test",
+            )
+            wrong_type = self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": "prisonToSupervision",
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_CO",
+                    "routes": {
+                        "system_prisonToSupervision": True,
+                        "community_practices": False,
+                        "A": True,
+                    },
+                    "featureVariants": {
+                        "variant1": "true",
+                    },
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_update_user_permissions_user_override(self) -> None:
+        added_user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_TN",
+            roles=[LEADERSHIP_ROLE],
+        )
+        default_tn = generate_fake_default_permissions(
+            state="US_TN",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True},
+            feature_variants={"C": "D"},
+        )
+        add_entity_to_database_session(self.database_key, [added_user, default_tn])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            update_tn_access = self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": {"C": False},
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(
+                HTTPStatus.OK, update_tn_access.status_code, update_tn_access.data
+            )
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user parameter@testdomain.com with reason: test",
+            )
+            wrong_type = self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": "Should not be a string",
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(
+                HTTPStatus.BAD_REQUEST, wrong_type.status_code, update_tn_access.data
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [LEADERSHIP_ROLE],
+                    "routes": {"A": True, "C": False},
+                    "featureVariants": {"C": "D"},
+                    "stateCode": "US_TN",
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_update_user_permissions_override(self) -> None:
+        added_user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            roles=[LEADERSHIP_ROLE],
+        )
+        override_permissions = generate_fake_permissions_overrides(
+            email="parameter@testdomain.com",
+            routes={"A": True},
+            feature_variants={"C": "D"},
+        )
+        add_entity_to_database_session(
+            self.database_key, [added_user, override_permissions]
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": {"E": False},
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user parameter@testdomain.com with reason: test",
+            )
+            expected = {
+                "emailAddress": "parameter@testdomain.com",
+                "routes": {"E": False},
+                "featureVariants": {"C": "D"},
+            }
+            self.assertEqual(expected, json.loads(response.data))
+
+    ########
+    # DELETE /users/.../permissions
+    ########
+
+    def test_delete_user_permissions(self) -> None:
+        roster_user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_MO",
+            roles=[LEADERSHIP_ROLE],
+            district="D1",
+        )
+        default = generate_fake_default_permissions(
+            state="US_MO",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True, "C": False},
+            feature_variants={"E": "F"},
+        )
+        roster_user_override_permissions = generate_fake_permissions_overrides(
+            email="parameter@testdomain.com",
+            routes={"A": False},
+            feature_variants={"C": "D"},
+        )
+        add_entity_to_database_session(
+            self.database_key, [roster_user, default, roster_user_override_permissions]
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            delete_roster_user = self.client.delete(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(
+                HTTPStatus.OK, delete_roster_user.status_code, delete_roster_user.data
+            )
+            self.assertReasonLog(
+                log.output,
+                "removing custom permissions for user parameter@testdomain.com with reason: test",
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "D1",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D1",
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [LEADERSHIP_ROLE],
+                    "routes": {"A": True, "C": False},
+                    "featureVariants": {"E": "F"},
+                    "stateCode": "US_MO",
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_added_user_permissions(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            roles=[LEADERSHIP_ROLE],
+        )
+        default = generate_fake_default_permissions(
+            state="US_CO",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True, "C": False},
+            feature_variants={"E": "F", "G": "H"},
+        )
+        add_entity_to_database_session(self.database_key, [user, default])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.put(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "routes": {"A": True},
+                    "featureVariants": {"E": "F"},
+                    "reason": "test",
+                },
+            )
+            delete_roster_user = self.client.delete(
+                self.user_permissions,
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, delete_roster_user.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing custom permissions for user parameter@testdomain.com with reason: test",
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "roles": [LEADERSHIP_ROLE],
+                    "routes": {"A": True, "C": False},
+                    "featureVariants": {"E": "F", "G": "H"},
+                    "stateCode": "US_CO",
+                    "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_nonexistent_user_permissions_error(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            roles=[LEADERSHIP_ROLE],
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context():
+            delete_permissions = self.client.delete(
+                self.user_permissions,
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, delete_permissions.status_code)
 
     ########
     # POST /users

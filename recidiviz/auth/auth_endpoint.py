@@ -34,8 +34,7 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
 )
 from sqlalchemy import delete, func, inspect, select, update
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
-from sqlalchemy.sql import Update
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from recidiviz.auth.helpers import (
     generate_pseudonymized_id,
@@ -64,7 +63,6 @@ from recidiviz.metrics.export.export_config import (
     PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    PermissionsOverride,
     Roster,
     StateRolePermissions,
     UserOverride,
@@ -87,29 +85,6 @@ def _validate_state_code(state_code: str) -> None:
         raise ValueError(
             f"Unknown state_code [{state_code}] received, must be a valid state code."
         )
-
-
-def _lookup_user_attrs_from_hash(
-    session: Session, user_hash: str
-) -> tuple[str, str] | None:
-    return (
-        session.query(
-            func.coalesce(UserOverride.email_address, Roster.email_address).label(
-                "email_address"
-            ),
-            func.coalesce(UserOverride.state_code, Roster.state_code).label(
-                "state_code"
-            ),
-        )
-        .select_from(Roster)
-        .join(
-            UserOverride,
-            UserOverride.email_address == Roster.email_address,
-            full=True,
-        )
-        .filter(func.coalesce(UserOverride.user_hash, Roster.user_hash) == user_hash)
-        .one_or_none()
-    )
 
 
 def _upsert(
@@ -523,191 +498,6 @@ def get_auth_endpoint_blueprint(
             )
         except ValueError as error:
             return (f"{error}", HTTPStatus.BAD_REQUEST)
-
-    # "path" type annotation allows parameters containing slashes, which the user hash might
-    @auth_endpoint_blueprint.route(
-        "/users/<path:user_hash>/permissions", methods=["PUT"]
-    )
-    def update_user_permissions(
-        user_hash: str,
-    ) -> Union[tuple[Response, int], tuple[str, int]]:
-        """Gives a state user custom permissions by adding or updating an entry for that user in Permissions Override."""
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            schema_type=SchemaType.CASE_TRIAGE
-        )
-        try:
-            with SessionFactory.using_database(database_key) as session:
-                request_json = assert_type(request.json, dict)
-                user_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
-                # user_dict's value for "routes" and "feature_variants" shouldn't be in snake case
-                routes_json = request_json.get("routes")
-                if routes_json is not None:
-                    user_dict["routes"] = assert_type(routes_json, dict)
-                feature_variants_json = request_json.get("featureVariants")
-                if feature_variants_json is not None:
-                    user_dict["feature_variants"] = assert_type(
-                        feature_variants_json, dict
-                    )
-
-                if (attrs := _lookup_user_attrs_from_hash(session, user_hash)) is None:
-                    raise ValueError(
-                        f"User not found for email address hash {user_hash}, please file a bug"
-                    )
-                (email, _) = attrs
-
-                user_dict["email_address"] = email
-                log_reason(
-                    user_dict,
-                    f"updating permissions for user {user_dict['email_address']}",
-                )
-
-                if (
-                    session.query(PermissionsOverride)
-                    .filter(PermissionsOverride.email_address == email)
-                    .first()
-                    is None
-                ):
-                    new_permissions = PermissionsOverride(**user_dict)
-                    session.add(new_permissions)
-                    session.commit()
-                    return (
-                        jsonify(
-                            {
-                                "emailAddress": new_permissions.email_address,
-                                "routes": new_permissions.routes,
-                                "featureVariants": new_permissions.feature_variants,
-                            }
-                        ),
-                        HTTPStatus.OK,
-                    )
-                session.execute(
-                    Update(PermissionsOverride)
-                    .where(PermissionsOverride.email_address == email)
-                    .values(user_dict)
-                )
-                updated_permissions = (
-                    session.query(PermissionsOverride)
-                    .filter(PermissionsOverride.email_address == email)
-                    .first()
-                )
-                return (
-                    jsonify(
-                        {
-                            "emailAddress": updated_permissions.email_address,
-                            "routes": updated_permissions.routes,
-                            "featureVariants": updated_permissions.feature_variants,
-                        }
-                    ),
-                    HTTPStatus.OK,
-                )
-        except (StatementError, TypeError, ValueError) as error:
-            return (
-                f"{error}",
-                HTTPStatus.BAD_REQUEST,
-            )
-
-    # "path" type annotation allows parameters containing slashes, which the user hash might
-    @auth_endpoint_blueprint.route(
-        "/users/<path:user_hash>/permissions", methods=["DELETE"]
-    )
-    def delete_user_permissions(user_hash: str) -> tuple[str, int]:
-        """Removes state user custom permissions by deleting an entry for that user in Permissions Override."""
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            schema_type=SchemaType.CASE_TRIAGE
-        )
-        try:
-            with SessionFactory.using_database(database_key) as session:
-                if (attrs := _lookup_user_attrs_from_hash(session, user_hash)) is None:
-                    raise ValueError(
-                        f"User not found for email address hash {user_hash}, please file a bug"
-                    )
-                (email, _) = attrs
-
-                overrides = session.query(PermissionsOverride).filter(
-                    PermissionsOverride.email_address == email
-                )
-                if overrides.first() is None:
-                    raise ValueError(
-                        f"An entry for {email} in PermissionsOverride does not exist."
-                    )
-
-                request_json = assert_type(request.json, dict)
-                request_dict = convert_nested_dictionary_keys(
-                    request_json, to_snake_case
-                )
-                log_reason(
-                    request_dict,
-                    f"removing custom permissions for user {email}",
-                )
-
-                overrides.delete(synchronize_session=False)
-                return (
-                    f"{email} has been deleted from PermissionsOverride.",
-                    HTTPStatus.OK,
-                )
-        except ValueError as error:
-            return (
-                f"{error}",
-                HTTPStatus.BAD_REQUEST,
-            )
-
-    # "path" type annotation allows parameters containing slashes, which the user hash might
-    @auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["DELETE"])
-    def delete_user(user_hash: str) -> tuple[str, int]:
-        """Blocks a user by setting blocked_on=today's date in the corresponding UserOverride object."""
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            schema_type=SchemaType.CASE_TRIAGE
-        )
-        try:
-            with SessionFactory.using_database(database_key) as session:
-                request_json = assert_type(request.json, dict)
-                request_dict = convert_nested_dictionary_keys(
-                    request_json, to_snake_case
-                )
-
-                existing_override = session.query(UserOverride).filter(
-                    UserOverride.user_hash == user_hash
-                )
-                if value := existing_override.first():
-                    existing_override.update(
-                        {"blocked": True, "blocked_on": datetime.now(tzlocal())},
-                        synchronize_session=False,
-                    )
-                    email = value.email_address
-                else:
-                    roster_user = (
-                        session.query(Roster)
-                        .filter(Roster.user_hash == user_hash)
-                        .first()
-                    )
-                    if roster_user is None:
-                        raise ValueError(
-                            f"An entry for user_hash {user_hash} does not exist."
-                        )
-                    email = roster_user.email_address
-                    user_override = UserOverride(
-                        state_code=roster_user.state_code,
-                        email_address=roster_user.email_address,
-                        blocked=True,
-                        blocked_on=datetime.now(tzlocal()),
-                        user_hash=roster_user.user_hash,
-                    )
-                    session.add(user_override)
-                    session.commit()
-
-                log_reason(
-                    request_dict,
-                    f"blocking user {email}",
-                )
-                return (
-                    f"{email} has been blocked.",
-                    HTTPStatus.OK,
-                )
-        except ValueError as error:
-            return (
-                f"{error}",
-                HTTPStatus.BAD_REQUEST,
-            )
 
     @auth_endpoint_blueprint.route("/import_ingested_users_async", methods=["POST"])
     def import_ingested_users_async() -> Tuple[str, HTTPStatus]:

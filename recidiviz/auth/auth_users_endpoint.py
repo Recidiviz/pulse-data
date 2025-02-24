@@ -16,32 +16,36 @@
 # =============================================================================
 """Endpoints related to getting/setting information about users of Recidiviz applications."""
 import csv
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List
 
+from dateutil.tz import tzlocal
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import and_, cast, func, not_
+from sqlalchemy import and_, cast, func, not_, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.row import Row
-from sqlalchemy.exc import IntegrityError, ProgrammingError
+from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_api_schemas import (
     FullUserSchema,
+    PermissionsRequestSchema,
+    PermissionsResponseSchema,
     ReasonSchema,
     StateCodeSchema,
     UploadSchema,
     UserRequestSchema,
     UserSchema,
 )
-from recidiviz.auth.auth_endpoint import _lookup_user_attrs_from_hash, _upsert_user_rows
+from recidiviz.auth.auth_endpoint import _upsert_user_rows
 from recidiviz.auth.helpers import (
     convert_to_dict_multiple_results,
     convert_to_dict_single_result,
@@ -236,6 +240,30 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 setattr(existing, key, value)
             return existing
         return UserOverride(**user_dict)
+
+    def _lookup_user_attrs_from_hash(
+        session: Session, user_hash: str
+    ) -> tuple[str, str] | None:
+        return (
+            session.query(
+                func.coalesce(UserOverride.email_address, Roster.email_address).label(
+                    "email_address"
+                ),
+                func.coalesce(UserOverride.state_code, Roster.state_code).label(
+                    "state_code"
+                ),
+            )
+            .select_from(Roster)
+            .join(
+                UserOverride,
+                UserOverride.email_address == Roster.email_address,
+                full=True,
+            )
+            .filter(
+                func.coalesce(UserOverride.user_hash, Roster.user_hash) == user_hash
+            )
+            .one_or_none()
+        )
 
     @users_blueprint.route("")
     class UsersAPI(MethodView):  # pylint: disable=unused-variable
@@ -451,5 +479,141 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 return self.get(user_hash)
             except (ProgrammingError, ValueError) as e:
                 abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
+
+        @users_blueprint.arguments(
+            ReasonSchema,
+            # Return BAD_REQUEST on schema validation errors
+            error_status_code=HTTPStatus.BAD_REQUEST,
+        )
+        @users_blueprint.response(HTTPStatus.OK)
+        def delete(self, body: Dict[str, str], user_hash: str) -> None:
+            """Blocks a user by setting blocked_on=today's date in the corresponding UserOverride object."""
+            try:
+                existing_override = current_session.query(UserOverride).filter(
+                    UserOverride.user_hash == user_hash
+                )
+                if value := existing_override.first():
+                    existing_override.update(
+                        {"blocked": True, "blocked_on": datetime.now(tzlocal())},
+                        synchronize_session=False,
+                    )
+                    email = value.email_address
+                else:
+                    roster_user = (
+                        current_session.query(Roster)
+                        .filter(Roster.user_hash == user_hash)
+                        .first()
+                    )
+                    if roster_user is None:
+                        raise ValueError(
+                            f"An entry for user_hash {user_hash} does not exist."
+                        )
+                    email = roster_user.email_address
+                    user_override = UserOverride(
+                        state_code=roster_user.state_code,
+                        email_address=roster_user.email_address,
+                        blocked=True,
+                        blocked_on=datetime.now(tzlocal()),
+                        user_hash=roster_user.user_hash,
+                    )
+                    current_session.add(user_override)
+                    current_session.commit()
+
+                log_reason(
+                    body,
+                    f"blocking user {email}",
+                )
+            except ValueError as error:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
+
+    @users_blueprint.route("<path:user_hash>/permissions")
+    class UserPermissionsAPI(MethodView):  # pylint: disable=unused-variable
+        """CRUD endpoints for /users/<user_hash>/permissions"""
+
+        @users_blueprint.arguments(
+            PermissionsRequestSchema,
+            # Return BAD_REQUEST on schema validation errors
+            error_status_code=HTTPStatus.BAD_REQUEST,
+        )
+        @users_blueprint.response(HTTPStatus.OK, PermissionsResponseSchema)
+        def put(
+            self,
+            user_dict: Dict[str, Any],
+            user_hash: str,
+        ) -> PermissionsOverride:
+            """Gives a state user custom permissions by adding or updating an entry for that user in Permissions Override."""
+            try:
+                if (
+                    attrs := _lookup_user_attrs_from_hash(current_session, user_hash)
+                ) is None:
+                    raise ValueError(
+                        f"User not found for email address hash {user_hash}, please file a bug"
+                    )
+                (email, _) = attrs
+
+                user_dict["email_address"] = email
+                log_reason(
+                    user_dict,
+                    f"updating permissions for user {user_dict['email_address']}",
+                )
+
+                if (
+                    current_session.query(PermissionsOverride)
+                    .filter(PermissionsOverride.email_address == email)
+                    .first()
+                    is None
+                ):
+                    new_permissions = PermissionsOverride(**user_dict)
+                    current_session.add(new_permissions)
+                    current_session.commit()
+                    return new_permissions
+                current_session.execute(
+                    update(PermissionsOverride)
+                    .where(PermissionsOverride.email_address == email)
+                    .values(user_dict)
+                )
+                current_session.commit()
+                return (
+                    current_session.query(PermissionsOverride)
+                    .filter(PermissionsOverride.email_address == email)
+                    .first()
+                )
+            except (StatementError, TypeError, ValueError) as error:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
+
+        @users_blueprint.arguments(
+            ReasonSchema,
+            # Return BAD_REQUEST on schema validation errors
+            error_status_code=HTTPStatus.BAD_REQUEST,
+        )
+        @users_blueprint.response(HTTPStatus.OK)
+        def delete(self, body: Dict[str, str], user_hash: str) -> None:
+            """Removes state user custom permissions by deleting an entry for that user in Permissions Override."""
+            try:
+                if (
+                    attrs := _lookup_user_attrs_from_hash(current_session, user_hash)
+                ) is None:
+                    raise ValueError(
+                        f"User not found for email address hash {user_hash}, please file a bug"
+                    )
+                (email, _) = attrs
+
+                overrides = current_session.query(PermissionsOverride).filter(
+                    PermissionsOverride.email_address == email
+                )
+                if overrides.first() is None:
+                    raise ValueError(
+                        f"An entry for {email} in PermissionsOverride does not exist."
+                    )
+
+                log_reason(
+                    body,
+                    f"removing custom permissions for user {email}",
+                )
+
+                overrides.delete(synchronize_session=False)
+                current_session.commit()
+            except ValueError as error:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
 
     return users_blueprint

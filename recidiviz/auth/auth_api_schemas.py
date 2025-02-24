@@ -94,7 +94,20 @@ class UserRequestSchema(UserSchema, ReasonSchema):
     pass
 
 
-class FullUserSchema(UserSchema, CamelCaseSchema):
+class PermissionsSchema(CamelCaseSchema):
+    routes = fields.Dict(keys=fields.Str(), values=fields.Bool())
+    feature_variants = fields.Dict(keys=fields.Str(), values=fields.Raw())
+
+
+class PermissionsRequestSchema(PermissionsSchema, ReasonSchema):
+    pass
+
+
+class PermissionsResponseSchema(PermissionsSchema, CamelCaseSchema):
+    email_address = fields.Email(required=True)
+
+
+class FullUserSchema(UserSchema, PermissionsSchema, CamelCaseSchema):
     @pre_dump
     def process_input(
         self, data: dict | Row, **kwargs: dict[str, Any]
@@ -116,8 +129,6 @@ class FullUserSchema(UserSchema, CamelCaseSchema):
             else ""
         )
     )
-    routes = fields.Dict(keys=fields.Str(), values=fields.Bool())
-    feature_variants = fields.Dict(keys=fields.Str(), values=fields.Raw())
 
 
 class StateCodeSchema(CamelOrSnakeCaseSchema):
