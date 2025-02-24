@@ -72,6 +72,7 @@ SELECT DISTINCT
     aggs AS TDCJ_Numbers
 FROM clean_name_cte
 LEFT JOIN agg_ids_cte USING (SID_Number)
+WHERE SID_Number IS NOT NULL
 QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY Creation_Date desc) = 1
 """
 
