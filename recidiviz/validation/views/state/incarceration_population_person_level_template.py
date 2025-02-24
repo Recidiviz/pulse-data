@@ -79,6 +79,11 @@ sanitized_internal_metrics AS (
     -- For MI, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
     -- (which have custodial authority set to 'INTERNAL_UNKNOWN' as opposed to 'STATE_PRISON' like all other ingested incarceration periods)
     AND (dataflow.state_code <> 'US_MI' OR custodial_authority = 'STATE_PRISON')
+    -- Also exclude inferred temporary custody periods for TN. TN inferred periods use the 'COUNTY' custodial authority, which is used for
+    -- ingested periods as well, so instead check incarceration_type (which is 'INTERNAL_UNKNOWN' for inferred periods, and defaults to
+    -- 'STATE_PRISON' for all other periods).
+    -- TODO(#38505): Revisit these exclusions if we can find another way to prevent these periods from counting toward state populations.
+    AND (dataflow.state_code <> 'US_TN' OR incarceration_type = 'STATE_PRISON')
   )
 )
 SELECT
