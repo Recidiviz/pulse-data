@@ -302,6 +302,11 @@ metric_pipelines:
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-central1
     staging_only: True
+  - pipeline: incarceration_metrics
+    state_code: US_UT
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
+    region: us-central1
+    staging_only: True
 
 supplemental_dataset_pipelines:
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
