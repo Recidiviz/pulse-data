@@ -511,32 +511,3 @@ class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     time_period = Column(String, nullable=True)
     # Binned length of supervision in months
     length_of_stay = Column(String, nullable=True)
-
-
-class UsTnCompliantReportingWorkflowsImpact(PathwaysBase):
-    """ETL data imported from
-    `recidiviz.calculator.query.state.views.impact.us_tn_compliant_reporting_workflows_impact.py`
-    """
-
-    __tablename__ = "us_tn_compliant_reporting_workflows_impact"
-
-    # State code for compliant reporting
-    state_code = Column(String, primary_key=True, nullable=False)
-    # Supervision district for compliant reporting
-    supervision_district = Column(String, primary_key=True, nullable=False)
-    # District name for compliant reporting
-    district_name = Column(String, nullable=False)
-    # Variant id for compliant reporting
-    variant_id = Column(String, nullable=False)
-    # Variant date for compliant reporting
-    variant_date = Column(Date, nullable=False)
-    # Start date for compliant reporting
-    start_date = Column(Date, primary_key=True, nullable=False)
-    # End date for compliant reporting
-    end_date = Column(Date, primary_key=True, nullable=False)
-    # Months since treatment
-    months_since_treatment = Column(Integer, nullable=False)
-    # Average daily population
-    avg_daily_population = Column(Float, nullable=False)
-    # Average population with limited supervision level
-    avg_population_limited_supervision_level = Column(Float, nullable=False)

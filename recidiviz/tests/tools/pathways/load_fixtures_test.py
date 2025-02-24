@@ -29,7 +29,6 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PathwaysBase,
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
-    UsTnCompliantReportingWorkflowsImpact,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -89,28 +88,13 @@ class TestLoadFixtures(TestCase):
 
     def test_reset_pathways_fixtures(self) -> None:
         # First order of business, this shouldn't crash.
-        reset_pathways_fixtures(
-            self.engine,
-            [
-                entity
-                for entity in get_pathways_database_entities()
-                # TODO(Recidiviz/recidiviz-dashboards#5045): Remove this check
-                if entity != UsTnCompliantReportingWorkflowsImpact
-            ],
-            "US_XX",
-        )
+        reset_pathways_fixtures(self.engine, get_pathways_database_entities(), "US_XX")
 
         # Make sure values are actually written to the tables we know about.
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
             for fixture_class in get_all_table_classes_in_schema(SchemaType.PATHWAYS):
-                # TODO(Recidiviz/recidiviz-dashboards#5045): Remove this check
-                if (
-                    fixture_class.name
-                    == UsTnCompliantReportingWorkflowsImpact.__tablename__
-                ):
-                    continue
                 self.assertTrue(len(read_session.query(fixture_class).all()) > 0)
 
     def test_create_dbs(self) -> None:

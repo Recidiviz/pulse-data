@@ -165,7 +165,6 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_population_projection",
             "supervision_to_liberty_transitions",
             "supervision_to_prison_transitions",
-            "us_tn_compliant_reporting_workflows_impact",
         ]
         state_table_names = [
             "state_assessment",

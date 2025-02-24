@@ -574,7 +574,6 @@ class TestPathwaysMigrations(MigrationsTestBase):
             "supervision_population_projection_pkey",
             "supervision_to_liberty_transitions_pkey",
             "supervision_to_prison_transitions_pkey",
-            "us_tn_compliant_reporting_workflows_impact_pkey",
         }
 
 
