@@ -860,15 +860,18 @@ def get_all_ingest_tests_for_state(
                     )
 
     # TODO(#38321) Remove v1 mapping tests
-    v1_mapping_test = _test_class_from_module(
-        ModuleCollectorMixin.get_relative_module(
-            state_test_module,
-            [
-                f"{state_code.value.lower()}_ingest_view_parser_test",
-            ],
-        ),
-        LegacyStateIngestViewParserTestBase,
-    )
+    try:
+        v1_mapping_test = _test_class_from_module(
+            ModuleCollectorMixin.get_relative_module(
+                state_test_module,
+                [
+                    f"{state_code.value.lower()}_ingest_view_parser_test",
+                ],
+            ),
+            LegacyStateIngestViewParserTestBase,
+        )
+    except ModuleNotFoundError:
+        v1_mapping_test = None
     if v1_mapping_test and issubclass(
         v1_mapping_test, LegacyStateIngestViewParserTestBase
     ):
