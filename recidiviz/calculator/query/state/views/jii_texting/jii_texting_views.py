@@ -19,8 +19,16 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.jii_texting.jii_to_text import (
+    JII_TO_TEXT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii_texting.us_ix_lsu import (
     US_IX_LSU_VIEW_BUILDER,
 )
 
-JII_TEXTING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [US_IX_LSU_VIEW_BUILDER]
+JII_TEXTING_VIEWS_TO_EXPORT: List[BigQueryViewBuilder] = [JII_TO_TEXT_VIEW_BUILDER]
+
+JII_TEXTING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    US_IX_LSU_VIEW_BUILDER,
+    *JII_TEXTING_VIEWS_TO_EXPORT,
+]

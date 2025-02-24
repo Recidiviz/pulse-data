@@ -42,7 +42,7 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_vi
     VITALS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
-    JII_TEXTING_VIEW_BUILDERS,
+    JII_TEXTING_VIEWS_TO_EXPORT,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
@@ -394,7 +394,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # JII Texting views
     ExportViewCollectionConfig(
-        view_builders_to_export=JII_TEXTING_VIEW_BUILDERS,
+        view_builders_to_export=JII_TEXTING_VIEWS_TO_EXPORT,
         output_directory_uri_template=JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="JII_TEXTING",
         allow_empty=True,
