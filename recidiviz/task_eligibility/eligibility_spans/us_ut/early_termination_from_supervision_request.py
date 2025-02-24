@@ -25,10 +25,16 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
+    at_least_3_months_since_most_recent_positive_drug_test,
+    on_supervision_at_least_6_months,
+    supervision_continuous_employment_for_3_months,
+    supervision_housing_is_permanent_or_temporary_for_3_months,
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     has_completed_ordered_assessments,
+    no_medhigh_supervision_violation_within_3_months,
+    no_risk_level_increase_of_15_percent,
     risk_level_reduction_of_one_or_more,
     risk_level_stayed_moderate_or_low,
     risk_score_reduction_5_percent_or_more,
@@ -49,9 +55,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # Completion of ordered assessments and any recommended treatment or programming
+        # 1. Completion of ordered assessments and any recommended treatment or programming
         has_completed_ordered_assessments.VIEW_BUILDER,
-        # Risk reduction criteria
+        # 2. Risk reduction criteria
         OrTaskCriteriaGroup(
             criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
             sub_criteria_list=[
@@ -64,6 +70,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 "first_assessment_level_raw_text",
             ],
         ),
+        # 3. Compliance and stability
+        supervision_housing_is_permanent_or_temporary_for_3_months.VIEW_BUILDER,
+        supervision_continuous_employment_for_3_months.VIEW_BUILDER,
+        no_medhigh_supervision_violation_within_3_months.VIEW_BUILDER,
+        on_supervision_at_least_6_months.VIEW_BUILDER,
+        at_least_3_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
+        no_risk_level_increase_of_15_percent.VIEW_BUILDER,
         # Past ET Review date/ half-time date
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
     ],

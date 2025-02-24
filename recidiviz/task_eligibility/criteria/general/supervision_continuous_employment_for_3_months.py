@@ -13,26 +13,33 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Describes the spans of time when a client has not had a positive drug test within the
-past 6 months.
+# =============================================================================
+"""Defines a criteria span view that shows spans of time during which
+someone is continuous for at least 3 months
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
-    at_least_X_time_since_drug_screen,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    employed_for_at_least_x_time_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_CRITERIA_NAME = "SUPERVISION_CONTINUOUS_EMPLOYMENT_FOR_3_MONTHS"
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    at_least_X_time_since_drug_screen(
-        date_interval=6,
+    employed_for_at_least_x_time_criteria_builder(
+        date_interval=3,
         date_part="MONTH",
-        where_clause="WHERE is_positive_result",
-        criteria_name="AT_LEAST_6_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        employment_status_values=[
+            "EMPLOYED_UNKNOWN_AMOUNT",
+            "EMPLOYED_FULL_TIME",
+            "EMPLOYED_PART_TIME",
+        ],
     )
 )
 

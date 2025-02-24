@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,16 +13,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
-"""Defines a criterion span view that shows spans of time during which there have been
-no supervision violations resulting in violation reports within the past 2 years (based
-on violation date, not report date).
+# ============================================================================
+"""Spans of time when someone in UT has been 3 months or more without a medium or high level
+violation while on supervision.
 """
-
 from typing import cast
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     supervision_violations_within_time_interval_criteria_builder,
@@ -30,29 +29,29 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_REPORT_WITHIN_2_YEARS"
+_CRITERIA_NAME = "US_UT_NO_MEDHIGH_SUPERVISION_VIOLATION_WITHIN_3_MONTHS"
 
-_WHERE_CLAUSE_ADDITION = """
-/* Only keep 'VIOLATION_REPORT' responses. Note that this will exclude responses with
-missing `response_type` values, as well as responses with other types from the
-StateSupervisionViolationResponseType enum (such as 'CITATION' and
-'PERMANENT_DECISION'). */
-AND vr.response_type='VIOLATION_REPORT'
-"""
-
-# NB: criterion currently uses *violation dates* to assess eligibility, not *response
-# dates*. This is intended to prevent clients from being penalized by delays in the
-# submission of violation reports.
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+query_dict = cast(
+    dict,
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        date_interval=2,
-        date_part="YEAR",
-        where_clause_addition=_WHERE_CLAUSE_ADDITION,
-        violation_date_name_in_reason_blob="latest_violations_resulting_in_violation_reports",
+        date_interval=3,
+        date_part="MONTH",
+        where_clause_addition="AND JSON_VALUE(violation_metadata, '$.sanction_level') IN ('3', '2')",
+        return_view_builder=False,
     ),
+)
+
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        reasons_fields=query_dict["reasons_fields"],
+        state_code=StateCode.US_UT,
+        criteria_spans_query_template=query_dict["criteria_query"],
+        meets_criteria_default=True,
+    )
 )
 
 if __name__ == "__main__":

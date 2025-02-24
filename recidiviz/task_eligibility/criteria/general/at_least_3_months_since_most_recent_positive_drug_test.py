@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a client has not had a positive drug test within the
-past 6 months.
+past 3 months.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -29,10 +29,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     at_least_X_time_since_drug_screen(
-        date_interval=6,
+        date_interval=3,
         date_part="MONTH",
         where_clause="WHERE is_positive_result",
-        criteria_name="AT_LEAST_6_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
+        criteria_name="AT_LEAST_3_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
     )
 )
 

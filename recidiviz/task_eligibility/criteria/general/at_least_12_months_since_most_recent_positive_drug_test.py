@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,41 +18,22 @@
 past 12 months.
 """
 
-from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
-    at_least_X_time_since_positive_drug_screen,
+    at_least_X_time_since_drug_screen,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "AT_LEAST_12_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST"
-
-_QUERY_TEMPLATE = f"""
-   {at_least_X_time_since_positive_drug_screen(date_interval=12,
-                                               date_part="MONTH")
-    }
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=__doc__,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="most_recent_positive_test_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of most recent positive drug test",
-            )
-        ],
+    at_least_X_time_since_drug_screen(
+        date_interval=12,
+        date_part="MONTH",
+        where_clause="WHERE is_positive_result",
+        criteria_name="AT_LEAST_12_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
     )
 )
 

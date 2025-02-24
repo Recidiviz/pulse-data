@@ -19,6 +19,8 @@ no supervision violations resulting in violation reports within the past 6 month
 on violation date, not report date).
 """
 
+from typing import cast
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -41,13 +43,16 @@ AND vr.response_type='VIOLATION_REPORT'
 # NB: criterion currently uses *violation dates* to assess eligibility, not *response
 # dates*. This is intended to prevent clients from being penalized by delays in the
 # submission of violation reports.
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = supervision_violations_within_time_interval_criteria_builder(
-    criteria_name=_CRITERIA_NAME,
-    description=__doc__,
-    date_interval=6,
-    date_part="MONTH",
-    where_clause_addition=_WHERE_CLAUSE_ADDITION,
-    violation_date_name_in_reason_blob="latest_violations_resulting_in_violation_reports",
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    supervision_violations_within_time_interval_criteria_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        date_interval=6,
+        date_part="MONTH",
+        where_clause_addition=_WHERE_CLAUSE_ADDITION,
+        violation_date_name_in_reason_blob="latest_violations_resulting_in_violation_reports",
+    ),
 )
 
 if __name__ == "__main__":

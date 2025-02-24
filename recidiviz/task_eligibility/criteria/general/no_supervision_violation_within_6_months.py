@@ -18,6 +18,8 @@
 been a violation within the past 6 months on supervision.
 """
 
+from typing import cast
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -29,13 +31,14 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_6_MONTHS"
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
         date_interval=6,
         date_part="MONTH",
-    )
+    ),
 )
 
 if __name__ == "__main__":

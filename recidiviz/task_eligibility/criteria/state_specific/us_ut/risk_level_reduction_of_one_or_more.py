@@ -33,7 +33,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_UT_RISK_LEVEL_REDUCTION_OF_ONE_OR_MORE"
 
 _QUERY_TEMPLATE = f"""
-# TODO(#37900) - Change after schema change request is approved
 WITH {assessment_scores_with_first_score_ctes(assessment_types_list = ["LS_RNR"])}
 
 SELECT 

@@ -17,33 +17,42 @@
 """Helper SQL fragments that do standard queries against pre-processed views.
 """
 
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
 
 # TODO(#20230): Deprecate this view and move functions to state_data_query_fragments when relevant data is ingested
 # TODO(#20231): Ingest drug screens data into state_drug_screen
 
 
-def at_least_X_time_since_positive_drug_screen(
-    date_interval: int = 12,
+def at_least_X_time_since_drug_screen(
+    criteria_name: str,
+    date_interval: int,
     date_part: str = "MONTH",
-) -> str:
+    where_clause: str = "",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Args:
+        criteria_name (str): Name of the criteria
         date_interval (int): Number of <date_part> when the positive drug screen
-            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
+            will be counted as valid.
         date_part (str): Supports any of the BigQuery date_part values:
             "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        where_clause (str): Additional WHERE clause to filter the drug screens.
     Returns:
         f-string: Spans of time where the criteria is met
     """
 
-    return f"""
-    WITH positive_drug_test_sessions_cte AS
+    query_template = f"""WITH drug_test_sessions_cte AS
     (
         SELECT
             state_code,
@@ -54,15 +63,14 @@ def at_least_X_time_since_positive_drug_screen(
             drug_screen_date AS latest_drug_screen_date,
         FROM
             `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
-        WHERE
-            is_positive_result
+        {where_clause}
     )
     ,
     /*
     If a person has more than 1 positive test in an X month period, they will have overlapping sessions
     created in the above CTE. Therefore we use `create_sub_sessions_with_attributes` to break these up
     */
-    {create_sub_sessions_with_attributes('positive_drug_test_sessions_cte')}
+    {create_sub_sessions_with_attributes('drug_test_sessions_cte')}
     ,
     dedup_cte AS
     /*
@@ -100,6 +108,21 @@ def at_least_X_time_since_positive_drug_screen(
         latest_drug_screen_date AS most_recent_positive_test_date,
     FROM sessionized_cte
     """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=__doc__,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_positive_test_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of most recent positive drug test",
+            )
+        ],
+    )
 
 
 def has_at_least_x_negative_tests_in_time_interval(

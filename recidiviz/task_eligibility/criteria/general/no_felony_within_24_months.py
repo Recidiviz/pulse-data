@@ -18,6 +18,8 @@
 been a felony within the past 24 months on supervision.
 """
 
+from typing import cast
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -29,7 +31,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_FELONY_WITHIN_24_MONTHS"
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
@@ -37,7 +40,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         date_part="MONTH",
         violation_type="AND vt.violation_type='FELONY'",
         violation_date_name_in_reason_blob="latest_felony_convictions",
-    )
+    ),
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

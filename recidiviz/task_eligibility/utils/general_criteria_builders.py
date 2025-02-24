@@ -17,7 +17,7 @@
 """Helper methods that return criteria view builders with similar logic that
 can be parameterized.
 """
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from google.cloud import bigquery
 
@@ -482,9 +482,9 @@ def custody_level_compared_to_recommended(
         n.upcoming_eligibility_date
     FROM next_eligibility_spans n
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
-            ON n.custody_level = current_cl.custody_level
+        ON n.custody_level = current_cl.custody_level
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
-            ON recommended_custody_level = recommended_cl.custody_level
+        ON recommended_custody_level = recommended_cl.custody_level
     WHERE start_date <= CURRENT_DATE('US/Pacific')
     """
 
@@ -549,7 +549,8 @@ def supervision_violations_within_time_interval_criteria_builder(
     violation_type: str = "",
     where_clause_addition: str = "",
     violation_date_name_in_reason_blob: str = "latest_violations",
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    return_view_builder: bool = True,
+) -> Dict | StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a TES criterion view builder that has spans of time where violations that
     meet certain conditions set by the user have occurred within some specified window
@@ -570,13 +571,15 @@ def supervision_violations_within_time_interval_criteria_builder(
             Defaults to "".
         violation_date_name_in_reason_blob (str, optional): Name of the `violation_date`
             field in the reason blob. Defaults to "latest_violations".
+        return_view_builder (bool, optional): Whether to return a view builder or just the
+            query string + reasons_fields in a dictionary. Defaults to True.
     Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: view builder for a TES criterion
-            view that shows the spans of time where the violations that meet certain
-            conditions set by the user (<violation_type> and <where_clause_addition>)
-            occurred. The span of time for the validity of each violation starts at
-            `violation_date` and ends after a period specified by the user
-            (<date_interval> and <date_part>).
+        Union[str, StateAgnosticTaskCriteriaBigQueryViewBuilder]: Either a TES criterion
+        view builder that shows the spans of time where the violations that meet any
+        condition(s) set by the user have occurred (<violation_type> and <where_clause_addition>),
+        or a dictionary with the query string and reasons_fields. The span of time for
+        the validity of each violation starts at `violation_date` and ends after a
+        period specified by the user (<date_interval> and <date_part>).
     """
 
     violation_type_join = f"""
@@ -670,25 +673,27 @@ def supervision_violations_within_time_interval_criteria_builder(
     FROM sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
     """
-
-    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        description=description,
-        criteria_spans_query_template=criteria_query,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name=violation_date_name_in_reason_blob,
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Date(s) when the violation(s) occurred",
-            ),
-            ReasonsField(
-                name="violation_expiration_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date when the most recent violation(s) will age out of the time interval",
-            ),
-        ],
-    )
+    reasons_fields = [
+        ReasonsField(
+            name=violation_date_name_in_reason_blob,
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Date(s) when the violation(s) occurred",
+        ),
+        ReasonsField(
+            name="violation_expiration_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when the most recent violation(s) will age out of the time interval",
+        ),
+    ]
+    if return_view_builder:
+        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+            criteria_name=criteria_name,
+            description=description,
+            criteria_spans_query_template=criteria_query,
+            meets_criteria_default=True,
+            reasons_fields=reasons_fields,
+        )
+    return {"criteria_query": criteria_query, "reasons_fields": reasons_fields}
 
 
 def incarceration_incidents_within_time_interval_criteria_builder(
@@ -1058,3 +1063,173 @@ def no_absconsion_within_time_interval_criteria_builder(
             ),
         ],
     )
+
+
+def employed_for_at_least_x_time_criteria_builder(
+    criteria_name: str,
+    description: str,
+    employment_status_values: List[str],
+    date_interval: int = 6,
+    date_part: str = "MONTH",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query builder that has spans of time when someone has been employed
+    for at least a given amount of time.
+
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        employment_status_values (List[str], optional): List of employment statuses to include in the criteria.
+            Example: ["EMPLOYED_UNKNOWN_AMOUNT", "EMPLOYED_FULL_TIME", "EMPLOYED_PART_TIME"].
+        date_interval (int, optional): Number of <date_part> when the employment will be counted as
+            valid. Defaults to 6.
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
+    """
+    query_template = status_for_at_least_x_time_criteria_query(
+        table_name="{project_id}.normalized_state.state_employment_period",
+        additional_where_clause=f"""AND employment_status IN {tuple(employment_status_values)}""",
+        date_interval=date_interval,
+        date_part=date_part,
+        start_date="start_date",
+        end_date="end_date",
+        additional_column="employment_status",
+    )
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        reasons_fields=[
+            ReasonsField(
+                name="employment_status",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="employment_status",
+            ),
+        ],
+    )
+
+
+def housed_for_at_least_x_time_criteria_builder(
+    criteria_name: str,
+    description: str,
+    housing_status_values: List[str],
+    date_interval: int = 6,
+    date_part: str = "MONTH",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query builder that has spans of time when someone has been housed
+    for at least a given amount of time.
+
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        housing_status_values (List[str], optional): List of housing statuses to include in the criteria.
+            Example: ["PERMANENT_RESIDENCE", "TEMPORARY_OR_SUPPORTIVE_HOUSING"].
+        date_interval (int, optional): Number of <date_part> when the employment will be counted as
+            valid. Defaults to 6.
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
+    """
+    query_template = status_for_at_least_x_time_criteria_query(
+        table_name="{project_id}.normalized_state.state_person_housing_status_period",
+        additional_where_clause=f"""AND housing_status_type IN {tuple(housing_status_values)}""",
+        date_interval=date_interval,
+        date_part=date_part,
+        start_date="housing_status_start_date",
+        end_date="housing_status_end_date",
+        additional_column="housing_status_type",
+    )
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        reasons_fields=[
+            ReasonsField(
+                name="housing_status_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Housing status type",
+            ),
+        ],
+    )
+
+
+def status_for_at_least_x_time_criteria_query(
+    start_date: str,
+    end_date: str,
+    table_name: str,
+    date_interval: int,
+    date_part: str = "MONTH",
+    additional_where_clause: str = "",
+    additional_column: str = "",
+) -> str:
+
+    """
+    Returns a criteria query builder that has spans of time when someone has been in a
+    certain status for at least a given amount of time.
+
+    Args:
+        start_date (str): The name of the start date field in the table.
+        end_date (str): The name of the end date field in the table.
+        table_name (str): The name of the table that contains the status information.
+        date_interval (int, optional): Number of <date_part> when the status will be counted as
+            valid.
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
+        additional_where_clause (str, optional): Any additional WHERE-clause filters for
+            selecting statuses. Defaults to "".
+        additional_column (str, optional): The name of the column that contains the
+    """
+    return f"""WITH spans AS (
+        -- Spans that are relevant for the criteria
+        SELECT 
+            state_code,
+            person_id,
+            {start_date} AS start_date,
+            {end_date} AS end_date,
+            state_code AS column_placeholder,
+            {additional_column}
+        FROM `{table_name}`
+        WHERE {start_date} < '9999-01-01' 
+            {additional_where_clause}
+    ),
+
+    {create_sub_sessions_with_attributes('spans')},
+
+    sessions AS (
+        -- Aggregate the spans to get non-overlapping sessions
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            {f"STRING_AGG(DISTINCT {additional_column}, ', ' ORDER BY {additional_column}) AS {additional_column}," if additional_column != '' else ''}
+        FROM sub_sessions_with_attributes
+        GROUP BY 1,2,3,4
+    ),
+    critical_date_spans AS (
+        -- Aggregate adjacent spans and calculate the critical date
+        SELECT 
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            DATE_ADD(start_date, INTERVAL {date_interval} {date_part}) AS critical_date,
+            {additional_column}
+        FROM ({aggregate_adjacent_spans(
+            table_name='sessions',
+            end_date_field_name="end_date",
+            index_columns=["state_code", "person_id", additional_column]
+            )})
+    ),
+    {critical_date_has_passed_spans_cte(attributes = [additional_column])}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT({additional_column} AS {additional_column})) AS reason,
+        {additional_column},
+    FROM critical_date_has_passed_spans"""

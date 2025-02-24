@@ -13,26 +13,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Describes the spans of time when a client has not had a positive drug test within the
-past 6 months.
+# =============================================================================
+"""Defines a criterion span view that shows spans of time during which someone has
+served at least six continuous months on 'DUAL', 'PAROLE' and/or 'PROBATION' supervision.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
-    at_least_X_time_since_drug_screen,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    get_minimum_time_served_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_CRITERIA_NAME = "ON_SUPERVISION_AT_LEAST_6_MONTHS"
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    at_least_X_time_since_drug_screen(
-        date_interval=6,
-        date_part="MONTH",
-        where_clause="WHERE is_positive_result",
-        criteria_name="AT_LEAST_6_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST",
+    get_minimum_time_served_criteria_query(
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        minimum_time_served=6,
+        time_served_interval="MONTH",
+        compartment_level_1_types=["SUPERVISION"],
+        compartment_level_2_types=["DUAL", "PAROLE", "PROBATION"],
     )
 )
 
