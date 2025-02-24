@@ -16,6 +16,7 @@
 # =============================================================================
 """Shows the eligibility spans for supervision clients in AZ who are eligible 
 for a transfer to administrative supervision"""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
@@ -31,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
     not_serving_ineligible_offense_for_admin_supervision,
+    risk_release_assessment_level_is_minimum,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -49,6 +51,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_is_not_limited.VIEW_BUILDER,
+        # 1.1 ORAS score or Risk Release Assessment
+        risk_release_assessment_level_is_minimum.VIEW_BUILDER,
         # 1.6 Mental Health Score of 3 or below.
         mental_health_score_3_or_below.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
