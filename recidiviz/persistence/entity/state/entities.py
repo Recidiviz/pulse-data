@@ -130,12 +130,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
     DateOrDateTime,
     DateRange,
     DurationMixin,
     PotentiallyOpenDateRange,
 )
+from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -2611,7 +2613,24 @@ class StateSentence(
     #   - this is a paritially hydrated entity (not merged yet)
     #   - it has sentencing_authority = StateSentencingAuthority.OTHER_STATE
     imposed_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # When all exempted states are removed, please replace
+        # the validator with the following:
+        # validator=attr_validators.is_opt_not_future_date
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_not_future_date,
+                exempted_states={
+                    # TODO(#38700) Filter out imposed dates from the future
+                    StateCode.US_ND,
+                    # TODO(#38698) Filter out imposed dates from the future
+                    StateCode.US_IX,
+                    # TODO(#38699) Filter out imposed dates from the future
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
 
     # The amount of any time already served (in days) at time of sentence imposition,

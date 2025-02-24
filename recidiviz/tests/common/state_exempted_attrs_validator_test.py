@@ -59,3 +59,87 @@ class AttrValidatorsTest(unittest.TestCase):
             state_code="US_YY",
             my_required_str=True,  # type: ignore[arg-type]
         )
+
+    def test_state_exempted_validator_composite(self) -> None:
+        @attr.s
+        class _TestClass:
+            state_code: str = attr.ib(validator=attr_validators.is_str)
+            my_required_str: str = attr.ib(
+                default=None,
+                validator=attr.validators.and_(
+                    attr_validators.is_opt_str,
+                    state_exempted_validator(
+                        attr_validators.is_str, exempted_states={StateCode.US_YY}
+                    ),
+                ),
+            )
+
+        # These crash because the state is not exempted
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=None,  # type: ignore[arg-type]
+            )
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=True,  # type: ignore[arg-type]
+            )
+
+        # This does not crash because the state is exempted
+        _ = _TestClass(
+            state_code="US_YY",
+            my_required_str=None,  # type: ignore[arg-type]
+        )
+
+        # This crashes because we're still checking is_opt_str on all states
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_YY",
+                my_required_str=True,  # type: ignore[arg-type]
+            )
+
+    def test_state_exempted_validator_composite_using_list(self) -> None:
+        """
+        The same test as test_state_exempted_validator_composite, but using
+        a list instead of validators.and_
+        """
+
+        @attr.s
+        class _TestClass:
+            state_code: str = attr.ib(validator=attr_validators.is_str)
+            my_required_str: str = attr.ib(
+                default=None,
+                # Mypy didn't like this, but it is allowed in attrs
+                validator=[  # type: ignore
+                    attr_validators.is_opt_str,
+                    state_exempted_validator(
+                        attr_validators.is_str, exempted_states={StateCode.US_YY}
+                    ),
+                ],
+            )
+
+        # These crash because the state is not exempted
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=None,  # type: ignore[arg-type]
+            )
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=True,  # type: ignore[arg-type]
+            )
+
+        # This does not crash because the state is exempted
+        _ = _TestClass(
+            state_code="US_YY",
+            my_required_str=None,  # type: ignore[arg-type]
+        )
+
+        # This crashes because we're still checking is_opt_str on all states
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_YY",
+                my_required_str=True,  # type: ignore[arg-type]
+            )
