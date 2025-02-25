@@ -44,6 +44,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_warrant_within_2_years,
     not_interstate_compact_incoming,
     not_on_community_supervision_for_life,
+    not_on_suspension_of_direct_supervision,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -89,6 +90,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_warrant_within_2_years.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
+        not_on_suspension_of_direct_supervision.VIEW_BUILDER,
         FINES_FEES_CRITERIA_GROUP,
     ],
     # TODO(#38270): Refine this almost-eligible condition, likely by setting an upper
