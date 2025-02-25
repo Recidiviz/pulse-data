@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: validation_supervision_population_person_level
+file_description: |-
+  This is an external validation dataset that lists each person on active supervision 
+  on a given date, their identifying information, location, supervising officer, and supervision
+  level. It is sourced from active supervision population reports run for each office
+  individually in ACIS. This process currently must be run by a member of the ADCRR team. 
+  The reports are then consolidated in Google Sheets and stored in go/arizona -> Validation Data
+  before being uploaded as raw data.
+data_classification: validation
+always_historical_export: False
+primary_key_cols:
+  - REPORT_DATE
+  - ADC_NUMBER
+columns:
+  - name: OFFENDER_NAME
+    description: The name of the person on supervision.
+    is_pii: True
+  - name: ADC_NUMBER
+    description: |-
+      The ADC_NUMBER of the person on supervision. FK to PERSON. 
+      Values included here do not always appear in the PERSON table. 
+      TODO(#30383): Figure out why that may be.
+    is_pii: True
+  - name: SO
+    description: Is this individual convicted of a sex offense?
+    known_values:
+      - value: A
+      - value: B
+      - value: C
+      - value: D
+      - value: E
+      - value: F
+      - value: G
+      - value: N
+  - name: CA
+    description: Is this individual a U.S. Citizen?
+    known_values:
+      - value: U.S. CITIZEN
+      - value: CRIMNL ALIEN
+      - value: LEGAL/NO DP
+      - value: LEGAL P/DP
+      - value: UNKNOWN
+  - name: MF
+    description: Individual's sex
+    known_values:
+      - value: M
+      - value: F
+  - name: SUPV_TYPE
+    description: |-
+      The type of supervision this person is serving. Includes release type,
+      Interstate Compact, STG membership, and sex offender status, among other things.
+      Can include many types separated by commas.
+  - name: BEGAN_SUPERVSN
+    description: The date this individual began supervision.
+    field_type: datetime
+  - name: SCHEDULED_END_DATE
+    description: The date this person is scheduled to finish their term of supervision. Sometimes NULL.
+    field_type: datetime
+  - name: SUPV_LEV
+    description: The individual's supervision level.
+    known_values:
+      - value: MIN
+      - value: MED
+      - value: MAX
+      - value: UNK
+      - value: INT
+  - name: OFFICER
+    description: The name of the officer supervising this individual.
+    is_pii: True
+  - name: OFFICE
+    description: The name of the office this individual is supervised out of.
+  - name: REPORT_DATE
+    description: The date the report was generated.
+    field_type: datetime

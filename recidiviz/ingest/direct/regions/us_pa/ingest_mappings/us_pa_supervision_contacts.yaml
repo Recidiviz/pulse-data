@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - external_id
+  - parole_number
+  - contact_start_date
+  - contact_end_date
+  - contact_type
+  - method
+  - contact_attempt
+  - collateral_type
+  - assisted
+  - agent_number
+  - agent_first_name
+  - agent_last_name
+  - parole_org
+unused_columns:
+  - contact_end_date
+  - assisted
+  - parole_org
+  - agent_first_name
+  - agent_last_name
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: parole_number
+          id_type: $literal("US_PA_PBPP")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id:
+            $concat:
+              $values:
+                - external_id
+                - parole_number
+          contacting_staff_external_id: agent_number
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: agent_number
+                $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")
+          contact_date: contact_start_date
+          contact_type:
+            $enum_mapping:
+              $raw_text: contact_type
+              $mappings:
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT: "Both"
+                StateSupervisionContactType.COLLATERAL: "Collateral"
+                StateSupervisionContactType.DIRECT: "Offender"
+          contact_method:
+            $enum_mapping:
+              $raw_text: method
+              $mappings:
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "Home"
+                  - "Office"
+                  - "Field"
+                  - "Work"
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "Phone"
+                  - "Phone-Voice"
+                  - "Phone-Voicemail"
+                StateSupervisionContactMethod.VIRTUAL: "Virtual"
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - "Email"
+                  - "Phone-Text"
+                  - "Mail"
+                  - "Facsimile"
+          status:
+            $enum_mapping:
+              $raw_text: contact_attempt
+              $mappings:
+                StateSupervisionContactStatus.ATTEMPTED: "Yes"
+                StateSupervisionContactStatus.COMPLETED: "No"
+          location:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "†"
+                  $values:
+                    - collateral_type
+                    - method
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.supervision_contact_location_mapper

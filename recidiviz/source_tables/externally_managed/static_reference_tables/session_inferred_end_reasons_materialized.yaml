@@ -1,0 +1,32 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: session_inferred_end_reasons_materialized
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: compartment_level_1
+    type: STRING
+    mode: NULLABLE
+  - name: compartment_level_2
+    type: STRING
+    mode: NULLABLE
+  - name: outflow_to_level_1
+    type: STRING
+    mode: NULLABLE
+  - name: outflow_to_level_2
+    type: STRING
+    mode: NULLABLE
+  - name: end_reason
+    type: STRING
+    mode: NULLABLE
+  - name: original_end_reason
+    type: STRING
+    mode: NULLABLE
+  - name: is_inferred_end_reason
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,29 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - SSN_UPPER
+  - SSN_MID
+  - SSN_LOWER
+  - ADDRESS
+  - IS_VALID_ADDR
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    ssn:
+      $custom:
+        $function: fake_custom_parsers.ssn_from_parts
+        $args:
+          ssn_first_three: SSN_UPPER
+          ssn_next_two: SSN_MID
+          ssn_last_four: SSN_LOWER
+    current_address:
+      $custom:
+        $function: fake_custom_parsers.normalize_address_roads
+        $args:
+          full_address: ADDRESS
+          is_valid_address:
+            $not_in:
+              $value: IS_VALID_ADDR
+              $options:
+                - $literal("N")

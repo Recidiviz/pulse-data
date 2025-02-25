@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_dob
+file_description: |-
+  Offender Date Of Birth
+data_classification: source
+primary_key_cols:
+  - ofndr_dob_id
+columns:
+  - name: ofndr_dob_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: dob
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: brth_st
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: brth_ctry_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: brth_city
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: temp_name_id
+    description: |-
+      TODO(#33372): Fill in column description

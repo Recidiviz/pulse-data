@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: recidiviz_elite_offender_medical_categories_6i
+file_description: |-
+  Contains the categories (questions) that make up elite_offender_medical_screenings_6i.
+  Does not contain medical information. This table is used to document information about
+  parole board hearings.
+data_classification: source
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - SCREEN_SEQ
+always_historical_export: True
+columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions 
+      with the justice system due to a new offense.
+    is_pii: True
+  - name: MEDICAL_QUESTIONAIRE_CODE
+    description: |-
+      A code for the type of questionnaire given. This table is filtered before it is sent
+      to us so this value is always "PAR" or "PDMISC", which are parole board hearings.
+  - name: MEDICAL_CATEGORY
+    description: Unknown. Always 0 or 1, depending on the MEDICAL_QUESTIONAIRE_CODE.
+  - name: SCREEN_SEQ
+    description: Part of the PK, can be used to join screenings, categories, and answers.
+  - name: SEAL_FLAG
+    description: Unknown
+  - name: CREATE_DATETIME
+    description: The date the record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: CREATE_USER_ID
+    description: The ID of the person who created the record.
+    is_pii: True
+  - name: MODIFY_DATETIME
+    description: The date the record was last modified
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: MODIFY_USER_ID
+    description: The ID of the person who last modified the record.
+    is_pii: True

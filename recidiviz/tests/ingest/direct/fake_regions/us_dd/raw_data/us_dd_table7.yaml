@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: table7
+file_description: |-
+  table7 file description
+data_classification: source
+primary_key_cols:
+  - PERSON_ID
+  - SENTENCE_ID
+  - CHARGE_ID
+columns:
+  - name: PERSON_ID
+    description: |-
+      PERSON_ID description
+  - name: SENTENCE_ID
+    description: |-
+      SENTENCE_ID description
+  - name: CHARGE_ID
+    description: |-
+      CHARGE_ID description

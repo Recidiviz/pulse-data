@@ -1,0 +1,589 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Outliers-related types"""
+
+from datetime import date, datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import attr
+import cattrs
+from cattrs.gen import make_dict_unstructure_fn, override
+
+from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetric
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    InsightsCaseloadCategoryType,
+)
+from recidiviz.common.str_field_utils import person_name_case
+
+
+class MetricOutcome(Enum):
+    FAVORABLE = "FAVORABLE"
+    ADVERSE = "ADVERSE"
+
+
+class TargetStatusStrategy(Enum):
+    # This is the default TargetStatusStrategy: the threshold for the target status is calculated by target +/- IQR.
+    IQR_THRESHOLD = "IQR_THRESHOLD"
+    # In some cases, i.e. certain favorable metrics, the target minus the IQR may be <= zero and officers
+    # who have zero rates should be highlighted as outliers, instead of using the IQR threshold logic.
+    ZERO_RATE = "ZERO_RATE"
+
+
+class TargetStatus(Enum):
+    MET = "MET"
+    NEAR = "NEAR"
+    FAR = "FAR"
+
+
+class OutliersMetricValueType(Enum):
+    COUNT = "COUNT"
+    AVERAGE = "AVERAGE"
+    # Implies that the value is divided by the avg_daily_population
+    RATE = "RATE"
+
+
+class ConfigurationStatus(Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
+def _optional_name_converter(name: Optional[str]) -> Optional[str]:
+    return None if name is None else person_name_case(name)
+
+
+@attr.s
+class PersonName:
+    """Components of a person's name represented as structured data."""
+
+    given_names: str = attr.ib(converter=person_name_case)
+    surname: str = attr.ib(converter=person_name_case)
+    middle_names: Optional[str] = attr.ib(
+        default=None, converter=_optional_name_converter
+    )
+    name_suffix: Optional[str] = attr.ib(
+        default=None, converter=_optional_name_converter
+    )
+
+    @property
+    def formatted_first_last(self) -> str:
+        return f"{self.given_names} {self.surname}"
+
+
+@attr.s
+class CaseloadCategory:
+    # The caseload category as it appears in the data
+    id: str = attr.ib()
+
+    # The caseload category as it should appear in the UI
+    display_name: str = attr.ib()
+
+
+@attr.s(eq=False)
+class OutliersMetric:
+    # The aggregated metric, which is an object from aggregated_metric_configurations.py
+    aggregated_metric: EventCountMetric = attr.ib()
+
+    # Whether the metric outcome is favorable or adverse to the best path of a JII
+    outcome_type: MetricOutcome = attr.ib()
+
+    @property
+    def name(self) -> str:
+        """
+        The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
+        This also corresponds to a column name in an aggregated_metric view
+        """
+        return self.aggregated_metric.name
+
+    @property
+    def metric_event_conditions_string(self) -> str:
+        """
+        The query fragment to use to filter analyst_data.person_events for this metric's events
+        """
+        return self.aggregated_metric.get_metric_conditions_string_no_newline()
+
+
+@attr.s
+class OutliersClientEvent:
+    # The aggregated metric, which is an object from aggregated_metric_configurations.py
+    aggregated_metric: EventCountMetric = attr.ib()
+
+    @property
+    def name(self) -> str:
+        """
+        The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
+        This also corresponds to a column name in an aggregated_metric view
+        """
+        return self.aggregated_metric.name
+
+
+@attr.s(eq=False)
+class OutliersMetricConfig:
+    """
+    Represents all information needed for a single metric in the Outliers products
+    """
+
+    name: str = attr.ib()
+
+    outcome_type: MetricOutcome = attr.ib()
+
+    # The string used as a display name for a metric, used in email templating
+    title_display_name: str = attr.ib()
+
+    # String used for metric in highlights and other running text
+    body_display_name: str = attr.ib()
+
+    # Event name in the plural form corresponding to the metric
+    event_name: str = attr.ib()
+
+    # Event name in the singular form corresponding to the metric
+    event_name_singular: str = attr.ib()
+
+    # Event name in the past participle form corresponding to the metric, to be put into sentences
+    # of the form "the number of JII who {event_name_past_tense}"
+    event_name_past_tense: str = attr.ib()
+
+    # A description of how the metric for this event type is calculated, formatted in markdown and
+    # displayed when a user clicks on the info icon next to the metric.
+    description_markdown: str = attr.ib()
+
+    # The query fragment to use to filter analyst_data.person_events for this metric's events
+    metric_event_conditions_string: str = attr.ib(default=None)
+
+    # The top percent (as an integer) of officers to highlight for this metric, if applicable;
+    # i.e. top_x_pct = 10 translates to highlighting officers that are in the top 10%
+    top_x_pct: int | None = attr.ib(default=None)
+
+    # Identifies if this is an absconsion related metric
+    is_absconsion_metric: bool = attr.ib(default=False)
+
+    # Helper text to display with list of metric events
+    list_table_text: str | None = attr.ib(default=None)
+
+    @classmethod
+    def build_from_metric(
+        cls,
+        *,
+        metric: OutliersMetric,
+        title_display_name: str,
+        body_display_name: str,
+        event_name: str,
+        event_name_singular: str,
+        event_name_past_tense: str,
+        # TODO(#27455): Remove the default value when the copy is ready for PA and IX
+        description_markdown: str = "",
+        top_x_pct: int | None = None,
+        is_absconsion_metric: bool = False,
+        list_table_text: str | None = None,
+    ) -> "OutliersMetricConfig":
+        return cls(
+            metric.name,
+            metric.outcome_type,
+            title_display_name,
+            body_display_name,
+            event_name,
+            event_name_singular,
+            event_name_past_tense,
+            description_markdown,
+            metric.metric_event_conditions_string,
+            top_x_pct,
+            is_absconsion_metric,
+            list_table_text,
+        )
+
+
+@attr.s
+class OutliersClientEventConfig:
+    name: str = attr.ib()
+
+    display_name: str = attr.ib()
+
+    @classmethod
+    def build(
+        cls, event: OutliersClientEvent, display_name: str
+    ) -> "OutliersClientEventConfig":
+        return cls(event.name, display_name)
+
+
+@attr.s
+class OutliersBackendConfig:
+    """
+    Information for a state's Outliers configuration represented as structured data.
+    """
+
+    # List of metrics that are relevant for this state,
+    # where each element corresponds to a column name in an aggregated_metrics views
+    # NOTE: if you are removing an existing metric, i.e. replacing it or deleting it,
+    # add the metric to the deprecated_metrics field and create a ticket to remove it
+    # once the metric changes are propogated through to production.
+    metrics: List[OutliersMetricConfig] = attr.ib()
+
+    # Mapping of client event types that are relevant for this state to a config with relevant info
+    client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
+
+    # String containing exclusions that should be applied to the supervision staff product views.
+    supervision_staff_exclusions: str = attr.ib(default=None)
+
+    # A string representing the filters to apply for the state's supervision officer aggregated metrics
+    supervision_officer_metric_exclusions: str = attr.ib(default=None)
+
+    # List of metrics that were previously configured. This list is maintained in order
+    # to prevent completely omitting a metric from the webtool when metrics are being
+    # changed or replaced. Context here: https://paper.dropbox.com/doc/Design-Doc-Outliers-Metric-Race-Condition--CIFSxbs7iv0jEUQqZZHsNwqCAg-Mpf1Bq5VbYyxqJyW0jHhb
+    deprecated_metrics: List[OutliersMetricConfig] = attr.ib(default=[])
+
+    # The caseload category type to use for disaggregating caseload types in the state
+    # TODO(#32104): Move this to the admin panel
+    primary_category_type: InsightsCaseloadCategoryType = attr.ib(
+        default=InsightsCaseloadCategoryType.ALL
+    )
+
+    # The available specialized caseload categories for this state, plus the display name for each
+    # category, broken down by category type.
+    # TODO(#32104): Move this to the admin panel
+    available_specialized_caseload_categories: dict[
+        InsightsCaseloadCategoryType, list[CaseloadCategory]
+    ] = attr.ib(default={})
+
+    def to_json(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
+        # Omit the exclusions since they are only for internal (backend) use.
+        unst_hook = make_dict_unstructure_fn(
+            OutliersBackendConfig,
+            c,
+            supervision_staff_exclusions=override(omit=True),
+            supervision_officer_metric_exclusions=override(omit=True),
+        )
+        c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
+        return c.unstructure(self)
+
+    def get_all_metrics(self) -> List[OutliersMetricConfig]:
+        return self.metrics + self.deprecated_metrics
+
+
+@attr.s
+class OfficerOutlierStatus:
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The current rate for this unit of analysis
+    rate: float = attr.ib()
+    # Categorizes how the rate for this OfficerMetricEntity compares to the target value
+    target_status: TargetStatus = attr.ib()
+    # The rate for the prior YEAR period for this unit of analysis;
+    # None if there is no metric rate for the previous period
+    prev_rate: Optional[float] = attr.ib()
+    # The target status for the previous period
+    prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
+
+
+@attr.s
+class OfficerMetricEntity:
+    # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
+    name: PersonName = attr.ib()
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The current rate for this unit of analysis
+    rate: float = attr.ib()
+    # Categorizes how the rate for this OfficerMetricEntity compares to the target value
+    target_status: TargetStatus = attr.ib()
+    # The rate for the prior YEAR period for this unit of analysis;
+    # None if there is no metric rate for the previous period
+    prev_rate: Optional[float] = attr.ib()
+    # The external_id of this OfficerMetricEntity's supervisor
+    supervisor_external_id: str = attr.ib()
+    # The external_id of this OfficerMetricEntity's supervisor
+    supervisor_external_ids: List[str] = attr.ib()
+    # The supervision district the officer is assigned to
+    supervision_district: str = attr.ib()
+    # The target status for the previous period
+    prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
+
+
+@attr.s
+class MetricContext:
+    # Unless otherwise specified, the target is the state average for the current period
+    target: float = attr.ib()
+    # All units of analysis for a given state and metric for the current period
+    entities: List[OfficerOutlierStatus] = attr.ib()
+    # Describes how the TargetStatus is calculated (see the Enum definition)
+    target_status_strategy: TargetStatusStrategy = attr.ib(
+        default=TargetStatusStrategy.IQR_THRESHOLD
+    )
+
+
+@attr.s
+class OutlierMetricInfo:
+    # The Outliers metric the information corresponds to
+    metric: OutliersMetricConfig = attr.ib()
+    # Unless otherwise specified, the target is the state average for the current period
+    target: float = attr.ib()
+    # Maps target status to a list of metric rates for all officers not included in highlighted_officers
+    other_officers: Dict[TargetStatus, List[float]] = attr.ib()
+    # Officers for a specific supervisor who have the "FAR" status for a given metric
+    highlighted_officers: List[OfficerMetricEntity] = attr.ib()
+    # Describes how the TargetStatus is calculated (see the Enum definition)
+    target_status_strategy: TargetStatusStrategy = attr.ib(
+        default=TargetStatusStrategy.IQR_THRESHOLD
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class OfficerSupervisorReportData:
+    # List of OutlierMetricInfo objects, representing metrics with outliers for this supervisor
+    metrics: List[OutlierMetricInfo] = attr.ib()
+    # List of OutliersMetric objects for metrics where there are no outliers
+    metrics_without_outliers: List[OutliersMetricConfig] = attr.ib()
+    recipient_email_address: str = attr.ib()
+    # Additional emails the report data should be CC'd to
+    additional_recipients: List[str] = attr.ib()
+
+    def to_dict(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
+        return c.unstructure(self)
+
+
+@attr.s
+class SupervisionOfficerEntityBase:
+    """Base class for supervision officer types."""
+
+    # The full name of the officer
+    full_name: PersonName = attr.ib()
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The officer's pseudonymized id
+    pseudonymized_id: str = attr.ib()
+    # The officer's supervisor's external id
+    supervisor_external_id: str = attr.ib()
+    # The officer's supervisor's external ids
+    supervisor_external_ids: List[str] = attr.ib()
+    # The district the officer
+    district: str = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
+    """Represents an officer we have included in our benchmarks and outlier status
+    calculations. These officers may or may not be outliers themselves."""
+
+    # List of objects that represent what metrics the officer is an Outlier for
+    # If the list is empty, then the officer is not an Outlier on any metric.
+    outlier_metrics: list = attr.ib()
+    # List of objects that represent what metrics the officer is in the top x% for the latest period for,
+    # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
+    top_x_pct_metrics: list = attr.ib()
+    # The officer's avg caseload size in the latest period
+    avg_daily_population: float = attr.ib()
+    # The caseload category this officer is part of
+    caseload_category: str = attr.ib()
+    # earliest date that this officer was assigned a caseload
+    earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class ExcludedSupervisionOfficerEntity(SupervisionOfficerEntityBase):
+    """An officer that was excluded from benchmark and outlier status
+    calculations."""
+
+
+@attr.s
+class SupervisionOfficerSupervisorEntity:
+    # The full name of the supervisor
+    full_name: PersonName = attr.ib()
+    # The supervisor's external id
+    external_id: str = attr.ib()
+    # The officer's pseudonymized id
+    pseudonymized_id: str = attr.ib()
+    # The district the supervisor's in
+    supervision_district: Optional[str] = attr.ib()
+    email: str = attr.ib()
+    # Whether the supervisor has outliers in the latest period
+    has_outliers: bool = attr.ib()
+    # The unit the supervisor's in
+    supervision_unit: Optional[str] = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class UserInfo:
+    entity: Optional[SupervisionOfficerSupervisorEntity] = attr.ib()
+    role: Optional[str] = attr.ib()
+    has_seen_onboarding: bool = attr.ib()
+    has_dismissed_data_unavailable_note: bool = attr.ib()
+    has_dismissed_rate_over_100_percent_note: bool = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class OutliersProductConfiguration:
+    """
+    Class that contains all of the information that is configured for a state
+    and needed by products externally. This is a combination of what's configured for
+    a state via the OutliersBackendConfig and the Configuration entity defined in
+    outliers/schema.py.
+    """
+
+    # Who authored the copy configuration
+    updated_by: str = attr.ib()
+
+    # When the copy configuration was implemented
+    updated_at: datetime = attr.ib()
+
+    # The feature variant that gates this configuration (if necessary)
+    feature_variant: Optional[str] = attr.ib()
+
+    # where each element corresponds to a column name in an aggregated_metrics views
+    metrics: List[OutliersMetricConfig] = attr.ib()
+
+    # URL that methodology/FAQ links can be pointed to
+    learn_more_url: str = attr.ib()
+
+    # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
+    supervision_officer_label: str = attr.ib()
+
+    # The string that represents what a state calls a location-based group of offices, e.g. "district" or "region"
+    supervision_district_label: str = attr.ib()
+
+    # The string that represents what a state calls a group of supervision officers, e.g. "unit"
+    supervision_unit_label: str = attr.ib()
+
+    # The string that represents what a state calls a supervisor, e.g. "supervisor"
+    supervision_supervisor_label: str = attr.ib()
+
+    # The string that represents what a state calls someone who manages supervision supervisors, e.g. "district director"
+    supervision_district_manager_label: str = attr.ib()
+
+    # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
+    supervision_jii_label: str = attr.ib()
+
+    # The string shown when supervisor is missing outlier officers
+    supervisor_has_no_outlier_officers_label: str = attr.ib()
+
+    # The string shown when officer has no outlier metrics
+    officer_has_no_outlier_metrics_label: str = attr.ib()
+
+    # The string shown when supervisor has no officers with clients eligible for opportunities
+    supervisor_has_no_officers_with_eligible_clients_label: str = attr.ib()
+
+    # The string shown when officer has no clients eligible
+    officer_has_no_eligible_clients_label: str = attr.ib()
+
+    # The string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers
+    # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
+    none_are_outliers_label: str = attr.ib(default="")
+
+    # The string that describes a metric that is worse than the statewide rate
+    worse_than_rate_label: str = attr.ib(default="")
+
+    # A description of why some officers may be excluded from the list.
+    exclusion_reason_description: str = attr.ib(default="")
+
+    # The string that describes a metric that is slightly worse than the statewide rate
+    slightly_worse_than_rate_label: str = attr.ib(
+        default="Slightly worse than statewide rate"
+    )
+
+    # The string that describes a metric that is at or below the statewide rate
+    at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
+
+    # The string that describes a metric that is at or ABOVE the statewide rate
+    at_or_above_rate_label: str = attr.ib(default="At or above statewide rate")
+
+    # Mapping of client event types that are relevant for this state to a config with relevant info
+    client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
+
+    # The category type to use for disaggregating caseload types in the state
+    primary_category_type: InsightsCaseloadCategoryType = attr.ib(
+        default=InsightsCaseloadCategoryType.ALL
+    )
+
+    # The available specialized caseload categories for this state, plus the display name for each
+    # category, broken down by category type.
+    caseload_categories: list[CaseloadCategory] = attr.ib(default={})
+
+    # The string that is in the "Outliers" hover tooltip explaining what an outlier is
+    outliers_hover: str = attr.ib(
+        default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate."
+    )
+
+    # How to refer to the government agency body
+    doc_label: str = attr.ib(default="DOC")
+
+    # The string that represents what a state calls an absconder
+    absconder_label: str = attr.ib(default="absconder")
+
+    def to_json(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
+        return c.unstructure(self)
+
+
+class ActionStrategyType(Enum):
+    ACTION_STRATEGY_OUTLIER = "ACTION_STRATEGY_OUTLIER"
+    ACTION_STRATEGY_OUTLIER_3_MONTHS = "ACTION_STRATEGY_OUTLIER_3_MONTHS"
+    ACTION_STRATEGY_OUTLIER_ABSCONSION = "ACTION_STRATEGY_OUTLIER_ABSCONSION"
+    ACTION_STRATEGY_OUTLIER_NEW_OFFICER = "ACTION_STRATEGY_OUTLIER_NEW_OFFICER"
+    ACTION_STRATEGY_60_PERC_OUTLIERS = "ACTION_STRATEGY_60_PERC_OUTLIERS"
+
+
+@attr.s
+class ActionStrategySurfacedEvent:
+    # The state code of the user
+    state_code: str = attr.ib()
+    # The pseudonymized id of the user (supervisor)
+    user_pseudonymized_id: str = attr.ib()
+    # The officer's pseudonymized id
+    officer_pseudonymized_id: Optional[str] = attr.ib()
+    # The action strategy enum value
+    action_strategy: str = attr.ib()
+    # Timestamp
+    timestamp: date = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)

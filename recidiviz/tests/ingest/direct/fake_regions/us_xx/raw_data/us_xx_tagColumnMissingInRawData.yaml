@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: tagColumnMissingInRawData
+file_description: |-
+  Used to test the case where a column is configured in the schema but is missing in the raw data file
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+  - name: COL2
+  - name: COL3
+custom_line_terminator: "\n"

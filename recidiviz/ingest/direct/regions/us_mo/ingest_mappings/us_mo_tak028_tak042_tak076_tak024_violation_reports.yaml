@@ -1,0 +1,192 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak028_tak042_tak076_tak024_violation_reports` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - BY_DOC
+  - BY_CYC
+  - BY_VSN
+  - BY_VE
+  - BY_VWI
+  - BY_VRT
+  - BY_VSI
+  - BY_VPH
+  - BY_VBG
+  - BY_VA
+  - BY_VIC
+  - BY_DAX
+  - BY_VC
+  - BY_VD
+  - BY_VIH
+  - BY_VIM
+  - BY_VIL
+  - BY_VOR
+  - BY_PIN
+  - BY_PLN
+  - BY_PON
+  - BY_RCA
+  - BY_VTY
+  - BY_DV
+  - BY_UID
+  - BY_UIU
+  - VIOLATED_CONDITIONS
+  - CZ_DOC
+  - CZ_CYC
+  - CZ_SEO
+  - CZ_FSO
+  - FINAL_FORMED_CREATE_DATE
+  - FINAL_FORMED_UPDATE_DATE
+  - BDGNO
+  - CLSTTL
+  - LNAME
+  - FNAME
+  - MINTL
+unused_columns:
+  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
+  - BY_VWI # Unused - Violation warrant flag
+  - BY_VSI # Unused - Advised of Statements
+  - BY_VPH # Unused - Preliminary hearing
+  - BY_VBG # Unused - Given booklet
+  - BY_VA # Unused - Absconsion warrant date
+  - BY_VIC # Unused - Custody flag
+  - BY_DAX # Unused - Detainer cross reference
+  - BY_VC # Unused - Custody date
+  - BY_VD # Unused - Interview date
+  - BY_VIH # Unused - Interview hour
+  - BY_VIM # Unused - Interview minute
+  - BY_VIL # Unused - Interview location
+  - BY_PIN # Unused - Designated DOC location
+  - BY_PLN # Unused - DOC location acronym
+  - BY_PON # Unused - Duplicate of BDGNO
+  - BY_RCA # Unused - Requires court action
+  - BY_UID
+  - BY_UIU
+  - CZ_DOC # Duplicate of BY_DOC
+  - CZ_CYC # Duplicate of BY_CYC
+  - CZ_SEO # Sentence Key Sequence Number
+  - CZ_FSO # Field Sentence Sequence Number
+  - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
+  - CLSTTL
+  - LNAME
+  - FNAME
+  - MINTL
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: BY_DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - BY_DOC
+                - BY_CYC
+                - $literal("R")
+                - BY_VSN
+          violation_date: BY_DV
+          supervision_violation_types:
+            - $foreach:
+                $iterable: BY_VTY
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - "A"
+                          StateSupervisionViolationType.ESCAPED:
+                            - "E"
+                          StateSupervisionViolationType.FELONY:
+                            - "F"
+                          StateSupervisionViolationType.MISDEMEANOR:
+                            - "M"
+                          StateSupervisionViolationType.MUNICIPAL:
+                            - "O"
+                          StateSupervisionViolationType.TECHNICAL:
+                            - "T"
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable: VIOLATED_CONDITIONS
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolatedConditionType.EMPLOYMENT:
+                            - "EMP"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                            - "TRA"
+                            - "RES"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_REPORT:
+                            - "DIR"
+                          StateSupervisionViolatedConditionType.FINANCIAL:
+                            - "SPC"
+                          StateSupervisionViolatedConditionType.LAW:
+                            - "LAW"
+                            - "WEA"
+                          StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                            - "ASC"
+                            - "SUP"
+                            - "INT"
+                          StateSupervisionViolatedConditionType.SUBSTANCE:
+                            - "DRG"
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - BY_DOC
+                      - BY_CYC
+                      - $literal("R")
+                      - BY_VSN
+                deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                deciding_staff_external_id: BDGNO
+                deciding_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $not_null: BDGNO
+                      $then: $literal("US_MO_STAFF_BADGE_NUMBER")
+                is_draft:
+                  $is_null: FINAL_FORMED_CREATE_DATE
+                response_date:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_response_date
+                    $args:
+                      final_formed_create_date: FINAL_FORMED_CREATE_DATE
+                      response_date: BY_VE
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_subtype: BY_VRT
+                supervision_violation_response_decisions:
+                  - $foreach:
+                      $iterable: BY_VOR
+                      $result:
+                        StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - "CO" # Court Ordered Detention Sanction
+                                StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED:
+                                  - "RN" # Court Ordered Detention Sanction  # SIS revoke to SES
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - "I"
+                                  - "R"
+                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                  - "C"
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - "D"
+                                StateSupervisionViolationResponseDecision.EXTENSION:
+                                  - "E"
+                                StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                  - "T"
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "A"
+                                StateSupervisionViolationResponseDecision.SUSPENSION:
+                                  - "S"
+                              $ignore:
+                                - "NOREC"

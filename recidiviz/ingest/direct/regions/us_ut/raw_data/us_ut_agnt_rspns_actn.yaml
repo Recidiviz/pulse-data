@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: agnt_rspns_actn
+file_description: |-
+  Agent Response Action
+data_classification: source
+primary_key_cols:
+  - agnt_rspns_actn_id
+columns:
+  - name: agnt_rspns_actn_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_agnt_rspns_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_rspns_actn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agnt_actn_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rcmd_csty_day
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rspns_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: agnt_actn_deny_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agent_acknowledge_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

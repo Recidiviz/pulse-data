@@ -1,0 +1,13 @@
+# Paths of files from recidiviz non-Airflow source code to add to the Cloud Composer bucket
+# The paths should follow the Terraform fileset format of [path, pattern]. Any non-Python file
+# dependency must be added here. Python dependencies (including DAG files) will be added
+# automatically.
+- [recidiviz/airflow/dags/operators, "*.yaml"]
+- [recidiviz/ingest/direct/regions, "*/manifest.yaml"]
+- [recidiviz/metrics/export/products, products.yaml]
+- [recidiviz/pipelines, calculation_pipeline_templates.yaml]
+- [recidiviz/pipelines, "*/template_metadata.json"]
+- [recidiviz/ingest/direct/raw_data/validations/configs, "*.yaml"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.py"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.csv"]

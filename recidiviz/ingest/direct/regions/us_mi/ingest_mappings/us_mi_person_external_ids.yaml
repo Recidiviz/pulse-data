@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - offender_number
+  - offender_id
+  - offender_booking_ids
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      # Offender number
+      - StatePersonExternalId:
+          external_id: offender_number
+          id_type: $literal("US_MI_DOC")
+
+      # Offender ID
+      - StatePersonExternalId:
+          external_id: offender_id
+          id_type: $literal("US_MI_DOC_ID")
+
+      # Offender booking IDs
+      - $foreach:
+          $iterable: offender_booking_ids
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_MI_DOC_BOOK")

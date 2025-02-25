@@ -1,0 +1,78 @@
+address:
+  dataset_id: us_ix_validation_oneoffs
+  table_id: idoc_prison_admissions_releases
+description: Admission and releases validation data imported from https://docs.google.com/spreadsheets/d/1rgiaTZHNZtEpdzhZmfVJnf9Os6f7wjAIlOADiGVcAKQ/edit#gid=1653729877
+schema:
+  - name: DOCNO
+    type: STRING
+    mode: NULLABLE
+  - name: incrno
+    type: STRING
+    mode: NULLABLE
+  - name: statno
+    type: STRING
+    mode: NULLABLE
+  - name: stat_strt_dtd
+    type: STRING
+    mode: NULLABLE
+  - name: stat_rls_dtd
+    type: STRING
+    mode: NULLABLE
+  - name: stat_strt_typ
+    type: STRING
+    mode: NULLABLE
+  - name: stat_rls_typ
+    type: STRING
+    mode: NULLABLE
+  - name: CSTARTYEAR
+    type: STRING
+    mode: NULLABLE
+  - name: RELEASEYEAR
+    type: STRING
+    mode: NULLABLE
+  - name: STARTMONTH
+    type: STRING
+    mode: NULLABLE
+  - name: RELEASEMONTH
+    type: STRING
+    mode: NULLABLE
+  - name: RLSTYPE
+    type: STRING
+    mode: NULLABLE
+  - name: ADMISSION
+    type: STRING
+    mode: NULLABLE
+  - name: IDOCADMISSION
+    type: STRING
+    mode: NULLABLE
+  - name: RELEASE
+    type: STRING
+    mode: NULLABLE
+  - name: IDOCRELEASE
+    type: STRING
+    mode: NULLABLE
+  - name: NEW_COMMIT
+    type: STRING
+    mode: NULLABLE
+  - name: STARTFSYEAR
+    type: STRING
+    mode: NULLABLE
+  - name: RELEASEFSYEAR
+    type: STRING
+    mode: NULLABLE
+  - name: LOSYRS
+    type: STRING
+    mode: NULLABLE
+  - name: LOSDAYS
+    type: STRING
+    mode: NULLABLE
+  - name: CHANGEMONTH
+    type: STRING
+    mode: NULLABLE
+  - name: DURATION
+    type: STRING
+    mode: NULLABLE
+  - name: CHANGESTATUS
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

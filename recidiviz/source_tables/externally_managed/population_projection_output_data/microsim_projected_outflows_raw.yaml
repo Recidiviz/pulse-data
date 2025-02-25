@@ -1,0 +1,29 @@
+address:
+  dataset_id: population_projection_output_data
+  table_id: microsim_projected_outflows_raw
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: simulation_date
+    type: DATE
+    mode: NULLABLE
+  - name: simulation_group
+    type: STRING
+    mode: NULLABLE
+  - name: compartment
+    type: STRING
+    mode: NULLABLE
+  - name: outflow_to
+    type: STRING
+    mode: NULLABLE
+  - name: total_population
+    type: INTEGER
+    mode: NULLABLE
+  - name: date_created
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null

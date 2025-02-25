@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_staff` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PARTYID
+  - PERSONLASTNAME
+  - PERSONFIRSTNAME
+  - PERSONMIDDLENAME
+  - PERSONSUFFIX
+  - PARTYEMAILADDR
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: PARTYID
+          id_type: $literal("US_AR_PARTYID")
+    full_name:
+      $person_name:
+        $given_names: PERSONFIRSTNAME
+        $middle_names: PERSONMIDDLENAME
+        $surname: PERSONLASTNAME
+        $name_suffix: PERSONSUFFIX
+    email: PARTYEMAILADDR

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - FirstName
+  - MiddleName
+  - LastName
+  - Sex
+  - BirthDate
+  - Race
+  - Ethnicity
+  - AddressLine1
+  - AddressLine2
+  - AddressCity
+  - AddressState
+  - AddressZip
+  - PhoneNumber
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    birthdate: BirthDate
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
+    gender:
+      $enum_mapping:
+        $raw_text: Sex
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.ASIAN: A
+                StateRace.BLACK: B
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.WHITE: W
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: Ethnicity
+              $mappings:
+                StateEthnicity.HISPANIC: HISPANIC
+                StateEthnicity.NOT_HISPANIC: NOT_HISPANIC
+    current_address:
+      $physical_address:
+        $address_1: AddressLine1
+        $address_2: AddressLine2
+        $city: AddressCity
+        $state: AddressState
+        $zip: AddressZip
+    current_phone_number: PhoneNumber

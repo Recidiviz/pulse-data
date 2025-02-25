@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - Program_Name
+  - Program_Start_Date
+  - Program_End_Date
+  - currently_assigned
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_CA_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          # Note: the external ID is not a good one. If the program start_date was
+          # entered incorrectly for example, and later corrected, we would consider it a
+          # good program start. We need a stable program UUID. This is tracked here:
+          # #32264.
+          external_id:
+            $concat:
+              $values:
+                - $literal("ARMS")
+                - OffenderId
+                - Program_Name
+                - Program_Start_Date
+                - Program_End_Date
+          program_id: Program_Name
+          participation_status:
+            $conditional:
+              - $if:
+                  $equal:
+                    - currently_assigned
+                    - $literal("True")
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.IN_PROGRESS)
+              - $else: $literal_enum(StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN)
+          start_date: Program_Start_Date
+          discharge_date: Program_End_Date

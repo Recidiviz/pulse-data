@@ -1,0 +1,237 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_booking_id
+  - supervision_violation_id
+  - supv_violation_incident_id
+  - violation_date
+  - incident_summary_notes
+  - violation_type
+  - violation_invest_begin_date
+  - decision_info
+  - violated_conditions
+unused_columns:
+  - incident_summary_notes
+  # BL NOTE: should we use this for is_drug and is_sex_offense? We could try searching for key terms to
+  #          determine these fields since this notes field is usually fairly descriptive, but it's not
+  #          standardized so not sure how much we'd miscategorize
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - supervision_violation_id
+                - supv_violation_incident_id
+              $separator: "##"
+              $include_nulls: true
+          violation_date: violation_date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: violation_type
+                    $mappings:
+                      StateSupervisionViolationType.FELONY:
+                        - Felony
+                      StateSupervisionViolationType.LAW:
+                        - New Offense
+                      StateSupervisionViolationType.TECHNICAL:
+                        - Technical
+                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        - Incident
+                        - Supplemental
+                        - Investigation
+                        - Multiple Order Violation
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable:
+                  $split_json: violated_conditions
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $concat:
+                            $separator: "@@"
+                            $values:
+                              - $json_extract:
+                                  $key: special_condition_id
+                                  $json: $iter_item
+                              - $json_extract:
+                                  $key: short_description
+                                  $json: $iter_item
+                              - $json_extract:
+                                  $key: description
+                                  $json: $iter_item
+                            $include_nulls: True
+                        $custom_parser: us_mi_custom_enum_parsers.parse_condition
+          supervision_violation_responses:
+            # There's always at least one violation response associated with the supervision violation record, and then there are
+            # 1 violation responses associated with each associated management decision or sanction (if they exist)
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("REPORT")
+                      - supervision_violation_id
+                      - supv_violation_incident_id
+                    $separator: "##"
+                    $include_nulls: true
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_date: violation_invest_begin_date
+            - $foreach:
+                $iterable:
+                  $split_json: decision_info
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - $json_extract:
+                              $key: _response_type
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: _response_external_id
+                              $json: $iter_item
+                          - supv_violation_incident_id
+                        $separator: "##"
+                        $include_nulls: true
+                    response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                    response_date:
+                      $json_extract:
+                        $key: _response_date
+                        $json: $iter_item
+                    deciding_staff_external_id:
+                      $conditional:
+                        - $if:
+                            $not_null:
+                              $json_extract:
+                                $key: _decision_agent_id
+                                $json: $iter_item
+                          $then:
+                            $json_extract:
+                              $key: _decision_agent_id
+                              $json: $iter_item
+                    deciding_staff_external_id_type:
+                      $conditional:
+                        - $if:
+                            $not_null:
+                              $json_extract:
+                                $key: _decision_agent_id
+                                $json: $iter_item
+                          $then: $literal("US_MI_OMNI_USER")
+                    deciding_body_type:
+                      $conditional:
+                        - $if:
+                            $equal:
+                              - $json_extract:
+                                  $key: _response_type
+                                  $json: $iter_item
+                              - $literal("DECISION")
+                          $then: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                        - $else:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: _deciding_body_role
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecidingBodyType.COURT:
+                                  - "1795" # Circuit Court
+                                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD:
+                                  - "1791" # Parole Board
+                                StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER:
+                                  - "1793" # Program Manager
+                                  - "7177" # Agent
+                                  - "1792" # Area Manager
+                                  - "1794" # Supervisor
+                                StateSupervisionViolationResponseDecidingBodyType.INTERNAL_UNKNOWN:
+                                  - "1790" # Parole Violation Unit
+                                  - "1789" # Other State (Compact)
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: _decision
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                  - Reinstate
+                                  - Continue
+                                  - Probation Continued
+                                  - No Change
+                                  - Delayed Sentence Continued
+                                  - Parole Continued
+                                  - Parole Reinstated
+                                  - HYTA Continued
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - Refer to Program Manager
+                                  - Refer to Area Manager
+                                  - Return to Agent for Further Investigation
+                                  - Defer to Court
+                                  - Parole Violation Decision Deferred
+                                StateSupervisionViolationResponseDecision.EXTENSION:
+                                  - Extend Term
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - Add Special Condition
+                                  - Substance Abuse Testing
+                                  - Electronic Monitoring
+                                  - Return/Divert to Electronic Monitoring
+                                  - Increase Supervision Level
+                                  - Add/Change Conditions
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - Other
+                                  - Other Action
+                                StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED:
+                                  - HYTA Revoked
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - Return to Prison
+                                  - Return to Prison PVNS
+                                  - Return/Divert to Corrections Center
+                                  - Returned for Parole Revocation with New Sentence
+                                  - Probation Revoked  Jail
+                                  - Probation Revoked  Prison
+                                  - Delayed Sentenced Revoked
+                                  - Returned for Parole Revocation Process
+                                StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                  - Reinstate and Discharge
+                                  - Discharge
+                                  - Discharged by Court
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                  - Day Treatment
+                                  - Outpatient Treatment
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
+                                  - Return/Divert to Residential Treatment
+                                  - Residential Treatment
+                                StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
+                                  - Dismissed by Court
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - Verbal Warning
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "Issue Warrant #2"
+                                  - "Issue Warrant #1"
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - TEMP LOCATION TYPE # <- There are quite a few (7%) management decisions that are designated with this decision type
+                                    # Not sure if this just means the decision hasn't been made yet?  But the decision date is valued for these records
+                                    # In the data, we'll usually see another non-"0" decision made after this "0" decision, but not necessarily by the same person
+                                    # Gonna keep this in the data for now and it can be filtered out later as necessary
+                                  # BL NOTE: Not sure if these two are just some jail/prison time or complete revocation
+                                  - Additional Jail
+                                  - Corrections Center
+                                  # BL NOTE: Not sure if mandated programming should be counted as "treatment"?
+                                  - Other Programming
+                                  - Return/Divert to TRV
+                                  - Residential Programming Center
+                                  - Residential ReEntry Program
+                                  - SAI Commitment
+                                  - TRV

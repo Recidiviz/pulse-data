@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - recidiviz_primary_person_id
+  - control_numbers
+  - inmate_numbers
+  - parole_numbers
+unused_columns:
+  - recidiviz_primary_person_id # Internal Recidiviz person ID
+output:
+  StatePerson:
+    external_ids:
+      # PA DOC id numbers
+      - $foreach:
+          $iterable: control_numbers
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_PA_CONT")
+
+      # Inmate numbers
+      - $foreach:
+          $iterable: inmate_numbers
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_PA_INMATE")
+
+      # Parole numbers
+      - $foreach:
+          $iterable: parole_numbers
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_PA_PBPP")

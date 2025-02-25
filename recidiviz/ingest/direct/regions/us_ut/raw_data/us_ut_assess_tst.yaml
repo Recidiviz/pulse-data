@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: assess_tst
+file_description: |-
+  Assessment Test
+data_classification: source
+primary_key_cols:
+  - assess_tst_id
+columns:
+  - name: assess_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_cat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_tst_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vndr_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: tst_obj
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_instruct
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: substance_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assmnt_prty_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: allow_email_attach
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: help_file
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: help_file_name
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rstrct_edit
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - parole_number
+  - parole_count_id
+  - set_id
+  - violation_date
+  - violation_types
+unused_columns: []
+output:
+  # Each set of violations and responses begets a single `state_supervision_violation`
+  # instance with one to many child `state_supervision_violation_type_entry`
+  # instances, each of the latter corresponding to a `dbo_SanctionTracking` row with
+  # `Type='V'`. Additionally, for each such `Type='V'` row with a unique `SanctionCode`
+  # value, a new `state_supervision_violated_condition_entry` child instance
+  # will be created. It is possible to have multiple such rows in a set with the same
+  # `SanctionCode` if there are multiple associated violations of the same condition.
+
+  # Each set begets a single `state_supervision_violation_response` instance with one
+  # to many child `state_supervision_violation_response_decision_entry`
+  # instances, each of the latter corresponding to a `dbo_SanctionTracking` row with `Type='S'`.
+
+  # These sets also include "decision" rows which have less rich information and which PADOC has informed us are not
+  # particularly useful, so are ignored.
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: parole_number
+          id_type: $literal("US_PA_PBPP")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - parole_number
+                - parole_count_id
+                - set_id
+          violation_date: violation_date
+          supervision_violation_types:
+            - $foreach:
+                $iterable:
+                  $split_json: violation_types
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $json: $iter_item
+                            $key: violation_code
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - H06 # Failure to report upon release
+                            - H09 # Absconding
+                          StateSupervisionViolationType.LAW:
+                            - H04 # Pending criminal charges (UCV) Detained/Not detained
+                            - M20 # Conviction of Misdemeanor Offense
+                            - M13 # Conviction of a summary offense (a minor criminal, not civil offense)
+                          StateSupervisionViolationType.TECHNICAL:
+                            - M04 # Travel violations
+                            - H01 # Changing residence without permission
+                            - M02 # A - Failure to report as instructed
+                            - M19 # B - Failure to notify agent of arrest or citation within 72 hrs
+                            - L07 # C - Failure to notify agent of change in status/employment
+                            - M01 # C - Failure to notify agent of change in status/employment
+                            - L08 # A - Positive urine, drugs
+                            - M03 # A - Positive urine, drugs
+                            - H12 # A - Positive urine, drugs
+                            - H10 # B - Possession of offense weapon
+                            - H11 # B - Possession of firearm
+                            - H08 # C - Assaultive behavior
+                            - L06 # Failure to pay court ordered fees, restitution
+                            - L01 # Failure to participate in community service
+                            - L03 # Failure to pay supervision fees
+                            - L04 # Failure to pay urinalysis fees
+                            - L05 # Failure to support dependents
+                            - M05 # Possession of contraband, cell phones, etc.
+                            - M06 # Failure to take medications as prescribed
+                            - M07 # Failure to maintain employment
+                            - M08 # Failure to participate or maintain treatment
+                            - M09 # Entering prohibited establishments
+                            - M10 # Associating with gang members, co-defendants, etc
+                            - M11 # Failure to abide by written instructions
+                            - M12 # Failure to abide by field imposed special conditions
+                            - L02 # Positive urine, alcohol (Previous History)
+                            - M14 # Positive urine, alcohol (Previous History)
+                            - H03 # Positive urine, alcohol (Previous History)
+                            - M15 # Violating curfew
+                            - M16 # Violating electronic monitoring
+                            - M17 # Failure to provide urine
+                            - M18 # Failure to complete treatment
+                            - H02 # Associating with crime victims
+                            - H05 # Failure to abide by Board Imposed Special Conditions
+                            - H07 # Removal from Treatment/CCC Failure
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable:
+                  $split_json: violation_types
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $json: $iter_item
+                            $key: violation_code
+                        $mappings:
+                          StateSupervisionViolatedConditionType.EMPLOYMENT:
+                            - "M07"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                            - "H01"
+                            - "M04"
+                            - "L07"
+                            - "M01"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_REPORT:
+                            - "H06"
+                            - "M02"
+                            - "M19"
+                          StateSupervisionViolatedConditionType.FINANCIAL:
+                            - "L03"
+                            - "L04"
+                            - "L05"
+                            - "L06"
+                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - "H09"
+                          StateSupervisionViolatedConditionType.LAW:
+                            - "H04"
+                            - "M13"
+                            - "M20"
+                            - "H10"
+                            - "H11"
+                            - "H08"
+                          StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                            - "H02"
+                            - "M09"
+                            - "M10"
+                            - "M15"
+                            - "H05"
+                            - "L01"
+                            - "M05"
+                            - "M11"
+                            - "M12"
+                            - "M16"
+                          StateSupervisionViolatedConditionType.SUBSTANCE:
+                            - "H03"
+                            - "H12"
+                            - "L02"
+                            - "L08"
+                            - "M03"
+                            - "M14"
+                            - "M17"
+                          StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE:
+                            - "H07"
+                            - "M06"
+                            - "M08"
+                            - "M18"

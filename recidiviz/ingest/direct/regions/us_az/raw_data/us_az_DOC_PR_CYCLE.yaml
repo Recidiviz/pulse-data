@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DOC_PR_CYCLE
+file_description: |-
+  Contains information about work and non-work program assignments.
+data_classification: source
+primary_key_cols:
+  - CYCLE_ID
+columns:
+  - name: CYCLE_ID
+    description: |-
+      Primary Key
+  - name: PROGRAM_UNIT_ID
+    description: |-
+      FK to DOC_PROGRAM_COMPLEX_UNIT (not currently in transfer)
+  - name: FACILITATOR_ID
+    description: |-
+      PERSON_ID of program facilitator
+    is_pii: True
+  - name: CYCLE_NAME
+    description: |-
+      The name of the cycle
+  - name: LOCATION_AT_FACILITY_ID
+    description: |-
+      Location of program within facility. FK to AZ_DOC_INTERNAL_LOCATION.
+  - name: SECURITY_LOCATION_ID
+    description: |-
+      Security location code. FK to LOOKUPS.
+  - name: SESSION_RECCURENCE_ID
+    description: |-
+      FK to LOOKUPS
+  - name: SESSION_SETTING_ID
+    description: |-
+      Where the program session will take place. FK to LOOKUPS.
+  - name: CYCLE_START_DATE
+    description: |-
+      The date the cycle begins
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CYCLE_END_DATE
+    description: |-
+      The date the cycle ends
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: STATUS_ID
+    description: |-
+      Cycle status. FK to LOOKUPS.
+  - name: IS_EARLY_OUT
+    description: |-
+      Is early out Y/N flag.
+  - name: IS_V_GATE
+    description: |-
+      Is V Gate Y/N flag.
+  - name: ENROLL_WAIT_LIST_LIMIT
+    description: |-
+      Limit of how many people can be on the waitlist for this program
+  - name: NUM_DAY_WEEK
+    description: Unclear
+  - name: DAY_OF_MONTH
+    description: Unclear
+  - name: DAY_OF_YEAR
+    description: Unclear
+  - name: OTHER_SESSION_SETTING
+    description: Unclear
+  - name: MONTHLY_DAY_OF_WEEK
+    description: Unclear
+  - name: YEARLY_DAY_NUMBER
+    description: Unclear
+  - name: START_TIME
+    description: |-
+      The time at which the cycle began
+  - name: END_TIME
+    description: |-
+      The time at which the cycle ended
+  - name: ENROLL_ROSTER_LIMIT
+    description: |-
+      The maximum number of people who can be enrolled in this cycle
+  - name: ENROLL_ROSTER_MINIMUM
+    description: |-
+      The minimum number of people who must be enrolled in this cycle
+  - name: WAIT_LIST_LIMIT
+    description: |-
+      Limit of how many people can be on the waitlist for this program
+  - name: LINKED_CYCLE_ID
+    description: |-
+      Main cycle ID or Linked (related) Cycle ID
+  - name: ROSTER_LIMITED_FLAG
+    description: |-
+      Y/N flag for if enrollment is limited
+  - name: WAIT_LIMITED_FLAG
+    description: |-
+      Y/N flag for if waitlist space is limited
+  - name: SAVED_DATE
+    description: Unclear
+  - name: ACTIVE_FLAG
+    description: |-
+      Is the record deleted Y/N
+  - name: CHANGE_ID
+    description: |-
+      CHANGE ID
+  - name: UNLIMITED_END_DATE_FLAG
+    description: |-
+      Y/N flag, unclear significance

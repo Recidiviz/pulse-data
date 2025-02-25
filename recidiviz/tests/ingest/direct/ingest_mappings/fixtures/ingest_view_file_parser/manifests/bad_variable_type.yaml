@@ -1,0 +1,14 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - DOB
+unused_columns: []
+variables:
+  - some_boolean_value:
+      $in:
+        $value: $literal("FOO")
+        $options:
+          - $literal("BAR")
+output:
+  FakePerson:
+    name: $variable(some_boolean_value)

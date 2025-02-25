@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sprvsn_cntc
+file_description: |-
+  Supervision Contact
+data_classification: source
+primary_key_cols:
+  - sprvsn_cntc_id
+columns:
+  - name: sprvsn_cntc_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: ofndr_addr_hist_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cntc_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cntc_rslt_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cntc_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: omr_rvw_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cntc_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: cntc_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: udc_agnt1_id
+    description: |-
+      TODO(#33372): This is a staff_external_id but there are duplicates
+    is_pii: True
+  - name: udc_agnt2_id
+    description: |-
+      TODO(#33372): This is a staff_external_id but there are duplicates
+    is_pii: True
+  - name: next_appt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: next_appt_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cntc_cmt_title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_qstn_rspns_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

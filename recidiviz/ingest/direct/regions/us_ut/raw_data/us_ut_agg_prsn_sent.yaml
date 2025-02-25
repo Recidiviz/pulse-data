@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: agg_prsn_sent
+file_description: |-
+  Aggregate Prison Sentences
+data_classification: source
+primary_key_cols:
+  - agg_sent_id
+columns:
+  - name: agg_sent_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: agg_sent_stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: begin_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: min_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_mos
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_yrs
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_mos
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: max_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: reqd_min_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: life_cat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prle_elig_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: full_term_rlse_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: sent_stsfy_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: agg_sent_comp_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: adj_cmtmnt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: rlse_stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: orig_max_days
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agg_exp_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

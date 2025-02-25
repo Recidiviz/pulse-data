@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - OffSex
+  - OffRaceEthnicGroup
+  - first_name
+  - last_name
+  - suffix
+  - DOB
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $surname: last_name
+        $name_suffix: suffix
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: first_name
+              $surname: last_name
+              $name_suffix: suffix
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    gender:
+      $enum_mapping:
+        $raw_text: OffSex
+        $mappings:
+          StateGender.MALE: [M, m]
+          StateGender.FEMALE: [F, f]
+        $ignore:
+          # These are relatively rare erroneous values.
+          - "1"
+          - A
+          - B
+          - MM
+          - N
+          - U
+          - W
+    races:
+      - StatePersonRace:
+          # Race information from DOC tables assigns a single race to a single person. Conversely, race information from PBPP
+          # tables assigns one to many races to a single person. Because we ingest both, we ingest one to many races for each
+          # person.
+          race:
+            $enum_mapping:
+              $raw_text: OffRaceEthnicGroup
+              $mappings:
+                StateRace.ASIAN: A
+                StateRace.BLACK: B
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.OTHER: N
+                StateRace.WHITE: [W, w]
+              $ignore:
+                # This is an ethnicity value - ignore when mapping to race.
+                - H
+                # These are relatively rare erroneous values - ignore them.
+                - EW
+                - F
+                - M
+                - Q
+                - QB
+                - QW
+                - S
+                - U
+                - WSW
+                - WW
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: OffRaceEthnicGroup
+              $mappings:
+                StateEthnicity.HISPANIC: H
+              $ignore:
+                # These are race values - ignore when mapping to ethnicity.
+                - A
+                - B
+                - I
+                - N
+                - W
+                - w
+                # These are relatively rare erroneous values - ignore them.
+                - EW
+                - F
+                - M
+                - Q
+                - QB
+                - QW
+                - S
+                - U
+                - WSW
+                - WW
+    birthdate: DOB

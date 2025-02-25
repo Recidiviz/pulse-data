@@ -1,0 +1,11 @@
+manifest_language: 1.0.0
+input_columns:
+  - FULL
+unused_columns: []
+output:
+  FakePerson:
+    aliases:
+      - FakePersonAlias:
+          full_name:
+            $person_name:
+              $full_name: FULL

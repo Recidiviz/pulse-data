@@ -1,0 +1,204 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Offense
+file_description: |-
+  This file contains offense information
+data_classification: source
+primary_key_cols:
+  - pkOffenseId
+columns:
+  - name: pkOffenseId
+    description: |-
+      Offense if
+  - name: inmateNumber
+    description: |-
+      internal id number
+    is_pii: True
+  - name: fkOffenseTypeCode
+    description: |-
+      Offense type code
+  - name: docketCount
+    description: |-
+      Docket count
+  - name: offenseCount
+    description: |-
+      offense count
+  - name: docketNumber
+    description: |-
+      docket number
+  - name: habitualCrime
+    description: |-
+      TODO(#31972)
+  - name: precedence
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumYear
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumMonth
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumDay
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumTerm
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumYear
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumMonth
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumDay
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumTerm
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryYear
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryMonth
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryDay
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryterm
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: arrestDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkFelonyMisdemeanorCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkOffenseAttemptCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkOffenseArrestCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkOffenseRunCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkCountyCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: convictedSexualOffense
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: beginDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: deadTimeDays
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: jailTimeDays
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkGoodTimeLawCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: convictedDescription
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: barAssociationNumber
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: modifiedDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseBeginDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseAttempt
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseAid
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseConspiracy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseMandatoryMinimum
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fkOffenseGoodTimeLawCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: controlling
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: offenseCommittedDate
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: statute
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: convertedData
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumYear3Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumMonth2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: minimumDay2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumYear3Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumMonth2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: maximumDay2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryYear3Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryMonth2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: mandatoryDay2Dig
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsYear
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsMonth
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsDay
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prsSource
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: courtType
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: lsoOrdered
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: validDocketNumberFormat
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: docketNumberOrig
+    description: |-
+      TODO(#31972): Fill in with answers from NE

@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_COALTERNATIVESCREENING
+file_description: |-
+  This table contains screening information for people under MIDOC jurisdiction.
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - RecId
+columns:
+  - name: RecId
+    description: COMPAS system-generated ID for a screening record
+  - name: FkShOffender
+    description: ID for an offender record (links with fkshperson in the ADH_SHOFFENDER table)
+    is_pii: True
+  - name: FkCoSyScreeningType
+    description: Screening type
+  - name: FkShUserScreener
+    description: ID for the user that conducted the screening
+    is_pii: True
+  - name: FkShRfCodeLocation
+  - name: FkShCase
+  - name: DateOfScreening
+    description: Date of screening
+    field_type: datetime
+  - name: FkShUserCreatedBy
+    is_pii: True
+  - name: FkShUserUpdatedBy
+    is_pii: True
+  - name: FkShUserDeletedBy
+    is_pii: True
+  - name: DateCreated
+    field_type: datetime
+  - name: DateUpdated
+    description: Date screening record was updated
+    field_type: datetime
+  - name: DateDeleted
+    field_type: datetime
+  - name: IsDeleted
+    description: flag for whether this screening record was invalidated
+  - name: IsCompleted
+    description: flag for whether the screening was completed
+  - name: IsComputed
+    description: flag for whether the screening score was computed
+  - name: IsComputedOffline
+  - name: FkShAgencyCreatedBy
+    description: ID for agency that created this screening record (links with FkShAgencyCreatedBy in ADH_SHOFFENDER)
+  - name: DateComputed
+    description: Date screening score computed
+    field_type: datetime
+  - name: IsLocked
+  - name: Comments
+    is_pii: True
+  - name: FkShRfCodeNonComplete
+  - name: FkCoAlternativeScreeningParent
+  - name: DateOfScreeningAsString
+  - name: DateUpdatedAsString
+  - name: DateCreatedAsString
+  - name: DateComputedAsString
+  - name: FkShSyCodeMatrixType
+  - name: FkPtMaster
+  - name: OldRecId
+  - name: IsQa
+  - name: FkCoRfAlternativeScreeningStatus
+  - name: FkCoRfScreeningQuestionSet
+  - name: FkShRfCodeScreeningOverride

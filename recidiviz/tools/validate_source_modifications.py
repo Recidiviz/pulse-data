@@ -1,0 +1,407 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# ============================================================================
+
+"""Tool to validate sets of files that must be modified together.
+
+This uses a rudimentary if-this-then-that check that ensures if one or more files in a specified set is modified,
+then all of the files in that set have been modified.
+
+This entire check is skipped if any of the commit messages in the given range start contains the text
+'[skip validation]'. It is also possible to skip specific sets of assertions if any of the commit messages in the
+given range contain the text '[skip validation some-validation-key]'. For example, '[skip validation state]'.
+
+Example usage:
+$ python -m recidiviz.tools.validate_source_modifications [--commit-range RANGE]
+"""
+
+import argparse
+import functools
+import logging
+import os
+import re
+import subprocess
+import sys
+from collections import defaultdict
+from inspect import getmembers, isfunction
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+
+import attr
+from werkzeug.routing import Rule
+
+from recidiviz.admin_panel.models import validation_pb2
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_region_codes,
+)
+from recidiviz.tools.docs.endpoint_documentation_generator import (
+    EndpointDocumentationGenerator,
+    app_rules,
+)
+
+ADMIN_PANEL_DIRECTORY = "frontends/admin-panel/src"
+ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
+
+
+@attr.s(auto_attribs=True)
+class RequiredModificationSets:
+    if_modified_files: FrozenSet[str]
+    then_modified_files: FrozenSet[str]
+
+    @staticmethod
+    def for_symmetric_check(files: FrozenSet[str]) -> "RequiredModificationSets":
+        return RequiredModificationSets(
+            if_modified_files=files,
+            then_modified_files=files,
+        )
+
+
+def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
+    """Given a rule, look for the actual file within the codebase that has the method definition
+    for the endpoint defined. This is done by crawling through all of our customized modules imported
+    and finding the exact function that matches."""
+    endpoint_parts = rule.endpoint.split(".")
+    endpoint_module_name = endpoint_parts[0]
+    function_name = endpoint_parts[1] if len(endpoint_parts) > 1 else None
+    recidiviz_modules = [
+        module
+        for module in sys.modules
+        if "recidiviz" in module and "tools" not in module and "tests" not in module
+    ]
+    file_for_endpoint: Optional[str] = None
+    for module_name in recidiviz_modules:
+        module = sys.modules[module_name]
+        if module.__file__ is None:
+            raise ValueError(f"No file associated with {module}.")
+
+        if endpoint_module_name in module_name or not file_for_endpoint:
+            for func, _ in getmembers(module, isfunction):
+                if func == function_name:
+                    top_level_idx = module.__file__.find("recidiviz/")
+                    file_for_endpoint = module.__file__[top_level_idx:]
+                    break
+    return file_for_endpoint
+
+
+def _get_modified_endpoints() -> List[RequiredModificationSets]:
+    """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
+    source code modifications."""
+
+    doc_generator = EndpointDocumentationGenerator()
+    endpoint_files_to_markdown_paths: Dict[str, List[str]] = defaultdict(list)
+    for rule in app_rules():
+        file_for_endpoint = _get_file_for_endpoint_rule(rule)
+        if file_for_endpoint:
+            endpoint_files_to_markdown_paths[file_for_endpoint].append(
+                doc_generator.generate_markdown_path_for_endpoint(
+                    ENDPOINT_DOCS_DIRECTORY, rule.rule
+                )
+            )
+
+    required_modification_sets = []
+    for (
+        endpoint_file,
+        markdown_paths,
+    ) in endpoint_files_to_markdown_paths.items():
+        common_path = os.path.commonpath(markdown_paths)
+        paths_to_modify = (
+            # If an endpoint python file has methods that produce two endpoints with different url_prefixes,
+            # the common_path will end up being the docs directory (docs/endpoints). So in this case,
+            # we will add the next immediate top-level directories to the set that should be modified,
+            # since that directory is the url_prefix that will be affixed to the endpoint.
+            # (e.g. docs/endpoints/export, docs/endpoints/view_update)
+            {"/".join(top_level_dir.split("/")[:3]) for top_level_dir in markdown_paths}
+            if common_path == ENDPOINT_DOCS_DIRECTORY
+            else {common_path}
+        )
+        required_modification_sets.append(
+            RequiredModificationSets(
+                if_modified_files=frozenset({endpoint_file}),
+                then_modified_files=frozenset(paths_to_modify),
+            )
+        )
+    return required_modification_sets
+
+
+# Sets of prefixes to check. For each set, if the changes modify a file matching
+# any prefix in the set, then it must also modify files matching all other
+# prefixes in that set.
+#
+# New sets of file prefixes can be added to this set. This will cause the check
+# to be performed for that new set as well.
+
+ADMIN_PANEL_KEY = "admin_panel"
+PIPFILE_KEY = "pipfile"
+INGEST_DOCS_KEY = "ingest_docs"
+CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
+ENDPOINTS_DOCS_KEY = "endpoints_docs"
+IGNORE_KEY = "ignore"
+BUILD_INFRA_KEY = "build_infra"
+US_IX_KEY = "us_ix"
+FLEX_KEY = "dataflow_env"
+
+
+@functools.cache
+def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
+    return {
+        # admin panel files
+        ADMIN_PANEL_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {
+                        os.path.relpath(validation_pb2.__file__)[: -len("_pb2.py")]
+                        + ".proto",  # proto
+                    }
+                ),
+                then_modified_files=frozenset(
+                    {
+                        os.path.relpath(
+                            validation_pb2.__file__
+                        ),  # generated proto source
+                        os.path.relpath(validation_pb2.__file__)
+                        + "i",  # proto type hints
+                        os.path.join(
+                            ADMIN_PANEL_DIRECTORY,
+                            os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                            + ".js",
+                        ),  # javascript
+                        os.path.join(
+                            ADMIN_PANEL_DIRECTORY,
+                            os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                            + ".d.ts",
+                        ),  # typescript
+                    }
+                ),
+            )
+        ],
+        # pipfile
+        PIPFILE_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset({"Pipfile"}),
+                then_modified_files=frozenset({"Pipfile.lock"}),
+            )
+        ],
+        # ingest docs
+        INGEST_DOCS_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {f"recidiviz/ingest/direct/regions/{region_code}/raw_data/"}
+                ),
+                then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
+            )
+            for region_code in get_existing_region_codes()
+        ],
+        ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
+        # ignore files
+        IGNORE_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset({".gitignore"}),
+                then_modified_files=frozenset({".dockerignore", ".gcloudignore"}),
+            )
+        ],
+        # build infrastructure
+        BUILD_INFRA_KEY: [
+            RequiredModificationSets.for_symmetric_check(
+                frozenset(
+                    {
+                        "mirror/copy.bara.sky",
+                        "Dockerfile.case-triage-pathways.dockerignore",
+                        "Dockerfile.justice-counts.dockerignore",
+                    }
+                )
+            ),
+        ],
+        # Ensure that any files copied from ID are kept in sync between the two regions.
+        US_IX_KEY: [
+            RequiredModificationSets.for_symmetric_check(
+                frozenset(
+                    {
+                        "recidiviz/ingest/direct/regions/us_id/raw_data/us_id_current_day_daily_summary.yaml",
+                        "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
+                    }
+                )
+            ),
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {"recidiviz/pipelines/utils/state_utils/us_id/"}
+                ),
+                then_modified_files=frozenset(
+                    {"recidiviz/pipelines/utils/state_utils/us_ix/"}
+                ),
+            ),
+        ],
+    }
+
+
+def _match_filenames(
+    modified_files: FrozenSet[str], required_modification_sets: RequiredModificationSets
+) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+    """Returns all of the assertions in the set of expected assertions which are actually contained within the set of
+    modified files."""
+    matched_prefixes = frozenset(
+        file_prefix
+        for file_prefix in required_modification_sets.if_modified_files
+        if any(
+            modified_file.startswith(file_prefix) for modified_file in modified_files
+        )
+    )
+    if not matched_prefixes:
+        return frozenset(), frozenset()
+    matched_assertions = frozenset(
+        file_prefix
+        for file_prefix in required_modification_sets.then_modified_files
+        if any(
+            modified_file.startswith(file_prefix) for modified_file in modified_files
+        )
+    )
+
+    if matched_assertions < required_modification_sets.then_modified_files:
+        return (
+            matched_prefixes,
+            required_modification_sets.then_modified_files - matched_assertions,
+        )
+
+    return matched_prefixes, frozenset()
+
+
+def check_assertions(
+    modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str]
+) -> List[Tuple[FrozenSet[str], FrozenSet[str], str]]:
+    """Checks that all of the the modified files against the global set of modification assertions, and returns any
+    failed assertions.
+
+    If any of the modified files are part of a set of files that must be modified together and the other files in that
+    set are not themselves modified, that constitutes a failure. However, if that set is provided as one of the sets
+    to skip, then any such failure is ignored.
+    """
+    failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = []
+
+    for set_to_validate, modifications in get_modified_file_assertions().items():
+        if set_to_validate in sets_to_skip:
+            logging.info("Skipping %s check due to skip commits.", set_to_validate)
+            continue
+
+        for required_modification_sets in modifications:
+            matched_prefixes, failed_prefixes = _match_filenames(
+                modified_files, required_modification_sets
+            )
+            if failed_prefixes:
+                failed_assertion_files.append(
+                    (matched_prefixes, failed_prefixes, set_to_validate)
+                )
+
+    return failed_assertion_files
+
+
+def _get_modified_files(commit_range: str) -> FrozenSet[str]:
+    """Returns a set of all files that have been modified in the given commit range."""
+    git = subprocess.run(
+        ["git", "diff", "--name-only", commit_range],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    return frozenset(git.stdout.decode().splitlines())
+
+
+def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str], str]) -> str:
+    """Returns the set of source modification assertion failures in a pretty-printable format."""
+    matched_prefixes = failure[0]
+    failed_prefixes = failure[1]
+    set_to_validate = failure[2]
+
+    matched_prefixes_string = "\n".join(
+        map(lambda file: "\t\t" + file, matched_prefixes)
+    )
+    failed_prefixes_string = "\n".join(map(lambda file: "\t\t" + file, failed_prefixes))
+    return (
+        "Failure:\n"
+        f"\tModified file(s):\n{matched_prefixes_string}\n"
+        f"\tWithout modifying file(s):\n{failed_prefixes_string}\n"
+        "If your change does not require documentation changes and you're sure documentation pre-commit hooks ran "
+        "properly and did not generate any docs updates based on your changes, prefix your commit with "
+        f'"[skip validation {set_to_validate}]".'
+    )
+
+
+_SKIP_COMMIT_REGEX = r"\[skip validation.*\]"
+
+
+def _should_skip(validation_message: str, validation_key: str) -> bool:
+    """Returns whether or not the given validation set should be skipped based on the commit message."""
+    return len(validation_message) < 2 or validation_key in validation_message
+
+
+def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
+    """Returns a set of all of the assertion sets that should be skipped for the given commit range.
+
+    This is determined based on the commit messages in this range, i.e. whether commit messages were written to skip
+    either all assertion sets or specific assertion sets.
+    """
+    git = subprocess.run(
+        [
+            "git",
+            "log",
+            "--format=%h %B",
+            f"--grep={_SKIP_COMMIT_REGEX}",
+            commit_range,
+        ],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+
+    if git.returncode != 0:
+        logging.error("git log failed")
+        sys.exit(git.returncode)
+
+    sets_to_skip = set()  # type: Set[str]
+    full_validation_message = re.findall(
+        r"\[skip validation(.*?)\]", git.stdout.decode()
+    )
+    if full_validation_message:
+        for valid_message in full_validation_message:
+            skip_sets = [
+                key
+                for key in get_modified_file_assertions()
+                if _should_skip(valid_message, key)
+            ]
+            sets_to_skip = sets_to_skip.union(skip_sets)
+
+    return frozenset(sets_to_skip)
+
+
+def main(commit_range: str) -> None:
+    assertions_to_skip = _get_assertions_to_skip(commit_range)
+
+    failures = check_assertions(_get_modified_files(commit_range), assertions_to_skip)
+    return_code = 0
+    if failures:
+        return_code = 1
+        for failure in failures:
+            logging.warning(_format_failure(failure))
+
+    sys.exit(return_code)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--commit-range",
+        default="main...HEAD",
+        help="The git commit range to compare against.",
+    )
+    args = parser.parse_args()
+    main(args.commit_range)

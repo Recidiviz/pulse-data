@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: E04_LOCT_PRFX
+file_description: |-
+  Location prefix lookup table
+data_classification: source
+primary_key_cols:
+  - LOCT_PRFX_CD
+columns:
+  - name: LOCT_PRFX_CD
+    description: |-
+      Location prefic code
+  - name: LOCT_PRFX_DESC
+    description: |-
+      Location prefix description
+  - name: INCLUDE_IN_CNT_IND
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: COMMUNITY_CORR_IND
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: SEG_CONF_LOCT_IND
+    description: |-
+      TODO(#31972): Fill in with answers from NE

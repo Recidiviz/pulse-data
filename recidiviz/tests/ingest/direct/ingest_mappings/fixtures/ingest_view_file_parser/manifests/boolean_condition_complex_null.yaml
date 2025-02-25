@@ -1,0 +1,21 @@
+manifest_language: 1.0.0
+input_columns:
+  - PART_1
+  - PART_2
+unused_columns: []
+output:
+  FakePerson:
+    name:
+      $conditional:
+        - $if:
+            # Note: You really would use $not_null to build this condition,
+            # but this is a test of the $not functionality.
+            $not:
+              $is_null:
+                $concat:
+                  $values:
+                    - PART_1
+                    - PART_2
+                  $include_nulls: False
+          $then: PART_1
+        - $else: $literal("BOTH NULL")

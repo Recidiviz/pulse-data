@@ -1,0 +1,27 @@
+# Defines services needed to run the Justice Counts Control Panel app (on top of shared services already in docker-compose.yaml)
+# Run via `docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up`
+
+version: "3"
+
+services:
+  control_panel_backend:
+    image: us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - justice_counts_db_socket:/cloudsql/justice_counts
+    depends_on:
+      - justice_counts_db
+    ports:
+      - "5001:5000"
+      - "5678:5678"
+    # Running with threads and no debugger seems to improve latency on first request
+    command: pipenv run flask run -h 0.0.0.0  --with-threads --no-debugger
+    environment:
+      - FLASK_APP=/app/recidiviz/justice_counts/control_panel/server.py
+      - FLASK_ENV=development
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+      # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
+      # They can safely be excluded from the stat reloader for a performance boost
+      - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
+      - IS_DEV=true

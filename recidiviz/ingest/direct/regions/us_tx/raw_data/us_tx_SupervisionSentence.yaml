@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: SupervisionSentence
+file_description: |-
+  This table contains information on sentences and their statuses.
+data_classification: source
+primary_key_cols:
+  - SID_Number
+  - Sentence_ID_Number
+columns:
+  - name: SID_Number
+    description: |-
+      This is a unique identifier assigned to a particular client.
+    field_type: person_external_id
+    external_id_type: US_TX_SID
+    is_pii: True
+  - name: Sentence_ID_Number
+    description: |-
+      Sentence ID number
+  - name: Status
+    description: |-
+      Status of sentence.

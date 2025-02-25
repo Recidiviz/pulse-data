@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CIS_2084_JOB_NAME_CODE
+file_description: |-
+  This table lists the names of jobs.
+data_classification: source
+primary_key_cols:
+  - JOB_NAME_CD
+columns:
+  - name: JOB_NAME_CD
+    description: Code for this specific job.
+  - name: JOB_NAME_TX
+    description: The name of the job. Considered PII because it's a free text field.
+    is_pii: True
+  - name: CIS_908_CCS_LOCATION_ID
+    description: Used to join to CIS_908 for location information.
+  - name: SYS_ROW_IND
+    description: Likely unused.
+  - name: SYSTEM_REF_TX
+    description: Likely unused.
+    is_pii: True
+  - name: SYSTEM_REF_COMMENTS_TX
+    description: Likely unused.
+    is_pii: True
+  - name: LOGICAL_DELETE_IND
+    description: Y if this row should be considered deleted.
+  - name: CREATED_BY_TX
+    description: The user who created this row.
+    is_pii: True
+  - name: CREATED_ON_DATE
+    description: The date the row was created.
+    field_type: datetime
+  - name: MODIFIED_BY_TX
+    description: The user who last modified the row.
+    is_pii: True
+  - name: MODIFIED_ON_DATE
+    description: The last time the row was modified.
+    field_type: datetime

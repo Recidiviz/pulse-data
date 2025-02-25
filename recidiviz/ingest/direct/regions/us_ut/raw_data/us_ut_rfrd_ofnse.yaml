@@ -1,0 +1,153 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rfrd_ofnse
+file_description: |-
+  Referred Ofnse
+data_classification: source
+primary_key_cols:
+  - ofnse_id
+columns:
+  - name: ofnse_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: intr_case_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ofnse_svrty_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_cnt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cnt_qty
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_viol_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: weapon_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crime_degree_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crime_typ_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: crt_jdmt_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sent_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ncic_agcy_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: intr_ord_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: atmpt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: arrest_agcy
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: arrest_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: arrest_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofnse_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: bci_arst_disp_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: bci_updt_src
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: bci_updt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: bci_updt_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: otn
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: plea_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: convict_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: juris_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: juris_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: exp_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: adj_cmtmnt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: domestic_violence_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: loss_of_life_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: orig_exp_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: gvnmt_src_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vrfy_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vrfy_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vrfy_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: rgstry_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: missing_body_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: disp_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

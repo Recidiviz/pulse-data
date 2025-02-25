@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns true if all of the values of the expressions in the list are equal.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$equal": {
+      "type": "array",
+      "items": {
+        "$ref": "../string_expressions/index.json"
+      }
+    }
+  },
+  "required": ["$equal"],
+  "examples": [
+    {
+      "$equal": [
+        "PERSONNAME",
+        "$literal(\"COLIN\")"
+      ]
+    },
+    {
+      "$equal": [
+        "drug_related",
+        "$literal(\"Y\")"
+      ]
+    },
+    {
+      "$equal": [
+        "birthdate_1",
+        "birthdate_2",
+        "birthdate_3",
+        "birthdate_4"
+      ]
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$equal": [
+              "drug_related",
+              "$literal(\"Y\")"
+            ]
+          },
+          "$then": "$literal_enum(StateIncarcerationIncidentType.CONTRABAND)"
+        },
+        {
+          "$else": "$literal_enum(StateIncarcerationIncidentType.REPORT)"
+        }
+      ]
+    }
+  ]
+}

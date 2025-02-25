@@ -1,0 +1,24 @@
+manifest_language: 1.0.0
+input_columns:
+  - FIRST
+  - FIRST_2
+  - MIDDLE
+  - LAST
+  - SUFFIX
+unused_columns: []
+output:
+  FakePerson:
+    aliases:
+      - FakePersonAlias:
+          full_name:
+            $person_name:
+              $given_names:
+                $concat:
+                  $separator: " "
+                  $values:
+                    - FIRST
+                    - FIRST_2
+                  $include_nulls: False
+              $middle_names: MIDDLE
+              $surname: LAST
+              $name_suffix: SUFFIX

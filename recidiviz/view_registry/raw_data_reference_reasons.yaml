@@ -1,0 +1,1466 @@
+US_AR:
+  ADDRESS:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  HOUSINGAREA:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  INMATEPROFILE:
+    workflows_views.us_ar_resident_metadata: |-
+      Used to pull in resident metadata.
+  INTERVENTOFFENSE:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
+  ORGANIZATIONPROF:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  PROGRAMACHIEVEMENT:
+    workflows_views.us_ar_resident_metadata: |-
+      Used to pull in resident metadata.
+  RECIDIVIZ_REFERENCE_OFFICE_LOCATIONS:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  RECIDIVIZ_REFERENCE_TARGET_STATUTES:
+    task_eligibility_criteria_us_ar.sentence_statute_eligible_for_admin_transfer:
+      |-
+      Used to map raw statutes to statutes in the semi-official Target Offenses list.
+  RELATEDPARTY:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  SUPERVISIONEVENT:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  SUPVINCENTIVE:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
+  SUPVINTERVENTION:
+    analyst_data.us_ar_ovg_events_preprocessed: |-
+      Source for preprocessed data used in us_ar_ovg_timeline.
+US_AZ:
+  AZ_AQ_CATEGORY:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_REASON:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_RECORD:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_TEMPLATE:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_TYPE:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_CM_INMATE_ASSIGNMENT:
+    sessions.us_az_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+  AZ_DOC_HOME_PLAN:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HOME_PLAN_APPROVAL:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HOME_PLAN_DETAIL:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HWD_DETAINER:
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      Needed information on when detainers are placed on residents, this information is not ingested.
+  AZ_DOC_PRISON:
+    reference_views.us_az_location_metadata: |-
+      We pull all prison facility locations from this raw data into the location metadata view.
+  AZ_DOC_SC_COMMITMENT:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  AZ_DOC_SC_EPISODE:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  AZ_DOC_SC_OFFENSE:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  DEMOGRAPHICS:
+    task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
+      |-
+      Needed a way to map the different citizen status ids in AZ to one another.
+  DOC_EPISODE:
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      Needed a way to map the different ids in AZ to one another.
+  DPP_OFFICE_LOCATION:
+    reference_views.us_az_location_metadata: |-
+      We pull all supervision locations from this raw data into the location metadata view.
+  LOOKUPS:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+    reference_views.us_az_location_metadata: |-
+      We decode location names in the location metadata view.
+    task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
+      |-
+      Needed a way to map the different citizen status ids in AZ to one another.
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      Needed information on when detainers are placed on residents, this information is not ingested.
+  MEA_PROFILES:
+    us_az_validation.supervision_population_person_level: |-
+      This table is used to join officer names available in external data to PERSON_IDs
+      used internally in the external comparison validation view.
+  PERSON:
+    task_eligibility_criteria_us_az.no_active_felony_detainers: |-
+      This table is used to convert ADC_NUMBER identifiers available in external data
+      into PERSON_ID identifiers used internally in the external comparison validation view.
+    us_az_validation.supervision_population_person_level: |-
+      This table is used to convert ADC_NUMBER identifiers available in external data
+      into PERSON_ID identifiers used internally in the external comparison validation view.
+    workflows_views.incarceration_staff_record: |-
+      Get CM staff assignments to residents.
+  validation_daily_count_sheet_by_custody_level:
+    us_az_validation.incarceration_population_by_custody_level: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+  validation_daily_count_sheet_by_facility:
+    us_az_validation.incarceration_population_by_facility: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+  validation_daily_count_sheet_by_supervision_type:
+    us_az_validation.supervision_population_by_type: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+  validation_supervision_population_person_level:
+    us_az_validation.supervision_population_person_level: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+US_CA:
+  AgentParole:
+    reference_views.us_ca_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    validation_views.parole_agent_badge_number_changes: |-
+      This is a validation on the raw data -- if a badge number changes in the raw data,
+      we want to be alerted so we can write a migration.
+  ParoleHousing:
+    analyst_data.us_ca_sustainable_housing_status_periods: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  PersonParole:
+    reference_views.us_ca_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ca_supervision_level_downgrade_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_CO:
+  Base_Curr_Off_Pop:
+    us_co_validation.incarceration_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  eomis_commitmentsummary:
+    sessions.us_co_incarceration_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  eomis_sentencecomponent:
+    sessions.us_co_incarceration_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_IX:
+  RECIDIVIZ_REFERENCE_community_opportunities:
+    sentencing_views.sentencing_community_opportunity_record: |-
+      Used to grab PSI information on community opportunities. 07/05/24
+  RECIDIVIZ_REFERENCE_county_to_district_mapping:
+    reference_views.us_ix_location_metadata: |-
+      Used to map counties to their respective districts
+  RECIDIVIZ_REFERENCE_incarceration_location_names_map:
+    reference_views.incarceration_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings:
+    workflows_views.us_ix_resident_metadata: |-
+      Used to map release facility to crc facility. 07/23/2024.
+  RECIDIVIZ_REFERENCE_supervision_location_districts_map:
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervisor_roster:
+    validation_views.supervisor_roster_exclusions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  asm_Assessment:
+    sessions.us_ix_raw_lsir_assessments: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  bop_BOPHearing:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  bop_BOPVoteResult:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  bop_BOPVoteValue:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  com_PSIReport:
+    sentencing_views.sentencing_case_record: |-
+      Used to grab PSI information. 05/21/24
+    sentencing_views.sentencing_client_record: |-
+      Used to grab PSI information. 05/21/24
+    sentencing_views.sentencing_staff_record: |-
+      Used to grab PSI information. 05/21/24
+  com_Transfer:
+    dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_Course:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_CourseName:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_CourseSection:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_CourseSectionName:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_OfdCourseEnrollment:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  crs_OfdEnrollmentStatus:
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  current_day_daily_summary:
+    us_ix_validation.incarceration_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    us_ix_validation.supervision_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  dsc_DACase:
+    task_eligibility_criteria_us_ix.no_class_a_or_b_dor_for_6_months: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  dsc_DAProcedure:
+    task_eligibility_criteria_us_ix.no_class_a_or_b_dor_for_6_months: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  facility:
+    reference_views.us_ix_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_Alert:
+    task_eligibility_criteria_us_ix.no_active_nco: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_ix.no_sex_offender_alert: |-
+      Sex offender alerts are not ingested.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_AlertType:
+    task_eligibility_criteria_us_ix.no_active_nco: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_AlertVisibilityType:
+    task_eligibility_criteria_us_ix.no_active_nco: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_ContactMode:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_EmploymentHistory:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_OffenderNote:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_OffenderNoteInfo:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_OffenderNoteInfo_ContactMode:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_OffenderNoteStatus:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+  ind_Offender_Address:
+    sentencing_views.sentencing_client_record: |-
+      Used to grab JII address for PSI tool. 05/21/24
+    workflows_views.us_ix_supervision_tasks_record: |-
+      Used to track address changes for next recommended home contacts dates.  The alternative 
+      would have been to ingest address periods and then track changes in the case compliance pipeline
+      in calc, but that was too big of a lift at this time and we plan to readdress
+      this tech debt when we work on Texas Tasks.
+  ind_Offender_Alert:
+    task_eligibility_criteria_us_ix.no_active_nco: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_ix.no_sex_offender_alert: |-
+      Sex offender alerts are not ingested.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  prb_PBCase:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  prb_PBCaseSubType:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  prb_PBCase_Employee:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_Address:
+    sentencing_views.sentencing_client_record: |-
+      Used for sentencing PSI tool, we need it to grab client's county. 5/21/24
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_Employee:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    us_ix_validation.supervision_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    validation_views.supervisor_roster_exclusions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_EmployeeType:
+    sessions.us_ix_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_Employer_Address:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_Location:
+    reference_views.us_ix_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    sentencing_views.sentencing_case_record: |-
+      Used for sentencing PSI tool, we need it as a reference for case county. 5/21/24
+    sentencing_views.sentencing_client_record: |-
+      Used for sentencing PSI tool, we need it as a reference for client's county. 5/21/24
+    validation_views.supervisor_roster_exclusions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ref_NoteType:
+    case_notes_prototype_views.us_ix_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_Charge:
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_Detainer:
+    analyst_data.us_ix_detainer_spans: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_DetainerStatus:
+    analyst_data.us_ix_detainer_spans: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_DetainerType:
+    analyst_data.us_ix_detainer_spans: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_DorOffenseType:
+    task_eligibility_criteria_us_ix.no_class_a_or_b_dor_for_6_months: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_transfer_to_xcrc_request_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_Offense:
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_RetainedJurisdiction:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We do not ingest any info to identify retained jurisdiction sentences. 05/31/2024
+  scl_RetainedJurisdictionType:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We do not ingest any info to identify retained jurisdiction sentences. 05/31/2024
+  scl_Sentence:
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_SentenceLink:
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_SentenceLinkOffense:
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_SentenceOrder:
+    task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
+      We use this to merge to the RetainedJurisdiction table. 05/31/2024
+    workflows_views.us_ix_complete_discharge_early_from_supervision_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  scl_Term:
+    analyst_data.us_ix_parole_dates_spans_preprocessing: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_ME:
+  CIS_1000_CURRENT_STATUS:
+    task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_1017_CLIENT_SYS:
+    task_eligibility_completion_events_us_me.granted_work_release: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_community: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_medium: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_minimum: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_minimum_or_community: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.resident_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_1020_ALERT:
+    task_eligibility_completion_events_us_me.custody_level_downgrade_to_medium_trustee:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.not_already_medium_trustee: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_102_ALERT_HISTORY:
+    task_eligibility_completion_events_us_me.custody_level_downgrade_to_medium_trustee:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.not_already_medium_trustee: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_112_CUSTODY_LEVEL:
+    task_eligibility_completion_events_us_me.granted_work_release: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_community: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_medium: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_minimum: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.custody_level_is_minimum_or_community: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.resident_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_124_SUPERVISION_HISTORY:
+    dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    sessions.us_me_incarceration_staff_assignment_sessions_preprocessed: |-
+      Used to pull in officer assignment data.
+  CIS_125_CURRENT_STATUS_HIST:
+    task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_1301_INVESTIGATION:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_130_INVESTIGATION:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_140_CLASSIFICATION_REVIEW:
+    task_eligibility_completion_events_us_me.incarceration_assessment_completed:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_180_DISCIPLINARY_CASE:
+    task_eligibility_criteria_us_me.no_class_a_or_b_violation_for_90_days: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.no_violation_for_5_years: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_1810_VIOLATION_DISPOSITION_CLASS:
+    task_eligibility_criteria_us_me.no_class_a_or_b_violation_for_90_days: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.no_violation_for_5_years: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_1811_VIOLATION_DISPOSITION_TYPE:
+    task_eligibility_criteria_us_me.no_class_a_or_b_violation_for_90_days: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.no_violation_for_5_years: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_181_VIOLATION_DISPOSITION:
+    task_eligibility_criteria_us_me.no_class_a_or_b_violation_for_90_days: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.no_violation_for_5_years: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_2010_GOAL_TYPE:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_2011_DOMAIN_GOAL_TYPE:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_2012_GOAL_STATUS_TYPE:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_201_GOALS:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_2040_CONTACT_MODE:
+    case_notes_prototype_views.us_me_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    workflows_views.us_me_complete_early_termination_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_work_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_2041_NOTE_TYPE:
+    case_notes_prototype_views.us_me_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    workflows_views.us_me_complete_early_termination_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_work_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_204_GEN_NOTE:
+    case_notes_prototype_views.us_me_case_notes: |-
+      Notes are not ingested and we surface them in the case notes prototypes.
+    workflows_views.us_me_complete_early_termination_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_work_release_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_2082_JOB_CODE:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_2084_JOB_NAME_CODE:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_208_JOB_DEFN:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_210_JOB_ASSIGN:
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
+  CIS_300_Personal_Property:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_3030_PP_Item_Type:
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_3090_MOVEMENT_TYPE:
+    task_eligibility_completion_events_us_me.granted_furlough: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_3093_MVMT_STATUS:
+    task_eligibility_completion_events_us_me.granted_furlough: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_309_MOVEMENT:
+    task_eligibility_completion_events_us_me.granted_furlough: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_319_TERM:
+    analyst_data.us_me_sentence_term: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_4009_SENT_CALC_SYS:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_400_CHARGE:
+    analyst_data.us_me_early_discharge_sessions_preprocessing: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_401_CRT_ORDER_HDR:
+    analyst_data.us_me_early_discharge_sessions_preprocessing: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_me_sentence_term: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_4030_CONDITION_TYPE:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_403_CONDITION:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_409_CRT_ORDER_CNDTION_HDR:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_420_PROGRAMS:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_425_MAIN_PROG:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_426_PROG_STATUS:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_462_CLIENTS_INVOLVED:
+    task_eligibility_criteria_us_me.no_class_a_or_b_violation_for_90_days: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_me.no_violation_for_5_years: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_4800_VIOLATION_FINDING:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_480_VIOLATION:
+    task_eligibility_criteria_us_me.no_pending_violations_while_supervised: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_573_CLIENT_CASE_DETAIL:
+    analyst_data.us_me_fines_fees_sessions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_me_invoices_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_me_payments_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_574_CLIENT_CASE_STATUS:
+    analyst_data.us_me_fines_fees_sessions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_580_REST_TRANSACTION:
+    analyst_data.us_me_payments_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_900_EMPLOYEE:
+    analyst_data.early_discharge_reports_per_officer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.early_discharge_sessions_with_officer_and_supervisor: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.incarceration_staff_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_908_CCS_LOCATION:
+    reference_views.incarceration_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    us_me_validation.population_releases: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_9900_STATUS_TYPE:
+    workflows_views.us_me_complete_early_termination_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_furlough_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_me_work_release_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Furloughs:
+    task_eligibility_completion_events_us_me.granted_furlough: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  INCARCERATION_POPULATION_RELEASES:
+    us_me_validation.population_releases: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_MI:
+  ADH_COS_FEE_TYPE:
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_LOCATION:
+    reference_views.us_mi_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_OFFENDER:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_OFFENDER_DETAINER:
+    task_eligibility_criteria_us_mi.no_pending_detainer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_OFFENDER_FEE_PROFILE:
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_OFFENDER_SCHEDULE:
+    analyst_data.us_mi_security_classification_committee_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_supervision_classification_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_OFFENDER_SENTENCE:
+    task_eligibility_criteria_us_mi.not_on_lifetime_electronic_monitoring: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_PERSONAL_PROTECTION_ORDER:
+    task_eligibility_criteria_us_mi.no_active_ppo: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_PLAN_DETAIL:
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_PLAN_OF_SUPERVISION:
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_PLAN_PROGRESS:
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ADH_REFERENCE_CODE:
+    analyst_data.us_mi_security_classification_committee_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_supervision_classification_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_supervision_level_raw_text_mappings: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    reference_views.us_mi_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_telephone_reporting:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_classification_review_form_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Case_Notes:
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Relevant case notes for SCC opportunities
+  COMS_Intervention_Referral_Program_and_Service_Type_Combinations:
+    outliers_views.supervision_client_events: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Intervention_Referrals:
+    outliers_views.supervision_client_events: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Modifiers:
+    task_eligibility_criteria_us_mi.supervision_level_is_not_modified: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Personal_Protection_Orders:
+    task_eligibility_criteria_us_mi.no_active_ppo: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Security_Classification:
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      We need to fill in 3 different types of security classification in the RH opps forms.  
+      It's possible we could ingest each security classfication as a different type of assessment? TODO(#32155)
+  COMS_Specialties:
+    task_eligibility_criteria_us_mi.not_on_electronic_monitoring: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_on_lifetime_electronic_monitoring: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.supervision_or_supervision_out_of_state_level_is_sai:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.supervision_specialty_is_not_rposn: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  COMS_Supervision_Schedule_Activities:
+    analyst_data.us_mi_add_in_person_security_classification_committee_review:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_security_classification_committee_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_supervision_classification_review: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mi_warden_in_person_security_classification_committee_review:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
+    workflows_views.us_mi_complete_warden_in_person_security_classification_committee_review_form_record:
+      |-
+      Used to identify relevant case notes for SCC opportunities
+  COMS_Supervision_Statuses:
+    task_eligibility_criteria_us_mi.supervision_status_is_not_delayed_sentence:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_offense_exclusion_list:
+    task_eligibility_criteria_us_mi.if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.no_new_ineligible_offenses_for_early_discharge_from_supervision:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_already_on_lowest_eligible_supervision_level:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_required_to_register_under_sora: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_early_discharge_from_parole_dual_supervision:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_telephone_reporting:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    validation_views.flag_new_offense_codes: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervision_location_ids:
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    reference_views.us_mi_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_MO:
+  CODE_PDB_CLASS_EXIT_REASON_CODES:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LANTERN_DA_RA_LIST:
+    reference_views.ingested_product_users: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK015:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.resident_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK017:
+    sessions.us_mo_housing_stays_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK020:
+    analyst_data.us_mo_sentencing_dates_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK022:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    sessions.us_mo_charges_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK023:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK026:
+    analyst_data.projected_discharges: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK033:
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK034:
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK040:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK044:
+    analyst_data.us_mo_sentencing_dates_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK046:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK068:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK071:
+    analyst_data.us_mo_sentencing_dates_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK194:
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK204:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK293:
+    analyst_data.us_mo_classification_hearings_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK294:
+    analyst_data.us_mo_classification_hearings_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBAKRDTA_TAK295:
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_mo.initial_hearing_past_due_date: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  LBCMDATA_APFX90:
+    reference_views.ingested_product_users: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  MASTER_PDB_ASSESSMENT_EVALUATIONS:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  MASTER_PDB_CLASSES:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OFNDR_PDB_OFNDR_ASMNTS:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OFNDR_PDB_OFNDR_ASMNT_SCORES:
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF:
+    analyst_data.us_mo_program_tracks: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mo_restrictive_housing_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_mo_screeners_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervision_district_to_name:
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervision_district_to_region:
+    reference_views.supervision_location_ids_to_names: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_ND:
+  RECIDIVIZ_REFERENCE_alert_codes:
+    task_eligibility_criteria_us_nd.has_facility_restrictions: |-
+      We use alerts to identify people eligible.
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      We surface alerts on the side panel of workflows.
+  RECIDIVIZ_REFERENCE_alert_types:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      We surface alerts on the side panel of workflows.
+  RECIDIVIZ_REFERENCE_state_attorney:
+    workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervision_location_ids:
+    reference_views.us_nd_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    us_nd_validation.supervision_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_REF_PROVIDER_LOCATION:
+    public_dashboard_views.active_program_participation_by_region: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_contacts:
+    sessions.violation_responses: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_lsi_chronology:
+    sessions.us_nd_raw_lsir_assessments: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_offendercasestable:
+    analyst_data.projected_discharges: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_nd_early_discharge_sessions_preprocessing: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_nd.not_in_active_revocation_status: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_offenders:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  docstars_offensestable:
+    task_eligibility_criteria_us_nd.has_registration_requirements: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_OffenderCaseNotes:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      We need case notes related to SSI.
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      We need case notes related to SSI.
+  elite_OffenderProgramProfiles:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+  elite_ProgramServices:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+  elite_offender_chk_list_details:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      List of IDs available for a given person.
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      List of IDs available for a given person.
+  elite_offender_medical_screenings_6i:
+    task_eligibility_criteria_us_nd.incarceration_within_12_months_of_parole_review_date:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_nd.incarceration_within_6_months_of_parole_review_date:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_nd_resident_metadata: |-
+      Parole Review Dates are flagged as resident metadata.
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Parole Review Date notes were needed for the side panel.
+  elite_offender_offences:
+    task_eligibility_criteria_us_nd.no_detainers_or_warrants: |-
+      We don't have a place to ingest detainers or warrants.
+  elite_offender_report_texts:
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      We are surfacing STATIC scores for folks who require committee approval.
+  elite_offenderchargestable:
+    task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
+      We needed this to connect to sentences_preprocessed.
+  elite_offendersentenceaggs:
+    sessions.us_nd_incarceration_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_nd_resident_metadata: |-
+      Parole Dates are flagged as resident metadata.
+  elite_offendersentences:
+    sessions.us_nd_consecutive_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
+      There's no place to store MIN/MAN sentences.
+    task_eligibility_criteria_us_nd.has_to_serve_85_percent_of_sentence: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_offense_in_custody_and_pos_report_data:
+    task_eligibility_criteria_us_nd.no_level_2_or_3_infractions_for_6_months: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Alerts are flagged in the side panel of Workflows.
+    workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
+      Alerts are flagged in the side panel of Workflows.
+  recidiviz_elite_Assessments:
+    task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
+      Used to create a criteria using data from a referral tool.
+  recidiviz_elite_CourseActivities:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+  recidiviz_elite_OffenderAssessments:
+    task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
+      Used to create a criteria using data from a referral tool.
+  recidiviz_elite_offender_alerts:
+    task_eligibility_criteria_us_nd.has_facility_restrictions: |-
+      We pull alerts that restrict residents from being in a given facility.
+    task_eligibility_criteria_us_nd.has_registration_requirements: |-
+      Alerts are not ingested.
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Alerts are not ingested.
+  recidiviz_elite_offender_medical_answers_6i:
+    workflows_views.us_nd_transfer_to_atp_form_record: |-
+      Parole Review Date notes were needed for the side panel.
+  recidiviz_elite_staff_members:
+    sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed: |-
+      Get CM staff assignments to residents.
+    workflows_views.incarceration_staff_record: |-
+      Get CM staff assignments to residents.
+US_OR:
+  RCDVZ_CISPRDDTA_CMOFFT:
+    workflows_views.us_or_earned_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RCDVZ_CISPRDDTA_OPCOND:
+    workflows_views.us_or_earned_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RCDVZ_DOCDTA_TBCOND:
+    workflows_views.us_or_earned_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RCDVZ_PRDDTA_OP013P:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_OZ:
+  validation_incarceration_population:
+    us_oz_validation.incarceration_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_PA:
+  RECIDIVIZ_REFERENCE_locations_from_supervision_contacts:
+    reference_views.us_pa_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions:
+    task_eligibility_criteria_us_pa.not_serving_ineligible_offense_for_admin_supervision:
+      |-
+      We do not ingest transfer data historically.
+  RECIDIVIZ_REFERENCE_supervision_location_ids:
+    reference_views.us_pa_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  dbo_ReleaseInfo:
+    task_eligibility_criteria_us_pa.not_serving_ineligible_offense_for_admin_supervision:
+      |-
+      We do not ingest transfer data historically.
+  dbo_Senrec:
+    analyst_data.projected_discharges: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  dbo_vwCCISAllMvmt:
+    experiments_metadata.person_assignments: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  dbo_vwCCISAllProgDtls:
+    experiments_metadata.person_assignments: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+US_TN:
+  AssignedStaff:
+    sessions.us_tn_incarceration_staff_assignment_sessions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  BoardAction:
+    sessions.us_tn_parole_board_hearing_decisions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Classification:
+    analyst_data.us_tn_custody_level_sessions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  CodesDescription:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_full_term_supervision_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ContactNoteComment:
+    analyst_data.us_tn_contact_comments_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  ContactNoteType:
+    analyst_data.us_tn_relevant_contact_codes: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_tn_zero_tolerance_codes: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    sessions.us_tn_drug_screens_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_tn.no_arrests_in_past_year: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_tn.no_recent_compliant_reporting_rejections: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_tn.not_permanently_rejected_from_compliant_reporting:
+      |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_tn.special_conditions_are_current: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Needed to pull risk assessment refusal codes and we don't ingest contact information.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Needed to pull risk assessment refusal codes and we don't ingest contact information.
+    workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  DailyCommunitySupervisionForRecidiviz:
+    us_tn_validation.supervision_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Detainer:
+    analyst_data.us_tn_caf_q8: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Disciplinary:
+    analyst_data.us_tn_incarceration_incidents_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  DrugTestDrugClass:
+    sessions.us_tn_drug_screens_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  HealthExam:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Hearing:
+    sessions.us_tn_parole_board_hearing_sessions: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  IncompatiblePair:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  JOIdentification:
+    sessions.us_tn_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  JOSentence:
+    sessions.us_tn_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  JOVictim:
+    workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  MentalHealthServices:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Offender:
+    workflows_views.client_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderAccounts:
+    analyst_data.us_tn_exemptions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_tn_invoices_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_tn_payments_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderAttributes:
+    workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderExemptions:
+    analyst_data.us_tn_exemptions_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderInvoices:
+    analyst_data.us_tn_invoices_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderPayments:
+    analyst_data.us_tn_payments_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderSentenceSummary:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderStatute:
+    analyst_data.us_tn_prior_record_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    sessions.us_tn_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_full_term_supervision_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  OffenderTreatment:
+    outliers_views.supervision_client_events: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  PREAScreeningResults:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Used in opportunity record query for workflows tool. No schema ingesting PREA results.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Used in opportunity record query for workflows tool. No schema ingesting PREA results.
+  PriorRecord:
+    analyst_data.us_tn_prior_record_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_supervision_locations:
+    reference_views.us_tn_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  STGOffender:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_full_term_supervision_discharge_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Sanctions:
+    task_eligibility_criteria_us_tn.no_high_sanctions_in_past_year: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Segregation:
+    analyst_data.us_tn_segregation_lists: |-
+      Using view to flag data issues in the raw Segregation table to TN.
+    analyst_data.us_tn_segregation_stays: |-
+      Segregation data is unreliable in TN, we tried ingesting it with incarceration 
+      periods and it resulted in lots of inaccuracies so need to check it against ingested data here.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Sentence:
+    sessions.us_tn_sentences_preprocessed: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Site:
+    reference_views.us_tn_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  SupervisionPlan:
+    dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  TDPOP:
+    us_tn_validation.incarceration_population_person_level: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  TOMIS_CODESTABLE:
+    outliers_views.supervision_client_events: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  VantagePointAssessments:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  VantagePointPathways:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  VantagePointProgram:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  VantagePointRecommendations:
+    outliers_views.supervision_client_events: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
+  Violations:
+    task_eligibility_criteria_us_tn.no_high_sanctions_in_past_year: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.

@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`stateCodeInfo 1`] = `
+Array [
+  Object {
+    "code": "US_PA",
+    "name": "Pennsylvania",
+  },
+  Object {
+    "code": "US_IX",
+    "name": "Idaho ATLAS",
+  },
+  Object {
+    "code": "US_MI",
+    "name": "Michigan",
+  },
+  Object {
+    "code": "US_TN",
+    "name": "Tennessee",
+  },
+]
+`;

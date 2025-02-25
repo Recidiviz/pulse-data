@@ -1,0 +1,208 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_Transfer
+file_description: |-
+  This table contains a record of each movement into and out of DOC jurisdiction, and
+  movements between different locations within the DOC.
+data_classification: source
+primary_key_cols:
+  - TransferId
+columns:
+  - name: TransferId
+    description: |-
+      ID of this transfer.
+  - name: OffenderId
+    description: |-
+      ID of incarcerated/supervised individual transferred.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+  - name: TransferDate
+    description: |-
+      Datetime of transfer.
+    field_type: datetime
+  - name: TransferTypeId
+    description: |-
+      Code for transfer type, joins to com_TransferType.TransferTypeId.
+    known_values:
+      - value: 1
+        description: In to DOC
+      - value: 2
+        description: Out from DOC
+      - value: 6
+        description: DOC Community to DOC Facility
+      - value: 7
+        description: DOC Facility to DOC Community
+      - value: 8
+        description: DOC Community to Community
+      - value: 9
+        description: DOC Facility to Facility
+  - name: TransferReasonId
+    description: |-
+      Code for transfer reason, joins to com_TransferReason.TransferReasonId.
+    known_values:
+      - value: 1
+        description: Court Action
+      - value: 10
+        description: Pending Custody Intake
+      - value: 12
+        description: Administrative
+      - value: 2
+        description: Offender Moves Location
+      - value: 27
+        description: Escape
+      - value: 29
+        description: Assigned
+      - value: 3
+        description: Administrative Transfer
+      - value: 32
+        description: Initial Facility Intake
+      - value: 41
+        description: Out To Court
+      - value: 50
+        description: Release to Supervision
+      - value: 53
+        description: Return from Escape
+      - value: 8
+        description: Discharged from DOC
+  - name: DOCLocationFromId
+    description: |-
+      Code for origin location within IDOC. Joins to ref_Location.LocationId.
+  - name: DOCLocationToId
+    description: |-
+      Code for destination location within IDOC. Joins to ref_Location.LocationId.
+  - name: JurisdictionFromId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: JurisdictionToId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Notes
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: OfficerName
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: OfficerLocation
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: OfficerTelephone
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: CustodyReleaseDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: SupervisionReleaseDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: HearingDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: ScheduledDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: CancelledReason
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ScheduledFor
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ApprovedBy
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      Timestamp for record creation.
+    field_type: datetime
+  - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
+    field_type: datetime
+  - name: TransferStatusId
+    description: |-
+      ID for the transfer status. Can be joined to `com_TransferStatus.TransferStatusId`.
+    known_values:
+      - value: 1
+        description: Scheduled
+      - value: 3
+        description: Confirmed
+  - name: CancellationDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: ApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: TermId
+    description: |-
+      ID of the sentence term to which this transfer applies, joins to scl_Term.TermId.
+  - name: BedTypeId
+    description: |-
+      ID for the bed type. Can be joined to `hsn_BedType.BedTypeId`.
+    known_values:
+      - value: 2
+        description: General Population
+      - value: 4
+        description: Reception and Diagnostic Unit
+  - name: KeepSeparateReason
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: TransferApprovalId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: EmergencyTransfer
+    description: |-
+      TODO(#15329): Fill in column description
+
+table_relationships:
+  - foreign_table: com_TransferType
+    join_logic:
+      - com_Transfer.TransferTypeId = com_TransferType.TransferTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: com_TransferReason
+    join_logic:
+      - com_Transfer.TransferReasonId = com_TransferReason.TransferReasonId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - com_Transfer.DOCLocationFromId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - com_Transfer.DOCLocationToId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: com_TransferStatus
+    join_logic:
+      - com_Transfer.TransferStatusId = com_TransferStatus.TransferStatusId
+    cardinality: MANY_TO_ONE
+  - foreign_table: scl_Term
+    join_logic:
+      - com_Transfer.TermId = scl_Term.TermId
+    cardinality: MANY_TO_ONE
+  - foreign_table: hsn_BedType
+    join_logic:
+      - com_Transfer.BedTypeId = hsn_BedType.BedTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_Offender
+    join_logic:
+      - com_Transfer.OffenderId = ind_Offender.OffenderId
+    cardinality: MANY_TO_ONE

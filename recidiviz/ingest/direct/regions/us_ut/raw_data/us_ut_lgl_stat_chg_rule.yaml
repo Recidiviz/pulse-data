@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: lgl_stat_chg_rule
+file_description: |-
+  Legal Stat Chg Rule
+data_classification: source
+primary_key_cols:
+  - prev_lgl_stat_cd
+  - lgl_stat_cd
+  - lgl_stat_chg_cd
+columns:
+  - name: prev_lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_chg_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime

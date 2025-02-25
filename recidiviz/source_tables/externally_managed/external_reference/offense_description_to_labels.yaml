@@ -1,0 +1,69 @@
+address:
+  dataset_id: external_reference
+  table_id: offense_description_to_labels
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: offense_description
+    type: STRING
+    mode: NULLABLE
+  - name: probability
+    type: FLOAT
+    mode: NULLABLE
+  - name: uccs_code
+    type: INTEGER
+    mode: NULLABLE
+  - name: uccs_description
+    type: STRING
+    mode: NULLABLE
+  - name: uccs_category
+    type: STRING
+    mode: NULLABLE
+  - name: ncic_code
+    type: INTEGER
+    mode: NULLABLE
+  - name: ncic_description
+    type: STRING
+    mode: NULLABLE
+  - name: ncic_category
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_code
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_description
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_category
+    type: STRING
+    mode: NULLABLE
+  - name: crime_against
+    type: STRING
+    mode: NULLABLE
+  - name: is_drug
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: is_violent
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_completed
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_attempted
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_conspired
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-external-reference-data/offense_description_to_labels.csv
+  sourceFormat: CSV
+  compression: NONE
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8

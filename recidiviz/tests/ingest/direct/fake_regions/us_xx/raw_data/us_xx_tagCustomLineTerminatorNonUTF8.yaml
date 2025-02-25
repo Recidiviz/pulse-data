@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: tagCustomLineTerminatorNonUTF8
+file_description: |-
+  tagPipeSeparatedNonUTF8 file description
+data_classification: source
+primary_key_cols:
+  - PRIMARY_COL1
+columns:
+  - name: PRIMARY_COL1
+    description: |-
+      PRIMARY_COL1 description
+  - name: COL2
+  - name: COL3
+  - name: COL4
+encoding: ISO-8859-1
+ignore_quotes: True
+custom_line_terminator: "@"

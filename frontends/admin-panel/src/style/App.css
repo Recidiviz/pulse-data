@@ -1,0 +1,333 @@
+/*
+Recidiviz - a data platform for criminal justice reform
+Copyright (C) 2020 Recidiviz, Inc.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+=============================================================================
+*/
+@import "~antd/dist/antd.css";
+@import "~antd/dist/antd.dark.css" (prefers-color-scheme: dark);
+@import "Validation.css";
+
+.main-content {
+  height: 100%;
+  width: 100%;
+  margin: auto;
+
+  overflow-y: scroll;
+}
+
+.main-content-padding {
+  padding-top: 2vw;
+  padding-bottom: 1em;
+
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+.content-side-padding {
+  padding: 0 24px;
+}
+
+.buffer {
+  padding-top: 16px;
+  white-space: normal !important;
+}
+
+.metadata-table {
+  padding-top: 16px;
+}
+
+.ant-table-tbody > tr.metadata-table-row > td.ant-table-cell {
+  padding: 0px;
+}
+
+tr.metadata-table-row > td.ant-table-cell > div {
+  padding: 16px;
+}
+
+.ant-layout-sider-children {
+  background-color: #ffffff;
+}
+
+.ant-message-error {
+  white-space: pre;
+}
+
+.success {
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.failed-soft {
+  color: #ffffff;
+  background-color: #faad14;
+}
+
+.failed-hard {
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.broken {
+  color: #ffffff;
+  animation: broken-animation 1s infinite alternate;
+}
+
+@keyframes broken-animation {
+  from {
+    background-color: #f5222d;
+  }
+  to {
+    background-color: black;
+  }
+}
+
+.ant-anchor-ink::before {
+  background-color: #c6c6c6;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  .ant-layout-sider-children {
+    background-color: rgb(20, 20, 20);
+  }
+
+  .ant-menu-inline {
+    border-right-width: 0;
+  }
+}
+
+.highlight {
+  animation: highlight-animation 1s;
+}
+
+@keyframes highlight-animation {
+  from {
+    background-color: inherit;
+  }
+  50% {
+    background-color: #F2BB05;
+  }
+  to {
+    background-color: inherit;
+  }
+}
+
+/* Site Side Panel */
+.title-header {
+  display: flex;
+  padding: 23px;
+  justify-content: space-around;
+}
+
+/* Actions and Summaries*/
+
+.tag {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  font-variant: tabular-nums;
+  line-height: 1.5715;
+  list-style: none;
+  font-feature-settings: 'tnum', "tnum";
+  display: inline-block;
+  height: auto;
+  margin-right: 8px;
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  opacity: 1;
+  transition: all 0.3s;
+}
+
+.tag-with-color {
+  border: none;
+}
+
+.ingest-status-cell {
+  height: 60px;
+  width: 350px;
+  padding: 10px;
+  border-radius: 15px;
+  font-weight: bold;
+}
+
+.ingest-status-cell-green {
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.ingest-status-cell-grey {
+  color: #ffffff;
+  background-color: #444444;
+}
+
+.ingest-status-cell-yellow {
+  color: #000000;
+  background-color: #ffff00;
+}
+
+.ingest-status-cell-gated {
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
+.queue-status-running {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 100px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.queue-status-not-running {
+  color: #ffffff;
+  background-color: #f5222d;
+  width: 100px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.dataflow-enabled {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 100px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.dataflow-disabled {
+  color: #ffffff;
+  background-color: #f5222d;
+  width: 100px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.ingest-caution {
+  color: #000000;
+  background-color: #ffff00;
+}
+
+.ingest-danger {
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.job-succeeded {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 150px;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.job-failed {
+  color: #ffffff;
+  background-color: #f5222d;
+  width: 150px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.job-no-runs {
+  color: #ffffff;
+  background-color: #444444;
+  width: 150px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.job-dataflow-not-enabled {
+  color: #ffffff;
+  background-color: #000000;
+  width: 150px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.raw-data-import-cell {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 150px;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.raw-data-import-no-runs{
+  color: #ffffff;
+  background-color: #444444;
+}
+
+.raw-data-import-in-progress{
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
+.raw-data-import-failure{
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.raw-data-import-success{
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.raw-data-import-not-enabled{
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
+.resource-lock-cell {
+  color: #ffffff;
+  background-color: #DEF2C8;
+  width: 150px;
+  white-space: pre-line;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
+}
+
+.resource-locks-held, .resource-locks-mixed{
+  color: #ffffff;
+  background-color: #f5222d;
+}
+
+.resource-locks-free{
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.resource-locks-unknown{
+  color: #ffffff;
+  background-color: #444444;
+}

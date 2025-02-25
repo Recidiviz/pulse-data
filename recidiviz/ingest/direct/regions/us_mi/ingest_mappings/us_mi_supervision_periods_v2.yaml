@@ -1,0 +1,947 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_id
+  - period_id
+  - period_start
+  - period_end
+  - movement_reason_id
+  - next_movement_reason_id
+  - offender_external_movement_id
+  - next_offender_external_movement_id
+  - prev_offender_external_movement_id
+  - dest_name
+  - dest_location_type_id
+  - supervision_level_id
+  - order_type_id_list
+  - special_condition_ids
+  - employee_id
+  - first_name
+  - middle_name
+  - last_name
+  - name_suffix
+  - employee_county
+  - prev_order_type_id_list
+  - next_order_type_id_list
+  - position
+  - prev_movement_reason_id
+  - most_recent_supervision_level_id
+  - modifier
+  - specialties
+unused_columns:
+  - next_order_type_id_list
+  - first_name
+  - middle_name
+  - last_name
+  - name_suffix
+  - position
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_id
+          id_type: $literal("US_MI_DOC_ID")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - offender_id
+                - period_id
+              $include_nulls: True
+          supervision_type:
+            $conditional:
+              # If the COMS supervision level or modifiers data contain information about supervision type, use that
+              - $if:
+                  $custom:
+                    $function: us_mi_custom_parsers.supervision_type_info_from_COMS
+                    $args:
+                      supervision_level: supervision_level_id
+                      modifier: modifier
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION LEVEL-")
+                          - supervision_level_id
+                          - $literal("##MODIFIER-")
+                          - modifier
+                        $separator: ""
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_COMS
+              # Else if this period has a supervision level from OMNI that indicates absconsion or warrant status, map types accordingly
+              - $else_if:
+                  $in:
+                    $value: supervision_level_id
+                    $options:
+                      - $literal("7483") # Probation Absconder Warrant Status
+                      - $literal("2286") # Warrant Status
+                      - $literal("7482") # Parole Absconder Warrant Status
+                      - $literal("2394") # Absconder Warrant Status
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("WARRANT-supervision_level")
+                          - supervision_level_id
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
+                        - "WARRANT-supervision_level-2286" # Warrant Status
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "WARRANT-supervision_level-7483" # Probation Absconder Warrant Status
+                        - "WARRANT-supervision_level-7482" # Parole Absconder Warrant Status
+                        - "WARRANT-supervision_level-2394" # Absconder Warrant Status
+              # If the movements data indicate that the individual has absconded, and this is a period that started before the COMS migration
+              # (aka before they had Absconsion modifiers) then we're going to mark supervision type as ABSCONSION
+              - $else_if:
+                  $and:
+                    - $custom:
+                        $function: us_mi_custom_parsers.period_before_COMS_migration
+                        $args:
+                          period_start_date: period_start
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("112") # Absconder from Parole
+                          - $literal("119") # Absconder from Probation
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("ABSCONSION-external_movement_reason")
+                          - movement_reason_id
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "ABSCONSION-external_movement_reason-112"
+                        - "ABSCONSION-external_movement_reason-119"
+              # If the movements data indicate that the individual is going through intake and a legal order hasn't been issued yet, then we're going to mark supervision type as INVESTIGATION
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
+                    - $is_null: supervision_level_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: $literal("INVESTIGATION-movement_reason_id-2")
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                        - "INVESTIGATION-movement_reason_id-2"
+              # If not one of those three special cases, look at legal order first to determine type
+              # (Most of the remaining supervision periods get categorized here)
+              - $else_if:
+                  $not_null: order_type_id_list
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("order_type_id_list")
+                          - order_type_id_list
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.DUAL:
+                        - "order_type_id_list-1726,1727" # Parole,Probation
+                        - "order_type_id_list-1719,1727" # Interstate Compact Parole,Probation
+                        - "order_type_id_list-1719,1720" # Interstate Compact Parole,Interstate Compact Probation
+                        - "order_type_id_list-1719,1720,1727" # Interstate Compact Parole,Interstate Compact Probation,Probation
+                        - "order_type_id_list-1720,1726" # Interstate Compact Probation,Parole
+                        - "order_type_id_list-1719,1726,1727" # Interstate Compact Parole,Parole,Probation
+                        - "order_type_id_list-1720,1726,1727" # Interstate Compact Probation,Parole,Probation
+                        - "order_type_id_list-1719,1720,1726,1727" # Interstate Compact Parole,Interstate Compact Probation,Parole,Probation
+                        - "order_type_id_list-1719,1720,1726" # Interstate Compact Parole,Interstate Compact Probation,Parole
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "order_type_id_list-1726" # Parole
+                        - "order_type_id_list-1719" # Interstate Compact Parole
+                        - "order_type_id_list-1719,1726" # Interstate Compact Parole,Parole
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "order_type_id_list-1727" # Probation
+                        - "order_type_id_list-1720" # Interstate Compact Probation
+                        - "order_type_id_list-1720,1727" # Interstate Compact Probation,Probation
+              # If no there's no active legal order for this period but there's an active supervision level, use that to determine type
+              #   If the supervision level came from COMS, map supervision level according to custom enum parser
+              - $else_if:
+                  $and:
+                    - $not_null: supervision_level_id
+                    - $custom:
+                        $function: us_mi_custom_parsers.is_coms_level
+                        $args:
+                          supervision_level_value: supervision_level_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: supervision_level_id
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_coms_level
+              #   If the supervision level came from OMNI, map supervision level accordingly to below
+              - $else_if:
+                  $not_null: supervision_level_id
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("legal_order_NULL-supervision_level_id")
+                          - supervision_level_id
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "legal_order_NULL-supervision_level_id-13577" # SA Parole Medium Unemployed
+                        - "legal_order_NULL-supervision_level_id-13584" # SA Parole Maximum Unemployed
+                        - "legal_order_NULL-supervision_level_id-13827" # VO Parole GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13565" # VO Parole EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3810" # Parole EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-2282" # Parole Medium Unemployed
+                        - "legal_order_NULL-supervision_level_id-2281" # Parole Maximum Unemployed
+                        - "legal_order_NULL-supervision_level_id-2294" # Parole Minimum
+                        - "legal_order_NULL-supervision_level_id-2283" # Parole Medium Employed
+                        - "legal_order_NULL-supervision_level_id-13573" # VO/SA Parole Medium Unemployed
+                        - "legal_order_NULL-supervision_level_id-14049" # VO Parole Minimum In-Person Employed
+                        - "legal_order_NULL-supervision_level_id-13579" # VO/SA Parole Maximum Unemployed
+                        - "legal_order_NULL-supervision_level_id-13581" # VO Parole Maximum Unemployed
+                        - "legal_order_NULL-supervision_level_id-8172" # Parole TRV Center Placement
+                        - "legal_order_NULL-supervision_level_id-13561" # Parole Minimum Unemployed
+                        - "legal_order_NULL-supervision_level_id-14189" # SA Parole Intensive Unemployed
+                        - "legal_order_NULL-supervision_level_id-14181" # SA Parole SAI Intensive Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13569" # SA Parole EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14187" # Parole Intensive Unemployed
+                        - "legal_order_NULL-supervision_level_id-14180" # SA Parole SAI Intensive Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14175" # Parole LCRRP Placement
+                        - "legal_order_NULL-supervision_level_id-13567" # VO/SA Parole EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13582" # VO Parole Maximum Employed
+                        - "legal_order_NULL-supervision_level_id-15901" # Parole DRC/PRF Placement
+                        - "legal_order_NULL-supervision_level_id-13822" # Parole GPS Employed
+                        - "legal_order_NULL-supervision_level_id-14207" # SA Parole Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14206" # SA Parole Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-7405" # Paroled in Custody
+                        - "legal_order_NULL-supervision_level_id-14204" # SA Parole Intensive GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13571" # VO Parole Minimum Unemployed
+                        - "legal_order_NULL-supervision_level_id-13821" # Parole GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13580" # VO/SA Parole Maximum Employed
+                        - "legal_order_NULL-supervision_level_id-13560" # Parole Minimum Employed
+                        - "legal_order_NULL-supervision_level_id-13830" # VO/SA Parole GPS Employed
+                        - "legal_order_NULL-supervision_level_id-14213" # VO/SA Parole Intensive GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14209" # VO Parole Intensive GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13572" # VO Parole Minimum Employed
+                        - "legal_order_NULL-supervision_level_id-14190" # VO Parole Intensive Employed
+                        - "legal_order_NULL-supervision_level_id-14176" # Parole SAI Intensive Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14202" # Parole Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13624" # Parole Minimum Mail-in Employed
+                        - "legal_order_NULL-supervision_level_id-14183" # VO/SA Parole SAI Intensive Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14221" # VO/SA Parole SAI Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14208" # VO Parole Intensive GPS Employed
+                        - "legal_order_NULL-supervision_level_id-14220" # VO/SA Parole SAI Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14216" # VO Parole SAI Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14192" # VO/SA Parole Intensive Employed
+                        - "legal_order_NULL-supervision_level_id-14051" # Parole Minimum Telephone Employed
+                        - "legal_order_NULL-supervision_level_id-14212" # VO/SA Parole Intensive GPS Employed
+                        - "legal_order_NULL-supervision_level_id-19613" # Parole Minimum Low Employed
+                        - "legal_order_NULL-supervision_level_id-14186" # Parole Intensive Employed
+                        - "legal_order_NULL-supervision_level_id-14205" # SA Parole Intensive GPS Employed
+                        - "legal_order_NULL-supervision_level_id-14219" # SA Parole SAI Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13833" # Parole Minimum Low Risk Employed
+                        - "legal_order_NULL-supervision_level_id-2293" # Parole Minimum Mail-In
+                        - "legal_order_NULL-supervision_level_id-14211" # VO Parole Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14214" # Parole SAI Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-7183" # Parole Pre-Transfer Tracking
+                        - "legal_order_NULL-supervision_level_id-14200" # Parole Intensive GPS Employed
+                        - "legal_order_NULL-supervision_level_id-13623" # Parole Minimum Mail-in Unemployed
+                        - "legal_order_NULL-supervision_level_id-14217" # VO Parole SAI Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3803" # Parole SAI Employed
+                        - "legal_order_NULL-supervision_level_id-4058" # Parole SAI EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3635" # Parole SAI EMS Employed
+                        - "legal_order_NULL-supervision_level_id-7500" # Parole SAI (Team) EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13611" # VO/SA Parole SAI (Team) Unemployed
+                        - "legal_order_NULL-supervision_level_id-7499" # Parole SAI (Team) Reduced Intensity Unemployed
+                        - "legal_order_NULL-supervision_level_id-13604" # SA Parole SAI (Team) Employed
+                        - "legal_order_NULL-supervision_level_id-13600" # VO Parole SAI EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13619" # VO/SA Parole SAI (Team) Reduced Intensity Unemployed
+                        - "legal_order_NULL-supervision_level_id-13593" # VO Parole SAI Unemployed
+                        - "legal_order_NULL-supervision_level_id-4057" # Parole SAI EMS Unemployed Sub Abuse
+                        - "legal_order_NULL-supervision_level_id-3806" # Parole SAI Employed Sub. Abuse
+                        - "legal_order_NULL-supervision_level_id-3804" # Parole SAI Unemployed Sub. Abuse
+                        - "legal_order_NULL-supervision_level_id-13610" # VO Parole SAI (Team) EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13617" # VO Parole SAI (Team) Reduced Intensity Unemployed
+                        - "legal_order_NULL-supervision_level_id-3807" # Parole SAI/TRV (Team) Reduced Intensity
+                        - "legal_order_NULL-supervision_level_id-14197" # Parole Minimum In-Person Unemployed
+                        - "legal_order_NULL-supervision_level_id-13583" # SA Parole Maximum Employed
+                        - "legal_order_NULL-supervision_level_id-13828" # VO Parole GPS Employed
+                        - "legal_order_NULL-supervision_level_id-13568" # VO Parole EMS Employed
+                        - "legal_order_NULL-supervision_level_id-3636" # Parole EMS Employed
+                        - "legal_order_NULL-supervision_level_id-2292" # Parole Minimum Administrative
+                        - "legal_order_NULL-supervision_level_id-2280" # Parole Maximum Employed
+                        - "legal_order_NULL-supervision_level_id-13575" # VO Parole Medium Unemployed
+                        - "legal_order_NULL-supervision_level_id-13576" # VO Parole Medium Employed
+                        - "legal_order_NULL-supervision_level_id-13825" # SA Parole GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13826" # SA Parole GPS Employed
+                        - "legal_order_NULL-supervision_level_id-13566" # SA Parole EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13564" # VO/SA Parole EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13578" # SA Parole Medium Employed
+                        - "legal_order_NULL-supervision_level_id-14196" # Parole Minimum In-Person Employed
+                        - "legal_order_NULL-supervision_level_id-14050" # VO Parole Minimum In-Person Unemployed
+                        - "legal_order_NULL-supervision_level_id-13829" # VO/SA Parole GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14169" # VO/SA Parole Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14177" # Parole SAI Intensive Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14188" # SA Parole Intensive Employed
+                        - "legal_order_NULL-supervision_level_id-14052" # Parole Minimum Telephone Unemployed
+                        - "legal_order_NULL-supervision_level_id-14203" # Parole Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13574" # VO/SA Parole Medium Employed
+                        - "legal_order_NULL-supervision_level_id-14193" # VO/SA Parole Intensive Unemployed
+                        - "legal_order_NULL-supervision_level_id-14191" # VO Parole Intensive Unemployed
+                        - "legal_order_NULL-supervision_level_id-14174" # Parole TRRP Placement
+                        - "legal_order_NULL-supervision_level_id-14201" # Parole Intensive GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14178" # VO Parole SAI Intensive Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14182" # VO/SA Parole SAI Intensive Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-20007" # Parole MPVU/PRF Placement
+                        - "legal_order_NULL-supervision_level_id-14215" # Parole SAI Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14218" # SA Parole SAI Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-19612" # Parole Minimum Low Unemployed
+                        - "legal_order_NULL-supervision_level_id-13832" # Parole Minimum Low Risk Unemployed
+                        - "legal_order_NULL-supervision_level_id-14179" # VO Parole SAI Intensive Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14168" # VO/SA Parole Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-19616" # VO Parole Minimum Low Unemployed
+                        - "legal_order_NULL-supervision_level_id-19617" # VO Parole Minimum Low Employed
+                        - "legal_order_NULL-supervision_level_id-14210" # VO Parole Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3805" # Parole SAI Unemployed
+                        - "legal_order_NULL-supervision_level_id-13601" # VO/SA Parole SAI EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3633" # Parole SAI Residential (Wayne Co.)
+                        - "legal_order_NULL-supervision_level_id-13597" # SA Parole SAI EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13591" # SA Parole SAI Unemployed
+                        - "legal_order_NULL-supervision_level_id-13595" # VO/SA Parole SAI Unemployed
+                        - "legal_order_NULL-supervision_level_id-13598" # SA Parole SAI EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13592" # SA Parole SAI Employed
+                        - "legal_order_NULL-supervision_level_id-7501" # Parole SAI (Team) EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3809" # Parole SAI (Team) Employed
+                        - "legal_order_NULL-supervision_level_id-3634" # Parole SAI Residential
+                        - "legal_order_NULL-supervision_level_id-3808" # Parole SAI (Team) Unemployed
+                        - "legal_order_NULL-supervision_level_id-7498" # Parole SAI (Team) Reduced Intensity Employed
+                        - "legal_order_NULL-supervision_level_id-13605" # SA Parole SAI (Team) EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13606" # SA Parole SAI (Team) EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13603" # SA Parole SAI (Team) Unemployed
+                        - "legal_order_NULL-supervision_level_id-13613" # VO/SA Parole SAI (Team) EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13602" # VO/SA Parole SAI EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13599" # VO Parole SAI EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13594" # VO Parole SAI Employed
+                        - "legal_order_NULL-supervision_level_id-13614" # VO/SA Parole SAI (Team) EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13596" # VO/SA Parole SAI Employed
+                        - "legal_order_NULL-supervision_level_id-13609" # VO Parole SAI (Team) EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13620" # VO/SA Parole SAI (Team) Reduced Intensity Employed
+                        - "legal_order_NULL-supervision_level_id-13612" # VO/SA Parole SAI (Team) Employed
+                        - "legal_order_NULL-supervision_level_id-13616" # SA Parole SAI (Team) Reduced Intensity Employed
+                        - "legal_order_NULL-supervision_level_id-13615" # SA Parole SAI (Team) Reduced Intensity Unemployed
+                        - "legal_order_NULL-supervision_level_id-4056" # Parole SAI EMS Employed Sub Abuse
+                        - "legal_order_NULL-supervision_level_id-13608" # VO Parole SAI (Team) Employed
+                        - "legal_order_NULL-supervision_level_id-13618" # VO Parole SAI (Team) Reduced Intensity Employed
+                      StateSupervisionPeriodSupervisionType.DUAL:
+                        - "legal_order_NULL-supervision_level_id-13585" # SA Probation Parole Maximum SSU Employed
+                        - "legal_order_NULL-supervision_level_id-13586" # SA Probation Parole Maximum SSU Unemployed
+                        - "legal_order_NULL-supervision_level_id-13590" # VO/SA Probation Parole Maximum SSU Employed
+                        - "legal_order_NULL-supervision_level_id-14239" # SA Probation Parole Intensive SSU Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13588" # VO Probation Parole Maximum SSU Employed
+                        - "legal_order_NULL-supervision_level_id-14238" # SA Probation Parole Intensive SSU Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14249" # VO Probation Parole Intensive SSU EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-13589" # VO/SA Probation Parole Maximum SSU Unemployed
+                        - "legal_order_NULL-supervision_level_id-14241" # VO Probation Parole Intensive SSU Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14243" # VO/SA Probation Parole Intensive SSU Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14242" # VO/SA Probation Parole Intensive SSU Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14247" # SA Probation Parole Intensive SSU EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14250" # VO/SA Probation Parole Intensive SSU EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13587" # VO Probation Parole Maximum SSU Unemployed
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "legal_order_NULL-supervision_level_id-3624" # Probation Minimum Administrative
+                        - "legal_order_NULL-supervision_level_id-3629" # Probation Maximum Unemployed
+                        - "legal_order_NULL-supervision_level_id-3630" # Probation Maximum Employed
+                        - "legal_order_NULL-supervision_level_id-2289" # Probation EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14199" # Probation Minimum In-Person Employed
+                        - "legal_order_NULL-supervision_level_id-5769" # Probation EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3795" # Probation Minimum SSU Inpatient
+                        - "legal_order_NULL-supervision_level_id-14237" # Probation Intensive SSU Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14165" # Probation Minimum Telephone Employed
+                        - "legal_order_NULL-supervision_level_id-14198" # Probation Minimum In-Person Unemployed
+                        - "legal_order_NULL-supervision_level_id-14164" # Probation Minimum Telephone Unemployed
+                        - "legal_order_NULL-supervision_level_id-13622" # Probation Minimum Mail-in Employed
+                        - "legal_order_NULL-supervision_level_id-14185" # Probation SAI Intensive Non-EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-4055" # Probation SAI EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-7506" # Probation SAI (Team) EMS Employed
+                        - "legal_order_NULL-supervision_level_id-3632" # Probation SAI Unemployed
+                        - "legal_order_NULL-supervision_level_id-14194" # Probation Intensive Employed
+                        - "legal_order_NULL-supervision_level_id-7184" # Probation Pre-Transfer Tracking
+                        - "legal_order_NULL-supervision_level_id-7505" # Probation SAI (Team) Reduced Intensity Unemployed
+                        - "legal_order_NULL-supervision_level_id-3800" # Probation SAI Unemployed Sub. Abuse
+                        - "legal_order_NULL-supervision_level_id-19615" # Probation Minimum Low Employed
+                        - "legal_order_NULL-supervision_level_id-19614" # Probation Minimum Low Unemployed
+                        - "legal_order_NULL-supervision_level_id-13823" # Probation GPS Employed
+                        - "legal_order_NULL-supervision_level_id-14222" # Probation SAI Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13820" # Probation Minimum Low Risk Unemployed
+                        - "legal_order_NULL-supervision_level_id-13819" # Probation Minimum Low Risk Employed
+                        - "legal_order_NULL-supervision_level_id-14245" # Probation Intensive SSU EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14170" # Probation Intensive GPS Employed
+                        - "legal_order_NULL-supervision_level_id-3628" # Probation Medium Employed
+                        - "legal_order_NULL-supervision_level_id-3627" # Probation Medium Unemployed
+                        - "legal_order_NULL-supervision_level_id-7503" # Probation Maximum SSU Unemployed
+                        - "legal_order_NULL-supervision_level_id-7502" # Probation Maximum SSU Employed
+                        - "legal_order_NULL-supervision_level_id-3626" # Probation Minimum
+                        - "legal_order_NULL-supervision_level_id-3625" # Probation Minimum Mail-in
+                        - "legal_order_NULL-supervision_level_id-13562" # Probation Minimum Employed
+                        - "legal_order_NULL-supervision_level_id-13563" # Probation Minimum Unemployed
+                        - "legal_order_NULL-supervision_level_id-2396" # Probation Detention
+                        - "legal_order_NULL-supervision_level_id-14195" # Probation Intensive Unemployed
+                        - "legal_order_NULL-supervision_level_id-3802" # Probation SAI Employed
+                        - "legal_order_NULL-supervision_level_id-2395" # Probation SAI EMS Employed
+                        - "legal_order_NULL-supervision_level_id-7507" # Probation SAI (Team) EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-3798" # Probation SAI (Team) Employed
+                        - "legal_order_NULL-supervision_level_id-4054" # Probation SAI EMS Employed Sub Abuse
+                        - "legal_order_NULL-supervision_level_id-3801" # Probation SAI Employed Sub. Abuse
+                        - "legal_order_NULL-supervision_level_id-3631" # Probation SAI Residential
+                        - "legal_order_NULL-supervision_level_id-7504" # Probation SAI (Team) Reduced Intensity Employed
+                        - "legal_order_NULL-supervision_level_id-13621" # Probation Minimum Mail-in Unemployed
+                        - "legal_order_NULL-supervision_level_id-2285" # Unsupervised Probation
+                        - "legal_order_NULL-supervision_level_id-3799" # Probation SAI (Team) Unemployed
+                        - "legal_order_NULL-supervision_level_id-3796" # Probation Maximum SSU
+                        - "legal_order_NULL-supervision_level_id-3797" # Probation SAI (Team) Reduced Intensity
+                        - "legal_order_NULL-supervision_level_id-4053" # Probation SAI EMS Unemployed Sub Abuse
+                        - "legal_order_NULL-supervision_level_id-14173" # Probation Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14172" # Probation Intensive EMS Employed
+                        - "legal_order_NULL-supervision_level_id-13824" # Probation GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14223" # Probation SAI Intensive EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14171" # Probation Intensive GPS Unemployed
+                        - "legal_order_NULL-supervision_level_id-14184" # Probation SAI Intensive Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-14236" # Probation Intensive SSU Non-EMS Employed
+                        - "legal_order_NULL-supervision_level_id-11890" # Probation SAI Residential (Wayne County)
+                        - "legal_order_NULL-supervision_level_id-14244" # Probation Intensive SSU EMS Employed
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        # ignoring categorizing these because CRPs have been inactive for a long time
+                        - "legal_order_NULL-supervision_level_id-7314" # CRP - Corrections Center Unemployed
+                        - "legal_order_NULL-supervision_level_id-7172" # CRP - Residential Drug Treatment
+                        - "legal_order_NULL-supervision_level_id-7477" # CRP - Escapee
+                        - "legal_order_NULL-supervision_level_id-7318" # CRP - EMS Combination Office Employed
+                        - "legal_order_NULL-supervision_level_id-7316" # CRP - EMS Unemployed
+                        - "legal_order_NULL-supervision_level_id-7480" # CRP - Custody Rule Violation(s)
+                        - "legal_order_NULL-supervision_level_id-7479" # CRP - Custody Escape
+                        - "legal_order_NULL-supervision_level_id-7317" # CRP - EMS Combination Office Unemployed
+                        - "legal_order_NULL-supervision_level_id-7481" # CRP - Custody Administrative
+                        - "legal_order_NULL-supervision_level_id-7313" # CRP - Corrections Center Employed
+                        - "legal_order_NULL-supervision_level_id-8171" # CRP - TRV Center Placement
+                        - "legal_order_NULL-supervision_level_id-7315" # CRP - EMS Employed
+                        - "legal_order_NULL-supervision_level_id-2288" # CRP EMS
+                        - "legal_order_NULL-supervision_level_id-2287" # CRP - Corrections Center
+                        - "legal_order_NULL-supervision_level_id-7478" # CRP - Custody Pending Felony
+                        - "legal_order_NULL-supervision_level_id-7173" # CRP EMS Combination Office
+                        - "legal_order_NULL-supervision_level_id-7225" # CRP - Jail Custody
+                        - "legal_order_NULL-supervision_level_id-7171" # CRP - EMS Waiver
+                        # Not sure how to categorize these
+                        - "legal_order_NULL-supervision_level_id-7174" # Out State Transfer"
+                        - "legal_order_NULL-supervision_level_id-2284" # Appeal Bond Posted
+                        - "legal_order_NULL-supervision_level_id-13457" # Unavailable for Supervision
+              # If no active legal order or supervision level but the movements data indicates parole or probation, use that for type
+              - $else_if:
+                  $in:
+                    $value: movement_reason_id
+                    $options:
+                      - $literal("86") # First Parole
+                      - $literal("89") # Reinstated on Parole While at Large
+                      - $literal("87") # Reinstated on Parole from the Institution
+                      - $literal("90") # Reparoled While on Same Term
+                      - $literal("88") # Paroled in Custody
+                      - $literal("152") # Reinstated on Parole from a County Jail
+                      - $literal("110") # Out of State Case Activated in Michigan for Parole Suprvn
+                      - $literal("150") # Reinstated on Parole from TRV
+                      - $literal("120") # Placed on Probation
+                      - $literal("127") # Reinstated on Probation
+                      - $literal("77") # Court Resentenced to Probation
+                      - $literal("157") # Probationer Released With Pending  Violation
+                      - $literal("141") # Disch. Prison MAX - Transfer for Probation
+                      - $literal("145") # Discharge From Prison Under HYTA & Continued on Probation
+                      - $literal("130") # Out of State Case Activated in Michigan for Probation Suprv.
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("legal_order_NULL-supervision_level_NULL-movement_reason_id")
+                          - movement_reason_id
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-86" # First Parole
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-89" # Reinstated on Parole While at Large
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-88" # Paroled in Custody
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-90" # Reparoled While on Same Term
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-110" # Out of State Case Activated in Michigan for Parole Suprvn
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-87" # Reinstated on Parole from the Institution
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-150" # Reinstated on Parole from TRV
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-152" # Reinstated on Parole from a County Jail
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-127" # Reinstated on Probation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-77" # Court Resentenced to Probation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-120" # Placed on Probation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-141" # Disch. Prison MAX - Transfer for Probation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-145" # Discharge From Prison Under HYTA & Continued on Probation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-157" # Probationer Released With Pending  Violation
+                        - "legal_order_NULL-supervision_level_NULL-movement_reason_id-130" # Out of State Case Activated in Michigan for Probation Suprv.
+              - $else: $literal_enum(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+          start_date: period_start
+          termination_date: period_end
+          county_code: employee_county
+          supervision_site: dest_name
+          admission_reason:
+            $conditional:
+              # if the movement is intake and this is the first period of intake with no previous movement or with a previous different movement, then mark admission reason as investigation
+              - $if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
+                    - $or:
+                        - $is_null: prev_movement_reason_id
+                        - $not_in:
+                            $value: prev_movement_reason_id
+                            $options:
+                              - $literal("2")
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
+              # if the movement is intake and this is the first period where a legal order applies, mark admission reason as Court Sentence
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $not_null: order_type_id_list
+                    - $is_null: prev_order_type_id_list
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE)
+              # if the previous record was an intake period with a legal order, and this is the first probation movement,
+              # mark this as transfer within state actually since the first intake period with a legal order should have already been marked as Court Sentence
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - prev_movement_reason_id
+                        - $literal("2") # Intake
+                    - $not_null: prev_order_type_id_list
+                    - $equal:
+                        - prev_order_type_id_list
+                        - order_type_id_list
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("77")
+                          - $literal("120")
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              # if the previous record is associated with the same movement_id, then this period must have been constructed because some other field changed
+              - $else_if:
+                  $equal:
+                    - offender_external_movement_id
+                    - prev_offender_external_movement_id
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              # else mark based on movement
+              - $else:
+                  $enum_mapping:
+                    $raw_text: movement_reason_id
+                    $mappings:
+                      StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                        - "112" # Absconder from Parole
+                        - "119" # Absconder from Probation
+                      StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                        - "77" # Court Resentenced to Probation
+                        - "120" # Placed on Probation
+                      StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                        # If not one of the special intake cases above (e.g. when an individual starts a new intake session)
+                        - "2" # Intake
+                      StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                        - "141" # Disch. Prison MAX - Transfer for Probation
+                        - "145" # Discharge From Prison Under HYTA & Continued on Probation
+                        - "87" # Reinstated on Parole from the Institution
+                        - "28" # Released from SAI - Complete
+                        - "27" # Released from SAI - Incomplete
+                        - "86" # First Parole
+                        - "88" # Paroled in Custody
+                      StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
+                        - "89" # Reinstated on Parole While at Large
+                        - "151" # Reinstated on Parole from Absconder Status
+                      StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION:
+                        - "90" # Reparoled While on Same Term
+                        - "127" # Reinstated on Probation
+                        - "157" # Probationer Released With Pending Violation
+                        - "152" # Reinstated on Parole from a County Jail
+                        - "150" # Reinstated on Parole from TRV
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - "110" # Out of State Case Activated in Michigan for Parole Suprvn
+                        - "130" # Out of State Case Activated in Michigan for Probation Suprv.
+                        - "4" # Transfer Out State
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                        - "5" # Transfer Between Offices in Michigan
+                        - "1" # Report to Office
+                        # Held in custody admission reasons
+                        - "105" # Held Under Custody - Parole Violation Processing
+                        - "128" # Held Under Custody - Probation Violation Processing
+                        - "104" # Held Under Custody - REP Violation Processing
+                        - "106" # Held Under Custody
+                        - "103" # Held Under Custody - Jail Sentence
+                        - "102" # Held Under Custody - New Criminal Processing
+                        - "156" # Probationer Held Under Custody
+                      StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        # Not sure exactly how Other Movement is used but it's often from a sherriffs department to a supervision office
+                        - "3" # Other Movement
+          termination_reason:
+            $conditional:
+              # if not the two cases above and the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
+              - $if:
+                  $equal:
+                    - offender_external_movement_id
+                    - next_offender_external_movement_id
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              # if this is an absconder situation
+              - $else_if:
+                  $and:
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("112") # Absconder from Parole
+                          - $literal("119") # Absconder from Probation
+                    - $in:
+                        $value: next_movement_reason_id
+                        $options:
+                          - $literal("106") # Held Under Custody
+                          - $literal("103") # Held Under Custody - Jail Sentence
+                          - $literal("102") # Held Under Custody - New Criminal Processing
+                          - $literal("127") # Reinstated on Probation
+                          - $literal("156") # Probationer Held Under Custody
+                          - $literal("89") # Reinstated on Parole While at Large
+                          - $literal("128") # Held Under Custody - Probation Violation Processing
+                          - $literal("86") # First Parole
+                          - $literal("120") # Placed on Probation
+                          - $literal("88") # Paroled in Custody
+                          - $literal("87") # Reinstated on Parole from the Institution
+                          - $literal("38") # Released from SAI - Complete
+                          - $literal("150") # Reinstated on Parole from TRV
+                          - $literal("90") # Reparoled While on Same Term
+                          - $literal("151") # Reinstated on Parole from Absconder Status
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION)
+              # else if the movement is "Other Movement" or IC rejected and the destination location is out of state of outside of MDOC jurisdiction, map to TRANSFER_TO_OTHER_JURISDICTION
+              - $else_if:
+                  $and:
+                    - $in:
+                        $value: next_movement_reason_id
+                        $options:
+                          - $literal("3") # Other Movement
+                          - $literal("137") # Interstate Compact Transfer Request Rescinded
+                          - $literal("133") # Interstate Compact Case Rejected for Supervision
+                          - $literal("136") # Jurisdiction Activated in Error
+                    - $in:
+                        $value: dest_location_type_id
+                        $options:
+                          - $literal("2155") # State
+                          - $literal("5772") # Outside of MDOC Jurisdiction
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("next_movement_reason_id")
+                          - next_movement_reason_id
+                          - $literal("destination_type")
+                          - dest_location_type_id
+                    $mappings:
+                      StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - "next_movement_reason_id-3-destination_type-2155"
+                        - "next_movement_reason_id-3-destination_type-5772"
+                        - "next_movement_reason_id-137-destination_type-2155"
+                        - "next_movement_reason_id-137-destination_type-5772"
+                        - "next_movement_reason_id-133-destination_type-2155"
+                        - "next_movement_reason_id-133-destination_type-5772"
+                        - "next_movement_reason_id-136-destination_type-2155"
+                        - "next_movement_reason_id-136-destination_type-5772"
+              # else map based on next_movement_reason_id
+              - $else:
+                  $enum_mapping:
+                    $raw_text: next_movement_reason_id
+                    $mappings:
+                      StateSupervisionPeriodTerminationReason.ABSCONSION:
+                        - "112" # Absconder from Parole
+                        - "119" # Absconder from Probation
+                      StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                        - "13" # New Commitment (Reception Center Only)
+                        - "159" # New Commitment - HYTA Prisoner
+                        - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
+                        - "16" # New Commitment, (SAI Only)
+                        - "149" # Sentenced to Prison While in Custody of Outside Jurisdiction
+                        - "144" # Sentenced to Prison under HYTA
+                        - "131" # Sentenced to Prison
+                      StateSupervisionPeriodTerminationReason.COMMUTED:
+                        - "24" # Sentence Reduced to Misdemeanor
+                      StateSupervisionPeriodTerminationReason.DEATH:
+                        - "31" # Death on Parole
+                        - "126" # Death on Probation
+                        - "38" # Death in Institution
+                        - "78" # Death on Escape
+                        - "39" # Death on Limited Furlough
+                        - "40" # Death on Temporary Release
+                      StateSupervisionPeriodTerminationReason.DISCHARGE:
+                        - "29" # Administrative Discharge from Parole
+                        - "122" # Administrative Discharge from Probation
+                        - "134" # Discharged Due to Commitment to FIA Only
+                        - "147" # Discharged Sentenced to Community Service Only
+                        - "124" # Discharged Sentenced to Fine, Cost or Restitution Only
+                        - "115" # Discharged While on Escape or Absconder
+                        - "30" # Early Discharge from Parole
+                        - "125" # Early Discharge from Probation
+                        - "22" # Court Discharged with Time Served
+                        - "123" # Discharged Sentenced to Jail Only
+                        - "146" # Discharge From Prison Under HYTA Without Probation
+                        - "143" # Discharged After Special Investigation Only
+                        - "28" # Released from SAI - Complete
+                      StateSupervisionPeriodTerminationReason.EXPIRATION:
+                        - "32" # Discharged from Parole
+                        - "121" # Discharged from Probation
+                        - "142" # Discharged from Probation Without Improvement
+                        - "41" # Discharged on Maximum after Parole and Return
+                        - "36" # Discharged on the Maximum without Parole
+                        - "154" # Sentenced From Delay No Further Sentence Imposed
+                      StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                        - "2" # Intake
+                      StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                        - "89" # Reinstated on Parole While at Large
+                        - "151" # Reinstated on Parole from Absconder Status
+                      StateSupervisionPeriodTerminationReason.REVOCATION:
+                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
+                        - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+                        - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+                        - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
+                        - "17" # Returned as Parole Technical Rule Violator
+                        - "18" # Returned While on Parole Sentenced In Michigan
+                        - "129" # Discharged from Probation - Probation Revoked
+                        - "158" # New Commitment - HYTA Probationer
+                      StateSupervisionPeriodTerminationReason.SUSPENSION:
+                        - "92" # Parole Furlough
+                        - "139" # Sentence Suspended by the Court
+                        - "114" # Stop Time Warrant on a Parole
+                        - "113" # Technical Violator of Parole
+                        - "105" # Held Under Custody - Parole Violation Processing
+                        - "128" # Held Under Custody - Probation Violation Processing
+                        - "104" # Held Under Custody - REP Violation Processing
+                        - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
+                        - "79" # Returned to Court from Bond
+                        - "95" # Temporary Release - Outside Hospital/Funerals Only
+                        - "106" # Held Under Custody
+                        - "103" # Held Under Custody - Jail Sentence
+                        - "102" # Held Under Custody - New Criminal Processing
+                        - "156" # Probationer Held Under Custody
+                      StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - "42" # Discharged by Transfer to Foreign Country
+                        - "111" # Out of State Case Transfered Out of Michigan
+                        - "153" # Supervision Transferred to District Court
+                        - "4" # Transfer Out State
+                      StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                        - "118" # Client Number Reassignment
+                        - "5" # Transfer Between Offices in Michigan
+                        - "1" # Report to Office
+                        # NOTE: Not sure how to categorize these exactly (since these are sort of unexpected)
+                        #       but they almost always happen after intake or absconsion (which would get taken care of above)
+                        - "86" # First Parole
+                        - "127" # Reinstated on Probation
+                        - "88" # Paroled in Custody
+                        - "120" # Placed on Probation
+                        - "157" # Probationer Released With Pending  Violation
+                        - "110" # Out of State Case Activated in Michigan for Parole Suprvn
+                        - "90" # Reparoled While on Same Term
+                        - "77" # Court Resentenced to Probation
+                        - "87" # Reinstated on Parole from the Institution
+                        - "145" # Discharge From Prison Under HYTA & Continued on Probation
+                        - "152" # Reinstated on Parole from a County Jail
+                        - "141" # Disch. Prison MAX - Transfer for Probation
+                        - "27" # Released from SAI - Incomplete
+                        - "130" # Out of State Case Activated in Michigan for Probation Suprv.
+                        - "19" # Out of State Parolee Sentenced in Michigan
+                        - "133" # Interstate Compact Case Rejected for Supervision
+                        - "137" # Interstate Compact Transfer Request Rescinded
+                        - "37" # Released to Court on Writ
+                        - "150" # Reinstated on Parole from TRV
+                        - "136" # Jurisdiction Activated in Error
+                      StateSupervisionPeriodTerminationReason.VACATED:
+                        - "148" # Charge(s) Dismissed by Court
+                        - "25" # Conviction Reversed by Court
+                        - "23" # Discharged by Court - Nolle Prosequi
+                      StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                        # NOTE: Only appears in really old data so ignoring for now
+                        - "21" # CRP Additional Felony Out to Court (REP Only)
+                        - "140" # Failure To Appear For Sentencing
+                        # Not sure how to categorize these
+                        - "138" # Plea Withdrawn
+                        - "91" # Limited Furlough
+                        # If we've reached this part of the logic, then the only type of "Other Movement" transfer that's left are those that involve a supervision office
+                        # but otherwise we don't have much information
+                        - "3" # Other Movement
+          supervision_level:
+            $conditional:
+              # If this period has a in custody related modifier, map to IN_CUSTODY
+              - $if:
+                  $in:
+                    $value: modifier
+                    $options:
+                      - $literal("MPVU")
+                      - $literal("Pending Revocation Hearing")
+                      - $literal("Paroled to Custody")
+                      - $literal("In Prison")
+                      - $literal("In Jail")
+                      - $literal("Paroled to Custody (Fed/Outstate)")
+                      - $literal("#2 Warrant Issued Sentenced Over 90 Days")
+                      - $literal("#2 Warrant Issued")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MODIFIER")
+                          - modifier
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
+              # Map supervision level to Absconsion if the modifier indicates absconsion
+              - $else_if:
+                  $equal:
+                    - modifier
+                    - $literal("Absconded")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MODIFIER")
+                          - modifier
+                    $mappings:
+                      StateSupervisionLevel.ABSCONSION:
+                        - "MODIFIER-Absconded"
+              # If this period has a in custody related supervision site, map to IN_CUSTODY
+              - $else_if:
+                  $in:
+                    $value: dest_name
+                    $options:
+                      - $literal("PAROLED IN CUSTODY")
+                      - $literal("Paroled to Michigan Custody")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION_SITE")
+                          - dest_name
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
+              # if this period is an OTHER_STATE period, supervision level is null, and
+              # we wouldn't be imputing it based on most recent supervision level, then
+              # let's set supervision level to INTERNAL_UNKNOWN so that they won't be
+              # excluded from the workflows candidate population query due to NULL supervision level
+              - $else_if:
+                  $and:
+                    - $is_null: supervision_level_id
+                    - $or:
+                        - $is_null: most_recent_supervision_level_id
+                        - $is_null: order_type_id_list
+                    - $equal:
+                        - dest_location_type_id
+                        - $literal("2155")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("OTHER_STATE")
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_internal_unknown_level
+              - $else_if:
+                  $in:
+                    $value: movement_reason_id
+                    $options:
+                      - $literal("105") # Held Under Custody - Parole Violation Processing
+                      - $literal("128") # Held Under Custody - Probation Violation Processing
+                      - $literal("104") # Held Under Custody - REP Violation Processing
+                      - $literal("106") # Held Under Custody
+                      - $literal("103") # Held Under Custody - Jail Sentence
+                      - $literal("102") # Held Under Custody - New Criminal Processing
+                      - $literal("156") # Probationer Held Under Custody
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MOVEMENT_REASON")
+                          - movement_reason_id
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
+              - $else:
+                  $enum_mapping:
+                    $raw_text:
+                      # when supervision level id is null but there is an active supervision legal order, impute supervision level
+                      # as the most recently observed supervision level
+                      $conditional:
+                        - $if:
+                            $not_null: supervision_level_id
+                          $then:
+                            $concat:
+                              $values:
+                                - supervision_level_id
+                                - specialties
+                              $separator: "##"
+                        - $else_if:
+                            $and:
+                              - $not_null: most_recent_supervision_level_id
+                              - $not_null: order_type_id_list
+                          $then:
+                            $concat:
+                              $values:
+                                - most_recent_supervision_level_id
+                                - specialties
+                                - $literal("imputed")
+                              $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
+          conditions: special_condition_ids
+          supervising_officer_staff_external_id: employee_id
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: employee_id
+                $then: $literal("US_MI_OMNI_USER")
+          custodial_authority:
+            $conditional:
+              # If this has custodial authority info in the COMS modifier or supervision level info
+              - $if:
+                  $custom:
+                    $function: us_mi_custom_parsers.custodial_authority_info_from_COMS
+                    $args:
+                      supervision_level: supervision_level_id
+                      modifier: modifier
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION LEVEL-")
+                          - supervision_level_id
+                          - $literal("##MODIFIER-")
+                          - modifier
+                        $separator: ""
+                    $custom_parser: us_mi_custom_enum_parsers.map_custodial_authority_based_on_COMS
+              - $else_if:
+                  $equal:
+                    - dest_location_type_id
+                    - $literal("2155")
+                $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
+              - $else_if:
+                  $in:
+                    $value: dest_name
+                    $options:
+                      - $literal("UNITED STATES MARSHALLS")
+                      - $literal("US Marshal Service")
+                      - $literal("Outside MDOC Jurisdiction")
+                $then:
+                  $enum_mapping:
+                    $raw_text: dest_name
+                    $mappings:
+                      StateCustodialAuthority.FEDERAL:
+                        - "UNITED STATES MARSHALLS"
+                        - "US Marshal Service"
+                      StateCustodialAuthority.INTERNAL_UNKNOWN:
+                        - "Outside MDOC Jurisdiction"
+              - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)

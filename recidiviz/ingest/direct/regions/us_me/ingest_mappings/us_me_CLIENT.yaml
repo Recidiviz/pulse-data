@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_CLIENT` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Client_Id
+  - First_Name
+  - Middle_Name
+  - Last_Name
+  - Birth_Date
+  - Gender
+  - Ethnicity
+  - Race
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Client_Id
+          id_type: $literal("US_ME_DOC")
+    birthdate: Birth_Date
+    full_name:
+      $person_name:
+        $given_names: First_Name
+        $middle_names: Middle_Name
+        $surname: Last_Name
+    gender:
+      $enum_mapping:
+        $raw_text: Gender
+        $mappings:
+          StateGender.MALE: "1"
+          StateGender.FEMALE: "2"
+          StateGender.EXTERNAL_UNKNOWN: "3"
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "1"
+                StateRace.ASIAN: "2"
+                StateRace.BLACK: "3"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "4"
+                StateRace.WHITE: "5"
+                StateRace.EXTERNAL_UNKNOWN: "6"
+                StateRace.OTHER:
+                  - "8"
+                  - "9"
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: Ethnicity
+              $mappings:
+                StateEthnicity.HISPANIC: "186"
+                StateEthnicity.NOT_HISPANIC: "187"
+                StateEthnicity.EXTERNAL_UNKNOWN: "188"

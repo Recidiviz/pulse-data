@@ -1,0 +1,17 @@
+# local dependencies
+**/node_modules
+
+# local build artifacts
+**/*.tsbuildinfo
+
+# storybook files
+**/.storybook
+**/*.stories.*
+
+# tests
+**/__snapshots__
+**/__image_snapshots__
+**/*.test.*
+
+# local mock services
+nodejs/asset-generation/local

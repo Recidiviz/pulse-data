@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_staff`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - email_list
+  - staff_id_list
+  - FirstName
+  - MiddleName
+  - LastName
+
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - $foreach:
+          $iterable: staff_id_list
+          $result:
+            StateStaffExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_TX_STAFF_ID")
+      - $foreach:
+          $iterable: email_list
+          $result:
+            StateStaffExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_TX_EMAIL")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName

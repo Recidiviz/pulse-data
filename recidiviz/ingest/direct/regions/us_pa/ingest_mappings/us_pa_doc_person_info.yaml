@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - recidiviz_primary_person_id
+  - control_number
+  - Frst_Nm
+  - Mid_Nm
+  - Lst_Nm
+  - Nm_Suff
+  - race
+  - sex
+  - date_of_birth
+  - legal_address_1
+  - legal_address_2
+  - legal_city
+  - legal_state
+  - legal_zip_code
+  - inmate_numbers
+unused_columns:
+  - recidiviz_primary_person_id # Internal Recidiviz person ID
+  - inmate_numbers # Already ingested in the `person_external_ids` ingest view.
+  - Mid_Nm # TODO(#18543): temporarily unused -- see below
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: control_number
+          id_type: $literal("US_PA_CONT")
+    birthdate: date_of_birth
+    full_name:
+      $person_name:
+        $given_names: Frst_Nm
+        # TODO(#18543): We don't ingest middle names so that these line up with the names from
+        # parole data. Include middle names once we have a parole source that also has
+        # middle names.
+        # $middle_names: Mid_Nm
+        $surname: Lst_Nm
+        $name_suffix: Nm_Suff
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: Frst_Nm
+              # TODO(#18543): We don't ingest middle names so that these line up with the names from
+              # parole data. Include middle names once we have a parole source that also has
+              # middle names.
+              # $middle_names: Mid_Nm
+              $surname: Lst_Nm
+              $name_suffix: Nm_Suff
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    current_address:
+      $physical_address:
+        $address_1: legal_address_1
+        $address_2: legal_address_2
+        $city: legal_city
+        $state: legal_state
+        $zip: legal_zip_code
+    residency_status:
+      $enum_mapping:
+        $raw_text:
+          $concat:
+            $values:
+              - legal_address_1
+              - legal_address_2
+            $include_nulls: False
+        $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
+    gender:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateGender.MALE: MALE
+          StateGender.FEMALE: FEMALE
+    races:
+      # Race information from DOC tables assigns a single race to a single person. Conversely, race information from PBPP
+      # tables assigns one to many races to a single person. Because we ingest both, we ingest one to many races for each
+      # person.
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                StateRace.ASIAN: ASIAN
+                StateRace.BLACK: BLACK
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN"
+                StateRace.OTHER: OTHER
+                StateRace.WHITE: WHITE
+              $ignore:
+                # This is an ethnicity value - ignore when mapping to race.
+                - HISPANIC
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                StateEthnicity.HISPANIC: HISPANIC
+              # These are race values - ignore when mapping to ethnicity.
+              $ignore: [ASIAN, BLACK, "AMERICAN INDIAN", OTHER, WHITE]

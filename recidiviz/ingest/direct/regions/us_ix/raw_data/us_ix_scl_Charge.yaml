@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Charge
+file_description: |-
+  Contains details about each charge, identifying the associated offender and docket.
+data_classification: source
+primary_key_cols:
+  - ChargeId
+columns:
+  - name: ChargeId
+    description: |-
+      Unique identifier for each row in table.
+  - name: OffenderId
+    description: |-
+      ID for the offender receiving the charge. Can be joined to 
+      `ind_Offender.OffenderId`.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+  - name: Docket
+    description: |-
+      Identifies the docket containing the charge. A docket can contain multiple 
+      different ChargeIds.
+  - name: InformationSource
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: WarrantDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: ArrestDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: CourtId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: StateId
+    description: |-
+      The state where the charge was brought from (or where the alleged crime occurred?)
+      Can be joined to `ref_Location.LocationId`.
+    known_values: []
+  - name: OtherCourt
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ChargeStatusId
+    description: |-
+      TODO(#15329): Fill in column description
+    known_values: []
+  - name: ChargePleaId
+    description: |-
+      TODO(#15329): Fill in column description
+    known_values: []
+  - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ChargedOffenseId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: VictimId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: NextCourtDateTime
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: NextCourtComments
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: OutcomeDate
+    description: |-
+      TODO(#15329): Fill in column description
+    field_type: datetime
+  - name: HasPleaAgreement
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ChargeOutcomeTypeId
+    description: |-
+      ID for the type of charge outcome.
+    known_values:
+      - value: 32
+        description: Court Retains Jurisdiction
+      - value: 37
+        description: Commuted Sentence
+  - name: OtherOutcomeType
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: AmendedOffenseTypeId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: AmendedOffenseComments
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      Timestamp for record creation.
+    field_type: datetime
+  - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
+    field_type: datetime
+
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender.OffenderId = scl_Charge.OffenderId

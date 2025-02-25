@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: p_p_allgt
+file_description: |-
+  P P Allegation
+data_classification: source
+primary_key_cols:
+  - p_p_allgt_id
+columns:
+  - name: p_p_allgt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_spcl_cond_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_agrmnt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: allgt_plea_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_agrmnt_cond_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_allgt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: p_p_allgt_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_incdnt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: plea_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

@@ -1,0 +1,55 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2024 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+# This file is used to define config to be used by the stable_historical_counts_table_validation.
+# This file contains the following default values:
+#  - time_window_lookback_days
+#    The number of days to look back when calculating the median row count for a file.
+#  - percent_change_tolerance
+#    The percent change tolerance to use when comparing the median row count of a file
+# And the following values that can be configured on a per-file tag basis:
+#   - tolerance_override
+#     This value is used to override the default percent change tolerance. This may be useful
+#     for small files where even small changes in file size can cause large percent changes.
+#   - date_range_exclusions
+#     All files with an update_datetime within an excluded date range will (1) have the stable historical counts validation skipped
+#     and (2) have their row counts excluded when calculating the median row count for other files.
+#     This might be useful if there is a jump in file size, you can exclude older entries that have lower raw row counts.
+#     If you import a file that has an update datetime within an excluded range, the validation will be skipped,
+#     and the raw row count of that imported will be excluded from future median calculations.
+#     This might be useful if you need to import a file that has an anomalously high or low row count but is valid.
+#     The same file tag in the same region can have multiple entries if you want to exclude multiple distinct datetime ranges.
+defaults:
+  time_window_lookback_days: 90
+  percent_change_tolerance: 0.1
+#
+# Example format:
+#
+#custom:
+#  US_XX:
+#    file_tags:
+#      example_file_tag:
+#        tolerance_override:
+#          percent_change_tolerance: 0.25
+#          reason:
+#            "This is an example of a custom percent change tolerance for a
+#            specific file in a specific state."
+#        date_range_exclusions:
+#          - datetime_start_inclusive: "2024-08-01T00:00:00Z"
+#            datetime_end_exclusive: "2024-08-15T00:00:00Z"
+#            reason:
+#              "This is an example of a date range exclusion for a specific file in
+#              a specific state."

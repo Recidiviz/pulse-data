@@ -1,0 +1,3 @@
+# By default Airflow searches for DAG definitions in all files under the top level DAG folder and attempts to parse any files containing the word "dag" or "airflow"
+# all of our files containing DAG definitions should be in the top level folder therefore we can ignore all files under the recidiviz subdirectory 
+recidiviz/*

@@ -1,0 +1,16 @@
+{{ components.layout_table_start() }}
+{{components.y_padding(24)}}
+{% if show_metric_section_headings %}
+<tr>
+    {{components.section_heading(metrics_section_heading)}}
+</tr>
+{% endif %}
+{% for metric in metrics %}
+<tr>
+    <td>
+        {% include "outliers_supervision_officer_supervisor/metric_card.html.jinja2" %}
+    </td>
+</tr>
+{{components.y_padding(16)}}
+{% endfor %}
+{{ components.layout_table_end() }}

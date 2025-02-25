@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DOC
+  - CYC
+  - FIELD_ASSIGNMENT_SEQ_NUM
+  - START_STATUS_SEQ_NUM
+  - SUPV_PERIOD_BEG_DT
+  - START_STATUS_CODE_LIST
+  - SUPV_PERIOD_END_DT
+  - END_STATUS_CODE_LIST
+  - LOCATION_ACRONYM
+  - CASE_TYPE_LIST
+  - BDGNO
+  - CLSTTL
+  - DEPCLS
+  - LNAME
+  - FNAME
+  - MINTL
+  - SUP_TYPE
+unused_columns:
+  - CLSTTL
+  - DEPCLS # Unused - Employee Job Code
+  - LNAME
+  - FNAME
+  - MINTL
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - DOC
+                - CYC
+                - FIELD_ASSIGNMENT_SEQ_NUM
+                - START_STATUS_SEQ_NUM
+          start_date: SUPV_PERIOD_BEG_DT
+          termination_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: SUPV_PERIOD_END_DT
+                    $options:
+                      - $literal("0")
+                      - $literal("99999999")
+                $then: SUPV_PERIOD_END_DT
+          supervision_site: LOCATION_ACRONYM
+          admission_reason:
+            $conditional:
+              - $if:
+                  $is_null: START_STATUS_CODE_LIST
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: START_STATUS_CODE_LIST
+                    $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_admission_reason
+          termination_reason:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_in:
+                        $value: SUPV_PERIOD_END_DT
+                        $options:
+                          - $literal("0")
+                          - $literal("99999999")
+                    - $not_null: SUPV_PERIOD_END_DT
+                    - $is_null: END_STATUS_CODE_LIST
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: END_STATUS_CODE_LIST
+                    $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_termination_reason
+          supervision_level:
+            $enum_mapping:
+              $raw_text: SUP_TYPE
+              $mappings:
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - "ESC" # Absconder
+                StateSupervisionLevel.UNASSIGNED:
+                  - "IAP" # Initial Assessment Phase
+                  - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "PSI" # Pre Sentence Investigation
+                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
+                  - "EMP" # Electronic Monitoring
+                StateSupervisionLevel.MINIMUM:
+                  - "OOI" # Low Risk (low risk on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "NOI" # No Contract Monitoring Level I
+                  - "MIN" # Minimum
+                  - "MSC" # Automated Minimum
+                StateSupervisionLevel.MEDIUM:
+                  - "OII" # Moderate Risk (moderate/low or moderate on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "NII" # No Contract Monitoring Level II
+                  - "REG" # Regular Supervision
+                StateSupervisionLevel.HIGH:
+                  - "III" # High Risk (high risk on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "ENH" # Enhanced
+                StateSupervisionLevel.MAXIMUM:
+                  - "ISP" # Intensive Supervision (specialized programming + very high risk on ORAS)
+                  - "CPP" # Residential Community Placement (treatment)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "RTF" # Residential Treatment facility
+                  - "VCT" # Residential Violator Center
+                StateSupervisionLevel.IN_CUSTODY:
+                  - "ITC" # Institutional Treatment Center
+                  - "JAL" # Incarceration/Jail
+                  - "PRS" # Incarceration/Prison
+                  - "SHK" # 120 Day Incarceration
+          supervising_officer_staff_external_id: BDGNO
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: BDGNO
+                $then: $literal("US_MO_STAFF_BADGE_NUMBER")
+          case_type_entries:
+            - $foreach:
+                $iterable: CASE_TYPE_LIST
+                $result:
+                  StateSupervisionCaseTypeEntry:
+                    case_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $custom_parser: us_mo_custom_enum_parsers.parse_case_types

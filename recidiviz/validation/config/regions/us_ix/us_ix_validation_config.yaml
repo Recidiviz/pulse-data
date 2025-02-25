@@ -1,0 +1,131 @@
+# Configuration for which validations to run for region US_IX.
+
+region_code: US_IX
+# TODO(#10703): Move the exclusions / overrides in this validation config over to the
+# US_ID validation config once US_IX is merged into US_ID
+dev_mode: False
+exclusions:
+  - validation_name: incarceration_population_by_facility_external_comparison
+    exclusion_type: BROKEN
+    exclusion_reason:
+      TODO(#27607) the new data from atlas didn't quite match up with the existing
+      external validation data we had. rather than remove this validation, we are
+      migrating it and marking it as broken with a todo.
+  - validation_name: population_projection_monthly_population_external_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      TODO(#16974), TODO(#15942) we haven't launched population projections
+      against Atlas yet (due to an outstanding question about paid beds), so US_IX can't
+      be incorporated into this validation yet.
+  - validation_name: supervision_termination_person_level_external_comparison
+    exclusion_type: BROKEN
+    exclusion_reason:
+      TODO(#27607), TODO(#6126) the new data from atlas didn't quite match up with the
+      existing external validation data we had. rather than remove this validation, we
+      are migrating it and marking it as broken with a todo.
+  - validation_name: supervision_start_person_level_external_comparison
+    exclusion_type: BROKEN
+    exclusion_reason:
+      TODO(#27607) the new data from atlas didn't quite match up with the existing
+      external validation data we had. rather than remove this validation, we are
+      migrating it and marking it as broken with a todo.
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28863) Hydrate new sentencing entities
+max_allowed_error_overrides:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    hard_max_allowed_error_override: 0.165
+    override_reason:
+      TODO(#20470) - Fixed state specific condition but will need additional
+      investigation after that.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
+    hard_max_allowed_error_override: 0.04
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
+  - validation_name: incarceration_release_person_level_external_comparison
+    hard_max_allowed_error_override: 0.375
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
+  - validation_name: incarceration_admission_person_level_external_comparison
+    hard_max_allowed_error_override: 0.61
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
+  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
+    hard_max_allowed_error_override: 0.025
+    override_reason:
+      TODO(#23970) Error rate should not have increased from 1.96% to 2.02% on 9/8/23
+      because the external data is not changing. Could have to do with recent IP work.
+      Needs to be investigated.
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    hard_max_allowed_error_override: 0.27
+    override_reason: We're expecting this is standard variation.
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    hard_max_allowed_error_override: 0.27
+    override_reason: We're expecting this is standard variation.
+  - validation_name: state_supervision_period_by_termination_date_stable_counts
+    hard_max_allowed_error_override: .27
+    override_reason: We're expecting this is standard variation.
+  - validation_name: outliers_staff_count_percent_change_intermonth
+    hard_max_allowed_error_override: .04
+    override_reason: We're expecting this is standard variation.
+num_allowed_rows_overrides:
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 2000
+    override_reason: TODO(#25369) - Needs investigation.  See ticket for context.
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    hard_num_allowed_rows_override: 35000
+    override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    hard_num_allowed_rows_override: 11550
+    override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
+  - validation_name: incarceration_commitments_subset_of_admissions
+    hard_num_allowed_rows_override: 1
+    override_reason:
+      TODO(#20470) - Needs investigation. As of 2/24/23, just one failing row and it's
+      an admission from decades ago
+  - validation_name: sentences_undefined_relationship
+    hard_num_allowed_rows_override: 150
+    override_reason: Needs investigation. Current failing level as of 2/24/23 is 69 rows #TODO(#19047)
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 2750
+    override_reason: TODO(#23972) - Addressed known issues, ticket to investigate remaining issues.
+  - validation_name: incarceration_release_reason_no_release_date
+    hard_num_allowed_rows_override: 10
+    override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 40000
+    override_reason:
+      TODO(#20472) - Half of the issue is coming from ingested charges that aren't
+      attached to an ingested sentence (20472 is the ticket to fix). The other half of
+      the issue is from ingested early discharges that are attached to dummy sentences
+      since we don't have sentence info.
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 60
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 200
+    override_reason: TODO(#21246) To investigate
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 3000
+    override_reason: Current failing level as of 4/20/23 is 2,067 rows (0.8%)
+  - validation_name: location_metadata_human_readable_location_name
+    hard_num_allowed_rows_override: 1
+    override_reason: In Atlas, there's one location who's name is just 0
+  - validation_name: invalid_release_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 10
+    override_reason: TODO(#21922) Just a few cases, to investigate later
+  - validation_name: invalid_admission_reason_and_pfi
+    hard_num_allowed_rows_override: 9
+    override_reason: TODO(#22279) Just a few cases, to investigate later
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 8
+    override_reason: TODO(#23965) Just a few cases, to investigate later
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 100
+    override_reason:
+      TODO(#23965) Current failing level as of 11/10/23 is 38 rows. Likely the same root
+      cause as incarceration_admission_after_open_period failure. Increase in failing
+      rows after the custody level revision. Needs to be investigated.

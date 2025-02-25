@@ -1,0 +1,181 @@
+Facility,Race,Sex,Population
+MSP,Black,Male,1370
+MSP,Black,Female,0
+MSP,White,Male,638
+MSP,White,Female,0
+MSP,Hispanic,Male,15
+MSP,Hispanic,Female,0
+MSP,Native American,Male,0
+MSP,Native American,Female,0
+MSP,Asian,Male,4
+MSP,Asian,Female,0
+MSP,Data Unavailable,Male,0
+MSP,Data Unavailable,Female,0
+CMCF,Black,Male,1326
+CMCF,Black,Female,352
+CMCF,White,Male,916
+CMCF,White,Female,488
+CMCF,Hispanic,Male,24
+CMCF,Hispanic,Female,5
+CMCF,Native American,Male,5
+CMCF,Native American,Female,2
+CMCF,Asian,Male,7
+CMCF,Asian,Female,0
+CMCF,Data Unavailable,Male,0
+CMCF,Data Unavailable,Female,0
+SMCI,Black,Male,1562
+SMCI,Black,Female,0
+SMCI,White,Male,810
+SMCI,White,Female,0
+SMCI,Hispanic,Male,19
+SMCI,Hispanic,Female,0
+SMCI,Native American,Male,4
+SMCI,Native American,Female,0
+SMCI,Asian,Male,8
+SMCI,Asian,Female,0
+SMCI,Data Unavailable,Male,0
+SMCI,Data Unavailable,Female,0
+County Jails (approved),Black,Male,382
+County Jails (approved),Black,Female,2
+County Jails (approved),White,Male,433
+County Jails (approved),White,Female,11
+County Jails (approved),Hispanic,Male,4
+County Jails (approved),Hispanic,Female,0
+County Jails (approved),Native American,Male,0
+County Jails (approved),Native American,Female,0
+County Jails (approved),Asian,Male,2
+County Jails (approved),Asian,Female,0
+County Jails (approved),Data Unavailable,Male,1
+County Jails (approved),Data Unavailable,Female,0
+County Jails (unapproved),Black,Male,380
+County Jails (unapproved),Black,Female,11
+County Jails (unapproved),White,Male,294
+County Jails (unapproved),White,Female,26
+County Jails (unapproved),Hispanic,Male,7
+County Jails (unapproved),Hispanic,Female,0
+County Jails (unapproved),Native American,Male,0
+County Jails (unapproved),Native American,Female,0
+County Jails (unapproved),Asian,Male,1
+County Jails (unapproved),Asian,Female,0
+County Jails (unapproved),Data Unavailable,Male,9
+County Jails (unapproved),Data Unavailable,Female,0
+Youthful Offender Facility,Black,Male,10
+Youthful Offender Facility,Black,Female,1
+Youthful Offender Facility,White,Male,2
+Youthful Offender Facility,White,Female,0
+Youthful Offender Facility,Hispanic,Male,0
+Youthful Offender Facility,Hispanic,Female,0
+Youthful Offender Facility,Native American,Male,0
+Youthful Offender Facility,Native American,Female,0
+Youthful Offender Facility,Asian,Male,0
+Youthful Offender Facility,Asian,Female,0
+Youthful Offender Facility,Data Unavailable,Male,0
+Youthful Offender Facility,Data Unavailable,Female,0
+Private Prisons,Black,Male,2571
+Private Prisons,Black,Female,0
+Private Prisons,White,Male,885
+Private Prisons,White,Female,0
+Private Prisons,Hispanic,Male,22
+Private Prisons,Hispanic,Female,0
+Private Prisons,Native American,Male,8
+Private Prisons,Native American,Female,0
+Private Prisons,Asian,Male,2
+Private Prisons,Asian,Female,0
+Private Prisons,Data Unavailable,Male,1
+Private Prisons,Data Unavailable,Female,0
+Regional Correctional Facilities,Black,Male,2465
+Regional Correctional Facilities,Black,Female,48
+Regional Correctional Facilities,White,Male,1280
+Regional Correctional Facilities,White,Female,75
+Regional Correctional Facilities,Hispanic,Male,55
+Regional Correctional Facilities,Hispanic,Female,2
+Regional Correctional Facilities,Native American,Male,7
+Regional Correctional Facilities,Native American,Female,0
+Regional Correctional Facilities,Asian,Male,14
+Regional Correctional Facilities,Asian,Female,0
+Regional Correctional Facilities,Data Unavailable,Male,0
+Regional Correctional Facilities,Data Unavailable,Female,0
+Community Work Centers,Black,Male,140
+Community Work Centers,Black,Female,15
+Community Work Centers,White,Male,75
+Community Work Centers,White,Female,85
+Community Work Centers,Hispanic,Male,2
+Community Work Centers,Hispanic,Female,0
+Community Work Centers,Native American,Male,0
+Community Work Centers,Native American,Female,0
+Community Work Centers,Asian,Male,1
+Community Work Centers,Asian,Female,0
+Community Work Centers,Data Unavailable,Male,0
+Community Work Centers,Data Unavailable,Female,0
+Community Trusties,Black,Male,0
+Community Trusties,Black,Female,0
+Community Trusties,White,Male,0
+Community Trusties,White,Female,0
+Community Trusties,Hispanic,Male,0
+Community Trusties,Hispanic,Female,0
+Community Trusties,Native American,Male,0
+Community Trusties,Native American,Female,0
+Community Trusties,Asian,Male,0
+Community Trusties,Asian,Female,0
+Community Trusties,Data Unavailable,Male,0
+Community Trusties,Data Unavailable,Female,0
+TVC,Black,Male,98
+TVC,Black,Female,0
+TVC,White,Male,35
+TVC,White,Female,0
+TVC,Hispanic,Male,0
+TVC,Hispanic,Female,0
+TVC,Native American,Male,1
+TVC,Native American,Female,0
+TVC,Asian,Male,0
+TVC,Asian,Female,0
+TVC,Data Unavailable,Male,0
+TVC,Data Unavailable,Female,0
+Transitional Housing,Black,Male,3
+Transitional Housing,Black,Female,0
+Transitional Housing,White,Male,7
+Transitional Housing,White,Female,1
+Transitional Housing,Hispanic,Male,1
+Transitional Housing,Hispanic,Female,0
+Transitional Housing,Native American,Male,0
+Transitional Housing,Native American,Female,0
+Transitional Housing,Asian,Male,0
+Transitional Housing,Asian,Female,0
+Transitional Housing,Data Unavailable,Male,0
+Transitional Housing,Data Unavailable,Female,0
+Pending File Review,Black,Male,54
+Pending File Review,Black,Female,3
+Pending File Review,White,Male,50
+Pending File Review,White,Female,4
+Pending File Review,Hispanic,Male,2
+Pending File Review,Hispanic,Female,0
+Pending File Review,Native American,Male,0
+Pending File Review,Native American,Female,0
+Pending File Review,Asian,Male,2
+Pending File Review,Asian,Female,0
+Pending File Review,Data Unavailable,Male,0
+Pending File Review,Data Unavailable,Female,0
+RRP,Black,Male,6
+RRP,Black,Female,0
+RRP,White,Male,13
+RRP,White,Female,7
+RRP,Hispanic,Male,0
+RRP,Hispanic,Female,0
+RRP,Native American,Male,0
+RRP,Native American,Female,0
+RRP,Asian,Male,0
+RRP,Asian,Female,0
+RRP,Data Unavailable,Male,0
+RRP,Data Unavailable,Female,0
+Court Order,Black,Male,75
+Court Order,Black,Female,5
+Court Order,White,Male,57
+Court Order,White,Female,4
+Court Order,Hispanic,Male,0
+Court Order,Hispanic,Female,0
+Court Order,Native American,Male,0
+Court Order,Native American,Female,0
+Court Order,Asian,Male,0
+Court Order,Asian,Female,0
+Court Order,Data Unavailable,Male,0
+Court Order,Data Unavailable,Female,0

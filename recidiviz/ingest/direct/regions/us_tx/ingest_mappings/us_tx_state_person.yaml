@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to the
+# corresponding ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - TDCJ_Numbers
+  - SID_Number
+  - Address
+  - FirstName
+  - MiddleName
+  - LastName
+  - Suffix
+  - Phone_Number
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+      - $foreach:
+          $iterable: TDCJ_Numbers
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_TX_TDCJ")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
+        $name_suffix: Suffix
+    current_address: Address
+    current_phone_number: Phone_Number

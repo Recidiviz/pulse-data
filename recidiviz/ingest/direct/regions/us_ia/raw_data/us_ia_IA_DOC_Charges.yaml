@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Charges
+file_description: |-
+  This file contains charge information
+data_classification: source
+primary_key_cols:
+  - ChargeId
+columns:
+  - name: ChargeId
+    description: |-
+      Charge id
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: OffenseDt
+    field_type: datetime
+    description: |-
+      Date of offense
+  - name: ArrestDt
+    field_type: datetime
+    description: |-
+      Date of arrest
+  - name: TDD
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: TDDDisplay
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MPD
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: MPDDisplay
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: OpenSDD
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: SDD
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: JurisdictionType
+    description: |-
+      Type of jurisdiction
+  - name: JurisdictionId
+    description: |-
+      Jurisdiction Id
+  - name: Jurisdiction
+    description: |-
+      Jurisdiction
+  - name: CauseNumber
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: ChargeCount
+    description: |-
+      Charge count
+  - name: OriginalCrimeCdId
+    description: |-
+      Original crime code id
+  - name: ConvictingCrimeCdId
+    description: |-
+      convicting crime code id
+  - name: DnaApplicable
+    description: |-
+      DNA applicable
+  - name: DnaApplicableChangeReason
+    description: |-
+      DNA applicable change reason
+  - name: EnhancedCrimeCdId
+    description: |-
+      Enhanced crime code id
+  - name: WaivedMandatoryMinimum
+    description: |-
+      Waived mandatory minimum
+  - name: MandatoryMinimumCrimeCdId
+    description: |-
+      Mandatory minimum crime code id
+  - name: EndReasonId
+    description: |-
+      End reason id
+  - name: EndReason
+    description: |-
+      End reason
+  - name: MostSeriousCharge
+    description: |-
+      Most serious charge
+  - name: LeadCharge
+    description: |-
+      Lead charge
+  - name: Active
+    description: |-
+      active
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered

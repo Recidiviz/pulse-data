@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_alert_types
+file_description: |-
+  A reference file for decoding the alert types that appear in recidiviz_elite_offender_alerts.
+data_classification: source
+primary_key_cols:
+  - Type
+columns:
+  - name: Type
+    description: |-
+      The Alert Type, as found in the ALERT_TYPE column of recidiviz_elite_offender_alerts.
+  - name: Description
+    description: |-
+      A plain English description of the alert type.
+update_cadence: IRREGULAR
+is_code_file: True

@@ -1,0 +1,24 @@
+source: "Alabama Department of Corrections"
+report_type: "Monthly Statistical Report"
+report_instance: "September 2020"
+publish_date: "2020-11-20"
+url: "http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf"
+assignee: "Jane Doe"
+tables:
+  - file: "table.csv"
+    date_range:
+      fixed:
+        type: "RANGE"
+        input:
+          - "2020-09-01"
+          - "2020-10-01"
+    system: "CORRECTIONS"
+    metric:
+      supervision_starts:
+        measurement_type: "DELTA"
+        supervision_type: "PROBATION"
+    value_column:
+      column_name: "Total"
+    location:
+      state: "US_AL"
+    methodology: "none"

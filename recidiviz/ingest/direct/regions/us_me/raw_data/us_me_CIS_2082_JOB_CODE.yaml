@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CIS_2082_JOB_CODE
+file_description: |-
+  Lists the codes for jobs. Used to get employer information by joining to
+  CIS_208_JOB_DEFN.CIS_2082_COMM_AGCY_CD.
+data_classification: source
+primary_key_cols:
+  - JOB_CD
+columns:
+  - name: JOB_CD
+    description: Primary key of this table.
+  - name: JOB_DESC
+    description: Description of the job.
+  - name: ADULT_IND
+    description: An indicator for if the job is suitable for adults.
+  - name: JUVENILE_IND
+    description: An indicator for if the job is suitable for juveniles.
+  - name: CIS_2081_JOB_CD
+    description: Maps to CIS_2081, which we don't receive.
+  - name: CIS_908_CCS_LOCATION_ID
+    description: Maps to CIS_908 to get location information.
+  - name: SYS_ROW_IND
+    description: Likely unused.
+  - name: SYSTEM_REF_TX
+    description: Likely unused.
+  - name: SYSTEM_REF_COMMENTS_TX
+    description: Likely unused.
+  - name: LOGICAL_DELETE_IND
+    description: Y if this row should be considered deleted.
+  - name: CREATED_BY_TX
+    description: Who created this row.
+    is_pii: True
+  - name: CREATED_ON_DATE
+    description: When the row was created
+    field_type: datetime
+  - name: MODIFIED_BY_TX
+    description: The user who last modified the row.
+    is_pii: True
+  - name: MODIFIED_ON_DATE
+    description: The last time the row was modified.
+    field_type: datetime

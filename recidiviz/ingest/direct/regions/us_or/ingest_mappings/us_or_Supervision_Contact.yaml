@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - CASELOAD
+  - NEXT_NUMBER
+  - CHRONO_DATE
+  - CHRONO_WHO
+  - CHRONO_WHAT
+  - CHRONO_TYPE
+  - MEASURABLE
+unused_columns:
+  - CHRONO_WHO # Filtered to always be "O" (Adult on Supervision)
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - CASELOAD
+                - NEXT_NUMBER
+          contacting_staff_external_id: CASELOAD
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CASELOAD
+                $then: $literal("US_OR_CASELOAD")
+          contact_date: CHRONO_DATE
+          contact_type: $literal_enum(StateSupervisionContactType.DIRECT)
+          contact_method:
+            $enum_mapping:
+              $raw_text: CHRONO_TYPE
+              $custom_parser: us_or_custom_enum_parsers.supervision_contact_method
+          status: $literal_enum(StateSupervisionContactStatus.COMPLETED)
+          location:
+            $enum_mapping:
+              $raw_text: CHRONO_TYPE
+              $custom_parser: us_or_custom_enum_parsers.supervision_contact_location
+          supervision_contact_metadata:
+            $json_dict:
+              MEASURABLE: MEASURABLE
+              KEYWORD: CHRONO_WHAT

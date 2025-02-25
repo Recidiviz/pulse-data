@@ -1,0 +1,16 @@
+manifest_language: 1.0.0
+input_columns:
+  - ID_1
+  - TYPE_1
+  - ID_2
+  - TYPE_2
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id: ID_1
+          id_type: TYPE_1
+      - FakePersonExternalId:
+          external_id: ID_2
+          id_type: TYPE_2

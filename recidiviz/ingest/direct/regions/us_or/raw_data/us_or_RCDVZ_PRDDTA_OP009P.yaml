@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP009P
+file_description: |-
+  Admission and Release. Adult in Custody (AIC_ admission and release cycle information. Includes information on the 
+  period and type of supervision given an AIC. Indicates reason for release from a supervision status.
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - CUSTODY_NUMBER
+  - ADMISSION_NUMBER
+columns:
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for record.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_RECORD_KEY
+  - name: CUSTODY_NUMBER
+    description: |-
+      Prior adjudicated and discharged felony convictions
+  - name: ADMISSION_NUMBER
+    description: |-
+      Incremental unique status changes.
+  - name: ADMISSION_LOCATION
+    description: |-
+      Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
+  - name: ADMISSION_DATE
+    field_type: datetime
+    description: |-
+      Date of current incarceration admission.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: PREVIOUS_STATUS
+    description: |-
+      Previous status of incarceration.
+    known_values: [] #TODO(#17148): Fill in with dataname values from OR
+  - name: ADMISSION_FROM_LOCATION
+    description: |-
+      Location of previous period, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
+  - name: CURRENT_STATUS
+    description: |-
+      Current status of incarceration.
+    known_values: []
+  - name: NEW_CRIME_DATE
+    description: |-
+      Date of a new crime, if any. Not used.
+  - name: LEAVE_SCHEDULED_DATE
+    description: |-
+      Not used.
+  - name: RELEASE_DATE
+    field_type: datetime
+    description: |-
+      Date of status release.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: RELEASE_REASON
+    description: |-
+      Reason for status release.
+    known_values: [] #TODO(#17148): Fill in with values from OR
+  - name: VIOLATION_TYPE
+    description: |-
+      Not used.
+  - name: RELEASE_TO_LOCATION
+    description: |-
+      Location where released to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
+
+table_relationships:
+  - foreign_table: RCDVZ_PRDDTA_OP970P
+    join_logic:
+      - RCDVZ_PRDDTA_OP970P.RECORD_KEY = RCDVZ_PRDDTA_OP009P.RECORD_KEY

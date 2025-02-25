@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: table5
+file_description: |-
+  table5 file description
+data_classification: source
+primary_key_cols:
+  - PERSON_ID
+columns:
+  - name: PERSON_ID
+    description: |-
+      PERSON_ID description
+  - name: TASK_DATE
+    description: |-
+      TASK_DATE description
+    field_type: datetime
