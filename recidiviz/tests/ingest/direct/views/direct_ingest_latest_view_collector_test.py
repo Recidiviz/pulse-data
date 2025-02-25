@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -152,7 +153,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             separator="@",
             custom_line_terminator=None,
             ignore_quotes=False,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.ONE_WEEK_INCREMENTAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
@@ -208,7 +209,8 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
 
     def test_build_historical_file_latest_view(self) -> None:
         raw_file_config = attr.evolve(
-            self.raw_file_config, always_historical_export=True
+            self.raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         view = DirectIngestRawDataTableLatestViewBuilder(
             region_code="us_xx",
@@ -283,7 +285,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         # Columns with no documentation
         raw_file_config = attr.evolve(
             self.raw_file_config,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             columns=[
                 RawTableColumnInfo(
                     name="col1",
@@ -317,7 +319,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         # Config with no columns
         raw_file_config = attr.evolve(
             self.raw_file_config,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             columns=[],
             primary_key_cols=[],
         )

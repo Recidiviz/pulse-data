@@ -122,6 +122,35 @@ class RawDataFileUpdateCadence(Enum):
                 )
 
 
+class RawDataExportLookbackWindow(Enum):
+    """Defines the lookback window for each raw data file, or how much historical data we
+    expect to be in a typical raw data file a state sends to us. Generally, we prefer
+    states to send us full historicals. If a raw file tag is an incremental file, that
+    likely means that either the file or underlying data table itself has an audit
+    column that reliably allows the states to generate date-bounded diffs.
+    """
+
+    # We expect each raw data file to include a full table export, and will never change
+    # to incremental exports.
+    FULL_HISTORICAL_LOOKBACK = "FULL_HISTORICAL_LOOKBACK"
+
+    # We expect each raw data file to ONLY include the last two weeks worth of data for this
+    # file tag. This means that this file tag or table itself likely has some sort of
+    # audit column that allows the state to generate date-bounded diffs.
+    TWO_WEEK_INCREMENTAL_LOOKBACK = "TWO_WEEK_INCREMENTAL_LOOKBACK"
+
+    # We expect each raw data file to ONLY include the last weeks worth of data for this file
+    # tag. This means that this file tag or table itself likely has some sort of audit
+    # column that allows the state to generate date-bounded diffs.
+    ONE_WEEK_INCREMENTAL_LOOKBACK = "ONE_WEEK_INCREMENTAL_LOOKBACK"
+
+    # We expect each raw data file to only include recent data for this file tag, but
+    # we're not exactly sure how much historical data is included with each file. This
+    # means that this file tag or table itself likely has some sort of audit column that
+    # allows the state to generate date-bounded diffs.
+    UNKNOWN_INCREMENTAL_LOOKBACK = "UNKNOWN_INCREMENTAL_LOOKBACK"
+
+
 @attr.s
 class ColumnEnumValueInfo:
     # The literal enum value
@@ -507,8 +536,11 @@ class DirectIngestRawFileDefaultConfig:
     default_separator: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # The default setting for whether to ignore quotes in files from this region
     default_ignore_quotes: bool = attr.ib(validator=attr_validators.is_bool)
-    # The default setting for whether to always treat raw files as historical exports
-    default_always_historical_export: bool = attr.ib(validator=attr_validators.is_bool)
+    # The default export lookback window for a raw data file, or how much historical
+    # data we expect to be included in a typical raw data file a state sends to us
+    default_export_lookback_window: RawDataExportLookbackWindow = attr.ib(
+        validator=attr.validators.in_(RawDataExportLookbackWindow)
+    )
     # The default value for whether tables in a region have valid primary keys
     default_no_valid_primary_keys: bool = attr.ib(validator=attr_validators.is_bool)
     # The default value for the expected ingest update cadence for files from this region
@@ -588,9 +620,11 @@ class DirectIngestRawFileConfig:
     #     123|456789|2|He said, "I will be there.|ASDF
     ignore_quotes: bool = attr.ib()
 
-    # If true, means that we **always** will get a historical version of this raw data file from the state and will
-    # never change to incremental uploads (for example, because we need to detect row deletions).
-    always_historical_export: bool = attr.ib()
+    # The export lookback window for a raw data file, or how much historical data we
+    # expect to be included in a typical file for this file tag
+    export_lookback_window: RawDataExportLookbackWindow = attr.ib(
+        validator=attr.validators.in_(RawDataExportLookbackWindow)
+    )
 
     # TODO(#28239) remove this once raw data import dag is fully rolled out
     # Defines the number of rows in each chunk we will read one at a time from the
@@ -824,6 +858,13 @@ class DirectIngestRawFileConfig:
 
         return DEFAULT_CSV_LINE_TERMINATOR
 
+    @property
+    def always_historical_export(self) -> bool:
+        return (
+            self.export_lookback_window
+            == RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK
+        )
+
     def caps_normalized_col(self, col_name: str) -> Optional[str]:
         """If the provided column name has a case-insensitive match in the columns list,
         returns the proper capitalization of the column, as listed in the configuration
@@ -971,7 +1012,7 @@ class DirectIngestRawFileConfig:
         default_line_terminator: Optional[str],
         default_update_cadence: RawDataFileUpdateCadence,
         default_ignore_quotes: bool,
-        default_always_historical_export: bool,
+        default_export_lookback_window: RawDataExportLookbackWindow,
         default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: bool,
         default_import_blocking_validation_exemptions: Optional[
@@ -1098,9 +1139,14 @@ class DirectIngestRawFileConfig:
         custom_line_terminator = file_config_dict.pop_optional(
             "custom_line_terminator", str
         )
-        always_historical_export = file_config_dict.pop_optional(
-            "always_historical_export", bool
-        )
+        export_lookback_window = None
+        if export_lookback_window_yaml := file_config_dict.pop_optional(
+            "export_lookback_window", str
+        ):
+            export_lookback_window = RawDataExportLookbackWindow(
+                export_lookback_window_yaml
+            )
+
         is_code_file = file_config_dict.pop_optional("is_code_file", bool) or False
         no_valid_primary_keys = file_config_dict.pop_optional(
             "no_valid_primary_keys", bool
@@ -1162,10 +1208,10 @@ class DirectIngestRawFileConfig:
             ignore_quotes=(
                 ignore_quotes if ignore_quotes is not None else default_ignore_quotes
             ),
-            always_historical_export=(
-                always_historical_export
-                if always_historical_export is not None
-                else default_always_historical_export
+            export_lookback_window=(
+                export_lookback_window
+                if export_lookback_window is not None
+                else default_export_lookback_window
             ),
             no_valid_primary_keys=(
                 no_valid_primary_keys
@@ -1282,8 +1328,9 @@ class DirectIngestRegionRawFileConfig:
         default_update_cadence_str = default_contents.pop("default_update_cadence", str)
         default_update_cadence = RawDataFileUpdateCadence(default_update_cadence_str)
         default_ignore_quotes = default_contents.pop("default_ignore_quotes", bool)
-        default_always_historical_export = default_contents.pop(
-            "default_always_historical_export", bool
+
+        default_export_lookback_window = RawDataExportLookbackWindow(
+            default_contents.pop("default_export_lookback_window", str)
         )
         default_no_valid_primary_keys = default_contents.pop(
             "default_no_valid_primary_keys", bool
@@ -1314,7 +1361,7 @@ class DirectIngestRegionRawFileConfig:
             default_line_terminator=default_line_terminator,
             default_ignore_quotes=default_ignore_quotes,
             default_infer_columns_from_config=default_infer_columns_from_config,
-            default_always_historical_export=default_always_historical_export,
+            default_export_lookback_window=default_export_lookback_window,
             default_no_valid_primary_keys=default_no_valid_primary_keys,
             default_update_cadence=default_update_cadence,
             default_import_blocking_validation_exemptions=default_import_blocking_validation_exemptions,
@@ -1411,7 +1458,7 @@ class DirectIngestRegionRawFileConfig:
                 default_line_terminator=default_config.default_line_terminator,
                 default_update_cadence=default_config.default_update_cadence,
                 default_ignore_quotes=default_config.default_ignore_quotes,
-                default_always_historical_export=default_config.default_always_historical_export,
+                default_export_lookback_window=default_config.default_export_lookback_window,
                 default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
                 default_infer_columns_from_config=default_config.default_infer_columns_from_config,
                 default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,

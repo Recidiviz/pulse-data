@@ -75,8 +75,8 @@ def initialize_state_directories(state_code: str) -> None:
                 f"default_update_cadence: IRREGULAR\n"
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_ignore_quotes value\n",
                 "default_ignore_quotes: False\n",
-                f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_always_historical_export value\n",
-                "default_always_historical_export: False\n",
+                f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_export_lookback_window value\n",
+                "default_export_lookback_window: UNKNOWN_INCREMENTAL_LOOKBACK\n",
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_no_valid_primary_keys value\n",
                 "default_no_valid_primary_keys: False\n",
                 f"# {PLACEHOLDER_TO_DO_STRING}: Double-check the default_infer_columns_from_config value\n",

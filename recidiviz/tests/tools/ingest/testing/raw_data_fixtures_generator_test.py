@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -107,7 +108,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             encoding="UTF-8",
             separator="|",
             ignore_quotes=True,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.UNKNOWN_INCREMENTAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=2500,
             infer_columns_from_config=False,
@@ -289,7 +290,7 @@ FROM filtered_rows
     def test_build_query_for_raw_table_historical_export(self) -> None:
         self.standard_raw_table_dependency_config.raw_file_config = attr.evolve(
             self.standard_raw_table_dependency_config.raw_file_config,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         fixtures_generator = self._build_raw_data_fixtures_generator(
             root_entity_external_ids=["123"]

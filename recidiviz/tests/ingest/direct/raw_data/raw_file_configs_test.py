@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     ImportBlockingValidationExemption,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -627,7 +628,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             encoding="UTF-8",
             separator=",",
             ignore_quotes=False,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
@@ -790,7 +791,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 )
             ],
             no_valid_primary_keys=True,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.UNKNOWN_INCREMENTAL_LOOKBACK,
         )
 
         self.assertTrue(config.is_exempt_from_raw_data_pruning())
@@ -812,7 +813,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 )
             ],
             no_valid_primary_keys=True,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
 
         self.assertTrue(config.is_exempt_from_raw_data_pruning())
@@ -835,7 +836,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 )
             ],
             primary_key_cols=[],
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
 
         self.assertFalse(config.is_exempt_from_raw_data_pruning())
@@ -859,7 +860,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             ],
             primary_key_cols=["Col1"],
             no_valid_primary_keys=False,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
         )
 
         self.assertTrue(config.is_exempt_from_raw_data_pruning())
@@ -879,7 +880,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 )
             ],
             no_valid_primary_keys=True,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.ONE_WEEK_INCREMENTAL_LOOKBACK,
         )
         self.assertFalse(config.always_historical_export)
 
@@ -1244,7 +1245,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             encoding="UTF-8",
             separator=",",
             ignore_quotes=False,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
@@ -1655,7 +1656,10 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual("UTF-8", default_config.default_encoding)
         self.assertEqual(",", default_config.default_separator)
         self.assertEqual(False, default_config.default_ignore_quotes)
-        self.assertEqual(False, default_config.default_always_historical_export)
+        self.assertEqual(
+            RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
+            default_config.default_export_lookback_window,
+        )
         self.assertEqual("‡\n", default_config.default_line_terminator)
         self.assertEqual(False, default_config.default_no_valid_primary_keys)
         self.assertTrue(
@@ -1686,8 +1690,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             default_config.default_separator,
         )
         self.assertEqual(
-            simple_file_config.always_historical_export,
-            default_config.default_always_historical_export,
+            simple_file_config.export_lookback_window,
+            default_config.default_export_lookback_window,
         )
         self.assertEqual(
             simple_file_config.no_valid_primary_keys,
@@ -1748,8 +1752,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             "tagFullHistoricalExport"
         ]
         self.assertNotEqual(
-            file_config.always_historical_export,
-            default_config.default_always_historical_export,
+            file_config.export_lookback_window,
+            default_config.default_export_lookback_window,
         )
         self.assertTrue(file_config.always_historical_export)
 

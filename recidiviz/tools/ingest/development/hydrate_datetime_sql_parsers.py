@@ -194,7 +194,7 @@ def update_parsers_in_region(
                 default_encoding=default_config.default_encoding,
                 default_separator=default_config.default_separator,
                 default_ignore_quotes=default_config.default_ignore_quotes,
-                default_always_historical_export=default_config.default_always_historical_export,
+                default_export_lookback_window=default_config.default_export_lookback_window,
                 default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
                 default_line_terminator=default_config.default_line_terminator,
                 default_update_cadence=default_config.default_update_cadence,

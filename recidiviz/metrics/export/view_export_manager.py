@@ -466,11 +466,12 @@ def export_views_with_exporters(
     logging.info("Starting composite BigQuery view export.")
     all_staging_paths: List[GcsfsFilePath] = []
 
-    for export_type, view_exporter in delegate_exporter_for_output.items():
+    for export_lookback_window, view_exporter in delegate_exporter_for_output.items():
         staging_configs = [
             config.pointed_to_staging_subdirectory()
             for config in export_configs
-            if export_type in config.export_output_formats_and_validations.keys()
+            if export_lookback_window
+            in config.export_output_formats_and_validations.keys()
         ]
 
         logging.info(

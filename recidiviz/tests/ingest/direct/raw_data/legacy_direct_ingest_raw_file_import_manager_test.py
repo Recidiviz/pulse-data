@@ -1134,6 +1134,7 @@ def test_validate_all_raw_yaml_schemas() -> None:
     for region_code in get_existing_region_codes():
         region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
         for file_path in region_raw_file_config.get_raw_data_file_config_paths():
+            print(file_path)
             validate_yaml_matches_schema(
                 yaml_dict=YAMLDict.from_path(file_path),
                 json_schema_path=json_schema_path,

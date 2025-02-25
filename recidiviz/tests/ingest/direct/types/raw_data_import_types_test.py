@@ -40,6 +40,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     get_region_raw_file_config,
 )
@@ -88,7 +89,7 @@ class PreImportNormalizationTypeTest(unittest.TestCase):
             encoding=DEFAULT_CSV_ENCODING,
             separator=",",
             ignore_quotes=False,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,

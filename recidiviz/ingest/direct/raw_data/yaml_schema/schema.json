@@ -50,7 +50,13 @@
           "field_type": {
             "description": "Designates the type of data that this column contains",
             "type": "string",
-            "enum": ["string", "datetime","person_external_id", "staff_external_id", "integer"]
+            "enum": [
+              "string",
+              "datetime",
+              "person_external_id",
+              "staff_external_id",
+              "integer"
+            ]
           },
           "external_id_type": {
             "description": "If this column holds an external id field_type, designates which type it is (out of the external types defined in common/constants/state/external_id_types.py).",
@@ -103,7 +109,12 @@
                 "validation_type": {
                   "description": "Import-blocking validation type to exempt",
                   "type": "string",
-                  "enum": ["NONNULL_VALUES", "DATETIME_PARSERS", "KNOWN_VALUES", "EXPECTED_TYPE"]
+                  "enum": [
+                    "NONNULL_VALUES",
+                    "DATETIME_PARSERS",
+                    "KNOWN_VALUES",
+                    "EXPECTED_TYPE"
+                  ]
                 },
                 "exemption_reason": {
                   "description": "The reason for the exemption",
@@ -139,7 +150,6 @@
                 }
               }
             }
-
           }
         }
       },
@@ -211,9 +221,15 @@
       "description": "The line terminator character(s) used to denote CSV rows. If None, will default to the Pandas default (any combination of \n and \r).",
       "type": "string"
     },
-    "always_historical_export": {
-      "description": "If true, means that we **always** will get a historical version of this raw data file from the state and will never change to incremental uploads (for example, because we need to detect row deletions).",
-      "type": "boolean"
+    "export_lookback_window": {
+      "description": "The export lookback window for this file tag, or how much historical data we expect to be included in a typical file for this file tag",
+      "type": "string",
+      "enum": [
+        "FULL_HISTORICAL_LOOKBACK",
+        "TWO_WEEK_INCREMENTAL_LOOKBACK",
+        "ONE_WEEK_INCREMENTAL_LOOKBACK",
+        "UNKNOWN_INCREMENTAL_LOOKBACK"
+      ]
     },
     "no_valid_primary_keys": {
       "description": "If true, means that the primary keys for this raw data file are unstable over time",
@@ -254,7 +270,13 @@
           "validation_type": {
             "description": "Import-blocking validation type to exempt",
             "type": "string",
-            "enum": ["NONNULL_VALUES", "DATETIME_PARSERS", "KNOWN_VALUES", "EXPECTED_TYPE", "STABLE_HISTORICAL_RAW_DATA_COUNTS"]
+            "enum": [
+              "NONNULL_VALUES",
+              "DATETIME_PARSERS",
+              "KNOWN_VALUES",
+              "EXPECTED_TYPE",
+              "STABLE_HISTORICAL_RAW_DATA_COUNTS"
+            ]
           },
           "exemption_reason": {
             "description": "The reason for the exemption",

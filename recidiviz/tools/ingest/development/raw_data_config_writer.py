@@ -22,6 +22,7 @@ from typing import List, Optional
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     ImportBlockingValidationExemption,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -125,7 +126,7 @@ class RawDataConfigWriter:
         default_encoding: str,
         default_separator: str,
         default_ignore_quotes: bool,
-        default_always_historical_export: bool,
+        default_export_lookback_window: RawDataExportLookbackWindow,
         default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
         default_update_cadence: Optional[RawDataFileUpdateCadence],
@@ -177,8 +178,11 @@ class RawDataConfigWriter:
             config += f"ignore_quotes: {raw_file_config.ignore_quotes}\n"
         # If whether to always treat raw files as historical exports is not the default,
         # we need to include it in the config
-        if raw_file_config.always_historical_export != default_always_historical_export:
-            config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
+        if (
+            raw_file_config.export_lookback_window is not None
+            and raw_file_config.export_lookback_window != default_export_lookback_window
+        ):
+            config += f"export_lookback_window: {raw_file_config.export_lookback_window.value}\n"
         if raw_file_config.custom_line_terminator != default_line_terminator:
             # Convert newline, etc. to escape sequences
             custom_line_terminator_for_yaml = repr(

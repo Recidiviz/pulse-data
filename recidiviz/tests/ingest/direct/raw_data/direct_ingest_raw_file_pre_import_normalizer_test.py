@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -78,7 +79,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             encoding="UTF-8",
             separator=",",
             ignore_quotes=True,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,

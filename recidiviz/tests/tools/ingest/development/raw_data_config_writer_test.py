@@ -23,6 +23,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     ImportBlockingValidationExemption,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
@@ -74,7 +75,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_separator=",",
                     default_update_cadence=RawDataFileUpdateCadence.WEEKLY,
                     default_ignore_quotes=False,
-                    default_always_historical_export=False,
+                    default_export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
                     default_no_valid_primary_keys=False,
                     output_path=test_output_path,
                     raw_file_config=config,

@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnUpdateOperation,
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -117,7 +118,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
             separator="@",
             custom_line_terminator=None,
             ignore_quotes=False,
-            always_historical_export=False,
+            export_lookback_window=RawDataExportLookbackWindow.UNKNOWN_INCREMENTAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
@@ -234,7 +235,8 @@ FROM filtered_rows
 
     def test_date_and_latest_filter_historical_file_query_cannot_prune(self) -> None:
         raw_file_config = attr.evolve(
-            self.raw_file_config, always_historical_export=True
+            self.raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
@@ -292,7 +294,8 @@ FROM filtered_rows
 
     def test_no_filters_no_normalization_query(self) -> None:
         raw_file_config = attr.evolve(
-            self.raw_file_config, always_historical_export=True
+            self.raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
@@ -458,7 +461,8 @@ FROM filtered_rows
     def test_always_historical_can_prune(self, mock_is_enabled: mock.MagicMock) -> None:
         mock_is_enabled.return_value = True
         raw_file_config = attr.evolve(
-            self.raw_file_config, always_historical_export=True
+            self.raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
@@ -516,7 +520,8 @@ FROM filtered_rows
     ) -> None:
         mock_is_enabled.return_value = True
         raw_file_config = attr.evolve(
-            self.raw_file_config, always_historical_export=True
+            self.raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
         self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(

@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -91,7 +92,7 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
             supplemental_order_by_clause="",
             separator=",",
             ignore_quotes=False,
-            always_historical_export=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
@@ -112,7 +113,8 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
         )
 
         incremental_raw_file_config = attr.evolve(
-            always_historical_raw_file_config, always_historical_export=False
+            always_historical_raw_file_config,
+            export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
         )
         self.assertTrue(
             NonNullValuesColumnValidation.validation_applies_to_column(
