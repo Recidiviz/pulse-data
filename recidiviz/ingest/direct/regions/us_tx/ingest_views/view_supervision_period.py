@@ -234,7 +234,7 @@ period_info_agg AS (
 officer_cte AS (
     SELECT
         Staff_ID_Number
-    FROM `{{StaffData}}`
+    FROM `{{Staff}}`
 ),
 -- Assign row numbers for period external id
 final_periods AS (SELECT

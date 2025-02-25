@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query that generates the state staff entity using the following tables: StaffData"""
+"""Query that generates the state staff entity using the following tables: Staff"""
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -46,7 +46,7 @@ WITH
                 NULL  
         END AS MiddleName,
         Creation_Date
-    FROM {StaffData}
+    FROM {Staff}
 ),
 --Filters down to a single name per unique email 
 choose_one_name_per_email as (
