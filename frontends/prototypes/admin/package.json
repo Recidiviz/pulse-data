@@ -1,0 +1,13 @@
+{
+  "name": "prototypes-admin",
+  "description": "Admin scripts for prototype environment",
+  "scripts": {},
+  "engines": {
+    "node": "20"
+  },
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@google-cloud/firestore": "^7.10.0"
+  }
+}

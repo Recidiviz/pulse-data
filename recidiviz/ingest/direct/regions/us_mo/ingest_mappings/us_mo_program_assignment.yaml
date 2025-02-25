@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - DOC_ID
+  - CYCLE_NO
+  - ENROLLMENT_REF_ID
+  - CLASS_REF_ID
+  - ENROLLMENT_STATUS_CD
+  - REFERRAL_DT
+  - REFERRED_BY_USER_REF_ID
+  - ACTUAL_START_DT
+  - ACTUAL_EXIT_DT
+  - CLASS_TITLE
+  - LOC_ACRONYM
+unused_columns:
+  - REFERRED_BY_USER_REF_ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - CYCLE_NO
+                - ENROLLMENT_REF_ID
+                - CLASS_REF_ID
+          program_id: CLASS_TITLE
+          program_location_id: LOC_ACRONYM
+          participation_status:
+            $enum_mapping:
+              $raw_text: ENROLLMENT_STATUS_CD
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DECEASED:
+                  - DEC
+                  - DED
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - CMP
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - ADD
+                  - ADM
+                  - CBA
+                  - REL
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - CFS
+                  - CST
+                  - DET
+                  - EDN
+                  - LGL
+                  - MDL
+                  - MED
+                  - MHL
+                  - MNH
+                  - NLO
+                  - NOO
+                  - NST
+                  - PCN
+                  - STF
+                  - TAL
+                  - TRN
+                  - TRT
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - ENR
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - PND
+                  - REF
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - CAN
+                  - NEL
+                  - NEP
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - EXA
+          referral_date: REFERRAL_DT
+          start_date: ACTUAL_START_DT
+          discharge_date: ACTUAL_EXIT_DT

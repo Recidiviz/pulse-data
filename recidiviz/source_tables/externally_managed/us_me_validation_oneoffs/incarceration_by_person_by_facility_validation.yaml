@@ -1,0 +1,26 @@
+address:
+  dataset_id: us_me_validation_oneoffs
+  table_id: incarceration_by_person_by_facility_validation
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: client_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: facility_name
+    type: STRING
+    mode: NULLABLE
+  - name: custody_level
+    type: STRING
+    mode: NULLABLE
+  - name: current_status
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_incarceration
+    type: DATE
+    mode: NULLABLE
+  - name: date_of_admission
+    type: DATE
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,11 @@
+# Configuration for which validations to run for region US_XX.
+
+region_code: US_XX
+exclusions:
+  - validation_name: my_view
+    exclusion_type: BROKEN
+    exclusion_reason: This needs fixing
+  - validation_name: my_view
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: We do not have this data
+max_allowed_error_overrides: []

@@ -1,0 +1,155 @@
+# Defines services that shared across multiple apps, such as Redis and our databases
+# Run via `docker-compose up`
+
+version: "3"
+
+services:
+  case_triage_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - case_triage_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=case_triage_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=case_triage_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
+  case_triage_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: case_triage_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - case_triage_db_data:/var/lib/postgresql/data
+      - case_triage_db_socket:/var/run/postgresql/
+
+  justice_counts_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: justice_counts_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - justice_counts_db_data:/var/lib/postgresql/data
+      - justice_counts_db_socket:/var/run/postgresql/
+
+  justice_counts_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - justice_counts_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=justice_counts_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=justice_counts_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
+  operations_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: operations_user
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - operations_db_data:/var/lib/postgresql/data
+      - operations_db_socket:/var/run/postgresql/
+
+  operations_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - operations_db
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/operations_alembic.ini upgrade head
+    environment:
+      - SQLALCHEMY_DB_HOST=operations_db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_USE_SSL=0
+      - SQLALCHEMY_DB_USER=operations_user
+      - SQLALCHEMY_DB_PASSWORD=example
+
+  pathways_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: pathways_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5432:5432"
+    volumes:
+      - pathways_db_data:/var/lib/postgresql/data
+      - pathways_db_socket:/var/run/postgresql/
+
+  workflows_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: workflows_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5437:5432"
+    volumes:
+      - workflows_db_data:/var/lib/postgresql/data
+      - workflows_db_socket:/var/run/postgresql/
+
+  redis:
+    image: redis:5.0
+    ports:
+      - "6379:6379"
+
+  insights_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - insights_db
+    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database INSIGHTS
+    environment:
+      - IS_DEV=true
+
+  workflows_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - workflows_db
+    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database WORKFLOWS
+    environment:
+      - IS_DEV=true
+
+  insights_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: insights_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5438:5432"
+    volumes:
+      - insights_db_data:/var/lib/postgresql/data
+      - insights_db_socket:/var/run/postgresql/
+
+volumes:
+  case_triage_db_data:
+  case_triage_db_socket:
+  justice_counts_db_data:
+  justice_counts_db_socket:
+  operations_db_data:
+  operations_db_socket:
+  pathways_db_data:
+  pathways_db_socket:
+  workflows_db_data:
+  workflows_db_socket:
+  insights_db_data:
+  insights_db_socket:

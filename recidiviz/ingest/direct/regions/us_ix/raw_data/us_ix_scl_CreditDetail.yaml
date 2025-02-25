@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_CreditDetail
+file_description: |-
+  Table containing information on credit detail
+data_classification: source
+primary_key_cols:
+  - CreditDetailId
+columns:
+  - name: CreditDetailId
+    description: ID of credit detail
+  - name: CreditId
+    description: The ID of the credit
+  - name: CreditDetailTypeId
+    description: Type of credit detail. (joins on scl_CreditDetailType)
+  - name: SubmittedDate
+    description: Date record was submitted
+    field_type: datetime
+  - name: DurationDay
+    description: Duration in days
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Timestamp for record creation
+    field_type: datetime
+  - name: InsertUserId
+    description: User who first inserted record
+    is_pii: True
+  - name: UpdateDate
+    description: Date record last updated
+    field_type: datetime
+  - name: UpdateUserId
+    description: User who last updated record
+    is_pii: True

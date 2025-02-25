@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Security_Standards_Toxin_Id
+  - Offender_Number
+  - Conducted_Date
+  - Result_Date
+  - Security_Standard_Toxin_Type
+  - Satisfactory
+  - Sample
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    drug_screens:
+      - StateDrugScreen:
+          external_id:
+            $concat:
+              $values:
+                - $literal("COMS")
+                - Offender_Number
+                - Security_Standards_Toxin_Id
+          drug_screen_date: Conducted_Date
+          # Satisfactory is only ever Yes or NULL
+          drug_screen_result:
+            $conditional:
+              - $if:
+                  # only map drug screen result if result date is not NULL
+                  $not_null: Result_Date
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - Sample
+                          - Satisfactory
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.parse_coms_drug_screen_result
+          sample_type:
+            $enum_mapping:
+              $raw_text: Security_Standard_Toxin_Type
+              $mappings:
+                StateDrugScreenSampleType.SALIVA:
+                  - "Saliva Test"
+                StateDrugScreenSampleType.URINE:
+                  - "Urinalysis"
+                  - "Lab Urine Test"
+                StateDrugScreenSampleType.BREATH:
+                  - "Breath Analysis"
+                  - "PBT"
+                StateDrugScreenSampleType.INTERNAL_UNKNOWN:
+                  - "Admission"
+                  - "STOP Test"
+                  - "Patch"

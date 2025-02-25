@@ -1,0 +1,6 @@
+default_encoding: UTF-8
+default_separator: ","
+default_ignore_quotes: False
+default_always_historical_export: False
+default_no_valid_primary_keys: False
+default_update_cadence: WEEKLY

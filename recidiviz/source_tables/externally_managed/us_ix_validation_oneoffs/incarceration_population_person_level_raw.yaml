@@ -1,0 +1,21 @@
+address:
+  dataset_id: us_ix_validation_oneoffs
+  table_id: incarceration_population_person_level_raw
+description:
+  This contains the validation data that we received prior to `current_day_daily_summary`
+  (and long before the Atlas migration). The data was manually inserted into this
+  view.
+schema:
+  - name: region_code
+    type: STRING
+    mode: NULLABLE
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_stay
+    type: DATE
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

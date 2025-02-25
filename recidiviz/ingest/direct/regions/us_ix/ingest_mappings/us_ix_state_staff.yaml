@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - FirstName
+  - MiddleName
+  - LastName
+  - Suffix
+  - Email
+  - StaffId
+  - StaffIds
+  - employeeIds
+  - employeeCodes
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      #Employee staff Id from Atlas when there's only one Staff Id
+      - $conditional:
+          - $if:
+              $not_null: StaffId
+            $then:
+              StateStaffExternalId:
+                external_id: StaffId
+                id_type: $literal("US_IX_STAFF_ID")
+      #Employee staff Id from Atlas when there's multiple Staff Id
+      - $foreach:
+          $iterable: StaffIds
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_STAFF_ID")
+      #Employee IDs from Atlas
+      - $foreach:
+          $iterable: employeeIds
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_EMPLOYEE")
+      #Employee codes from CIS
+      - $foreach:
+          $iterable: employeeCodes
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_CIS_EMPL_CD")
+      - $conditional:
+          - $if:
+              $not_null: Email
+            $then:
+              StateStaffExternalId:
+                external_id: Email
+                id_type: $literal("US_IX_STAFF_EMAIL")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
+        $name_suffix: Suffix
+    email: Email

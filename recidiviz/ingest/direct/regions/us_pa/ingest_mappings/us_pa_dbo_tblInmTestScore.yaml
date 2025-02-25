@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_dbo_tbllmnTestScore` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Control_Number
+  - Test_Desc
+  - Test_Dt
+  - Test_Score
+  - RSTRvsd_Flg
+  - Inmate_number
+  - Test_Id
+  - AsmtVer_Num
+  - Fac_Cd
+  - ModBy_EmpNum
+  - LstMod_Dt
+  - Fab_ind
+unused_columns:
+  - Fac_Cd
+  - ModBy_EmpNum
+  - LstMod_Dt
+  - Fab_ind
+output:
+  StatePerson:
+    external_ids:
+      # PA DOC id numbers
+      - $foreach:
+          $iterable: Control_Number
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_PA_CONT")
+      # Inmate numbers
+      - $foreach:
+          $iterable: Inmate_number
+          $result:
+            StatePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_PA_INMATE")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - Control_Number
+                - Inmate_number
+                - Test_Id
+                - AsmtVer_Num
+          assessment_date: Test_Dt
+          assessment_type:
+            $enum_mapping:
+              $raw_text: Test_Desc
+              $mappings:
+                StateAssessmentType.CSSM: "CSS-M"
+                StateAssessmentType.LSIR: "LSI-R"
+                StateAssessmentType.PA_RST: "RST"
+                StateAssessmentType.STATIC_99: "ST99"
+                StateAssessmentType.TCU_DRUG_SCREEN: "TCU"
+                StateAssessmentType.HIQ: "HIQ"
+          assessment_score: Test_Score
+          assessment_metadata:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: RSTRvsd_Flg
+                    - $equal:
+                        - $literal("RST")
+                        - Test_Desc
+                $then:
+                  $json_dict:
+                    latest_version:
+                      $conditional:
+                        - $if:
+                            $in:
+                              $value: RSTRvsd_Flg
+                              $options:
+                                - $literal("1")
+                                - $literal("-1")
+                          $then: $literal("True")
+                        - $else: $literal("False")
+          assessment_class:
+            $enum_mapping:
+              $raw_text: Test_Desc
+              $mappings:
+                StateAssessmentClass.SOCIAL:
+                  - "CSS-M"
+                  - "HIQ"
+                StateAssessmentClass.RISK:
+                  - "LSI-R"
+                  - "RST"
+                StateAssessmentClass.SEX_OFFENSE: "ST99"
+                StateAssessmentClass.SUBSTANCE_ABUSE: "TCU"
+          assessment_level:
+            $conditional:
+              - $if:
+                  $equal:
+                    - Test_Desc
+                    - $literal("LSI-R")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "††"
+                        $values:
+                          - Test_Dt
+                          - Test_Desc
+                          - Test_Score
+                        $include_nulls: True
+                    $custom_parser: us_pa_custom_enum_parsers.assessment_level_mapper

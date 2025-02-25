@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_PBREVO
+file_description: |-
+  This file contains information on Parole Board Revocations.
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - SUBFILE_KEY
+columns:
+  - name: TIME_LAST_UPDATED
+    field_type: datetime
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each AIC.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OR_RECORD_KEY
+  - name: LAST_UPDATED_WHEN
+    field_type: datetime
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: OFFENSE_TYPE
+    description: |-
+      Type of offense.
+  - name: TERMINATION_DATE
+    field_type: datetime
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: TERMINATION_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: PB_SENTENCE_DATE
+    field_type: datetime
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: PB_SENTENCE_TYPE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: BAF_GROUP_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: CRIME_NUMBER
+    description: |-
+      Number of crime.
+  - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating sequence of custody.
+  - name: SUBFILE_KEY
+    description: |-
+      File key, part of composite key.
+  - name: DATE_LAST_UPDATED
+    field_type: datetime
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

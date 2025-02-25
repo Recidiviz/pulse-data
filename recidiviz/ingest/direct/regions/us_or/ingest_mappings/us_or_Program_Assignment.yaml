@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - TREAT_ID
+  - SUBFILE_KEY
+  - LOCATION
+  - EXIT_CODE
+  - REFER_DATE
+  - ENTRY_DATE
+  - EXIT_DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - TREAT_ID
+                - SUBFILE_KEY
+          program_id: TREAT_ID
+          participation_status:
+            $enum_mapping:
+              $raw_text: EXIT_CODE
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - SUCC # Successful completion
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL_WITH_DISCRETION:
+                  - MXBN # Max Benefit
+                  - ADMN # Administrative Closure
+                  - EXPI # Expired
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - ADMI # Administrative removal
+                  - UNSU # Unsuccessful Termination
+                  - ABSC # Absconded (work release)
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - MOVE #???
+                  - CHNG # Change in STTL Eligibility
+                  - AUTO # Closed by transfer program
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - RJIN # Rejected at Intake
+                  - DENL # Denial
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - REFU # AIC Refused to Enter
+                  - NOSH # No show
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  - NOTX # erroneous value
+          start_date: ENTRY_DATE
+          referral_date: REFER_DATE
+          program_location_id: LOCATION
+          discharge_date: EXIT_DATE
+          referral_metadata:
+            $json_dict:
+              EXIT_CODE: EXIT_CODE

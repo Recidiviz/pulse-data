@@ -1,0 +1,93 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Script for deleting any unmanaged views and datasets within a BigQuery project.
+
+Note that this only deletes unmanaged views and datasets from datasets that have ever
+been regularly updated by our deploy process (see
+DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED). This does not delete any views or
+datasets created during the federated CloudSQL to BQ refresh process.
+
+When run in dry-run mode (the default), will only log the unmanaged tables/datasets to
+be deleted, but will not actually delete them
+
+Example terminal execution:
+python -m recidiviz.tools.run_delete_unmanaged_views --project-id recidiviz-staging --dry-run True
+"""
+import argparse
+import logging
+
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.view_update_manager_utils import (
+    cleanup_datasets_and_delete_unmanaged_views,
+    get_managed_view_and_materialized_table_addresses_by_dataset,
+)
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    deployed_view_builders,
+)
+
+
+def main() -> None:
+    """Executes the main flow of the script."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project against which to run this script.",
+        required=True,
+    )
+    parser.add_argument(
+        "--dry-run",
+        default=True,
+        type=str_to_bool,
+        help="Runs delete in dry-run mode, only prints the views/tables it would delete.",
+    )
+    args = parser.parse_args()
+    logging.getLogger().setLevel(logging.INFO)
+
+    with local_project_id_override(args.project_id):
+        views = build_views_to_update(
+            view_source_table_datasets=get_all_source_table_datasets(),
+            candidate_view_builders=deployed_view_builders(),
+            sandbox_context=None,
+        )
+
+        dag_walker = BigQueryViewDagWalker(views)
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            bq_client=BigQueryClientImpl(),
+            managed_views_map=managed_views_map,
+            dry_run=args.dry_run,
+            datasets_that_have_ever_been_managed=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        )
+
+
+if __name__ == "__main__":
+    main()

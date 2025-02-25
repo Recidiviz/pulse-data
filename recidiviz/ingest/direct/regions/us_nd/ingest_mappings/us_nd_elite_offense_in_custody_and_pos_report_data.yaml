@@ -1,0 +1,219 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - INCIDENT_TYPE
+  - INCIDENT_DATE
+  - INCIDENT_DETAILS
+  - AGY_LOC_ID
+  - ROOT_OFFENDER_ID
+  - OIC_SANCTION_CODE
+  - OIC_SANCTION_DESC
+  - RESULT_OIC_OFFENCE_CATEGORY
+  - EFFECTIVE_DATE
+  - OIC_INCIDENT_ID
+  - AGENCY_INCIDENT_ID
+  - OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION
+  - FINDING_DESCRIPTION
+  - SANCTION_SEQ
+  - SANCTION_MONTHS
+  - SANCTION_DAYS
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $separator: "-"
+              $values:
+                - AGENCY_INCIDENT_ID
+                - OIC_INCIDENT_ID
+          incident_date: INCIDENT_DATE
+          facility: AGY_LOC_ID
+          location_within_facility:
+            $custom:
+              $function: us_nd_custom_parsers.get_loc_within_facility
+              $args:
+                facility: AGY_LOC_ID
+                facility_with_loc: OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION
+          incident_details: INCIDENT_DETAILS
+          incident_type:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: INCIDENT_TYPE
+                    $options:
+                      - $literal("MISC")
+                $then:
+                  $enum_mapping:
+                    $raw_text: INCIDENT_TYPE
+                    $mappings:
+                      StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                        - DAMAGE
+                        - DISCON
+                        - ESCAPE_ATT
+                        - INS
+                        - SEXCONTACT
+                        - UNAUTH
+                        - NON
+                        - REFSEC
+                        - INDEXP # Indecent Exposure
+                        - THEFT
+                      StateIncarcerationIncidentType.CONTRABAND:
+                        - CONT
+                        - PROP
+                        - TOB
+                        - ALCOHOL
+                        - DRUGS
+                      StateIncarcerationIncidentType.MINOR_OFFENSE:
+                        - SWIFT
+                        - MINOR
+                      StateIncarcerationIncidentType.POSITIVE:
+                        - POSREPORT
+                      StateIncarcerationIncidentType.REPORT:
+                        - STAFFREP
+                        - TATTOO
+                        - LOAN
+                        - MAILVIDEO
+                        - GANG
+                        - GANGREL
+                        - BRIBERY
+                        - MED # Misuse of medication
+                      StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
+                        - CONV
+                      StateIncarcerationIncidentType.VIOLENCE:
+                        - IIASSAULT
+                        - IIASSAULTINJ
+                        - IIFIGHT
+                        - FGHT
+                        - IISUBNOINJ
+                        - ISASSAULT
+                        - ISASSAULTINJ
+                        - ISSUBNOINJ
+                        - SEXUAL
+                        - THREAT
+                        - IIHOMICIDE
+                      StateIncarcerationIncidentType.ESCAPE:
+                        - ESCAPE
+          incident_severity:
+            $enum_mapping:
+              $raw_text: RESULT_OIC_OFFENCE_CATEGORY
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - MAJ
+                  - LVL3
+                  - LVL2E
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - LVL3R
+                  - LVL1E
+                  - LVL2
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - LVL1
+                  - LVL2R
+                  - MIN
+                StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
+                  - DELETE
+                  - PBR
+          incarceration_incident_outcomes:
+            - $conditional:
+                - $if:
+                    $and:
+                      - $not_null: AGENCY_INCIDENT_ID
+                      - $not_null: OIC_INCIDENT_ID
+                      - $not_null: SANCTION_SEQ
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id:
+                        $concat:
+                          $separator: "-"
+                          $values:
+                            - AGENCY_INCIDENT_ID
+                            - OIC_INCIDENT_ID
+                            - SANCTION_SEQ
+                      date_effective: EFFECTIVE_DATE
+                      outcome_description: OIC_SANCTION_DESC
+                      punishment_length_days:
+                        $custom:
+                          $function: us_nd_custom_parsers.get_punishment_days
+                          $args:
+                            months: SANCTION_MONTHS
+                            days: SANCTION_DAYS
+                            effective_date: EFFECTIVE_DATE
+                      outcome_type:
+                        $conditional:
+                          - $if:
+                              $equal:
+                                - FINDING_DESCRIPTION
+                                - $literal("NOT GUILTY")
+                            $then:
+                              $enum_mapping:
+                                $raw_text: FINDING_DESCRIPTION
+                                $mappings:
+                                  StateIncarcerationIncidentOutcomeType.NOT_GUILTY: "NOT GUILTY"
+                          - $else:
+                              $enum_mapping:
+                                $raw_text: OIC_SANCTION_CODE
+                                $mappings:
+                                  StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                                    - LCP
+                                    - LOR
+                                    - LCO
+                                    - LVPVV
+                                    - LOP
+                                    - LVP
+                                    - LPJES
+                                    - FREM
+                                    - RTQ
+                                    - UREST
+                                    - LPH
+                                    - LSE
+                                    - CCF
+                                    - SREM
+                                    - LWEIGHTMUSIC
+                                    - LPHONE
+                                    - LTABLET
+                                    - LOUTUNITREC
+                                    - LJPAYKIOSK
+                                    - LINUNITREC
+                                    - PRAIR_LOSS
+                                    - CABLE
+                                    - LOSS_EMESS
+                                  StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                                    - RES
+                                    - PAY
+                                    - FIN
+                                    - PRO
+                                    - LJB
+                                  StateIncarcerationIncidentOutcomeType.SOLITARY:
+                                    - SEG
+                                    - DD
+                                    - RAS
+                                  StateIncarcerationIncidentOutcomeType.TREATMENT:
+                                    - RTX
+                                  StateIncarcerationIncidentOutcomeType.DISMISSED:
+                                    - DSM
+                                  StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION:
+                                    - RSA
+                                  StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                                    - COMB
+                                    - DELETED
+                                    - RED
+                                    - TRA
+                                    - COMSRV
+                                    - STAR
+                                    - PLAY
+                                    - PLAY_1_1
+                                    - WORK_TEAM
+                                    - REST_JUST
+                                  StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                                    - EXD
+                                  StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                                    - LG
+                                    - STP
+                                  StateIncarcerationIncidentOutcomeType.WARNING:
+                                    - WAR
+                                    - NS

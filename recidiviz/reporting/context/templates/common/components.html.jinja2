@@ -1,0 +1,201 @@
+{% macro card_divider() -%}
+<tr>
+    <td colspan="2" class="em_dm_border_30" style="border-top: 1px solid #CDD2D0; height: 0; font-size: 0px; line-height: 0px;">
+        &nbsp;
+    </td>
+</tr>
+{% endmacro %}
+
+{% macro preview_text(text) %}
+<div style="display: none; max-height: 0px; overflow: hidden;">
+  {{ text }}
+</div>
+{%- endmacro %}
+
+{% macro section_heading(text) %}
+  <tr>
+    <td class="em_heading em_dm_txt_white" valign="top" align="center"
+      style="{{brand_styles.fonts.sans_serif}} font-weight: 500; font-size: 16px; color: #547485;">
+      {{ text }} 
+    </td>
+  </tr>
+  {{ y_padding(24) }}
+{% endmacro %}
+
+{% macro y_padding(px) %}
+  <tr>
+    <td height="{{px}}" style="height: {{px}}px; font-size: 1px; line-height: 1px;">&nbsp;</td>
+  </tr>
+{% endmacro %}
+
+{% macro x_padding(px) %}
+  <td width="{{px}}" style="width: {{px}}px; font-size: 1px; line-height: 1px;">&nbsp;</td>
+{% endmacro %}
+
+{% macro heading(text, align="left", colspan=None, valign="top", size="lg") %}
+  {# default size lg #}
+  {% set font_size = 29 %}
+
+  {% if size == "md" %}
+    {% set font_size = 24 %}
+  {% endif %}
+
+  {% if size == "xl" %}
+    {% set font_size = 32 %}
+  {% endif %}
+
+  <td class="em_dm_txt_white Heading Heading--{{size}}" valign="{{valign}}" align="{{align}}" 
+    {% if colspan %}colspan="{{colspan}}"{% endif %}
+    style="
+      {{brand_styles.fonts.serif}}
+      font-size: {{font_size}}px; 
+      font-weight: 400; 
+      color: #00413E;"
+  >
+    {{ text }}
+  </td>
+{% endmacro %}
+
+{# based on the "conditional padding" button, https://www.goodemailcode.com/email-code/link-button #}
+{% macro button(text, link, size="lg", width=300, kind="primary") %}
+  {# default for kind primary #}
+  {% set fill = "#014C48" %}
+  {% set color = "#FFFFFF" %}
+  {% set border = "" %}
+
+  {% if kind == 'secondary' %}
+    {% set fill = "#F2F4F4" %}
+    {% set border = "border: 1px solid #B7C2C6;" %}
+    {% set color = "#014C48" %}
+  {% endif %}
+
+  {# default for size lg #}
+  {% set xpad = 56 %}
+    {% set ypad = 32 %}
+  {% set font_size = 21 %}
+
+  {% if size == "md" %}
+    {% set xpad = 56 %}
+    {% set ypad = 24 %}
+    {% set font_size = 16 %}
+  {% endif %}
+
+  {% if size == "sm" %}
+    {% set xpad = 24 %}
+    {% set ypad = 16 %}
+    {% set font_size = 16 %}
+  {% endif %}
+
+  <a 
+    href="{{link}}"
+    class="Button Button--{{kind}}"
+    style="
+      {{brand_styles.fonts.sans_serif}}
+      {{border}}
+      background-color: {{fill}}; 
+      border-radius:{{ ypad * 2 + font_size }}px;
+      color: {{color}};
+      display: inline-block;
+      font-size: {{font_size}}px; 
+      font-weight: 500; 
+      padding: {{ypad}}px {{xpad}}px; 
+      mso-padding-alt: 0;
+      text-align:center;
+      text-decoration: none; 
+      -webkit-text-size-adjust:none;
+    "
+  >
+    <!--[if mso]><i style="letter-spacing: {{xpad}}px; mso-font-width: -100%; mso-text-raise: {{ypad * 2}}pt;">&nbsp;</i><![endif]-->
+    <span style="mso-text-raise: {{ypad}}pt;">{{text}}</span>
+    <!--[if mso]><i style="letter-spacing: {{xpad}}px; mso-font-width: -100%;">&nbsp;</i><![endif]-->
+  </a> 
+{% endmacro %}
+
+{# nestable layout table helpers #}
+{% macro layout_table_start() %}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+{% endmacro %}
+
+{% macro layout_table_end() %}
+  </table>
+{% endmacro %}
+
+{# for when we want a table that is actually for tabular data #}
+{% macro data_table(rows, highlight_column=None, color="green") %}
+  {# needs to be one gigantic line to avoid introducing unwanted white space #}
+  {% set arrow_image %}<span class="em_light_only"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/downgrade-arrow.png" /></span><span class="em_dark_only" style="display: none;"><img width="16" height="16" alt="&rarr;" class="TableCard__rarr" src="{{static_image_path}}/dark/downgrade-arrow.png" /></span>&nbsp;{% endset %}
+  {# green is the default color #}
+  {% set rule_color = "#C4E5D9" %}
+  {% set highlight_color = "#006C67" %}
+  {# yellow is also supported #}
+  {% if color == "yellow" %}
+    {% set rule_color = "#E5D8C4" %}
+    {% set highlight_color = "#B7873D" %}
+  {% endif %}
+  <table 
+    width="100%" 
+    style="color: #014C48; {{brand_styles.fonts.sans_serif}}" 
+    cellpadding="0" 
+    cellspacing="0"
+    role="table"
+  >
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        {% for cell in row %}
+        <td valign="top" class="em_dm_border_30" style="
+          font-size: 18px; 
+          padding: 8px;
+          border-top: 1px solid {{rule_color}};
+          {% if loop.first %}
+          padding-left: 0;
+          {% endif %}
+          {% if loop.last %}
+          padding-right: 0;
+          {% if not loop.first %}text-align: right;{% endif %}
+          {% if loop.index == highlight_column %}color: {{highlight_color}};{% endif %}
+          {% endif %}
+          ">
+            {{ cell|replace(
+              '&rarr; ', 
+              arrow_image
+            )}}
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro circle(color, diameter) %}
+<span style="display: inline-block; vertical-align: super;"><!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="http://" style="height:{{diameter}};v-text-anchor:middle;width:{{diameter}};" arcsize="600%" stroke="f" fillcolor="{{color}}">
+<w:anchorlock/>
+<center>
+<![endif]-->
+  <span
+    style="background-color:{{color}};border-radius:600px;display:inline-block;font-family:sans-serif;font-size:1px;font-weight:bold;line-height:{{diameter}};text-align:center;text-decoration:none;width:{{diameter}};-webkit-text-size-adjust:none;">
+    &nbsp;</span>
+  <!--[if mso]>
+</center>
+</v:roundrect>
+<![endif]-->
+</span>
+{% endmacro %}
+
+{% macro pill(color, width, height) %}
+<span style="display: inline-block; vertical-align: super;"><!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="http://" style="height:{{height}};v-text-anchor:middle;width:{{width}};" arcsize="600%" stroke="f" fillcolor="{{color}}">
+<w:anchorlock/>
+<center>
+<![endif]-->
+  <span
+    style="background-color:{{color}};border-radius:600px;display:inline-block;font-family:sans-serif;font-size:1px;font-weight:bold;line-height:{{height}};text-align:center;text-decoration:none;width:{{width}};-webkit-text-size-adjust:none;">
+    &nbsp;</span>
+  <!--[if mso]>
+</center>
+</v:roundrect>
+<![endif]-->
+</span>
+{% endmacro %}

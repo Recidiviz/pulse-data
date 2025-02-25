@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dio_roster
+file_description: |-
+  Division Of Institutional Operations Roster
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: lname
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: fname
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: mname
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sfx_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: name_use_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: diag_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: usp_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: casemgr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: loc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: cell
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: class
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_juris
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: job_title
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rehear_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: parole
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prvlg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prvlg_lvl_mtrx
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: mdcl_acuity_title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wrk_loc_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description

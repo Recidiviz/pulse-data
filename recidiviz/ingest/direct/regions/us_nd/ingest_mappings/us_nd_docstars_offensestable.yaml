@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - LEVEL
+  - COUNTS
+  - OFFENSEDATE
+  - COUNTY
+  - SID
+  - CASE_NUMBER
+  - RecID
+  - COUNT
+  - COURT_NUMBER
+  - INACTIVEDATE
+  - RecDate
+  - YEAR
+  - LAST_UPDATE
+  - CREATED_BY
+  - MASTER_OFFENSE_IND
+  - REQUIRES_REGISTRATION
+  - Common_Statute_Number
+  - JUDGE
+  - ncic_code
+unused_columns:
+  - COUNT # No apparent use for this
+  - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
+  - INACTIVEDATE # No longer in use within source
+  - RecDate # No apparent use for these at the moment
+  - YEAR # Less precise version of OFFENSEDATE
+  - LAST_UPDATE # No apparent use for these
+  - CREATED_BY # No apparent use for these
+  - MASTER_OFFENSE_IND # Not in consistent use within source
+  - REQUIRES_REGISTRATION
+  - Common_Statute_Number
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id: CASE_NUMBER
+          charges:
+            - StateCharge:
+                external_id: RecID
+                offense_date: OFFENSEDATE
+                counts: COUNTS
+                classification_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $custom:
+                        $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                        $args:
+                          raw_charge_text: LEVEL
+                    $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: LEVEL
+                ncic_code:
+                  # This field sometimes includes invalid NCIC codes in raw data.
+                  # If the NCIC code attached to this charge is known, it appears
+                  # in the ncic.csv reference table, and this function returns its associated entry.
+
+                  # If the NCIC code attached to this charge does not exist in the reference table,
+                  # this function checks if the first two digits of the NCIC code followed by "99"
+                  # appear as a code in this table, which would be the generic category of the same
+                  # offense. This is to minimize the prevalence of NULL values in offense fields.
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_ncic_code
+                    $args:
+                      ncic_code: ncic_code
+                description:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_description_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
+                is_violent:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
+                is_drug:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_is_drug_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
+                county_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: COUNTY
+                judge_full_name:
+                  $person_name:
+                    $full_name: JUDGE

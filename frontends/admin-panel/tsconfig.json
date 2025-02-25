@@ -1,0 +1,9 @@
+{
+  "extends": "@recidiviz/tsconfig/react",
+  "include": [
+    "src"
+, "src/components/StateUserPermissions/ReasonsLogButton.tsx"  ],
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: file_tag_first
+file_description: |-
+  First raw file.
+data_classification: source
+primary_key_cols:
+  - col_name_1a
+  - col_name_1b
+columns:
+  - name: col_name_1a
+    description: |-
+      First column.
+    known_values:
+      - value: A
+        description: A description
+      - value: B
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: reason
+  - name: col_name_1b
+    description: |-
+      A column description that is long enough to take up
+      multiple lines. This text block will be interpreted
+      literally and trailing/leading whitespace is removed.
+  - name: undocumented_column
+encoding: ISO-456-7
+table_relationships:
+  - foreign_table: file_tag_second
+    cardinality: ONE_TO_MANY
+    join_logic:
+      - file_tag_first.col_name_1a = file_tag_second.col_name_2a
+  - foreign_table: file_tag_first
+    join_logic:
+      - file_tag_first.col_name_1a = file_tag_first.col_name_1b

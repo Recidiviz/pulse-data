@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dio_prog
+file_description: |-
+  Division Of Institutional Operations Program
+data_classification: source
+primary_key_cols:
+  - dio_prog_id
+columns:
+  - name: dio_prog_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: srvce_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prog_hours
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: title
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: prereq_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rfrbl_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

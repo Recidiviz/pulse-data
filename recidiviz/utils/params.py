@@ -1,0 +1,174 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""Helpers for working with parameters from requests."""
+import argparse
+import re
+from typing import Any, Callable, List, Optional
+from urllib.parse import unquote
+
+from werkzeug.datastructures import MultiDict
+
+
+def get_str_param_value(
+    arg_key: str,
+    args: MultiDict,
+    default: Optional[str] = None,
+    preserve_case: bool = False,
+) -> Optional[str]:
+    """Retrieves URL parameter from request handler params list
+
+    Takes a MultiDict of key/value pairs (URL parameters from the request
+    object), finds the key being sought, and returns the first value. The value
+    will be stripped of leading or trailing whitespace and converted to lower
+    case. If the key is not found, this returns the given default, or None. The
+    given default will also be transformed like a found value.
+
+    Args:
+        arg_key: (string) Key of the URL parameter being sought
+        args: List of URL parameter key/value pairs, as a MultiDict (e.g.,
+            [("key", "val"), ("key2", "val2"), ...])
+        default: The default value to return if the param name is not found
+        preserve_case: Whether to preserve the original string case [False]
+
+    Returns:
+        First value for given param_name if found
+        Provided default value if not found
+        None if no default provided and not found
+    """
+    return clean_str_param_value(
+        args.get(arg_key, default), preserve_case=preserve_case
+    )
+
+
+def get_only_str_param_value(
+    arg_key: str, args: MultiDict, preserve_case: bool = False
+) -> Optional[str]:
+    """Returns a single value for the provided key in the request args.
+
+    Raises a ValueError if there is more than one possible value in the args.
+    Returns:
+        A single value for a given arg_key if found
+        None if no value is found
+    """
+    values = get_str_param_values(arg_key, args, preserve_case=preserve_case)
+    if len(values) > 1:
+        raise ValueError(f"Only one value can be provided for query param {arg_key}.")
+    if values:
+        return values[0]
+    return None
+
+
+def get_bool_param_value(arg_key: str, args: MultiDict, default: bool) -> bool:
+    str_value = get_str_param_value(arg_key, args)
+
+    if str_value is None:
+        return default
+
+    return str_to_bool(str_value)
+
+
+def str_to_bool(bool_str: str, arg_key: Optional[str] = None) -> bool:
+    """Converts a string with values "True" or "False" (case-insensitive) to the boolean
+    value described by the string.
+
+    Throws on null values and empty strings.
+    """
+
+    if arg_key:
+        error_suffix = f"for bool param {arg_key}"
+    else:
+        error_suffix = "for bool param"
+
+    if bool_str is None:
+        raise ValueError(f"Unexpected null value {error_suffix}")
+
+    if bool_str == "":
+        raise ValueError(f"Unexpected empty-string value {error_suffix}")
+
+    bool_str_lower = bool_str.lower()
+    if bool_str_lower == "true":
+        return True
+    if bool_str_lower == "false":
+        return False
+
+    raise ValueError(f"Unexpected value [{bool_str}] {error_suffix}")
+
+
+def opt_str_to_bool(bool_str: str | None, arg_key: Optional[str] = None) -> bool | None:
+    """Converts a string with values "True" or "False" (case-insensitive) to the boolean
+    value described by the string.
+
+    Returns None if |bool_str| is None. Throws on empty strings.
+    """
+    if bool_str is None:
+        return None
+
+    return str_to_bool(bool_str, arg_key)
+
+
+def str_to_list(list_str: str) -> List[str]:
+    """
+    Separates strings by commas and returns a list
+    """
+    return list_str.split(",")
+
+
+def str_matches_regex_type(regex: str) -> Callable[[Any], str]:
+    def matches_regex_str(value: Any) -> str:
+        if not isinstance(value, str):
+            raise argparse.ArgumentTypeError(
+                f"Unexpected type for argument [{value}]: [{type(value)}]"
+            )
+        if not re.match(regex, value):
+            raise argparse.ArgumentTypeError(
+                f"Value [{value}] does not match expected pattern [{regex}]."
+            )
+        return value
+
+    return matches_regex_str
+
+
+def get_int_param_value(arg_key: str, args: MultiDict) -> Optional[int]:
+    str_value = get_str_param_value(arg_key, args)
+
+    if str_value is None or not str_value.isnumeric():
+        return None
+
+    return int(str_value)
+
+
+def get_str_param_values(
+    arg_key: str, args: MultiDict, preserve_case: bool = False
+) -> List[str]:
+    """Same as above, but returns all values for a given key"""
+    values = [
+        clean_str_param_value(val, preserve_case=preserve_case)
+        for val in args.getlist(arg_key)
+    ]
+    return [v for v in values if v is not None]
+
+
+def clean_str_param_value(
+    value: Optional[str], preserve_case: bool = False
+) -> Optional[str]:
+    if value:
+        value = unquote(value)
+        if preserve_case:
+            return value.strip()
+        return value.lower().strip()
+    return value

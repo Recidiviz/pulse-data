@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: validation_daily_count_sheet_by_custody_level
+file_description: |-
+  This is an external validation dataset that lists the population count of people who
+  are actively incarcerated by ADCRR on a given date, aggregated by custody level.
+  It is derived from the Daily Count Sheets that were previously available on the ADCRR 
+  websites Reports page. These reports are no longer available publicly and must be requested
+  from the data team.
+data_classification: validation
+always_historical_export: False
+primary_key_cols:
+  - count_date
+  - custody_level
+columns:
+  - name: count_date
+    description: The date of the count
+  - name: custody_level
+    description: The custody level a group has
+    known_values:
+      - value: MINIMUM CUSTODY
+      - value: MEDIUM CUSTODY
+      - value: CLOSE CUSTODY
+      - value: MAXIMUM CUSTODY
+      - value: RECEPTION
+      - value: INPATIENT CARE UNIT
+      - value: MH WATCH
+  - name: population_count
+    description: The number of people who are incarcerated at this custody level on that date

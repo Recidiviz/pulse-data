@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFICER
+  - SUPERVISOR
+  - SUPERVISOR_ID
+  - LNAME
+  - FNAME
+  - STATUS
+  - period_seq_num
+  - start_date
+  - end_date
+unused_columns:
+  - STATUS # Employment status, currently unused
+  - SUPERVISOR # Y/N this officer is a supervisor, currently unused
+  - LNAME
+  - FNAME
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: OFFICER
+          id_type: $literal("US_ND_DOCSTARS_OFFICER")
+    supervisor_periods:
+      - StateStaffSupervisorPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFICER
+                - period_seq_num
+          supervisor_staff_external_id: SUPERVISOR_ID
+          supervisor_staff_external_id_type: $literal("US_ND_DOCSTARS_OFFICER")
+          start_date: start_date
+          end_date: end_date

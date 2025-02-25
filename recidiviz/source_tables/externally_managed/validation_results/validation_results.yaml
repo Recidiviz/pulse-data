@@ -1,0 +1,62 @@
+address:
+  dataset_id: validation_results
+  table_id: validation_results
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+  - name: run_date
+    type: DATE
+    mode: REQUIRED
+  - name: system_version
+    type: STRING
+    mode: REQUIRED
+  - name: check_type
+    type: STRING
+    mode: REQUIRED
+  - name: validation_name
+    type: STRING
+    mode: REQUIRED
+  - name: region_code
+    type: STRING
+    mode: REQUIRED
+  - name: did_run
+    type: BOOLEAN
+    mode: REQUIRED
+  - name: run_datetime
+    type: DATETIME
+    mode: NULLABLE
+  - name: validation_category
+    type: STRING
+    mode: NULLABLE
+  - name: was_successful
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: validation_result_status
+    type: STRING
+    mode: NULLABLE
+  - name: result_details_type
+    type: STRING
+    mode: NULLABLE
+  - name: result_details
+    type: STRING
+    mode: NULLABLE
+  - name: trace_id
+    type: STRING
+    mode: NULLABLE
+  - name: exception_log
+    type: STRING
+    mode: NULLABLE
+  - name: failure_description
+    type: STRING
+    mode: NULLABLE
+  - name: runtime_seconds
+    type: FLOAT
+    mode: NULLABLE
+  - name: ingest_instance
+    type: STRING
+    mode: NULLABLE
+  - name: sandbox_dataset_prefix
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

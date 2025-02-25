@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PREAScreeningResults
+file_description: |-
+  This table contains one row for each PREA screening a given person has gone through a PREA (Prison Rape Elimination Act) Screening.
+data_classification: source
+primary_key_cols:
+  - OffenderID
+  - ScreeningDate
+columns:
+  - name: OffenderID
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+  - name: ScreeningDate
+    description: |-
+      Date on which a screening takes place.
+  - name: ScreeningType
+    description: |-
+      This element describes a PREA screening type code
+  - name: ScreeningSiteID
+    description: |-
+      This identifies an organizational/location entity. This site will identify the institution where a PREA screening takes place.
+  - name: ScreeningBy
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to the staff ID who does a PREA screening.
+  - name: VictimFindingLevel
+    description: |-
+      Code indicating the PREA finding level for a victim.
+  - name: MonitorVictimFlag
+    description: |-
+      Indicates if an offender should have PREA monitoring for his VICTIM finding level.
+  - name: AggressorFindingLevel
+    description: |-
+      Code indicating the PREA finding level for an aggressor.
+  - name: MontorAggressorFlag
+    description: |-
+      Code indicating the PREA finding level for an aggressor.
+  - name: PostedByStaff
+    is_pii: True
+    description: |-
+      The staff id of the individual who initially posted information for an offender.
+  - name: PostedDate
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastUpdateStaffID
+    is_pii: True
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    is_pii: True
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

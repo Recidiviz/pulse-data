@@ -1,0 +1,42 @@
+{# 
+  For default padding use the "children" block when extending this template.
+  To override that padding (if e.g. you need a full-bleed divider in the card)
+  use the "rows" block, which surrounds "children". You must provide <tr> elements
+  at the top level of "rows", as the name suggests.
+#}
+
+{% import 'common/components.html.jinja2' as components with context %}
+
+
+<table 
+  align="center" 
+  width="600" 
+  border="0" 
+  cellspacing="0" 
+  cellpadding="0"
+  class="em_wrapper em_border_radius Card {% block class %}{% endblock class%}" 
+  style="width:600px; border-radius: 5px; background-color: {% block bgcolor %}#ffffff{% endblock bgcolor%};" 
+  role="presentation"
+>
+  {% block rows %}
+    {{ components.y_padding(32) }}
+    <tr>
+      <td>
+        <table role="presentation" width="100%">
+          <tr>
+            {{
+              components.x_padding(32)
+            }}
+            <td>
+              {% block children %}{% endblock children %}
+            </td>
+            {{
+              components.x_padding(32)
+            }}
+          </tr>
+        </table>
+      </td>
+    </tr>
+    {{ components.y_padding(32) }}
+  {% endblock rows %}
+</table>

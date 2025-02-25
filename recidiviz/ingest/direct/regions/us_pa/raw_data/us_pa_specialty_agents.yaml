@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: specialty_agents
+file_description: |-
+  A table containing a list of Specialty Agents in Pennsylvania with information such as 
+  name and district office. This reference table is not refreshed regularly. T
+  he most recent update was accurate as of January 2023. If there are complaints 
+  about agents’ caseload types being wrong in our tools, that is likely why.
+data_classification: source
+update_cadence: IRREGULAR
+primary_key_cols:
+  - PosNo6
+columns:
+  - name: PosNo6
+    is_pii: True
+    description: |-
+      ID for Position number related to Agent
+  - name: PositionNumber
+    is_pii: True
+    description: |-
+      Position number related to Agent
+  - name: AgentName
+    is_pii: True
+    description: |-
+      Name of PA Agent
+  - name: AgentType
+    description: |-
+      Type of Agent
+  - name: AgentTypeOriginal
+    description: |-
+      Original Agent Type
+  - name: DistrictOffice
+    description: |-
+      Office where Agent is located
+  - name: Notes
+    is_pii: True
+    description: |-
+      Notes related to Agent
+  - name: external_id
+    is_pii: True
+    description: |-
+      Unique ID for each Agent
+  - name: date_received
+    description: |-
+      Date that the row from this file was received from PA

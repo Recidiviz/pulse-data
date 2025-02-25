@@ -1,0 +1,30 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - RACES
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    races:
+      - $foreach:
+          $iterable: RACES
+          $result:
+            $conditional:
+              - $if:
+                  $equal:
+                    - $iter_item
+                    - $literal("A")
+                $then:
+                  FakePersonRace:
+                    race: $literal_enum(FakeRace.ASIAN)
+              - $else:
+                  FakePersonRace:
+                    race:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          FakeRace.BLACK: B
+                          FakeRace.WHITE: W
+                        $ignore:
+                          - X

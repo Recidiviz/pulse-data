@@ -1,0 +1,219 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - period_id
+  - Start_TransferDate
+  - End_TransferDate
+  - Start_TransferReasonDesc
+  - End_TransferReasonDesc
+  - DOCLocationToName
+  - DOCLocationToTypeName
+  - LegalStatusDesc
+  - LevelPath
+  - SecurityLevelName
+  - JurisdictionId
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - period_id
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: DOCLocationToTypeName
+              $mappings:
+                StateIncarcerationType.STATE_PRISON:
+                  - Adult Facility/Institution
+                  - Juvenile Facility
+                StateIncarcerationType.COUNTY_JAIL:
+                  - Jail
+                StateIncarcerationType.OUT_OF_STATE:
+                  - State
+                StateIncarcerationType.FEDERAL_PRISON:
+                  - Federal Facility
+                StateIncarcerationType.INTERNAL_UNKNOWN:
+                  - District Office # Related to 'Court Action' in to DOC
+          admission_date: Start_TransferDate
+          release_date: End_TransferDate
+          custody_level:
+            $enum_mapping:
+              $raw_text: SecurityLevelName
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.CLOSE: Close
+                StateIncarcerationPeriodCustodyLevel.MEDIUM: Medium
+                StateIncarcerationPeriodCustodyLevel.MINIMUM: Minimum
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                  - Rider
+                  - Community
+                  - Life-Death
+          facility: DOCLocationToName
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $equal:
+                    - SecurityLevelName
+                    - $literal("Rider")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: LegalStatusDesc
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.GENERAL:
+                        - Termer
+                      StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                        - Rider
+                      StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD:
+                        - Parole Violator
+                      StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
+                        - Non Idaho Commitment
+          admission_reason:
+            $enum_mapping:
+              $raw_text: Start_TransferReasonDesc
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
+                  - Pending Custody Intake
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - Escape
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - Administrative
+                  - Administrative Transfer
+                  - Assigned To Jail
+                  - Civil Commitment
+                  - Civil Commitment Pending
+                  # TODO(#21085) Investigate why Release to Supervision and Release to Parole
+                  # are coming in as an admission reason for one person
+                  - Release to Supervision
+                  - Release to Parole
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - Court Action
+                  - Initial Facility Intake
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - Return From Bond
+                  - Return From Temporary Release
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - Return From Parole
+                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                  - Sanction
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - Assigned To Work Release
+                  - Death Row
+                  - Home Electronic Monitoring
+                  - Independent Living Program
+                  - Intensive Re-entry Program
+                  - Pre-Release Assignment
+                  - Segregation -Administration
+                  - Segregation -Mental Health
+                  - Segregation -Protective Custody
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                  - Mental Health Treatment
+                  - Substance Abuse And Therapeutic Program Assignment
+                  - Temporary Remand To Custody
+                  - Wellness Hold
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - Emergency Transfer
+                  - Jail To Jail
+                  - Offender Moves Location
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                  - Return From Court
+                  - Returned To Jail
+                  - Transfer To Hospital
+                  - Housing Unit Transfer
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - Assigned
+                  - Contract In
+                  - Interstate Compact Facility In
+                  - Return Other Jurisdictions
+                  - Serving Local Jail Sentence
+                  - Serving Other Jurisdiction
+                  - Serving Out of State Sentence
+          release_reason:
+            $enum_mapping:
+              $raw_text: End_TransferReasonDesc
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - Release to Parole
+                  - Granted Early Discharge - Parole
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - Death - Natural
+                  - Death - Unnatural
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - Escape
+                StateIncarcerationPeriodReleaseReason.EXECUTION:
+                  - Execution
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - Administrative
+                  - Administrative Transfer
+                  - Assigned To Jail
+                  - Civil Commitment
+                  - Civil Commitment Pending
+                  - Court Action
+                  - Initial Facility Intake
+                  - Mental Health Treatment
+                  - Other Unspecified Release
+                  - Pending Custody Intake
+                  - Release Court Order
+                  - Return From Bond
+                  - Return From Parole
+                  - Return Other Jurisdictions
+                  - Substance Abuse And Therapeutic Program Assignment
+                  - Temporary Remand To Custody
+                  - Wellness Hold
+                StateIncarcerationPeriodReleaseReason.PARDONED:
+                  - Release Clemency/Pardon
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+                  - Out On Bond
+                  - Reinstate Parole
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - Intensive Re-entry Program
+                  - Release to Supervision
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - Discharged from DOC
+                  - Parole Term Expired
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - Assigned To Work Release
+                  - Death Row
+                  - Home Electronic Monitoring
+                  - Independent Living Program
+                  - Pre-Release Assignment
+                  - Segregation -Administration
+                  - Segregation -Mental Health
+                  - Segregation -Protective Custody
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - Authorized Temporary Release
+                  - Temporary Remand To Community
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - Emergency Transfer
+                  - Jail To Jail
+                  - Offender Moves Location
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                  - Return From Court
+                  - Returned To Jail
+                  - Transfer To Hospital
+                  - Housing Unit Transfer
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Assigned # Transferred to other state
+                  - Contract Out
+                  - Deported
+                  - Federal Custody
+                  - Interstate Compact Facility Out
+                  - Serving Local Jail Sentence
+                  - Serving Other Jurisdiction
+                  - Serving Out of State Sentence
+                  - Interstate Compact Community Out
+          housing_unit: LevelPath
+          county_code: JurisdictionId

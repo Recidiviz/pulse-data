@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - Employee_Id
+  - Cis_9001_Employee_Type_Cd
+  - period_seq_num
+  - Start_Date
+  - End_Date
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: Employee_Id
+          id_type: $literal("US_ME_EMPLOYEE")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - Employee_Id
+                - period_seq_num
+          start_date: Start_Date
+          end_date: End_Date
+          role_type:
+            $enum_mapping:
+              $raw_text: Cis_9001_Employee_Type_Cd
+              $custom_parser: us_me_custom_enum_parsers.role_type_mapper

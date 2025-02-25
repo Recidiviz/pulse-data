@@ -1,0 +1,89 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      # This runs on py, pyi, and ipynb files.
+      - id: black-jupyter
+        language_version: python3
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.5.1
+    hooks:
+      - id: prettier
+        types_or: [yaml]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+      - id: isort
+        name: isort (pyi)
+        types: [pyi]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.8.0.4
+    hooks:
+      - id: shellcheck
+        # Also validate any `source`d files
+        args: [-x]
+  - repo: local
+    hooks:
+      - id: generate_docs_for_region
+        name: generate_docs_for_region
+        entry: pipenv run python -m
+          recidiviz.tools.docs.region_documentation_generator
+        language: system
+        files: ^recidiviz/ingest/direct/regions/|^recidiviz/view_registry/raw_data_reference_reasons.yaml
+        require_serial: true
+      - id: generate_docs_for_endpoint
+        name: generate_docs_for_endpoint
+        entry: pipenv run python -m
+          recidiviz.tools.docs.endpoint_documentation_generator
+        language: system
+        files: (?x)(^recidiviz/tools/docs/endpoint_documentation_generator.py|^recidiviz/server_blueprint_registry.py|.*/routes/|.*routes.py|.*/server.py|.*control.py|.*endpoint.py|.*endpoints.py|^recidiviz/backup/backup_manager.py|^recidiviz/pipelines/calculation_data_storage_manager.py)$
+        exclude: ^recidiviz/tests
+        require_serial: true
+      - id: generate_entity_documentation
+        name: generate_entity_documentation
+        entry: pipenv run python -m
+          recidiviz.tools.docs.entity_documentation_generator
+        language: system
+        # TODO(#32861): Remove state/schema.py from this list once we stop referencing that file in entity documentation
+        # TODO(#32863): Add state/normalized_entities.py once we generate documentation for that schema
+        files: >
+          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/entity/state/entities.py|^recidiviz/common/constants/state/)$
+        require_serial: true
+      - id: generate_calc_documentation
+        name: generate_calc_documentation
+        entry: pipenv run python -m
+          recidiviz.calculator.calculation_documentation_generator
+        language: system
+        files: ^recidiviz/calculator/|^recidiviz/pipelines/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/|^recidiviz/persistence/database/schema/|^recidiviz/persistence/entity/|^recidiviz/task_eligibility/
+        exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
+        require_serial: true
+      - id: generate_ingest_mappings_schema_documentation
+        name: generate_ingest_mappings_schema_documentation
+        entry: pipenv run python -m
+          recidiviz.tools.docs.ingest_mappings_schema_documentation_generator
+        language: system
+        files: ^recidiviz/ingest/direct/ingest_mappings/yaml_schema/|^docs/engineering/ingest_mapping_schema/
+        require_serial: true
+      - id: update_terraform_lock_file
+        name: update_terraform_lock_file
+        entry: recidiviz/tools/deploy/update_terraform_lock.sh
+        language: script
+        files: ^recidiviz/tools/deploy/terraform/
+        require_serial: true
+      - id: terraform_fmt
+        name: terraform_fmt
+        entry: recidiviz/tools/deploy/format_terraform.sh
+        language: script
+        files: ^recidiviz/tools/deploy/terraform/
+      - id: alphabetize_yaml
+        name: alphabetize_yaml
+        entry: pipenv run python -m
+          recidiviz.tools.alphabetize_raw_data_reference_reasons
+        language: system
+        files: recidiviz/view_registry/raw_data_reference_reasons.yaml

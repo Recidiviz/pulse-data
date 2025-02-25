@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prgm_prvdr
+file_description: |-
+  Program Provider
+data_classification: source
+primary_key_cols:
+  - prgm_prvdr_id
+columns:
+  - name: prgm_prvdr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: prgm_prvdr_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: prvdr_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: addr_long
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: city
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: st
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: zip_cd
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: area_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ph_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: prvdr_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: body_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description

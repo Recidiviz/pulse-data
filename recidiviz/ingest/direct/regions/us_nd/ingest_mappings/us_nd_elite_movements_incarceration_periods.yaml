@@ -1,0 +1,212 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_elite_movements_incarceration_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - period_sequence
+  - offender_book_id
+  - admission_reason_code
+  - start_date
+  - facility
+  - custody_level
+  - release_reason_code
+  - end_date
+  - override_reason
+  - bed_assignment
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_book_id
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - offender_book_id
+                - period_sequence
+          admission_date: start_date
+          release_date: end_date
+          facility:
+            $conditional:
+              - $if:
+                  $equal:
+                    - bed_assignment
+                    - $literal("CJ-WRK-WAR") # Ward County Jail Work Release Program
+                $then: $literal("WCJWRP")
+              - $else_if:
+                  $equal:
+                    - bed_assignment
+                    - $literal("CJ-WRK-STA")
+                $then: $literal("SWMCCC") # Southwest Multi-County Correction Center
+              - $else: facility
+          incarceration_type:
+            $enum_mapping:
+              $custom_parser: us_nd_custom_enum_parsers.incarceration_type_from_unit_or_facility
+              $raw_text:
+                $concat:
+                  $values:
+                    - bed_assignment
+                    - facility
+                  $separator: "|"
+          custodial_authority:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - bed_assignment
+                    - facility
+                    - $conditional:
+                        - $if:
+                            $not_null: start_date
+                          $then: start_date
+                        - $else: end_date
+                  $separator: "|"
+              $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - bed_assignment
+                    - facility
+                    - $conditional:
+                        - $if:
+                            $not_null: start_date
+                          $then: start_date
+                        - $else: end_date
+                  $separator: "|"
+              $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
+          admission_reason:
+            $enum_mapping:
+              $raw_text: admission_reason_code
+              $ignore:
+                - COM
+                - CONT
+                - CONV
+                - NTAD
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
+                  - ADM ERROR
+                StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                  - OTHER
+                  - PREA
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - ADMN
+                  - RAB
+                  - DEF
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  # Parole revocations
+                  - PARL
+                  - PV
+                  # Probation revocations
+                  - NPRB
+                  - NPROB
+                  - PRB
+                  - RPRB
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - REC
+                  - RECA
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+                  - READMN
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - CONF
+                  - CRT
+                  - DETOX
+                  - FED
+                  - HOSP
+                  - HOSPS
+                  - HOSPU
+                  - INT
+                  - JOB
+                  - MED
+                  - PROG
+                  - RB
+                  - SUPL
+                  - TRN
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                  - STATUS_CHANGE
+                  - BED_ASSIGNMENT_CHANGE
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - OOS
+          release_reason:
+            $enum_mapping:
+              $raw_text: release_reason_code
+              $ignore:
+                - ADMN
+                - CONT
+                - READMN
+                - ADM ERROR
+                - CONV
+                - REC
+                - NPROB
+                - "4139"
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - ESC
+                  - ESCP
+                  - ABSC
+                StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - ERR
+                StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
+                  - OTHER
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - CMM
+                StateIncarcerationPeriodReleaseReason.COMPASSIONATE:
+                  - COM
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - PARL
+                  - PRB
+                  - PV
+                  - RPAR
+                  - RPRB
+                  - PROL
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                  - CO
+                  - CRT
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - DECE
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - XSNT
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - CONF
+                  - DETOX
+                  - HOSP
+                  - HOSPS
+                  - HOSPU
+                  - INT
+                  - JOB
+                  - MED
+                  - PROG
+                  - RB
+                  - SUPL
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                  # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                  - STATUS_CHANGE
+                  - BED_ASSIGNMENT_CHANGE
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - TRN
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - FED
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: bed_assignment
+              $custom_parser: us_nd_custom_enum_parsers.parse_housing_unit_category
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: bed_assignment
+              $custom_parser: us_nd_custom_enum_parsers.parse_housing_unit_type
+          housing_unit: bed_assignment
+          custody_level:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - custody_level
+                    - override_reason
+                  $separator: "|"
+              $custom_parser: us_nd_custom_enum_parsers.parse_custody_level

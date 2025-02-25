@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: grvnc_prblm_rtrn_rsn
+file_description: |-
+  Grievance Prblm Rtrn Reason
+data_classification: source
+primary_key_cols:
+  - grvnc_prblm_rtrn_rsn_id
+columns:
+  - name: grvnc_prblm_rtrn_rsn_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: grvnc_prblm_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rtrn_rsn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

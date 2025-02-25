@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - COMMITMENT_ID
+  - DOC_ID
+  - PERSON_ID
+  - group_update_datetime
+  - CommunitySupervisionBeginDate
+  - CommunitySupervisionEndDate
+  - EarnedReleaseCreditDate
+  - SentenceExpirationDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id:
+            $concat:
+              $values:
+                - COMMITMENT_ID
+                - DOC_ID
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                group_update_datetime: group_update_datetime
+                parole_eligibility_date_external: CommunitySupervisionBeginDate
+                projected_full_term_release_date_min_external: EarnedReleaseCreditDate
+                projected_full_term_release_date_max_external:
+                  # If a person is not eligible for community supervision, then the latest
+                  # they can be released from prison is their Sentence Expiration Date (SED). If they
+                  # are eligible for community supervision, then the latest they can be released
+                  # from prison is their Community Supervision End Date, which is 115% of the SED.
+                  $conditional:
+                    - $if:
+                        $is_null: CommunitySupervisionEndDate
+                      $then: SentenceExpirationDate
+                    - $else: CommunitySupervisionEndDate

@@ -1,0 +1,86 @@
+# Configuration for which validations to run for region US_MO.
+
+region_code: US_MO
+exclusions:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: MO has not provided us with person-level validation data for supervision level
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: MO has not provided us with person-level validation data for supervising officers
+  - validation_name: current_impact_funnel_status_duplicate_external_ids
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: In MO, the usMoOverdueRestrictiveHousingReviewHearing is intentionally designed to have 3 opportunities for each ID, which makes this validation invalid. If we begin to expand opportunties in MO, we should consider a more nuanced fix. However, for now excluding the validation is fine.
+max_allowed_error_overrides:
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    hard_max_allowed_error_override: 0.26
+    override_reason: Needs investigation.
+  - validation_name: sentence_type_by_district_by_demographics_internal_consistency
+    hard_max_allowed_error_override: 0.2
+    override_reason: TODO(#5074) - The age_bucket_breakdown_sum column does not match the others - investigate.
+  - validation_name: client_and_resident_record_percent_change_in_eligibility_exceeded
+    hard_max_allowed_error_override: 0.40
+    override_reason:
+      Since we get data from MO once per week, the percent change for opportunities tends to aggregate
+      over the data in a week and then spike once it's all processed on Mondays. We expect most opportunities to fluctuate
+      between 20-30% when new data comes in, so we bump this threshold to 40% in order to capture when the percent change
+      is significantly larger than that which likely indicates something unusual is happening and should be investigated.
+num_allowed_rows_overrides:
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 100000
+    override_reason:
+      In MO we rely on a table where they build incarceration period
+      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
+      rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
+      query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010. Error is ballooning over time to 51304 as of 12/7/2022.
+      Inital investigations into this show entity deletion as the main culprit. Error improved after refresh. This error should also be helped by continual work in MO
+      for raw data tables and rework in TODO(#15905). When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 47500
+    override_reason:
+      Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
+      we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
+      that do follow standard formats. Rerun decreased error significantly, bumping threshold down to 1500 to note if it greatly
+      increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
+      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Error improved after refresh and is now 201. Error is currently 30467 as of 10/19/23, 35166 as of 11/29/23. TODO(#24843) - We should do a refresh of the view.
+      When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
+      Bumped again (from 45000 to 47500) on 4/8/23, at which point the error had increased to 45830.
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 3000
+    override_reason: TODO(#15905). Error is 2500 as of 1/5/2022. Error now at 899 as of 1/25/23. Refresh reduced error. When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 10000
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly. Error is 96 as of 12/7/2022. TODO(#17629) - Error is 239 as of 1/5/2022. Refactor caused a spike that should be investigated. Level on 5/24/24 is 8156.
+  - validation_name: incarceration_release_prior_to_admission
+    hard_num_allowed_rows_override: 30
+    override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    hard_num_allowed_rows_override: 250000
+    override_reason: Needs investigation.  Current failing level as of 10/26 is 195,120 rows #TODO(#16226)
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    hard_num_allowed_rows_override: 150000
+    override_reason: Needs investigation.  Current failing level as of 10/26 is 102,721 rows #TODO(#16239)
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 4000
+    override_reason: Needs investigation.  Current failing level as of 11/2 is 2,868 rows #TODO(#16437)
+  - validation_name: sessions_persons_in_incarceration_or_supervision
+    hard_num_allowed_rows_override: 190000
+    override_reason: Currently have different logic between sessions and incarceration/supervision period views to filter out certain types of periods. #TODO(#15790) - Investigate best fix for longterm parity betweeen sessions and periods
+  - validation_name: incarceration_commitments_subset_of_admissions
+    hard_num_allowed_rows_override: 1
+    override_reason: There appears to be one very old data point that surfaced on 11/28/2022 which is causing a failure in this validation now. It's not clear why this suddenly popped up, but all data will be refreshed with a full historical and this may be a result of wonkiness before that is done. TODO(#15905) - check on this after full data refresh.
+  - validation_name: sentences_undefined_relationship
+    hard_num_allowed_rows_override: 6000
+    override_reason: Needs investigation. Current failing level as of 2/24/23 is 4,153 rows #TODO(#19047)
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 2000000
+    override_reason: MO charges must be sanitized of PII. Current failing level as of 4/5/23 is 1,726,658 rows (98%) #TODO(#18436)
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 75000
+    override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%). Error increased to 71,241 as of 11/29/23. #TODO(#20402)
+  - validation_name: in_custody_sps_have_associated_ip
+    hard_num_allowed_rows_override: 300000
+    override_reason: We have not implemented this change in MO normalization yet. Once we do, this override should not be needed.

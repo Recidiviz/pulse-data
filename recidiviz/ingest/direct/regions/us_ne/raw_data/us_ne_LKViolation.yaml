@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: LKViolation
+file_description: |-
+  This is a lookup table for violations
+data_classification: source
+primary_key_cols:
+  - pkCode
+columns:
+  - name: pkCode
+    description: |-
+      Primary Key ID
+  - name: fkType
+    description: |-
+      Foreign key type
+  - name: description
+    description: |-
+      Code description
+  - name: startDate
+    field_type: datetime
+    description: |-
+      start date
+  - name: endDate
+    field_type: datetime
+    description: |-
+      end date
+  - name: createdBy
+    description: |-
+      created by
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      created date
+  - name: modifiedBy
+    description: |-
+      modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      date modified
+  - name: version
+    description: |-
+      verison

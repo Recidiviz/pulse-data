@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OffenderAttributes
+file_description: |-
+  This table contains miscellaneous information about a person, such as height, weight, hair color, etc.
+data_classification: source
+primary_key_cols:
+  - OffenderID
+columns:
+  - name: OffenderID
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    field_type: person_external_id
+    external_id_type: US_TN_DOC
+  - name: Weight
+    description: |-
+      The weight of an individual, measured in pounds.
+  - name: HeightFeet
+    description: |-
+      A unit of measure describing an inmate's height.
+  - name: HeightInches
+    description: |-
+      The inches portion of a person's height.
+  - name: EyeColor
+    description: |-
+      The predominant eye color of a person.
+  - name: HairColor
+    description: |-
+      The predominant hair color classification of a person.
+  - name: Complexion
+    description: |-
+      The predominant skin color of a person.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: MaritalStatus
+    description: |-
+      The abbreviation of the marital status of a person.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: DriverLicenseState
+    description: |-
+      The state issuing a driver's license.
+  - name: DriverLicenseNumber
+    is_pii: True
+    description: |-
+      A unique identifier assigned to a driver's license by the state issuing the license.
+  - name: ScarsMarksTattoos
+    description: |-
+      The data reported on a criminal history report of distinguishing scars, marks, or tattoos that a person  might be identified by.
+  - name: Religion
+    description: |-
+      An abbreviation of the type of Religion practiced by a person.
+    # TODO(#7424) - Populate with definitions.
+    known_values: []
+  - name: BirthCounty
+    description: |-
+      The county in which a person  was born.
+  - name: BirthState
+    description: |-
+      The state in which a person  was born.
+  - name: NCICFingerprintID
+    is_pii: True
+    description: |-
+      An alphanumeric identified assigned by NCIC which uniquely identifies a person.
+  - name: TennesseeFingerprintID
+    is_pii: True
+    description: |-
+      An alphanumeric identified assigned by the state of Tennesse which uniquely identifies a person.
+  - name: DeathType
+    description: |-
+      The abbreviation for the cause of death of a person.
+  - name: DeathDate
+    field_type: datetime
+    description: |-
+      The date of the death of a person.
+  - name: DeathLocation
+    description: |-
+      The exact location (address, building number, cell number) at which an inmate died.
+  - name: DisposalType
+    description: |-
+      This indicates how the remains of a dead inmate were disposed.
+    known_values: []
+  - name: DisposalDate
+    field_type: datetime
+    description: |-
+      The date on which an inmate's remains were disposed. The date on which damaged or scrap merchandise is disposed of.
+  - name: DisposalLocation
+    is_pii: True
+    description: |-
+      The exact location (address, burial plot, or medical facility) at which disposal of an inmate's remains were made.
+  - name: DeathPostedByStaffID
+    is_pii: True
+    description: |-
+      The staff id of the individual who initially posted the death of a person.
+  - name: OBSCISID
+    is_pii: True
+    description: |-
+      This is the person ID used on the OBSCIS system.
+  - name: RestoreDate
+    field_type: datetime
+    description: |-
+      The date on which a person  and his related tables have been restored from tape.
+  - name: DeathSiteID
+    description: |-
+      This identifies the organizational/location entity which reports a person  as dead.
+  - name: DeathCertificateFlag
+    description: |-
+      This flag signifies that a death certificate was obtained as proof of death.
+  - name: OldFBINumber
+    is_pii: True
+    description: |-
+      The old FBI number associated with the person.
+  - name: OldSTGAffiliation
+    description: |-
+      This code is no longer used.  It was replaced by the STG (Security Threat Group) conversation.
+  - name: OldSTG
+    description: |-
+      The code to represent a security threat group name.
+  - name: OldSTGComments
+    description: |-
+      Comment line for person STG (Security Threat Group) information.
+  - name: CitizenshipCountry
+    description: |-
+      The country in which a person  is a citizen.
+  - name: BirthPlace
+    description: |-
+      This element will contain a person's place of birth (city) for a person  whose citizenship is other than the USA.
+  - name: AlienID
+    is_pii: True
+    description: |-
+      An identifier which uniquely identifies a person  with respect to immigration authorities.
+  - name: FBINumber
+    is_pii: True
+    description: |-
+      The FBI number for a person's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
+  - name: SIDNumber
+    is_pii: True
+    description: |-
+      An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies a person.
+  - name: LastUpdateUserID
+    is_pii: True
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    field_type: datetime
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
+
+table_relationships:
+  - foreign_table: OffenderName
+    join_logic:
+      - OffenderName.OffenderID = OffenderAttributes.OffenderID

@@ -1,0 +1,153 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PERSON_ID
+  - DPP_ID
+  - OFFICE
+  - OFFICER
+  - SUPV_LEVEL
+  - start_date
+  - end_date
+  - start_reason
+  - end_reason
+  - period_seq
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - PERSON_ID
+                - DPP_ID
+                - period_seq
+          start_date: start_date
+          admission_reason:
+            $enum_mapping:
+              $raw_text: start_reason
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - Releasee Abscond
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - SENTENCE EXPIRATION
+                  - TEMPORARY RELEASE
+                  - INTERSTATE COMPACT
+                  - DPPE START
+                  - PAROLE
+                  - WORK FURLOUGH
+                  - PROVISIONAL
+                  - HOME ARREST
+                  - TPR
+                  - DISCRETIONARY
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                  - INTERSTATE COMPACT PROBATION
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
+                  # This is the case when there was a warrant out for a person who absconded,
+                  # but rather than send them back to custody when they returned, the warrant
+                  # was quashed.
+                  - Warrant Quashed
+                StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  # A release type not used since 1997.
+                  - SHOCK INCARCERATION
+                StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                  - Temporary Placement
+                  - In Custody - Other
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - SUPV LEVEL ASSESSMENT
+                  - OFFICER CHANGE
+          termination_date: end_date
+          termination_reason:
+            $enum_mapping:
+              $raw_text: end_reason
+              $mappings:
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - Releasee Abscond
+                StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                  - Close Supervision Episode - Leave Prison Episode Active
+                StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                  - In Custody - Other
+                  - Temporary Placement
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - Death
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  # Describes a person being released from their supervision earlier than their sentence’s end date.
+                  - Release by Court
+                  - Admin Action Case Closed
+                  - Early Discharge
+                  - Court Ordered Termination
+                  - NEW CODE - Earned Release
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - OLD/NEW CODE - Expiration
+                  - DPPE END
+                  - Community Supervision End Date
+                  - End of Supervision
+                  - Absolute Discharge
+                  - ISC Closure
+                  - ISC Case Closure
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - SUPV LEVEL ASSESSMENT
+                  - OFFICER CHANGE
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Release ISC
+                  - Deport 1/2 Term
+                StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                  - Warrant Quashed
+                  - DPPE START # This only appears 3 times, always after a warrant was quashed, due to data entry errors.
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - Return from Abscond
+                  - TIS Release Return
+                  - Correctional Release Center Release
+                  - Temporary Release Return
+                  - Home Arrest Rescinded/Revoked
+                  - Parole Revoked-Regular
+                  - Provisional Rel Rescinded/Revoked
+                  - SB1291 Violated
+                  - Mandatory Release Res/Rev
+                  - Reopen Last Prison Episode
+                  - Work Furlough Rescinded/Revoked
+                  - Parole Revoked/41.1604.11K
+                  - ERCD Release Return
+                  - Drug Transition Violated
+                  - RTRN CUSTDY ITP
+                  - 41-1604.16 Revoked
+                  - Revocation
+                  - Discretionary Release Returnee
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - Activated In Error
+                  - Release in Error Return
+                  - Deactivated in Error
+                  - INFERRED MIGRATION ERROR
+                  - Duplicate ADC Number Activation
+          supervision_level:
+            $custom:
+              $function: us_az_custom_enum_parsers.parse_supervision_level
+              $args:
+                supervision_level: SUPV_LEVEL
+                admission_reason: start_reason
+          supervision_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - start_reason
+                    - $literal("Releasee Abscond")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              - $else_if:
+                  $equal:
+                    - start_reason
+                    - $literal("Interstate Compact Probation")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.PROBATION)
+              - $else: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
+          supervision_site: OFFICE
+          supervising_officer_staff_external_id: OFFICER
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: OFFICER
+                $then: $literal("US_AZ_PERSON_ID")

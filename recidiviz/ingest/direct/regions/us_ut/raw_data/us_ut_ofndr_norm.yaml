@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_norm
+file_description: |-
+  Offender Norm
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: full_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: addr
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: city
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: phone
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: region_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assnd_staff
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: zip
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: state
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ofndr_ssn
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: dob
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ofndr_lgl_stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: body_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: super_agnt_id
+    description: |-
+      TODO(#33372): Fill in column description. After we get root table for staff, flag this field with field_type: staff_external_id and external_id_type: US_UT_USR_ID.
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: fname
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: lname
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True

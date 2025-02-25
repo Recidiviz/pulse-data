@@ -1,0 +1,106 @@
+# Configuration for which validations to run for region US_ME.
+
+region_code: US_MI
+dev_mode: False
+exclusions:
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28865) Hydrate new sentencing entities
+max_allowed_error_overrides:
+  - validation_name: client_record_archive_duplicate_person_ids
+    hard_max_allowed_error_override: 0.01
+    override_reason:
+      A case where the MI accidentally assigned 2 sets of ids to a single person, and
+      then at one point realized and then combined the records in the raw data so we
+      combined their records in ingest. But that means now that this person was
+      associated with two distinct offender_ids and so they came up as duplicates in the
+      client record. Since it seems like this person no longer appears twice in the more
+      recent client records, that means this no longer has any impact on workflows.
+      # TODO(#23568)
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 1.0
+    override_reason:
+      Needs further investigation. There are some facilities in the external data that
+      don't appear in our data. In some cases (like "GUI"), it's not an actual facility
+      in the external data but a category of facilities. In other cases (like "JLS",
+      "ZPF", "ZPM"), they're facilities that we don't consider as part of incarceration
+      but further investigation is required to confirm that they are being excluded in
+      our incarceration periods view. Lastly, there are also some mismatches for
+      facilities that no longer exist ("IRM"). As a note, MI has cautioned that the
+      counts they have in the external data are also not entirely consistent.
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: .035
+    override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
+  - validation_name: supervision_population_by_type_external_comparison
+    hard_max_allowed_error_override: .18
+    override_reason:
+      Some error is expected because MI has told us that their validation
+      numbers for supervision have some weirdness. Hopefully we'll be able to get more
+      reliable validation data for supervision population when we receive OTIS data (TODO(#18578)).
+      There have been some changes in this error rate recently most likely due to all the ingest
+      changes we've made for outliers, where IN_CUSTODY supervision periods are no longer counted
+      in the supervision population because we now infer an IP during those periods.
+  - validation_name: person_caseload_location_sessions_caseload
+    hard_max_allowed_error_override: .25
+    soft_max_allowed_error_override: .25
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28363)
+  - validation_name: person_caseload_location_sessions_location
+    hard_max_allowed_error_override: .5
+    soft_max_allowed_error_override: .5
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28363)
+num_allowed_rows_overrides:
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 200000
+    override_reason:
+      We infer a ton of temporary custody periods in normalization, and so this produces
+      a ton of overlapping periods and so it's not surprising that we have such a high
+      failure rate for this validation.  When we have a chance, we should investigate whether
+      this validaiton ever makes sense for MI given all the inference we do #TODO(#13882)
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 50
+    override_reason: Mostly fixed but needs investigation for remaining cases.
+  - validation_name: incarceration_commitments_subset_of_admissions
+    hard_num_allowed_rows_override: 4
+    override_reason: Needs investigation. Current failing level as of 9/26 is 4 rows #TODO(#15586)
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    hard_num_allowed_rows_override: 400000
+    override_reason:
+      Needs investigation.  Current failing level as of 10/26 is 326,285
+      rows #TODO(#16227)
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    hard_num_allowed_rows_override: 100000
+    override_reason:
+      Needs investigation.  Current failing level as of 10/26 is 69,392
+      rows #TODO(#16237)
+  - validation_name: supervision_termination_reason_no_date
+    hard_num_allowed_rows_override: 10
+    override_reason: Needs investigation.  Current failing level as of 10/28 is 3 rows #TODO(#16337)
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 20
+    override_reason: Needs investigation.  Current failing level as of 11/2 is 9 rows
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 2500
+    override_reason: Current failing level as of 9/13/24 is 2101 rows (there are 3 distinct offense descriptions)
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 85000
+    override_reason:
+      This is largely due to the TEMPORARY_CUSTODY periods we infer, but the remaining cases
+      require further investigation. #TODO(#22303)
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 7
+    override_reason: Not required for web tool.  Ticket to investigate #TODO(#26496)
+  - validation_name: invalid_release_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 1500
+    override_reason:
+      Needs investigation and seems due to the in custody inference we've done.
+      As of 7/12/24, failing at 1379 rows because we fixed the sorting coming out of normalization (which had previous led to some failing rows not being flagged).
+      No immediate impact because the most recent row it's failing for is a period from 2020, and our tools don't use data that far back.
+      TODO(#26444)
+  - validation_name: current_impact_funnel_status_duplicate_external_ids
+    hard_num_allowed_rows_override: 10000
+    override_reason:
+      This validation is failing due to the way task eligibility spans are structured for MI.
+      Bumping threshold for now until it's determined whether this is an issue or not.  See #25100

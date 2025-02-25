@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - StaffID
+  - LastName
+  - FirstName
+  - OutlookEmail
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: StaffID
+          id_type: $literal("US_TN_STAFF_TOMIS")
+      - $conditional:
+          - $if:
+              $not_null: OutlookEmail
+            $then:
+              StateStaffExternalId:
+                external_id: OutlookEmail
+                id_type: $literal("US_TN_STAFF_EMAIL")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $surname: LastName
+    email: OutlookEmail

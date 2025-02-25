@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: lgl_stat_cd
+file_description: |-
+  Legal Stat Code
+data_classification: source
+primary_key_cols:
+  - lgl_stat_cd
+columns:
+  - name: lgl_stat_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: terminated_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: need_spr_agnt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: lgl_stat_displaycd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: hrchy
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

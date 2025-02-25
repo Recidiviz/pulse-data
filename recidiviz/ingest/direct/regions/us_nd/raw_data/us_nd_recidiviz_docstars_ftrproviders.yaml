@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: recidiviz_docstars_ftrproviders
+file_description: |-
+  Table with all contracted organizations and contact information that are providing 
+  Free Through Recovery services.
+data_classification: source
+primary_key_cols:
+  - PROVIDER_ID
+columns:
+  - name: PROVIDER_ID
+  - name: BUSINESS_NAME
+  - name: ADDRESS1
+  - name: ADDRESS2
+  - name: CITY
+  - name: STATE
+  - name: ZIP
+  - name: ACTIVE_PROVIDER
+  - name: LOCATION_ID
+  - name: DESCRIPTION
+  - name: CAPACITY
+  - name: REGION
+  - name: ACTIVE_LOCATION
+  - name: ACTIVE
+  - name: ACTIVE_1
+  - name: UNDERSERVED

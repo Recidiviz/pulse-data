@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_Investigation
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - InvestigationId
+columns:
+  - name: InvestigationId
+    description: |-
+      Unique identifier for each investigation.
+  - name: RequestDate
+    description: |-
+      The date on which the investigation was requested.
+    field_type: datetime
+  - name: RequestingAgencyId
+    description: |-
+      Identifier for the agency requesting the investigation; can be a number, 
+      alphanumeric string, or null.
+  - name: InvestigationTypeId
+    description: |-
+      Identifier for the type of investigation conducted. Can be joined to
+      `com_InvestigationType.InvestigationTypeId`.
+    known_values:
+      - value: 158
+        description: SUD Assessment Investigation
+      - value: 19
+        description: Home Plan Investigation
+      - value: 237
+        description: Firearm Applicant
+      - value: 250
+        description: Release Date Request
+      - value: 251
+        description: Parole- DOR
+      - value: 253
+        description: Transfer - District to District
+      - value: 254
+        description: Transfer to LSU
+      - value: 255
+        description: Transfer - District Officer to Officer
+      - value: 31
+        description: PSI_investigation_Converted
+      - value: 8
+        description: Pardon Investigation
+  - name: RequestingStaffId
+    description: |-
+      Identifier for the staff requesting the investigation.
+    is_pii: True
+  - name: ReceivingDOCLocationId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: TransferReasonId
+    description: |-
+      TODO(#15329): Fill in column description
+    known_values: []
+  - name: RequestNotes
+    description: |-
+      Notes regarding the investigation request; can be raw text or a number.
+    is_pii: True
+  - name: AssignedById
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: AssignedToId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: AssignedDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: DueDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: CompletionDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: AssociatedReportId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Accepted
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Cancelled
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ResponseNotes
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ProposedOffenderAddressId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: OtherDOCLocationId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: OtherAssignedById
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: OtherAssignedToId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: OtherAssignedDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: OtherDueDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InvestigationStatusId
+    description: |-
+      TODO(#15329): Fill in column description
+    known_values:
+      - value: 1
+        description: Pending
+      - value: 2
+        description: Completed
+      - value: 3
+        description: Accepted
+      - value: 4
+        description: Denied

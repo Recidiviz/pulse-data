@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFICER
+  - JobTitle
+  - start_date
+  - end_date
+  - period_seq_num
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: OFFICER
+          id_type: $literal("US_ND_DOCSTARS_OFFICER")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFICER
+                - period_seq_num
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_subtype:
+            $enum_mapping:
+              $raw_text: JobTitle
+              $custom_parser: us_nd_custom_enum_parsers.parse_role_subtype

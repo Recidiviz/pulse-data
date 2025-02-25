@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "Boolean literal",
+    "description": "Expression that evaluates to the same boolean value for every input CSV row, regardless of the CSV's contents.",
+    "type": "string",
+    "pattern": "^\\$literal_bool\\((True|False)\\)$",
+    "examples": [
+      "$literal_bool(True)"
+    ],
+    "#contextualized_examples": [
+      {
+        "$equal": [
+          "is_capital_punishment",
+          "$literal_bool(False)"
+        ]
+      }
+    ]
+  }
+  

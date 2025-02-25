@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_common_statute_table
+file_description: |-
+  A reference table containing Common Statute Numbers and their descriptions, as found online
+  at https://attorneygeneral.nd.gov/criminal-justice-resources/common-statute-table/
+
+  The Common Statute Table (CST) is a list of offenses from North Dakota Century Code and 
+  provides a common charging reference for criminal justice agencies. The CST is updated 
+  in July of every odd numbered year to reflect legislative changes. Between legislative 
+  sessions, the CST is updated once per month, as needed. When the CST is updated, a current, 
+  full version of the CST is published as well as a file outlining just the changes from 
+  the last release.
+
+  These are used in the Docstars system, and should be prioritized over NCIC codes whenever
+  possible. This raw data table should be updated periodically to account for changes.
+data_classification: source
+update_cadence: IRREGULAR
+primary_key_cols:
+  - Id
+columns:
+  - name: Authority
+    description: Always "Common".
+  - name: Common_Statute_Number
+    description: The Number associated with this statute. An alternate primary key.
+  - name: Id
+    description: An ID associated with this common statute number.
+  - name: Source
+    description: Sometimes the chapter of the related statute, sometimes "Other".
+  - name: Base_Statute
+    description: The statute related to this offense code.
+  - name: Inchoate
+  - name: Additional_Statute
+    description: A further detailed statute related to this offense, if applicable.
+  - name: Dropdown_Description
+    description: The description of the offense code, including detail and felony or misdemeanor classification.
+  - name: Rap_Sheet_Description
+    description: The description of the offense code, including detail but not felony or misdemeanor classification.
+  - name: Charging_Description
+    description: The simplified description of the offense code.
+  - name: By_Then_And_There_Description
+  - name: Offense_Class
+    description: |-
+      If the offense is a misdemeanor or felony. Values that start with "M" are 
+      misdemeanors and codes that start with "F" are felonies.
+  - name: Criminal__1_Non_Criminal_0
+  - name: Category
+  - name: Fingerprints_Required__F_
+  - name: Registration_Required__R_
+  - name: RMSTracsFBI
+  - name: DOT
+  - name: Minimum_Mandatory
+  - name: Fixed_Fine
+  - name: Effective_Date
+  - name: Expiration_Date
+is_code_file: True

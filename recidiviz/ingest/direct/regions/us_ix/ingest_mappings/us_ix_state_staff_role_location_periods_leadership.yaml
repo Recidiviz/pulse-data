@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - EmployeeId
+  - Role
+  - LocationId
+  - start_date
+  - end_date
+  - period_id
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: EmployeeId
+          id_type: $literal("US_IX_EMPLOYEE")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ATLAS")
+                - EmployeeId
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
+          role_subtype:
+            $enum_mapping:
+              $raw_text: Role
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
+                  - "DISTRICT MANAGER"
+                  - "DEPUTY DISTRICT MANAGER"
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
+                  - "STATE LEADERSHIP"
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ATLAS")
+                - EmployeeId
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          location_external_id:
+            $concat:
+              $values:
+                - $literal("ATLAS")
+                - LocationId

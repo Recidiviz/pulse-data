@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_oth_num
+file_description: |-
+  Offender Other Num
+data_classification: source
+primary_key_cols:
+  - ofndr_oth_num_id
+columns:
+  - name: ofndr_oth_num_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: num_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: gvnmt_src_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: num_val
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

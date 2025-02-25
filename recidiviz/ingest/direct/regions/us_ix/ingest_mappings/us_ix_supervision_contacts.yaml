@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId #external_id
+  - OffenderNoteInfoId #external_id
+  - NoteDate
+  - contact_type
+  - contact_method
+  - contact_title #reason_raw_text
+  - contact_location #location_raw_text and concat for method
+  - contact_result
+  - verified_employment
+  - resulted_in_arrest
+  - EmployeeId
+  - FirstName
+  - MiddleName
+  - LastName
+unused_columns:
+  - FirstName
+  - MiddleName
+  - LastName
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_contacts:
+      - StateSupervisionContact:
+          contacting_staff_external_id: EmployeeId
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: EmployeeId
+                $then: $literal("US_IX_EMPLOYEE")
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - OffenderNoteInfoId
+          verified_employment:
+            $equal:
+              - verified_employment
+              - $literal("True")
+          contact_date: NoteDate
+          contact_method:
+            $enum_mapping:
+              $raw_text: contact_method
+              $custom_parser: us_ix_custom_enum_parsers.contact_method_from_contact_methods_list
+          location:
+            $enum_mapping:
+              $raw_text: contact_location
+              $custom_parser: us_ix_custom_enum_parsers.contact_location_from_contact_locations_list
+              $ignore:
+                - "EMAIL"
+                - "FAX"
+                - "MAIL"
+                - "TELEPHONE"
+                - "VIRTUAL"
+                - "$IGNORE"
+          contact_type:
+            $enum_mapping:
+              $raw_text: contact_type
+              $mappings:
+                StateSupervisionContactType.COLLATERAL:
+                  - "COLLATERAL"
+                StateSupervisionContactType.DIRECT:
+                  - "DIRECT"
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
+                  - "COLLATERAL,DIRECT"
+          contact_reason:
+            $enum_mapping:
+              $raw_text: contact_title
+              $mappings:
+                StateSupervisionContactReason.INITIAL_CONTACT:
+                  - "72 HOUR INITIAL"
+                  - "INITIAL"
+                StateSupervisionContactReason.EMERGENCY_CONTACT:
+                  - "CRITICAL"
+                  - "EMERGENCY"
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "GENERAL"
+                StateSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "CONVERSION"
+                  - "GENERAL REINFORCEMENT"
+                  - "GENERAL DISAPPROVAL"
+                  - "EMERGENCY,INITIAL"
+                  - "GENERAL,INITIAL"
+                  - "EMERGENCY,GENERAL"
+                  - "EMERGENCY,GENERAL,INITIAL"
+          status:
+            $enum_mapping:
+              $raw_text: contact_result
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - "SUCCESSFUL"
+                  - "PROGRESS REVIEW"
+                  - "FACE TO FACE"
+                  - "ARREST"
+                  - "COMPLETED"
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - "ATTEMPTED"
+                  - "INQUIRY"
+                  - "FAILED TO REPORT"
+                  - "ATTEMPTED,COMPLETED"
+          resulted_in_arrest:
+            $equal:
+              - resulted_in_arrest
+              - $literal("True")

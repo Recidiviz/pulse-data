@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: assess_sel
+file_description: |-
+  Assessment Selections
+data_classification: source
+primary_key_cols:
+  - assess_itm_cd
+  - score_id
+  - rsk_need_sctn_cd
+  - rsk_need_typ_cd
+columns:
+  - name: assess_itm_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: score_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rsk_need_sctn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rsk_need_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: score_desc
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: score_val
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,39 @@
+address:
+  dataset_id: us_pa_supplemental
+  table_id: recidivism
+description: "Recidivism numbers provided directly by the PA DOC. Source: https://drive.google.com/file/d/1m5rnU29ojh5fC8ViOPjSxFdzliOu4JIi/view?usp=sharing"
+schema:
+  - name: year_of_release
+    type: INTEGER
+    mode: NULLABLE
+  - name: inmates_released
+    type: INTEGER
+    mode: NULLABLE
+  - name: rearrest_6mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: rearrest_12mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: rearrest_36mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: reincarceration_6mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: reincarceration_12mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: reincarceration_36mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: recidivism_6mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: recidivism_12mo
+    type: FLOAT
+    mode: NULLABLE
+  - name: recidivism_36mo
+    type: FLOAT
+    mode: NULLABLE
+clustering_fields: null

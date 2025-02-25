@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: manyPrimaryKeys
+file_description: |-
+  First raw file.
+data_classification: source
+primary_key_cols:
+  - col_name_1a
+  - col_name_1b
+columns:
+  - name: col_name_1a
+    description: |-
+      First column.
+    field_type: person_external_id
+    external_id_type: US_OZ_EG
+    is_pii: True
+  - name: col_name_1b
+    description: |-
+      A column description that is long enough to take up
+      multiple lines. This text block will be interpreted
+      literally and trailing/leading whitespace is removed.
+  - name: undocumented_column
+encoding: ISO-456-7
+table_relationships:
+  - foreign_table: noValidPrimaryKeys
+    join_logic:
+      - manyPrimaryKeys.col_name_1b = noValidPrimaryKeys.col_name_1b
+      - manyPrimaryKeys.col_name_1b = "test value"

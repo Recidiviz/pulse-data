@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Addresses
+file_description: |-
+  This file contains address information
+data_classification: source
+primary_key_cols:
+  - AddressId
+columns:
+  - name: AddressId
+    description: |-
+      Address PK
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: true
+  - name: Homeless
+    description: |-
+      Homeless indicator
+  - name: ForwardingAddress
+    description: |-
+      Forwarding address
+    is_pii: True
+  - name: Address1
+    description: |-
+      Address
+    is_pii: True
+  - name: Address2
+    description: |-
+      Address second line
+    is_pii: True
+  - name: AddressCity
+    description: |-
+      City
+    is_pii: True
+  - name: AddressCounty
+    description: |-
+      County
+    is_pii: True
+  - name: AddressCountry
+    description: |-
+      country
+  - name: AddressState
+    description: |-
+      Address state
+    is_pii: True
+  - name: AddressZipCode
+    description: |-
+      Address zip code
+    is_pii: True
+  - name: ResidencePhoneNo
+    description: |-
+      Residence phone
+    is_pii: True
+  - name: CellPhoneNo
+    description: |-
+      Cell Phone
+    is_pii: True
+  - name: PropertyType
+    description: |-
+      Property type
+  - name: MonthlyCost
+    description: |-
+      Monthly cost
+  - name: AddressStartDt
+    field_type: datetime
+    description: |-
+      Date started at address
+  - name: AddressEndDt
+    field_type: datetime
+    description: |-
+      Date ended at address
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered

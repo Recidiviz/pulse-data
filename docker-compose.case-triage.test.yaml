@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  backend:
+    environment:
+      - SQLALCHEMY_DB_NAME=case_triage_test
+
+  migrations:
+    environment:
+      - SQLALCHEMY_DB_NAME=case_triage_test

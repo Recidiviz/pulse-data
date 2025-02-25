@@ -1,0 +1,26 @@
+address:
+  dataset_id: us_pa_validation_oneoffs
+  table_id: supervision_population_person_level_raw
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: region_code
+    type: STRING
+    mode: NULLABLE
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_supervision
+    type: DATE
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: supervising_officer
+    type: STRING
+    mode: NULLABLE
+  - name: supervision_level
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

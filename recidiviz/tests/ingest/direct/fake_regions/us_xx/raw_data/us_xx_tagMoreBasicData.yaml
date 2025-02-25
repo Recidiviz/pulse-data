@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: tagMoreBasicData
+file_description: |-
+  tagMoreBasicData file description
+data_classification: source
+primary_key_cols:
+  - COL4
+columns:
+  - name: COL4
+    description: |-
+      column 4 description
+  - name: COL5
+    description: |-
+      column 5 description
+  - name: COL6
+    description: |-
+      column 6 description
+custom_line_terminator: "\n"

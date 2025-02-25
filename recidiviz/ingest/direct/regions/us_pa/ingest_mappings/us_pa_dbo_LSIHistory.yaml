@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_dbo_LSIHistory` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - LsirID
+  - ParoleCountID
+  - LSIRScore
+  - ReleaseStatus
+  - InterviewDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - ParoleNumber
+                - ParoleCountID
+                - LsirID
+                - ReleaseStatus
+          assessment_type: $literal_enum(StateAssessmentType.LSIR)
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_date: InterviewDate
+          assessment_score: LSIRScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "††"
+                  $values:
+                    - InterviewDate
+                    - $literal("LSIR")
+                    - LSIRScore
+              $custom_parser: us_pa_custom_enum_parsers.assessment_level_mapper

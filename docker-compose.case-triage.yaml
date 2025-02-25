@@ -1,0 +1,39 @@
+# Defines services needed to run the Case Triage app (on top of shared services already in docker-compose.yaml)
+# Run via `docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml up`
+
+version: "3"
+
+services:
+  case_triage_backend:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - case_triage_db_socket:/cloudsql/case_triage
+      - pathways_db_socket:/cloudsql/pathways
+      - insights_db_socket:/cloudsql/insights
+      - workflows_db_socket:/cloudsql/workflows
+    depends_on:
+      - case_triage_db
+      - pathways_db
+      - insights_db
+      - workflows_db
+
+    ports:
+      - "5000:5000"
+    # Running with threads and no debugger seems to improve latency on first request
+    command: pipenv run flask run -h 0.0.0.0 --with-threads --no-debugger
+    environment:
+      - AUTH0_CLAIM_NAMESPACE=https://dashboard.recidiviz.org
+      - FLASK_APP=/app/recidiviz/case_triage/server.py
+      - FLASK_ENV=development
+      # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
+      # They can safely be excluded from the stat reloader for a performance boost
+      - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+      - IS_DEV=true
+      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
+    links:
+      - "redis:rate_limit_cache"
+      - "redis:sessions_cache"
+      - "redis:pathways_metric_cache"

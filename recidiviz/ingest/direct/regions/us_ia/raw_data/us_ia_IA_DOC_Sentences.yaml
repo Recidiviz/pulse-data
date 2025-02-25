@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Sentences
+file_description: |-
+  This table contains sentence information
+data_classification: source
+primary_key_cols:
+  - SentenceId
+columns:
+  - name: SentenceId
+    description: |-
+      Sentence id
+  - name: ChargeId
+    description: |-
+      Charge id
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: SentenceDispositionStatusId
+    description: |-
+      Sentence disposition status id
+  - name: SentenceDispositionStatus
+    description: |-
+      Sentence disposition status
+  - name: JudgeLegalPeopleId
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: JudgeFirstNm
+    description: |-
+      Judge first name
+    is_pii: True
+  - name: JudgeMiddleNm
+    description: |-
+      Judge middle name
+    is_pii: True
+  - name: JudgeLastNm
+    description: |-
+      Judge last name
+    is_pii: True
+  - name: DefenseAttorneys
+    description: |-
+      Defense Attorney
+    is_pii: True
+  - name: ProsecutingAttorneys
+    description: |-
+      Prosecuting attorneys
+    is_pii: True
+  - name: SentenceDt
+    field_type: datetime
+    description: |-
+      Sentence date
+  - name: SentenceEndDt
+    field_type: datetime
+    description: |-
+      Senence end date
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered

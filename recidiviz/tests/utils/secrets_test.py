@@ -1,0 +1,123 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2019 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+# pylint: disable=unused-import,wrong-import-order
+
+"""Tests for utils/secrets.py."""
+from typing import Callable
+from unittest.mock import MagicMock, patch
+
+from google.cloud import exceptions
+from google.cloud.secretmanager_v1 import AccessSecretVersionResponse, SecretPayload
+from mock import Mock
+
+from recidiviz.utils import metadata, secrets
+
+
+class TestSecrets:
+    """Tests for the secrets module."""
+
+    def setup_method(self) -> None:
+        self.in_test_patcher = patch(
+            "recidiviz.utils.secrets.in_test", return_value=False
+        )
+        self.in_ci_patcher = patch("recidiviz.utils.secrets.in_ci", return_value=False)
+        self.in_test_patcher.start()
+        self.in_ci_patcher.start()
+
+    def teardown_method(self, _test_method: Callable) -> None:
+        secrets.clear_sm()
+        secrets.CACHED_SECRETS.clear()
+        self.in_test_patcher.stop()
+        self.in_ci_patcher.stop()
+
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_in_cache(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
+        write_to_local("top_track", "An Eagle In Your Mind")
+
+        actual = secrets.get_secret("top_track")
+        assert actual == "An Eagle In Your Mind"
+
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_not_in_cache(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
+        payload = SecretPayload(data=bytes("Olson".encode("UTF-8")))
+
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.return_value = AccessSecretVersionResponse(
+            payload=payload
+        )
+        with patch(
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
+            assert actual == "Olson"
+
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_not_in_cache_not_found(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
+
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.side_effect = exceptions.NotFound(
+            "Could not find it"
+        )
+        with patch(
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
+            assert actual is None
+
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_not_in_cache_error(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
+
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.side_effect = Exception(
+            "Something bad happened"
+        )
+        with patch(
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
+            assert actual is None
+
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_not_in_cache_bad_payload(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
+
+        mock_client = Mock()
+        mock_client.secret_version_path.return_value = "test-project.top_track.latest"
+        mock_client.access_secret_version.return_value = AccessSecretVersionResponse(
+            payload=None
+        )
+        with patch(
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
+            return_value=mock_client,
+        ):
+            actual = secrets.get_secret("top_track")
+            assert actual is None
+
+
+def write_to_local(name: str, value: str) -> None:
+    secrets.CACHED_SECRETS[(name, "test-project")] = value

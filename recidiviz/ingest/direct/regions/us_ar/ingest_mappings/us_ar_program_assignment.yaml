@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - WORKPGMASSIGNMENTCODE
+  - JOBPGMASSIGNMENTLOC
+  - JOBPGMASSIGNMENTSTATUS
+  - PADATETIME
+  - WRKASSIGNSTATUSDATE
+  - WORKASSIGNMENTAUTHBY
+unused_columns: []
+variables:
+  - is_valid_id:
+      $and:
+        - $not_null: WORKASSIGNMENTAUTHBY
+        - $custom:
+            $function: us_ar_custom_parsers.is_known_staff_id
+            $args:
+              staff_id: WORKASSIGNMENTAUTHBY
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - PADATETIME
+          program_id: WORKPGMASSIGNMENTCODE
+          program_location_id: JOBPGMASSIGNMENTLOC
+          participation_status:
+            $enum_mapping:
+              $raw_text: JOBPGMASSIGNMENTSTATUS
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - CMP # Completed
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - REL # Released
+                  - DRP # Dropped
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - HH # Hearing Held
+                  - REA # Re-Assigned
+                  - TRN # Transferred
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - ASG # Assigned (Permanent)
+                  - EXT # Assigned (Extended)
+                  - INT # Assigned (Initial)
+                  - TMP # Assigned (Temporary)
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - PND # Pending Approval
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - WTH # Withdrew
+          start_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: JOBPGMASSIGNMENTSTATUS
+                    $options:
+                      - $literal("PND") # Pending Approval
+                $then: PADATETIME
+          discharge_date:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: JOBPGMASSIGNMENTSTATUS
+                    $options:
+                      - $literal("CMP") # Completed
+                      - $literal("REL") # Released
+                $then: WRKASSIGNSTATUSDATE
+          referring_staff_external_id:
+            $conditional:
+              - $if: $variable(is_valid_id)
+                $then: WORKASSIGNMENTAUTHBY
+          referring_staff_external_id_type:
+            $conditional:
+              - $if: $variable(is_valid_id)
+                $then: $literal("US_AR_PARTYID")
+          referral_metadata:
+            $json_dict:
+              program_type:
+                $custom:
+                  $function: us_ar_custom_parsers.parse_program_type
+                  $args:
+                    program_id: WORKPGMASSIGNMENTCODE
