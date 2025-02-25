@@ -48,10 +48,6 @@
       },
       "uniqueItems": true
     },
-    "launch_env": {
-      "description": "Boolean expressions indicating under what environment an ingest view is launched. Parsing should continue if this condition is met. If this field is not present, assume that we should launch the ingest view.",
-      "$ref": "boolean_expressions/index.json"
-    },
     "output": {
       "description": "The entity tree to generate for each row in the input file.",
       "$ref": "entity_expressions/entity_tree.json"

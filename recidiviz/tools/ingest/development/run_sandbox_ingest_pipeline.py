@@ -53,15 +53,6 @@ from tabulate import tabulate
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
 )
@@ -150,19 +141,12 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value
     )
-    ingest_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-    )
-    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
+    view_collector = DirectIngestViewQueryBuilderCollector(region)
+    launchable_ingest_views = view_collector.launchable_ingest_views(
         # Use the context for the project we will be running against, not the one that
         # corresponds to the local environment so that we don't identify local-only
         # views as launchable here.
-        IngestViewContentsContext.build_for_project(project_id=project_id),
-    )
-    view_collector = DirectIngestViewQueryBuilderCollector(
-        region,
-        launchable_ingest_views,
+        project_id=project_id,
     )
 
     raw_table_dependencies = {

@@ -284,7 +284,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.IngestViewManifestCollector",
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.DirectIngestViewQueryBuilderCollector",
     )
     def test_ingest_pipeline_should_run_in_dag_false(
         self, mock_manifest_collector: MagicMock

@@ -18,9 +18,6 @@
 import unittest
 
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -29,6 +26,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
@@ -63,16 +63,18 @@ class TestStateSpecificNormalizationDelegate(unittest.TestCase):
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
+
+            view_collector = DirectIngestViewQueryBuilderCollector(region=region)
             for project_id in DATA_PLATFORM_GCP_PROJECTS:
-                ingest_view_context = IngestViewContentsContext.build_for_project(
-                    project_id=project_id
+                all_launchable_views = view_collector.launchable_ingest_views(
+                    project_id
                 )
                 # These are the entity types that are output from ingest mappings
-                normalization_input_types = get_expected_output_pre_normalization_entity_classes(
-                    ingest_manifest_collector,
-                    ingest_views_to_run=ingest_manifest_collector.launchable_ingest_views(
-                        ingest_view_context
-                    ),
+                normalization_input_types = (
+                    get_expected_output_pre_normalization_entity_classes(
+                        ingest_manifest_collector,
+                        ingest_views_to_run=list(all_launchable_views.keys()),
+                    )
                 )
 
                 # These are the types that would be output from ingest, given no custom

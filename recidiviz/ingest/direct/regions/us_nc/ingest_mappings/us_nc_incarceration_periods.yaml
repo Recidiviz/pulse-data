@@ -1,9 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
-# Output for this view currently crashes with normalization errors - limit to only run in tests.
-# Presumably we will start over with new views if we were to start real product development for NC.
-launch_env:
-  $env: is_local
 input_columns:
   doc_id: STRING
   start_date: STRING

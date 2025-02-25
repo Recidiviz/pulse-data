@@ -44,9 +44,6 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 )
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
 )
@@ -67,7 +64,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.ingest.state.generate_entities import to_string_value_converter
-from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import get_closest_string
@@ -177,7 +173,6 @@ def parse_results(
         ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
-            context=IngestViewContentsContext.build_for_project(metadata.project_id()),
         )
 
         progress.close()

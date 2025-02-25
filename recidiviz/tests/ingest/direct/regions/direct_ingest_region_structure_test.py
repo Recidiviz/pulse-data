@@ -54,9 +54,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -115,7 +112,7 @@ from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integr
     PIPELINE_INTEGRATION_TEST_NAME,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import environment
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.types import assert_type
 
@@ -687,44 +684,19 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
             )
-            with patch.object(
-                metadata, "project_id", return_value=project
-            ), patch.object(
-                environment,
-                "in_gcp_staging",
-                return_value=(project == environment.GCP_PROJECT_STAGING),
-            ), patch.object(
-                environment,
-                "in_gcp_production",
-                return_value=(project == environment.GCP_PROJECT_PRODUCTION),
-            ):
-                ingest_view_manifest_collector = IngestViewManifestCollector(
-                    region=region,
-                    delegate=StateSchemaIngestViewManifestCompilerDelegate(
-                        region=region
-                    ),
-                )
-                ingest_view_names = list(
-                    ingest_view_manifest_collector.ingest_view_to_manifest
-                )
-                related_ingest_view_pairs = self._get_related_ingest_view_pairs(
-                    ingest_view_names
-                )
-                contents_context = IngestViewContentsContext.build_for_project(project)
-                for ingest_view, ingest_view_2 in related_ingest_view_pairs:
-                    manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
-                        ingest_view
-                    ]
-                    manifest_2 = ingest_view_manifest_collector.ingest_view_to_manifest[
-                        ingest_view_2
-                    ]
-                    self.assertFalse(
-                        manifest.should_launch(contents_context)
-                        and manifest_2.should_launch(contents_context),
-                        f"Found related {region_code.value} views, [{ingest_view}] and "
-                        f"[{ingest_view_2}], which are both configured to launch in "
-                        f"[{project}]",
+            view_collector = DirectIngestViewQueryBuilderCollector(region=region)
+            launchable_views = view_collector.launchable_ingest_views(project)
+            related_ingest_view_pairs = self._get_related_ingest_view_pairs(
+                list(launchable_views.keys())
+            )
+            if any(related_ingest_view_pairs):
+                msg = (
+                    f"Found related views which are both configured to launch in {region_code.value}, [{project}]:"
+                    "\n- ".join(
+                        f"[{iv1}] and [{iv2}]" for iv1, iv2 in related_ingest_view_pairs
                     )
+                )
+                self.assertFalse(msg)
 
     # TODO(#22059): Update integration test fixtures
     def test_integration_test_ingest_view_result_fixture_files_have_corresponding_yaml(

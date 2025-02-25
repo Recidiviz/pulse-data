@@ -28,9 +28,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -87,16 +84,9 @@ class IngestRegionTestMixin(abc.ABC):
         )
 
     @classmethod
-    def launchable_ingest_views(cls) -> list[str]:
-        return cls.ingest_view_manifest_collector().launchable_ingest_views(
-            IngestViewContentsContext.build_for_tests()
-        )
-
-    @classmethod
     def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
         return DirectIngestViewQueryBuilderCollector(
             cls.region(),
-            cls.launchable_ingest_views(),
         )
 
     def get_ingest_view_results_from_fixture(

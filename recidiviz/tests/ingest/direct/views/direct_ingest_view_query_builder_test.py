@@ -52,6 +52,35 @@ class DirectIngestViewQueryBuilderTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
+    def test_can_run_in_project(self) -> None:
+        """Tests that we gate ingest views correctly."""
+        view_builder = DirectIngestViewQueryBuilder(
+            region="us_xx",
+            ingest_view_name="ingest_view_tag",
+            view_query_template="SELECT * FROM table",
+            region_module=fake_regions_module,
+            allowed_project_ids={self.PROJECT_ID},
+        )
+        assert view_builder.can_run_in_project(self.PROJECT_ID)
+        assert not view_builder.can_run_in_project("recidiviz-abcd")
+
+        view_builder = DirectIngestViewQueryBuilder(
+            region="us_xx",
+            ingest_view_name="ingest_view_tag",
+            view_query_template="SELECT * FROM table",
+            region_module=fake_regions_module,
+        )
+        assert view_builder.can_run_in_project(self.PROJECT_ID)
+
+        view_builder = DirectIngestViewQueryBuilder(
+            region="us_xx",
+            ingest_view_name="ingest_view_tag",
+            view_query_template="SELECT * FROM table",
+            region_module=fake_regions_module,
+            testing_only=True,
+        )
+        assert not view_builder.can_run_in_project(self.PROJECT_ID)
+
     def test_direct_ingest_preprocessed_view(self) -> None:
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}

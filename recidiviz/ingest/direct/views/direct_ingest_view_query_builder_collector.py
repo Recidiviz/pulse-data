@@ -62,6 +62,15 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
             expected_ingest_views,
         )
 
+    def launchable_ingest_views(
+        self, project_id: str
+    ) -> dict[str, DirectIngestViewQueryBuilder]:
+        return {
+            ingest_view_name: builder
+            for (ingest_view_name, builder) in self._query_builders_by_name().items()
+            if builder.can_run_in_project(project_id)
+        }
+
     def _collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         """Collect the ingest view query builders for this state from the file system."""
         if self.region.region_module.__file__ is None:

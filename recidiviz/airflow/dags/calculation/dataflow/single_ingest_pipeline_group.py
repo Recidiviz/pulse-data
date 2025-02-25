@@ -55,14 +55,8 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
@@ -79,20 +73,11 @@ def _has_launchable_ingest_views(state_code: StateCode) -> bool:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
-    ingest_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+    view_collector = DirectIngestViewQueryBuilderCollector(region=region)
+    launchable_views = view_collector.launchable_ingest_views(
+        project_id=metadata.project_id()
     )
-    return (
-        len(
-            ingest_manifest_collector.launchable_ingest_views(
-                IngestViewContentsContext.build_for_project(
-                    project_id=metadata.project_id()
-                )
-            )
-        )
-        > 0
-    )
+    return any(launchable_views)
 
 
 @task.short_circuit(ignore_downstream_trigger_rules=False)

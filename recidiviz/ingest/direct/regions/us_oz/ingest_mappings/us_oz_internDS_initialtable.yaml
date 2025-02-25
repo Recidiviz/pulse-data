@@ -2,9 +2,6 @@
 # This file associates the columns outputted from the query in `view_internDS_initialtable` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
-# The raw data for this view no longer exists in staging so we don't run this view
-launch_env:
-  $env: is_local
 input_columns:
   ID: STRING
   FirstName: STRING

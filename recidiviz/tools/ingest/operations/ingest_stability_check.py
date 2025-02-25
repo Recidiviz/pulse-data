@@ -67,15 +67,6 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -274,20 +265,13 @@ def verify_ingest_view_determinism(
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
-    ingest_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-    )
-    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
+    ingest_view_collector = DirectIngestViewQueryBuilderCollector(region)
+    launched_ingest_views = ingest_view_collector.launchable_ingest_views(
         # Since this is a script run locally, we use the context for the specified
         # project so that we don't include local-only views.
-        IngestViewContentsContext.build_for_project(project_id=metadata.project_id()),
+        project_id=metadata.project_id(),
     )
-
-    view_query_builders = DirectIngestViewQueryBuilderCollector(
-        region,
-        expected_ingest_views=launched_ingest_views,
-    ).get_query_builders()
+    view_query_builders = ingest_view_collector.get_query_builders()
 
     progress = tqdm(
         total=len(launched_ingest_views),

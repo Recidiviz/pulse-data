@@ -55,12 +55,6 @@ class IngestViewManifestCompilerDelegate:
         """Returns the path to the ingest view manifest for a given ingest name."""
 
     @abc.abstractmethod
-    def get_env_property_type(self, property_name: str) -> Type:
-        """Returns the expected value type for the given env property (i.e. the type
-        of the value returned by IngestViewContentsContext.get_env_property()).
-        """
-
-    @abc.abstractmethod
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         """Returns a dictionary containing any fields, with their corresponding values,
         that should be set on every entity produced by the parser.
@@ -102,11 +96,6 @@ class IngestViewManifestCompilerDelegate:
 
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 
-# Supported $env properties
-IS_LOCAL_PROPERTY_NAME = "is_local"
-IS_STAGING_PROPERTY_NAME = "is_staging"
-IS_PRODUCTION_PROPERTY_NAME = "is_production"
-
 
 def ingest_view_manifest_dir(region: DirectIngestRegion) -> str:
     """Returns the directory where all ingest view manifests for a given region live."""
@@ -140,16 +129,6 @@ class StateSchemaIngestViewManifestCompilerDelegate(
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         return yaml_mappings_filepath(self.region, ingest_view_name)
-
-    def get_env_property_type(self, property_name: str) -> Type:
-        if property_name in (
-            IS_LOCAL_PROPERTY_NAME,
-            IS_STAGING_PROPERTY_NAME,
-            IS_PRODUCTION_PROPERTY_NAME,
-        ):
-            return bool
-
-        raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         # All entities in the state schema have the state_code field - we add this

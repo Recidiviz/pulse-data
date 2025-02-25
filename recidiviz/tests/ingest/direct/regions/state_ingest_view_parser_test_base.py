@@ -30,9 +30,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContext,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
 )
@@ -156,7 +153,6 @@ class LegacyStateIngestViewParserTestBase:
                         row[field] = converter(row[field])
             parsed_output = manifest.parse_contents(
                 contents_iterator=fixture_content,
-                context=IngestViewContentsContext.build_for_tests(),
             )
 
         if debug:
