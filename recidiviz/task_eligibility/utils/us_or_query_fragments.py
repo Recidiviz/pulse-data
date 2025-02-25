@@ -230,14 +230,3 @@ OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED =
     "163.160(03X)",  # only funded if constituting domestic violence
     "163.190",  # only funded if constituting domestic violence
 ]
-
-# supervision types ineligible for EDIS (see OR ingest mappings to see all types)
-# TODO(#35095): If we can move from a person-level supervision type criterion to
-# something at the sentence level, perhaps we won't need this?
-OR_EARNED_DISCHARGE_INELIGIBLE_SUPERVISION_TYPES = [
-    "CD",  # not yet convicted (& won't be if sup. is completed successfully)
-    "DV",  # not yet convicted (& won't be if sup. is completed successfully)
-    "PA",  # parole
-    "PS",  # post-parole
-    "SL",  # Second Look juveniles
-]

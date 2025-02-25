@@ -43,9 +43,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_FUNDED_SENTENCE_VIEW_NAME = "us_or_funded_sentence"
 
-# TODO(#35095): Account for conviction status (i.e., conditional discharge or diversion)
-# and supervision/sentence type (i.e., probation vs. local-control post-prison vs.
-# general post-prison vs. other types) within this criterion.
 US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
         /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
