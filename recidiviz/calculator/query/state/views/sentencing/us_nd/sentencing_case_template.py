@@ -64,7 +64,19 @@ WITH
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offensestable_latest`
   QUALIFY
     ROW_NUMBER() OVER (PARTITION BY COURT_NUMBER ORDER BY IF (COUNTY IS NULL, 1, 0),
-      RecDate DESC) = 1)
+      RecDate DESC) = 1),
+  court_to_county AS (
+  SELECT
+    COURT_NUMBER,
+    location_name AS county
+  FROM
+    offense
+  LEFT JOIN
+    `{project_id}.reference_views.location_metadata_materialized` lmm
+  ON
+    -- strip the leading zeros an format as 'COUNTY-X'
+    CONCAT('COUNTY-', LTRIM(COUNTY, '0')) = lmm.location_external_id
+    AND lmm.state_code = "US_ND" )
 SELECT
   "US_ND" AS state_code,
   REPLACE(psi.RecID,',','') AS external_id,
@@ -74,7 +86,8 @@ SELECT
   NULL AS lsir_score,
   CAST(NULL AS STRING) AS lsir_level,
   CAST(NULL AS STRING) AS report_type,
-  COALESCE(offense1.COUNTY, offense2.COUNTY, offense3.COUNTY) AS county,
+  -- Pick the first non-null county, if one exists
+  COALESCE(court_to_county1.county, court_to_county2.county, court_to_county3.county) AS county,
   CAST(NULL AS STRING) AS district,
 FROM
   psi
@@ -88,15 +101,15 @@ ON
     AND( psi.given_names LIKE CONCAT(UPPER(s.given_names), '%')
       OR UPPER(s.given_names) LIKE CONCAT(psi.given_names, '%')))
 LEFT JOIN
-  offense AS offense1
+  court_to_county AS court_to_county1
 ON
-  (COURT1 = offense1.COURT_NUMBER)
+  (COURT1 = court_to_county1.COURT_NUMBER)
 LEFT JOIN
-  offense AS offense2
+  court_to_county AS court_to_county2
 ON
-  (COURT2 = offense2.COURT_NUMBER)
+  (COURT2 = court_to_county2.COURT_NUMBER)
 LEFT JOIN
-  offense AS offense3
+  court_to_county AS court_to_county3
 ON
-  (COURT3 = offense3.COURT_NUMBER)
+  (COURT3 = court_to_county3.COURT_NUMBER)
 """
