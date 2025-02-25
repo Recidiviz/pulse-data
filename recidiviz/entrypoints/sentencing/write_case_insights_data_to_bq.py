@@ -212,7 +212,7 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
     )
 
     cohort_df.any_is_violent_uniform = cohort_df.any_is_violent_uniform.fillna(False)
-    cohort_df.any_is_drug_uniform = cohort_df.any_is_violent_uniform.fillna(False)
+    cohort_df.any_is_drug_uniform = cohort_df.any_is_drug_uniform.fillna(False)
     cohort_df.any_is_sex_offense = cohort_df.any_is_sex_offense.fillna(False)
     cohort_df.any_is_sex_offense = cohort_df.apply(
         adjust_any_is_sex_offense,

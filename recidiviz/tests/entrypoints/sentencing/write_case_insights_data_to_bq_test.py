@@ -1151,13 +1151,21 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
     def test_add_offense_attributes(self) -> None:
         cohort_df = pd.DataFrame(
             {
-                "gender": ["FEMALE", "MALE"],
-                "assessment_score": [5, 5],
-                "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
-                "most_severe_description": ["ASSAULT OR BATTERY", "SEXUAL ASSAULT"],
-                "any_is_violent_uniform": [True, False],
-                "any_is_drug_uniform": [True, False],
-                "any_is_sex_offense": [False, True],
+                "gender": ["FEMALE", "MALE", "FEMALE"],
+                "assessment_score": [5, 5, 5],
+                "most_severe_ncic_category_uniform": [
+                    "Assault",
+                    "Sex Offense",
+                    "Homicide",
+                ],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "SEXUAL ASSAULT",
+                    "MURDER II",
+                ],
+                "any_is_violent_uniform": [True, False, True],
+                "any_is_drug_uniform": [True, False, False],
+                "any_is_sex_offense": [False, True, False],
             }
         )
 
@@ -1167,18 +1175,27 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         expected_added_attributes_df = pd.DataFrame(
             {
-                "gender": ["FEMALE", "MALE"],
-                "assessment_score": [5, 5],
-                "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
-                "most_severe_description": ["ASSAULT OR BATTERY", "SEXUAL ASSAULT"],
-                "any_is_violent_uniform": [True, False],
-                "any_is_drug_uniform": [True, False],
-                "any_is_sex_offense": [False, True],
-                "assessment_score_bucket_start": [0, 0],
-                "assessment_score_bucket_end": [22, 20],
+                "gender": ["FEMALE", "MALE", "FEMALE"],
+                "assessment_score": [5, 5, 5],
+                "most_severe_ncic_category_uniform": [
+                    "Assault",
+                    "Sex Offense",
+                    "Homicide",
+                ],
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "SEXUAL ASSAULT",
+                    "MURDER II",
+                ],
+                "any_is_violent_uniform": [True, False, True],
+                "any_is_drug_uniform": [True, False, False],
+                "any_is_sex_offense": [False, True, False],
+                "assessment_score_bucket_start": [0, 0, 0],
+                "assessment_score_bucket_end": [22, 20, 22],
                 "combined_offense_category": [
                     "Violent offense, Drug offense",
                     "Sex offense",
+                    "Violent offense",
                 ],
             }
         )
