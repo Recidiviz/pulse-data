@@ -213,7 +213,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
             input_row
         )
-        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "TRANS_FEMALE", "assessment_score": 1})
@@ -223,7 +223,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
             input_row
         )
-        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
         input_row = pd.Series({"gender": "TRANS_MALE", "assessment_score": 1})
@@ -233,7 +233,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
             input_row
         )
-        self.assertEqual(-1, score_bucket_start)
+        self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
     def test_adjust_any_is_sex_offense(self) -> None:

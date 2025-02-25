@@ -117,7 +117,8 @@ def get_gendered_assessment_score_bucket_range(
 
     This returns an assessment_score_bucket_start and assessment_score_bucket_end, which are inclusive endpoints of the
     bucket range. If the bucket has no upper limit (e.g. "29+") then assessment_score_bucket_end is -1. If the
-    input assessment_score is invalid or the gender is unhandled, both return values are -1.
+    input assessment_score is invalid, both return values are -1. If the gender is not FEMALE or MALE, the return values
+    are (0, -1), which is treated on the front end as matching all assessment scores.
 
     TODO(#31126): Revisit these buckets if we start working with other states that call for different buckets.
     """
@@ -136,8 +137,8 @@ def get_gendered_assessment_score_bucket_range(
         if assessment_score <= 30:
             return 23, 30
         return 31, -1
-    # This doesn't handle EXTERNAL_UNKNOWN, TRANS_MALE, TRANS_FEMALE
-    return -1, -1
+    # For other genders (EXTERNAL_UNKNOWN, TRANS_MALE, TRANS_FEMALE), set the assessment score to be "all"
+    return 0, -1
 
 
 def adjust_any_is_sex_offense(cohort_df_row: pd.Series) -> bool:
