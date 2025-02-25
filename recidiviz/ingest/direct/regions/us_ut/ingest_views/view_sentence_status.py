@@ -16,93 +16,75 @@
 # =============================================================================
 """Query that collects information about sentences statuses over time in UT.
 
-TODO(#37588): This view is based on the following assumptions, which need to be confirmed with the 
-state:
-- One case can have multiple associated offenses
-- Each offense can have its own associated sentence
+Sentences in Utah can be suspended upon imposition, meaning that a person is sentenced
+to a term of probation that, if they serve successfully, will take the place of their prison sentence.
+If they are revoked from that term of probation, they must serve the entirety of their original
+prison sentence. These types of sentences are ingested as probation sentences, and will 
+appear as probation sentences even if the term of probation is revoked and the person 
+is required to face incarceration."""
 
-It is likely that this logic will need to be revisited once we have clarity on the
-sentencing and related data storage practices in Utah. 
-"""
-
+from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_and_utils import (
+    VALID_PEOPLE_AND_SENTENCES,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
--- Collect all sentences and charges that are valid for ingest.
-valid_sentences AS (
-SELECT DISTINCT
-  crt.ofndr_num,
-  ofnse.ofnse_id,
-  cast(sent_dt AS DATETIME) as sent_dt,
-  cast(crt_trmn_dt AS DATETIME) as crt_trmn_dt,
-  CAST(crt.updt_dt AS DATETIME) AS updt_dt
-FROM 
-  {crt_case@ALL} crt
-JOIN 
-  {rfrd_ofnse} ofnse
-USING 
-  (intr_case_num)
--- Exclude sentences with no imposed date. These are all in the past, and make up 5% of closed cases.
-WHERE sent_dt IS NOT NULL),
+-- Collect identifiers for sentences to ingest.
+base_sentences AS ({VALID_PEOPLE_AND_SENTENCES}),
+
 -- For the time being, assign statuses to cases based only on whether they have a 
 -- termination date included in the crt_case table.
-sentences_with_status AS (
+statuses AS (
 SELECT 
   ofndr_num,
-  ofnse_id,
+  intr_case_num,
+  sentence_type,
   CASE 
     WHEN sent_dt IS NOT NULL AND crt_trmn_dt IS NULL THEN 'SERVING'
     WHEN sent_dt IS NOT NULL AND crt_trmn_dt IS NOT NULL THEN 'COMPLETE'
     ELSE 'UNKNOWN'
   END AS status,
-  updt_dt
-FROM valid_sentences
+CAST(updt_dt AS DATETIME) AS updt_dt
+FROM 
+  base_sentences
+JOIN
+  {{crt_case@ALL}} crt
+USING
+  (ofndr_num, intr_case_num)
 ),
--- Only keep rows that signify a change in sentence status. Also filter some rows
--- where a case was erroneously reopened.
-changed_statuses_only AS (
+-- Keep statuses that are different from the previous status for that sentence,
+-- and discard any that are invalid. TODO(#38008): Clarify with Utah that we are 
+-- handling these correctly.
+filter_invalid_statuses AS (
 SELECT 
   ofndr_num,
-  ofnse_id,
-  status,
-  updt_dt,
-  FROM (
-    SELECT *, 
-    LAG(status) OVER (partition by ofndr_num, ofnse_id ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as prev_status
-    FROM sentences_with_status
-  )
-WHERE 
--- Status changed
-  status IS DISTINCT FROM prev_status
--- 87 out of 591,669 cases have a crt_trmn_dt populated that later is unpopulated, making
--- it appear that the case was completed and then being served again.
--- It does not seem like the norm, and appears to be a data entry error. 
--- This excludes cases that appear to have been reopened; revisit once we have
--- more context from UT. TODO(#38008)
-AND 
-  (prev_status != 'COMPLETE' OR prev_status IS NULL)
-)
-SELECT 
-  ofndr_num,
-  ofnse_id,
+  intr_case_num,
   status,
   updt_dt,
   -- There are 6 sentences with multiple statuses entered into the UT database with the 
   -- exact same timestamp. Order these manually so that the SERVING status comes before
   -- the COMPLETE status.
-  ROW_NUMBER() OVER (PARTITION BY OFNDR_NUM, OFNSE_ID ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as sequence 
-FROM (
-  SELECT * ,
-  LAG(status) OVER (partition by ofndr_num, ofnse_id ORDER BY UPDT_DT, IF(STATUS='COMPLETE',1,0)) as prev_status
-  FROM changed_statuses_only
+  ROW_NUMBER() OVER (PARTITION BY ofndr_num, intr_case_num, sentence_type ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS sequence
+  FROM (
+    SELECT *, 
+    LAG(status) OVER (PARTITION BY ofndr_num, intr_case_num, sentence_type ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS prev_status
+    FROM statuses
   )
-WHERE 
-  (prev_status != 'COMPLETE' OR prev_status IS NULL)
+  WHERE status IS DISTINCT FROM prev_status
+  AND 
+  -- This is the case in 87 out of 591,669 resulting rows. 
+  -- It does not seem like the norm, and appears to be a data entry error in a majority
+  -- of cases. Exclude these cases for the time being and revisit once we have
+  -- more context from UT. TODO(#38008)
+    (NOT (status = 'SERVING' AND prev_status = 'COMPLETE') OR prev_status IS NULL)
+)
+SELECT * FROM filter_invalid_statuses
+WHERE NOT (status = 'COMPLETE' AND sequence > 1)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

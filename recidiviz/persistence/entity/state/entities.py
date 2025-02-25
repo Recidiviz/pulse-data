@@ -2626,8 +2626,6 @@ class StateSentence(
                     StateCode.US_ND,
                     # TODO(#38698) Filter out imposed dates from the future
                     StateCode.US_IX,
-                    # TODO(#38699) Filter out imposed dates from the future
-                    StateCode.US_UT,
                 },
             ),
         ),

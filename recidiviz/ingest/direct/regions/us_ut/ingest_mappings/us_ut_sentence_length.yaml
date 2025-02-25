@@ -4,13 +4,11 @@
 manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
-  ofnse_id: STRING
-  jail_days: STRING
-  probation_days: STRING
-  max_prison_days: STRING
-  total_days: INTEGER
-  relevant_update_datetime: DATETIME
-  sequence_num: STRING
+  intr_case_num: STRING
+  updt_dt: DATETIME
+  max_end_dt: DATETIME
+  early_trmn_dt: DATETIME
+  sequence_num: INTEGER
 unused_columns: []
 output:
   StatePerson:
@@ -20,16 +18,10 @@ output:
           id_type: $literal("US_UT_DOC")
     sentences:
       - StateSentence:
-          external_id: ofnse_id
+          external_id: intr_case_num
           sentence_lengths:
-            - $conditional:
-                - $if:
-                    $or:
-                      - $not_null: jail_days
-                      - $not_null: probation_days
-                      - $not_null: max_prison_days
-                  $then:
-                    StateSentenceLength:
-                      sentence_length_days_max: total_days
-                      length_update_datetime: relevant_update_datetime
-                      sequence_num: sequence_num
+            - StateSentenceLength:
+                projected_completion_date_min_external: early_trmn_dt
+                projected_completion_date_max_external: max_end_dt
+                length_update_datetime: updt_dt
+                sequence_num: sequence_num

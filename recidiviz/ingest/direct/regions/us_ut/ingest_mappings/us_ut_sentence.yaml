@@ -4,6 +4,8 @@
 manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
+  intr_case_num: STRING
+  sentence_type: STRING
   ofnse_id: STRING
   statute: STRING
   charge_description: STRING
@@ -12,19 +14,8 @@ input_columns:
   offense_date: DATETIME
   charge_classification_type_raw_text: STRING
   sent_dt: DATETIME
-  probation_days: STRING
-  max_prison_days: STRING
   sentencing_court: STRING
-  jail_days_at_sentencing: STRING
-  consec_to_ofnse: STRING
 unused_columns: []
-variables:
-  - has_jail_component:
-      $not_null: jail_days_at_sentencing
-  - has_prison_component:
-      $not_null: max_prison_days
-  - has_probation_component:
-      $not_null: probation_days
 output:
   StatePerson:
     external_ids:
@@ -33,56 +24,20 @@ output:
           id_type: $literal("US_UT_DOC")
     sentences:
       - StateSentence:
-          external_id: ofnse_id
+          external_id: intr_case_num
           sentence_type:
-            $conditional:
-              # The sentence prescribes time with more than one custodial authority
-              - $if:
-                  $or:
-                    - $and:
-                        - $variable(has_probation_component)
-                        - $variable(has_prison_component)
-                    - $and:
-                        - $variable(has_probation_component)
-                        - $variable(has_jail_component)
-                    - $and:
-                        - $variable(has_prison_component)
-                        - $variable(has_jail_component)
-                $then: $literal_enum(StateSentenceType.SPLIT)
-              # The sentence only prescribes time in county jail
-              - $else_if:
-                  $and:
-                    - $variable(has_jail_component)
-                    - $not:
-                        $or:
-                          - $variable(has_probation_component)
-                          - $variable(has_prison_component)
-                $then: $literal_enum(StateSentenceType.COUNTY_JAIL)
-              # The sentence only prescribes time on probation
-              - $else_if:
-                  $and:
-                    - $variable(has_probation_component)
-                    - $not:
-                        $or:
-                          - $variable(has_jail_component)
-                          - $variable(has_prison_component)
-                $then: $literal_enum(StateSentenceType.PROBATION)
-              # The sentence only prescribes time in prison
-              - $else_if:
-                  $and:
-                    - $variable(has_prison_component)
-                    - $not:
-                        $or:
-                          - $variable(has_jail_component)
-                          - $variable(has_probation_component)
-                $then: $literal_enum(StateSentenceType.STATE_PRISON)
-              - $else: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
+            $enum_mapping:
+              $raw_text: sentence_type
+              $mappings:
+                StateSentenceType.STATE_PRISON:
+                  - INCARCERATION
+                StateSentenceType.PROBATION:
+                  - PROBATION
           imposed_date: sent_dt
           sentencing_authority:
             $enum_mapping:
               $raw_text: sentencing_court
               $custom_parser: us_ut_custom_enum_parsers.parse_sentencing_authority
-          parent_sentence_external_id_array: consec_to_ofnse
           is_capital_punishment:
             $conditional:
               - $if:

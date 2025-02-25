@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,116 +16,130 @@
 # =============================================================================
 """Query that collects information about sentence lengths in UT.
 
-TODO(#37588): This view is based on the following assumptions, which need to be confirmed with the 
-state:
-- One case can have multiple associated offenses
-- Each offense can have its own associated sentence
-- Sentences can involve three components: prison time, probation time, and jail time
-- The maximum sentence length can be found by adding the maximum possible duration of all of those components together
+Sentences in Utah can be suspended upon imposition, meaning that a person is sentenced
+to a term of probation that, if they serve successfully, will take the place of their prison sentence.
+If they are revoked from that term of probation, they must serve the entirety of their original
+prison sentence. These types of sentences are ingested as probation sentences. 
 
-It is likely that this logic will need to be revisited once we have clarity on the
-sentencing and related data storage practices in Utah. 
-"""
+For the period during which a person is serving their probation, the release dates associated
+with their sentences are the dates they may be released from probation. If and when the person
+is revoked and required to serve their prison sentence, these dates will change to reflect
+the person's projected release dates from prison."""
 
+from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_and_utils import (
+    VALID_PEOPLE_AND_SENTENCES,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
--- Preprocess date fields from raw data for easier use in later CTEs.
-cleaned_dates AS (
-SELECT DISTINCT
-  crt.ofndr_num,
-  ofnse.ofnse_id,
-  NULLIF(CAST(CAST(crt.sent_jail_day AS FLOAT64) AS INT64), 0) as jail_days,
-  NULLIF(CAST(CAST(prob.prob_sent_days AS FLOAT64) AS INT64), 0) AS probation_days,
-  NULLIF(CAST(CAST(prsn.max_days AS FLOAT64) AS INT64), 0) as max_prison_days,
-  CAST(crt.updt_dt as DATETIME) AS jail_update_datetime,
-  CAST(prob.updt_dt AS DATETIME) as probation_update_datetime,
-  CAST(prsn.updt_dt AS DATETIME) AS prison_update_datetime
-FROM 
-  {crt_case@ALL} crt
-JOIN 
-  {rfrd_ofnse} ofnse
-USING 
-  (intr_case_num)
-LEFT JOIN 
-  {prob_sent@ALL} prob
-USING 
-  (intr_case_num)
--- Inner join so that we do not ingest sentence lengths for sentences with no charges. 
-JOIN 
-  {prsn_sent_len@ALL} prsn
-USING 
-  (ofnse_id)
--- Exclude sentences with no imposed date. These are all in the past, and make up 5% of closed cases.
-WHERE sent_dt IS NOT NULL
+-- Collect identifiers for sentences to ingest.
+base_sentences AS ({VALID_PEOPLE_AND_SENTENCES}),
+-- Collect identfiiers for probation sentences that have bene revoked. This will allow 
+-- us to discern which dates (probation or incarceration) are correct to use as a person's
+-- projected release dates.
+probation_revocations AS (
+SELECT
+  DISTINCT intr_case_num,
+  cd.lgl_stat_chg_desc,
+  cast(case_stat.stat_beg_dt as datetime) as stat_beg_dt
+FROM
+  {{case_stat}} case_stat
+LEFT JOIN
+  {{lgl_stat_chg_cd}} cd
+USING
+  (lgl_stat_chg_cd)
+WHERE
+  lgl_stat_chg_desc ='PROBATION REVOKED'
+  OR lgl_stat_chg_desc LIKE '%PROB VIOLATION%' 
 ),
--- collect date information for each sentence
-dates AS (
-SELECT 
-  ofndr_num,
-  ofnse_id,
-  jail_days,
-  probation_days,
-  max_prison_days,
-  (IFNULL(jail_days, 0) + IFNULL(probation_days, 0) + IFNULL(max_prison_days, 0)) AS total_days,
-  jail_update_datetime,
-  probation_update_datetime,
-  prison_update_datetime
-FROM cleaned_dates
--- There are two rows with a probation_days value of -1. Exclude them since it is unclear what that means
--- and they are both >20 years old and closed.
-WHERE (probation_days IS NULL OR probation_days >= 0)
+-- Collect all dates associated with a case. 
+case_dates AS (
+SELECT
+  intr_case_num,
+  CAST(dt.updt_dt AS DATETIME) AS updt_dt,
+  CAST(sched_expire_dt AS DATETIME) AS sched_expire_dt,
+  CAST(early_trmn_dt AS DATETIME) AS early_trmn_dt,
+  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt
+FROM
+  {{est_dt_hist}} dt
+
+UNION DISTINCT
+
+SELECT
+  DISTINCT intr_case_num,
+  CAST(dt.updt_dt AS DATETIME) AS updt_dt,
+  CAST(sched_expire_dt AS DATETIME) AS sched_expire_dt,
+  CAST(early_trmn_dt AS DATETIME) AS early_trmn_dt,
+  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt
+FROM
+  {{est_dt}} dt 
 ),
--- This maintains only those rows where one of the sentence length components changed. 
-  -- Only preserve rows where one of the sentence length variables changed. Changes
-  -- preserved by this logic include:
-    -- The first value
-    -- Any value that is different from the previous value of the same field
-    -- The final value
-changed_dates_only AS (
-  SELECT DISTINCT
-    * EXCEPT(prev_jail_days, prev_probation_days, prev_max_prison_days, jail_update_datetime, probation_update_datetime, prison_update_datetime),
-    CASE
-      WHEN ((prev_jail_days IS NULL AND jail_days IS NOT NULL) OR (jail_days != prev_jail_days) OR (prev_jail_days IS NOT NULL AND jail_days IS NULL)) THEN jail_update_datetime
-      WHEN ((prev_probation_days IS NULL AND probation_days IS NOT NULL) OR (probation_days != prev_probation_days) OR (prev_probation_days IS NOT NULL AND probation_days IS NULL)) THEN probation_update_datetime
-      WHEN((prev_max_prison_days IS NULL AND max_prison_days IS NOT NULL) OR (max_prison_days != prev_max_prison_days) OR (prev_max_prison_days IS NOT NULL AND max_prison_days IS NULL)) THEN prison_update_datetime
-    END AS relevant_update_datetime
-  FROM (
-    SELECT DISTINCT
-      *, 
-      LAG(jail_days) OVER (PARTITION BY ofnse_id ORDER BY jail_update_datetime) AS prev_jail_days,
-      LAG(probation_days) OVER (PARTITION BY ofnse_id ORDER BY probation_update_datetime) AS prev_probation_days,
-      LAG(max_prison_days) OVER (PARTITION BY ofnse_id ORDER BY prison_update_datetime) AS prev_max_prison_days,
-    FROM dates
-  )
-  WHERE 
-  -- Rows where the number of jail days changes.
-    ((prev_jail_days IS NULL AND jail_days IS NOT NULL)
-      OR (jail_days != prev_jail_days)
-      OR (prev_jail_days IS NOT NULL AND jail_days IS NULL))
-    OR 
-  -- Rows where the number of probation days changes.
-    ((prev_probation_days IS NULL AND probation_days IS NOT NULL)
-      OR (probation_days != prev_probation_days)
-      OR (prev_probation_days IS NOT NULL AND probation_days IS NULL))
-    OR 
-  -- Rows where the number of prison days changes.
-    ((prev_max_prison_days IS NULL AND max_prison_days IS NOT NULL)
-      OR (max_prison_days != prev_max_prison_days)
-      OR (prev_max_prison_days IS NOT NULL AND max_prison_days IS NULL))
+-- Connect cases with their corresponding dates and revocation statuses.
+-- Only attach probation revocation indicators to probation sentences.
+cases_with_dates AS (
+SELECT
+  sent.*,
+  case_dates.updt_dt,
+  case_dates.sched_expire_dt,
+  case_dates.early_trmn_dt,
+  case_dates.sched_trmn_dt,
+  rev.lgl_stat_chg_desc,
+  rev.stat_beg_dt
+FROM
+  base_sentences sent
+JOIN
+  case_dates
+USING
+  (intr_case_num)
+LEFT JOIN
+  probation_revocations rev
+ON
+  (sent.intr_case_num = rev.intr_case_num
+    AND sent.sentence_type = 'PROBATION')
 )
 
-SELECT 
-  *,
-  -- Create a sequence number for sentence lengths. If two rows have the same update_datetime 
-  -- and distinct duration values, assume the longer one is the most recent.
-  ROW_NUMBER() OVER (PARTITION BY OFNSE_ID ORDER BY relevant_update_datetime, total_days) AS sequence_num
-FROM changed_dates_only
+SELECT DISTINCT
+  ofndr_num,
+  intr_case_num,
+  max_end_dt,
+  early_trmn_dt,
+  updt_dt,  
+  ROW_NUMBER() OVER (
+    PARTITION BY ofndr_num, intr_case_num, sentence_type 
+    -- If two updates were made on the same date, sort them so that the latest date 
+    -- appears as the most recent. This is an assumption based on the observation that
+    -- dates are rarely moved to be sooner, but commonly moved to farther in the future.
+    ORDER BY updt_dt, max_end_dt DESC
+    ) AS sequence_num
+FROM (
+  SELECT 
+    ofndr_num,
+    intr_case_num,
+    sentence_type,
+    CASE  
+    -- This is a probation sentence that has been revoked, after the date of the revocation. We should use the incarceration dates.
+      WHEN stat_beg_dt IS NOT NULL AND updt_dt > stat_beg_dt THEN sched_expire_dt
+    -- This is a probation sentence that has been revoked, before the date of the revocation. We should use the probation dates.
+      WHEN stat_beg_dt IS NOT NULL AND updt_dt < stat_beg_dt THEN sched_trmn_dt
+      WHEN sentence_type = 'PROBATION' AND stat_beg_dt IS NULL THEN sched_trmn_dt
+      WHEN sentence_type = 'INCARCERATION' THEN sched_expire_dt
+    END AS max_end_dt,
+    early_trmn_dt,
+    updt_dt
+  FROM
+    cases_with_dates
+  -- There are 5 rows with no hydrated date fields. 
+  -- Since they provide us no information and are always followed by meaningful date 
+  -- entries, we exclude them.
+  WHERE sched_expire_dt IS NOT NULL 
+  OR sched_trmn_dt IS NOT NULL 
+  OR early_trmn_dt IS NOT NULL
+)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
