@@ -52,8 +52,8 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   }
 }
 
-# TODO(#29135): consider moving this later in the evening based on approx expected runtime so it runs
-#  right before the calculation DAG.
+# TODO(#38729): make dag scheduling more nuance to ensure that raw data is always
+# as fresh as possible
 resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
   name        = "schedule_raw_data_import_dag_run_cloud_function"
   schedule    = "0 2 * * *" # Every day at 2 am Pacific
