@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
-    transfer_to_minimum_facility,
+    granted_institutional_worker_status,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
+    crc_work_release_time_based_criteria,
     in_crc_facility_or_pwcc_unit_1,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_sex_offender_alert,
@@ -78,8 +79,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
         tentative_parole_date_not_within_6_months.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
+        # Do not count someone eligible for resident worker status if they are
+        # eligible for work release
+        InvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=crc_work_release_time_based_criteria.VIEW_BUILDER,
+        ),
     ],
-    completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
+    completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(
         criteria=not_serving_for_violent_offense.VIEW_BUILDER,
         description="Serving a sentence for a violent offense",

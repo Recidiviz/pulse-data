@@ -82,7 +82,13 @@ class TaskCompletionEventType(Enum):
     # TODO(#35491): rename these hearing events to be more specific
     HEARING_OCCURRED = "HEARING_OCCURRED"
     REVIEW_HEARING_OCCURRED = "REVIEW_HEARING_OCCURRED"
+    # Work release allows incarcerated residents to leave the facility for a
+    # period of time (often during the day) to work a job within the community
     GRANTED_WORK_RELEASE = "GRANTED_WORK_RELEASE"
+    # Institutional worker status allows incarcerated residents to work within
+    # a facility, or work in a very limited capacity outside a facility while
+    # monitored by a warden, sheriff, or other officer
+    GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
     GRANTED_FURLOUGH = "GRANTED_FURLOUGH"
     # TODO(#35580): determine if this should be split into separate events
     # (potentially transfer to minimum facility & transfer to re-entry facility)
@@ -93,7 +99,6 @@ class TaskCompletionEventType(Enum):
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
     )
     TRANSFER_TO_NO_CONTACT_PAROLE = "TRANSFER_TO_NO_CONTACT_PAROLE"
-    GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
     TRANSFER_TO_SUPERVISION_RUN_FACILITY = "TRANSFER_TO_SUPERVISION_RUN_FACILITY"
     TRANSFER_TO_ADMINISTRATIVE_SUPERVISION = "TRANSFER_TO_ADMINISTRATIVE_SUPERVISION"
 

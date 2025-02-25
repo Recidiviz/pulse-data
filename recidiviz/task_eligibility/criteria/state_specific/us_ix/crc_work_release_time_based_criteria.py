@@ -18,8 +18,8 @@
 Shows the spans of time during which someone in ID is eligible time-wise
 for a transfer to a Community Reentry Center (CRC) for work-release.
 For this to be true, the person must have one of the following three conditions:
-    1. Tentative Parole Date (TPD) within seven (18) months OR
-        Full Term Release Date (FTRD) within seven (18) months
+    1. Tentative Parole Date (TPD) within eighteen (18) months OR
+        Full Term Release Date (FTRD) within eighteen (18) months
     2. Early Release Date (EPRD) within 18 months AND
         Full Term Release Date (FTRD) within 15 years
     3. Life sentence AND
@@ -47,8 +47,8 @@ _DESCRIPTION = """
 Shows the spans of time during which someone in ID is eligible time-wise
 for a transfer to a Community Reentry Center (CRC) for work-release. 
 For this to be true, the person must have one of the following three conditions:
-    1. Tentative Parole Date (TPD) within seven (18) months OR
-        Full Term Release Date (FTRD) within seven (18) months 
+    1. Tentative Parole Date (TPD) within eighteen (18) months OR
+        Full Term Release Date (FTRD) within eighteen (18) months 
     2. Early Release Date (EPRD) within 18 months AND
         Full Term Release Date (FTRD) within 15 years
     3. Life sentence AND

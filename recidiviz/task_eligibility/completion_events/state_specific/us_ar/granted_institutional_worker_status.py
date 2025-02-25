@@ -18,8 +18,9 @@
 across all states.
 """
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -36,7 +37,8 @@ FROM
 LIMIT 0
 """
 
-VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+    state_code=StateCode.US_AR,
     completion_event_type=TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,

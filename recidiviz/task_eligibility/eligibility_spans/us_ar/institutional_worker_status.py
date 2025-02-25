@@ -22,7 +22,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
+from recidiviz.task_eligibility.completion_events.state_specific.us_ar import (
     granted_institutional_worker_status,
 )
 from recidiviz.task_eligibility.criteria.general import (
