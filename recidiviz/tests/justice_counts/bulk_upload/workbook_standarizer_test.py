@@ -24,10 +24,10 @@ from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUpload
 from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
     WorkbookStandardizer,
 )
+from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
-    create_combined_excel_file,
     create_csv_file,
     create_excel_file,
 )
@@ -74,7 +74,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
-            workbook_standardizer = WorkbookStandardizer(metadata=metadata)
+            workbook_uploader = WorkbookUploader(metadata=metadata)
             file_name = "test_prison_csv.csv"
             file_path = create_csv_file(
                 system=schema.System.PRISONS,
@@ -86,9 +86,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 file_path,
                 mode="rb",
             ) as file:
-                workbook_standardizer.standardize_workbook(
-                    file=file.read(), file_name=file_name
-                )
+                workbook_uploader.upload_workbook(file=file.read(), file_name=file_name)
             self.assertEqual(len(metadata.metric_key_to_errors), 1)
             self.assertEqual(len(metadata.metric_key_to_errors[None]), 1)
             self.assertEqual(
@@ -106,7 +104,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             metadata = BulkUploadMetadata(
                 system=schema.System.PRISONS, agency=prison_agency, session=session
             )
-            workbook_standardizer = WorkbookStandardizer(metadata=metadata)
+            workbook_uploader = WorkbookUploader(metadata=metadata)
             file_name = "test_prison.xlsx"
             file_path, _ = create_excel_file(
                 system=schema.System.PRISONS,
@@ -118,9 +116,7 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 file_path,
                 mode="rb",
             ) as file:
-                workbook_standardizer.standardize_workbook(
-                    file=file.read(), file_name=file_name
-                )
+                workbook_uploader.upload_workbook(file=file.read(), file_name=file_name)
             self.assertEqual(len(metadata.metric_key_to_errors), 1)
             self.assertEqual(len(metadata.metric_key_to_errors[None]), 1)
             self.assertEqual(
@@ -141,13 +137,8 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             )
             workbook_standardizer = WorkbookStandardizer(metadata=superagency_metadata)
 
-            _, df = create_excel_file(
-                system=schema.System.SUPERAGENCY,
-                file_name="superagency_funding.xlsx",
-            )
-
             result = workbook_standardizer.should_sheet_have_month_column(
-                metric_key="SUPERAGENCY_FUNDING", sheet_df=df
+                metric_keys=["SUPERAGENCY_FUNDING"]
             )
             self.assertFalse(result)
 
@@ -158,25 +149,27 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
             )
             workbook_standardizer = WorkbookStandardizer(metadata=prisons_metadata)
 
-            _, df = create_excel_file(
-                system=schema.System.PRISONS,
-                file_name="prisons_funding.xlsx",
-            )
-
             result = workbook_standardizer.should_sheet_have_month_column(
-                metric_key="PRISONS_FUNDING", sheet_df=df
+                metric_keys=["PRISONS_FUNDING"]
             )
             self.assertFalse(result)
 
             result = workbook_standardizer.should_sheet_have_month_column(
-                metric_key="PRISONS_ADMISSIONS", sheet_df=df
+                metric_keys=["PRISONS_ADMISSIONS"]
             )
             self.assertTrue(result)
 
-            _, df = create_combined_excel_file(
-                system=schema.System.PRISONS,
-                file_name="prisons_funding_single_page.xlsx",
+            result = workbook_standardizer.should_sheet_have_month_column(
+                metric_keys=[
+                    "PRISONS_FUNDING",
+                    "PRISONS_EXPENSES",
+                    "PRISONS_TOTAL_STAFF",
+                    "PRISONS_ADMISSIONS",
+                    "PRISONS_POPULATION",
+                    "PRISONS_RELEASES",
+                    "PRISONS_READMISSIONS",
+                    "PRISONS_USE_OF_FORCE_INCIDENTS",
+                    "PRISONS_GRIEVANCES_UPHELD",
+                ]
             )
-
-            result = workbook_standardizer.should_sheet_have_month_column(sheet_df=df)
             self.assertTrue(result)

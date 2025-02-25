@@ -21,6 +21,9 @@ import logging
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import numpy as np
+import pandas as pd
+
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
@@ -107,9 +110,7 @@ class WorkbookUploader:
         # infer an aggregate value when one is explicitly given.
         # Note that the regular sorting will work for this case, since
         # foobar will always come before foobar_by_xxx alphabetically.
-
         sorted_sheet_names = sorted(sheet_name_to_sheet_df.keys())
-
         # 3. Now run through all sheets and process each in turn.
         inserts: List[schema.Datapoint] = []
         updates: List[schema.Datapoint] = []
@@ -117,6 +118,8 @@ class WorkbookUploader:
         for sheet_name in sorted_sheet_names:
             logging.info("Uploading %s", sheet_name)
             df = sheet_name_to_sheet_df[sheet_name]
+            # Replace Nan with None
+            df = df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
             rows = df.to_dict("records")
             if len(rows) == 0:
                 continue

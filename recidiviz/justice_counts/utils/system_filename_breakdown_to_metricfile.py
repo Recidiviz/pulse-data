@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Contains Dictionary that maps Metric, Breakdown pairs to their appropriate Bulk
-Upload sheet name
+""" Contains Dictionary that maps Metric, Breakdown pairs to their appropriate Metricfile
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
+from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import metric_files
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 metric_definition_key_to_aggregate_metricfile = {
     metricfile.definition.key: metricfile
@@ -30,17 +31,18 @@ metric_definition_key_to_aggregate_metricfile = {
 
 # this mapping contains:
 #   - key: (aggregate metricfile.canonical_filename, breakdown metricfile.disaggregation_column_name)
-#   - value: breakdown metricfile.canonical_filename
-METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME: Dict[tuple[str, str], str] = {}
+#   - value: breakdown metricfile
+SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE: Dict[
+    tuple[schema.System, str, Optional[str]], MetricFile
+] = {}
 for metricfile in metric_files:
-    if metricfile.disaggregation is None:
-        continue
     aggregate_metricfile = metric_definition_key_to_aggregate_metricfile[
         metricfile.definition.key
     ]
-    METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME[
+    SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE[
         (
+            metricfile.definition.system,
             aggregate_metricfile.canonical_filename,
             metricfile.disaggregation_column_name,  # type: ignore[index]
         )
-    ] = metricfile.canonical_filename
+    ] = metricfile

@@ -35,6 +35,7 @@ from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import BREAKDOWN
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -180,7 +181,11 @@ class TimeRangeUploader:
 
                 # disaggregation_value is either "All" or an enum member,
                 # e.g. "Male" for Gender, "Asian" for Race, "Felony" for OffenseType, etc
-                disaggregation_value = row[self.metricfile.disaggregation_column_name]
+                disaggregation_value = (
+                    row[self.metricfile.disaggregation_column_name]
+                    if self.metadata.is_single_page_upload is False
+                    else row[BREAKDOWN]
+                )
 
                 matching_disaggregation_member = self.metricfile.disaggregation(disaggregation_value)  # type: ignore
                 dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]

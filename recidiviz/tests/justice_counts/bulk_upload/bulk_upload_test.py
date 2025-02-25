@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
-
 from typing import Dict, List
 
 import pandas as pd
@@ -1383,7 +1382,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
                 workbook_uploader.upload_workbook(file=file, file_name=file_name)
 
-            self.assertEqual(len(metadata.metric_key_to_errors), 0)
+            # Warning about `month` column because no metrics are configured as monthly
+            self.assertEqual(len(metadata.metric_key_to_errors), 1)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,

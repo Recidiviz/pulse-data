@@ -20,11 +20,10 @@ Bulk Upload into the Justice Counts database.
 """
 
 import datetime
-import math
-from collections import defaultdict
 from io import StringIO
 from typing import Any, Dict, Hashable, List, Optional, Set, Tuple
 
+import numpy as np
 import pandas as pd
 from thefuzz import fuzz
 
@@ -50,8 +49,8 @@ from recidiviz.justice_counts.utils.constants import (
     BREAKDOWN_CATEGORY,
     MAXIMUM_CSV_FILE_NAME_LENGTH,
 )
-from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
-    METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME,
+from recidiviz.justice_counts.utils.system_filename_breakdown_to_metricfile import (
+    SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -63,7 +62,6 @@ class WorkbookStandardizer:
         self.metadata = metadata
         self.invalid_sheet_names: Set[str] = set()
         self.is_csv_upload = False
-        self.is_single_page_upload = False
         self.canonical_file_name_to_metric_key = {
             m.canonical_filename: m.definition.key for m in self.metadata.metric_files
         }
@@ -199,30 +197,17 @@ class WorkbookStandardizer:
             if column == "row_number":
                 continue
 
-            if (
-                column == "month"
-                and self.is_single_page_upload is True
-                and "metric" not in sheet_df.columns
-            ):
-                # Don't add Unexpected Month Column Error if there
-                # is no metric column. We cannot be sure what metric(s)
-                # are included in the upload and, as a result, cannot correctly
-                # determine if there should be a month column.
-                continue
-
             message_type = BulkUploadMessageType.ERROR
             description = f"A '{column}' column was found in your sheet. Only the following columns were expected in your sheet: {', '.join(expected_columns)}. "
             standardized_column_header = self._standardize_string(
                 column, add_underscore=True
             )
             if standardized_column_header not in expected_columns:
-                if (
-                    standardized_column_header == "month"
-                    and bool(sheet_df[column].isna().all()) is False
-                ):
-                    # If there is a month column with data in it, update the description to say
-                    # that the data will be recorded as monthly.
-                    description += "Since you provided month data, your data will be saved for a monthly reporting frequency"
+                if standardized_column_header == "month":
+                    if bool(sheet_df[column].isna().all()) is False:
+                        # If there is a month column with data in it, update the description to say
+                        # that the data will be recorded as monthly.
+                        description += "Since you provided month data, your data will be saved for a monthly reporting frequency"
                     message_type = BulkUploadMessageType.WARNING
 
                 message_types.add(message_type)
@@ -271,17 +256,6 @@ class WorkbookStandardizer:
             title = ""
             description = ""
 
-            if (
-                column == "month"
-                and self.is_single_page_upload is True
-                and "metric" not in sheet_df.columns
-            ):
-                # Don't add Missing Month Column Errors if there
-                # is no metric column. We cannot be sure what metric(s)
-                # are included in the upload and, as a result, cannot correctly
-                # determine if there should be a month column.
-                continue
-
             if column not in standardized_column_actual_column.keys():
                 title = f"Missing '{column}' Column"
                 description = (
@@ -317,204 +291,9 @@ class WorkbookStandardizer:
             )
         return message_types
 
-    def _process_metric_df(
-        self,
-        df: pd.DataFrame,
-        metric_key: str,
-        sheet_name: str,
-        breakdown_category: Optional[str] = None,
-    ) -> pd.DataFrame:
-        """
-        Helper function to process/convert a dataframe from single-page bulk upload.
-        This function drops and renames columns so that they align with what the rest
-        of the Bulk Upload flow expects.
-
-        Args:
-            df (pd.DataFrame): The DataFrame to be processed. It should contain the columns that may need transformation.
-
-            breakdown_category (Optional[str]): The name to rename the 'breakdown' column to. If None, the column is not renamed.
-
-        Returns:
-            pd.DataFrame: The transformed DataFrame with unnecessary columns removed and the 'breakdown' column renamed if applicable.
-
-        """
-        # Drop any columns in which the entire column is empty
-        # Examples of this:
-        # - month column for annual metrics
-        # - breakdown_category and breakdown columns for aggregate metrics
-        rows = df.to_dict("records")
-        df = df.dropna(
-            axis=1,
-            how="all",
-        )
-        # Drop metric column
-        # We already used this to break up the single sheet into multiple sheets
-        # (1 sheet for each metric)
-        # This column would cause an error further in the Bulk Upload flow if kept
-        df = df.drop(
-            labels=["metric"],
-            axis=1,
-        )
-        # Drop breakdown_category column
-        # We already used this column to get the appropriate sheet_name for the given
-        # (metric, breakdown) pair
-        # This column would cause an error further in the Bulk Upload flow if kept
-        if BREAKDOWN_CATEGORY in df.columns:
-            df = df.drop(
-                labels=[BREAKDOWN_CATEGORY],
-                axis=1,
-            )
-
-        # Keep track of rows to drop that have empty breakdown cells
-        rows_to_drop = []
-
-        if breakdown_category is None:
-            for i, row in enumerate(rows):
-                if isinstance(row[BREAKDOWN], float) and math.isnan(row[BREAKDOWN]):
-                    # If the breakdown value is empty, continue. The breakdown category
-                    # and the breakdown are empty if the row represents an aggregate
-                    # value for the metric.
-                    continue
-                # If there is a breakdown provided, raise an error and drop the row.
-                # There must be a breakdown_category value in the row if a breakdown is
-                # provided.
-                self._add_row_value_error(
-                    column_name=BREAKDOWN,
-                    value=row[BREAKDOWN],
-                    metric_key=metric_key,
-                    sheet_name=sheet_name,
-                    additional_description="A value must be provided in the 'breakdown_category' column if there is a value in the 'breakdown' column.",
-                )
-                rows_to_drop.append(i)
-
-            df = df.drop(index=rows_to_drop)
-            if BREAKDOWN in df.columns:
-                # Drop breakdown column. There should be no breakdown column in the
-                # dataframe if there is no breakdown_category.
-                df = df.drop(
-                    labels=[BREAKDOWN],
-                    axis=1,
-                )
-
-        # Rename 'breakdown' column if breakdown_category is provided
-        if breakdown_category is not None:
-            df = df.rename({BREAKDOWN: breakdown_category}, axis=1)
-        return df
-
-    def _transform_combined_metric_file_upload(
-        self,
-        df: pd.DataFrame,
-    ) -> Dict[str, pd.DataFrame]:
-        """
-        This function transforms an uploaded file that contains only 1 sheet.
-        In this case, the file contains a single sheet that includes data for
-        more than 1 metric (distinguished by the 'metric' column). This function breaks
-        the data up by metric and breakdown_category (if present). It then exports the
-        data into a temporary excel file that contains one sheet per metric/breakdown.
-        It then loads the new temporary file and returns the xls to continue the rest of
-        the Bulk Upload process.
-
-        Args:
-            df (pd.DataFrame): A DataFrame containing the data to be transformed. The DataFrame
-            is in the single-page upload format.
-
-        Returns:
-            Dict[str, pd.DataFrame]: A dictionary where the keys are sheet names and the values are
-            DataFrames containing data in the sheet.
-
-        """
-        workbook_dfs: Dict[str, pd.DataFrame] = defaultdict(pd.DataFrame)
-        for metric in df["metric"].unique():
-            if isinstance(metric, float) and math.isnan(metric):
-                # Add an error if metric cell is empty.
-                self._add_row_value_error(
-                    column_name="metric",
-                    value=metric,
-                )
-                continue
-            metric_df = df[df["metric"] == metric]
-            if metric not in self.canonical_file_name_to_metric_key.keys():
-                # Add an error if metric cell has a value that does not correspond
-                # to a metric for the sector.
-                self._add_row_value_error(
-                    column_name="metric",
-                    value=metric,
-                    additional_description=f"The metric name, {metric}, does not correspond to a metric for this sector.",
-                )
-                continue
-            metric_key = self.canonical_file_name_to_metric_key[metric]
-            if BREAKDOWN_CATEGORY not in df.columns:
-                # Process metric_df and concatenate it to the existing DataFrame.
-                processed_df = self._process_metric_df(
-                    df=metric_df,
-                    metric_key=metric_key,
-                    sheet_name=metric,
-                )
-                workbook_dfs[metric] = pd.concat(
-                    [workbook_dfs[metric], processed_df], axis=0, ignore_index=True
-                )
-                continue
-            for breakdown_category in metric_df[BREAKDOWN_CATEGORY].unique():
-                if isinstance(breakdown_category, float) and math.isnan(
-                    breakdown_category
-                ):
-                    # Handle aggregate metrics
-                    aggregate_df = metric_df[metric_df[BREAKDOWN_CATEGORY].isnull()]
-                    processed_df = self._process_metric_df(
-                        df=aggregate_df,
-                        metric_key=metric_key,
-                        sheet_name=metric,
-                    )
-                    workbook_dfs[metric] = pd.concat(
-                        [workbook_dfs[metric], processed_df], axis=0, ignore_index=True
-                    )
-                else:
-                    # Handle breakdown metrics
-                    breakdown_df = metric_df[
-                        metric_df[BREAKDOWN_CATEGORY] == breakdown_category
-                    ]
-                    sheet_name = METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME.get(
-                        (
-                            metric,
-                            self._standardize_string(breakdown_category),
-                        )
-                    )
-
-                    if sheet_name is None:
-                        possible_disaggregation_categories_for_metric = ", ".join(
-                            [
-                                m.disaggregation_column_name
-                                for m in self.metadata.metric_files
-                                if m.definition.key == metric_key
-                                and m.disaggregation_column_name is not None
-                            ]
-                        )
-                        # Add error if breakdown category does not correspond to the metric.
-                        self._add_row_value_error(
-                            column_name=BREAKDOWN_CATEGORY,
-                            value=breakdown_category,
-                            additional_description=f"The breakdown category does not correspond to the metric. Possible breakdown categories include : {possible_disaggregation_categories_for_metric}.",
-                        )
-                        continue
-
-                    processed_df = self._process_metric_df(
-                        df=breakdown_df,
-                        breakdown_category=self._standardize_string(breakdown_category),
-                        metric_key=metric_key,
-                        sheet_name=sheet_name,
-                    )
-                    workbook_dfs[sheet_name] = pd.concat(
-                        [workbook_dfs[sheet_name], processed_df],
-                        axis=0,
-                        ignore_index=True,
-                    )
-
-        return workbook_dfs
-
     def should_sheet_have_month_column(
         self,
-        sheet_df: pd.DataFrame,
-        metric_key: Optional[str] = None,
+        metric_keys: List[str],
     ) -> bool:
         """
         Determines if a DataFrame sheet should include a 'month' column based on the reporting frequency.
@@ -530,7 +309,7 @@ class WorkbookStandardizer:
         """
         reporting_frequencies = set()
 
-        if metric_key is not None:
+        for metric_key in metric_keys:
             if (
                 len(self.metadata.child_agency_name_to_agency) > 0
                 and self.metadata.system != schema.System.SUPERAGENCY
@@ -557,36 +336,11 @@ class WorkbookStandardizer:
                     == schema.ReportingFrequency.MONTHLY
                 )
 
-        else:
-            # In a single-page upload, there should be a month column if there is a
-            # metric in the sheet that has a monthly reporting frequency.
-            unique_metrics = (
-                sheet_df["metric"].unique() if "metric" in sheet_df.columns else []
-            )
-            metric_keys_in_sheet = {
-                self.canonical_file_name_to_metric_key.get(m) for m in unique_metrics
-            }
-
-            reporting_frequencies = {
-                metric_interface.get_reporting_frequency_to_use()[0]
-                for metric_interface in self.metadata.metric_key_to_metric_interface.values()
-                if metric_interface.metric_definition.key in metric_keys_in_sheet
-            }
-
-            reporting_frequencies.update(
-                {
-                    metric_interface.get_reporting_frequency_to_use()[0]
-                    for metric_key_to_metric_interface in self.metadata.child_agency_id_to_metric_key_to_metric_interface.values()
-                    for metric_interface in metric_key_to_metric_interface.values()
-                    if metric_interface.metric_definition.key in metric_keys_in_sheet
-                }
-            )
-
         return schema.ReportingFrequency.MONTHLY in reporting_frequencies
 
     def get_expected_columns(
         self,
-        sheet_df: Optional[pd.DataFrame] = None,
+        sheet_df: pd.DataFrame,
         metric_file: Optional[MetricFile] = None,
     ) -> List[str]:
         """
@@ -602,16 +356,27 @@ class WorkbookStandardizer:
             List[str]
                 A list of expected column names for the sheet.
         """
-
-        metric_key = metric_file.definition.key if metric_file is not None else None
-        expected_columns = ["metric", "year"] if metric_key is None else ["year"]
-
-        if (
-            self.should_sheet_have_month_column(
-                metric_key=metric_key, sheet_df=sheet_df
+        if metric_file is not None:
+            metric_keys = [metric_file.definition.key]
+        else:
+            metric_keys = (
+                [
+                    key
+                    for m in sheet_df["metric"].unique()
+                    for key in [self.canonical_file_name_to_metric_key.get(m)]
+                    if key is not None
+                ]
+                if "metric" in sheet_df.columns
+                else []
             )
-            is True
-        ):
+
+        expected_columns = (
+            ["year"]
+            if self.metadata.is_single_page_upload is False
+            else ["metric", "year"]
+        )
+
+        if self.should_sheet_have_month_column(metric_keys=metric_keys) is True:
             expected_columns.append("month")
 
         if (
@@ -629,36 +394,29 @@ class WorkbookStandardizer:
         ):
             disaggregated_metric_by_supervision_subsystem = (
                 self._get_disaggregated_metric_by_supervision_subsystem_set(
-                    metric_key=metric_key
+                    metric_keys=metric_keys
                 )
             )
             if True in disaggregated_metric_by_supervision_subsystem:
                 expected_columns.append("system")
 
         if (
-            metric_file is not None
+            self.metadata.is_single_page_upload is False
+            and metric_file is not None
             and metric_file.disaggregation_column_name is not None
         ):
             expected_columns.append(metric_file.disaggregation_column_name)
-        if (
-            metric_file is None
-            and sheet_df is None
-            or (
-                sheet_df is not None
-                and (
-                    BREAKDOWN in sheet_df.columns
-                    or BREAKDOWN_CATEGORY in sheet_df.columns
-                )
-            )
-        ):
+
+        if self.metadata.is_single_page_upload is True:
             # If there is a 'breakdown column' we expect a 'breakdown_category' column (and vice versa).
-            expected_columns += [BREAKDOWN_CATEGORY, BREAKDOWN]
+            if BREAKDOWN_CATEGORY in sheet_df.columns or BREAKDOWN in sheet_df.columns:
+                expected_columns += [BREAKDOWN_CATEGORY, BREAKDOWN]
 
         expected_columns.append("value")
         return expected_columns
 
     def _get_disaggregated_metric_by_supervision_subsystem_set(
-        self, metric_key: Optional[str] = None
+        self, metric_keys: List[str]
     ) -> Set[Optional[bool]]:
         """
         Generates a set of disaggregated_by_supervision_subsystems values for a metric.
@@ -675,18 +433,12 @@ class WorkbookStandardizer:
                 the disaggregated_by_supervision_subsystems for the specified metric. metric_key will
                 be None for single-page format uploads.
         """
-        return (
-            {
-                self.metadata.metric_key_to_metric_interface[
-                    metric_key
-                ].disaggregated_by_supervision_subsystems
-            }
-            if metric_key is not None
-            else {
-                metric_interface.disaggregated_by_supervision_subsystems
-                for metric_interface in self.metadata.metric_key_to_metric_interface.values()
-            }
-        )
+        return {
+            self.metadata.metric_key_to_metric_interface[
+                metric_key
+            ].disaggregated_by_supervision_subsystems
+            for metric_key in metric_keys
+        }
 
     def standardize_column_headers(
         self,
@@ -742,9 +494,7 @@ class WorkbookStandardizer:
         """
         description = f"Row {row_number}: " if row_number is not None else ""
 
-        if not isinstance(value, str) and math.isnan(
-            value
-        ):  # representing an empty cell
+        if value is None:  # representing an empty cell
             title = f"Empty '{column_name}' Column Value"
             description += f"The '{column_name}' column should contain a value. "
         else:
@@ -794,7 +544,7 @@ class WorkbookStandardizer:
     def standardize_rows(
         self,
         sheet_df: pd.DataFrame,
-        metric_file: MetricFile,
+        metric_file: Optional[MetricFile],
         sheet_name: Optional[str],
         expected_columns: List[str],
     ) -> pd.DataFrame:
@@ -823,12 +573,26 @@ class WorkbookStandardizer:
         pd.DataFrame
             A DataFrame containing rows that passed validation, with errors and warnings logged separately.
         """
-
+        # Replace Nan with None
+        sheet_df = sheet_df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
         rows = sheet_df.to_dict("records")
-        metric_key = metric_file.definition.key
+
         valid_rows = []
         today = datetime.date.today()
         for row in rows:
+            if self.metadata.is_single_page_upload is True:
+                metric_file = SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE.get(
+                    (
+                        self.metadata.system,
+                        row["metric"],
+                        self._standardize_string(row.get(BREAKDOWN_CATEGORY)),
+                    )
+                )
+            metric_key = (
+                metric_file.definition.key
+                if metric_file is not None
+                else self.canonical_file_name_to_metric_key.get(row["metric"])
+            )
             row_number = row["row_number"]
             # Check for invalid 'year' values
             num_errors_before = len(
@@ -847,7 +611,7 @@ class WorkbookStandardizer:
                 )
 
             # Check for invalid 'month' values
-            if "month" in sheet_df.columns:
+            if row.get("month") is not None:
                 additional_description = "The month column should have either numbers between 1 and 12 or the name of the month (i.e January)."
                 try:
                     month_value = int(row["month"])  # Try to convert "month" to an int
@@ -884,15 +648,43 @@ class WorkbookStandardizer:
                             row_number=row_number,
                             additional_description="Data from this row will be saved with an Annual reporting frequency.",
                         )
+            # Check for invalid disaggregation values
+            if metric_file is None:
+                possible_disaggregation_categories_for_metric = ", ".join(
+                    [
+                        m.disaggregation_column_name
+                        for m in self.metadata.metric_files
+                        if m.definition.key == metric_key
+                        and m.disaggregation_column_name is not None
+                    ]
+                )
+                # Add error if breakdown category does not correspond to the metric.
+                self._add_row_value_error(
+                    column_name=BREAKDOWN_CATEGORY,
+                    value=row[BREAKDOWN_CATEGORY],
+                    row_number=row_number,
+                    metric_key=metric_key,
+                    sheet_name=sheet_name,
+                    additional_description=f"The breakdown category does not correspond to the metric. Possible breakdown categories include: {possible_disaggregation_categories_for_metric}.",
+                )
 
-            # Check for invalid 'agency' values
             if (
                 metric_file is not None
                 and metric_file.disaggregation_column_name is not None
             ):
+                text = (
+                    row.get(metric_file.disaggregation_column_name)
+                    if self.metadata.is_single_page_upload is False
+                    else row.get(BREAKDOWN)
+                )
+                column_name = (
+                    metric_file.disaggregation_column_name
+                    if self.metadata.is_single_page_upload is False
+                    else BREAKDOWN
+                )
                 disaggregation_value = self.fuzzy_match_against_options(
-                    text=row.get(metric_file.disaggregation_column_name),
-                    column_name=metric_file.disaggregation_column_name,
+                    text=text,
+                    column_name=column_name,
                     options=[d.value for d in list(metric_file.disaggregation)],  # type: ignore[call-overload]
                     sheet_name=sheet_name,
                     row_number=row_number,
@@ -905,6 +697,11 @@ class WorkbookStandardizer:
             # Check for invalid 'system' values
             if (
                 "system" in expected_columns
+                and metric_key is not None
+                and self.metadata.metric_key_to_metric_interface[
+                    metric_key
+                ].disaggregated_by_supervision_subsystems
+                is True
                 and row.get("system") not in self.metadata.agency.systems
             ):
 
@@ -928,6 +725,7 @@ class WorkbookStandardizer:
                     additional_description=message,
                 )
 
+            # Check for invalid 'agency' values
             if "agency" in expected_columns:
                 original_agency_name = row["agency"]
                 row["agency"] = self._standardize_string(
@@ -944,8 +742,7 @@ class WorkbookStandardizer:
                         row_number=row_number,
                         additional_description=(
                             ""
-                            if not isinstance(row["agency"], str)
-                            and math.isnan(row["agency"])
+                            if not row.get("agency") is not None
                             else f"Your agency does not have permissions to report for {original_agency_name}."
                         ),
                     )
@@ -969,6 +766,26 @@ class WorkbookStandardizer:
                         row_number=row_number,
                         additional_description="",
                     )
+
+            # Check for invalid 'metric' values
+            if (
+                self.metadata.is_single_page_upload is True
+                and row.get("metric") is None
+                or (
+                    row.get("metric") is not None
+                    and self.canonical_file_name_to_metric_key.get(row["metric"])
+                    is None
+                )
+            ):
+                valid_metrics = ", ".join(self.canonical_file_name_to_metric_key)
+                self._add_row_value_error(
+                    column_name="metric",
+                    value=row.get("metric"),
+                    metric_key=metric_key,
+                    sheet_name=sheet_name,
+                    row_number=row_number,
+                    additional_description=f"The metric in this row does not correspond to a metric for this agency. The valid values for this row are {valid_metrics}.",
+                )
 
             num_errors_after = len(
                 self.metadata.metric_key_to_errors.get(metric_key, [])
@@ -1038,13 +855,12 @@ class WorkbookStandardizer:
         if can_rows_be_ingested is False:
             return can_rows_be_ingested, sheet_df
 
-        if metric_file is not None:
-            sheet_df = self.standardize_rows(
-                sheet_df=sheet_df,
-                sheet_name=sheet_name,
-                expected_columns=expected_columns,
-                metric_file=metric_file,
-            )
+        sheet_df = self.standardize_rows(
+            sheet_df=sheet_df,
+            sheet_name=sheet_name,
+            expected_columns=expected_columns,
+            metric_file=metric_file,
+        )
 
         return True, sheet_df
 
@@ -1069,50 +885,32 @@ class WorkbookStandardizer:
         )
 
         workbook_df = pd.read_excel(excel_file, sheet_name=None)
-        can_workbook_be_ingested = True
         single_page_upload_columns = ["metric", "breakdown", "breakdown_category"]
-        self.is_single_page_upload = len(excel_file.sheet_names) == 1 and any(
+        self.metadata.is_single_page_upload = len(excel_file.sheet_names) == 1 and any(
             col in workbook_df[excel_file.sheet_names[0]].columns
             for col in single_page_upload_columns
         )
-        if self.is_single_page_upload is True:
-            # If it's a single-page upload, run the workbook through standardize_sheet
-            # to catch column warnings specific to the single-page upload format.
-            (
-                can_workbook_be_ingested,
-                standardized_sheet_df,
-            ) = self.standardize_sheet(sheet_df=workbook_df[excel_file.sheet_names[0]])
-            if can_workbook_be_ingested is True:
-                # If the workbook can be ingested and it's a single-page upload,
-                # reformat the workbook_df to be in the standard format.
-                workbook_df = self._transform_combined_metric_file_upload(
-                    df=standardized_sheet_df
-                )
 
-        if can_workbook_be_ingested is True:
-            for sheet_name in workbook_df:
-                sheet_df = workbook_df[sheet_name]
-                standardized_sheet_name = self._standardize_string(sheet_name)
-                metric_file = get_metricfile_by_sheet_name(
-                    sheet_name=standardized_sheet_name, system=self.metadata.system
-                )
-                if metric_file is None:
-                    # 1) Don't write sheet with invalid sheet name to new excel object
-                    # 2) Add sheet name to invalid sheet names
-                    self.invalid_sheet_names.add(sheet_name)
-                    continue
+        for sheet_name in workbook_df:
+            sheet_df = workbook_df[sheet_name]
+            standardized_sheet_name = self._standardize_string(sheet_name)
+            metric_file = get_metricfile_by_sheet_name(
+                sheet_name=standardized_sheet_name, system=self.metadata.system
+            )
+            if metric_file is None and self.metadata.is_single_page_upload is False:
+                # 1) Don't write sheet with invalid sheet name to new excel object
+                # 2) Add sheet name to invalid sheet names
+                self.invalid_sheet_names.add(sheet_name)
+                continue
 
-                (
-                    can_sheet_be_ingested,
-                    standardized_sheet_df,
-                ) = self.standardize_sheet(
-                    sheet_df=sheet_df,
-                    metric_file=metric_file,
-                    sheet_name=sheet_name,
-                )
+            (can_sheet_be_ingested, standardized_sheet_df,) = self.standardize_sheet(
+                sheet_df=sheet_df,
+                metric_file=metric_file,
+                sheet_name=sheet_name,
+            )
 
-                if can_sheet_be_ingested is True:
-                    standardized_workbook_df[sheet_name] = standardized_sheet_df
+            if can_sheet_be_ingested is True:
+                standardized_workbook_df[sheet_name] = standardized_sheet_df
 
         if len(self.invalid_sheet_names) > 0:
             self._add_invalid_name_error()

@@ -18,12 +18,9 @@
 
 import datetime
 import logging
-import math
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
-
-import pandas as pd
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
@@ -34,17 +31,20 @@ from recidiviz.justice_counts.exceptions import (
 )
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
-    SYSTEM_TO_FILENAME_TO_METRICFILE,
     get_metricfile_by_sheet_name,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import UNEXPECTED_ERROR
+from recidiviz.justice_counts.utils.system_filename_breakdown_to_metricfile import (
+    SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
 )
+from recidiviz.utils.types import assert_type
 
 
 class SpreadsheetUploader:
@@ -136,7 +136,6 @@ class SpreadsheetUploader:
             # annually. So the same sheet may have a 'month' column filled out for some
             # child agencies, and not for others.
 
-            current_rows = pd.DataFrame(current_rows).to_dict(orient="records")
             if self.metadata.system == schema.System.SUPERVISION:
                 system_to_rows = self._get_system_to_rows(
                     rows=current_rows,
@@ -191,48 +190,87 @@ class SpreadsheetUploader:
         uploaded_reports: Set[schema.Report],
         child_agency_name: Optional[str] = None,
     ) -> None:
-        """Uploads rows for a given system and child agency. If child_agency_id
-        if None, then the rows are uploaded for the agency specified as self.agency."""
-        # Redefine this here to properly handle sheets that contain
-        # rows for multiple systems (e.g. a Supervision sheet can
-        # contain rows for Parole and Probation)
-        sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+        """
+        Uploads metric rows for a given system and child agency by organizing and
+        mapping the rows to the appropriate metric files.
 
-        # Based on the system and the name of the CSV file, determine which
-        # Justice Counts metric this file contains data for
-        metricfile = get_metricfile_by_sheet_name(
-            sheet_name=self.sheet_name, system=system
-        )
+        For single-page uploads, all rows are assigned to the metric file directly
+        based on the sheet name and system. For multi-page uploads, rows are
+        sorted and grouped by 'breakdown' and 'breakdown category', and then
+        mapped to the corresponding metric file.
 
-        if not metricfile:
-            return
+        Parameters:
+        inserts (List[schema.Datapoint]): List of new datapoints to be inserted.
+        updates (List[schema.Datapoint]): List of datapoints to be updated.
+        histories (List[schema.DatapointHistory]): List of datapoint history
+        records for tracking changes.
+        rows (List[Dict[str, Any]]): List of rows containing metric data.
+        system (schema.System): The system being processed (e.g., Parole,
+        Probation).
+        uploaded_reports (Set[schema.Report]): Set of reports that have been
+        successfully uploaded.
+        child_agency_name (Optional[str]): Name of the child agency if rows are
+        uploaded for a sub-agency (default is None, meaning it uploads for
+        the main agency).
 
-        existing_datapoint_json_list = self.metadata.metric_key_to_datapoint_jsons[
-            metricfile.definition.key
-        ]
-        try:
-            new_datapoint_json_list = self._upload_rows_for_metricfile(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-                rows=rows,
-                metricfile=metricfile,
-                uploaded_reports=uploaded_reports,
-                child_agency_name=child_agency_name,
+        Raises:
+        ValueError: If a corresponding metric file cannot be found for a given
+        breakdown and breakdown category.
+        """
+        if self.metadata.is_single_page_upload is False:
+            metricfile = get_metricfile_by_sheet_name(
+                sheet_name=self.sheet_name, system=system
             )
-        except Exception as e:
-            new_datapoint_json_list = []
-            curr_metricfile = sheet_name_to_metricfile[self.sheet_name]
-            self.metadata.metric_key_to_errors[curr_metricfile.definition.key].append(
-                self._handle_error(
-                    e=e,
-                    sheet_name=self.sheet_name,
+            metricfile_to_rows = {}
+            metricfile_to_rows[assert_type(metricfile, MetricFile)] = rows
+        else:
+            metricfile_to_rows = defaultdict(list)
+            for row in rows:
+                metricfile_key = (
+                    system,
+                    str(row["metric"]),
+                    (
+                        str(row.get("breakdown_category"))
+                        if row.get("breakdown_category") is not None
+                        else None
+                    ),
+                )
+
+                try:
+                    metricfile = SYSTEM_METRIC_BREAKDOWN_PAIR_TO_METRICFILE[
+                        metricfile_key
+                    ]
+                    metricfile_to_rows[metricfile].append(row)
+                except KeyError as e:
+                    raise ValueError(
+                        f"Metric file not found for key: {metricfile_key}"
+                    ) from e
+        for metricfile, grouped_rows in metricfile_to_rows.items():
+            existing_datapoint_json_list = (
+                self.metadata.metric_key_to_datapoint_jsons.get(
+                    metricfile.definition.key, []
                 )
             )
+            try:
+                new_datapoint_json_list = self._upload_rows_for_metricfile(
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
+                    rows=grouped_rows,
+                    metricfile=metricfile,
+                    uploaded_reports=uploaded_reports,
+                    child_agency_name=child_agency_name,
+                )
+            except Exception as e:
+                new_datapoint_json_list = []
+                if metricfile is not None:
+                    self.metadata.metric_key_to_errors[
+                        metricfile.definition.key
+                    ].append(self._handle_error(e=e, sheet_name=self.sheet_name))
 
-        self.metadata.metric_key_to_datapoint_jsons[metricfile.definition.key] = (
-            existing_datapoint_json_list + new_datapoint_json_list
-        )
+            self.metadata.metric_key_to_datapoint_jsons[metricfile.definition.key] = (
+                existing_datapoint_json_list + new_datapoint_json_list
+            )
 
     def _upload_rows_for_metricfile(
         self,
@@ -362,9 +400,9 @@ class SpreadsheetUploader:
             # remove whitespace from column headers
             row = {k.strip(): v for k, v in row.items() if k is not None}
             year = row["year"]
-            if reporting_frequency == ReportingFrequency.MONTHLY and (
-                row.get("month") is None
-                or (isinstance(row["month"], float) and math.isnan(row["month"]))
+            if (
+                reporting_frequency == ReportingFrequency.MONTHLY
+                and row.get("month") is None
             ):
                 # We will be in this case if annual data is provided for monthly metrics
                 month = (
@@ -389,7 +427,10 @@ class SpreadsheetUploader:
             date_range_start, date_range_end = ReportInterface.get_date_range(
                 year=year, month=int(month), frequency=assumed_frequency.value
             )
-            time_range_to_year_month[(date_range_start, date_range_end)] = (year, month)
+            time_range_to_year_month[(date_range_start, date_range_end)] = (
+                year,
+                int(month),
+            )
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
 
@@ -403,8 +444,8 @@ class SpreadsheetUploader:
         system_value_to_rows = {
             k: list(v)
             for k, v in groupby(
-                sorted(rows, key=lambda x: x.get("system", "all")),
-                lambda x: x.get("system", "all"),
+                sorted(rows, key=lambda x: x.get("system") or "all"),
+                lambda x: x.get("system") or "all",
             )
         }
         normalized_system_value_to_system = {

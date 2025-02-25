@@ -53,3 +53,6 @@ class MetricFile:
 
     def __attrs_post_init__(self) -> None:
         self.display_name = self.canonical_filename.replace("_", " ").title()
+
+    def __hash__(self) -> int:
+        return hash((self.definition.key, self.canonical_filename))
