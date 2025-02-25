@@ -92,8 +92,9 @@ WHERE state_code = '{state_code}'
 AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
--- For officers, we only need these metrics if this officer is included in outcomes
-{"AND include_in_outcomes" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
+-- For officers, we only need these metrics if this officer is included in outcomes and the value is not NULL
+-- TODO(#38725): Avoid unexpected null values via a custom metrics collection
+{f"AND include_in_outcomes AND {metric.name} IS NOT NULL" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
 """
 
             rate_subquery = f"""
@@ -108,7 +109,8 @@ AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 -- For officers, we only need these metrics if this officer is included in outcomes
-{"AND include_in_outcomes" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
+-- TODO(#38725): Avoid unexpected null values via a custom metrics collection
+{f"AND include_in_outcomes AND {metric.name} / avg_daily_population IS NOT NULL" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
 """
 
             subqueries.extend([rate_subquery, count_subquery])
