@@ -21,6 +21,9 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.task_eligibility import task_eligiblity_spans
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_task_eligibility_spans_view_for_tes_builder,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
 )
@@ -39,13 +42,20 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     """Collects and returns a list of builders for all views related to task
     eligibility (i.e. views in task_eligibility* datasets).
     """
+    tes_builders = SingleTaskEligibilityBigQueryViewCollector().collect_view_builders()
+    collapsed_tes_builders = [
+        build_collapsed_task_eligibility_spans_view_for_tes_builder(tes_builder)
+        for tes_builder in tes_builders
+    ]
+
     return list(
         itertools.chain.from_iterable(
             (
                 TaskCriteriaBigQueryViewCollector().collect_view_builders(),
                 TaskCandidatePopulationBigQueryViewCollector().collect_view_builders(),
                 TaskCompletionEventBigQueryViewCollector().collect_view_builders(),
-                SingleTaskEligibilityBigQueryViewCollector().collect_view_builders(),
+                tes_builders,
+                collapsed_tes_builders,
                 task_eligiblity_spans.get_unioned_view_builders(),
             )
         )

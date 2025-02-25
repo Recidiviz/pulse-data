@@ -24,6 +24,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_task_eligibility_spans_view_for_tes_builder,
+)
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_DATASET_ID,
     task_eligibility_spans_state_specific_dataset,
@@ -145,7 +148,7 @@ ALL_COMPLETION_EVENTS_VIEW_ID = "all_completion_events"
 ALL_TASKS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
 This view contains all task eligiblity spans for {state_code} tasks. It unions the 
 results of all single-task views for this state, aka all the other views in this 
-dataset (`{state_specific_spans_dataset_id}`).
+dataset (`{state_specific_spans_dataset_id}`), excluding *__collapsed derivative views.
 """
 
 ALL_TASKS_ALL_STATES_DESCRIPTION = """
@@ -154,6 +157,24 @@ results of all single-state `all_tasks` views (e.g. `task_eligibility_us_xx.all_
 """
 
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
+
+ALL_TASKS_COLLAPSED_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
+This view contains all task eligiblity spans for {state_code} tasks, where adjacent 
+spans of the same task with the same is_eligible/is_almost_eligible values are collapsed
+into a single span. It unions the results of all single-task *__collapsed views for this
+state, aka all the other *__collapsed views in this dataset 
+(`{state_specific_spans_dataset_id}`).
+"""
+
+ALL_TASKS_COLLAPSED_ALL_STATES_DESCRIPTION = """
+This view contains all task eligiblity spans for tasks across states, where adjacent 
+spans of the same task with the same is_eligible/is_almost_eligible values are collapsed
+into a single span. It unions the results of all single-state `all_tasks__collapsed` 
+views (e.g. `task_eligibility_us_xx.all_tasks__collapsed`).
+"""
+
+
+TASK_ELIGIBILITY_SPANS_ALL_TASKS_COLLAPSED_VIEW_ID = "all_tasks__collapsed"
 
 
 def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
@@ -204,7 +225,62 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
             description=ALL_TASKS_ALL_STATES_DESCRIPTION,
             parents=state_specific_unioned_view_builders,
             clustering_fields=clustering_fields,
+        ),
+    ]
+
+
+def _get_collapsed_eligiblity_spans_unioned_view_builders() -> Sequence[
+    BigQueryViewBuilder
+]:
+    """Returns a list of view builders containing:
+    a) one view per state, which unions collapsed task eligiblity spans for that state into
+        a single 'all_tasks__collapsed' view for that state, and
+    b) one view that unions all the data from the state-specific 'all_tasks__collapsed'
+    views into one place.
+    """
+    clustering_fields = ["state_code", "task_name"]
+
+    state_specific_unioned_view_builders = []
+    view_collector = SingleTaskEligibilityBigQueryViewCollector()
+    for (
+        state_code,
+        task_view_builders,
+    ) in view_collector.collect_view_builders_by_state().items():
+        if not task_view_builders:
+            raise ValueError(
+                f"Found no defined SingleTaskEligibilityBigQueryView for "
+                f"[{state_code}] - is there an empty module for this state?"
+            )
+
+        dataset_id = task_eligibility_spans_state_specific_dataset(state_code)
+        state_specific_unioned_view_builders.append(
+            UnionAllBigQueryViewBuilder(
+                dataset_id=dataset_id,
+                view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_COLLAPSED_VIEW_ID,
+                description=ALL_TASKS_COLLAPSED_STATE_SPECIFIC_DESCRIPTION_TEMPLATE,
+                parents=[
+                    build_collapsed_task_eligibility_spans_view_for_tes_builder(
+                        tes_builder
+                    )
+                    for tes_builder in task_view_builders
+                ],
+                clustering_fields=clustering_fields,
+            )
         )
+
+    if not state_specific_unioned_view_builders:
+        raise ValueError(
+            "Found no defined SingleTaskEligibilityBigQueryViews defined for any state."
+        )
+
+    return state_specific_unioned_view_builders + [
+        UnionAllBigQueryViewBuilder(
+            dataset_id=TASK_ELIGIBILITY_DATASET_ID,
+            view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_COLLAPSED_VIEW_ID,
+            description=ALL_TASKS_COLLAPSED_ALL_STATES_DESCRIPTION,
+            parents=state_specific_unioned_view_builders,
+            clustering_fields=clustering_fields,
+        ),
     ]
 
 
@@ -467,4 +543,5 @@ def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
         *_get_candidate_population_unioned_view_builders(),
         *_get_completion_events_unioned_view_builders(),
         *_get_eligiblity_spans_unioned_view_builders(),
+        *_get_collapsed_eligiblity_spans_unioned_view_builders(),
     ]

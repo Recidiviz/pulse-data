@@ -65,7 +65,7 @@ def get_task_eligible_event_observation_view_builder(
         launches.first_access_date IS NOT NULL AS task_type_is_live,
         IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     FROM
-        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` a
+        `{{project_id}}.task_eligibility.all_tasks__collapsed_materialized` a
     -- Get information about impact funnel status.
     -- We convert the eligibility start date to a timestamp having the last time (23:59:59) on that date,
     -- to account for any usage events that may have occurred on the same date.
@@ -86,7 +86,7 @@ def get_task_eligible_event_observation_view_builder(
         a.state_code = launches.state_code
         AND d.completion_event_type = launches.completion_event_type
     LEFT JOIN
-        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` prev_eligibility_span
+        `{{project_id}}.task_eligibility.all_tasks__collapsed_materialized` prev_eligibility_span
     ON
         prev_eligibility_span.person_id = a.person_id
         AND prev_eligibility_span.task_type = a.task_type

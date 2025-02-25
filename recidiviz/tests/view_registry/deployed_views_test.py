@@ -46,8 +46,8 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
-from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
-    ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibility_spans import (
+    ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
@@ -75,6 +75,15 @@ from recidiviz.ingest.views.dataset_config import (
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.observations.views.events.person.task_completed import (
     VIEW_BUILDER as TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.task_eligibility_start import (
+    VIEW_BUILDER as TASK_ELIGIBILITY_START_TES_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.task_eligible_7_days import (
+    VIEW_BUILDER as TASK_ELIGIBLE_7_DAYS_TES_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.task_eligible_30_days import (
+    VIEW_BUILDER as TASK_ELIGIBLE_30_DAYS_TES_VIEW_BUILDER,
 )
 from recidiviz.observations.views.spans.person.task_eligibility_session import (
     VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
@@ -419,11 +428,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             #  that look at all tasks.
             TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER.address,
             TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER.address,
-            # TODO(#29650): Generate opportunity-specific eligibility sessions views,
-            #  then convert all_task_eligibility_spans (renamed to
-            #  all_task_eligibility_sessions) to a UnionAllBigQueryViewBuilder view and
-            #  remove all downstream direct usages.
-            ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
+            TASK_ELIGIBILITY_START_TES_VIEW_BUILDER.address,
+            TASK_ELIGIBLE_7_DAYS_TES_VIEW_BUILDER.address,
+            TASK_ELIGIBLE_30_DAYS_TES_VIEW_BUILDER.address,
+            ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
             ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER.address,
             BigQueryAddress(
                 dataset_id="observations__person_event", table_id="impact_transition"

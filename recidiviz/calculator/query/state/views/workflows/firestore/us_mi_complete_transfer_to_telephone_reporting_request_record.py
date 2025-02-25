@@ -19,11 +19,12 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.task_eligibility.dataset_config import (
-    task_eligibility_spans_state_specific_dataset,
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_mi.complete_transfer_to_telephone_reporting_request import (
+    VIEW_BUILDER as US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,25 +36,30 @@ US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_NAME = (
 US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_DESCRIPTION = """
     Query for clients eligible for transfer to minimum telephone reporting in Michigan
     """
+
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_TES_VIEW_BUILDER
+)
+
+
 US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 SELECT
     pei.external_id,
     tes.state_code,
-    tes_all.start_date AS metadata_eligible_date,
+    tes_collapsed.start_date AS metadata_eligible_date,
     reasons,
     tes.is_eligible,
     tes.is_almost_eligible,
-FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_telephone_reporting_request_materialized` tes
+FROM `{{project_id}}.{US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_TES_VIEW_BUILDER.table_for_query.to_str()}` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.state_code = pei.state_code 
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_MI_DOC"
---join analyst view dataset that sessionizes spans based on eligibility to get eligible start date
-INNER JOIN `{{project_id}}.{{analyst_views_dataset}}.all_task_eligibility_spans_materialized` tes_all
-    ON tes_all.state_code = tes.state_code
-    AND tes_all.person_id = tes.person_id 
-    AND tes_all.task_name = 'COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST'
-    AND CURRENT_DATE('US/Pacific') BETWEEN tes_all.start_date AND {nonnull_end_date_exclusive_clause('tes_all.end_date')}
+--join view that sessionizes spans based on eligibility to get eligible start date
+INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS.to_str()}` tes_collapsed
+    ON tes_collapsed.state_code = tes.state_code
+    AND tes_collapsed.person_id = tes.person_id 
+    AND CURRENT_DATE('US/Pacific') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_MI'
@@ -65,10 +71,6 @@ US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER = Sim
     view_query_template=US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_QUERY_TEMPLATE,
     description=US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    analyst_views_dataset=ANALYST_VIEWS_DATASET,
-    task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
-        StateCode.US_MI
-    ),
     should_materialize=True,
 )
 

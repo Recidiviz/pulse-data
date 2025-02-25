@@ -32,7 +32,7 @@ ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_DESCRIPTION = """Sessionized view of `all_t
 spans based on completion event type and eligibility status"""
 
 ALL_TASK_TYPE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
-WITH all_task_spans AS (SELECT * FROM `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized`)
+WITH all_task_spans AS (SELECT * FROM `{{project_id}}.task_eligibility.all_tasks__collapsed_materialized`)
 ,
 {create_sub_sessions_with_attributes("all_task_spans", index_columns=["state_code", "person_id", "task_type"])}
 ,
