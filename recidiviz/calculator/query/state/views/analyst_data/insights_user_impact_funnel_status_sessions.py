@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,12 +19,13 @@ Sessionized view representing spans of time where a supervisor has surfaceable
 officer outlier officers, along with tool usage.
 """
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
-    create_sub_sessions_with_attributes,
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.state.views.analyst_data.funnel_status_sessions_big_query_view_builder import (
+    FunnelStatusEventQueryBuilder,
+    FunnelStatusSessionsViewBuilder,
+    FunnelStatusSpanQueryBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.insights_segment_events import (
     INSIGHTS_SEGMENT_EVENT_QUERY_CONFIGS,
 )
@@ -43,29 +44,22 @@ INSIGHTS_USAGE_EVENTS: list[str] = [
     for event_config in INSIGHTS_SEGMENT_EVENT_QUERY_CONFIGS
 ]
 
-# TODO(#35954): Replace this with a generalized funnel status sessions function
-def generate_insights_person_impact_funnel_status_sessions(
-    usage_event_names: list[str],
-) -> str:
-    """Returns a query template that combines information about outlier status
-    with the inputted set of usage statuses to create a unified funnel view
-    of product usage."""
-    # Query fragment that checks for the existence of a usage status for a given span.
-    # Used to dedup sub sessions and generate boolean flags.
-    usage_status_dedup_query_fragment = ",\n".join(
-        [
-            f"""COUNTIF(usage_event_type = "{k}") > 0 AS {k.lower()}"""
-            for k in usage_event_names
-        ]
-    )
-
-    all_attributes = [
-        "has_outlier_officers",
-        "num_outlier_officers",
-    ] + [k.lower() for k in usage_event_names]
-
-    query_template = f"""
-WITH surfaceable_outlier_sessions AS (
+INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER = FunnelStatusSessionsViewBuilder(
+    view_id=_VIEW_NAME,
+    description=_VIEW_DESCRIPTION,
+    index_cols=["state_code", "email_address"],
+    # End dates are always the end of the month
+    funnel_reset_dates_sql_source="""
+    SELECT DISTINCT
+        state_code,
+        email AS email_address,
+        DATE_ADD(DATE_TRUNC(event_ts, MONTH), INTERVAL 1 MONTH) AS funnel_reset_date,
+    FROM
+        `{project_id}.analyst_data.insights_segment_events_materialized`
+""",
+    funnel_status_query_builders=[
+        FunnelStatusSpanQueryBuilder(
+            sql_source="""
     SELECT
         state_code,
         email_address,
@@ -74,84 +68,42 @@ WITH surfaceable_outlier_sessions AS (
         num_outlier_officers > 0 AS has_outlier_officers,
         num_outlier_officers,
     FROM
-        `{{project_id}}.analyst_data.insights_supervisor_outlier_status_archive_sessions_materialized`
+        `{project_id}.analyst_data.insights_supervisor_outlier_status_archive_sessions_materialized`""",
+            start_date_col="start_date",
+            end_date_exclusive_col="end_date_exclusive",
+            index_cols=["state_code", "email_address"],
+            status_cols_by_type=[
+                ("has_outlier_officers", bigquery.enums.StandardSqlTypeNames.BOOL),
+                ("num_outlier_officers", bigquery.enums.StandardSqlTypeNames.INT64),
+            ],
+            # We don't need to further truncate these sessions because they already
+            # represent accurate spans of time of outlier status as surfaced in the
+            # tool.
+            truncate_spans_at_reset_dates=False,
+        ),
+        *[
+            FunnelStatusEventQueryBuilder(
+                sql_source=f"""
+        SELECT
+            state_code,
+            email AS email_address,
+            event_ts AS start_date,
+            TRUE AS {event_type.lower()},
+        FROM
+            `{{project_id}}.analyst_data.insights_segment_events_materialized`
+        WHERE
+            event = "{event_type}"
+            """,
+                event_date_col="start_date",
+                index_cols=["state_code", "email_address"],
+                status_cols_by_type=[
+                    (event_type.lower(), bigquery.enums.StandardSqlTypeNames.BOOL)
+                ],
+            )
+            for event_type in INSIGHTS_USAGE_EVENTS
+        ],
+    ],
 )
-,
-usage_sessions AS (
-    SELECT
-        state_code,
-        email AS email_address,
-        event AS usage_event_type,
-        event_ts AS start_date,
-        -- Close out usage span at the end of the month
-        DATE_ADD(DATE_TRUNC(event_ts, MONTH), INTERVAL 1 MONTH) AS end_date_exclusive,
-    FROM
-        `{{project_id}}.analyst_data.insights_segment_events_materialized`
-)
-,
-all_sessions AS (
-    SELECT
-        state_code,
-        email_address,
-        start_date,
-        end_date_exclusive,
-        has_outlier_officers,
-        num_outlier_officers,
-        CAST(NULL AS STRING) AS usage_event_type,
-    FROM
-        surfaceable_outlier_sessions
-
-    UNION ALL
-
-    
-    SELECT
-        state_code,
-        email_address,
-        start_date,
-        end_date_exclusive,
-        FALSE AS has_outlier_officers,
-        CAST(NULL AS INT64) AS num_outlier_officers,
-        usage_event_type,
-    FROM
-        usage_sessions
-)
-,
-{create_sub_sessions_with_attributes("all_sessions", index_columns=["state_code", "email_address"], end_date_field_name="end_date_exclusive")}
-,
-sub_sessions_dedup AS (
-    SELECT
-        state_code,
-        email_address,
-        start_date,
-        end_date_exclusive,
-        LOGICAL_OR(has_outlier_officers) AS has_outlier_officers,
-        MAX(num_outlier_officers) AS num_outlier_officers,
-        {usage_status_dedup_query_fragment},
-    FROM
-        sub_sessions_with_attributes
-    GROUP BY 1, 2, 3, 4
-)
-{aggregate_adjacent_spans(
-    "sub_sessions_dedup", 
-    index_columns=["state_code", "email_address"],
-    attribute=all_attributes,
-    end_date_field_name="end_date_exclusive"
-)}
-"""
-    return query_template
-
-
-INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=ANALYST_VIEWS_DATASET,
-    view_id=_VIEW_NAME,
-    description=_VIEW_DESCRIPTION,
-    view_query_template=generate_insights_person_impact_funnel_status_sessions(
-        INSIGHTS_USAGE_EVENTS
-    ),
-    clustering_fields=["state_code", "email_address"],
-    should_materialize=True,
-)
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
