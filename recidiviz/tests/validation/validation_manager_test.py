@@ -824,6 +824,7 @@ class TestFetchValidations(TestCase):
                 "US_OR",
                 "US_PA",
                 "US_TN",
+                "US_UT",
             ],
         )
 

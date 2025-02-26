@@ -125,6 +125,8 @@ products:
         environment: production
       - state_code: US_TX
         environment: staging
+      - state_code: US_UT
+        environment: production
   - name: Insights
     description: Insights is a state-agnostic product offering for staff performance and accountability.
     exports:
