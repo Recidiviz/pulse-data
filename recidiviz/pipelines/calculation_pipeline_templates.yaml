@@ -294,7 +294,7 @@ metric_pipelines:
   # Full US_UT supervision calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_UT
-    metric_types: SUPERVISION_POPULATION_SPAN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
   - pipeline: supervision_metrics
     state_code: US_UT
