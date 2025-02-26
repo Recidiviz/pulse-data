@@ -153,6 +153,7 @@ class SpreadsheetInterface:
                 ),
                 "status": spreadsheet.status.value,
                 "system": spreadsheet.system.value,
+                "num_new_datapoints": spreadsheet.num_new_datapoints,
             }
             for spreadsheet in spreadsheets
         ]
@@ -271,6 +272,8 @@ class SpreadsheetInterface:
                 *bulk_upload_metadata.metric_key_to_errors.values()
             )
         )
+
+        spreadsheet.num_new_datapoints = uploader.num_new_datapoints
 
         ingest_result = BulkUploadResult(
             spreadsheet=spreadsheet,

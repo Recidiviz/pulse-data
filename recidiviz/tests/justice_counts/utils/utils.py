@@ -436,6 +436,7 @@ class JusticeCountsSchemaTestObjects:
                 if is_ingested
                 else schema.SpreadsheetStatus.UPLOADED
             ),
+            num_new_datapoints=12,
         )
 
     @staticmethod

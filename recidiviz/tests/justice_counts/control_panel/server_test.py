@@ -2017,6 +2017,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 spreadsheet.uploaded_by,
                 self.test_schema_objects.test_user_A.auth0_user_id,
             )
+            self.assertEqual(spreadsheet.num_new_datapoints, 0)
             self.assertIsNotNone(spreadsheet.ingested_at)
             self.assertEqual(
                 spreadsheet.original_name, self.law_enforcement_excel_file_name
@@ -2259,6 +2260,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 probation_spreadsheet.get("uploaded_by_v2"),
                 {"name": self.test_schema_objects.test_user_A.name, "role": None},
             )
+            self.assertEqual(probation_spreadsheet.get("num_new_datapoints"), 12)
 
             self.assertEqual(
                 probation_spreadsheet.get("ingested_at"),
@@ -2276,6 +2278,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(parole_spreadsheet.get("ingested_at"), None)
             self.assertEqual(parole_spreadsheet.get("status"), "UPLOADED")
             self.assertEqual(parole_spreadsheet.get("system"), "PAROLE")
+            self.assertEqual(parole_spreadsheet.get("num_new_datapoints"), 12)
             supervision_spreadsheet = spreadsheets[2]
             self.assertEqual(
                 supervision_spreadsheet.get("name"),
@@ -2288,6 +2291,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(supervision_spreadsheet.get("ingested_at"), None)
             self.assertEqual(supervision_spreadsheet.get("status"), "UPLOADED")
             self.assertEqual(supervision_spreadsheet.get("system"), "SUPERVISION")
+            self.assertEqual(supervision_spreadsheet.get("num_new_datapoints"), 12)
 
     def test_download_spreadsheet_fail_without_permissions(self) -> None:
         agency_A = self.test_schema_objects.test_agency_A

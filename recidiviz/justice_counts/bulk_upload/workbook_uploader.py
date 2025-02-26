@@ -52,6 +52,8 @@ class WorkbookUploader:
         self.updated_reports: Set[schema.Report] = set()
         # A set of uploaded report IDs will be used to create the `unchanged_reports` set
         self.uploaded_reports: Set[schema.Report] = set()
+        # Number of new datapoints created from the upload of the workbook.
+        self.num_new_datapoints = 0
 
     def upload_workbook(self, file: Any, file_name: str) -> None:
         """
@@ -172,6 +174,7 @@ class WorkbookUploader:
         )
         for different_key in unique_key_difference:
             # datapoint that previously did not exist has been added to report
+            self.num_new_datapoints += 1
             agency_id = different_key[2]
 
             # If a user tried to upload monthly data for a metric that is configured as
@@ -211,6 +214,11 @@ class WorkbookUploader:
                 and existing_datapoints_dict_unchanged[unique_key]
                 != get_value(datapoint=datapoint)
             ):
+                if get_value(datapoint=datapoint) is None:
+                    # If the datapoint was previously unreported (None) and now has a value,
+                    # count it as a new datapoint since it was not reported before.
+                    self.num_new_datapoints += 1
+
                 # datapoint that previously existed has been updated/changed
                 agency_id = unique_key[2]
 

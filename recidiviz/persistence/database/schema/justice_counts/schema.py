@@ -625,6 +625,8 @@ class Spreadsheet(JusticeCountsBase):
     ingested_at = Column(DateTime, nullable=True)
 
     upload_note = Column(String, nullable=True)
+    # Number of new datapoints created with the upload
+    num_new_datapoints = Column(Integer, nullable=True)
 
     __table_args__ = tuple(
         [PrimaryKeyConstraint(id), ForeignKeyConstraint([agency_id], [Agency.id])]
