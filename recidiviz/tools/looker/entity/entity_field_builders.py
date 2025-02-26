@@ -30,7 +30,6 @@ from recidiviz.looker.lookml_view_field import (
     LookMLViewField,
     MeasureLookMLViewField,
 )
-from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
 from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
@@ -117,9 +116,6 @@ class EntityLookMLFieldBuilder(LookMLFieldBuilder):
         )
 
 
-PRIMARY_KEY_COL = "primary_key"
-
-
 @attr.define
 class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
     """Builds LookML fields for an association table based on it's schema fields and associated entities' metadata."""
@@ -145,15 +141,8 @@ class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
             associated_class_id_a,
             associated_class_id_b,
         ) = self.metadata.associated_entities_class_ids
-        return DimensionLookMLViewField(
-            field_name=PRIMARY_KEY_COL,
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.primary_key(True),
-                LookMLFieldParameter.sql(
-                    f'CONCAT(${{TABLE}}.{associated_class_id_a}, "_", ${{TABLE}}.{associated_class_id_b})'
-                ),
-            ],
+        return DimensionLookMLViewField.for_compound_primary_key(
+            associated_class_id_a, associated_class_id_b
         )
 
     def build_view_fields(self) -> List[LookMLViewField]:

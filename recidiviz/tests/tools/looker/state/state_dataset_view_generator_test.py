@@ -39,6 +39,10 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_
     FakeEntitiesModuleContext,
 )
 from recidiviz.tests.persistence.entity import fake_entities
+from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
+    EntityLookMLFieldFactory,
+    StateEntityLookMLCustomFieldProvider,
+)
 from recidiviz.tools.looker.state.state_dataset_view_generator import (
     generate_state_views,
 )
@@ -49,33 +53,36 @@ from recidiviz.tools.looker.state.state_dataset_view_generator import (
 class StateViewGenerator(unittest.TestCase):
     """Tests LookML view generation functions for states"""
 
-    def setUp(self) -> None:
-        self.module_context_patchers = [
-            patch(
-                "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
-                return_value=FakeEntitiesModuleContext(),
-            ),
-            patch(
-                "recidiviz.persistence.entity.entity_metadata_helper.entities_module_context_for_module",
-                return_value=FakeEntitiesModuleContext(),
-            ),
-        ]
-        for patcher in self.module_context_patchers:
-            patcher.start()
-
-    def tearDown(self) -> None:
-        for patcher in self.module_context_patchers:
-            patcher.stop()
+    def test_generate_state_views(self) -> None:
+        # assert doesn't crash
+        _ = generate_state_views()
 
     @patch(
         "recidiviz.tools.looker.state.state_dataset_view_generator.ENTITIES_MODULE",
         fake_entities,
     )
     @patch(
+        "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
+        return_value=FakeEntitiesModuleContext(),
+    )
+    @patch(
+        "recidiviz.persistence.entity.entity_metadata_helper.entities_module_context_for_module",
+        return_value=FakeEntitiesModuleContext(),
+    )
+    @patch(
         "recidiviz.persistence.entity.entity_metadata_helper.get_entities_by_association_table_id",
         return_value=(fake_entities.FakeAnotherEntity, fake_entities.FakeEntity),
     )
-    def test_generate_lookml_views(self, _mock_get_entities: MagicMock) -> None:
+    @patch(
+        "recidiviz.tools.looker.state.state_dataset_view_generator.StateEntityLookMLCustomFieldProvider",
+        spec=StateEntityLookMLCustomFieldProvider,
+    )
+    def test_generate_lookml_views(
+        self, mock_field_provider: MagicMock, _: MagicMock, _1: MagicMock, _2: MagicMock
+    ) -> None:
+        mock_field_provider.return_value.get.return_value = [
+            EntityLookMLFieldFactory.count_measure()
+        ]
         expected_views = [
             LookMLView(
                 view_name="fake_another_entity",

@@ -42,6 +42,8 @@ FIELD_TEMPLATE = """
 
 LookMLViewFieldT = TypeVar("LookMLViewFieldT", bound="LookMLViewField")
 
+PRIMARY_KEY_COLUMN_NAME = "primary_key"
+
 
 def enforce_has_datatype_if_date_field(
     field_parameters: List[LookMLFieldParameter],
@@ -180,6 +182,22 @@ class DimensionLookMLViewField(LookMLViewField):
                 *additional_params,
                 LookMLFieldParameter.sql(
                     f"DATE_DIFF(${{TABLE}}.{end_date_column_name}, ${{TABLE}}.{start_date_column_name}, DAY)"
+                ),
+            ],
+        )
+
+    @classmethod
+    def for_compound_primary_key(
+        cls, field_1: str, field_2: str
+    ) -> "DimensionLookMLViewField":
+        """Generates a dimension that concatenates two fields to create a compound primary key"""
+        return cls(
+            field_name=PRIMARY_KEY_COLUMN_NAME,
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.primary_key(True),
+                LookMLFieldParameter.sql(
+                    f'CONCAT(${{TABLE}}.{field_1}, "_", ${{TABLE}}.{field_2})'
                 ),
             ],
         )
