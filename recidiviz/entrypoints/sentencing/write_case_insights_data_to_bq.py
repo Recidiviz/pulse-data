@@ -73,6 +73,7 @@ ROLLUP_ATTRIBUTES = [
     # All offenses
     ["state_code", "cohort_group"],
 ]
+# NOTE: All keys in ATTRIBUTE_MAPPING must be in the first level of ROLLUP_ATTRIBUTES
 ATTRIBUTE_MAPPING = {
     "most_severe_description": [
         "most_severe_ncic_category_uniform",
@@ -283,6 +284,50 @@ def get_disposition_df(cohort_df: pd.DataFrame) -> pd.DataFrame:
     return disposition_df.reset_index()
 
 
+def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
+    """Add placeholder rows to the cohort DataFrame with each combination of violent/drug/sex offense attributes.
+
+    Per #36670, this addresses the fact that not all possible roll-up values are necessarily represented in the case
+    insights table by default. This adds a single row in the underlying data for each combination, which ensures that
+    when the roll-ups are calculated, every combination will be represented.
+
+    Note that the most_severe_description names have [PLACEHOLDER] in them, as this exact string is used in the
+    front-end to filter these out so that they're not displayed as possible options for offenses.
+    """
+    state_codes = cohort_df["state_code"].unique()
+
+    data = [
+        state_codes,
+        ["INTERNAL_UNKNOWN"],
+        [-1],
+        ["PROBATION"],
+        [pd.to_datetime("1970-01-01")],
+        ["[PLACEHOLDER] NCIC CATEGORY"],
+        [True, False],
+        [True, False],
+        [True, False],
+    ]
+    cols = [
+        "state_code",
+        "gender",
+        "assessment_score",
+        "cohort_group",
+        "cohort_start_date",
+        "most_severe_ncic_category_uniform",
+        "any_is_violent_uniform",
+        "any_is_drug_uniform",
+        "any_is_sex_offense",
+    ]
+    placeholder_rows = pd.DataFrame(columns=cols, data=itertools.product(*data))
+    # person_id must be unique per row, and it's set to be negative numbers starting with -1
+    placeholder_rows["person_id"] = range(-1, -1 * (placeholder_rows.shape[0] + 1), -1)
+    placeholder_rows["most_severe_description"] = placeholder_rows.apply(
+        lambda row: f'[PLACEHOLDER] {row["any_is_violent_uniform"]}, {row["any_is_drug_uniform"]}, {row["any_is_sex_offense"]}',
+        axis=1,
+    )
+    return pd.concat([cohort_df, placeholder_rows]).reset_index(drop=True)
+
+
 def add_all_combinations(disposition_df: pd.DataFrame) -> pd.DataFrame:
     """Add rows for every possible combination of key columns.
 
@@ -371,6 +416,10 @@ def add_attributes_to_index(
     most_severe_ncic_category_uniform is unique given most_severe_description).
     """
     for from_attribute in attribute_mapping:
+        if from_attribute not in target_df.index.names:
+            raise ValueError(
+                f"{from_attribute} not found: All keys in ATTRIBUTE_MAPPING must be in the first level of ROLLUP_ATTRIBUTES."
+            )
         for to_attribute in attribute_mapping[from_attribute]:
             # Find the most frequent value of to_attribute in reference_df for from_attribute
             attr_to_add_df = (
@@ -582,10 +631,9 @@ def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
         cols_in_rollup = set(ROLLUP_ATTRIBUTES[row.rollup_level]).difference(
             {"cohort_group"}
         )
-        recidivism_rollup = json.dumps(
-            {col: row[col] for col in cols_in_rollup}, default=int
-        )
-        return recidivism_rollup
+        recidivism_rollup_dict = {col: row[col] for col in cols_in_rollup}
+
+        return json.dumps(recidivism_rollup_dict, default=int)
 
     # Get the appropriate rollup level for each row
     exceeds_ci_threshold = (
@@ -622,6 +670,33 @@ def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
     return all_rollup_levels_df
 
 
+def add_combined_attributes_to_rollup(
+    rolled_up_recidivism_df: pd.DataFrame,
+) -> pd.DataFrame:
+    def add_combined_attributes(recidivism_rollup: str) -> str:
+        recidivism_rollup_dict = json.loads(recidivism_rollup)
+
+        if "combined_offense_category" in recidivism_rollup_dict:
+            combined_offense = recidivism_rollup_dict["combined_offense_category"]
+            recidivism_rollup_dict["rollupCombinedOffenseCategory"] = {
+                "isViolent": "Violent offense" in combined_offense,
+                "isDrug": "Drug offense" in combined_offense,
+                "isSex": "Sex offense" in combined_offense,
+            }
+        else:
+            recidivism_rollup_dict["rollupCombinedOffenseCategory"] = None
+
+        recidivism_rollup_with_added_attributes = json.dumps(recidivism_rollup_dict)
+
+        return recidivism_rollup_with_added_attributes
+
+    rolled_up_recidivism_df["recidivism_rollup"] = rolled_up_recidivism_df[
+        "recidivism_rollup"
+    ].apply(add_combined_attributes)
+
+    return rolled_up_recidivism_df
+
+
 def create_final_table(
     rolled_up_recidivism_df: pd.DataFrame, disposition_df: pd.DataFrame
 ) -> pd.DataFrame:
@@ -645,6 +720,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     * The comma-separated values of the rollup level (recidivism_rollup)
     """
     cohort_df = get_cohort_df(project_id)
+    cohort_df = add_placeholder_cohort_rows(cohort_df)
     cohort_df = add_offense_attributes(cohort_df)
 
     event_df = get_recidivism_event_df(project_id)
@@ -673,6 +749,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
         disposition_df,
     )
     rolled_up_recidivism_df = extract_rollup_columns(all_rollup_levels_df)
+    rolled_up_recidivism_df = add_combined_attributes_to_rollup(rolled_up_recidivism_df)
 
     final_table = create_final_table(rolled_up_recidivism_df, disposition_df)
 
