@@ -19,12 +19,16 @@ the specialized caseload type of their supervising officer"""
 from enum import Enum
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states_for_bigquery,
+)
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
@@ -114,6 +118,8 @@ WITH officer_sessions AS (
         end_date_exclusive,
     FROM 
         `{{project_id}}.sessions.supervision_officer_sessions_materialized`
+    WHERE
+        state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
 ),
 caseload_type_sessions AS (
     SELECT
@@ -125,6 +131,8 @@ caseload_type_sessions AS (
         end_date_exclusive
     FROM
         `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized`
+    WHERE
+        state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
 )
 ,
 intersection_spans AS (
