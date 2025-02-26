@@ -5,6 +5,7 @@
 - [recidiviz/airflow/dags/operators, "*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/manifest.yaml"]
 - [recidiviz/ingest/direct/regions, "*/ingest_mappings/*"]
+- [recidiviz/ingest/direct/regions, "*/ingest_views/*"]
 - [recidiviz/ingest/direct/ingest_mappings/yaml_schema, "*/schema.json"]
 - [recidiviz/ingest/direct/ingest_mappings/yaml_schema, "*/*/*.json"]
 - [recidiviz/ingest/direct/regions, "*/*_custom_enum_parsers.py"]
