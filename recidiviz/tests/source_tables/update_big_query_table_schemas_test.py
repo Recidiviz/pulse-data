@@ -1663,6 +1663,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_oz_state.state_task_deadline",
     "us_pa_ingest_view_results.board_action",
     "us_pa_ingest_view_results.ccis_incarceration_period",
+    "us_pa_ingest_view_results.charges_from_crim_hist",
     "us_pa_ingest_view_results.dbo_LSIHistory",
     "us_pa_ingest_view_results.dbo_Miscon",
     "us_pa_ingest_view_results.dbo_Offender_v2",
