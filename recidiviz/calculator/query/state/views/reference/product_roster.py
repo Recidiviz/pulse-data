@@ -90,7 +90,7 @@ PRODUCT_ROSTER_QUERY_TEMPLATE = f"""
         FULL OUTER JOIN
             `{{project_id}}.{{case_triage_federated_dataset_id}}.permissions_override` permissions_override
         USING(email_address)
-        WHERE NOT IFNULL(blocked, FALSE)
+        WHERE blocked_on IS NULL OR blocked_on > CURRENT_TIMESTAMP()
     )
     SELECT
         {{joined_columns}},

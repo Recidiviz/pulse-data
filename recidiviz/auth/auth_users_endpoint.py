@@ -27,7 +27,7 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import and_, cast, func, not_, update
+from sqlalchemy import and_, cast, func, or_, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
@@ -446,8 +446,9 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                         and_(
                             func.coalesce(UserOverride.user_hash, Roster.user_hash)
                             == user_hash,
-                            not_(
-                                UserOverride.blocked.is_(True),
+                            or_(
+                                UserOverride.blocked_on.is_(None),
+                                UserOverride.blocked_on > func.now(),
                             ),
                         )
                     )

@@ -19,7 +19,7 @@
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo
 import flask
 import freezegun
 import pytest
+from dateutil.tz import tzlocal
 from flask import Flask
 from flask_smorest import Api
 from werkzeug.datastructures import FileStorage
@@ -477,6 +478,47 @@ class AuthUsersEndpointTestCase(TestCase):
         self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
         error_message = f"User not found for email address hash {_PARAMETER_USER_HASH}, please file a bug"
         self.assertEqual(error_message, json.loads(response.data)["message"])
+
+    # Need to set blocked_on to a future date so that blocked_on will always be in the
+    # future compared to the current datetime. The time freeze does not apply to the endpoint;
+    # instead it returns the user only if blocked_on is after the actual datetime the
+    # test is run, so we can't simply freeze the time to a past date.
+    @freezegun.freeze_time(datetime.now(tzlocal()))
+    def test_get_user_upcoming_block(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            external_id="XXXX",
+            roles=[SUPERVISION_STAFF],
+            blocked_on=datetime.now(tzlocal()) + timedelta(weeks=1),
+        )
+
+        add_entity_to_database_session(self.database_key, [user])
+
+        response = self.client.get(
+            self.user,
+            headers=self.headers,
+        )
+        expected = {
+            "allowedSupervisionLocationIds": "",
+            "allowedSupervisionLocationLevel": "",
+            "blocked": False,
+            "blockedOn": datetime.isoformat(
+                datetime.now(tz=timezone.utc) + timedelta(weeks=1)
+            ),
+            "district": None,
+            "emailAddress": "parameter@testdomain.com",
+            "externalId": "XXXX",
+            "firstName": None,
+            "lastName": None,
+            "roles": [SUPERVISION_STAFF],
+            "stateCode": "US_CO",
+            "routes": {},
+            "featureVariants": {},
+            "userHash": _PARAMETER_USER_HASH,
+            "pseudonymizedId": None,
+        }
+        self.assertEqual(expected, json.loads(response.data))
 
     ########
     # PATCH /user/...
