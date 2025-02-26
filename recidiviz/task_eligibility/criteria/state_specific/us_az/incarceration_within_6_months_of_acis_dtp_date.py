@@ -44,7 +44,7 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 _QUERY_TEMPLATE = f"""
 WITH
 {task_deadline_critical_date_update_datetimes_cte(
-    task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+    task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION_MIN,
     critical_date_column='due_date',
     additional_where_clause="AND task_subtype = 'DRUG TRANSITION RELEASE' AND state_code = 'US_AZ'")
 },

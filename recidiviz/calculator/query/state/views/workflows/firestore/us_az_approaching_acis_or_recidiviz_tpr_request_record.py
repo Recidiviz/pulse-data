@@ -57,12 +57,41 @@ WITH recidiviz_tpr_date_approaching AS (
     eligible_and_almost_eligible_only=True)}
 ),
 
-acis_tpr_date_approaching AS (
+acis_tpr_wo_reasons AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code="'US_AZ'",
     tes_task_query_view='overdue_for_acis_tpr_request_materialized',
     id_type="'US_AZ_PERSON_ID'",
     almost_eligible_only=True)}
+),
+
+-- We add in the Overdue for Recidiviz reasons blob here by merging it with the Overdue for ACIS reasons blob.
+-- The reason we do this is to display the Overdue for Recidiviz TES Criteria on the frontend, in the resident side panel
+-- without impacting the eligibility of residents via Overdue for ACIS. We want to display only those eligible for 
+-- Overdue for ACIS + the criteria they meet for Overdue for Recidiviz.
+
+acis_tpr_date_approaching AS (
+  SELECT
+    acis_tpr_wo_reasons.external_id,
+    acis_tpr_wo_reasons.person_id,
+    acis_tpr_wo_reasons.state_code,
+    TO_JSON(ARRAY_CONCAT( 
+        JSON_QUERY_ARRAY(acis_tpr_wo_reasons.reasons, '$'), 
+        JSON_QUERY_ARRAY(tes.reasons, '$') )) AS reasons,
+    acis_tpr_wo_reasons.ineligible_criteria,
+    acis_tpr_wo_reasons.is_eligible,
+    acis_tpr_wo_reasons.is_almost_eligible,
+  FROM
+    acis_tpr_wo_reasons
+  LEFT JOIN
+    `{{project_id}}.{{task_eligibility_dataset}}.overdue_for_recidiviz_tpr_request_materialized` tes
+  USING
+    (person_id,
+      state_code)
+  WHERE
+    CURRENT_DATE('US/Pacific') BETWEEN tes.start_date
+    AND IFNULL(DATE_SUB(tes.end_date, INTERVAL 1 DAY), "9999-12-31")
+    AND tes.state_code = 'US_AZ'
 ),
 
 combine_acis_and_recidiviz_tpr_dates AS (

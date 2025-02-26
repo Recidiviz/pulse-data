@@ -19,19 +19,11 @@ their ACIS (Time Comp assigned) Drug Transition Program date.
 """
 from google.cloud import bigquery
 
-from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
-    critical_date_spans_cte,
-)
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    task_deadline_critical_date_update_datetimes_cte,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
     incarceration_past_early_release_date,
@@ -43,32 +35,6 @@ _CRITERIA_NAME = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has passed
 their ACIS (Time Comp assigned) Drug Transition Program date."""
-
-_ADDITIONAL_WHERE_CLAUSE = """
-            AND task_subtype = 'DRUG TRANSITION RELEASE'
-            AND state_code = 'US_AZ' 
-            AND eligible_date IS NOT NULL 
-            AND eligible_date > '1900-01-01'"""
-
-_QUERY_TEMPLATE = f"""
-WITH
-{task_deadline_critical_date_update_datetimes_cte(
-    task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
-    critical_date_column='eligible_date',
-    additional_where_clause=_ADDITIONAL_WHERE_CLAUSE)
-},
-{critical_date_spans_cte()},
-{critical_date_has_passed_spans_cte()}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(critical_date AS acis_dtp_date)) AS reason,
-    critical_date AS acis_dtp_date,
-FROM critical_date_has_passed_spans
-"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(

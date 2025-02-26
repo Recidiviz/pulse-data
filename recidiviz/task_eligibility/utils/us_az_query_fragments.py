@@ -311,7 +311,7 @@ def acis_date_not_set_criteria_builder(
             JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') AS sentence_group_external_id,
             DATE_ADD(SAFE_CAST(MIN(update_datetime) AS DATE), INTERVAL 1 DAY) AS acis_set_date,
         FROM `{{project_id}}.normalized_state.state_task_deadline`
-        WHERE task_type = 'DISCHARGE_FROM_INCARCERATION' 
+        WHERE task_type = 'DISCHARGE_FROM_INCARCERATION_MIN' 
             AND task_subtype = '{task_subtype}'
             AND state_code = 'US_AZ' 
             AND eligible_date IS NOT NULL 
@@ -670,7 +670,7 @@ def incarceration_past_early_release_date(opp_name: str) -> str:
     return f"""
         WITH
         {task_deadline_critical_date_update_datetimes_cte(
-        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION_MIN,
         critical_date_column='eligible_date',
         additional_where_clause=_ADDITIONAL_WHERE_CLAUSE)
     },
