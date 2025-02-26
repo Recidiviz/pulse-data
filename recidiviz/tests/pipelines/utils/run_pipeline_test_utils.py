@@ -47,7 +47,34 @@ from recidiviz.tests.pipelines.fake_bigquery import (
 )
 
 
-def pipeline_constructor(project_id: str) -> Callable[[PipelineOptions], Pipeline]:
+def pipeline_constructor_for_tests(
+    project_id: str,
+    build_for_integration_test: bool,
+) -> Callable[[PipelineOptions], Pipeline]:
+    """
+    Verifies the options given for a pipeline to be used in our tests,
+    and returns the pipeline of an appropriate class.
+
+    If build_for_integration_test is True, we will use the Pipeline class
+    as the parent class for the pipeline.
+
+    If build_for_integration_test is False, we will use the TestPipeline class
+    as the parent class for the pipeline.
+
+    Why? TestPipeline is a subclass of Pipeline, specifically designed for unit testing.
+    It allows enhanced assertions using assert_that from apache_beam.testing.test_pipeline
+    and produces output in a way for that to be possible. This is great for unit testing,
+    but is slower.
+
+    Pipeline is faster and mirrors what we use in production, and should be used for integration
+    testing where we verify outputs without assert_that functions.
+
+    Other Experiments
+    -----------------
+        - We tried 'direct_num_workers' and 'direct_running_mode' options to parallelize pipelines in tests.
+          This was not faster and at times produced incorrect output.
+    """
+
     def _inner_pipeline_constructor(options: PipelineOptions) -> Pipeline:
         non_default_options = options.get_all_options(drop_default=True)
         expected_non_default_options = {
@@ -61,6 +88,8 @@ def pipeline_constructor(project_id: str) -> Callable[[PipelineOptions], Pipelin
                     f"Expected non-default option [{option}] not found in"
                     f"non-default options [{non_default_options}]"
                 )
+        if build_for_integration_test:
+            return Pipeline(options=options)
         return TestPipeline(options=options)
 
     return _inner_pipeline_constructor
@@ -83,6 +112,7 @@ def run_test_pipeline(
         FakeWriteToBigQuery | FakeWriteToBigQueryEmulator,
     ],
     root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
+    build_for_integration_test: bool = False,
     **additional_pipeline_args: Any,
 ) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
@@ -119,7 +149,7 @@ def run_test_pipeline(
         ), patch(write_to_bq_class, write_to_bq_constructor):
             with patch(
                 "recidiviz.pipelines.base_pipeline.Pipeline",
-                pipeline_constructor(project_id),
+                pipeline_constructor_for_tests(project_id, build_for_integration_test),
             ):
                 with patch(
                     "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",

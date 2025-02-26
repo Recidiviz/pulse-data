@@ -116,4 +116,5 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
             self.run_test_ingest_pipeline(
                 test_name=PIPELINE_INTEGRATION_TEST_NAME,
                 create_expected=create_expected,
+                build_for_integration_test=True,
             )
