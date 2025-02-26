@@ -18,6 +18,7 @@
 someone in ND is eligible to have early termination paperwork completed for them in
 preparation for an early discharge.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
@@ -33,6 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     implied_valid_early_termination_supervision_level,
     not_in_active_revocation_status,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -58,6 +60,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=supervision_past_early_discharge_date.VIEW_BUILDER,
+        reasons_date_field="early_discharge_due_date",
+        interval_length=3,
+        interval_date_part=BigQueryDateInterval.MONTH,
+        description="Within 3 months of supervision early discharge date",
+    ),
 )
 
 if __name__ == "__main__":

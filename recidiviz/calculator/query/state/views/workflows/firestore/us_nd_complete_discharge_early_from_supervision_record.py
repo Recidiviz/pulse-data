@@ -170,7 +170,7 @@ individual_sentence AS (
   GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 ),
 eligible_population AS (
-   -- Pull the individuals that are currently eligible for early discharge
+   -- Pull the individuals that are currently eligible or almost eligible for early discharge
    SELECT
      state_code,
      person_id,
@@ -179,7 +179,7 @@ eligible_population AS (
      is_eligible,
      is_almost_eligible,
    FROM `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized`
-   WHERE is_eligible
+   WHERE (is_eligible OR is_almost_eligible)
     AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND DATE_SUB(end_date, INTERVAL 1 DAY)
 ),
 supervision_levels AS (
