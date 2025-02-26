@@ -44,6 +44,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
             "dill",
             "sqlalchemy",
             "google-cloud-tasks",
+            "cloudpickle",
         ]
 
         for dependency in pinned_dependencies:

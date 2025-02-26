@@ -73,5 +73,5 @@ class BasePipeline(abc.ABC, Generic[PipelineParametersT]):
         """Runs the designated pipeline."""
         with Pipeline(
             options=self.pipeline_parameters.apache_beam_pipeline_options
-        ) as p:
-            self.run_pipeline(p)
+        ) as pipe:
+            self.run_pipeline(pipe)

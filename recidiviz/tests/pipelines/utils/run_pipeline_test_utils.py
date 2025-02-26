@@ -61,7 +61,7 @@ def pipeline_constructor(project_id: str) -> Callable[[PipelineOptions], Pipelin
                     f"Expected non-default option [{option}] not found in"
                     f"non-default options [{non_default_options}]"
                 )
-        return TestPipeline()
+        return TestPipeline(options=options)
 
     return _inner_pipeline_constructor
 
@@ -125,7 +125,8 @@ def run_test_pipeline(
                     "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
                     get_job_id,
                 ):
-                    pipeline_cls.build_from_args(pipeline_args).run()
+                    pipe = pipeline_cls.build_from_args(pipeline_args)
+                    pipe.run()
 
 
 def default_data_dict_for_root_schema_classes(

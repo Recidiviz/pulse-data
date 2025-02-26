@@ -394,6 +394,7 @@ class PipelineParameters:
         args, _ = cls.parse_args(argv, sandbox_pipeline=sandbox_pipeline)
         apache_beam_pipeline_options = PipelineOptions(
             argv,
+            pickle_library="cloudpickle",  # options are 'dill' or 'cloudpickle'
             dataflow_service_options=[
                 # Prevents VMs from accepting SSH keys that are stored in project metadata.
                 # This is an additional measure of security for disallowing remote access to our VM instance
