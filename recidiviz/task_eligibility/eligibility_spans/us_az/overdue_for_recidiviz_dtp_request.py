@@ -47,6 +47,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     within_6_months_of_recidiviz_dtp_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
+    AnyTaskCriteriaViewBuilder,
     EligibleCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
@@ -63,7 +64,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # Criteria shared in both TPR and DTP
-COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
+COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[AnyTaskCriteriaViewBuilder] = [
     no_active_felony_detainers.VIEW_BUILDER,
     custody_level_is_minimum_or_medium.VIEW_BUILDER,
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
@@ -104,7 +105,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         ### Criteria shared in both TPR and DTP
-        *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,  # type: ignore
+        *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,
         ### DTP-specific criteria
         # a. Functional literacy
         _FUNCTIONAL_LITERACY_CRITERIA,

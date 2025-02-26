@@ -61,7 +61,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         ### Criteria shared in both TPR and DTP
-        *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,  # type: ignore
+        *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,
         ### TPR-specific criteria
         # a. Functional literacy
         meets_functional_literacy_tpr.VIEW_BUILDER,
