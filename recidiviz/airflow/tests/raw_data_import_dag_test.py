@@ -2641,7 +2641,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
     def _load_fixture_data(self, bucket: str, *tags: str) -> None:
         fixture_directory = os.path.dirname(raw_data_fixtures.__file__)
-        for file in os.listdir(fixture_directory):
+        for file in sorted(os.listdir(fixture_directory)):
             if any(tag in file for tag in tags):
                 self.fs.test_add_path(
                     path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -2837,6 +2837,21 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
+            self.load_bq_mock().create_table_from_query.assert_has_calls(
+                [
+                    call(),
+                    call(
+                        address=BigQueryAddress(
+                            dataset_id="us_xx_primary_raw_data_temp_load",
+                            table_id="1__singlePrimaryKey__1__transformed",
+                        ),
+                        query=ANY,
+                        overwrite=True,
+                        use_query_cache=False,
+                        job_labels=ANY,
+                    ),
+                ]
+            )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -4372,21 +4387,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
-            self.load_bq_mock().create_table_from_query.assert_has_calls(
-                [
-                    call(),
-                    call(
-                        address=BigQueryAddress(
-                            dataset_id="us_xx_primary_raw_data_temp_load",
-                            table_id="1__singlePrimaryKey__2__transformed",
-                        ),
-                        query=ANY,
-                        overwrite=True,
-                        use_query_cache=False,
-                        job_labels=ANY,
-                    ),
-                ]
-            )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             # we shouldn't delete the tables for the failed files
