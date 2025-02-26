@@ -156,6 +156,7 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
             input_or_inputs
             | "Convert entity info to keys for the specific constraint"
             >> beam.Map(
+                # TODO(#38782) Eliminate lambda func
                 lambda d: (
                     self._generate_constraint_key(d),
                     self._generate_root_entity_key(d),
@@ -351,6 +352,7 @@ class RunValidations(beam.PTransform):
         root_entity_by_key: beam.PCollection[
             Tuple[RootEntityPrimaryKey, RootEntity]
         ] = input_or_inputs | "Index RootEntities by primary key" >> beam.Map(
+            # TODO(#38782) Eliminate lambda func
             lambda root_entity: (get_entity_key(root_entity), root_entity)
         )
 

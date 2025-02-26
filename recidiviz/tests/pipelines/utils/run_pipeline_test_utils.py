@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
+from functools import cache
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.pipeline import Pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.transforms.core import get_function_arguments
 from mock import patch
 
 from recidiviz.persistence.database import schema_utils
@@ -45,6 +47,32 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQuery,
     FakeWriteToBigQueryEmulator,
 )
+
+
+@cache
+def _cached_get_function_args(obj: Any, func: Callable) -> tuple[list[str], list[Any]]:
+    """
+    Beam calls get_function_arguments to analyze DoFns and user defined funcs
+    to properly serialize, send to workers, etc.
+
+    This function caches the arguments and output types of transforms to avoid
+    heavy calls to the `inspect` library, which were a majority of our test time.
+
+    Avoid lambda functions and dynamic typing to avoid these calls in production.
+
+    For example:
+
+        p | "Transform" >> beam.Map(lambda x: x * 2)
+
+    Can be something like:
+
+        class MultiplyDoFn(beam.DoFn):
+            def process(self, element):
+                yield element * 2
+
+            p | "Transform" >> beam.ParDo(MultiplyDoFn())
+    """
+    return get_function_arguments(obj, func)
 
 
 def pipeline_constructor_for_tests(
@@ -139,24 +167,25 @@ def run_test_pipeline(
     else:
         raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
 
-    with patch(
-        "apache_beam.io.ReadFromBigQuery",
-        read_from_bq_constructor,
-    ):
-        with patch(
+    with (
+        patch(
+            "apache_beam.transforms.core.get_function_arguments",
+            _cached_get_function_args,
+        ),
+        patch("apache_beam.io.ReadFromBigQuery", read_from_bq_constructor),
+        patch(
             f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
             write_to_bq_constructor,
-        ), patch(write_to_bq_class, write_to_bq_constructor):
-            with patch(
-                "recidiviz.pipelines.base_pipeline.Pipeline",
-                pipeline_constructor_for_tests(project_id, build_for_integration_test),
-            ):
-                with patch(
-                    "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
-                    get_job_id,
-                ):
-                    pipe = pipeline_cls.build_from_args(pipeline_args)
-                    pipe.run()
+        ),
+        patch(write_to_bq_class, write_to_bq_constructor),
+        patch(
+            "recidiviz.pipelines.base_pipeline.Pipeline",
+            pipeline_constructor_for_tests(project_id, build_for_integration_test),
+        ),
+        patch("recidiviz.pipelines.metrics.base_metric_pipeline.job_id", get_job_id),
+    ):
+        pipe = pipeline_cls.build_from_args(pipeline_args)
+        pipe.run()
 
 
 def default_data_dict_for_root_schema_classes(
