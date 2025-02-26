@@ -30,15 +30,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
     EventValueMetric,
-    MiscAggregatedMetric,
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
@@ -131,26 +124,27 @@ AVG_AGE = DailyAvgTimeSinceSpanStartMetric(
     scale_to_year=True,
 )
 
-AVG_CRITICAL_CASELOAD_SIZE = MiscAggregatedMetric(
+AVG_CRITICAL_CASELOAD_SIZE = DailyAvgSpanValueMetric(
     name="avg_critical_caseload_size",
     display_name="Average Critical Officer Caseload",
     description="Average count of clients in the officer's caseload among days when "
     "officer has critical caseload size",
-    populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
+        span_conditions_dict={"caseload_count_above_critical_threshold": ["true"]},
+    ),
+    span_value_numeric="caseload_count",
 )
 
-AVG_DAILY_CASELOAD_OFFICER = MiscAggregatedMetric(
+AVG_DAILY_CASELOAD_OFFICER = DailyAvgSpanValueMetric(
     name="avg_daily_caseload_officer",
     display_name="Average Daily Caseload Per Officer",
     description="Average of the daily population size on each officer caseload",
-    populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[
-        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
+        span_conditions_dict={},
+    ),
+    span_value_numeric="caseload_count",
 )
 
 AVG_DAILY_POPULATION = DailyAvgSpanCountMetric(
@@ -1823,13 +1817,15 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
-PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
+PROP_PERIOD_WITH_CRITICAL_CASELOAD = DailyAvgSpanCountMetric(
     name="prop_period_with_critical_caseload",
     display_name="Proportion Of Analysis Period With Critical Caseload",
     description="Proportion of the analysis period for which an officer has a critical "
     "caseload size",
-    populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
+        span_conditions_dict={"caseload_count_above_critical_threshold": ["true"]},
+    ),
 )
 
 # This exists to support PROP_SENTENCE_ metrics

@@ -24,14 +24,10 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     get_standard_population_selector_for_unit_of_observation,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.aggregated_metrics.legacy.misc_aggregated_metrics import (
-    generate_misc_aggregated_metrics_view_builder,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -81,21 +77,12 @@ def generate_all_aggregated_metrics_view_builder(
     person_population_query = population_selector.generate_span_selector_query()
     collection_tag_part = "" if not collection_tag else f"{collection_tag}__"
     view_id = f"{collection_tag_part}{population_name}_{unit_of_analysis_name}_aggregated_metrics"
-    included_metrics = [
-        metric
-        for metric in metrics
-        # Only display MiscAggregatedMetrics that are relevant to the population and unit of analysis
-        if not isinstance(metric, MiscAggregatedMetric)
-        or (
-            population_type in metric.populations
-            and unit_of_analysis.type in metric.unit_of_analysis_types
-        )
-    ]
-    metrics_query_str = ",\n    ".join([metric.name for metric in included_metrics])
+
+    metrics_query_str = ",\n    ".join([metric.name for metric in metrics])
     view_description_metrics = [
         f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
-        f"`{metric.get_observation_conditions_string_no_newline(filter_by_observation_type=True, read_observation_attributes_from_json=True) if not isinstance(metric, MiscAggregatedMetric) else 'N/A'}`|"
-        for metric in included_metrics
+        f"`{metric.get_observation_conditions_string_no_newline(filter_by_observation_type=True, read_observation_attributes_from_json=True)}`|"
+        for metric in metrics
     ]
     view_description_metrics_str = "\n".join(view_description_metrics)
     view_description_header = f"All metrics for the {population_name} population disaggregated by {unit_of_analysis_name}."
@@ -126,7 +113,7 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
     """
 
     # determine which metric source tables to include
-    included_metric_types = {type(metric) for metric in included_metrics}
+    included_metric_types = {type(metric) for metric in metrics}
 
     # generate FROM clause
     from_clause = ""
@@ -135,16 +122,11 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
         PeriodEventAggregatedMetric,
         AssignmentSpanAggregatedMetric,
         AssignmentEventAggregatedMetric,
-        MiscAggregatedMetric,
     ]
 
     metric_class: type[PeriodSpanAggregatedMetric] | type[
         PeriodEventAggregatedMetric
-    ] | type[AssignmentSpanAggregatedMetric] | type[
-        AssignmentEventAggregatedMetric
-    ] | type[
-        MiscAggregatedMetric
-    ]
+    ] | type[AssignmentSpanAggregatedMetric] | type[AssignmentEventAggregatedMetric]
     for metric_class in metric_classes:
         # Check if there is a metric of the given class. If so, we need to add the
         # table to the FROM clause.
@@ -152,27 +134,10 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
             issubclass(metric_type, metric_class)
             for metric_type in included_metric_types
         ):
-            # For misc metrics, check if the view builder exists for the population,
-            # and if not, don't add the table to the FROM clause.
-            if metric_class == MiscAggregatedMetric:
-                misc_metrics_view_builder = (
-                    generate_misc_aggregated_metrics_view_builder(
-                        unit_of_analysis=unit_of_analysis,
-                        population_type=population_type,
-                        metrics=[
-                            m
-                            for m in included_metrics
-                            if isinstance(m, MiscAggregatedMetric)
-                        ],
-                    )
-                )
-                if not misc_metrics_view_builder:
-                    continue
 
             dataset_id = (
                 dataset_id_override
                 if dataset_id_override
-                and not issubclass(metric_class, MiscAggregatedMetric)
                 and is_metric_class_supported_by_optimized_format(metric_class)
                 else AGGREGATED_METRICS_DATASET_ID
             )

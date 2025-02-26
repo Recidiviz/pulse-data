@@ -37,7 +37,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventCountMetric,
     EventDistinctUnitCountMetric,
     EventValueMetric,
-    MiscAggregatedMetric,
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
@@ -80,7 +79,6 @@ def _generate_lookml_measure_fragment(
         (
             DailyAvgSpanValueMetric,
             DailyAvgTimeSinceSpanStartMetric,
-            MiscAggregatedMetric,
         ),
     ):
         return (
@@ -327,7 +325,6 @@ def generate_lookml_denominator_description_normalized(
             DailyAvgSpanValueMetric,
             DailyAvgTimeSinceSpanStartMetric,
             EventValueMetric,
-            MiscAggregatedMetric,
         ),
     ):
         return '""'

@@ -166,9 +166,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#35913), TODO(#35917): Make this private once legacy agg metrics definitions no
-#  longer reference it.
-UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
+_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
     MetricPopulationType, list[MetricUnitOfAnalysisType]
 ] = {
     MetricPopulationType.INCARCERATION: [
@@ -198,7 +196,7 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
 # grouped by the population they should be calculated for.
 # Metrics should be added only if necessary for products or analyses, since additions
 # will have a meaningful impact on view update performance.
-# TODO(#35913), TODO(#35917): Make this private once legacy agg metrics definitions no
+# TODO(#35917): Make this private once legacy agg metrics definitions no
 #  longer reference it.
 METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
@@ -421,7 +419,7 @@ STANDARD_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.buil
             lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
         ),
     ],
-    unit_of_analysis_types_by_population_type=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+    unit_of_analysis_types_by_population_type=_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
     metrics_by_population_type=METRICS_BY_POPULATION_TYPE,
 )
 

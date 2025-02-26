@@ -65,7 +65,6 @@ METRIC_CLASSES: list[AggregatedMetricClassType] = [
     PeriodSpanAggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    # TODO(#35913): Figure out what to do with MiscAggregatedMetric
 ]
 
 

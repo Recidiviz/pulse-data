@@ -29,9 +29,6 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
 )
 from recidiviz.aggregated_metrics.configuration import collections as collections_module
-from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
-    collect_standard_legacy_aggregated_metric_views,
-)
 from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
@@ -101,9 +98,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
         # TODO(#35914): Delete this view once it is no longer used
         METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
-        # TODO(#35913): Remove these builders entirely once metrics are fully covered by
-        #  the new optimized metrics.
-        *collect_standard_legacy_aggregated_metric_views(),
         *collect_assignment_sessions_view_builders(),
         *collect_assignments_by_time_period_builders_for_collections(all_collections),
         *get_all_aggregated_metrics_collections_view_builders(all_collections),

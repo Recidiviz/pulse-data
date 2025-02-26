@@ -30,7 +30,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -140,11 +139,7 @@ def main(
         output_subdirectory = os.path.join(output_directory, "subqueries")
 
         generate_custom_metrics_view(
-            [
-                metric
-                for metric in metrics
-                if not isinstance(metric, MiscAggregatedMetric)
-            ],
+            metrics,
             view_name,
             additional_view_fields=[],
             assignment_types_dict=INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -152,9 +147,7 @@ def main(
         ).write(output_directory, source_script_path=__file__)
 
         for unit_of_observation_type in set(
-            metric.unit_of_observation_type
-            for metric in metrics
-            if not isinstance(metric, MiscAggregatedMetric)
+            metric.unit_of_observation_type for metric in metrics
         ):
             unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(

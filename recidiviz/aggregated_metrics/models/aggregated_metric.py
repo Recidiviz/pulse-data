@@ -26,12 +26,6 @@ import attr
 from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
     MetricTimePeriodToAssignmentJoinType,
 )
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
 from recidiviz.common import attr_validators
 from recidiviz.observations.event_selector import EventSelector
@@ -178,44 +172,6 @@ class EventMetricConditionsMixin:
     @property
     def event_type(self) -> EventType:
         return self.event_selector.event_type
-
-
-@attr.define(frozen=True, kw_only=True)
-class MiscAggregatedMetric(AggregatedMetric):
-    """
-    Class that stores information about metrics that are calculated in a separate user-defined query
-    for specific populations and units of analysis, without using events or spans logic
-    """
-
-    @classmethod
-    def metric_class_name_lower(cls) -> str:
-        return "misc"
-
-    # Populations compatible with metric
-    populations: List[MetricPopulationType]
-
-    # Units of analysis at which the metric can be aggregated
-    unit_of_analysis_types: List[MetricUnitOfAnalysisType]
-
-    def referenced_observation_attributes(self) -> list[str]:
-        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
-
-    @property
-    def observation_selector(self) -> ObservationSelector[ObservationTypeT]:
-        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
-
-    def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return f"ARRAY_AGG({self.name} ORDER BY {self.name}) AS {self.name}"
-
-    @classmethod
-    def pretty_name(cls) -> str:
-        return "Misc. Metric"
-
-    @classmethod
-    def metric_time_period_to_assignment_join_type(
-        cls,
-    ) -> MetricTimePeriodToAssignmentJoinType:
-        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
 
 
 @attr.define(frozen=True, kw_only=True)
