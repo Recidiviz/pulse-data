@@ -166,6 +166,7 @@ def build_step_for_shell_command(
     dir_: str | None = None,
     secret_env: list[str] | None = None,
     volumes: list[Volume] | None = None,
+    timeout_seconds: int = 1800,  # Default 30 minute timeout
 ) -> BuildStep:
     """Helper function to create a BuildStep that runs a shell command"""
     return BuildStep(
@@ -178,6 +179,7 @@ def build_step_for_shell_command(
         env=env,
         secret_env=secret_env,
         volumes=volumes,
+        timeout=f"{timeout_seconds}s",
     )
 
 
@@ -186,6 +188,7 @@ def build_step_for_gcloud_command(
     *,
     id_: str,
     wait_for: list[str] | str | None = None,
+    timeout_seconds: int = 1800,  # Default 30 minute timeout
 ) -> BuildStep:
     """Helper function to create a BuildStep that runs a gcloud command with our default arguments"""
     return BuildStep(
@@ -194,4 +197,5 @@ def build_step_for_gcloud_command(
         entrypoint="gcloud",
         args=["--quiet", "--verbosity=debug", *args],
         wait_for=wait_for,
+        timeout=f"{timeout_seconds}s",
     )
