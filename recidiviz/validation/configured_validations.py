@@ -167,6 +167,9 @@ from recidiviz.validation.views.state.population_projection_data_validation.popu
 from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.product_roster_upcoming_blocks import (
+    PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.raw_data.configured_validations import (
     get_all_raw_data_validations,
 )
@@ -579,6 +582,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_DUPLICATE_ROWS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
