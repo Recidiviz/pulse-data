@@ -90,7 +90,10 @@ export const formatText = (
   text: string | boolean,
   record: StateUserPermissionsResponse
 ): string | boolean | JSX.Element => {
-  if (record.blocked === true) {
+  if (
+    record.blocked === true ||
+    (!!record.blockedOn && isDateInPast(record.blockedOn))
+  ) {
     return (
       <Text type="secondary" italic>
         {text}
@@ -683,4 +686,8 @@ const sortOnBlockStatus = (record: StateUserPermissionsResponse) => {
   if (!blockedOn) return 1;
   if (blockedOn <= now) return 2;
   return 3;
+};
+
+export const isDateInPast = (date: string): boolean => {
+  return new Date(date) < new Date();
 };

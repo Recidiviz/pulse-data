@@ -46,6 +46,7 @@ import {
   aggregateFormPermissionResults,
   checkResponse,
   getUserPermissionsTableColumns,
+  isDateInPast,
   updatePermissionsObject,
 } from "./utils";
 
@@ -96,7 +97,9 @@ const StateUserPermissionsView = (): JSX.Element => {
     selectedRowKeys,
     onChange: onSelectChange,
     getCheckboxProps: (record: StateUserPermissionsResponse) => ({
-      disabled: record.blocked === true,
+      disabled:
+        record.blocked === true ||
+        (!!record.blockedOn && isDateInPast(record.blockedOn)),
     }),
   };
 
