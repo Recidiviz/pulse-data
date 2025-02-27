@@ -42,6 +42,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_many_to_many_relationships_in_module,
     get_association_table_id,
+    get_child_entity_classes,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
@@ -57,6 +58,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateCharge,
     StateChargeV2,
+    StateEarlyDischarge,
     StateIncarcerationSentence,
     StatePerson,
     StateSentence,
@@ -536,6 +538,20 @@ class TestEntityUtils(TestCase):
             _ = get_entities_by_association_table_id(
                 entities_module_context_for_module(normalized_entities), table_id
             )
+
+    def test_get_child_entity_classes(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
+
+        self.assertEqual(
+            {StateCharge, StateEarlyDischarge},
+            get_child_entity_classes(
+                StateIncarcerationSentence, entities_module_context
+            ),
+        )
+        self.assertEqual(
+            set(),
+            get_child_entity_classes(StateCharge, entities_module_context),
+        )
 
 
 class TestBidirectionalUpdates(TestCase):

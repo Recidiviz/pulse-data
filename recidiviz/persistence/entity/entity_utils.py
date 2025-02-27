@@ -641,7 +641,35 @@ def get_many_to_many_relationships(
             and inverse_relationship_field_type == BuildableAttrFieldType.LIST
         ):
             many_to_many_relationships.add(back_edge)
+
     return many_to_many_relationships
+
+
+def get_child_entity_classes(
+    entity_cls: Type[Entity], entities_module_context: EntitiesModuleContext
+) -> Set[Type[Entity]]:
+    """Returns the set of child entities for which the provided entity has a direct relationship."""
+    child_entity_classes: Set[Type[Entity]] = set()
+
+    field_index = entities_module_context.field_index()
+    for field in field_index.get_all_entity_fields(
+        entity_cls, EntityFieldType.FORWARD_EDGE
+    ):
+        referenced_class_name = attr_field_referenced_cls_name_for_field_name(
+            entity_cls, field
+        )
+        if not referenced_class_name:
+            raise ValueError(
+                f"Expected a referenced class to exist for field [{field}] on "
+                f"class [{entity_cls.__name__}]"
+            )
+
+        referenced_entity_class = get_entity_class_in_module_with_name(
+            entities_module_context.entities_module(),
+            referenced_class_name,
+        )
+        child_entity_classes.add(referenced_entity_class)
+    return child_entity_classes
 
 
 def get_all_many_to_many_relationships_in_module(
