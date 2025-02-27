@@ -51,7 +51,9 @@ US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
                                                     "tes.state_code = 'US_TN' "
                                                     "AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date "
                                                     f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} "
-                                                    "AND tes.is_eligible"
+                                                    "AND (tes.is_eligible OR tes.is_almost_eligible)",
+                                      is_eligible_clause = "tes.is_eligible OR tes.is_almost_eligible",
+                                      is_almost_eligible_clause = "FALSE",
                                       )
         })
     

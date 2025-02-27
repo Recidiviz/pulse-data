@@ -281,15 +281,16 @@ tes_cte AS (
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason
     WHERE tes.state_code = 'US_TN'
         AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-        AND tes.is_eligible
-        AND STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY'
+        AND (tes.is_eligible OR tes.is_almost_eligible)
+        AND STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE'
 )
   SELECT
          tes.state_code,
          pei.external_id,
          tes.reasons,
-         tes.is_eligible,
-         tes.is_almost_eligible,
+         -- Include clients who are due or upcoming (1 day) due for full term discharge
+         (tes.is_eligible OR tes.is_almost_eligible) AS is_eligible,
+         FALSE AS is_almost_eligible,
          arr.case_notes,
          pse.latest_pse AS form_information_latest_pse,
          sex_offenses.sex_offenses AS form_information_sex_offenses,

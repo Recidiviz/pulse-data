@@ -32,6 +32,8 @@ def us_tn_classification_forms(
     tes_view: str,
     where_clause: str,
     disciplinary_history_month_lookback: str = DISCIPLINARY_HISTORY_MONTH_LOOKBACK,
+    is_eligible_clause: str = "tes.is_eligible",
+    is_almost_eligible_clause: str = "tes.is_almost_eligible",
 ) -> str:
     return f"""
     WITH latest_classification AS (
@@ -406,8 +408,8 @@ def us_tn_classification_forms(
     )
     SELECT tes.state_code,
            tes.reasons,
-           tes.is_eligible,
-           tes.is_almost_eligible,
+           {is_eligible_clause} AS is_eligible,
+           {is_almost_eligible_clause} AS is_almost_eligible,
            pei.external_id,
            level_care.form_information_level_of_care,
            latest_classification.form_information_latest_classification_date,

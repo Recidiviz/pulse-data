@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in TN is eligible for full term discharge from supervision or is 60 days away from being eligible.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -26,12 +27,13 @@ from recidiviz.task_eligibility.criteria.general import (
     has_active_sentence,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
-    supervision_past_full_term_completion_date_or_upcoming_1_day,
+    supervision_past_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_zero_tolerance_codes_spans,
     not_on_life_sentence_or_lifetime_supervision,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -48,7 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_past_full_term_completion_date_or_upcoming_1_day.VIEW_BUILDER,
+        supervision_past_full_term_completion_date.VIEW_BUILDER,
         not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
         no_zero_tolerance_codes_spans.VIEW_BUILDER,
         has_active_sentence.VIEW_BUILDER,
@@ -56,6 +58,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=supervision_past_full_term_completion_date.VIEW_BUILDER,
+        reasons_date_field="eligible_date",
+        interval_length=1,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 1 day of full term discharge date",
+    ),
 )
 
 if __name__ == "__main__":

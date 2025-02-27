@@ -55,10 +55,11 @@ _QUERY_TEMPLATE = f"""
             assessment is due 
             */
             classification_decision_date AS start_date,
-            DATE_SUB(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 WEEK) AS end_date,
+            DATE_ADD(DATE_TRUNC(assessment_due_date, MONTH), INTERVAL 1 MONTH) AS end_date,
             FALSE AS meets_criteria,
             assessment_date,
             assessment_due_date,
+            DATE_TRUNC(assessment_due_date, MONTH) AS assessment_due_month,
         FROM
             `{{project_id}}.analyst_data.custody_classification_assessment_dates_materialized`
         WHERE
@@ -84,34 +85,39 @@ _QUERY_TEMPLATE = f"""
         end_date,
         meets_criteria,
         TO_JSON(STRUCT(assessment_date AS most_recent_assessment_date,
-                        assessment_due_date AS assessment_due_date
+                        assessment_due_date AS assessment_due_date,
+                        assessment_due_month AS assessment_due_month
                         )
                 ) AS reason,
         assessment_date AS most_recent_assessment_date,
         assessment_due_date AS assessment_due_date,
+        assessment_due_month AS assessment_due_month,
     FROM dedup_cte
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        state_code=StateCode.US_TN,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="most_recent_assessment_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="assessment_due_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    state_code=StateCode.US_TN,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="most_recent_assessment_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="assessment_due_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date on which client has an assessment due",
+        ),
+        ReasonsField(
+            name="assessment_due_month",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="First day of the month in which client has an assessment due",
+        ),
+    ],
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

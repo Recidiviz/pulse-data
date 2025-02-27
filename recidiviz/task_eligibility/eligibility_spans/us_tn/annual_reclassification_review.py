@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in TN is eligible for a custody level downgrade.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison,
@@ -31,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     at_least_12_months_since_latest_assessment,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -52,6 +54,16 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_compared_to_recommended.VIEW_BUILDER,
     ],
     completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
+    # Almost eligible population includes clients in the week before the
+    # in which their assessment is due, as well as during the month in which
+    # the assessment is due.
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=at_least_12_months_since_latest_assessment.VIEW_BUILDER,
+        reasons_date_field="assessment_due_month",
+        interval_length=1,
+        interval_date_part=BigQueryDateInterval.WEEK,
+        description="Within 1 week of month during which assessment is due",
+    ),
 )
 
 if __name__ == "__main__":
