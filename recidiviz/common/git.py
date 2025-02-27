@@ -31,6 +31,9 @@ def get_hash_of_data_platform_version(data_platform_version: str) -> str:
             f"version regex."
         )
 
+    # First make sure all tags are current locally
+    run_command("git fetch --all --tags --prune --prune-tags --force", timeout_sec=30)
+
     get_commit_cmd = f"git rev-list -n 1 {data_platform_version}"
     return run_command(get_commit_cmd, timeout_sec=30).strip()
 
