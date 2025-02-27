@@ -20,7 +20,6 @@ from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
-    MAGIC_END_DATE,
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
@@ -319,8 +318,7 @@ all_sessions AS (
     WHERE
         # Drop zero day spans (indicating multiple updates in 1 day) and pick
         # the status as of the end of day
-        CAST(start_date AS DATE) != CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
-            THEN DATE("{MAGIC_END_DATE}") ELSE CAST(end_date_exclusive AS DATE) END
+        CAST(start_date AS DATE) != {nonnull_end_date_clause("CAST(end_date_exclusive AS DATE)")}
     UNION ALL
     SELECT
         state_code,
@@ -343,8 +341,7 @@ all_sessions AS (
     WHERE
         # Drop zero day spans (indicating multiple updates in 1 day) and pick
         # the status as of the end of day
-        CAST(start_date AS DATE) != CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
-            THEN DATE("{MAGIC_END_DATE}") ELSE CAST(end_date_exclusive AS DATE) END
+        CAST(start_date AS DATE) != {nonnull_end_date_clause("CAST(end_date_exclusive AS DATE)")}
     UNION ALL
     SELECT
         state_code,
