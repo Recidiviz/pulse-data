@@ -88,7 +88,6 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
             >> beam.GroupBy("external_id_key", "upperbound_date")
             | f"Extract entities from {self.ingest_view} entity metadata"
             >> beam.MapTuple(
-                # TODO(#38782) Eliminate lambda func
                 lambda key, values: (
                     (cast(ExternalIdKey, key[0]), cast(UpperBoundDate, key[1])),
                     [cast(RootEntity, value.root_entity) for value in values],

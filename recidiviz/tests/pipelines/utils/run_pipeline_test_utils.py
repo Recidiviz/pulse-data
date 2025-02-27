@@ -56,21 +56,8 @@ def _cached_get_function_args(obj: Any, func: Callable) -> tuple[list[str], list
     to properly serialize, send to workers, etc.
 
     This function caches the arguments and output types of transforms to avoid
-    heavy calls to the `inspect` library, which were a majority of our test time.
-
-    Avoid lambda functions and dynamic typing to avoid these calls in production.
-
-    For example:
-
-        p | "Transform" >> beam.Map(lambda x: x * 2)
-
-    Can be something like:
-
-        class MultiplyDoFn(beam.DoFn):
-            def process(self, element):
-                yield element * 2
-
-            p | "Transform" >> beam.ParDo(MultiplyDoFn())
+    heavy calls to the `inspect` library, which were a majority of our test time,
+    and happen largely internally to the beam library.
     """
     return get_function_arguments(obj, func)
 

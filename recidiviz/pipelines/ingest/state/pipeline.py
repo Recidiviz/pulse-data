@@ -244,7 +244,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
         # pylint: disable=E1120
         all_root_entities: beam.PCollection[RootEntity] = (
-            # TODO(#38782) Eliminate lambda func
             merged_root_entities_with_dates
             | "Remove all of the external ids" >> beam.Values()
             | "Remove all of the dates and ingest view names"
@@ -259,7 +258,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             | ClusterRootExternalIds()
             | "Generate primary keys for root entities"
             >> beam.MapTuple(
-                # TODO(#38782) Eliminate lambda func
                 lambda root_external_id, cluster: (
                     root_external_id,
                     generate_primary_key(
