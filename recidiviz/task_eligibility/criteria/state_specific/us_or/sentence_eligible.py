@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,10 +40,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_OR_SENTENCE_ELIGIBLE"
-
-_DESCRIPTION = """Combines sentence-level eligibility determinations for OR earned discharge to
-determine, at the person level, whether someone is eligible (i.e., has at least one
-eligible sentence)."""
 
 _QUERY_TEMPLATE = f"""
     WITH sentences AS (
@@ -97,12 +93,16 @@ _QUERY_TEMPLATE = f"""
             * EXCEPT (start_date, end_date_exclusive),
             start_date AS absconsion_start_date,
             end_date_exclusive AS absconsion_end_date,
-        FROM ({create_intersection_spans(table_1_name='sentences',
-                                         table_2_name='absconsion_sessions',
-                                         index_columns=['state_code', 'person_id'],
-                                         table_1_columns=['sentence_id'],
-                                         table_1_start_date_field_name='sentence_start_date',
-                                         table_1_end_date_field_name='sentence_end_date')})
+        FROM (
+            {create_intersection_spans(
+                table_1_name='sentences',
+                table_2_name='absconsion_sessions',
+                index_columns=['state_code', 'person_id'],
+                table_1_columns=['sentence_id'],
+                table_1_start_date_field_name='sentence_start_date',
+                table_1_end_date_field_name='sentence_end_date',
+            )}
+        )
     ),
     days_absconded_by_span AS (
         /* Here, for each person-sentence span of time, we pull the total number of days
@@ -177,24 +177,19 @@ _QUERY_TEMPLATE = f"""
         end_date,
         -- if any sentence is eligible, we consider the person to be eligible
         LOGICAL_OR(is_eligible) AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(reason ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS active_sentences,
-                       MIN(sentence_eligibility_date) AS earliest_sentence_eligibility_date,
-                       # TODO(#33043): drop these 2 fields after the Polaris migration
-                       ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
-                       ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences
+        TO_JSON(STRUCT(
+            ARRAY_AGG(reason ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS active_sentences,
+            MIN(sentence_eligibility_date) AS earliest_sentence_eligibility_date
         )) AS reason,
         ARRAY_AGG(reason ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS active_sentences,
         MIN(sentence_eligibility_date) AS earliest_sentence_eligibility_date,
-        # TODO(#33043): drop these 2 fields after the Polaris migration
-        ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
-        ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences,
     FROM sub_sessions_with_attributes_with_reasons
     GROUP BY 1, 2, 3, 4
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     state_code=StateCode.US_OR,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
@@ -209,17 +204,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
             name="earliest_sentence_eligibility_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="The earliest earned discharge eligibility date over all active sentences",
-        ),
-        # TODO(#33043): drop these 2 fields after the Polaris migration to us_or_earned_discharge_sentence_record.py
-        ReasonsField(
-            name="eligible_sentences",
-            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="Sentences eligible for earned discharge",
-        ),
-        ReasonsField(
-            name="ineligible_sentences",
-            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="Sentences ineligible for earned discharge",
         ),
     ],
 )
