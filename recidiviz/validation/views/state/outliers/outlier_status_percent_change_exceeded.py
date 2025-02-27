@@ -81,7 +81,7 @@ count_of_archived_outliers AS (
         state_code,
         metric_id,
         end_date,
-        export_date,
+        export_date AS date_of_data,
         category_type,
         caseload_type,
         COUNTIF(status = 'FAR') AS outliers_count
@@ -95,35 +95,37 @@ archived_metrics_types AS (
     category_type,
     caseload_type,
     end_date,
-    MIN(export_date) OVER(PARTITION BY state_code, metric_id, category_type, caseload_type, end_date) AS earliest_export_date
+    MIN(date_of_data) OVER(PARTITION BY state_code, metric_id, category_type, caseload_type, end_date) AS earliest_export_date
   FROM count_of_archived_outliers
 )
-
 SELECT * EXCEPT(earliest_export_date)
 FROM (
-  SELECT
-    state_code,
-    state_code AS region_code,
-    metric_id,
-    category_type,
-    caseload_type,
-    end_date,
-    date_of_data,
-    outliers_count,
-    LAG(outliers_count) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_outliers_count,
-    LAG(date_of_data) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_export_date,
-    earliest_export_date
-  FROM (
-    SELECT * FROM count_of_current_outliers
-    UNION ALL
-    SELECT * FROM count_of_archived_outliers
-  )
-  INNER JOIN current_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
-  INNER JOIN archived_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+    SELECT * 
+    FROM (
+      SELECT
+        state_code,
+        state_code AS region_code,
+        metric_id,
+        category_type,
+        caseload_type,
+        end_date,
+        date_of_data,
+        outliers_count,
+        LAG(outliers_count) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_outliers_count,
+        LAG(date_of_data) OVER (PARTITION BY state_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data) as prev_export_date,
+        earliest_export_date
+      FROM (
+        SELECT * FROM count_of_current_outliers
+        UNION ALL
+        SELECT * FROM count_of_archived_outliers
+      )
+      INNER JOIN current_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+      INNER JOIN archived_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
+    )
+    QUALIFY RANK() OVER(PARTITION BY region_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data DESC) <= 7
 )
 WHERE date_of_data > earliest_export_date
-  AND ABS(prev_outliers_count - outliers_count) > 3
-QUALIFY RANK() OVER(PARTITION BY region_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data DESC) <= 7
+      AND ABS(prev_outliers_count - outliers_count) > 3
 ORDER BY 1,2,3,4,5,6 
 """
 
