@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
+    nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -1092,7 +1093,7 @@ def employed_for_at_least_x_time_criteria_builder(
         date_interval=date_interval,
         date_part=date_part,
         start_date="start_date",
-        end_date="end_date",
+        end_date="DATE_ADD(end_date, INTERVAL 1 DAY)",
         additional_column="employment_status",
     )
 
@@ -1137,7 +1138,7 @@ def housed_for_at_least_x_time_criteria_builder(
         date_interval=date_interval,
         date_part=date_part,
         start_date="housing_status_start_date",
-        end_date="housing_status_end_date",
+        end_date="DATE_ADD(housing_status_end_date, INTERVAL 1 DAY)",
         additional_column="housing_status_type",
     )
 
@@ -1183,16 +1184,20 @@ def status_for_at_least_x_time_criteria_query(
     """
     return f"""WITH spans AS (
         -- Spans that are relevant for the criteria
-        SELECT 
-            state_code,
-            person_id,
-            {start_date} AS start_date,
-            {end_date} AS end_date,
-            state_code AS column_placeholder,
-            {additional_column}
-        FROM `{table_name}`
-        WHERE {start_date} < '9999-01-01' 
-            {additional_where_clause}
+        SELECT *
+        FROM (
+            SELECT 
+                state_code,
+                person_id,
+                {start_date} AS start_date,
+                {end_date} AS end_date,
+                state_code AS column_placeholder,
+                {additional_column}
+            FROM `{table_name}`
+            WHERE {start_date} < '9999-01-01'
+                {additional_where_clause}
+        )
+        WHERE start_date < {nonnull_end_date_exclusive_clause('end_date')}
     ),
 
     {create_sub_sessions_with_attributes('spans')},
