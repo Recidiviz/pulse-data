@@ -38,4 +38,6 @@ CASE_INSIGHTS_RATES_SCHEMA = [
     {"name": "disposition_probation_pc", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "disposition_rider_pc", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "disposition_term_pc", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "recidivism_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "dispositions", "type": "STRING", "mode": "REQUIRED"},
 ]

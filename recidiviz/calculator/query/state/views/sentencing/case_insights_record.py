@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_case_insights_template import (
     US_IX_SENTENCING_CASE_INSIGHTS_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_case_insights_template import (
+    US_ND_SENTENCING_CASE_INSIGHTS_TEMPLATE,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -32,17 +35,24 @@ SENTENCING_CASE_INSIGHTS_RECORD_DESCRIPTION = """
     """
 
 SENTENCING_CASE_INSIGHTS_RECORD_QUERY_TEMPLATE = f"""
-   WITH 
-    ix_case_insights AS 
-        ({US_IX_SENTENCING_CASE_INSIGHTS_TEMPLATE}), 
-    -- full_query serves as a template for when Sentencing expands to other states and we union other views
-    full_query AS 
-    (
-        SELECT * FROM ix_case_insights
-    ) 
-    SELECT
-        {{columns}}
-    FROM full_query
+WITH
+  ix_case_insights AS ({US_IX_SENTENCING_CASE_INSIGHTS_TEMPLATE}),
+  nd_case_insights AS ({US_ND_SENTENCING_CASE_INSIGHTS_TEMPLATE}),
+  -- full_query serves as a template for when Sentencing expands to other states and we union other views
+  full_query AS (
+  SELECT
+    *
+  FROM
+    ix_case_insights
+  UNION ALL
+  SELECT
+    *
+  FROM
+    nd_case_insights )
+SELECT
+  {{columns}}
+FROM
+  full_query
 """
 
 SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -58,11 +68,13 @@ SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "assessment_score_bucket_end",
         "most_severe_description",
         "recidivism_rollup",
+        "recidivism_series",
         "recidivism_num_records",
+        "dispositions",
+        "disposition_num_records",
         "recidivism_probation_series",
         "recidivism_rider_series",
         "recidivism_term_series",
-        "disposition_num_records",
         "disposition_probation_pc",
         "disposition_rider_pc",
         "disposition_term_pc",

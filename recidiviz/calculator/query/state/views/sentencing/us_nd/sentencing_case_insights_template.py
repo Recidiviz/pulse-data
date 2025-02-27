@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View logic to prepare US_IX recidivism and disposition data for PSI tools"""
+"""View logic to prepare US_ND recidivism and disposition data for PSI tools"""
 
-US_IX_SENTENCING_CASE_INSIGHTS_TEMPLATE = """
+US_ND_SENTENCING_CASE_INSIGHTS_TEMPLATE = """
 SELECT DISTINCT
   state_code,
   gender,
@@ -37,5 +37,5 @@ SELECT DISTINCT
 FROM
   `{project_id}.sentencing.case_insights_rates`
 WHERE
-  state_code = "US_IX"
+  state_code = "US_ND"
 """
