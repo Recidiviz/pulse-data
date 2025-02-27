@@ -72,6 +72,7 @@ def is_utc_timezone_aware_datetime(
         raise ValueError(f"Expected timezone value to be UTC, found: {value.tzinfo}")
 
 
+# TODO(#38836): Deprecate in favor of is_reasonable_past_date
 def is_not_future_date(
     _instance: Any, _attribute: attr.Attribute, value: datetime.date
 ) -> None:
@@ -82,6 +83,7 @@ def is_not_future_date(
         )
 
 
+# TODO(#38836): Deprecate in favor of is_opt_reasonable_past_date
 def is_opt_not_future_date(
     _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.date]
 ) -> None:
@@ -89,6 +91,7 @@ def is_opt_not_future_date(
         is_not_future_date(_instance, _attribute, value)
 
 
+# TODO(#38836): Deprecate in favor of is_reasonable_past_datetime
 def is_not_future_datetime(
     _instance: Any, _attribute: attr.Attribute, value: datetime.datetime
 ) -> None:
@@ -100,18 +103,123 @@ def is_not_future_datetime(
     if value.tzinfo:
         now = datetime.datetime.now(tz=value.tzinfo)
     else:
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(tz=pytz.UTC).replace(tzinfo=None)
+
     if value > now:
         raise ValueError(
             f"Datetime field with value {value} is in the future. It is now {now}"
         )
 
 
+# TODO(#38836): Deprecate in favor of is_opt_reasonable_past_datetime
 def is_opt_not_future_datetime(
     _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.datetime]
 ) -> None:
     if value is not None:
         is_not_future_datetime(_instance, _attribute, value)
+
+
+def is_reasonable_date(
+    min_allowed_date_inclusive: datetime.date, max_allowed_date_exclusive: datetime.date
+) -> Callable:
+    """Validator for a non-optional date field that enforces that the date is within a
+    reasonable set of bounds.
+
+    Args:
+        min_allowed_date_inclusive: The minimum allowed date for this field, inclusive.
+        max_allowed_date_exclusive: The maximum allowed date for this field, exclusive.
+    """
+    return IsReasonableDateValidator(
+        min_allowed_date_inclusive=min_allowed_date_inclusive,
+        max_allowed_date_exclusive=max_allowed_date_exclusive,
+        allow_nulls=False,
+    )
+
+
+def is_opt_reasonable_date(
+    min_allowed_date_inclusive: datetime.date, max_allowed_date_exclusive: datetime.date
+) -> Callable:
+    """Validator for an optional date field that enforces that the date is within a
+    reasonable set of bounds, if it is nonnull.
+
+    Args:
+        min_allowed_date_inclusive: The minimum allowed date for this field, inclusive.
+        max_allowed_date_exclusive: The maximum allowed date for this field, exclusive.
+    """
+    return IsReasonableDateValidator(
+        min_allowed_date_inclusive=min_allowed_date_inclusive,
+        max_allowed_date_exclusive=max_allowed_date_exclusive,
+        allow_nulls=True,
+    )
+
+
+# TODO(#38869): Extend to allow dates to be some fixed window in the future, perhaps
+#  naming this is_reasonable_past_or_soon_date?
+def is_reasonable_past_date(min_allowed_date_inclusive: datetime.date) -> Callable:
+    """Validator for a non-optional date field that enforces that the date falls after
+    a reasonable lower bound and on/before the current date (in UTC time).
+
+    Args:
+        min_allowed_date_inclusive: The minimum allowed date for this field, inclusive.
+    """
+    return IsReasonablePastDateValidator(
+        min_allowed_date_inclusive=min_allowed_date_inclusive,
+        allow_nulls=False,
+    )
+
+
+# TODO(#38869): Extend to allow dates to be some fixed window in the future, perhaps
+#  naming this is_opt_reasonable_past_or_soon_date?
+def is_opt_reasonable_past_date(min_allowed_date_inclusive: datetime.date) -> Callable:
+    """Validator for a date field that enforces that the date falls after a reasonable
+    lower bound and on/before the current date (in UTC time), if it is nonnull.
+
+    Args:
+        min_allowed_date_inclusive: The minimum allowed date for this field, inclusive.
+    """
+    return IsReasonablePastDateValidator(
+        min_allowed_date_inclusive=min_allowed_date_inclusive,
+        allow_nulls=True,
+    )
+
+
+# TODO(#38869): Extend to allow dates to be some fixed window in the future, perhaps
+#  naming this is_reasonable_past_or_soon_datetime?
+def is_reasonable_past_datetime(
+    min_allowed_datetime_inclusive: datetime.datetime,
+) -> Callable:
+    """Validator for a non-optional datetime field that enforces that the date falls
+    after a reasonable lower bound and on/before the current datetime (in UTC time if a
+    datetime with a timezone is not provided, otherwise in the provided timezone).
+
+    Args:
+        min_allowed_datetime_inclusive: The minimum allowed date for this field,
+            inclusive.
+    """
+    return IsReasonablePastDatetimeValidator(
+        min_allowed_datetime_inclusive=min_allowed_datetime_inclusive,
+        allow_nulls=False,
+    )
+
+
+# TODO(#38869): Extend to allow dates to be some fixed window in the future, perhaps
+#  naming this is_opt_reasonable_past_or_soon_datetime?
+def is_opt_reasonable_past_datetime(
+    min_allowed_datetime_inclusive: datetime.datetime,
+) -> Callable:
+    """Validator for a datetime field that enforces that the date falls after a
+    reasonable lower bound and on/before the current datetime (in UTC time if a
+    datetime with a timezone is not provided, otherwise in the provided timezone), if
+    it is nonnull.
+
+    Args:
+        min_allowed_datetime_inclusive: The minimum allowed date for this field,
+            inclusive.
+    """
+    return IsReasonablePastDatetimeValidator(
+        min_allowed_datetime_inclusive=min_allowed_datetime_inclusive,
+        allow_nulls=True,
+    )
 
 
 def is_opt_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
@@ -265,3 +373,164 @@ class IsSetOfValidator:
 
 def is_set_of(set_item_expected_type: Type) -> IsSetOfValidator:
     return IsSetOfValidator(set_item_expected_type)
+
+
+def _assert_value_falls_in_bounds(
+    instance: Any,
+    attribute: attr.Attribute,
+    value: datetime.date | datetime.datetime,
+    min_allowed_date_inclusive: datetime.date | datetime.datetime,
+    max_allowed_date_exclusive: datetime.date | datetime.datetime,
+) -> None:
+    if value < min_allowed_date_inclusive:
+        raise ValueError(
+            f"Found [{attribute.name}] value on class [{type(instance).__name__}] with "
+            f"value [{value.isoformat()}] which is less than "
+            f"[{min_allowed_date_inclusive.isoformat()}], the (inclusive) min allowed "
+            f"date."
+        )
+
+    if value >= max_allowed_date_exclusive:
+        raise ValueError(
+            f"Found [{attribute.name}] value on class [{type(instance).__name__}] with "
+            f"value [{value.isoformat()}] which is greater than or equal to "
+            f"[{max_allowed_date_exclusive.isoformat()}], the (exclusive) max allowed "
+            f"date."
+        )
+
+
+class IsReasonableDateValidator:
+    """Validator class for checking if a date field is within a reasonable set of
+    bounds.
+    """
+
+    def __init__(
+        self,
+        min_allowed_date_inclusive: datetime.date,
+        max_allowed_date_exclusive: datetime.date,
+        allow_nulls: bool,
+    ) -> None:
+        self.min_allowed_date_inclusive = min_allowed_date_inclusive
+        self.max_allowed_date_exclusive = max_allowed_date_exclusive
+        self.allow_nulls = allow_nulls
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if value is None and self.allow_nulls:
+            return
+
+        if not isinstance(value, datetime.date):
+            raise TypeError(
+                f"Found [{attribute.name}] value on class [{type(instance).__name__}] "
+                f"with unexpected type [{type(value).__name__}]: {value}"
+            )
+
+        _assert_value_falls_in_bounds(
+            instance,
+            attribute,
+            value,
+            min_allowed_date_inclusive=self.min_allowed_date_inclusive,
+            max_allowed_date_exclusive=self.max_allowed_date_exclusive,
+        )
+
+
+class IsReasonablePastDateValidator:
+    """Validator class for checking if a date field is within a reasonable set of
+    bounds strictly in the past (no future dates).
+    """
+
+    def __init__(
+        self, min_allowed_date_inclusive: datetime.date, allow_nulls: bool
+    ) -> None:
+        self.min_allowed_date_inclusive = min_allowed_date_inclusive
+        self.allow_nulls = allow_nulls
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if value is None and self.allow_nulls:
+            return
+
+        if not isinstance(value, datetime.date):
+            raise TypeError(
+                f"Found [{attribute.name}] value on class [{type(instance).__name__}] "
+                f"with unexpected type [{type(value).__name__}]: {value}"
+            )
+
+        tomorrow = datetime.datetime.now(tz=pytz.UTC).date() + datetime.timedelta(
+            days=1
+        )
+
+        _assert_value_falls_in_bounds(
+            instance,
+            attribute,
+            value,
+            min_allowed_date_inclusive=self.min_allowed_date_inclusive,
+            max_allowed_date_exclusive=tomorrow,
+        )
+
+
+class IsReasonableDatetimeValidator:
+    """Validator class for checking if a datetime field is within a reasonable set of
+    bounds.
+    """
+
+    def __init__(
+        self,
+        min_allowed_datetime_inclusive: datetime.datetime,
+        max_allowed_datetime_exclusive: datetime.datetime,
+        allow_nulls: bool,
+    ) -> None:
+        self.min_allowed_datetime_inclusive = min_allowed_datetime_inclusive
+        self.max_allowed_datetime_exclusive = max_allowed_datetime_exclusive
+        self.allow_nulls = allow_nulls
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if value is None and self.allow_nulls:
+            return
+
+        if not isinstance(value, datetime.datetime):
+            raise TypeError(
+                f"Found [{attribute.name}] value on class [{type(instance).__name__}] "
+                f"with unexpected type [{type(value).__name__}]: {value}"
+            )
+
+        _assert_value_falls_in_bounds(
+            instance,
+            attribute,
+            value,
+            min_allowed_date_inclusive=self.min_allowed_datetime_inclusive,
+            max_allowed_date_exclusive=self.max_allowed_datetime_exclusive,
+        )
+
+
+class IsReasonablePastDatetimeValidator:
+    """Validator class for checking if a datetime field is within a reasonable set of
+    bounds strictly in the past (no future dates).
+    """
+
+    def __init__(
+        self, min_allowed_datetime_inclusive: datetime.datetime, allow_nulls: bool
+    ) -> None:
+        self.min_allowed_datetime_inclusive = min_allowed_datetime_inclusive
+        self.allow_nulls = allow_nulls
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if value is None and self.allow_nulls:
+            return
+
+        if not isinstance(value, datetime.datetime):
+            raise TypeError(
+                f"Found [{attribute.name}] value on class [{type(instance).__name__}] "
+                f"with unexpected type [{type(value).__name__}]: {value}"
+            )
+
+        if value.tzinfo:
+            now = datetime.datetime.now(tz=value.tzinfo)
+        else:
+            now = datetime.datetime.now(tz=pytz.UTC).replace(tzinfo=None)
+
+        _assert_value_falls_in_bounds(
+            instance,
+            attribute,
+            value,
+            min_allowed_date_inclusive=self.min_allowed_datetime_inclusive,
+            max_allowed_date_exclusive=now,
+        )

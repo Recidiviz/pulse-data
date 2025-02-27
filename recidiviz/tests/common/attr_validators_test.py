@@ -21,6 +21,7 @@ import unittest
 from typing import List, Optional
 
 import attr
+import freezegun
 import pytz
 
 from recidiviz.common import attr_validators
@@ -589,3 +590,392 @@ class TestIsSetOfValidator(unittest.TestCase):
                 set_of_str_field=set(),
                 set_of_class_field={None},  # type: ignore[arg-type]
             )
+
+
+class TestIsReasonableDateValidator(unittest.TestCase):
+    """Tests for the IsReasonable*Date* validators"""
+
+    # Freeze time to midnight, UTC
+    @freezegun.freeze_time("2022-02-02T00:00:00Z")
+    def test_non_optional_fields(self) -> None:
+
+        lower_bound_date = datetime.date(2011, 1, 1)
+        upper_bound_date = datetime.date(2033, 3, 3)
+        reasonable_past_date = datetime.date(2012, 1, 1)
+        reasonable_future_date = datetime.date(2030, 1, 1)
+
+        lower_bound_datetime = datetime.datetime(2011, 1, 1)
+        reasonable_past_datetime = datetime.datetime(2012, 1, 1)
+
+        @attr.s
+        class _TestClass:
+            my_required_date: datetime.date = attr.ib(
+                validator=attr_validators.is_reasonable_date(
+                    min_allowed_date_inclusive=lower_bound_date,
+                    max_allowed_date_exclusive=upper_bound_date,
+                )
+            )
+            my_required_past_date: datetime.date = attr.ib(
+                validator=attr_validators.is_reasonable_past_date(
+                    min_allowed_date_inclusive=lower_bound_date
+                )
+            )
+            my_required_past_datetime: datetime.date = attr.ib(
+                validator=attr_validators.is_reasonable_past_datetime(
+                    min_allowed_datetime_inclusive=lower_bound_datetime
+                )
+            )
+
+        # Tests that we fail for None values
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_date\] value on class \[_TestClass\] with unexpected "
+            r"type \[NoneType\]: None",
+        ):
+            _ = _TestClass(
+                my_required_date=None,  # type: ignore[arg-type]
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_past_date\] value on class \[_TestClass\] with "
+            r"unexpected type \[NoneType\]: None",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=None,  # type: ignore[arg-type]
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_past_datetime\] value on class \[_TestClass\] with "
+            r"unexpected type \[NoneType\]: None",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=None,  # type: ignore[arg-type]
+            )
+
+        # Tests that we fail for non-date values
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_date\] value on class \[_TestClass\] with unexpected "
+            r"type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_required_date=True,  # type: ignore[arg-type]
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_past_date\] value on class \[_TestClass\] with "
+            r"unexpected type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=True,  # type: ignore[arg-type]
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_required_past_datetime\] value on class \[_TestClass\] with "
+            r"unexpected type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=True,  # type: ignore[arg-type]
+            )
+
+        # Tests that we fail for bad lower bound dates
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_date\] value on class \[_TestClass\] with value "
+            r"\[2010-12-31\] which is less than \[2011-01-01\], the \(inclusive\) min "
+            r"allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=(lower_bound_date - datetime.timedelta(days=1)),
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_past_date\] value on class \[_TestClass\] with value "
+            r"\[2010-12-31\] which is less than \[2011-01-01\], the \(inclusive\) min "
+            r"allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=(lower_bound_date - datetime.timedelta(days=1)),
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_past_datetime\] value on class \[_TestClass\] with "
+            r"value \[2010-12-31T00:00:00\] which is less than "
+            r"\[2011-01-01T00:00:00\], the \(inclusive\) min allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=(
+                    lower_bound_datetime - datetime.timedelta(days=1)
+                ),
+            )
+
+        # Tests that we fail for bad upper bound dates
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_date\] value on class \[_TestClass\] with value "
+            r"\[2033-03-03\] which is greater than or equal to \[2033-03-03\], the "
+            r"\(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=upper_bound_date,
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_past_date\] value on class \[_TestClass\] with value "
+            r"\[2022-02-03\] which is greater than or equal to \[2022-02-03\], the "
+            r"\(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=(
+                    datetime.date.today() + datetime.timedelta(days=1)
+                ),
+                my_required_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_required_past_datetime\] value on class \[_TestClass\] with "
+            r"value \[2022-02-12T00:00:00\] which is greater than or equal to "
+            r"\[2022-02-02T00:00:00\], the \(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_required_date=reasonable_past_date,
+                my_required_past_date=reasonable_past_date,
+                my_required_past_datetime=(
+                    datetime.datetime.now() + datetime.timedelta(days=10)
+                ),
+            )
+
+        # These don't crash
+        _ = _TestClass(
+            my_required_date=lower_bound_date,
+            my_required_past_date=lower_bound_date,
+            my_required_past_datetime=lower_bound_datetime,
+        )
+
+        _ = _TestClass(
+            my_required_date=upper_bound_date - datetime.timedelta(days=1),
+            my_required_past_date=datetime.date.today(),
+            my_required_past_datetime=(
+                datetime.datetime.now() - datetime.timedelta(seconds=1)
+            ),
+        )
+
+        _ = _TestClass(
+            my_required_date=reasonable_future_date,
+            my_required_past_date=reasonable_past_date,
+            my_required_past_datetime=reasonable_past_datetime,
+        )
+
+    # Freeze time to midnight, UTC
+    @freezegun.freeze_time("2022-02-02T00:00:00Z")
+    def test_optional_fields(self) -> None:
+
+        lower_bound_date = datetime.date(2011, 1, 1)
+        upper_bound_date = datetime.date(2033, 3, 3)
+        reasonable_past_date = datetime.date(2012, 1, 1)
+        reasonable_future_date = datetime.date(2030, 1, 1)
+
+        lower_bound_datetime = datetime.datetime(2011, 1, 1)
+        reasonable_past_datetime = datetime.datetime(2012, 1, 1)
+
+        @attr.s
+        class _TestClass:
+            my_optional_date: datetime.date | None = attr.ib(
+                validator=attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=lower_bound_date,
+                    max_allowed_date_exclusive=upper_bound_date,
+                )
+            )
+            my_optional_past_date: datetime.date | None = attr.ib(
+                validator=attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=lower_bound_date
+                )
+            )
+            my_optional_past_datetime: datetime.date | None = attr.ib(
+                validator=attr_validators.is_opt_reasonable_past_datetime(
+                    min_allowed_datetime_inclusive=lower_bound_datetime
+                )
+            )
+
+        # Tests that we do not fail for None values
+        _ = _TestClass(
+            my_optional_date=None,
+            my_optional_past_date=reasonable_past_date,
+            my_optional_past_datetime=reasonable_past_datetime,
+        )
+
+        _ = _TestClass(
+            my_optional_date=reasonable_past_date,
+            my_optional_past_date=None,
+            my_optional_past_datetime=reasonable_past_datetime,
+        )
+
+        _ = _TestClass(
+            my_optional_date=reasonable_past_date,
+            my_optional_past_date=reasonable_past_date,
+            my_optional_past_datetime=None,
+        )
+
+        # Tests that we fail for non-date values
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_optional_date\] value on class \[_TestClass\] with unexpected "
+            r"type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_optional_date=True,  # type: ignore[arg-type]
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_optional_past_date\] value on class \[_TestClass\] with "
+            r"unexpected type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=True,  # type: ignore[arg-type]
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found \[my_optional_past_datetime\] value on class \[_TestClass\] with "
+            r"unexpected type \[bool\]: True",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=True,  # type: ignore[arg-type]
+            )
+
+        # Tests that we fail for bad lower bound dates
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_date\] value on class \[_TestClass\] with value "
+            r"\[2010-12-31\] which is less than \[2011-01-01\], the \(inclusive\) min "
+            r"allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=(lower_bound_date - datetime.timedelta(days=1)),
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_past_date\] value on class \[_TestClass\] with value "
+            r"\[2010-12-31\] which is less than \[2011-01-01\], the \(inclusive\) min "
+            r"allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=(lower_bound_date - datetime.timedelta(days=1)),
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_past_datetime\] value on class \[_TestClass\] with "
+            r"value \[2010-12-31T00:00:00\] which is less than "
+            r"\[2011-01-01T00:00:00\], the \(inclusive\) min allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=(
+                    lower_bound_datetime - datetime.timedelta(days=1)
+                ),
+            )
+
+        # Tests that we fail for bad upper bound dates
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_date\] value on class \[_TestClass\] with value "
+            r"\[2033-03-03\] which is greater than or equal to \[2033-03-03\], the "
+            r"\(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=upper_bound_date,
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_past_date\] value on class \[_TestClass\] with value "
+            r"\[2022-02-03\] which is greater than or equal to \[2022-02-03\], the "
+            r"\(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=(
+                    datetime.date.today() + datetime.timedelta(days=1)
+                ),
+                my_optional_past_datetime=reasonable_past_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[my_optional_past_datetime\] value on class \[_TestClass\] with "
+            r"value \[2022-02-12T00:00:00\] which is greater than or equal to "
+            r"\[2022-02-02T00:00:00\], the \(exclusive\) max allowed date.",
+        ):
+            _ = _TestClass(
+                my_optional_date=reasonable_past_date,
+                my_optional_past_date=reasonable_past_date,
+                my_optional_past_datetime=(
+                    datetime.datetime.now() + datetime.timedelta(days=10)
+                ),
+            )
+
+        # These don't crash
+        _ = _TestClass(
+            my_optional_date=lower_bound_date,
+            my_optional_past_date=lower_bound_date,
+            my_optional_past_datetime=lower_bound_datetime,
+        )
+
+        _ = _TestClass(
+            my_optional_date=upper_bound_date - datetime.timedelta(days=1),
+            my_optional_past_date=datetime.date.today(),
+            my_optional_past_datetime=(
+                datetime.datetime.now() - datetime.timedelta(seconds=1)
+            ),
+        )
+
+        _ = _TestClass(
+            my_optional_date=reasonable_future_date,
+            my_optional_past_date=reasonable_past_date,
+            my_optional_past_datetime=reasonable_past_datetime,
+        )
