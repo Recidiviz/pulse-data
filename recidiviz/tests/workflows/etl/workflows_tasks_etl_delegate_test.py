@@ -72,11 +72,6 @@ class WorkflowsTasksETLDelegateTest(TestCase):
                             "details": {"supervisionLevel": "HIGH"},
                         }
                     ],
-                    "needs": [
-                        {
-                            "type": "employment",
-                        }
-                    ],
                 },
             )
 

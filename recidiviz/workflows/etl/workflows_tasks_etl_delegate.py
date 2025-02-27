@@ -23,6 +23,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
+COLLECTION_BY_FILENAME = {
+    "us_ix_supervision_tasks_record.json": "US_ID-supervisionTasks",
+    "us_tx_supervision_tasks_record.json": "US_TX-supervisionTasks",
+}
+
 
 class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' tasks records into Firestore."""
@@ -32,10 +37,10 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return {"us_ix_supervision_tasks_record.json": "US_ID-supervisionTasks"}
+        return COLLECTION_BY_FILENAME
 
     def get_supported_files(self) -> List[str]:
-        return ["us_ix_supervision_tasks_record.json"]
+        return list(COLLECTION_BY_FILENAME.keys())
 
     @property
     def timestamp_key(self) -> str:
@@ -60,10 +65,6 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
             "tasks": [
                 convert_nested_dictionary_keys(task, snake_to_camel)
                 for task in data.get("tasks")
-            ],
-            "needs": [
-                convert_nested_dictionary_keys(task, snake_to_camel)
-                for task in data.get("needs")
             ],
         }
 

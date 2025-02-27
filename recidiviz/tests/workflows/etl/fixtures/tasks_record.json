@@ -1,1 +1,1 @@
-{"person_external_id": "100", "officer_id":  "200", "state_code":  "US_IX", "tasks":  [{"type":  "homeVisit", "due_date":  "2023-02-01", "details":  {"supervision_level":  "HIGH"}}], "needs":  [{"type": "employment"}]}
+{"person_external_id": "100", "officer_id":  "200", "state_code":  "US_IX", "tasks":  [{"type":  "homeVisit", "due_date":  "2023-02-01", "details":  {"supervision_level":  "HIGH"}}]}
