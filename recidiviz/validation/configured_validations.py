@@ -1030,7 +1030,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_ACTIVE_USERS_SUPERVISION_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "officer_monthly_usage_report_active_users_supervision",
                 "impact_report_active_users_supervision",
@@ -1042,7 +1042,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_VS_IMPACT_REPORT_REGISTERED_USERS_SUPERVISION_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
             comparison_columns=[
                 "officer_monthly_usage_report_registered_users_supervision",
                 "impact_report_registered_users_supervision",
