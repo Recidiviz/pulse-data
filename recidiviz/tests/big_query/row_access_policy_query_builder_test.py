@@ -30,11 +30,6 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
     def test_build_column_based_row_level_policy(self) -> None:
         expected_queries = [
             """CREATE OR REPLACE ROW ACCESS POLICY
-                EXPLICIT_ACCESS_TO_US_OZ_STATE_CODE
-                ON `test_project.test_dataset.test_table`
-                GRANT TO ("group:s-oz-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) = "US_OZ");""",
-            """CREATE OR REPLACE ROW ACCESS POLICY
                 EXPLICIT_ACCESS_TO_US_MI_STATE_CODE
                 ON `test_project.test_dataset.test_table`
                 GRANT TO ("group:s-mi-data@recidiviz.org")
@@ -48,7 +43,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
                 NON_RESTRICTIVE_STATE_DATA_ACCESS_STATE_CODE
                 ON `test_project.test_dataset.test_table`
                 GRANT TO ("group:s-default-state-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) NOT IN ("US_OZ", "US_MI", "US_PA"));""",
+                FILTER USING (UPPER(state_code) NOT IN ("US_MI", "US_PA"));""",
             """CREATE OR REPLACE ROW ACCESS POLICY
                 ADMIN_ACCESS_TO_ALL_STATE_DATA_STATE_CODE
                 ON `test_project.test_dataset.test_table`
@@ -79,19 +74,19 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
         expected_queries = [
             """CREATE OR REPLACE ROW ACCESS POLICY
                 RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP
-                ON `test_project.us_oz_dataset.test_table`
-                GRANT TO ("group:s-oz-data@recidiviz.org")
+                ON `test_project.us_mi_dataset.test_table`
+                GRANT TO ("group:s-mi-data@recidiviz.org")
                 FILTER USING (TRUE);""",
             """CREATE OR REPLACE ROW ACCESS POLICY
                 ADMIN_ACCESS_TO_ALL_ROWS
-                ON `test_project.us_oz_dataset.test_table`
+                ON `test_project.us_mi_dataset.test_table`
                 GRANT TO ("group:s-big-query-admins@recidiviz.org")
                 FILTER USING (TRUE);""",
         ]
 
         table_ref = bigquery.TableReference(
             dataset_ref=bigquery.DatasetReference(
-                project="test_project", dataset_id="us_oz_dataset"
+                project="test_project", dataset_id="us_mi_dataset"
             ),
             table_id="test_table",
         )

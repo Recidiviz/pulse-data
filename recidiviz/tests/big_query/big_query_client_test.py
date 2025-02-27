@@ -3219,7 +3219,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_row_level_permissions(self) -> None:
         table_ref = bigquery.TableReference(
-            bigquery.DatasetReference(self.mock_project_id, "us_oz_dataset"),
+            bigquery.DatasetReference(self.mock_project_id, "us_mi_dataset"),
             "table",
         )
         table = bigquery.Table(

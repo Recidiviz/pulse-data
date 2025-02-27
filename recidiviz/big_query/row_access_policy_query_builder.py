@@ -25,7 +25,6 @@ from recidiviz.big_query.big_query_utils import table_has_field
 from recidiviz.common.constants.states import StateCode
 
 RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
-    StateCode.US_OZ: "s-oz-data@recidiviz.org",
     StateCode.US_MI: "s-mi-data@recidiviz.org",
     StateCode.US_PA: "s-pa-data@recidiviz.org",
 }
