@@ -52,6 +52,9 @@ from recidiviz.common.str_field_utils import (
     NormalizedSerializableJSON,
     SerializableJSON,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegate,
 )
@@ -60,6 +63,7 @@ from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
 )
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
@@ -89,8 +93,7 @@ class ManifestNode(Generic[ManifestNodeT]):
 
     @abc.abstractmethod
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[ManifestNodeT]:
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
@@ -159,10 +162,9 @@ class VariableManifestNode(ManifestNode[ManifestNodeT]):
         return self.value_manifest.additional_field_manifests(field_name)
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[ManifestNodeT]:
-        return self.value_manifest.build_from_row(row)
+        return self.value_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return [self.value_manifest]
@@ -217,14 +219,13 @@ class EntityTreeManifest(ManifestNode[EntityT]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[EntityT]:
         """Builds a recursively hydrated entity from the given input row."""
         args: Dict[str, DeserializableEntityFieldValue] = self.common_args.copy()
 
         for field_name, field_manifest in self.field_manifests.items():
-            field_value = field_manifest.build_from_row(row)
+            field_value = field_manifest.build_from_row(row, context)
             if field_value is None and field_name == self.filter_if_null_field:
                 # If there is a null value in this field, filter out the whole entity.
                 return None
@@ -502,8 +503,7 @@ class SplitCommaSeparatedListManifest(ManifestNode[List[str]]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> List[str]:
         column_value = row[self.column_name]
         if not column_value:
@@ -539,8 +539,7 @@ class SplitJSONListManifest(ManifestNode[List[str]]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> List[str]:
         column_value = row[self.column_name]
         if not column_value:
@@ -587,10 +586,9 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> List[Entity]:
-        values = self.values_manifest.build_from_row(row)
+        values = self.values_manifest.build_from_row(row, context)
         if values is None:
             raise ValueError("Unexpected null list value.")
 
@@ -602,7 +600,7 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
             )
         for value in values:
             row[self.FOREACH_LOOP_VALUE_NAME] = value
-            entity = self.child_entity_manifest.build_from_row(row)
+            entity = self.child_entity_manifest.build_from_row(row, context)
             del row[self.FOREACH_LOOP_VALUE_NAME]
             if entity:
                 result.append(entity)
@@ -664,15 +662,14 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> List[Entity]:
         child_entities = []
         for child_manifest in self.child_manifests:
             if isinstance(child_manifest, ExpandableListItemManifest):
-                child_entities.extend(child_manifest.build_from_row(row))
+                child_entities.extend(child_manifest.build_from_row(row, context))
             else:
-                child_entity = child_manifest.build_from_row(row)
+                child_entity = child_manifest.build_from_row(row, context)
                 if child_entity:
                     child_entities.append(child_entity)
         return child_entities
@@ -697,8 +694,7 @@ class DirectMappingFieldManifest(ManifestNode[str]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> str:
         return row[self.mapped_column]
 
@@ -727,8 +723,7 @@ class BooleanLiteralFieldManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[bool]:
         return self.literal_value
 
@@ -737,6 +732,41 @@ class BooleanLiteralFieldManifest(ManifestNode[bool]):
 
     def columns_referenced(self) -> Set[str]:
         return set()
+
+
+@attr.s(kw_only=True)
+class EnvPropertyManifest(ManifestNode[ManifestNodeT]):
+    """Manifest describing a value that will be hydrated with the same value based on
+    some static environment state such as the project or instance.
+    """
+
+    ENV_PROPERTY_KEY = "$env"
+
+    env_property_name: str = attr.ib()
+    env_property_type: Type[ManifestNodeT] = attr.ib()
+
+    @property
+    def result_type(self) -> Type[ManifestNodeT]:
+        return self.env_property_type
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
+    def build_from_row(
+        self, row: Dict[str, str], context: IngestViewContentsContext
+    ) -> ManifestNodeT:
+        return assert_type(
+            context.get_env_property(self.env_property_name), self.env_property_type
+        )
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
+
+    def columns_referenced(self) -> Set[str]:
+        return set()
+
+    def env_properties_referenced(self) -> Set[str]:
+        return {self.env_property_name}
 
 
 @attr.s(kw_only=True)
@@ -758,8 +788,7 @@ class StringLiteralFieldManifest(ManifestNode[str]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[str]:
         return self.literal_value
 
@@ -800,8 +829,7 @@ class EnumLiteralFieldManifest(ManifestNode[EnumT]):
         }
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> EnumT:
         return self.enum_value
 
@@ -872,11 +900,10 @@ class EnumMappingManifest(ManifestNode[EnumT]):
         return {_raw_text_field_name(field_name): self.raw_text_field_manifest}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[EnumT]:
         return self.enum_parser.parse(
-            raw_text=self.raw_text_field_manifest.build_from_row(row)
+            raw_text=self.raw_text_field_manifest.build_from_row(row, context)
         )
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
@@ -1058,11 +1085,10 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[ManifestNodeT]:
         kwargs = {
-            key: manifest.build_from_row(row)
+            key: manifest.build_from_row(row, context)
             for key, manifest in self.kwarg_manifests.items()
         }
         return self.function(**kwargs)
@@ -1154,11 +1180,10 @@ class SerializedJSONDictFieldManifest(ManifestNode[SerializableJSON]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[SerializableJSON]:
         result_dict = {
-            key: manifest.build_from_row(row)
+            key: manifest.build_from_row(row, context)
             for key, manifest in self.key_to_manifest_map.items()
         }
         if self.drop_all_empty:
@@ -1198,10 +1223,9 @@ class JSONExtractKeyManifest(ManifestNode[str]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> str:
-        json_str = self.json_manifest.build_from_row(row)
+        json_str = self.json_manifest.build_from_row(row, context)
         if json_str is None:
             raise ValueError(f"Expected nonnull JSON string for row: {row}")
         json_dict = json.loads(json_str)
@@ -1273,11 +1297,10 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> str:
         unfiltered_values = [
-            value_manifest.build_from_row(row)
+            value_manifest.build_from_row(row, context)
             for value_manifest in self.value_manifests
         ]
 
@@ -1356,17 +1379,16 @@ class PhysicalAddressManifest(ManifestNode[str]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> str:
         state_and_zip_parts = [
-            self.state_manifest.build_from_row(row),
-            self.zip_manifest.build_from_row(row),
+            self.state_manifest.build_from_row(row, context),
+            self.zip_manifest.build_from_row(row, context),
         ]
         address_parts: List[Optional[str]] = [
-            self.address_1_manifest.build_from_row(row),
-            self.address_2_manifest.build_from_row(row),
-            self.city_manifest.build_from_row(row),
+            self.address_1_manifest.build_from_row(row, context),
+            self.address_2_manifest.build_from_row(row, context),
+            self.city_manifest.build_from_row(row, context),
             " ".join([s for s in state_and_zip_parts if s]),
         ]
 
@@ -1468,10 +1490,9 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[SerializableJSON]:
-        return self.name_json_manifest.build_from_row(row)
+        return self.name_json_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return [self.name_json_manifest]
@@ -1583,11 +1604,10 @@ class ContainsConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
-        value = self.value_manifest.build_from_row(row)
-        options = {m.build_from_row(row) for m in self.options_manifests}
+        value = self.value_manifest.build_from_row(row, context)
+        options = {m.build_from_row(row, context) for m in self.options_manifests}
 
         return value in options
 
@@ -1637,10 +1657,9 @@ class IsNullConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
-        value = self.value_manifest.build_from_row(row)
+        value = self.value_manifest.build_from_row(row, context)
         return not bool(value)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
@@ -1689,12 +1708,11 @@ class EqualsConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
-        first_value = self.value_manifests[0].build_from_row(row)
+        first_value = self.value_manifests[0].build_from_row(row, context)
         return all(
-            first_value == value_manifest.build_from_row(row)
+            first_value == value_manifest.build_from_row(row, context)
             for value_manifest in self.value_manifests[1:]
         )
 
@@ -1730,11 +1748,10 @@ class AndConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
         return all(
-            value_manifest.build_from_row(row)
+            value_manifest.build_from_row(row, context)
             for value_manifest in self.condition_manifests
         )
 
@@ -1770,11 +1787,10 @@ class OrConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
         return any(
-            value_manifest.build_from_row(row)
+            value_manifest.build_from_row(row, context)
             for value_manifest in self.condition_manifests
         )
 
@@ -1803,10 +1819,9 @@ class InvertConditionManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
-        return not self.condition_manifest.build_from_row(row)
+        return not self.condition_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return [self.condition_manifest]
@@ -1829,8 +1844,7 @@ class BooleanLiteralManifest(ManifestNode[bool]):
         return {}
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> bool:
         return self.value
 
@@ -1907,20 +1921,19 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
         return additional_manifests
 
     def build_from_row(
-        self,
-        row: Dict[str, str],
+        self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[ManifestNodeT]:
-        condition = self.condition_manifest.build_from_row(row)
+        condition = self.condition_manifest.build_from_row(row, context)
         if condition is None:
             raise ValueError("Condition manifest should not return None.")
 
         if condition:
-            return self.then_manifest.build_from_row(row)
+            return self.then_manifest.build_from_row(row, context)
 
         if not self.else_manifest:
             return None
 
-        return self.else_manifest.build_from_row(row)
+        return self.else_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         manifests: List[ManifestNode] = [self.condition_manifest, self.then_manifest]
@@ -2333,6 +2346,18 @@ def build_manifest_from_raw(
                     expected_result_type=object,
                 ),
             )
+        if manifest_node_name == EnvPropertyManifest.ENV_PROPERTY_KEY:
+            property_name = raw_field_manifest.pop(
+                EnvPropertyManifest.ENV_PROPERTY_KEY, str
+            )
+            env_property_type = delegate.get_env_property_type(
+                property_name=property_name
+            )
+            return EnvPropertyManifest(
+                env_property_name=property_name,
+                env_property_type=env_property_type,
+            )
+
         if manifest_node_name == ExpandableListItemManifest.FOREACH_KEY:
             return ExpandableListItemManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),

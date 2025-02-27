@@ -9,6 +9,10 @@ input_columns:
   StaffID: STRING
   ContactSequenceNumber: INTEGER
 unused_columns: []
+# TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
+# faster than current infra allows.
+launch_env:
+  $env: is_local
 output:
   StatePerson:
     external_ids:

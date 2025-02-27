@@ -164,8 +164,6 @@ class DirectIngestViewQueryBuilder:
         ingest_view_name: str,
         view_query_template: str,
         region_module: ModuleType = regions,
-        allowed_project_ids: set[str] | None = None,
-        testing_only: bool = False,
     ):
         """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
         import into our Postgres DB.
@@ -175,9 +173,6 @@ class DirectIngestViewQueryBuilder:
             ingest_view_name: (str) The name of the view.
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
             region_module: (ModuleType) Module containing all region raw data config files.
-            testing_only: (bool). If True, this view will only run in ingest view tests (locally)
-            allowed_project_ids: (Optional list of strings). If a list is provided, this ingest view will only
-                                 run in those provided projects. If the value is None, it will run for all projects.
         """
         self._region_code = region
         self._raw_table_dependency_configs: Optional[
@@ -190,18 +185,6 @@ class DirectIngestViewQueryBuilder:
 
         self._view_query_template = view_query_template
         self._region_module = region_module
-        if not allowed_project_ids and allowed_project_ids is not None:
-            raise ValueError(
-                "Cannot set allowed_project_ids to the empty set - use the testing_only flag instead"
-            )
-        if allowed_project_ids and testing_only:
-            raise ValueError(
-                f"{ingest_view_name} is marked testing_only but has allowed_project_ids {allowed_project_ids} "
-                "A view builder can only be testing_only, gated to a certain project, or neither."
-            )
-        # Now we know that allowed_project_ids is None or non-empty
-        self._allowed_project_ids = allowed_project_ids
-        self._testing_only = testing_only
 
         if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
             raise ValueError(
@@ -213,14 +196,6 @@ class DirectIngestViewQueryBuilder:
                 "Found CURRENT_DATE function in this query - ingest views cannot contain CURRENT_DATE functions. "
                 f"Consider using @{UPDATE_DATETIME_PARAM_NAME} instead."
             )
-
-    def can_run_in_project(self, project_id: str) -> bool:
-        """Returns True if this ingest view can run in the given project."""
-        if self._testing_only:
-            return False
-        if self._allowed_project_ids is None:
-            return True
-        return project_id in self._allowed_project_ids
 
     @property
     def raw_table_dependency_configs(self) -> List[DirectIngestViewRawFileDependency]:

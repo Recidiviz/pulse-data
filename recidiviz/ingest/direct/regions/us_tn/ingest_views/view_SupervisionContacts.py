@@ -45,9 +45,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="SupervisionContacts",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
-    # faster than current infra allows.
-    testing_only=True,
 )
 
 if __name__ == "__main__":

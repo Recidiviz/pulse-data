@@ -22,6 +22,9 @@ from typing import Dict, List
 
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
     IngestViewManifestCompiler,
@@ -62,6 +65,16 @@ class IngestViewManifestCollector:
     @property
     def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
         return self._ingest_view_to_manifest
+
+    def launchable_ingest_views(
+        self, ingest_view_contents_context: IngestViewContentsContext
+    ) -> List[str]:
+        """Returns a list of ingest views that are launchable in the current project."""
+        return [
+            ingest_view_name
+            for ingest_view_name, manifest in self.ingest_view_to_manifest.items()
+            if manifest.should_launch(ingest_view_contents_context)
+        ]
 
     def _parse_ingest_view_name(self, manifest_path: str) -> str:
         file_name = os.path.basename(manifest_path)

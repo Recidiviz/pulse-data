@@ -32,8 +32,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
     ingest_view_name="nd_person_details",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    # The raw data for this view no longer exists in staging so we don't run this view
-    testing_only=True,
 )
 
 if __name__ == "__main__":

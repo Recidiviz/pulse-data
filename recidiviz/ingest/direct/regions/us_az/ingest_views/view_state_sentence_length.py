@@ -138,8 +138,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
     ingest_view_name="state_sentence_length",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    # TODO(#34648) Understand and update community supervision dates.
-    testing_only=True,
 )
 
 if __name__ == "__main__":

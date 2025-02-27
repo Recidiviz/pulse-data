@@ -17,14 +17,9 @@
 """Listing out exemptions for the state ingest pipeline."""
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.view_sci_incarceration_period import (
-    VIEW_BUILDER as SCI_VIEW_BUILDER,
-)
 
-# PLEASE DO NOT ADD EXEMPTIONS HERE.
-# If your ingest view output is not merging, please ping #platform-channel
 # TODO(#24679): Delete this list once it is empty
 INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS = {
     # TODO(#24299) Remove this exemption once conflicts no longer appear.
-    StateCode.US_PA: {SCI_VIEW_BUILDER.ingest_view_name},
+    StateCode.US_PA: {"sci_incarceration_period"},
 }

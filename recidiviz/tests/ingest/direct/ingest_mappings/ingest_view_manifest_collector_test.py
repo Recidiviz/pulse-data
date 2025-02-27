@@ -17,6 +17,9 @@
 """Tests for ingest_view_manifest_collector.py."""
 import unittest
 
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -60,6 +63,43 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 "tagMoreBasicData",
             ],
             list(sorted(result.keys())),
+        )
+
+    def test_launchable_ingest_views(self) -> None:
+        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContext(
+                is_production=False,
+                is_staging=True,
+                is_local=False,
+            )
+        )
+        self.assertListEqual(
+            ["basic", "tagBasicData", "tagMoreBasicData"],
+            list(sorted(result)),
+        )
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContext(
+                is_production=True,
+                is_staging=False,
+                is_local=False,
+            )
+        )
+        self.assertListEqual(
+            [],
+            list(sorted(result)),
+        )
+
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            IngestViewContentsContext(
+                is_production=False,
+                is_staging=True,
+                is_local=False,
+            )
+        )
+        self.assertListEqual(
+            # In US_YY this view is gated to only run in STAGING
+            ["basic"],
+            list(sorted(result)),
         )
 
     def test_parse_ingest_view_name(self) -> None:

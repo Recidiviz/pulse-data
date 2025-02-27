@@ -29,6 +29,9 @@ from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewManifestCompiler,
@@ -201,6 +204,16 @@ class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDel
         #  normal string field in the fake schema.
         return field_name == "full_name"
 
+    def get_env_property_type(self, property_name: str) -> Type:
+        if property_name in (
+            "is_local",
+            "is_staging",
+            "is_production",
+        ):
+            return bool
+
+        raise ValueError(f"Unexpected test env property: {property_name}")
+
 
 def ingest_mappingest_json_schema_path(version_str: str) -> str:
     return os.path.join(
@@ -219,6 +232,9 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
     def _run_parse_for_ingest_view(
         self,
         ingest_view_name: str,
+        is_production: bool = False,
+        is_staging: bool = False,
+        is_local: bool = False,
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
@@ -237,6 +253,11 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             ingest_view_name=ingest_view_name
         ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
+            context=IngestViewContentsContext(
+                is_production=is_production,
+                is_staging=is_staging,
+                is_local=is_local,
+            ),
         )
 
         # Additionally, check that the manifest is allowed by the YAML schema definition
@@ -1637,6 +1658,88 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_condition_env_property_production_secondary(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA ROSE",
+                gender=FakeGender.FEMALE,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_env_property", is_production=True
+        )
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_env_property_staging_local(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA",
+                gender=FakeGender.FEMALE,
+                birthdate=datetime.date(1962, 1, 29),
+            ),
+            FakePerson(
+                fake_state_code="US_XX", name="HANNAH", gender=FakeGender.FEMALE
+            ),
+            FakePerson(fake_state_code="US_XX", name="JULIA", gender=FakeGender.FEMALE),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_env_property", is_production=False, is_local=True
+        )
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_boolean_condition_env_property_production_local(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ANNA ROSE",
+                birthdate=datetime.date(1962, 1, 29),
+                gender=FakeGender.MALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="HANNAH ROSE",
+                birthdate=None,
+                gender=FakeGender.MALE,
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JULIA ROSE",
+                birthdate=None,
+                gender=FakeGender.MALE,
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_ingest_view(
+            "boolean_condition_env_property", is_production=True, is_local=True
+        )
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_boolean_condition_enum_raw_text(self) -> None:
         # Arrange
         expected_output = [
@@ -2351,6 +2454,67 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             self.compiler.compile_manifest(
                 ingest_view_name="set_primary_key_no_external_id"
             )
+
+    def test_should_launch_environment_matches(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                birthdate=datetime.date(1962, 1, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                birthdate=datetime.date(1954, 4, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="COSMOS KRAMER",
+                external_ids=[],
+            ),
+        ]
+        results = self._run_parse_for_ingest_view(
+            "should_launch", is_staging=True, is_local=True
+        )
+        self.assertEqual(results, expected_output)
+
+        results = self._run_parse_for_ingest_view(
+            "should_launch_inverse", is_staging=True
+        )
+        self.assertEqual(results, expected_output)
+
+        results = self._run_parse_for_ingest_view(
+            "should_launch_inverse", is_staging=False
+        )
+        self.assertEqual(results, expected_output)
+
+    def test_should_launch_environment_doesnt_match(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view \[should_launch\] because should_launch is false.",
+        ):
+            _ = self._run_parse_for_ingest_view("should_launch", is_production=True)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view \[should_launch_inverse\] because should_launch is false.",
+        ):
+            _ = self._run_parse_for_ingest_view(
+                "should_launch_inverse",
+                is_local=True,
+                is_staging=True,
+            )
+
+    def test_env_property_names_returned_bool_env_property(self) -> None:
+        manifest = self.compiler.compile_manifest(
+            ingest_view_name="boolean_condition_env_property"
+        )
+        self.assertSetEqual(
+            manifest.output.env_properties_referenced(),
+            {"is_production", "is_local"},
+        )
 
     def test_get_hydrated_entities(self) -> None:
         manifest = self.compiler.compile_manifest(ingest_view_name="enum_variable")

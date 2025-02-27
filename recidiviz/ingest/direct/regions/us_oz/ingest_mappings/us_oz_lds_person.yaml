@@ -2,6 +2,8 @@
 # This file associates the columns outputted from the query in `view_vfds_person` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
+launch_env:
+  $env: is_local
 input_columns:
   ID: STRING
   FirstName: STRING

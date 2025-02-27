@@ -148,9 +148,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nc",
     ingest_view_name="incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    # Output for this view currently crashes with normalization errors - limit to only run in tests.
-    # Presumably we will start over with new views if we were to start real product development for NC.
-    testing_only=True,
 )
 
 if __name__ == "__main__":

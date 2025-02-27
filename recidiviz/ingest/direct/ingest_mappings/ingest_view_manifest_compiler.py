@@ -26,9 +26,14 @@ from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
+    BooleanLiteralManifest,
     EntityTreeManifest,
     EntityTreeManifestFactory,
+    ManifestNode,
     VariableManifestNode,
     build_manifest_from_raw_typed,
 )
@@ -52,6 +57,7 @@ class IngestViewManifest:
     ingest_view_name: str
     manifest_language_version: str
     unused_columns: List[str]
+    should_launch_manifest: ManifestNode[bool]
     output: EntityTreeManifest
 
     # Dictionary containing column to type
@@ -82,6 +88,10 @@ class IngestViewManifest:
     def input_columns(self) -> list[str]:
         return sorted(self.input_column_to_type.keys())
 
+    def should_launch(self, context: IngestViewContentsContext) -> bool:
+        should_launch_value = self.should_launch_manifest.build_from_row({}, context)
+        return should_launch_value if should_launch_value is not None else True
+
     def hydrated_entity_classes(self) -> Set[Type[Entity]]:
         return {
             node.entity_cls
@@ -93,6 +103,7 @@ class IngestViewManifest:
         self,
         *,
         contents_iterator: Iterable[Dict[str, str]],
+        context: IngestViewContentsContext,
         result_callable: Optional[
             Callable[[int, Dict[str, str], Union[Entity, Exception]], None]
         ] = None,
@@ -101,15 +112,22 @@ class IngestViewManifest:
         entities.
         """
         result = []
+        if not self.should_launch(context):
+            raise ValueError(
+                f"Cannot parse results for ingest view [{self.ingest_view_name}] "
+                f"because should_launch is false."
+            )
+
         input_column_names = set(self.input_column_to_type.keys())
 
         for i, row in enumerate(contents_iterator):
+
             self._validate_row_columns(
                 row_number=i, row=row, expected_columns=input_column_names
             )
 
             try:
-                output_tree = self.output.build_from_row(row)
+                output_tree = self.output.build_from_row(row, context)
             except Exception as e:
                 if result_callable:
                     result_callable(i, row, e)
@@ -197,6 +215,17 @@ class IngestViewManifestCompiler:
                 )
                 variable_manifests[variable_name] = variable_manifest
 
+        raw_launch_env_manifest = manifest_dict.pop_dict_optional("launch_env")
+        if raw_launch_env_manifest:
+            should_launch_manifest = build_manifest_from_raw_typed(
+                raw_field_manifest=raw_launch_env_manifest,
+                delegate=self.delegate,
+                variable_manifests=variable_manifests,
+                expected_result_type=bool,
+            )
+        else:
+            should_launch_manifest = BooleanLiteralManifest(value=True)
+
         raw_entity_manifest = manifest_dict.pop_dict("output")
         entity_cls_name = one(raw_entity_manifest.keys())
         entity_cls = self.delegate.get_entity_cls(entity_cls_name=entity_cls_name)
@@ -209,8 +238,7 @@ class IngestViewManifestCompiler:
 
         if len(manifest_dict):
             raise ValueError(
-                f"Found unused keys in ingest view manifest: {manifest_dict.keys()} "
-                f"Manifest at: {manifest_path}"
+                f"Found unused keys in ingest view manifest: {manifest_dict.keys()}"
             )
 
         self._validate_input_columns_lists(
@@ -229,6 +257,7 @@ class IngestViewManifestCompiler:
             manifest_language_version=version,
             input_column_to_type=input_columns,
             unused_columns=unused_columns,
+            should_launch_manifest=should_launch_manifest,
             output=output_manifest,
         )
 

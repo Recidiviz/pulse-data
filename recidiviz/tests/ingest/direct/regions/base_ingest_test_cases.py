@@ -32,6 +32,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
@@ -170,6 +173,7 @@ class StateIngestMappingTestCase(BaseStateIngestTestCase):
         )
         parsed_ingest_view_results = manifest.parse_contents(
             contents_iterator=ingest_view_results,
+            context=IngestViewContentsContext.build_for_tests(),
         )
 
         # Build expected entity trees by loading the representation from a fixture
@@ -224,4 +228,5 @@ class EnumManifestParsingTestCase(BaseStateIngestTestCase):
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
+                context=IngestViewContentsContext.build_for_tests(),
             )

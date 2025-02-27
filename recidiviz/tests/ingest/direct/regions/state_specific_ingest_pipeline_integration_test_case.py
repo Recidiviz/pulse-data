@@ -22,6 +22,9 @@ import apache_beam as beam
 from apache_beam.pvalue import PBegin
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
@@ -73,8 +76,17 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         self.mock_environment_fn = self.environment_patcher.start()
         self.mock_environment_fn.return_value = True
 
+        self.context_patcher = patch(
+            "recidiviz.pipelines.ingest.state.pipeline.IngestViewContentsContext.build_for_project"
+        )
+        self.context_patcher_fn = self.context_patcher.start()
+        self.context_patcher_fn.return_value = (
+            IngestViewContentsContext.build_for_tests()
+        )
+
     def tearDown(self) -> None:
         self.environment_patcher.stop()
+        self.context_patcher_fn.stop()
         super().tearDown()
 
     def generate_ingest_view_results_for_one_date(
