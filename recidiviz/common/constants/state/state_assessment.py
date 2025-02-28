@@ -115,6 +115,8 @@ class StateAssessmentType(StateEntityEnum):
     ACCAT = state_enum_strings.state_assessment_type_accat
     RSLS = state_enum_strings.state_assessment_type_rsls
     CCRRA = state_enum_strings.state_assessment_type_ccrra
+    AZ_GEN_RISK_LVL = state_enum_strings.state_assessment_type_az_gen_risk_lvl
+    AZ_VLNC_RISK_LVL = state_enum_strings.state_assessment_type_az_vlnc_risk_lvl
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -181,6 +183,8 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.ACCAT: "Arizona Community Corrections Assessment Tool",
     StateAssessmentType.RSLS: "Reclassification Security Level Scoresheet (RSLS)",
     StateAssessmentType.CCRRA: "Arizona Community Corrections Risk Release Assessment",
+    StateAssessmentType.AZ_GEN_RISK_LVL: "Arizona Community General Risk Level",
+    StateAssessmentType.AZ_VLNC_RISK_LVL: "Arizona Community Violence Risk Level",
 }
 
 

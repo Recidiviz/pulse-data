@@ -224,6 +224,8 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.ACCAT,
                 StateAssessmentType.RSLS,
                 StateAssessmentType.CCRRA,
+                StateAssessmentType.AZ_GEN_RISK_LVL,
+                StateAssessmentType.AZ_VLNC_RISK_LVL,
             ]:
                 logging.warning(
                     "Cannot determine assessment score bucket - assessment type %s is unsupported.",

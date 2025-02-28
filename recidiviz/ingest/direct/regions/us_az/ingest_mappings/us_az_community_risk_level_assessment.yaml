@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `community_risk_level_assessment`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  PERSON_ID: STRING
+  CMNT_GNRL_RSK_LVL: STRING
+  CMNT_VLNC_RSK_LVE: STRING
+  DATE_CREATED: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - PERSON_ID
+                - $literal("GEN_RISK")
+                - DATE_CREATED
+          assessment_date: DATE_CREATED
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          # This is a community general risk level
+          assessment_type: $literal_enum(StateAssessmentType.AZ_GEN_RISK_LVL)
+          assessment_score: CMNT_GNRL_RSK_LVL
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - PERSON_ID
+                - $literal("VLNC_RISK")
+                - DATE_CREATED
+          assessment_date: DATE_CREATED
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          # This is a community violence risk level
+          assessment_type: $literal_enum(StateAssessmentType.AZ_VLNC_RISK_LVL)
+          assessment_score: CMNT_VLNC_RSK_LVE

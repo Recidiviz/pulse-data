@@ -150,6 +150,8 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_accat,
     state_enum_strings.state_assessment_type_rsls,
     state_enum_strings.state_assessment_type_ccrra,
+    state_enum_strings.state_assessment_type_az_gen_risk_lvl,
+    state_enum_strings.state_assessment_type_az_vlnc_risk_lvl,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_assessment_type",

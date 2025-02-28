@@ -70,7 +70,7 @@ USING
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
-    ingest_view_name="assessment",
+    ingest_view_name="accat_assessment",
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 

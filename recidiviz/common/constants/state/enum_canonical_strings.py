@@ -102,6 +102,8 @@ state_assessment_type_tx_rt = "TX_RT"
 state_assessment_type_accat = "ACCAT"
 state_assessment_type_rsls = "RSLS"
 state_assessment_type_ccrra = "CCRRA"
+state_assessment_type_az_gen_risk_lvl = "AZ_GEN_RISK_LVL"
+state_assessment_type_az_vlnc_risk_lvl = "AZ_VLNC_RISK_LVL"
 
 state_assessment_level_minimum = "MINIMUM"
 state_assessment_level_low = "LOW"
