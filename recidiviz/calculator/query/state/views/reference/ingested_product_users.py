@@ -16,6 +16,9 @@
 # =============================================================================
 """View containing users that may have access to Polaris products that we receive via ingest."""
 
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -83,7 +86,10 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
             "experiment-" || experiment_id || "-" || variant_id as experiment_role,
             unit_id as email_address
         FROM `{{project_id}}.experiments_metadata.experiment_assignments_materialized`
-        WHERE unit_type IN ("OFFICER", "UNIT")
+        WHERE unit_type IN (
+            "{MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER.value}",
+            "{MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER.value}"
+        )
     ),
     all_users_with_experiments AS (
         SELECT all_users.* EXCEPT(roles),
