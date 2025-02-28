@@ -80,6 +80,7 @@ SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "report_type",
         "external_id",
         "district",
+        "investigation_status",
     ],
 )
 

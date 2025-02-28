@@ -30,7 +30,8 @@ WITH
         countyLoc.LocationName AS county,
         PSIReportId AS external_id,
         id.person_id,
-        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') as district
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') as district,
+        ist.InvestigationStatusDesc AS investigation_status
     FROM 
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc 
@@ -43,6 +44,8 @@ WITH
         ON psi.AssignedToUserId = e.EmployeeId 
     LEFT JOIN `{project_id}.reference_views.location_metadata_materialized` lmm
         ON lmm.state_code = "US_IX" AND lmm.location_external_id =  CONCAT("ATLAS-",loc.LocationId)
+    LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_InvestigationStatus_latest` ist
+        USING (InvestigationStatusId)
     WHERE e.Inactive = "0" AND
     -- Make sure that case is either not completed or completed within the last 3 months 
     (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR CompletedDate IS NULL)
@@ -135,6 +138,7 @@ WITH
         lsir_level,
         report_type,
         county,
-        district
+        district,
+        investigation_status
     FROM case_info_with_report_type_and_assessment
 """

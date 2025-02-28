@@ -293,6 +293,9 @@ US_IX:
   clsf_OffenderSecurityLevelAct:
     task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
       Needed to identify discretionary overrides. 01/23/2025
+  com_InvestigationStatus:
+    sentencing_views.sentencing_case_record: |-
+      Used to determine investigation status of a case 02/28/2025
   com_PSIReport:
     sentencing_views.sentencing_case_record: |-
       Used to grab PSI information. 05/21/24

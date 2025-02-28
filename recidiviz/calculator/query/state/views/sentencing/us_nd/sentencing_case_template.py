@@ -89,6 +89,7 @@ SELECT
   -- Pick the first non-null county, if one exists
   COALESCE(court_to_county1.county, court_to_county2.county, court_to_county3.county) AS county,
   CAST(NULL AS STRING) AS district,
+  CAST(NULL AS STRING) AS investigation_status,
 FROM
   psi
 LEFT JOIN
