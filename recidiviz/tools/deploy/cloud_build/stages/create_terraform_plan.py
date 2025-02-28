@@ -104,7 +104,6 @@ def get_terraform_plan_step(
         env=[TERRAFORM_CLI_ARGS_ENV],
         secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
         wait_for=wait_for,
-        timeout="900s",  # 15 min timeout
     )
 
 
@@ -155,7 +154,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
             name="alpine",
             command="cp -r /workspace/recidiviz/* /app/recidiviz",
             volumes=[RECIDIVIZ_SOURCE_VOLUME],
-            timeout_seconds=(15 * 60),  # 15 min timeout
         )
 
         create_airflow_source_manifest = build_step_for_shell_command(
@@ -170,7 +168,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
             volumes=[RECIDIVIZ_SOURCE_VOLUME],
             env=["HOME=/home/recidiviz"],
             wait_for=[copy_git_source_to_volume.id],
-            timeout_seconds=(15 * 60),  # 15 min timeout
         )
 
         terraform_init = BuildStep(
@@ -184,7 +181,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 "-reconfigure",
             ],
             env=[TERRAFORM_CLI_ARGS_ENV],
-            timeout="900s",  # 15 min timeout
         )
 
         terraform_plan = get_terraform_plan_step(
@@ -215,8 +211,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                     env=[TERRAFORM_CLI_ARGS_ENV],
                     secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
                     wait_for=[terraform_plan.id],
-                    # No timeout for this step - this could take a long time for certain
-                    # upgrades, e.g. upgrades to Cloud Composer versions.
                 )
             )
 
@@ -227,7 +221,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                     command="git fetch origin $_COMMIT_REF && git checkout $_COMMIT_REF",
                     id_="Fetch webhook-specified commit",
                     name=BUILDER_GIT,
-                    timeout_seconds=(15 * 60),  # 15 min timeout
                 ),
             )
 
@@ -258,7 +251,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                         ),
                         volumes=[RECIDIVIZ_SOURCE_VOLUME],
                         wait_for=[STEP_SHOW_TERRAFORM_PLAN],
-                        timeout_seconds=(15 * 60),  # 15 min timeout
                     ),
                 ]
             )
@@ -266,10 +258,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
         return BuildConfiguration(
             steps=build_steps,
             uses_source=True,
-            # 90 min timeout for the overall job - we expect most runs to take much less
-            # time than this, but some infrastructure updates may take a long time and
-            # we don't want to fail those in the middle.
-            timeout_seconds=90 * 60,
+            timeout_seconds=15 * 60,
             secrets=[PAGERDUTY_SECRET_NAME],
             machine_type=assert_type(
                 BuildOptions.MachineType.E2_HIGHCPU_32,
