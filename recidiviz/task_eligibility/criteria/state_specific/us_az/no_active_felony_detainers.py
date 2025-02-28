@@ -66,11 +66,7 @@ _QUERY_TEMPLATE = f"""
         ON
           ADC_NUMBER = external_id
         WHERE
-          status.DESCRIPTION IN (
-            'Detainer Saved',
-            -- This status has only appeared 25 times ever, but we got feedback that
-            -- it is enough to be disqualifying. 
-             'Awaiting Extradition')
+          status.DESCRIPTION != 'Cancelled'
           -- Time Comp told us these types of detainers are not disqualifying.
           AND TYPE_ID NOT IN (
             '1976', -- Notification Request
