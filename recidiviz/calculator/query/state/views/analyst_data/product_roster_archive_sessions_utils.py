@@ -186,6 +186,31 @@ registration_sessions AS (
         table_2_columns=["is_registered"]
     )}
 )
+,
+inferred_facility_location_sessions AS (
+    SELECT
+        a.state_code,
+        LOWER(b.email) AS {product_name_str}_user_email_address,
+        a.primary_facility AS facility_inferred,
+        a.start_date,
+        a.end_date_exclusive,
+    FROM
+        `{{project_id}}.sessions.incarceration_staff_inferred_location_sessions_materialized` a
+    LEFT JOIN `{{project_id}}.normalized_state.state_staff` b
+    ON
+        incarceration_staff_id = staff_id
+)
+,
+registration_sessions_with_inferred_location AS (
+    {create_intersection_spans(
+        table_1_name="registration_sessions",
+        table_2_name="inferred_facility_location_sessions",
+        index_columns=["state_code", f"{product_name_str}_user_email_address"],
+        use_left_join=True,
+        table_1_columns=["system_type", "location_id", "is_primary_user", "is_registered"],
+        table_2_columns=["facility_inferred"]
+    )}
+)
 SELECT
     registration_sessions.state_code,
     registration_sessions.{f"{product_name_str}_user_email_address"},
@@ -200,8 +225,8 @@ SELECT
     -- that use office as the location ID in the product roster
     ANY_VALUE(
         CASE system_type
-        WHEN "SUPERVISION" THEN IFNULL(supervision_district, location_id)
-        WHEN "INCARCERATION" THEN IFNULL(facility, location_id)
+        WHEN "SUPERVISION" THEN COALESCE(supervision_district, location_id)
+        WHEN "INCARCERATION" THEN COALESCE(facility, facility_inferred, location_id)
         ELSE location_id END
     ) AS location_id,
     ANY_VALUE(
@@ -210,7 +235,7 @@ SELECT
         WHEN "INCARCERATION" THEN facility_name END
     ) AS location_name,
 FROM
-    registration_sessions
+    registration_sessions_with_inferred_location registration_sessions
 LEFT JOIN
     `{{project_id}}.normalized_state.state_staff` staff
 ON
@@ -240,7 +265,7 @@ ON
         -- Incarceration locations joining on facility
         OR (
             system_type = "INCARCERATION" 
-            AND location_id = facility
+            AND location_id = COALESCE(facility, facility_inferred)
         )
     )
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9

@@ -122,6 +122,12 @@ from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_attribute_sessions import (
+    INCARCERATION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_caseload_count_spans import (
+    INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
@@ -507,6 +513,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         table_id="meets_risk_assessment_standards",
     ): (
         "This criteria view will eventually be referenced by Texas tasks (Sophie 02/13/2024)"
+    ),
+    INCARCERATION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER.address: (
+        "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
+    ),
+    INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER.address: (
+        "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
     ),
 }
 

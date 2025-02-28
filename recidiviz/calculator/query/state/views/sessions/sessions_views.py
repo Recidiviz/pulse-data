@@ -111,6 +111,15 @@ from recidiviz.calculator.query.state.views.sessions.incarceration_projected_com
 from recidiviz.calculator.query.state.views.sessions.incarceration_staff_assignment_sessions_preprocessed import (
     INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_attribute_sessions import (
+    INCARCERATION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_caseload_count_spans import (
+    INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_inferred_location_sessions import (
+    INCARCERATION_STAFF_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -436,4 +445,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_UT_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     VIOLATION_RESPONSES_VIEW_BUILDER,
     WORK_RELEASE_SESSIONS_VIEW_BUILDER,
+    INCARCERATION_STAFF_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,
+    INCARCERATION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
+    INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
 ]
