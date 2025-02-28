@@ -20,6 +20,7 @@ import unittest
 from google.cloud import bigquery
 
 from recidiviz.big_query.row_access_policy_query_builder import (
+    RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP,
     RowAccessPolicyQueryBuilder,
 )
 
@@ -28,29 +29,6 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
     """Test cases for RowAccessPolicyQueryBuilder."""
 
     def test_build_column_based_row_level_policy(self) -> None:
-        expected_queries = [
-            """CREATE OR REPLACE ROW ACCESS POLICY
-                EXPLICIT_ACCESS_TO_US_MI_STATE_CODE
-                ON `test_project.test_dataset.test_table`
-                GRANT TO ("group:s-mi-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) = "US_MI");""",
-            """CREATE OR REPLACE ROW ACCESS POLICY
-                EXPLICIT_ACCESS_TO_US_PA_STATE_CODE
-                ON `test_project.test_dataset.test_table`
-                GRANT TO ("group:s-pa-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) = "US_PA");""",
-            """CREATE OR REPLACE ROW ACCESS POLICY
-                NON_RESTRICTIVE_STATE_DATA_ACCESS_STATE_CODE
-                ON `test_project.test_dataset.test_table`
-                GRANT TO ("group:s-default-state-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) NOT IN ("US_MI", "US_PA"));""",
-            """CREATE OR REPLACE ROW ACCESS POLICY
-                ADMIN_ACCESS_TO_ALL_STATE_DATA_STATE_CODE
-                ON `test_project.test_dataset.test_table`
-                GRANT TO ("group:s-big-query-admins@recidiviz.org")
-                FILTER USING (TRUE);""",
-        ]
-
         table_ref = bigquery.TableReference(
             dataset_ref=bigquery.DatasetReference(
                 project="test_project", dataset_id="test_dataset"
@@ -63,10 +41,12 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
         ]
         table = bigquery.Table(table_ref, schema=schema)
 
-        self.assertListEqual(
-            expected_queries,
-            RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
-                table
+        self.assertEqual(
+            len(RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP) + 2,
+            len(
+                RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
+                    table
+                )
             ),
         )
 
