@@ -320,16 +320,25 @@ def parse_staff_caseload_type(raw_text: str) -> Optional[StateStaffCaseloadType]
     return StateStaffCaseloadType.INTERNAL_UNKNOWN
 
 
-def parse_supervision_level(
-    supervision_level: str, admission_reason: str
-) -> Optional[StateSupervisionLevel]:
+def parse_supervision_level(raw_text: str) -> Optional[StateSupervisionLevel]:
     """Parses a person's supervision level based first on whether the admission reason
-    for the given subspan means they have absconded or are in custody, and if not, based on
-    their stated supervision level."""
+    for the given subspan means they have absconded or are in custody. If it does not,
+    the function checks if the person is designated to be on 35 days or less of supervision.
+    If that is also not the case, then their assessed supervision level is used."""
+
+    supervision_level, inmate_type, admission_reason = raw_text.split("@@")
+
     if admission_reason == "Releasee Abscond":
         return StateSupervisionLevel.ABSCONSION
     if admission_reason in ("Temporary Placement", "In Custody - Other"):
         return StateSupervisionLevel.IN_CUSTODY
+
+    # If a DPP_ID has an indicator that the person is on 35 days or less of supervision,
+    # assign them to LIMITED supervision. We will differentiate these from administrative
+    # supervision levels assigned below using raw text values.
+    if inmate_type:
+        if inmate_type == "35 Day":
+            return StateSupervisionLevel.LIMITED
 
     # If neither of the above cases are true, then base supervision level off of the
     # supervision_level field directly.

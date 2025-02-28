@@ -252,6 +252,17 @@ FROM periods
 LEFT JOIN {DPP_EPISODE} DPPE USING(DPP_ID)
 LEFT JOIN {DPP_OFFICE_LOCATION} DOL ON(periods.OFFICE = DOL.OFFICE_LOCATION_ID)
 LEFT JOIN {MEA_PROFILES} MEA ON (periods.OFFICER = MEA.USERID)
+), 
+-- For each DPP_ID, attach the "inmate type" provided in ACIS if and only if it indicates
+-- that a client has less than 35 days to serve on supervision upon their release.
+admin_35day_indicator AS (
+SELECT DISTINCT
+    ITYPE.DPP_ID, 
+    TYPE_LOOKUP.CODE AS INMATE_TYPE -- "35 Day"
+FROM {DOC_INMATE_TYPE} ITYPE
+LEFT JOIN {LOOKUPS} TYPE_LOOKUP
+ON(INMATE_TYPE_ID = LOOKUP_ID)
+WHERE INMATE_TYPE_ID = '17290' -- "35 Days or less supervisions"
 )
 SELECT * FROM (
 SELECT 
@@ -260,6 +271,7 @@ SELECT
     OFFICE,
     OFFICER,
     SUPV_LEVEL,
+    INMATE_TYPE,
     -- in the DPP_EPISODE table, 0001-01-01 is used in place of NULL. 
     -- When there are legitimate episodes associated with those dates based on data in other tables,
     -- we want to update that date to be the closest real date we know to be a part of the period. 
@@ -282,6 +294,8 @@ SELECT
         WHEN end_reason LIKE 'END - %' OR end_reason = 'DPPE END' THEN 4
     END) AS period_seq
 FROM infer_ends
+LEFT JOIN admin_35day_indicator
+USING(DPP_ID)
 WHERE start_reason NOT LIKE "END - %"
 AND start_reason NOT LIKE '%DPPE END'
 )

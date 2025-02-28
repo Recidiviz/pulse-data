@@ -8,6 +8,7 @@ input_columns:
   DPP_ID: STRING
   OFFICER: STRING
   SUPV_LEVEL: STRING
+  INMATE_TYPE: STRING
   start_date: DATETIME
   end_date: DATETIME
   start_reason: STRING
@@ -126,11 +127,15 @@ output:
                   - INFERRED MIGRATION ERROR
                   - Duplicate ADC Number Activation
           supervision_level:
-            $custom:
-              $function: us_az_custom_enum_parsers.parse_supervision_level
-              $args:
-                supervision_level: SUPV_LEVEL
-                admission_reason: start_reason
+            $enum_mapping:
+              $custom_parser: us_az_custom_enum_parsers.parse_supervision_level
+              $raw_text:
+                $concat:
+                  $values:
+                    - SUPV_LEVEL
+                    - INMATE_TYPE
+                    - start_reason
+                  $separator: "@@"
           supervision_type:
             $conditional:
               - $if:
