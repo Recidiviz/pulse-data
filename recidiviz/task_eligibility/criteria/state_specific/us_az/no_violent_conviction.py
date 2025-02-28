@@ -38,7 +38,9 @@ _CRITERIA_NAME = "US_AZ_NO_VIOLENT_CONVICTION"
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
     # Some offenses considered violent need to be added into our filter as they are not covered by sent.is_violent
     statutes_list=_ADDL_INELIGIBLE_VIOLENT_STATUTES,
-    additional_where_clauses="OR (sent.is_violent AND span.state_code = 'US_AZ')",
+    additional_where_clauses="OR (sent.is_violent AND span.state_code = 'US_AZ') OR "
+    # This includes out of state convictions in a resident's history that may make them ineligible
+    "JSON_VALUE(sentence_metadata, '$.dtp_ineligible_from_previous_conviction') = 'TRUE'",
 )
 
 _REASONS_FIELDS = [

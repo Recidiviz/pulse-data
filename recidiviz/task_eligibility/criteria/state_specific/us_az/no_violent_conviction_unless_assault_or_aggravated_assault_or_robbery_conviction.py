@@ -88,7 +88,9 @@ _QUERY_TEMPLATE = no_current_or_prior_convictions(
     + " OR ".join(
         [f"charge.statute LIKE '%{s}%'" for s in _ADDL_INELIGIBLE_VIOLENT_STATUTES]
     )
-    + ")",
+    + ")"
+    # This includes out of state convictions in a resident's history that may make them ineligible
+    " OR JSON_VALUE(sentence_metadata, '$.tpr_ineligible_from_previous_conviction') = 'TRUE'",
 )
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
