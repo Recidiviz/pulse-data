@@ -28,7 +28,7 @@
     "react-dom": "^17.0.0",
     "react-draggable": "^4.4.3",
     "react-modal": "^3.14.3",
-    "react-router": "^5.2.1",
+    "react-router": "^6.30.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^5.0.0",
     "semiotic": "^1.20.6",
