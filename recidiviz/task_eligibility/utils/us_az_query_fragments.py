@@ -412,7 +412,10 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
             WHEN is_eligible THEN "ALMOST_ELIGIBLE_BETWEEN_7_AND_180_DAYS"
             WHEN ARRAY_LENGTH(ineligible_criteria) = 1
                 THEN CASE
-                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY_{opp_name.upper()}" IN UNNEST(ineligible_criteria)
+                    -- criteria name for DTP
+                    WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY" IN UNNEST(ineligible_criteria)
+                    -- criteria name for TPR
+                    OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_MISSING_MANLIT_BETWEEN_7_AND_180_DAYS"
                     WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_BETWEEN_181_AND_365_DAYS"
@@ -423,7 +426,10 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
             WHEN is_eligible THEN "ALMOST_ELIGIBLE_1"
             WHEN ARRAY_LENGTH(ineligible_criteria) = 1
                 THEN CASE
-                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY_{opp_name.upper()}" IN UNNEST(ineligible_criteria)
+                    -- criteria name for DTP
+                    WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY" IN UNNEST(ineligible_criteria)
+                    -- criteria name for TPR
+                    OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_1"
                     WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_2"
