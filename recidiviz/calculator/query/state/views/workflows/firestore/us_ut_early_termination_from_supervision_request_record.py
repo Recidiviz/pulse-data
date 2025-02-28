@@ -46,6 +46,27 @@ WITH all_current_spans AS (
 )}
 ),
 
+all_current_spans_with_tab_names AS (
+    SELECT 
+        *,
+        CASE 
+            WHEN reasons_unnested = 'SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE' THEN 'EARLY_REQUESTS'
+            WHEN reasons_unnested IN ('SUPERVISION_CONTINUOUS_EMPLOYMENT_FOR_3_MONTHS', 'US_UT_HAS_COMPLETED_ORDERED_ASSESSMENTS') THEN 'REPORT_DUE_ALMOST_ELIGIBLE'
+            ELSE 'REPORT_DUE_ELIGIBLE'
+        END AS metadata_tab_name
+    FROM all_current_spans, 
+    UNNEST(ineligible_criteria) AS reasons_unnested
+    -- This is to future-proof this query. If we ever allow people to be almost eligible
+    -- for two or more criteria, this will make sure we don't have duplicates in our final query.
+    -- Additionally, it will make sure anyone who is missing the half-time date criteria
+    -- is assigned to the 'EARLY_REQUESTS' tab.
+    QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY state_code, person_id 
+        ORDER BY CASE reasons_unnested
+            WHEN 'SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE' THEN 1
+            ELSE 2 END) = 1
+),
+
 case_notes_cte AS (
     # TODO(#38490): This is a placeholder for now. We need to update this to the actual case notes table
     SELECT 
@@ -55,10 +76,12 @@ case_notes_cte AS (
 ),
 
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id(from_cte="all_current_spans", left_join_cte="case_notes_cte")}
+{array_agg_case_notes_by_external_id(from_cte="all_current_spans_with_tab_names", left_join_cte="case_notes_cte")}
 )
 
-{opportunity_query_final_select_with_case_notes(from_cte="all_current_spans")}
+{opportunity_query_final_select_with_case_notes(
+    from_cte="all_current_spans_with_tab_names",
+    additional_columns="metadata_tab_name",)}
 """
 
 US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
