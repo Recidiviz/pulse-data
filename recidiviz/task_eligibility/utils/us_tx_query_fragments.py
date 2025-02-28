@@ -196,7 +196,7 @@ divided_periods_with_contacts as (
     FROM divided_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
-        AND ci.contact_date BETWEEN p.month_start and p.period_end 
+        AND ci.contact_date BETWEEN p.month_start and DATE_SUB(p.period_end, INTERVAL 1 DAY)
         AND ci.contact_type = "{contact_type}"
     WHERE period_end is not null
     GROUP BY p.person_id, month_start, month_end, period_start, period_end, contact_type, quantity
@@ -239,7 +239,7 @@ periods AS (
     LEFT JOIN contact_info ci
         ON lc.person_id = ci.person_id
         AND ci.contact_type = lc.contact_type
-        AND ci.contact_date <= period_end
+        AND ci.contact_date < period_end
     GROUP BY person_id,month_start,month_end,lc.contact_type,contact_count,quantity, period_start, period_end
 )
 SELECT 
