@@ -36,20 +36,27 @@ _QUERY_TEMPLATE = """
         person_id,
         assessment_date AS start_date,
         score_end_date_exclusive AS end_date,
-        TRUE AS meets_criteria,
-        TO_JSON(STRUCT(assessment_score AS assessment_score)) AS reason,
-        assessment_score, 
+        JSON_VALUE(assessment_metadata, '$.LEVEL') = 'MINIMUM' AS meets_criteria,
+        TO_JSON(STRUCT(
+            assessment_score AS assessment_score,
+            JSON_VALUE(assessment_metadata, '$.LEVEL') AS assessment_level)) AS reason,
+        assessment_score,
+        JSON_VALUE(assessment_metadata, '$.LEVEL') AS assessment_level,
     FROM `{project_id}.sessions.assessment_score_sessions_materialized`
     WHERE state_code= 'US_AZ'
         AND assessment_type = 'CCRRA'
-        AND assessment_class = 'RISK'
-        AND JSON_VALUE(assessment_metadata, '$.LEVEL') = 'MINIMUM'"""
+        AND assessment_class = 'RISK'"""
 
 _REASONS_FIELDS = [
     ReasonsField(
         name="assessment_score",
         type=bigquery.enums.StandardSqlTypeNames.STRING,
-        description="A score that goes from 0-60.",
+        description="Assessment score ranging from 0 to 60.",
+    ),
+    ReasonsField(
+        name="assessment_level",
+        type=bigquery.enums.StandardSqlTypeNames.STRING,
+        description="Assessment level",
     ),
 ]
 
