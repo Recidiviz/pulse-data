@@ -72,7 +72,7 @@ SELECT
   external_id,
   s.full_name,
   s.email,
-  case_ids
+  CONCAT('[', case_ids,']') AS case_ids
 FROM
   psi
 LEFT JOIN
