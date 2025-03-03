@@ -1410,7 +1410,7 @@ US_OR:
       Needed for location information.
   RCDVZ_PRDDTA_OP013P:
     workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to identify which caseload an OR client is on.
 US_OZ:
   validation_incarceration_population:
     us_oz_validation.incarceration_population_person_level: |-

@@ -54,15 +54,24 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         no_supervision_sanctions_within_6_months.VIEW_BUILDER,
+        # Conditional-discharge and diversion cases should be excluded already by our
+        # sentence-level criteria, but we have these person-level exclusions in here as
+        # a backstop against bad data entry, per guidance from ODOC.
         not_on_conditional_discharge_or_diversion_supervision.VIEW_BUILDER,
+        # Similar reasoning for the Second Look exclusion: we presumably shouldn't see
+        # any SL cases coming through to this point anyways, but ODOC uses this
+        # exclusion as another backstop against data-quality issues.
         not_on_second_look_conditional_release.VIEW_BUILDER,
         sentence_eligible.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
-    # Clients are almost eligible in Oregon for earned discharge if they are 2 months away from becoming eligible:
-    #   (Less than 60 days from the latest supervision sanction being 6 months old OR no sanctions in the last 6 months)
+    # Clients are almost eligible in Oregon for earned discharge if they are 2 months
+    # away from becoming eligible:
+    #   (Less than 60 days from the latest supervision sanction being 6 months old
+    #       OR no sanctions in the last 6 months)
     #   AND
-    #   (Less than 60 days from the earliest sentence eligibility date OR at least 1 sentence is eligible)
+    #   (Less than 60 days from the earliest sentence eligibility date
+    #       OR at least 1 sentence is eligible)
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             PickNCompositeCriteriaCondition(
@@ -72,11 +81,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         reasons_date_field="violation_expiration_date",
                         interval_length=60,
                         interval_date_part=BigQueryDateInterval.DAY,
-                        description="Supervision sanction/violation less than 60 days from being 6 months old",
+                        description="Supervision sanction less than 60 days from being 6 months old",
                     ),
                     EligibleCriteriaCondition(
                         criteria=no_supervision_sanctions_within_6_months.VIEW_BUILDER,
-                        description="No supervision sanctions/violations within the past 6 months",
+                        description="No supervision sanctions within the past 6 months",
                     ),
                 ],
                 at_least_n_conditions_true=1,
@@ -92,7 +101,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     ),
                     EligibleCriteriaCondition(
                         criteria=sentence_eligible.VIEW_BUILDER,
-                        description="At least one sentence has passed the earned discharge sentence eligibility date",
+                        description="At least one sentence has passed the EDIS sentence eligibility date",
                     ),
                 ],
                 at_least_n_conditions_true=1,

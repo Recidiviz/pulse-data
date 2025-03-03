@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for relevant sentence metadata needed to support Earned Discharge in Oregon
+"""Collect relevant sentence metadata needed to support Earned Discharge (EDIS) in
+Oregon.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -47,13 +48,14 @@ US_OR_EARNED_DISCHARGE_SANCTIONS_CRITERIA = (
 US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA = sentence_eligible.VIEW_BUILDER.criteria_name
 
 US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
-    WITH eligible_and_almost_eligible_population AS ({join_current_task_eligibility_spans_with_external_id(
-        state_code='"US_OR"',
-        tes_task_query_view="earned_discharge_materialized",
-        id_type='"US_OR_ID"',
-        eligible_and_almost_eligible_only=True,
-    )})
-    ,
+    WITH eligible_and_almost_eligible_population AS (
+        {join_current_task_eligibility_spans_with_external_id(
+            state_code='"US_OR"',
+            tes_task_query_view="earned_discharge_materialized",
+            id_type='"US_OR_ID"',
+            eligible_and_almost_eligible_only=True,
+        )}
+    ),
     -- Create 1 row per person and eligibility criteria
     unnested_criteria_reasons AS (
         SELECT
@@ -102,15 +104,11 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                 criteria_name AS criteria_name,
                 sentence AS reason
             )) AS sentence_criteria_reason,
-        FROM
-            unnested_criteria_reasons,
-        UNNEST
-            -- Unnest the full `active_sentence` array
-            (JSON_QUERY_ARRAY(criteria_reason, "$.reason.active_sentences")) AS sentence
-        WHERE
-            criteria_name = "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
-    )
-    ,
+        FROM unnested_criteria_reasons,
+        -- Unnest the full `active_sentence` array
+        UNNEST (JSON_QUERY_ARRAY(criteria_reason, "$.reason.active_sentences")) AS sentence
+        WHERE criteria_name = "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
+    ),
     -- Aggregate the reasons fields that are already at the person-level
     person_level_reasons AS (
         SELECT
@@ -119,14 +117,11 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
             ARRAY_AGG(
                 criteria_reason ORDER BY JSON_VALUE(criteria_reason, "$.criteria_name")
             ) AS person_criteria_reason,
-        FROM
-            unnested_criteria_reasons
-        WHERE
-            -- Do not include the earned discharge criteria row from the unnested_criteria_reasons CTE
-            criteria_name != "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
+        FROM unnested_criteria_reasons
+        -- Do not include the earned discharge criteria row from the unnested_criteria_reasons CTE
+        WHERE criteria_name != "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
         GROUP BY 1, 2
-    )
-    ,
+    ),
     -- Re-aggregate the reasons blob on the sentence-level (instead of person-level)
     sentences_with_reaggregated_reasons AS (
         SELECT
@@ -142,37 +137,30 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                 person_criteria_reason,
                 [sentence_criteria_reason]
             )) AS reasons,
-        FROM
-            eligible_and_almost_eligible_population
-        INNER JOIN
-            person_level_reasons
-        USING
-            (state_code, person_id)
-        INNER JOIN
-            sentence_level_reasons
-        USING
-            (state_code, person_id)
-    )
-    ,
+        FROM eligible_and_almost_eligible_population
+        INNER JOIN person_level_reasons
+            USING (state_code, person_id)
+        INNER JOIN sentence_level_reasons
+            USING (state_code, person_id)
+    ),
     -- TODO(#24479): Query sentence conditions from preprocessed view
     current_conditions AS (
         SELECT
-            COURT_CASE_NUMBER as court_case_number,
+            COURT_CASE_NUMBER AS court_case_number,
             ARRAY_AGG(STRUCT(
-                COUNTY as county,
-                CONDITION_CODE as condition_code,
-                CONDITION_DESC as condition_description
-            ) ORDER BY COUNTY, CONDITION_CODE, CONDITION_DESC) AS conditions
+                COUNTY AS county,
+                CONDITION_CODE AS condition_code,
+                CONDITION_DESC AS condition_description
+            ) ORDER BY COUNTY, CONDITION_CODE, CONDITION_DESC) AS conditions,
         FROM `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_CISPRDDTA_OPCOND_latest` op
         LEFT JOIN `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_DOCDTA_TBCOND_latest`
-        USING (CONDITION_CODE, CONDITION_TYPE)
+            USING (CONDITION_CODE, CONDITION_TYPE)
         -- Filter to "trackable" conditions, of which a subset are relevant to Earned Discharge.
         -- TODO(#25574): Refine filter once we better understand which conditions are relevant,
         -- and what exactly "trackable" means.
         WHERE op.CONDITION_TRACKABLE = "Y"
         GROUP BY 1
-    )
-    ,
+    ),
     -- Store all relevant sentence-level information in a metadata JSON column
     sentences_with_metadata AS (
         SELECT
@@ -218,29 +206,26 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         LEFT JOIN `{{project_id}}.normalized_state.state_charge` sc
             USING (charge_id)
         LEFT JOIN current_conditions cc
-        ON
-            JSON_EXTRACT_SCALAR(sp.sentence_metadata, "$.COURT_CASE_NUMBER") = cc.court_case_number
+            ON JSON_EXTRACT_SCALAR(sp.sentence_metadata, "$.COURT_CASE_NUMBER") = cc.court_case_number
         -- Only keep active sentences that are eligible or almost eligible for earned discharge
         WHERE (sentence_is_eligible OR sentence_is_almost_eligible)
-    )
-    ,
+    ),
     programming AS (
         SELECT
             state_code,
             person_id,
             ARRAY_AGG(STRUCT(
-                DATE(ENTRY_DATE) as entry_date,
-                DATE(EXIT_DATE) as exit_date,
+                DATE(ENTRY_DATE) AS entry_date,
+                DATE(EXIT_DATE) AS exit_date,
                 TREAT_ID AS treatment_id,
-                EXIT_CODE as exit_code
-            ) ORDER BY ENTRY_DATE DESC) AS programs
+                EXIT_CODE AS exit_code
+            ) ORDER BY ENTRY_DATE DESC) AS programs,
         FROM `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_CISPRDDTA_CMOFFT_latest` prog
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON prog.RECORD_KEY = pei.external_id
             AND pei.id_type = "US_OR_RECORD_KEY"
         GROUP BY 1, 2
-    )
-    ,
+    ),
     current_supervision_type AS (
         SELECT
             state_code,
@@ -248,7 +233,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
             /* In case someone has multiple open supervision periods, pull just distinct
             supervision types. */
             ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type,
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
+        FROM `{{project_id}}.normalized_state.state_supervision_period`
         WHERE state_code="US_OR"
         AND termination_date IS NULL
         GROUP BY 1, 2
@@ -276,11 +261,11 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         current_supervision_type.supervision_type AS metadata_supervision_type,
     FROM sentences_with_metadata
     INNER JOIN `{{project_id}}.workflows_views.sentence_id_to_opportunity_id` opp_ids
-    USING (state_code, person_id, sentence_id)
+        USING (state_code, person_id, sentence_id)
     LEFT JOIN programming
-    USING (state_code, person_id)
+        USING (state_code, person_id)
     LEFT JOIN current_supervision_type
-    USING (state_code, person_id)
+        USING (state_code, person_id)
 """
 
 US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

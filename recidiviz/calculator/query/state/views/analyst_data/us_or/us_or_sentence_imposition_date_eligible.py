@@ -79,13 +79,19 @@ US_OR_SENTENCE_IMPOSITION_DATE_ELIGIBLE_QUERY_TEMPLATE = f"""
                 comes from in this case), all parole sentences are post-prison
                 sentences, so when looking for post-prison sentences we can filter to
                 sentences having 'PAROLE' as their supervision type. */
-                WHEN ((supervision_type='PAROLE') AND (date_imposed>='2022-01-01')) THEN DATE('2022-01-01')
+                WHEN (
+                    (supervision_type='PAROLE')
+                    AND (date_imposed>='2022-01-01')
+                ) THEN DATE('2022-01-01')
                 /* A later bill (Senate Bill 581 [2023], which was effective 2024-01-01)
                 expanded EDIS to include post-prison sentences imposed on or after
                 2013-08-01. This means that post-prison sentences imposed from
                 2013-08-01 through 2021-12-31 became eligible for EDIS starting on
                 2024-01-01. */
-                WHEN ((supervision_type='PAROLE') AND (date_imposed BETWEEN '2013-08-01' AND '2021-12-31')) THEN DATE('2024-01-01')
+                WHEN (
+                    (supervision_type='PAROLE')
+                    AND (date_imposed BETWEEN '2013-08-01' AND '2021-12-31')
+                ) THEN DATE('2024-01-01')
                 /* The original bill (House Bill 3194 [2013]) that established EDIS was
                 effective 2013-07-25 and made eligible any probation sentences imposed
                 on or after 2013-08-01. */
