@@ -151,6 +151,7 @@ class _RealStateCode(_SharedStateCode):
     US_AK = "US_AK"
     US_AL = "US_AL"
     US_AR = "US_AR"
+    US_AS = "US_AS"  # American Samoa
     US_AZ = "US_AZ"
     US_CA = "US_CA"
     US_CO = "US_CO"
@@ -161,6 +162,7 @@ class _RealStateCode(_SharedStateCode):
     US_DE = "US_DE"
     US_FL = "US_FL"
     US_GA = "US_GA"
+    US_GU = "US_GU"  # Guam
     US_HI = "US_HI"
     US_IA = "US_IA"
     US_ID = "US_ID"
@@ -175,6 +177,7 @@ class _RealStateCode(_SharedStateCode):
     US_MI = "US_MI"
     US_MN = "US_MN"
     US_MO = "US_MO"
+    US_MP = "US_MP"  #  Northern Mariana Islands
     US_MS = "US_MS"
     US_MT = "US_MT"
     US_NC = "US_NC"
@@ -197,6 +200,7 @@ class _RealStateCode(_SharedStateCode):
     US_TX = "US_TX"
     US_UT = "US_UT"
     US_VA = "US_VA"
+    US_VI = "US_VI"  # U.S. Virgin Islands
     US_VT = "US_VT"
     US_WA = "US_WA"
     US_WI = "US_WI"
@@ -333,6 +337,7 @@ class _FakeStateCode(_SharedStateCode):
     US_AK = "US_AK"
     US_AL = "US_AL"
     US_AR = "US_AR"
+    US_AS = "US_AS"  # American Samoa
     US_AZ = "US_AZ"
     US_CA = "US_CA"
     US_CO = "US_CO"
@@ -343,6 +348,7 @@ class _FakeStateCode(_SharedStateCode):
     US_DE = "US_DE"
     US_FL = "US_FL"
     US_GA = "US_GA"
+    US_GU = "US_GU"  # Guam
     US_HI = "US_HI"
     US_IA = "US_IA"
     US_ID = "US_ID"
@@ -357,6 +363,7 @@ class _FakeStateCode(_SharedStateCode):
     US_MI = "US_MI"
     US_MN = "US_MN"
     US_MO = "US_MO"
+    US_MP = "US_MP"  #  Northern Mariana Islands
     US_MS = "US_MS"
     US_MT = "US_MT"
     US_NC = "US_NC"
@@ -379,6 +386,7 @@ class _FakeStateCode(_SharedStateCode):
     US_TX = "US_TX"
     US_UT = "US_UT"
     US_VA = "US_VA"
+    US_VI = "US_VI"  # U.S. Virgin Islands
     US_VT = "US_VT"
     US_WA = "US_WA"
     US_WI = "US_WI"
@@ -432,6 +440,7 @@ if typing.TYPE_CHECKING:
         US_AK = "US_AK"
         US_AL = "US_AL"
         US_AR = "US_AR"
+        US_AS = "US_AS"  # American Samoa
         US_AZ = "US_AZ"
         US_CA = "US_CA"
         US_CO = "US_CO"
@@ -440,6 +449,7 @@ if typing.TYPE_CHECKING:
         US_DE = "US_DE"
         US_FL = "US_FL"
         US_GA = "US_GA"
+        US_GU = "US_GU"  # Guam
         US_HI = "US_HI"
         US_IA = "US_IA"
         US_ID = "US_ID"
@@ -454,6 +464,7 @@ if typing.TYPE_CHECKING:
         US_MI = "US_MI"
         US_MN = "US_MN"
         US_MO = "US_MO"
+        US_MP = "US_MP"  #  Northern Mariana Islands
         US_MS = "US_MS"
         US_MT = "US_MT"
         US_NC = "US_NC"
@@ -476,6 +487,7 @@ if typing.TYPE_CHECKING:
         US_TX = "US_TX"
         US_UT = "US_UT"
         US_VA = "US_VA"
+        US_VI = "US_VI"  # U.S. Virgin Islands
         US_VT = "US_VT"
         US_WA = "US_WA"
         US_WI = "US_WI"

@@ -22,7 +22,12 @@ from unittest import mock
 import us
 
 from recidiviz.common.constants import states
-from recidiviz.common.constants.states import MAX_FIPS_CODE, StateCode
+from recidiviz.common.constants.states import (
+    MAX_FIPS_CODE,
+    StateCode,
+    _FakeStateCode,
+    _RealStateCode,
+)
 
 
 class TestStates(unittest.TestCase):
@@ -38,9 +43,11 @@ class TestStates(unittest.TestCase):
     def test_hasStates_not_in_test(self) -> None:
         self.mock_in_test.return_value = False
 
-        # There are 53 states because we include US_DC, as well as a playground region
-        # US_OZ and an alternate ingest code for US_ID (US_IX).
-        self.assertEqual(54, len(states.StateCode))
+        # There are 58 states included because we count US_DC, U.S. territories
+        # (US_AS - American Samoa, US_GU - Guam, US_MP - Northern Mariana Islands,
+        # US_VI - U.S. Virgin Islands), a playground region (US_OZ), and an alternate
+        # ingest code for Idaho (US_IX for US_ID).
+        self.assertEqual(58, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-3].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-2].value)
@@ -50,9 +57,9 @@ class TestStates(unittest.TestCase):
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 58 states because we are in tests, so we add US_DD, US_LL,
+        # There are 63 states because we are in tests, so we add US_DD, US_LL,
         # US_WW, US_XX, and US_YY as valid values.
-        self.assertEqual(59, len(states.StateCode))
+        self.assertEqual(63, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-8].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-7].value)
@@ -72,7 +79,7 @@ class TestStates(unittest.TestCase):
 
         valid_states = ["us_wa", "US_MD", "us_ma"]
         # US_XX is not a valid state_code outside of tests
-        invalid_states = ["us_gu", "UX_CA", "us_xx", "US_XX"]
+        invalid_states = ["us_za", "UX_CA", "us_xx", "US_XX"]
 
         for state_code in valid_states:
             self.assertTrue(states.StateCode.is_state_code(state_code))
@@ -112,6 +119,26 @@ class TestStates(unittest.TestCase):
             f"Found maximum fips value of {max_fips_value}. "
             f"Must update MAX_FIPS_CODE to match.",
         )
+
+    def test_fake_state_code_superset_of_real_state_code(self) -> None:
+
+        fake_state_code_strs = {c.value for c in _FakeStateCode}
+        real_state_code_strs = {c.value for c in _RealStateCode}
+
+        missing = real_state_code_strs - fake_state_code_strs
+        if missing:
+            raise ValueError(
+                f"Found the following state_codes which are defined in _RealStateCode, "
+                f"but not _FakeStateCode: {sorted(missing)}. The state codes defined "
+                f"in _FakeStateCode should be a superset of those defined in "
+                f"_RealStateCode."
+            )
+
+    def test_us_territories(self) -> None:
+        self.assertEqual("Guam", StateCode.US_GU.get_state().name)
+        self.assertEqual("American Samoa", StateCode.US_AS.get_state().name)
+        self.assertEqual("Virgin Islands", StateCode.US_VI.get_state().name)
+        self.assertEqual("Northern Mariana Islands", StateCode.US_MP.get_state().name)
 
     def test_slack_channel(self) -> None:
         self.assertEqual("#us-tennessee", StateCode.US_TN.slack_channel_name())
