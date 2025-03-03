@@ -95,13 +95,19 @@ function bigQueryStateDatasetUrl(
   stateCode: string,
   tableName?: string
 ): string {
+  if (instance !== DirectIngestInstance.PRIMARY) {
+    throw new Error(
+      `Only valid to get bigQueryStateDatasetUrl for the PRIMARY instance, 
+      found ${instance}`
+    );
+  }
   // Returns a URL for the provided state's `us_xx_state` dataset in the BQ UI, or to a
   // table in that dataset if tableName is provided.
   const base = isProduction
     ? "https://go/prod-state-dataset-table"
     : "https://go/staging-state-dataset-table";
 
-  const datasetURL = `${base}/${stateCode.toLowerCase()}/${instance.toLowerCase()}`;
+  const datasetURL = `${base}/${stateCode.toLowerCase()}`;
   if (tableName === undefined) {
     return datasetURL;
   }
@@ -114,13 +120,20 @@ function bigQueryIngestViewResultsDatasetUrl(
   stateCode: string,
   ingestViewName?: string
 ): string {
+  if (instance !== DirectIngestInstance.PRIMARY) {
+    throw new Error(
+      `Only valid to get bigQueryIngestViewResultsDatasetUrl for the PRIMARY instance, 
+      found ${instance}`
+    );
+  }
+
   // Returns a URL for the provided state's ingest view results dataset in the BQ UI,
   // or to a table in that dataset if ingestViewName is provided.
   const base = isProduction
     ? "https://go/prod-ingest-view-results"
     : "https://go/staging-ingest-view-results";
 
-  const datasetURL = `${base}/${stateCode.toLowerCase()}/${instance.toLowerCase()}`;
+  const datasetURL = `${base}/${stateCode.toLowerCase()}`;
   if (ingestViewName === undefined) {
     return datasetURL;
   }
@@ -209,13 +222,13 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
       render: (fileTag: string) =>
         isProduction ? (
           <NewTabLink
-            href={`https://go/prod-raw-data-file/${stateCode}/${fileTag}`}
+            href={`https://go/prod-raw-data-file/${stateCode.toLowerCase()}/${fileTag}`}
           >
             {fileTag}
           </NewTabLink>
         ) : (
           <NewTabLink
-            href={`https://go/staging-raw-data-file/${stateCode}/${fileTag}`}
+            href={`https://go/staging-raw-data-file/${stateCode.toLowerCase()}/${fileTag}`}
           >
             {fileTag}
           </NewTabLink>
