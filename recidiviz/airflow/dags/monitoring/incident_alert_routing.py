@@ -136,7 +136,7 @@ def get_alerting_services_for_incident(
         return [
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
-            )
+            ),
         ]
 
     if dag_id == get_raw_data_import_dag_id(project_id):
@@ -170,7 +170,10 @@ def get_alerting_services_for_incident(
         return [
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
-            )
+            ),
+            RecidivizGitHubService.dataflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
+            ),
         ]
 
     # Failures in this job indicate that raw data has been removed or operations tables
@@ -180,7 +183,10 @@ def get_alerting_services_for_incident(
         return [
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
-            )
+            ),
+            RecidivizGitHubService.dataflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
+            ),
         ]
 
     if _job_is_in_group(

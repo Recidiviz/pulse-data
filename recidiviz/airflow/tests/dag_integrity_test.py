@@ -47,6 +47,17 @@ _PROJECT_ID = "recidiviz-testing"
 class TestDagIntegrity(AirflowIntegrationTest):
     """Tests the dags defined in the /dags package."""
 
+    def setUp(self) -> None:
+        self.github_client_patch = patch(
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook.get_conn",
+        )
+        self.github_client_patch.start()
+        super().setUp()
+
+    def tearDown(self) -> None:
+        self.github_client_patch.stop()
+        super().tearDown()
+
     def test_dag_bag_import(self) -> None:
         """
         Verify that Airflow will be able to import all DAGs in the repository without

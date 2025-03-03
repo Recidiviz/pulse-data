@@ -39,6 +39,7 @@ RECIDIVIZ_DATA_REPO = "Recidiviz/pulse-data"
 HELPERBOT_USER_NAME = "helperbot-recidiviz"
 
 RAW_DATA_DEFAULT_LABELS = ["Raw Data Import Failure", "Team: State Pod"]
+DATAFLOW_DEFAULT_LABELS = ["Dataflow Pipeline Failure", "Team: State Pod"]
 
 
 @attr.define
@@ -64,6 +65,23 @@ class RecidivizGitHubService(RecidivzAlertingService):
             name=f"Raw Data {state_code.value} Github Service",
             issue_labels=[
                 *RAW_DATA_DEFAULT_LABELS,
+                label_for_state_code,
+                label_for_project,
+            ],
+        )
+
+    @classmethod
+    def dataflow_service_for_state_code(
+        cls, *, project_id: str, state_code: StateCode
+    ) -> "RecidivizGitHubService":
+        label_for_project = (
+            "Prod" if project_id == GCP_PROJECT_PRODUCTION else "Staging"
+        )
+        label_for_state_code = f"Region: {state_code.value}"
+        return RecidivizGitHubService(
+            name=f"Dataflow {state_code.value} Github Service",
+            issue_labels=[
+                *DATAFLOW_DEFAULT_LABELS,
                 label_for_state_code,
                 label_for_project,
             ],

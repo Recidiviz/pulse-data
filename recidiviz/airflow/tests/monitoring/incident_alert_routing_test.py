@@ -94,7 +94,11 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # State-specific metric export failure
         self.assertEqual(
-            [RecidivizPagerDutyService.polaris_airflow_service(project_id=_PROJECT_ID)],
+            [
+                RecidivizPagerDutyService.polaris_airflow_service(
+                    project_id=_PROJECT_ID
+                ),
+            ],
             get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
@@ -154,7 +158,10 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             [
                 RecidivizPagerDutyService.airflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
-                )
+                ),
+                RecidivizGitHubService.dataflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_ND
+                ),
             ],
             get_alerting_services_for_incident(
                 self._make_incident(
@@ -174,7 +181,10 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             [
                 RecidivizPagerDutyService.airflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
-                )
+                ),
+                RecidivizGitHubService.dataflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_ND
+                ),
             ],
             get_alerting_services_for_incident(
                 self._make_incident(
@@ -241,7 +251,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             [
                 RecidivizPagerDutyService.airflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_AR
-                )
+                ),
             ],
             get_alerting_services_for_incident(
                 self._make_incident(
