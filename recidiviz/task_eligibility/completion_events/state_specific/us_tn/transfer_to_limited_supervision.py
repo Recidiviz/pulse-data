@@ -98,7 +98,10 @@ _QUERY_TEMPLATE = """
     where multiple plans with the same start date + supervision level are matched to an
     observed transition; however, this deduplication protects against potential
     duplicates in the future.) */
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, observed_transition_date ORDER BY DATE(sp.PostedDate)) = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY state_code, person_id, observed_transition_date
+        ORDER BY DATE(sp.PostedDate)
+    ) = 1
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
