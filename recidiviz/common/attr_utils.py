@@ -167,7 +167,7 @@ def get_enum_cls(attribute: attr.Attribute) -> Optional[Type[Enum]]:
     return None
 
 
-def is_optional_type(t: Type) -> bool:
+def is_optional_type(t: Type | None) -> bool:
     type_args = get_args(t)
     if len(type_args) == 1:
         return False

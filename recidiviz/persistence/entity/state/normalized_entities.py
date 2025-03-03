@@ -2608,7 +2608,7 @@ class NormalizedStateDrugScreen(NormalizedStateEntity, HasExternalIdEntity):
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateTaskDeadline(NormalizedStateEntity, LedgerEntityMixin, Entity):
     """The StateTaskDeadline object represents a single task that should be performed as
-    part of someone’s supervision or incarceration term, along with an associated date
+    part of someone's supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
     """
 

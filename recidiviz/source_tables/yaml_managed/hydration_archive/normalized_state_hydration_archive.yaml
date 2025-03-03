@@ -6,23 +6,40 @@ schema:
   - name: hydration_date
     type: DATE
     mode: REQUIRED
+    description:
+      Date when this row was archived, meaning the date for which the hydration
+      stats for this row was true on.
   - name: state_code
     type: STRING
     mode: REQUIRED
+    description: State code for this row of hydration stats
   - name: table_name
     type: STRING
     mode: REQUIRED
+    description: Table in normalized state dataset for this row of hydration stats.
   - name: entity_count
     type: INTEGER
     mode: REQUIRED
-  - name: column_hydration
+    description: Number of rows in this table.
+  - name: column_hydration_counts
     type: RECORD
     mode: REPEATED
+    description: "Number of rows with non-null values for each column for this table"
     fields:
       - name: column_name
         type: STRING
         mode: NULLABLE
+        description: Name of the column
       - name: hydrated_count
         type: INTEGER
         mode: NULLABLE
+        description: Number of rows with non-null values for column_name
+  - name: column_hydration_score
+    type: INTEGER
+    mode: REQUIRED
+    description:
+      The column hydration score for this table. This value is computed by
+      getting one point for hydrating all required fields (necessary for entity
+      creation), and then an additional point for each optional field that is
+      hydrated.
 clustering_fields: null
