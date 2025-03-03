@@ -117,17 +117,17 @@ const createExternalPersonIdLinkToLookerPersonDetailsDashbaord = (
 const ValidationErrorTable: React.FC<ValidationErrorTableProps> = ({
   tableData,
 }) => {
+  const alertMessage = tableData.metadata.limitedRowsShown
+    ? `Only showing first ${tableData.rows.length} of ${tableData.metadata.totalRows} rows. Use this query to explore further:`
+    : `Use this query to explore further:`;
+
   return (
     <>
-      {tableData.metadata.limitedRowsShown ? (
-        <Alert
-          message={`Only showing first ${tableData.rows.length} of
-            ${tableData.metadata.totalRows} rows. Use this query to explore further:`}
-          description={<code>{tableData.metadata.query}</code>}
-          type="warning"
-          showIcon
-        />
-      ) : null}
+      <Alert
+        message={alertMessage}
+        type={tableData.metadata.limitedRowsShown ? "warning" : "info"}
+        showIcon
+      />
       <Table
         className="validation-error-table"
         columns={getErrorTableColumns(tableData.rows)}
