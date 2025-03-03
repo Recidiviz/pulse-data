@@ -31,6 +31,7 @@ RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
     StateCode.US_NC: "s-nc-data@recidiviz.org",
     StateCode.US_UT: "s-ut-data@recidiviz.org",
     StateCode.US_ID: "s-id-data@recidiviz.org",
+    StateCode.US_IX: "s-ix-data@recidiviz.org",
 }
 
 RESTRICTED_ACCESS_FIELDS = ["state_code", "region_code"]
