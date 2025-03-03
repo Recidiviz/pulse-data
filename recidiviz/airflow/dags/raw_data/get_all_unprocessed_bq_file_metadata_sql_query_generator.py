@@ -471,6 +471,30 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                 )
                 continue
 
+            if any(
+                metadata.parts.file_tag not in self.region_raw_file_config.raw_file_tags
+                for metadata in gcs_files
+            ):
+                logger.error(
+                    "Skipping import for file_id [%s] as [%s] is no longer a valid file tag",
+                    file_id,
+                    gcs_files[0].parts.file_tag,
+                )
+                skipped_files.append(
+                    RawDataFilesSkippedError(
+                        file_paths=[gcs_file.path for gcs_file in gcs_files],
+                        file_tag=gcs_files[0].parts.file_tag,
+                        update_datetime=max(
+                            gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
+                        ),
+                        skipped_message=(
+                            f"Skipping import for file_id [{file_id}], file_tag [{gcs_files[0].parts.file_tag}]: "
+                            f"file_tag [{gcs_files[0].parts.file_tag}] no longer exists!"
+                        ),
+                    )
+                )
+                continue
+
             valid_unprocessed_bq_metadata.append(
                 RawBigQueryFileMetadata.from_gcs_files(list(gcs_files))
             )

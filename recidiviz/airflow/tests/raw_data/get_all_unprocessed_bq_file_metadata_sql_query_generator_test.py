@@ -17,7 +17,7 @@
 """Unit tests for GetAllUnprocessedBQFileMetadataSqlQueryGenerator"""
 import datetime
 from typing import List
-from unittest.mock import create_autospec, patch
+from unittest.mock import Mock, call, create_autospec, patch
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
+    RawDataFilesSkippedError,
     RawGCSFileMetadata,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
@@ -564,3 +565,86 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             assert isinstance(result.file_id, int)
             assert len(result.gcs_files) == 1
             assert result.gcs_files[0].path == newer_input[i].path
+
+    def test_deleted_file_tag_but_didnt_deprecate(self) -> None:
+        # first, upload new data
+        new_path = (
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_file_tag_first.csv"
+        )
+
+        inputs = self._insert_rows_into_gcs([new_path])
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == len(inputs)
+
+        for i, result in enumerate(metadata_results):
+            assert isinstance(result.file_id, int)
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == inputs[i].path
+            inputs[i].file_id = result.file_id
+
+        # then, try to import them again
+
+        new_gcs_path = GcsfsFilePath.from_absolute_path(new_path)
+        already_seen_gcs_metadata = [
+            RawGCSFileMetadata.from_gcs_metadata_table_row(metadata_row, new_gcs_path)
+            for metadata_row in self.mock_pg_hook.get_records(
+                # pylint: disable=protected-access
+                self.raw_gcs_generator._get_existing_files_by_path_sql_query(
+                    [new_gcs_path]
+                )
+            )
+        ]
+
+        self.mock_operator.xcom_pull.return_value = [
+            i.serialize() for i in already_seen_gcs_metadata
+        ]
+
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        empty_raw_region_config = Mock()
+        empty_raw_region_config.raw_file_tags = set()
+
+        # pylint: disable=protected-access
+        self.generator._region_raw_file_config = empty_raw_region_config
+
+        expected_skipped_error = RawDataFilesSkippedError(
+            file_paths=[GcsfsFilePath.from_absolute_path(new_path)],
+            file_tag="file_tag_first",
+            update_datetime=datetime.datetime.fromisoformat(
+                "2024-01-25T16:35:33:617135Z"
+            ),
+            skipped_message="Skipping import for file_id [1], file_tag [file_tag_first]: file_tag [file_tag_first] no longer exists!",
+        )
+
+        with self.assertLogs("raw_data", level="ERROR") as logs:
+            results = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+            assert len(results) == 0
+            assert len(logs.output) == 1
+
+            self.assertRegex(
+                logs.output[0],
+                r"ERROR:raw_data:Skipping import for file_id \[1\] as \[file_tag_first\] is no longer a valid file tag",
+            )
+
+            self.mock_operator.xcom_push.assert_has_calls(
+                [
+                    call(
+                        context=self.mock_context,
+                        key="skipped_file_errors",
+                        value=[expected_skipped_error.serialize()],
+                    )
+                ]
+            )
