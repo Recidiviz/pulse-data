@@ -22,10 +22,14 @@ from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
 from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot import (
     get_normalized_state_hydration_live_snapshot_view_builder,
 )
+from recidiviz.monitoring.platform_kpis.velocity.normalized_state_table_hydration import (
+    NORMALIZED_STATE_TABLE_HYDRATION_VIEW_BUILDER,
+)
 
 
 def get_platform_velocity_kpi_views_to_update() -> list[BigQueryViewBuilder]:
     return [
         get_normalized_state_hydration_live_snapshot_view_builder(),
         DAG_RUNTIMES_VIEW_BUILDER,
+        NORMALIZED_STATE_TABLE_HYDRATION_VIEW_BUILDER,
     ]
