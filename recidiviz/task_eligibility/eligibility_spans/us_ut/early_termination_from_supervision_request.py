@@ -29,7 +29,6 @@ from recidiviz.task_eligibility.criteria.general import (
     on_supervision_at_least_6_months,
     supervision_continuous_employment_for_3_months,
     supervision_housing_is_permanent_or_temporary_for_3_months,
-    supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     has_completed_ordered_assessments,
@@ -81,7 +80,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_3_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         no_risk_level_increase_of_15_percent.VIEW_BUILDER,
         # Past ET Review date/ half-time date
-        supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
+        # TODO(#38964) - Add this criteria back after the data is flowing through sessions
+        # supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
     ],
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
@@ -93,10 +93,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 criteria=supervision_continuous_employment_for_3_months.VIEW_BUILDER,
                 description="Only missing the continuous employment for 3 months criteria",
             ),
-            NotEligibleCriteriaCondition(
-                criteria=supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
-                description="Only missing the past ET Review date/half-time date criteria",
-            ),
+            # TODO(#38964) - Add this criteria back after the data is flowing through sessions
+            # NotEligibleCriteriaCondition(
+            #     criteria=supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
+            #     description="Only missing the past ET Review date/half-time date criteria",
+            # ),
         ],
         at_most_n_conditions_true=1,
     ),
