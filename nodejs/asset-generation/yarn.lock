@@ -9511,10 +9511,10 @@ vite-node@0.30.1:
     picocolors "^1.0.0"
     vite "^3.0.0 || ^4.0.0"
 
-vite-node@^3.0.6:
-  version "3.0.6"
-  resolved "https://registry.yarnpkg.com/vite-node/-/vite-node-3.0.6.tgz#a68c06c08e95c9a83f21993eabb17e0398804b1b"
-  integrity sha512-s51RzrTkXKJrhNbUzQRsarjmAae7VmMPAsRT7lppVpIg6mK3zGthP9Hgz0YQQKuNcF+Ii7DfYk3Fxz40jRmePw==
+vite-node@^3.0.7:
+  version "3.0.7"
+  resolved "https://registry.yarnpkg.com/vite-node/-/vite-node-3.0.7.tgz#f15bc1e0c343ac00115a52c7e110471a5a315c72"
+  integrity sha512-2fX0QwX4GkkkpULXdT1Pf4q0tC1i1lFOyseKoonavXUNlQ77KpW2XqBGGNIm/J4Ows4KxgGJzDguYVPKwG/n5A==
   dependencies:
     cac "^6.7.14"
     debug "^4.4.0"
