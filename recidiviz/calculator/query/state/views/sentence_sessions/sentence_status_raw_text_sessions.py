@@ -25,7 +25,7 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import sessionize_ledger_data
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
@@ -36,15 +36,11 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_ID = "sentence_status_raw_text_sessions"
 
-_SOURCE_LEDGER_TABLE = "`{project_id}.normalized_state.state_sentence_status_snapshot`"
-
 _INDEX_COLUMNS = [
     "state_code",
     "person_id",
     "sentence_id",
 ]
-
-_UPDATE_COLUMN_NAME = "status_update_datetime"
 
 _ATTRIBUTE_COLUMNS = [
     "status",
@@ -68,15 +64,31 @@ _SERVING_STATUS_TYPES = list_to_query_string(
 )
 
 _VIEW_TEMPLATE = f"""
-WITH
--- Create the status spans from the
-v2_sentence_statuses AS (
-{sessionize_ledger_data(
-    table_name=_SOURCE_LEDGER_TABLE,
-    index_columns=_INDEX_COLUMNS,
-    update_column_name=_UPDATE_COLUMN_NAME,
-    attribute_columns=_ATTRIBUTE_COLUMNS,
-)})
+WITH snapshot_cte AS
+(
+SELECT
+    *,
+    CAST(status_update_datetime AS DATE) AS start_date,
+    CAST(status_end_datetime AS DATE) AS end_date_exclusive, 
+FROM `{{project_id}}.normalized_state.state_sentence_status_snapshot`
+)
+,
+v2_sentence_statuses AS
+(
+SELECT
+    {list_to_query_string(_INDEX_COLUMNS)},
+    start_date,
+    end_date_exclusive,
+    {list_to_query_string(_ATTRIBUTE_COLUMNS)},
+FROM 
+    ({aggregate_adjacent_spans(
+        table_name="snapshot_cte",
+        index_columns=_INDEX_COLUMNS,
+        attribute=_ATTRIBUTE_COLUMNS,
+        end_date_field_name="end_date_exclusive",
+    )})
+WHERE start_date != {nonnull_end_date_clause("end_date_exclusive")}
+)
 -- Use the v2 sentence status snapshot data
 -- for all fully migrated states
 SELECT
