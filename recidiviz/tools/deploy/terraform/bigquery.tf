@@ -235,3 +235,21 @@ resource "google_bigquery_table" "workflows_launch_metadata" {
     schema = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/workflows_launch_metadata_materialized.yaml"))["schema"])
   }
 }
+
+
+resource "google_bigquery_table" "ingest_timeline_tracker" {
+  dataset_id          = module.google_sheet_backed_tables.dataset_id
+  table_id            = "ingest_timeline_tracker"
+  description         = "This table contains key dates related to ingest in our states."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect    = false
+    source_format = "GOOGLE_SHEETS"
+    google_sheets_options {
+      range             = "ingest-timeline-tracker"
+      skip_leading_rows = 1
+    }
+    source_uris = yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/ingest_timeline_tracker.yaml"))["external_data_configuration"]["sourceUris"]
+    schema      = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/ingest_timeline_tracker.yaml"))["schema"])
+  }
+}
