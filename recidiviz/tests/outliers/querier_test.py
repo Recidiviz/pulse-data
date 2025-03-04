@@ -159,7 +159,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 session.add(ActionStrategySurfacedEvents(**as_event))
 
         self.test_user_context = UserContext(
-            user_name="Tester Name",
             email_address="tester@example.com",
             state_code_str="US_PA",
             user_external_id="12345",
@@ -900,7 +899,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_configuration_for_user_fv(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)
         user_context = UserContext(
-            user_name="Tester Name",
             email_address="tester@example.com",
             state_code_str="US_PA",
             user_external_id="id",
@@ -916,7 +914,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_configuration_for_user_no_fv_match(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)
         user_context = UserContext(
-            user_name="Tester Name",
             email_address="tester@example.com",
             state_code_str="US_PA",
             user_external_id="id",
@@ -932,7 +929,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_configuration_for_user_multiple_fv(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)
         user_context = UserContext(
-            user_name="Tester Name",
             email_address="tester@example.com",
             state_code_str="US_PA",
             user_external_id="id",

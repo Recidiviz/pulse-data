@@ -78,7 +78,6 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
                     "role": role,
                 },
                 "https://recidiviz-test/email_address": "test@recidiviz.org",
-                "https://recidiviz-test/user_name": "Test User",
             },
             offline_mode=False,
         )
@@ -89,7 +88,6 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
             path,
             {
                 "https://recidiviz-test/email_address": "offline@recidiviz.org",
-                "https://recidiviz-test/user_name": "Offline User",
             },
             offline_mode=True,
         )
