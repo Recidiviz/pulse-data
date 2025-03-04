@@ -87,6 +87,7 @@ LEFT JOIN
   `{project_id}.reference_views.location_metadata_materialized` lmm
 ON
   lmm.state_code = "US_IX"
+  AND location_type = "CITY_COUNTY"
   AND lmm.location_external_id = CONCAT("ATLAS-",loc.LocationId)
   -- Gets most recent county of client, doesn't exclude if no county on record
 WHERE
