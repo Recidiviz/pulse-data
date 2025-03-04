@@ -189,13 +189,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="Whether or not you would like to attempt to resend texts that were previously undelivered. If provided, you must also specify the --previous-batch-id-to-update-status-for-to-update-status-for flag.",
     )
     parser.add_argument(
-        "--resend-eligibility-texts",
-        required=False,
-        type=str_to_bool,
-        default=False,
-        help="Whether or not you would like to attempt to resend eligibility texts to individuals that have already received eligibility texts in the past 90 days.",
-    )
-    parser.add_argument(
         "--project-id",
         choices=[
             GCP_PROJECT_STAGING,
@@ -216,7 +209,6 @@ def send_jii_texts(
     dry_run: bool,
     message_type: str,
     redeliver_failed_messages: bool,
-    resend_eligibility_texts: bool,
     previous_batch_id: Optional[str] = None,
     callback_url: Optional[str] = None,
 ) -> None:
@@ -361,7 +353,6 @@ def send_jii_texts(
             message_type=message_type,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=resend_eligibility_texts,
         )
         if attempt_to_send_text_bool is False:
             continue
@@ -515,7 +506,6 @@ def attempt_to_send_text(
     message_type: str,
     initial_text_document_ids: set,
     eligibility_text_document_ids_to_text_timestamp: Dict[str, datetime.datetime],
-    resend_eligibility_texts: bool,
     previous_batch_id: Optional[str] = None,
 ) -> bool:
     """
@@ -559,35 +549,17 @@ def attempt_to_send_text(
             return False
 
     # If this is an eligibility text, and the individual has
-    # received an eligibility text in the past 90 days, do not attempt to send
+    # received an eligibility text (all time), do not attempt to send
     # them an eligibility text
     if (
         message_type == MessageType.ELIGIBILITY_TEXT.value
         and eligibility_text_document_ids_to_text_timestamp.get(document_id) is not None
     ):
-        text_timestamp = eligibility_text_document_ids_to_text_timestamp.get(
-            document_id
+        logging.info(
+            "Individual with document id [%s] has already received an eligibility text. Do not attempt to send eligibility text.",
+            document_id,
         )
-        ninety_days_ago = datetime.datetime.now(
-            datetime.timezone.utc
-        ) - datetime.timedelta(days=90)
-        if text_timestamp > ninety_days_ago and resend_eligibility_texts is False:  # type: ignore[operator]
-            logging.info(
-                "Individual with document id [%s] has already received an eligibility text in the past 90 days. Do not attempt to send eligibility text.",
-                document_id,
-            )
-            return False
-
-        if text_timestamp > ninety_days_ago and resend_eligibility_texts is True:  # type: ignore[operator]
-            logging.info(
-                "Individual with document id [%s] has already received an eligibility text in the past 90 days. Re-send eligibility text anyway.",
-                document_id,
-            )
-        elif text_timestamp < ninety_days_ago:  # type: ignore[operator]
-            logging.info(
-                "Individual with document id [%s] received an eligibility text over 90 days ago. Re-send eligibility text.",
-                document_id,
-            )
+        return False
 
     return True
 
@@ -697,7 +669,6 @@ if __name__ == "__main__":
                 message_type=args.message_type,
                 previous_batch_id=args.previous_batch_id_to_update_status_for,
                 redeliver_failed_messages=args.redeliver_failed_messages,
-                resend_eligibility_texts=args.resend_eligibility_texts,
             )
     else:
         send_jii_texts(
@@ -707,5 +678,4 @@ if __name__ == "__main__":
             message_type=args.message_type,
             previous_batch_id=args.previous_batch_id_to_update_status_for,
             redeliver_failed_messages=args.redeliver_failed_messages,
-            resend_eligibility_texts=args.resend_eligibility_texts,
         )

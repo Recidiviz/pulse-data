@@ -61,6 +61,11 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 ),
                 bigquery.SchemaField(
                     "external_id",
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                ),
+                bigquery.SchemaField(
+                    "person_id",
                     field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
                     mode="NULLABLE",
                 ),
@@ -70,12 +75,12 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                     mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
-                    "supervision_type",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                    "phone_number",
+                    field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
                     mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
-                    "supervision_level",
+                    "officer_id",
                     field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="NULLABLE",
                 ),
@@ -85,73 +90,18 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                     mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
-                    "phone_number",
-                    field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "email_address",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "address",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "supervision_start_date",
-                    field_type=bigquery.enums.SqlTypeNames.DATE.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "expiration_date",
-                    field_type=bigquery.enums.SqlTypeNames.DATE.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "is_eligible",
-                    field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "array_reasons",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="REPEATED",
-                ),
-                bigquery.SchemaField(
-                    "status",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "denied_reasons",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="REPEATED",
-                ),
-                bigquery.SchemaField(
-                    "lsir_level",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "ineligible_criteria_list",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "ineligible_criteria",
-                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="REPEATED",
-                ),
-                bigquery.SchemaField(
                     "district",
                     field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
-                    "fines_n_fees_denials",
-                    field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
+                    "launch_id",
+                    field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
+                    mode="NULLABLE",
+                ),
+                bigquery.SchemaField(
+                    "group_id",
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="NULLABLE",
                 ),
             ],
@@ -161,138 +111,75 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
             data=[
                 {
                     "state_code": "US_IX",
-                    "external_id": "0",
+                    "external_id": "0A",
+                    "person_id": "0",
                     "person_name": '{"given_names": "TED", "middle_names": "", "name_suffix": "", "surname": "LASSO"}',
-                    "supervision_type": "PAROLE",
-                    "supervision_level": "MINIMUM",
-                    "po_name": "TEST PO 1",
                     "phone_number": "1234567890",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": "2023-12-19",
-                    "expiration_date": "2030-03-28",
-                    "is_eligible": "false",
-                    "array_reasons": "[]",
-                    "status": None,
-                    "denied_reasons": "[]",
-                    "lsir_level": "LOW",
-                    "ineligible_criteria_list": "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
-                    "ineligible_criteria": ["US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"],
+                    "officer_id": "1A",
+                    "po_name": "TEST PO 1",
                     "district": "District 2",
-                    "fines_n_fees_denials": "false",
+                    "launch_id": "1",
+                    "group_id": "MISSING_INCOME_VERIFICATION",
                 },
                 {
                     "state_code": "US_IX",
-                    "external_id": "1",
+                    "external_id": "1B",
+                    "person_id": "1",
                     "person_name": '{"given_names": "ROY", "middle_names": "", "name_suffix": "", "surname": "KENT"}',
-                    "supervision_type": "PAROLE",
-                    "supervision_level": "MINIMUM",
-                    "po_name": "TEST PO 1",
                     "phone_number": "1111111111",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": "2019-09-10",
-                    "expiration_date": "2029-03-09",
-                    "is_eligible": "false",
-                    "array_reasons": "[]",
-                    "status": None,
-                    "denied_reasons": "[]",
-                    "lsir_level": "LOW",
-                    "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS",
-                    "ineligible_criteria": ["NEGATIVE_DA_WITHIN_90_DAYS"],
+                    "officer_id": "1A",
+                    "po_name": "TEST PO 1",
                     "district": "District 4",
-                    "fines_n_fees_denials": "false",
+                    "launch_id": "1",
+                    "group_id": "MISSING_DA",
                 },
                 {
                     "state_code": "US_IX",
-                    "external_id": "2",
+                    "external_id": "2C",
+                    "person_id": "2",
                     "person_name": '{"given_names": "KEELEY", "middle_names": "", "name_suffix": "", "surname": "JONES"}',
-                    "supervision_type": None,
-                    "supervision_level": None,
-                    "po_name": "TEST PO 2",
                     "phone_number": "2222222222",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": None,
-                    "expiration_date": None,
-                    "is_eligible": "true",
-                    "array_reasons": None,
-                    "status": None,
-                    "denied_reasons": None,
-                    "lsir_level": None,
-                    "ineligible_criteria_list": None,
-                    "ineligible_criteria": [],
-                    "district": "District 6",
-                    "fines_n_fees_denials": "false",
-                },
-                {
-                    "state_code": "US_IX",
-                    "external_id": "3",
-                    "person_name": '{"given_names": "COACH", "middle_names": "", "name_suffix": "", "surname": "BEARD"}',
-                    "supervision_type": "PAROLE",
-                    "supervision_level": "MEDIUM",
+                    "officer_id": "2B",
                     "po_name": "TEST PO 2",
+                    "district": "District 6",
+                    "launch_id": "1",
+                    "group_id": "FULLY_ELIGIBLE",
+                },
+                {
+                    "state_code": "US_IX",
+                    "external_id": "3D",
+                    "person_id": "3",
+                    "person_name": '{"given_names": "COACH", "middle_names": "", "name_suffix": "", "surname": "BEARD"}',
                     "phone_number": "3333333333",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": "2020-11-27",
-                    "expiration_date": "2027-06-27",
-                    "is_eligible": "false",
-                    "array_reasons": "[]",
-                    "status": None,
-                    "denied_reasons": "[]",
-                    "lsir_level": "MODERATE",
-                    "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS, US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
-                    "ineligible_criteria": [
-                        "NEGATIVE_DA_WITHIN_90_DAYS",
-                        "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
-                    ],
+                    "officer_id": "2B",
+                    "po_name": "TEST PO 2",
                     "district": "District 3",
-                    "fines_n_fees_denials": "false",
+                    "launch_id": "1",
+                    "group_id": "TWO_MISSING_CRITERIA",
                 },
                 {
                     "state_code": "US_IX",
-                    "external_id": "4",
+                    "external_id": "4E",
+                    "person_id": "4",
                     "person_name": '{"given_names": "REBECCA", "middle_names": "", "name_suffix": "", "surname": "WELTON"}',
-                    "supervision_type": "PAROLE",
-                    "supervision_level": "MINIMUM",
-                    "po_name": "TEST PO 1",
                     "phone_number": "4444444444",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": "2023-12-19",
-                    "expiration_date": "2030-03-28",
-                    "is_eligible": "true",
-                    "array_reasons": "[]",
-                    "status": None,
-                    "denied_reasons": "[]",
-                    "lsir_level": "LOW",
-                    "ineligible_criteria_list": None,
-                    "ineligible_criteria": [],
+                    "officer_id": "1A",
+                    "po_name": "TEST PO 1",
                     "district": "District 1",
-                    "fines_n_fees_denials": "true",
+                    "launch_id": "1",
+                    "group_id": "ELIGIBLE_MISSING_FINES_AND_FEES",
                 },
                 {
                     "state_code": "US_IX",
-                    "external_id": "5",
+                    "external_id": "5F",
+                    "person_id": "5",
                     "person_name": '{"given_names": "JAMIE", "middle_names": "", "name_suffix": "", "surname": "TARTT"}',
-                    "supervision_type": "PAROLE",
-                    "supervision_level": "MINIMUM",
-                    "po_name": "TEST PO 1",
                     "phone_number": "5555555555",
-                    "email_address": None,
-                    "address": None,
-                    "supervision_start_date": "2023-12-19",
-                    "expiration_date": "2030-03-28",
-                    "is_eligible": "false",
-                    "array_reasons": "[]",
-                    "status": None,
-                    "denied_reasons": "[]",
-                    "lsir_level": "LOW",
-                    "ineligible_criteria_list": None,
-                    "ineligible_criteria": [],
-                    "district": "District 7",
-                    "fines_n_fees_denials": "true",
+                    "officer_id": "1A",
+                    "po_name": "TEST PO 1",
+                    "district": "PCO",
+                    "launch_id": "1",
+                    "group_id": "FULLY_ELIGIBLE",
                 },
             ],
         )
@@ -312,7 +199,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             initial_text_dicts[0],
             {
-                "external_id": "0",
+                "external_id": "0A",
                 "phone_num": "1234567890",
                 "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Ted", po_name="Test Po 1"
@@ -320,12 +207,13 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER,
                 "po_name": "Test Po 1",
                 "district": "district 2",
+                "group_id": "MISSING_INCOME_VERIFICATION",
             },
         )
         self.assertEqual(
             initial_text_dicts[1],
             {
-                "external_id": "1",
+                "external_id": "1B",
                 "phone_num": "1111111111",
                 "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Roy", po_name="Test Po 1"
@@ -333,12 +221,13 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER,
                 "po_name": "Test Po 1",
                 "district": "district 4",
+                "group_id": "MISSING_DA",
             },
         )
         self.assertEqual(
             initial_text_dicts[2],
             {
-                "external_id": "2",
+                "external_id": "2C",
                 "phone_num": "2222222222",
                 "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Keeley", po_name="Test Po 2"
@@ -346,12 +235,13 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER,
                 "po_name": "Test Po 2",
                 "district": "district 6",
+                "group_id": "FULLY_ELIGIBLE",
             },
         )
         self.assertEqual(
             initial_text_dicts[3],
             {
-                "external_id": "3",
+                "external_id": "3D",
                 "phone_num": "3333333333",
                 "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Coach", po_name="Test Po 2"
@@ -359,12 +249,13 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER,
                 "po_name": "Test Po 2",
                 "district": "district 3",
+                "group_id": "TWO_MISSING_CRITERIA",
             },
         )
         self.assertEqual(
             initial_text_dicts[4],
             {
-                "external_id": "4",
+                "external_id": "4E",
                 "phone_num": "4444444444",
                 "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Rebecca", po_name="Test Po 1"
@@ -372,6 +263,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER,
                 "po_name": "Test Po 1",
                 "district": "district 1",
+                "group_id": "ELIGIBLE_MISSING_FINES_AND_FEES",
             },
         )
 
@@ -389,7 +281,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             eligibility_text_dicts[0],
             {
-                "external_id": "0",
+                "external_id": "0A",
                 "phone_num": "1234567890",
                 "text_body": StrictStringFormatter().format(
                     MISSING_INCOME,
@@ -406,7 +298,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             eligibility_text_dicts[1],
             {
-                "external_id": "1",
+                "external_id": "1B",
                 "phone_num": "1111111111",
                 "text_body": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA,
@@ -423,7 +315,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             eligibility_text_dicts[2],
             {
-                "external_id": "2",
+                "external_id": "2C",
                 "phone_num": "2222222222",
                 "text_body": StrictStringFormatter().format(
                     FULLY_ELIGIBLE_TEXT,
@@ -440,7 +332,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             eligibility_text_dicts[3],
             {
-                "external_id": "3",
+                "external_id": "3D",
                 "phone_num": "3333333333",
                 "text_body": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_AND_INCOME,
@@ -457,7 +349,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
         self.assertEqual(
             eligibility_text_dicts[4],
             {
-                "external_id": "4",
+                "external_id": "4E",
                 "phone_num": "4444444444",
                 "text_body": StrictStringFormatter().format(
                     FULLY_ELIGIBLE_EXCEPT_FFR,

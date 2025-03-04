@@ -146,7 +146,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.INITIAL_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
             previous_batch_id=previous_batch_id,
         )
         self.assertFalse(send_text)
@@ -160,7 +159,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.INITIAL_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
             previous_batch_id=previous_batch_id,
         )
         self.assertTrue(send_text)
@@ -174,7 +172,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.ELIGIBILITY_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertFalse(send_text)
 
@@ -187,7 +184,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.INITIAL_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertFalse(send_text)
 
@@ -200,7 +196,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.INITIAL_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertTrue(send_text)
 
@@ -213,7 +208,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.ELIGIBILITY_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertFalse(send_text)
 
@@ -226,7 +220,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.ELIGIBILITY_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertTrue(send_text)
 
@@ -239,7 +232,6 @@ class TestSendJIITexts(TestCase):
             message_type=MessageType.ELIGIBILITY_TEXT.value,
             initial_text_document_ids=initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-            resend_eligibility_texts=False,
         )
         self.assertFalse(send_text)
 
@@ -293,34 +285,26 @@ class TestSendJIITexts(TestCase):
 
 
 @pytest.mark.parametrize(
-    (
-        "fully_eligible",
-        "missing_negative_da_within_90_days",
-        "missing_income_verified_within_3_months",
-        "fines_n_fees_denials",
-    ),
+    ("group_id",),
     [
-        pytest.param(True, False, False, False, id="Fully eligible text"),
+        pytest.param("FULLY_ELIGIBLE", id="Fully eligible text"),
         pytest.param(
-            True,
-            False,
-            False,
-            True,
+            "ELIGIBLE_MISSING_FINES_AND_FEES",
             id="Fully eligible except missing fines/fees text",
         ),
-        pytest.param(False, True, False, False, id="Missing DA text"),
-        pytest.param(False, False, True, False, id="Missing EV text"),
-        pytest.param(False, True, True, False, id="Missing DA and EV text"),
+        pytest.param("MISSING_DA", id="Missing DA text"),
+        pytest.param("MISSING_INCOME_VERIFICATION", id="Missing EV text"),
+        pytest.param("TWO_MISSING_CRITERIA", id="Missing DA and EV text"),
     ],
 )
 def test_text_character_length(
-    fully_eligible: bool,
-    missing_negative_da_within_90_days: bool,
-    missing_income_verified_within_3_months: bool,
-    fines_n_fees_denials: bool,
+    group_id: str,
 ) -> None:
     MAX_CHARACTER_LENGTH = 973
-    test_individual = {"person_name": '{"given_names": "Christopher"}'}
+    test_individual = {
+        "person_name": '{"given_names": "Christopher"}',
+        "group_id": group_id,
+    }
     test_po_name = "VeryyLong TestPoName"
     test_district = "district 7"
 
@@ -333,10 +317,6 @@ def test_text_character_length(
     # Eligibility Texts
     eligibility_text_string = construct_eligibility_text_body(
         individual=test_individual,
-        fully_eligible=fully_eligible,
-        missing_negative_da_within_90_days=missing_negative_da_within_90_days,
-        missing_income_verified_within_3_months=missing_income_verified_within_3_months,
-        fines_n_fees_denials=fines_n_fees_denials,
         po_name=test_po_name,
         district=test_district,
     )

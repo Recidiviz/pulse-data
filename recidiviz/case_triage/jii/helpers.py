@@ -20,6 +20,7 @@
 File with helper functions used by recidiviz/case_triage/jii/send_jii_texts.py
 """
 import datetime
+import enum
 import logging
 from ast import literal_eval
 from collections import defaultdict
@@ -60,6 +61,16 @@ D7_ADDITIONAL_CONTACT = (
     " or a specialist at d7.pp.specialist@idoc.idaho.gov or (208) 701-7130"
 )
 
+GOOD_DISTRICTS = ["1", "2", "3", "4", "5", "6", "7"]
+
+
+class GroupIds(enum.Enum):
+    ELIGIBLE_MISSING_FINES_AND_FEES = "ELIGIBLE_MISSING_FINES_AND_FEES"
+    FULLY_ELIGIBLE = "FULLY_ELIGIBLE"
+    MISSING_DA = "MISSING_DA"
+    MISSING_INCOME_VERIFICATION = "MISSING_INCOME_VERIFICATION"
+    TWO_MISSING_CRITERIA = "TWO_MISSING_CRITERIA"
+
 
 def generate_initial_text_messages_dict(
     bq_output: bigquery.QueryJob,
@@ -79,15 +90,10 @@ def generate_initial_text_messages_dict(
         phone_num = str(individual["phone_number"])
         given_name = literal_eval(individual["person_name"])["given_names"].title()
         po_name = individual["po_name"].title()
+        group_id = individual["group_id"]
+
         district = individual["district"].lower().strip()
-        fully_eligible = individual["is_eligible"]
-        fines_n_fees_denials = individual["fines_n_fees_denials"]
-        # We do not expect jii with fully_eligible=False and fines_n_fees_denials=True to be included in the BigQuery table as we do not want to text these individuals
-        if fully_eligible is False and fines_n_fees_denials is True:
-            logging.info(
-                "JII with external_id %s has fully_eligible=False and fines_n_fees_denials=True. We do not want to text this individual.",
-                external_id,
-            )
+        if district.split("district")[-1].strip() not in GOOD_DISTRICTS:
             continue
 
         text_body = construct_initial_text_body(given_name=given_name, po_name=po_name)
@@ -97,6 +103,7 @@ def generate_initial_text_messages_dict(
         initial_text_messages_dict["text_body"] = text_body
         initial_text_messages_dict["po_name"] = po_name
         initial_text_messages_dict["district"] = district
+        initial_text_messages_dict["group_id"] = group_id
         initial_text_messages_dicts.append(initial_text_messages_dict)
         logging.info("Initial text constructed for external_id: %s", external_id)
 
@@ -129,48 +136,18 @@ def generate_eligibility_text_messages_dict(
     eligibility_text_messages_dicts: List = []
 
     for individual in bq_output:
-        eligibility_text_messages_dict: Dict[str, str] = defaultdict()
-        fully_eligible = False
-        missing_negative_da_within_90_days = False
-        missing_income_verified_within_3_months = False
-        fines_n_fees_denials = individual["fines_n_fees_denials"]
-
-        if individual["is_eligible"] is True:
-            fully_eligible = True
-        elif set(individual["ineligible_criteria"]) == {
-            "NEGATIVE_DA_WITHIN_90_DAYS",
-            "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
-        }:
-            missing_negative_da_within_90_days = True
-            missing_income_verified_within_3_months = True
-        elif individual["ineligible_criteria"] == ["NEGATIVE_DA_WITHIN_90_DAYS"]:
-            missing_negative_da_within_90_days = True
-        elif individual["ineligible_criteria"] == [
-            "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"
-        ]:
-            missing_income_verified_within_3_months = True
-        else:
+        district = individual["district"].lower().strip()
+        if district.split("district")[-1].strip() not in GOOD_DISTRICTS:
             continue
+
+        eligibility_text_messages_dict: Dict[str, str] = defaultdict()
 
         external_id = str(individual["external_id"])
         phone_num = str(individual["phone_number"])
 
-        # We do not expect jii with fully_eligible=False and fines_n_fees_denials=True to be included in the BigQuery table as we do not want to text these individuals
-        if fully_eligible is False and fines_n_fees_denials is True:
-            logging.info(
-                "JII with external_id %s has fully_eligible=False and fines_n_fees_denials=True. We do not want to text this individual.",
-                external_id,
-            )
-            continue
-
         po_name = individual["po_name"].title()
-        district = individual["district"].lower().strip()
         text_body = construct_eligibility_text_body(
             individual=individual,
-            fully_eligible=fully_eligible,
-            missing_negative_da_within_90_days=missing_negative_da_within_90_days,
-            missing_income_verified_within_3_months=missing_income_verified_within_3_months,
-            fines_n_fees_denials=fines_n_fees_denials,
             po_name=po_name,
             district=district,
         )
@@ -180,27 +157,13 @@ def generate_eligibility_text_messages_dict(
         eligibility_text_messages_dict["po_name"] = po_name
         eligibility_text_messages_dict["district"] = district
         eligibility_text_messages_dicts.append(eligibility_text_messages_dict)
-
         logging.info("Eligibility text constructed for external_id: %s", external_id)
-        logging.info("fully_eligible: %s", fully_eligible)
-        logging.info("fines_n_fees_denials: %s", fines_n_fees_denials)
-        logging.info(
-            "missing_negative_da_within_90_days: %s", missing_negative_da_within_90_days
-        )
-        logging.info(
-            "missing_income_verified_within_3_months: %s",
-            missing_income_verified_within_3_months,
-        )
 
     return eligibility_text_messages_dicts
 
 
 def construct_eligibility_text_body(
     individual: Dict[str, str],
-    fully_eligible: bool,
-    missing_negative_da_within_90_days: bool,
-    missing_income_verified_within_3_months: bool,
-    fines_n_fees_denials: bool,
     po_name: str,
     district: str,
 ) -> str:
@@ -229,7 +192,9 @@ def construct_eligibility_text_body(
             f"Unexpected district. We expected {individual} to belong to districts 1, 2, 3, 4, 5, 6 or 7. They belong to: {district}."
         )
 
-    if fully_eligible is True and fines_n_fees_denials is False:
+    group_id = individual["group_id"]
+
+    if group_id == GroupIds.FULLY_ELIGIBLE.value:
         text_body += StrictStringFormatter().format(
             FULLY_ELIGIBLE_TEXT,
             given_name=given_name,
@@ -237,40 +202,7 @@ def construct_eligibility_text_body(
             additional_contact=additional_contact,
         )
         text_body += LEARN_MORE
-    elif fully_eligible is True and fines_n_fees_denials is True:
-        text_body += StrictStringFormatter().format(
-            FULLY_ELIGIBLE_EXCEPT_FFR,
-            given_name=given_name,
-            po_name=po_name,
-            additional_contact=additional_contact,
-        )
-        text_body += LEARN_MORE
-    elif (
-        missing_negative_da_within_90_days is True
-        and missing_income_verified_within_3_months is False
-    ):
-        text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA,
-            given_name=given_name,
-            po_name=po_name,
-            additional_contact=additional_contact,
-        )
-        text_body += VISIT
-    elif (
-        missing_negative_da_within_90_days is False
-        and missing_income_verified_within_3_months is True
-    ):
-        text_body += StrictStringFormatter().format(
-            MISSING_INCOME,
-            given_name=given_name,
-            po_name=po_name,
-            additional_contact=additional_contact,
-        )
-        text_body += VISIT
-    elif (
-        missing_negative_da_within_90_days is True
-        and missing_income_verified_within_3_months is True
-    ):
+    elif group_id == GroupIds.TWO_MISSING_CRITERIA.value:
         text_body += StrictStringFormatter().format(
             MISSING_NEGATIVE_DA_AND_INCOME,
             given_name=given_name,
@@ -278,6 +210,34 @@ def construct_eligibility_text_body(
             additional_contact=additional_contact,
         )
         text_body += VISIT
+    elif group_id == GroupIds.MISSING_DA.value:
+        text_body += StrictStringFormatter().format(
+            MISSING_NEGATIVE_DA,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
+        text_body += VISIT
+    elif group_id == GroupIds.MISSING_INCOME_VERIFICATION.value:
+        text_body += StrictStringFormatter().format(
+            MISSING_INCOME,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
+        text_body += VISIT
+    elif group_id == GroupIds.ELIGIBLE_MISSING_FINES_AND_FEES.value:
+        text_body += StrictStringFormatter().format(
+            FULLY_ELIGIBLE_EXCEPT_FFR,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
+        text_body += LEARN_MORE
+    else:
+        raise ValueError(
+            f"Unexpected group_id. {individual} belongs to group_id: {group_id}."
+        )
 
     text_body += ALL_CLOSER
     return text_body
