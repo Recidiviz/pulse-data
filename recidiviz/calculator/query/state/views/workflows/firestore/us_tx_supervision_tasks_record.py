@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for supervision tasks that are either overdue or upcoming within 30 days for Texas"""
+from typing import Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -28,40 +29,69 @@ US_TX_SUPERVISION_TASKS_RECORD_DESCRIPTION = """
     US_TX.
 """
 
-"""This defined a mapping between the raw criteria to the task type. Only criteria in this dictionary will be
-exported as a task."""
-CRITERIA_TO_TASK_TYPE = {
-    "US_TX_MEETS_RISK_ASSESSMENT_STANDARDS": "usTxAssessment",
-    "US_TX_MEETS_SCHEDULED_FIELD_CONTACT_STANDARDS": "usTxFieldContact",
-    "US_TX_MEETS_UNSCHEDULED_FIELD_CONTACT_STANDARDS": "usTxFieldContact",
-    "US_TX_MEETS_SCHEDULED_HOME_CONTACT_STANDARDS": "usTxHomeContact",
-    "US_TX_MEETS_UNSCHEDULED_HOME_CONTACT_STANDARDS": "usTxHomeContact",
-    "US_TX_MEETS_SCHEDULED_ELECTRONIC_CONTACT_STANDARDS": "usTxElectronicContact",
-}
-
-CRITERIA_TO_TYPE_QUERY_FRAGMENT = f"""
-    CASE criteria_name
-        {' '.join( f"WHEN '{criteria}' THEN '{type}'" for (criteria, type) in CRITERIA_TO_TASK_TYPE.items() )}
-    END
+"""This defines the views that will be used to generate tasks in TX as well as any task-specific information
+for the query, such as the task type and where the due date is stored.
 """
+TASK_CONFIGS = [
+    {
+        "type": "usTxAssessment",
+        "table": "meets_risk_assessment_standards_materialized",
+        "due_date_field": "event_date",
+    },
+    {
+        "type": "usTxFieldContact",
+        "table": "meets_scheduled_field_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+    {
+        "type": "usTxFieldContact",
+        "table": "meets_unscheduled_field_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+    {
+        "type": "usTxHomeContact",
+        "table": "meets_scheduled_home_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+    {
+        "type": "usTxHomeContact",
+        "table": "meets_unscheduled_home_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+    {
+        "type": "usTxElectronicContact",
+        "table": "meets_scheduled_electronic_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+]
 
-# TODO(#38852): Store task due date in common field
-US_TX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
-    WITH tasks AS (
+
+def generate_query_from_config(config: Dict[str, str]) -> str:
+    return f"""
         SELECT
             person_id,
             state_code,
-            JSON_OBJECT('type', {CRITERIA_TO_TYPE_QUERY_FRAGMENT}, 'dueDate', JSON_EXTRACT(reason_v2, '$.contact_due_date'), 'details', reason_v2) AS task,
-        FROM `{{project_id}}.task_eligibility_criteria_us_tx.all_state_specific_criteria_materialized`
+            '{config['type']}' AS type,
+            TO_JSON(STRUCT(
+                '{config['type']}' AS type,
+                JSON_EXTRACT(reason_v2, '$.{config['due_date_field']}') AS dueDate,
+                reason_v2 AS details
+            )) AS task,
+        FROM `{{project_id}}.task_eligibility_criteria_us_tx.{config['table']}`
         WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-09-09')
             AND state_code = "US_TX"
             AND NOT meets_criteria
-            AND criteria_name IN UNNEST({list(CRITERIA_TO_TASK_TYPE.keys())})
+    """
+
+
+US_TX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
+    WITH tasks AS (
+        { ' UNION ALL '.join(generate_query_from_config(config) for config in TASK_CONFIGS) }
     ), grouped_tasks AS (
         SELECT
             person_id,
             state_code,
-            ARRAY_AGG(task) as tasks,
+            ARRAY_AGG(task ORDER BY type) as tasks,
         FROM tasks
         GROUP BY person_id, state_code
     )

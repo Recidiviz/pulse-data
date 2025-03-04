@@ -99,6 +99,7 @@ def _top_level_condition_expression_score(
             expr.Star,
             expr.Unnest,
             expr.WindowSpec,
+            expr.JSONKeyValue,
         ),
     ):
         return score
@@ -235,6 +236,7 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
         expr.ToBase64,
         expr.StartsWith,
         expr.JSONFormat,
+        expr.JSONObject,
     } or (
         function_type == expr.Anonymous
         and function_name

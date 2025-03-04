@@ -443,37 +443,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     BigQueryAddress(
         dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_scheduled_field_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
         table_id="meets_scheduled_office_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_scheduled_home_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_scheduled_electronic_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_unscheduled_field_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_unscheduled_home_contact_standards",
     ): (
         "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
     ),
@@ -494,12 +464,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER.address: (
         "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
         " (Justine Kunz 12/03/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_risk_assessment_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Sophie 02/13/2024)"
     ),
     INCARCERATION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER.address: (
         "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
