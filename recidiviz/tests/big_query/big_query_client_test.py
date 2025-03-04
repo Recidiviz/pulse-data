@@ -2620,6 +2620,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.external_config.ExternalConfig("CSV")
         )
         mock_table.external_data_configuration.source_uris = ["gs://bucket/source.json"]
+        mock_table.schema = [bigquery.schema.SchemaField("foo", "STRING")]
 
         # Destination already exists
         self.mock_client.get_dataset.return_value = MagicMock()
@@ -2677,6 +2678,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.external_config.ExternalConfig("NEWLINE_DELIMITED_JSON")
         )
         mock_table.external_data_configuration.source_uris = ["gs://bucket/source.json"]
+        mock_table.schema = [bigquery.schema.SchemaField("foo", "STRING")]
 
         # Destination already exists
         self.mock_client.get_dataset.return_value = MagicMock()
