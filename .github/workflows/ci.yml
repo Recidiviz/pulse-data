@@ -3,7 +3,7 @@ on: push
 jobs:
   cancel-previous-runs:
     name: Cancel previous runs
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -12,7 +12,7 @@ jobs:
           access_token: ${{ github.token }}
   black:
     name: Black
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
@@ -21,7 +21,7 @@ jobs:
         run: pipenv run black . --check
   check-if-pipenv-locked:
     name: Check if Pipenv is locked and synced
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
@@ -32,7 +32,7 @@ jobs:
         run: pipenv run recidiviz/tools/diff_pipenv.sh
   mypy:
     name: Mypy
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
@@ -42,7 +42,7 @@ jobs:
   # Verify that all YAML files are properly formatted, according to prettier
   prettier:
     name: Prettier [yaml]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
@@ -50,7 +50,7 @@ jobs:
       - run: npx prettier --check "**/*.{yaml,yml}"
   pylint:
     name: Pylint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
         with:
@@ -67,7 +67,7 @@ jobs:
         run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
   terraform-validation:
     name: Terraform Validation
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - uses: hashicorp/setup-terraform@bfaf33cd488dd9a148df9ea8868ffec802fc4a04 # v1
@@ -92,7 +92,7 @@ jobs:
           fi
   validate-source-visibility:
     name: Validate source visibility
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
@@ -101,7 +101,7 @@ jobs:
         run: pipenv run python -m recidiviz.tools.validate_source_visibility
   frontend-tests:
     name: Frontend tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
         with:
@@ -132,7 +132,7 @@ jobs:
         run: yarn test
   asset-generation-tests:
     name: Asset Generation Service tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: ./nodejs/asset-generation/
@@ -155,7 +155,7 @@ jobs:
         run: yarn test
   unit-tests:
     name: Base unit tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -177,7 +177,7 @@ jobs:
   # environment defined in the Pipfile in the recidiviz/airflow package.
   airflow-tests:
     name: Airflow unit tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Airflow Python Setup
@@ -187,7 +187,7 @@ jobs:
         id: cache-postgres
         with:
           path: "~/postgres"
-          key: ${{ runner.os }}-postgres-13
+          key: ${{ runner.os }}-${{ runner.version }}-postgres-13
       - name: Install postgres
         env:
           CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
@@ -215,7 +215,7 @@ jobs:
           pipenv run pytest tests
   db-tests:
     name: Database tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -231,7 +231,7 @@ jobs:
         id: cache-postgres
         with:
           path: "~/postgres"
-          key: ${{ runner.os }}-postgres-13
+          key: ${{ runner.os }}-${{ runner.version }}-postgres-13
       - name: Install postgres
         env:
           CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
@@ -263,7 +263,7 @@ jobs:
             --durations=25
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -293,7 +293,7 @@ jobs:
         run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:

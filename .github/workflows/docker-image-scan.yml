@@ -7,7 +7,7 @@ jobs:
   build:
     if: github.repository == 'Recidiviz/pulse-data'
     name: docker-image-scan
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
