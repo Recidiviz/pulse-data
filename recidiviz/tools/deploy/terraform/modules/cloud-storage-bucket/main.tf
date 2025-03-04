@@ -44,13 +44,22 @@ variable "uniform_bucket_level_access" {
   default = true
 }
 
-# A map of key/value label pairs to assign to the bucket.
+# A map of key/value label pairs to assign to the bucket. Will be combined with default 
+# labels in the locals block
 variable "labels" {
-  type = map(string)
-  default = {
-    "vanta-owner"       = "joshua",
-    "vanta-description" = "terraform-managed-gcs-bucket"
-  }
+  type    = map(string)
+  default = {}
+}
+
+locals {
+  # combines default labels, in addition to any labels provided in vars.labels
+  labels = merge(
+    tomap({
+      "vanta-owner"       = "joshua",
+      "vanta-description" = "terraform-managed-gcs-bucket"
+    }),
+    var.labels
+  )
 }
 
 # See https://cloud.google.com/storage/docs/lifecycle
@@ -82,7 +91,7 @@ resource "google_storage_bucket" "bucket" {
   storage_class               = var.storage_class
   uniform_bucket_level_access = var.uniform_bucket_level_access
 
-  labels = var.labels
+  labels = local.labels
 
   logging {
     log_bucket = "${var.project_id}-gcs-object-logs"

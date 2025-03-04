@@ -22,6 +22,10 @@ module "sftp-storage-bucket" {
   name_suffix = local.direct_ingest_sftp_str
   location    = var.region
 
+  labels = {
+    "state_code" = var.state_code
+  }
+
   lifecycle_rules = [
     {
       action = {
