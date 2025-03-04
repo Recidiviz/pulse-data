@@ -125,6 +125,7 @@ const ValidationErrorTable: React.FC<ValidationErrorTableProps> = ({
     <>
       <Alert
         message={alertMessage}
+        description={<code>{tableData.metadata.query}</code>}
         type={tableData.metadata.limitedRowsShown ? "warning" : "info"}
         showIcon
       />
