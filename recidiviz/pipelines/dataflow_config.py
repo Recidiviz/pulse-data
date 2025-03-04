@@ -162,6 +162,8 @@ US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING = {
     if entity != UsIxNoteContentTextEntity.REVOCATION_INCLUDE
 }
 
+US_ME_SNOOZED_OPPORTUNITIES_TABLE_NAME = "us_me_snoozed_opportunities"
+
 DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS: dict[str, dict[str, Type]] = {
     US_IX_CASE_NOTE_MATCHED_ENTITIES_TABLE_NAME: {
         "person_id": int,
@@ -172,5 +174,15 @@ DATAFLOW_SUPPLEMENTAL_TABLE_TO_TABLE_FIELDS: dict[str, dict[str, Type]] = {
         "StaffId": str,
         "Details": str,
         **{entity: bool for entity in US_IX_CASE_NOTE_DEFAULT_ENTITY_MAPPING.keys()},
-    }
+    },
+    US_ME_SNOOZED_OPPORTUNITIES_TABLE_NAME: {
+        "person_id": int,
+        "person_external_id": str,
+        "Note_Id": str,
+        "Note_Date": datetime.datetime,
+        "state_code": str,
+        "is_valid_snooze_note": bool,
+        "note": str,
+        "error": str,
+    },
 }

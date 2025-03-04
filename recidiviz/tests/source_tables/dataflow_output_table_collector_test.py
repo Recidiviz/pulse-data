@@ -65,6 +65,7 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
             supplemental_collection,
             expected_addresses=[
                 "supplemental_data.us_ix_case_note_matched_entities",
+                "supplemental_data.us_me_snoozed_opportunities",
             ],
         )
 

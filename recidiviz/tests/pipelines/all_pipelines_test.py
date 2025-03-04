@@ -49,6 +49,9 @@ from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import 
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.pipeline import (
     UsIxCaseNoteExtractedEntitiesPipeline,
 )
+from recidiviz.pipelines.supplemental.us_me_snoozed_opportunities.pipeline import (
+    UsMeSnoozedOpportunitiesPipeline,
+)
 from recidiviz.pipelines.utils.pipeline_run_utils import (
     collect_all_pipeline_classes,
     collect_all_pipeline_names,
@@ -101,6 +104,11 @@ class TestReferenceViews(unittest.TestCase):
                     and state_code != StateCode.US_IX
                 ):
                     continue
+                if (
+                    issubclass(pipeline, UsMeSnoozedOpportunitiesPipeline)
+                    and state_code != StateCode.US_ME
+                ):
+                    continue
 
                 allowed_parent_datasets = all_pipelines_allowed_datasets
                 if issubclass(pipeline, (MetricPipeline, SupplementalDatasetPipeline)):
@@ -127,7 +135,8 @@ class TestReferenceViews(unittest.TestCase):
                         raise ValueError(
                             f"Found reference view builder [{provider_name}] for "
                             f"pipeline [{pipeline.__name__}] referencing a table in a "
-                            f"dataset that is not allowed: {parent.to_str()}."
+                            f"dataset that is not allowed: {parent.to_str()}. Allowed "
+                            f"parent datasets: {allowed_parent_datasets}."
                         )
 
 

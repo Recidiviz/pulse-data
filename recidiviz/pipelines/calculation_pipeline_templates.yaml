@@ -313,3 +313,7 @@ supplemental_dataset_pipelines:
     region: us-central1
     # TODO(#18319): Remove this once we group by entity.
     machine_type: c4a-highcpu-8
+  - pipeline: us_me_snoozed_opportunities_supplemental
+    state_code: US_ME
+    region: us-central1
+    machine_type: c4a-highcpu-8

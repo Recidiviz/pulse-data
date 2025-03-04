@@ -781,6 +781,7 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
         #  set up the necessary source table info there so we can avoid calling this
         #  function at all.
         "us_ix_case_update_info",
+        "us_me_snoozed_opportunity_notes",
         "state_person_to_state_staff",
     }:
         return

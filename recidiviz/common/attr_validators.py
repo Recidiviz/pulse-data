@@ -306,6 +306,27 @@ def is_opt_positive_int(
 is_date = attr.validators.instance_of(datetime.date)
 is_opt_date = is_opt(datetime.date)
 
+
+def is_str_iso_formatted_date(
+    _instance: Any, attribute: attr.Attribute, value: str
+) -> None:
+    # First validate that the value is a string
+    try:
+        is_str(_instance, attribute, value)
+    except TypeError as e:
+        raise TypeError(
+            f"Field [{attribute.name}] must be a string in ISO-format. Found [{value}], which is [{type(value)}]."
+        ) from e
+
+    # Validate that that string is an ISO-formatted date
+    try:
+        datetime.date.fromisoformat(value)
+    except ValueError as e:
+        raise ValueError(
+            f"Field [{attribute.name}] given a value [{value}] which does not appear to be in ISO format."
+        ) from e
+
+
 # Datetime field validators
 is_datetime = attr.validators.instance_of(datetime.datetime)
 is_opt_datetime = is_opt(datetime.datetime)

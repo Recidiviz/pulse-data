@@ -238,8 +238,10 @@ def main() -> int:
                     "recidiviz.persistence",
                 }
             )
-
-        if "us_ix_case_note" in pipeline.__name__:
+        if (
+            "us_ix_case_note" in pipeline.__name__
+            or "us_me_snoozed_opportunities" in pipeline.__name__
+        ):
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address_formatter",
@@ -247,6 +249,20 @@ def main() -> int:
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",
+                }
+            )
+        if "us_me_snoozed_opportunities" in pipeline.__name__:
+            valid_prefixes = valid_prefixes.union(
+                {
+                    "recidiviz.big_query.big_query_view",
+                    "recidiviz.big_query.big_query_view_sandbox_context",
+                    "recidiviz.calculator.query.bq_utils",
+                    "recidiviz.calculator.query.state.dataset_config",
+                    "recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states",
+                    "recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs",
+                    "recidiviz.task_eligibility.dataset_config",
+                    "recidiviz.task_eligibility.task_completion_event_big_query_view_builder",
+                    "recidiviz.workflows.types",
                 }
             )
         if "ingest" in pipeline.__name__:

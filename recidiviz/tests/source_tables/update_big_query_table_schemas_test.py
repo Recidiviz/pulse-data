@@ -47,6 +47,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "dataflow_metrics.supervision_termination_metrics",
     "dataflow_metrics.violation_with_response_metrics",
     "supplemental_data.us_ix_case_note_matched_entities",
+    "supplemental_data.us_me_snoozed_opportunities",
     "us_ar_ingest_view_results.arora_assessment",
     "us_ar_ingest_view_results.employment_period",
     "us_ar_ingest_view_results.incarceration_incident",
