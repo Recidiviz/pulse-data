@@ -20,6 +20,7 @@ Shows the spans of time during which someone in ND has no detainers or warrants.
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -52,7 +53,7 @@ WITH warrants_and_detainers AS (
         peid.person_id,
         SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) AS start_date,
         SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) AS start_date_warrant_or_detainer,
-        SAFE_CAST(NULL AS DATE) AS end_date,
+        iss.end_date AS end_date,
         FALSE AS meets_criteria,
         e.ORDER_TYPE,
         e.OFFENSE_STATUS,
@@ -62,6 +63,10 @@ WITH warrants_and_detainers AS (
     ON peid.external_id = {reformat_ids('e.OFFENDER_BOOK_ID')}
         AND peid.state_code = 'US_ND'
         AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    LEFT JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
+    ON peid.state_code = iss.state_code
+        AND peid.person_id = iss.person_id
+        AND SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
     WHERE ORDER_TYPE IN {tuple(ORDER_TYPES)}
 ),
 {create_sub_sessions_with_attributes(table_name='warrants_and_detainers')}
