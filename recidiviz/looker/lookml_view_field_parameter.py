@@ -37,8 +37,10 @@ class LookMLFieldType(Enum):
     COUNT = "count"
     DATE = "date"
     DURATION = "duration"
+    MAX = "max"
     NUMBER = "number"
     STRING = "string"
+    SUM_DISTINCT = "sum_distinct"
     TIME = "time"
     UNQUOTED = "unquoted"
     YESNO = "yesno"
@@ -155,6 +157,12 @@ class LookMLFieldParameter:
     @classmethod
     def sql(cls, sql: Union[str, ParameterizedValue]) -> "LookMLFieldParameter":
         return FieldParameterSql(sql)
+
+    @classmethod
+    def sql_distinct_key(
+        cls, sql_distinct_key: Union[str, ParameterizedValue]
+    ) -> "LookMLFieldParameter":
+        return FieldParameterSqlDistinctKey(sql_distinct_key)
 
     @classmethod
     def type(cls, type_param: LookMLFieldType) -> "LookMLFieldParameter":
@@ -514,6 +522,19 @@ class FieldParameterSql(LookMLFieldParameter):
 
 
 @attr.define
+class FieldParameterSqlDistinctKey(FieldParameterSql):
+    """Generates a `sql_distinct_key` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-sql-distinct-key)"""
+
+    @property
+    def key(self) -> str:
+        return "sql_distinct_key"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category == LookMLFieldCategory.MEASURE
+
+
+@attr.define
 class FieldParameterType(LookMLFieldParameter):
     """Generates a `type` field parameter. The allowed types varies based on the field
     category (see https://cloud.google.com/looker/docs/reference/param-dimension-filter-parameter-types,
@@ -549,13 +570,15 @@ class FieldParameterType(LookMLFieldParameter):
             )
         if field_category == LookMLFieldCategory.MEASURE:
             return self.field_type in (
+                LookMLFieldType.AVERAGE,
                 LookMLFieldType.COUNT,
                 LookMLFieldType.DATE,
+                LookMLFieldType.LIST,
+                LookMLFieldType.MAX,
                 LookMLFieldType.NUMBER,
                 LookMLFieldType.STRING,
-                LookMLFieldType.AVERAGE,
                 LookMLFieldType.SUM,
-                LookMLFieldType.LIST,
+                LookMLFieldType.SUM_DISTINCT,
             )
         if field_category == LookMLFieldCategory.PARAMETER:
             return self.field_type in (

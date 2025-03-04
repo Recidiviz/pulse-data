@@ -26,7 +26,7 @@ from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
 
 VIEW_TEMPLATE = """{include_clause}view: {view_name} {{
-{extension_required}{extends_clause}{table_clause}{field_declarations}
+{extension_required}{extends_clause}{drill_fields_clause}{table_clause}{field_declarations}
 }}"""
 
 
@@ -42,6 +42,7 @@ class LookMLView:
     fields: List[LookMLViewField] = attr.ib(factory=list)
     included_paths: List[str] = attr.ib(factory=list)
     extended_views: List[str] = attr.ib(factory=list)
+    drill_fields: List[str] = attr.ib(factory=list)
     extension_required: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
@@ -109,11 +110,17 @@ class LookMLView:
             )
             extends_clause = f"  extends: [\n{extends_str}\n  ]\n"
 
+        drill_fields_clause = ""
+        if self.drill_fields:
+            drill_fields_str = ",\n".join(list(self.drill_fields))
+            drill_fields_clause = f"  drill_fields: [\n{drill_fields_str}\n  ]\n"
+
         return StrictStringFormatter().format(
             VIEW_TEMPLATE,
             include_clause=include_clause,
             extension_required=extension_required_clause,
             extends_clause=extends_clause,
+            drill_fields_clause=drill_fields_clause,
             view_name=self.view_name,
             table_clause=self.table.build() if self.table else "",
             field_declarations=field_declarations,
