@@ -32,7 +32,7 @@ COMMON_VESTIGES = [
     # These are unused but will be referenced soon in Doppler KPI views.
     #  TODO(#34767): Remove these tracker tables from the list once they're referenced
     #   in downstream views.
-    "static_reference_tables.ingest_timeline_tracker",
+    "google_sheet_backed_tables.ingest_timeline_tracker",
     "validation_results.validations_completion_tracker",
     "view_update_metadata.refresh_bq_dataset_tracker",
     "view_update_metadata.rematerialization_tracker",

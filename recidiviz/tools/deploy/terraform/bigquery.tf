@@ -249,7 +249,7 @@ resource "google_bigquery_table" "ingest_timeline_tracker" {
       range             = "ingest-timeline-tracker"
       skip_leading_rows = 1
     }
-    source_uris = yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/ingest_timeline_tracker.yaml"))["external_data_configuration"]["sourceUris"]
-    schema      = jsonencode(yamldecode(file("${local.source_tables}/${module.static_reference_tables.dataset_id}/ingest_timeline_tracker.yaml"))["schema"])
+    source_uris = yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ingest_timeline_tracker.yaml"))["external_data_configuration"]["sourceUris"]
+    schema      = jsonencode(yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ingest_timeline_tracker.yaml"))["schema"])
   }
 }

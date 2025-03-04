@@ -1,5 +1,5 @@
 address:
-  dataset_id: static_reference_tables
+  dataset_id: google_sheet_backed_tables
   table_id: ingest_timeline_tracker
 description:
   "Key dates for ingest being pulled from a Google Sheets. For more information
