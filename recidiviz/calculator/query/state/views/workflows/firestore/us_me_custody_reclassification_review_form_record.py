@@ -22,12 +22,14 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
+    current_snooze,
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     completion_event_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
@@ -346,6 +348,15 @@ case_notes_cte AS (
 
 array_case_notes_cte AS (
 {array_agg_case_notes_by_external_id(from_cte = 'eligible_and_almost_eligible_clients')}
+),
+
+-- Get most recent reclassification review snoozes per person
+
+snooze_cte AS (
+{current_snooze(
+    state_code= "US_ME",
+    opportunity_type= "usMeReclassificationReview", 
+)}
 )
 
 SELECT
@@ -388,8 +399,14 @@ LEFT JOIN
   probation_term_cte ptc
 USING
   (person_id, state_code)
-LEFT JOIN array_case_notes_cte
-USING(external_id)
+LEFT JOIN 
+    array_case_notes_cte
+USING
+    (external_id)
+LEFT JOIN 
+    snooze_cte 
+USING
+    (person_id, external_id)
 """
 
 US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -398,6 +415,7 @@ US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_query_template=US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_QUERY_TEMPLATE,
     description=US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME

@@ -21,6 +21,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
+    current_snooze,
     join_current_task_eligibility_spans_with_external_id,
     opportunity_query_final_select_with_case_notes,
 )
@@ -28,6 +29,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -132,9 +134,27 @@ case_notes_cte AS (
 
 array_case_notes_cte AS (
   {array_agg_case_notes_by_external_id()}
+),
+
+-- Get most recent furlough release snoozes per person
+
+snooze_cte AS (
+{current_snooze(
+    state_code= "US_ME",
+    opportunity_type= "usMeFurloughRelease",
+)}
+),
+
+add_snooze_info AS (
+    SELECT *
+    FROM array_case_notes_cte
+    LEFT JOIN snooze_cte USING(external_id)
 )
 
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(
+    left_join_cte="add_snooze_info", 
+    additional_columns="metadata_denial"
+)}
 """
 
 US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -143,6 +163,7 @@ US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_QUERY_TEMPLATE,
     description=US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
     ),

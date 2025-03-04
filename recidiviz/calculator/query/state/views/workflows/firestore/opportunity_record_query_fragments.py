@@ -197,3 +197,28 @@ def current_violent_statutes_being_served(state_code: str) -> str:
             USING(person_id)
         WHERE vo.state_code = '{state_code}'
             AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}"""
+
+
+def current_snooze(
+    state_code: str,
+    opportunity_type: str,
+) -> str:
+    """Returns a CTE containing the most recent snooze data per person for specified opportunity.
+
+    Args:
+        state_code (str): State code. The final statement will filter out all other states.
+        opportunity_type (str): Opportunity for which we are gathering snooze data, defined in case note metadata.
+    """
+
+    return f"""    SELECT
+                person_id,
+                note AS metadata_denial,
+                person_external_id as external_id,
+                Note_Date as contact_date
+            FROM `{{project_id}}.{{supplemental_dataset}}.us_me_snoozed_opportunities`
+            WHERE state_code = '{state_code}'
+                AND is_valid_snooze_note
+                AND JSON_VALUE(note, '$.opportunity_type') = '{opportunity_type}'
+            QUALIFY 
+                ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY Note_Date DESC) = 1
+    """
