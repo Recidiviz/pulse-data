@@ -62,13 +62,53 @@ WITH current_opportunity_eligibility AS (
       AND SAFE_CAST(timestamp AS DATE) BETWEEN DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 MONTH) AND CURRENT_DATE('US/Eastern')
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id ORDER BY timestamp DESC) = 1
 )
+, phone_numbers AS (
+  WITH
+  -- Pulls the latest data from ind_Offender_Phone
+  ind_Offender_Phone_generated_view AS (
+      SELECT * FROM `{{project_id}}.us_ix_raw_data_up_to_date_views.ind_Offender_Phone_latest`
+  ),
+  -- Pulls the latest data from ref_Phone
+  ref_Phone_generated_view AS (
+      SELECT * FROM `{{project_id}}.us_ix_raw_data_up_to_date_views.ref_Phone_latest`
+  ),
+  -- Pulls the latest data from ref_Phone
+  ref_PhoneType_generated_view AS (
+      SELECT * FROM `{{project_id}}.us_ix_raw_data_up_to_date_views.ref_PhoneType_latest`
+  )
+  SELECT     
+    OffenderId,
+    PhoneNumber,
+  FROM (
+    SELECT
+    OffenderId,
+    PrimaryPhone,
+    off_phone.UpdateDate,
+    PhoneNumber,
+    RANK() OVER (
+        PARTITION BY OffenderId 
+        ORDER BY 
+            CASE 
+                WHEN phone_type.PhoneTypeId = "51" THEN 0  -- PhoneType = 51 comes first
+                ELSE 1
+            END,
+            PrimaryPhone DESC,
+            CAST(off_phone.UpdateDate AS DATETIME) DESC,
+            Offender_PhoneId DESC
+    ) AS rnk
+    FROM ind_Offender_Phone_generated_view off_phone 
+        LEFT JOIN ref_Phone_generated_view phone USING(PhoneId)
+        LEFT JOIN ref_PhoneType_generated_view phone_type USING (PhoneTypeId)
+  ) sub1
+  WHERE rnk = 1
+)
 , full_information AS (
   SELECT 
     opp.state_code,
     opp.external_id,
     opp.person_id,
     cr.person_name,
-    cr.phone_number,
+    COALESCE(CAST(p.PhoneNumber AS INT64), cr.phone_number) AS phone_number,
     opp.is_eligible,
     opp.ineligible_criteria,
     cr.officer_id,
@@ -85,6 +125,8 @@ WITH current_opportunity_eligibility AS (
   LEFT JOIN recent_denials rd
     ON rd.person_id = opp.person_id
       AND rd.state_code = opp.state_code
+  LEFT JOIN phone_numbers p 
+    ON opp.external_id = p.OffenderId
 )
 SELECT
   * EXCEPT (is_eligible, ineligible_criteria, denied_for_fines_and_fees),
