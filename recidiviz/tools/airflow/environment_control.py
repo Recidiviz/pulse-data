@@ -54,6 +54,9 @@ from recidiviz.tools.airflow.utils import (
 from recidiviz.tools.gsutil_shell_helpers import gcloud_storage_rm
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.service_accounts import (
+    get_default_compute_engine_service_account_email,
+)
 
 COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME = f"us-docker.pkg.dev/recidiviz-staging/appengine/composer-gke-test-{get_gcloud_auth_user()}:latest"
 
@@ -121,6 +124,11 @@ def action_create() -> None:
             workloads_config=COMPOSER_SMALL_WORKLOADS_CONFIG,
             private_environment_config=types.PrivateEnvironmentConfig(
                 enable_private_environment=True
+            ),
+            node_config=types.NodeConfig(
+                service_account=get_default_compute_engine_service_account_email(
+                    project_id=GCP_PROJECT_STAGING
+                ),
             ),
         ),
     )

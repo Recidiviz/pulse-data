@@ -66,6 +66,9 @@ resource "google_secret_manager_secret_version" "data_platform_version" {
   secret_data = var.docker_image_tag
 }
 
+data "google_compute_default_service_account" "default" {
+  project = var.project_id
+}
 
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
@@ -148,6 +151,10 @@ resource "google_composer_environment" "default_v2" {
         cpu       = 0.5
         memory_gb = 0.5
       }
+    }
+
+    node_config {
+      service_account = data.google_compute_default_service_account.default.email
     }
 
   }
