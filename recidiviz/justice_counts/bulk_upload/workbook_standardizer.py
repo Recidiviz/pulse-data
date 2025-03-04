@@ -747,7 +747,6 @@ class WorkbookStandardizer:
                         ),
                     )
 
-            # Check for invalid 'value' values
             if not isinstance(row.get("value"), int) or not isinstance(
                 row.get("value"), float
             ):
@@ -757,7 +756,7 @@ class WorkbookStandardizer:
                         row["value"] = value
                     else:
                         raise ValueError
-                except ValueError:
+                except (TypeError, ValueError):
                     self._add_row_value_error(
                         column_name="value",
                         value=row.get("value"),
