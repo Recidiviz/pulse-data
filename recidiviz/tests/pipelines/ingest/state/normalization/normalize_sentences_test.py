@@ -295,9 +295,9 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_length_days_max=142,
                 sentence_length_days_min=149,
                 # These are intended to be backwards
-                projected_completion_date_max_external=self.start_dt
+                projected_completion_date_max_external=self.start_date
                 + datetime.timedelta(days=142),
-                projected_completion_date_min_external=self.start_dt
+                projected_completion_date_min_external=self.start_date
                 + datetime.timedelta(days=149),
             ),
             StateSentenceLength(
@@ -308,9 +308,9 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_length_days_max=115,
                 sentence_length_days_min=100,
                 # These are intended to not be backwards
-                projected_completion_date_max_external=self.start_dt
+                projected_completion_date_max_external=self.start_date
                 + datetime.timedelta(days=115),
-                projected_completion_date_min_external=self.start_dt
+                projected_completion_date_min_external=self.start_date
                 + datetime.timedelta(days=100),
             ),
         ]
@@ -326,23 +326,23 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_length_days_min == 142
         assert (
             first.projected_completion_date_min_external
-            == self.start_dt + datetime.timedelta(days=142)
+            == self.start_date + datetime.timedelta(days=142)
         )
         assert first.sentence_length_days_max == 149
         assert (
             first.projected_completion_date_max_external
-            == self.start_dt + datetime.timedelta(days=149)
+            == self.start_date + datetime.timedelta(days=149)
         )
         assert second.sequence_num == 2
         assert second.sentence_length_days_min == 100
         assert (
             second.projected_completion_date_min_external
-            == self.start_dt + datetime.timedelta(days=100)
+            == self.start_date + datetime.timedelta(days=100)
         )
         assert second.sentence_length_days_max == 115
         assert (
             second.projected_completion_date_max_external
-            == self.start_dt + datetime.timedelta(days=115)
+            == self.start_date + datetime.timedelta(days=115)
         )
 
     def test_get_normalized_sentences_override_projected_dates_does_nothing_with_no_serving_status(
@@ -392,7 +392,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_length_days_min=149,
                 # One is missing, but these will be ignored
                 projected_completion_date_max_external=None,
-                projected_completion_date_min_external=self.start_dt
+                projected_completion_date_min_external=self.start_date
                 + datetime.timedelta(days=149),
             ),
             StateSentenceLength(
@@ -403,9 +403,9 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_length_days_max=115,
                 sentence_length_days_min=100,
                 # These are intended to not be backwards
-                projected_completion_date_max_external=self.start_dt
+                projected_completion_date_max_external=self.start_date
                 + datetime.timedelta(days=115),
-                projected_completion_date_min_external=self.start_dt
+                projected_completion_date_min_external=self.start_date
                 + datetime.timedelta(days=100),
             ),
         ]
@@ -451,14 +451,14 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 state_code=self.state_code_value,
                 sentence_group_length_id=111,
                 group_update_datetime=self.start_dt,
-                parole_eligibility_date_external=self.start_dt
+                parole_eligibility_date_external=self.start_date
                 + datetime.timedelta(days=100),
             ),
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=222,
                 group_update_datetime=self.start_dt + datetime.timedelta(days=10),
-                parole_eligibility_date_external=self.start_dt
+                parole_eligibility_date_external=self.start_date
                 + datetime.timedelta(days=90),
             ),
         ]
@@ -472,13 +472,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_group_length_id == 111
         assert (
             first.parole_eligibility_date_external
-            == self.start_dt + datetime.timedelta(100)
+            == self.start_date + datetime.timedelta(100)
         )
         assert second.sequence_num == 2
         assert second.sentence_group_length_id == 222
         assert (
             second.parole_eligibility_date_external
-            == self.start_dt + datetime.timedelta(90)
+            == self.start_date + datetime.timedelta(90)
         )
 
     def test_get_normalized_sentence_groups_length_inconsistent_projected_fields(
@@ -490,24 +490,24 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 state_code=self.state_code_value,
                 sentence_group_length_id=111,
                 group_update_datetime=self.start_dt,
-                parole_eligibility_date_external=self.start_dt
+                parole_eligibility_date_external=self.start_date
                 + datetime.timedelta(days=100),
                 # Intended to be more than the max value
-                projected_full_term_release_date_min_external=self.start_dt
+                projected_full_term_release_date_min_external=self.start_date
                 + datetime.timedelta(days=200),
-                projected_full_term_release_date_max_external=self.start_dt
+                projected_full_term_release_date_max_external=self.start_date
                 + datetime.timedelta(days=190),
             ),
             StateSentenceGroupLength(
                 state_code=self.state_code_value,
                 sentence_group_length_id=222,
                 group_update_datetime=self.start_dt + datetime.timedelta(days=10),
-                parole_eligibility_date_external=self.start_dt
+                parole_eligibility_date_external=self.start_date
                 + datetime.timedelta(days=90),
                 # Intended to be less than the max value
-                projected_full_term_release_date_min_external=self.start_dt
+                projected_full_term_release_date_min_external=self.start_date
                 + datetime.timedelta(days=180),
-                projected_full_term_release_date_max_external=self.start_dt
+                projected_full_term_release_date_max_external=self.start_date
                 + datetime.timedelta(days=190),
             ),
         ]
@@ -522,29 +522,29 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert first.sentence_group_length_id == 111
         assert (
             first.parole_eligibility_date_external
-            == self.start_dt + datetime.timedelta(100)
+            == self.start_date + datetime.timedelta(100)
         )
         assert (
             first.projected_full_term_release_date_min_external
-            == self.start_dt + datetime.timedelta(190)
+            == self.start_date + datetime.timedelta(190)
         )
         assert (
             first.projected_full_term_release_date_max_external
-            == self.start_dt + datetime.timedelta(200)
+            == self.start_date + datetime.timedelta(200)
         )
         assert second.sequence_num == 2
         assert second.sentence_group_length_id == 222
         assert (
             second.parole_eligibility_date_external
-            == self.start_dt + datetime.timedelta(90)
+            == self.start_date + datetime.timedelta(90)
         )
         assert (
             second.projected_full_term_release_date_min_external
-            == self.start_dt + datetime.timedelta(180)
+            == self.start_date + datetime.timedelta(180)
         )
         assert (
             second.projected_full_term_release_date_max_external
-            == self.start_dt + datetime.timedelta(190)
+            == self.start_date + datetime.timedelta(190)
         )
 
     def test_normalize_sentences_serving_and_completed_status(self) -> None:

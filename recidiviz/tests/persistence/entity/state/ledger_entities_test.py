@@ -437,7 +437,12 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             group_update_datetime=self.the_past,
         )
         self.assertEqual(ok.ledger_datetime_field, self.the_past)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[group_update_datetime\] value on class "
+            r"\[StateSentenceGroupLength\] with value \[.+\] which is greater than or "
+            r"equal to \[.+\], the \(exclusive\) max allowed date\.$",
+        ):
             _ = entities.StateSentenceGroupLength(
                 state_code=self.state_code,
                 group_update_datetime=self.the_future,

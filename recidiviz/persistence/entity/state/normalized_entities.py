@@ -140,6 +140,7 @@ from recidiviz.common.date import (
     NonNegativeDateRange,
     PotentiallyOpenDateTimeRange,
 )
+from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -150,6 +151,11 @@ from recidiviz.persistence.entity.base_entity import (
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.persistence.entity.state.entity_field_validators import appears_with
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -497,10 +503,45 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
     # Attributes
     #   - When
     offense_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_not_future_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1015-10-12.
+                    StateCode.US_AR,
+                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0983-03-09.
+                    #  - Found dates as high as 9090-08-03.
+                    StateCode.US_AZ,
+                    # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 3502-01-01.
+                    StateCode.US_IX,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0004-02-22.
+                    #  - Found dates as high as 4200-08-27.
+                    StateCode.US_ND,
+                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 2109-06-19.
+                    StateCode.US_NE,
+                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0016-02-07.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
     date_charged: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     #   - Where
@@ -634,12 +675,47 @@ class NormalizedStateSentenceStatusSnapshot(
 
     # The start of the period of time over which the sentence status is valid
     status_update_datetime: datetime = attr.ib(
-        validator=attr_validators.is_not_future_datetime
+        # TODO(#38799): Reset validator to just `attr_validators.is_reasonable_past_datetime`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_not_future_datetime,
+            state_exempted_validator(
+                attr_validators.is_reasonable_past_datetime(
+                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01 00:00:00.
+                    StateCode.US_AR,
+                    # TODO(#38801): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0199-01-13 00:00:00.
+                    StateCode.US_AZ,
+                    # TODO(#38803): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1200-10-10 12:00:00.
+                    StateCode.US_ND,
+                },
+            ),
+        )
     )
     # The end of the period of time over which the sentence status is valid.
     # This will be None if the status is actively serving or terminated.
     status_end_datetime: datetime | None = attr.ib(
-        validator=attr_validators.is_opt_not_future_datetime
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_datetime`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_not_future_datetime,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_datetime(
+                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0202-08-14 00:00:00.
+                    StateCode.US_AZ,
+                },
+            ),
+        ),
     )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
@@ -681,7 +757,21 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
 
     # The start of the period of time over which the set of all sentence length attributes are valid
     length_update_datetime: datetime = attr.ib(
-        validator=attr_validators.is_not_future_datetime
+        # TODO(#38799): Reset validator to just `attr_validators.is_reasonable_past_datetime`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_not_future_datetime,
+            state_exempted_validator(
+                attr_validators.is_reasonable_past_datetime(
+                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01 00:00:00.
+                    StateCode.US_AR,
+                },
+            ),
+        )
     )
     # The minimum duration of this sentence in days
     sentence_length_days_min: int | None = attr.ib(
@@ -703,22 +793,97 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
     )
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 3005-09-20.
+                    StateCode.US_AR,
+                },
+            ),
+        ),
     )
     # The date on which a person is projected to be released from incarceration to parole, if
     # they will be released to parole from the parent sentence.
     projected_parole_release_date_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
     )
     # The earliest date on which a person is projected to be released to liberty, if
     # they will be released to liberty from the parent sentence.
     projected_completion_date_min_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 3005-09-20.
+                    StateCode.US_AR,
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 3301-02-25.
+                    StateCode.US_MO,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2428-05-03.
+                    StateCode.US_ND,
+                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0022-05-12.
+                    #  - Found dates as high as 9020-06-20.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
     # The latest date on which a person is projected to be released to liberty, if
     # they will be released to liberty from the parent sentence.
     projected_completion_date_max_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 3005-09-20.
+                    StateCode.US_AR,
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 9999-12-31.
+                    StateCode.US_MO,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2429-02-27.
+                    StateCode.US_ND,
+                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2924-02-01.
+                    StateCode.US_NE,
+                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0022-05-12.
+                    #  - Found dates as high as 9999-01-01.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
 
     # Primary key
@@ -763,26 +928,100 @@ class NormalizedStateSentenceGroupLength(
 
     # The date when all sentence term attributes are updated
     group_update_datetime: datetime = attr.ib(
-        validator=attr_validators.is_not_future_datetime
+        validator=attr_validators.is_reasonable_past_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1006-11-05.
+                    #  - Found dates as high as 9994-02-28.
+                    StateCode.US_MO,
+                },
+            ),
+        ),
     )
     # The date on which a person is projected to be released from incarceration to parole
     projected_parole_release_date_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1009-05-20.
+                    #  - Found dates as high as 6201-03-23.
+                    StateCode.US_MO,
+                },
+            ),
+        ),
     )
     # The earliest date on which a person is projected to be released to liberty after having completed
     # all sentences in the term.
     projected_full_term_release_date_min_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2428-05-03.
+                    StateCode.US_ND,
+                },
+            ),
+        ),
     )
     # The latest date on which a person is projected to be released to liberty after having completed
     # all sentences in the term.
     projected_full_term_release_date_max_external: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 9999-12-31.
+                    StateCode.US_IX,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2429-02-27.
+                    StateCode.US_ND,
+                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2924-02-01.
+                    StateCode.US_NE,
+                },
+            ),
+        ),
     )
 
     # Primary key
@@ -913,13 +1152,58 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
         ),
     )
     # Only optional for StateSentencingAuthority.OTHER_STATE
-    imposed_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
+    imposed_date: date | None = attr.ib(
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1875-09-25.
+                    StateCode.US_MO,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0004-02-22.
+                    StateCode.US_ND,
+                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0016-05-04.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
+    )
     sentencing_authority: StateSentencingAuthority = attr.ib(
         validator=attr.validators.instance_of(StateSentencingAuthority)
     )
     # This can be None if all sentences have been imposed and not served yet,
     # or all sentences do not have a serving component (all fines, etc.)
-    serving_start_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
+    serving_start_date: date | None = attr.ib(
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_AR,
+                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0199-01-13.
+                    StateCode.US_AZ,
+                },
+            ),
+        ),
+    )
     most_severe_charge_v2_id: int = attr.ib(validator=attr_validators.is_int)
 
     person: Optional["NormalizedStatePerson"] = attr.ib(
@@ -1003,7 +1287,29 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
     #   - this is a paritially hydrated entity (not merged yet)
     #   - it has sentencing_authority = StateSentencingAuthority.OTHER_STATE
     imposed_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1875-09-25.
+                    StateCode.US_MO,
+                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0004-02-22.
+                    StateCode.US_ND,
+                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0016-05-04.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
 
     # The amount of any time already served (in days) at time of sentence imposition,

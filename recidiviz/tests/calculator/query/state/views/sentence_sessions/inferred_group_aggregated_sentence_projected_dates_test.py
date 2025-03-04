@@ -400,7 +400,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 state_code=self.state_code.value,
                 sentence_length_id=111,
                 length_update_datetime=later,
-                projected_completion_date_min_external=self.critical_date_3,
+                projected_completion_date_min_external=self.critical_date_3.date(),
                 projected_completion_date_max_external=None,
             )
         ]
@@ -556,22 +556,22 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 state_code=self.state_code.value,
                 sentence_length_id=111,
                 length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.critical_date_3,
-                projected_completion_date_max_external=self.critical_date_3,
+                projected_completion_date_min_external=self.critical_date_3.date(),
+                projected_completion_date_max_external=self.critical_date_3.date(),
             ),
             NormalizedStateSentenceLength(
                 state_code=self.state_code.value,
                 sentence_length_id=112,
                 length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.critical_date_3,
-                projected_completion_date_max_external=self.critical_date_3,
+                projected_completion_date_min_external=self.critical_date_3.date(),
+                projected_completion_date_max_external=self.critical_date_3.date(),
             ),
             NormalizedStateSentenceLength(
                 state_code=self.state_code.value,
                 sentence_length_id=113,
                 length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.critical_date_3,
-                projected_completion_date_max_external=self.critical_date_3,
+                projected_completion_date_min_external=self.critical_date_3.date(),
+                projected_completion_date_max_external=self.critical_date_3.date(),
             ),
         ]
         sentence_1.sentence_status_snapshots = [

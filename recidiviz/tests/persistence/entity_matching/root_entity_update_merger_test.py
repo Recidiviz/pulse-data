@@ -361,7 +361,7 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
-            date_charged=datetime.datetime(2022, 1, 1),
+            date_charged=datetime.date(2022, 1, 1),
         )
     ],
     state_entities.StateSentence: [
