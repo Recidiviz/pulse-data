@@ -3011,10 +3011,14 @@ class NormalizedStatePersonStaffRelationshipPeriod(
     # Attributes
     #   - When
     relationship_start_date: date = attr.ib(
-        validator=attr_validators.is_not_future_date
+        validator=attr_validators.is_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
     relationship_end_date_exclusive: date | None = attr.ib(
-        validator=attr_validators.is_opt_not_future_date
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     #   - Where
