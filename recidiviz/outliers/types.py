@@ -719,3 +719,36 @@ class ActionStrategySurfacedEvent:
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
+
+
+@attr.frozen
+class IntercomTicket:
+    """Represents an Intercom ticket."""
+
+    ticket_type_id: int
+    email: str
+    default_title: str
+    default_description: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts an object into the intercom format"""
+        return {
+            "ticket_type_id": self.ticket_type_id,
+            "contacts": [{"email": self.email}],
+            "ticket_attributes": {
+                "_default_title_": self.default_title,
+                "_default_description_": self.default_description,
+            },
+        }
+
+    @classmethod
+    def from_intercom_dict(cls, data: Dict[str, Any]) -> "IntercomTicket":
+        """Converts the response back to an object"""
+        ticket_attrs = data.get("ticket_attributes", {})
+        contacts = data.get("contacts", [])
+        return cls(
+            ticket_type_id=data.get("ticket_type_id", 1),
+            email=contacts[0].get("email", "") if contacts else "",
+            default_title=ticket_attrs.get("_default_title_", ""),
+            default_description=ticket_attrs.get("_default_description_", ""),
+        )

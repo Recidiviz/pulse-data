@@ -121,6 +121,8 @@ class OutliersBlueprintTestCase(InsightsDbTestCase):
         can_access_all_supervisors: Optional[bool] = False,
         can_access_supervision_workflows: Optional[bool] = False,
         pseudonymized_id: Optional[str] = None,
+        email_address: str = "test_user@somestate.gov",
+        user_name: str = "Some User",
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
@@ -138,6 +140,8 @@ class OutliersBlueprintTestCase(InsightsDbTestCase):
                     },
                     "pseudonymizedId": pseudonymized_id,
                 },
+                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
+                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/user_name": user_name,
             }
         )
 

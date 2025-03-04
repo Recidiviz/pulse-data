@@ -76,14 +76,23 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
                         "insights": outliers_route_enabled,
                     },
                     "role": role,
-                }
+                },
+                "https://recidiviz-test/email_address": "test@recidiviz.org",
+                "https://recidiviz-test/user_name": "Test User",
             },
             offline_mode=False,
         )
 
     @classmethod
     def process_offline_claim(cls, path: str) -> None:
-        return cls._process_claims(path, {}, offline_mode=True)
+        return cls._process_claims(
+            path,
+            {
+                "https://recidiviz-test/email_address": "offline@recidiviz.org",
+                "https://recidiviz-test/user_name": "Offline User",
+            },
+            offline_mode=True,
+        )
 
     @mock.patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",

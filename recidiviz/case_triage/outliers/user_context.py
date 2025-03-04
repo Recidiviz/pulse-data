@@ -27,6 +27,8 @@ class UserContext:
     # Use string to allow storing "CSG" as a value
     state_code_str: str
     user_external_id: str
+    user_name: str
+    email_address: str
     pseudonymized_id: Optional[str]
     can_access_all_supervisors: bool
     can_access_supervision_workflows: bool

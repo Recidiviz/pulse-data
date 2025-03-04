@@ -55,6 +55,8 @@ def on_successful_authorization(
         return
 
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
+    user_name = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/user_name"]
+    email_address = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"]
     user_state_code = app_metadata["stateCode"].upper()
     is_recidiviz_or_csg = user_state_code in ("RECIDIVIZ", "CSG")
 
@@ -71,6 +73,8 @@ def on_successful_authorization(
         state_code_str=user_state_code,
         user_external_id=user_external_id,
         pseudonymized_id=user_pseudonymized_id,
+        user_name=user_name,
+        email_address=email_address,
         can_access_all_supervisors=is_recidiviz_or_csg
         # TODO(Recidiviz/recidiviz-dashboards#4520): don't hard-code this string
         or routes.get("insights_supervision_supervisors-list", False),
