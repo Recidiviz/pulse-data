@@ -42,7 +42,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
-    VITALS_REPORT_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
@@ -421,18 +420,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
         "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
     ),
-    BigQueryAddress(
-        dataset_id=VITALS_REPORT_DATASET,
-        table_id="supervision_district_aggregated_metrics",
-    ): ("Will be used for vitals-in-insights (see #34611) (Dana Hoffman 11/1/24)"),
-    BigQueryAddress(
-        dataset_id=VITALS_REPORT_DATASET,
-        table_id="supervision_office_aggregated_metrics",
-    ): ("Will be used for vitals-in-insights (see #34611) (Dana Hoffman 11/1/24)"),
-    BigQueryAddress(
-        dataset_id=VITALS_REPORT_DATASET,
-        table_id="supervision_state_aggregated_metrics",
-    ): ("Will be used for vitals-in-insights (see #34611) (Dana Hoffman 11/1/24)"),
     BigQueryAddress(
         dataset_id="observations__workflows_surfaceable_caseload_event",
         table_id="all_workflows_surfaceable_caseload_events",

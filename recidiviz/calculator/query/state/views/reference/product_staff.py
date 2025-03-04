@@ -93,6 +93,7 @@ PRODUCT_STAFF_QUERY_TEMPLATE = f"""
         IFNULL(attrs.is_supervision_officer, FALSE) AS is_supervision_officer,
         IFNULL(attrs.is_supervision_officer_supervisor, FALSE) AS is_supervision_officer_supervisor,
         {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || attrs.officer_id")} AS pseudonymized_id,
+        attrs.specialized_caseload_type_primary,
         attrs.start_date,
         attrs.end_date_exclusive
     FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs

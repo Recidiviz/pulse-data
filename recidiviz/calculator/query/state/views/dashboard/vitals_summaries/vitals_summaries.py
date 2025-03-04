@@ -15,25 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Daily summaries of vitals metrics, at the state, district, and PO level."""
-from typing import Dict, List, Optional
 
-from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.bq_utils import generate_district_id_from_district_name
+import attr
+
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    generate_district_id_from_district_name,
+    list_to_query_string,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.state_specific_query_strings import (
-    VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
-    vitals_state_specific_district_display_name,
-)
-from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
-    ENABLED_VITALS,
-    make_enabled_states_filter_for_vital,
-)
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-# TODO(#8387): Clean up query generation for vitals dash views
 
 VITALS_SUMMARIES_VIEW_NAME = "vitals_summaries"
 
@@ -42,236 +35,240 @@ Daily summaries of vitals metrics, at the state, district, and PO level.
 """
 
 
-def generate_entity_summary_query(field: str, vitals_table: str) -> str:
-    po_condition = "supervising_officer_external_id != 'ALL' AND district_id != 'ALL'"
-    district_condition = (
-        "supervising_officer_external_id = 'ALL' AND district_id != 'ALL'"
+@attr.define(frozen=True)
+class VitalsEntity:
+    # Entity type as shown in final output
+    entity_type: str
+    # Entity id as shown in final output
+    entity_id_field: str
+    # Field within the aggregated metrics table to join on for this entity
+    entity_id_join_field: str
+    # Entity name as shown in final output
+    entity_name_field: str
+    # Parent entity id as shown in final output
+    parent_entity_id_field: str
+    # Aggregated metrics unit of analysis name for this entity
+    aggregated_metrics_entity: str
+    # States to include metrics for this entity
+    enabled_states: list[str]
+    # Whether we need to join to a table of staff data to get additional information about this entity, for example to fill in the parent_entity_id_field
+    include_staff_join: bool = False
+
+
+@attr.define(frozen=True)
+class VitalsMetric:
+    # Name of the metric as we refer to it in vitals
+    vitals_metric_name: str
+    # Name of the metric to look up in aggregated metrics
+    aggregated_metric_name: str
+    # Name of the denominator metric to look up in aggregated metrics to calculate the rate
+    aggregated_metric_denominator: str
+    # States that have this metric enabled
+    enabled_states: list[str]
+
+
+VITALS_ENTITIES = [
+    VitalsEntity(
+        entity_type="po",
+        entity_id_field="today.officer_id",
+        entity_id_join_field="officer_id",
+        entity_name_field="UPPER(today.officer_name)",
+        parent_entity_id_field="staff.district",
+        aggregated_metrics_entity="officer",
+        enabled_states=["US_ND", "US_IX"],
+        include_staff_join=True,
+    ),
+    VitalsEntity(
+        entity_type="level_1_supervision_location",
+        entity_id_field="today.office_name",
+        entity_id_join_field="office",
+        entity_name_field="today.office_name",
+        parent_entity_id_field='"STATE_DOC"',
+        aggregated_metrics_entity="office",
+        enabled_states=["US_ND"],
+    ),
+    VitalsEntity(
+        entity_type="level_2_supervision_location",
+        entity_id_field="today.district",
+        entity_id_join_field="district",
+        entity_name_field="today.district",
+        parent_entity_id_field='"STATE_DOC"',
+        aggregated_metrics_entity="district",
+        enabled_states=["US_IX"],
+    ),
+    VitalsEntity(
+        entity_type="state",
+        entity_id_field='"STATE_DOC"',
+        entity_id_join_field="state_code",
+        entity_name_field='"STATE DOC"',
+        parent_entity_id_field='"STATE_DOC"',
+        aggregated_metrics_entity="state",
+        enabled_states=["US_ND", "US_IX"],
+    ),
+]
+
+VITALS_METRICS = [
+    VitalsMetric(
+        vitals_metric_name="timely_discharge",
+        aggregated_metric_name="avg_population_past_full_term_release_date",
+        aggregated_metric_denominator="avg_daily_population",
+        enabled_states=["US_ND"],
+    ),
+    VitalsMetric(
+        vitals_metric_name="timely_risk_assessment",
+        aggregated_metric_name="avg_population_assessment_overdue",
+        aggregated_metric_denominator="avg_population_assessment_required",
+        enabled_states=["US_ND", "US_IX"],
+    ),
+    VitalsMetric(
+        vitals_metric_name="timely_contact",
+        aggregated_metric_name="avg_population_contact_overdue",
+        aggregated_metric_denominator="avg_population_contact_required",
+        enabled_states=["US_ND", "US_IX"],
+    ),
+    VitalsMetric(
+        vitals_metric_name="timely_downgrade",
+        aggregated_metric_name="avg_population_task_eligible_supervision_level_downgrade",
+        aggregated_metric_denominator="avg_daily_population",
+        enabled_states=["US_IX"],
+    ),
+]
+
+VITALS_METRICS_BY_STATE = {
+    state: [m.vitals_metric_name for m in VITALS_METRICS if state in m.enabled_states]
+    for metric in VITALS_METRICS
+    for state in metric.enabled_states
+}
+
+
+def calculate_rate_for_metric(
+    table_name: str,
+    vitals_metric: VitalsMetric,
+    suffix: str | None = None,
+) -> str:
+    rate_calc_string = f"100 * (1 - IFNULL(SAFE_DIVIDE({table_name}.{vitals_metric.aggregated_metric_name}, {table_name}.{vitals_metric.aggregated_metric_denominator}), 0))"
+    return f"IF(today.state_code IN ({list_to_query_string(vitals_metric.enabled_states, quoted=True)}), {rate_calc_string}, NULL) AS {vitals_metric.vitals_metric_name}{f'_{suffix}' if suffix else ''},"
+
+
+def calculate_rate_query_fragment(table_name: str, suffix: str | None = None) -> str:
+    return "\n    ".join(
+        [
+            calculate_rate_for_metric(table_name, vitals_metric, suffix)
+            for vitals_metric in VITALS_METRICS
+        ]
+    )
+
+
+def vitals_summaries_query() -> str:
+    """Query representing summaries of vitals metrics, at the state, district, and PO level."""
+
+    staff_join_fragment = f"""
+  INNER JOIN
+    `{{project_id}}.reference_views.product_staff_materialized` staff
+  ON
+    today.state_code = staff.state_code
+    AND today.officer_id = staff.external_id
+    AND today.start_date BETWEEN staff.start_date AND {nonnull_end_date_exclusive_clause("end_date_exclusive")}
+    AND staff.is_supervision_officer
+    AND NOT (staff.state_code="US_ND" AND (IFNULL(staff.district, "") LIKE "%PRETRIAL" OR IFNULL(staff.district, "") = "CENTRAL OFFICE"))
+    AND NOT (staff.state_code="US_IX" AND (staff.district IS NULL OR IFNULL(staff.specialized_caseload_type_primary, "") = "TRANSITIONAL" OR IFNULL(staff.is_supervision_officer_supervisor, FALSE)))
+"""
+    summary_ctes = "\n,".join(
+        [
+            f"""
+{vitals_entity.aggregated_metrics_entity}_values AS (
+  SELECT
+    today.state_code,
+    today.end_date AS most_recent_date_of_supervision,
+    "{vitals_entity.entity_type}" AS entity_type,
+    {generate_district_id_from_district_name(vitals_entity.entity_id_field)} AS entity_id,
+    {vitals_entity.entity_name_field} AS entity_name,
+    {generate_district_id_from_district_name(vitals_entity.parent_entity_id_field)} AS parent_entity_id,
+    {calculate_rate_query_fragment("today")}
+    {calculate_rate_query_fragment("thirty_days_ago", "30d")}
+    {calculate_rate_query_fragment("ninety_days_ago", "90d")}
+  FROM
+    `{{project_id}}.vitals_report_views.supervision_{vitals_entity.aggregated_metrics_entity}_aggregated_metrics_materialized` today
+  LEFT JOIN
+    `{{project_id}}.vitals_report_views.supervision_{vitals_entity.aggregated_metrics_entity}_aggregated_metrics_materialized` thirty_days_ago
+  ON
+    today.state_code = thirty_days_ago.state_code
+    AND today.{vitals_entity.entity_id_join_field} = thirty_days_ago.{vitals_entity.entity_id_join_field}
+    AND DATE_SUB(today.end_date, INTERVAL 30 DAY) = thirty_days_ago.end_date
+    AND today.period = thirty_days_ago.period
+  LEFT JOIN
+    `{{project_id}}.vitals_report_views.supervision_{vitals_entity.aggregated_metrics_entity}_aggregated_metrics_materialized` ninety_days_ago
+  ON
+    today.state_code = ninety_days_ago.state_code
+    AND today.{vitals_entity.entity_id_join_field} = ninety_days_ago.{vitals_entity.entity_id_join_field}
+    AND DATE_SUB(today.end_date, INTERVAL 90 DAY) = ninety_days_ago.end_date
+    AND today.period = ninety_days_ago.period
+  {staff_join_fragment if vitals_entity.include_staff_join else ''}
+  WHERE
+    today.end_date = CURRENT_DATE("US/Eastern")
+    AND today.period = "DAY"
+)
+"""
+            for vitals_entity in VITALS_ENTITIES
+        ]
+    )
+
+    overall_cases = "\n".join(
+        f"    WHEN '{state}' THEN ROUND(SAFE_DIVIDE({'+'.join(vitals_metric_name)}, {len(vitals_metric_name)}), 0)"
+        for state, vitals_metric_name in VITALS_METRICS_BY_STATE.items()
+    )
+
+    def past(suffix: str) -> str:
+        return "\n".join(
+            f"    WHEN '{state}' THEN ROUND(SAFE_DIVIDE({'+'.join(vitals_metric_name)}, {len(vitals_metric_name)}), 0) - ROUND(SAFE_DIVIDE({'+'.join(f'{vital}_{suffix}' for vital in vitals_metric_name)}, {len(vitals_metric_name)}), 0)"
+            for state, vitals_metric_name in VITALS_METRICS_BY_STATE.items()
+        )
+
+    summary_queries = "\nUNION ALL\n".join(
+        [
+            f"""
+SELECT
+  state_code,
+  most_recent_date_of_supervision,
+  entity_type,
+  entity_id,
+  entity_name,
+  parent_entity_id,
+  ROUND(timely_discharge, 0) AS timely_discharge,
+  ROUND(timely_risk_assessment, 0) AS timely_risk_assessment,
+  ROUND(timely_contact, 0) AS timely_contact,
+  ROUND(timely_downgrade, 0) AS timely_downgrade,
+  CASE state_code
+{overall_cases}
+  END AS overall,
+  CASE state_code
+{past("30d")}
+  END AS overall_30d,
+  CASE state_code
+{past("90d")}
+  END AS overall_90d
+FROM {vitals_entity.aggregated_metrics_entity}_values
+WHERE
+    NOT (state_code="US_ND" AND (entity_id LIKE "%PRETRIAL%" OR entity_id IN ("CENTRAL_OFFICE", "EXTERNAL_UNKNOWN")))
+    AND NOT (state_code="US_IX" AND entity_id IN ("PAROLE_COMMISSION_OFFICE", "DISTRICT_0", "EXTERNAL_UNKNOWN", "OUT_OF_STATE"))
+{f"AND state_code IN ({list_to_query_string(vitals_entity.enabled_states, quoted=True)})"}
+"""
+            for vitals_entity in VITALS_ENTITIES
+        ]
     )
 
     return f"""
-    SELECT
-      state_code,
-      most_recent_date_of_supervision,
-      supervising_officer_external_id,
-      district_name,
-      district_id,
-      MAX(IF(date_of_supervision = most_recent_supervision_dates_per_state.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
-      MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
-      MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY), {field}, null)) as {field}_90_days_before,
-      CASE
-        WHEN {po_condition} THEN {bq_utils.clean_up_supervising_officer_external_id()}
-        WHEN {district_condition} THEN {generate_district_id_from_district_name('district_name')}
-        ELSE 'STATE_DOC'
-      END as entity_id,
-      IF( {po_condition}, {generate_district_id_from_district_name('district_name')}, 'STATE_DOC') as parent_entity_id
-    FROM
-     `{{project_id}}.{{vitals_report_dataset}}.{vitals_table}` metric_table
-    INNER JOIN
-        most_recent_supervision_dates_per_state
-    USING (state_code)
-    WHERE (supervising_officer_external_id = 'ALL' OR district_id != 'ALL')
-      AND date_of_supervision IN (
-        most_recent_supervision_dates_per_state.most_recent_date_of_supervision,
-        DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY),
-        DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY))
-      AND {make_enabled_states_filter_for_vital(field)}
-    GROUP BY state_code, most_recent_date_of_supervision, entity_id, parent_entity_id, supervising_officer_external_id, district_id, district_name
-    """
-
-
-def generate_overall_scores(
-    enabled_vitals: Optional[Dict[str, List[str]]] = None,
-) -> str:
-    """
-    Uses ENABLED_VITALS to generate the overall score field by averaging all of the enabled vitals per state.
-    """
-    # Example generated code:
-    # enabled_vitals = {
-    #    'US_XX': ['vital_1', 'vital_2'],
-    #    'US_YY': ['vital_1', 'vital_3', 'vital_4']
-    # }
-    #
-    # CASE state_code
-    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2, 0)
-    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3, 0)
-    # END as overall,
-    #
-    # CASE state_code
-    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2 - (vital_1_30_days_before + vital_2_30_days_before) / 2, 0)
-    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3 - (vital_1_30_days_before + vital_3_30_days_before + vital_4_30_days_before) / 3, 0)
-    # END as overall_30d,
-    #
-    # CASE state_code
-    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2 - (vital_1_90_days_before + vital_2_90_days_before) / 2, 0)
-    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3 - (vital_1_90_days_before + vital_3_90_days_before + vital_4_90_days_before) / 3, 0)
-    # END as overall_90d,
-
-    if enabled_vitals is None:
-        enabled_vitals = ENABLED_VITALS
-
-    def most_recent_vitals_sum(vitals: List[str]) -> str:
-        return f'({" + ".join(f"most_recent_{metric}" for metric in vitals)}) / {len(vitals)}'
-
-    def historic_vitals_sum(vitals: List[str], days_past: int) -> str:
-        return f'({" + ".join(f"{metric}_{days_past}_days_before" for metric in vitals)}) / {len(vitals)}'
-
-    overall_cases = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)}, 0)"
-        for state, vitals in enabled_vitals.items()
-    )
-    most_recent_overall_query = f"""
-      CASE state_code
-        {overall_cases}
-      END as overall,"""
-
-    overall_30_cases = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 30)}, 1)"
-        for state, vitals in enabled_vitals.items()
-    )
-    overall_30_query = f"""
-      CASE state_code
-        {overall_30_cases}
-      END as overall_30d,"""
-
-    overall_90_cases = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 90)}, 1)"
-        for state, vitals in enabled_vitals.items()
-    )
-    overall_90_query = f"""
-      CASE state_code
-        {overall_90_cases}
-      END as overall_90d,"""
-
-    return most_recent_overall_query + overall_30_query + overall_90_query
-
-
-VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
-    WITH most_recent_supervision_dates_per_state AS (
-    SELECT DISTINCT
-        state_code,
-        CURRENT_DATE('US/Eastern') as most_recent_date_of_supervision,
-      FROM
-        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
-      WHERE included_in_state_population
-        AND end_date_exclusive IS NULL
-    ), 
-    timely_discharge AS (
-     {generate_entity_summary_query('timely_discharge', 'supervision_population_due_for_release_by_po_by_day')}
-    ),
-    timely_risk_assessment AS (
-     {generate_entity_summary_query('timely_risk_assessment', 'overdue_lsir_by_po_by_day')}
-    ),
-    timely_contact AS (
-     {generate_entity_summary_query('timely_contact', 'timely_contact_by_po_by_day')}
-    ),
-    timely_downgrade AS (
-     {generate_entity_summary_query('timely_downgrade', 'supervision_downgrade_opportunities_by_po_by_day')}
-    ),
-    vitals_metrics AS (
-        SELECT
-          COALESCE(
-            timely_discharge.state_code,
-            timely_risk_assessment.state_code,
-            timely_contact.state_code,
-            timely_downgrade.state_code
-          ) AS state_code,
-          COALESCE(
-            timely_discharge.most_recent_date_of_supervision,
-            timely_risk_assessment.most_recent_date_of_supervision,
-            timely_contact.most_recent_date_of_supervision,
-            timely_downgrade.most_recent_date_of_supervision
-          ) AS most_recent_date_of_supervision,
-          COALESCE(
-            timely_discharge.supervising_officer_external_id,
-            timely_risk_assessment.supervising_officer_external_id,
-            timely_contact.supervising_officer_external_id,
-            timely_downgrade.supervising_officer_external_id
-          ) AS supervising_officer_external_id,
-         COALESCE(
-            timely_discharge.district_id,
-            timely_risk_assessment.district_id,
-            timely_contact.district_id,
-            timely_downgrade.district_id
-          ) AS district_id,
-        COALESCE(
-            timely_discharge.entity_id,
-            timely_risk_assessment.entity_id,
-            timely_contact.entity_id,
-            timely_downgrade.entity_id
-          ) AS entity_id,
-        COALESCE(
-            timely_discharge.district_name,
-            timely_risk_assessment.district_name,
-            timely_contact.district_name,
-            timely_downgrade.district_name
-          ) AS district_name,
-        COALESCE(
-            timely_discharge.parent_entity_id,
-            timely_risk_assessment.parent_entity_id,
-            timely_contact.parent_entity_id,
-            timely_downgrade.parent_entity_id
-          ) AS parent_entity_id,
-          ROUND(most_recent_timely_discharge) as timely_discharge,
-          ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
-          ROUND(most_recent_timely_contact) as timely_contact,
-          ROUND(most_recent_timely_downgrade) as timely_downgrade,
-          {generate_overall_scores()}
-        FROM timely_discharge
-        FULL OUTER JOIN timely_risk_assessment
-          USING (state_code, entity_id, parent_entity_id)
-        FULL OUTER JOIN timely_contact
-          USING (state_code, entity_id, parent_entity_id)
-        FULL OUTER JOIN timely_downgrade
-          USING (state_code, entity_id, parent_entity_id)
-        WHERE entity_id is not null
-          AND entity_id != 'UNKNOWN'
-          AND ROUND(most_recent_timely_risk_assessment) != 0
-        ORDER BY most_recent_date_of_supervision DESC
-    )
-
-    SELECT DISTINCT
-        vitals_metrics.state_code,
-        most_recent_date_of_supervision,
-        CASE
-            WHEN supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN 'po'
-            WHEN supervising_officer_external_id = 'ALL' AND district_id != 'ALL'
-            THEN IF(vitals_metrics.state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
-        ELSE 'state'
-        END as entity_type,
-        entity_id,
-        CASE
-            WHEN vitals_metrics.supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN IFNULL(agent.full_name, 'UNKNOWN')
-            WHEN vitals_metrics.supervising_officer_external_id = 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_district_display_name('vitals_metrics.state_code', 'district_name')}
-            ELSE 'STATE DOC'
-        END as entity_name,
-        parent_entity_id,
-        timely_discharge,
-        timely_risk_assessment,
-        timely_contact,
-        timely_downgrade,
-        overall,
-        overall_30d,
-        overall_90d
-    FROM vitals_metrics
-    LEFT JOIN `{{project_id}}.reference_views.state_staff_with_names` agent
-        ON vitals_metrics.state_code = agent.state_code
-        AND vitals_metrics.supervising_officer_external_id = agent.legacy_supervising_officer_external_id
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` rp
-        ON vitals_metrics.state_code = rp.state_code
-        AND agent.staff_id = rp.staff_id
-    -- Filter out users who are not currently active POs
-    WHERE (rp.role_type = "SUPERVISION_OFFICER" AND rp.end_date IS NULL) OR vitals_metrics.supervising_officer_external_id = 'ALL'
+WITH {summary_ctes}
+{summary_queries}
 """
 
-VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
+
+VITALS_SUMMARIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=VITALS_SUMMARIES_VIEW_NAME,
-    view_query_template=VITALS_SUMMARIES_QUERY_TEMPLATE,
-    dimensions=("entity_id", "entity_name", "parent_entity_id"),
+    view_query_template=vitals_summaries_query(),
     description=VITALS_SUMMARIES_DESCRIPTION,
-    vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
