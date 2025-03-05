@@ -507,7 +507,7 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
         # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
-            attr_validators.is_opt_not_future_date,
+            attr_validators.is_opt_date,
             state_exempted_validator(
                 attr_validators.is_opt_reasonable_past_date(
                     min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
