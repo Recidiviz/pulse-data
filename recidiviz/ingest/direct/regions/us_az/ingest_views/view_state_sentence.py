@@ -57,7 +57,15 @@ SELECT
     LIFE_OR_DEATH_ID IN {LIFE_SENTENCE_IDS} AS is_life,
     LIFE_OR_DEATH_ID IN {CAPITAL_PUNISHMENT_IDS} AS is_capital_punishment,
     PAROLE_ELIGIBILITY_ID = '{PAROLE_POSSIBLE_ID}' AS parole_possible,
-    CAST(NULLIF(OFFENSE_DTM, 'NULL') AS DATETIME) AS OFFENSE_DTM,
+    -- We want to NULL out invalid dates, but still keep the information relating to the charge
+    -- in general. This ensures we can assess eligibility based on charges as accurately as possible
+    -- even if an offense date was entered incorrectly.
+    CASE  
+        WHEN CAST(NULLIF(OFFENSE_DTM, 'NULL') AS DATETIME) BETWEEN '1900-01-01' AND CURRENT_DATETIME('US/Eastern') 
+        THEN CAST(NULLIF(OFFENSE_DTM, 'NULL') AS DATETIME)
+        -- This case will apply to NULL dates and dates outside of the acceptable range. 
+        ELSE CAST(NULL AS DATETIME)
+    END AS OFFENSE_DTM,
     NULLIF(SUBSECTION_CODE, 'NULL') AS SUBSECTION_CODE, -- for statute
     OFFENSE_NUMBER -- charge count
 FROM
