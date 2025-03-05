@@ -49,7 +49,7 @@ WITH tpr_base AS (
         WHEN agrmt.INMATE_SIGNATURE_ID IS NOT NULL AND agrmt.INMATE_SIG_NA != 'Y' THEN 'SIGNED'
         ELSE 'NOT SIGNED, NOT DECLINED'
     END AS SIG_STATUS,
-    PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p',agrmt.CREATE_DTM) AS status_dtm,
+    COALESCE(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p',agrmt.CREATE_DTM), CAST(elig.CREATE_DTM AS DATETIME)) AS status_dtm,
     'TPR' AS program
   FROM
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` ep
@@ -125,6 +125,8 @@ SELECT DISTINCT
     * 
 FROM
     status_joined_to_sessions
+-- Only keep the most recent update
+QUALIFY ROW_NUMBER() OVER (PARTITION BY PERSON_ID, DOC_ID, SESSION_ID, PROGRAM ORDER BY STATUS_DTM DESC) = 1
 """
 
 US_AZ_AGREEMENT_FORM_SIGNATURES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
