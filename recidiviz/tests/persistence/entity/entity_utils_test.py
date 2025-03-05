@@ -45,6 +45,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_child_entity_classes,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_table_id,
+    get_external_id_entity_class,
     get_many_to_many_relationships,
     group_has_external_id_entities_by_function,
     is_many_to_many_relationship,
@@ -61,8 +62,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateEarlyDischarge,
     StateIncarcerationSentence,
     StatePerson,
+    StatePersonExternalId,
     StateSentence,
     StateStaff,
+    StateStaffExternalId,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -552,6 +555,28 @@ class TestEntityUtils(TestCase):
             set(),
             get_child_entity_classes(StateCharge, entities_module_context),
         )
+
+    def test_get_external_id_entity_class(self) -> None:
+        self.assertEqual(
+            StatePersonExternalId,
+            get_external_id_entity_class(
+                entities_module_context_for_module(state_entities), StatePerson
+            ),
+        )
+        self.assertEqual(
+            StateStaffExternalId,
+            get_external_id_entity_class(
+                entities_module_context_for_module(state_entities), StateStaff
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Entity class \[StateAssessment\] is not a root entity.",
+        ):
+            get_external_id_entity_class(
+                entities_module_context_for_module(state_entities), StateAssessment
+            )
 
 
 class TestBidirectionalUpdates(TestCase):

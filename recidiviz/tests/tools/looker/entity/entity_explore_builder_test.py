@@ -16,27 +16,14 @@
 # =============================================================================
 """Tests for entity_explore_builder.py."""
 import unittest
-from types import ModuleType
 
-from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.tests.persistence.entity import fake_entities
+from recidiviz.tests.persistence.entity.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
+)
 from recidiviz.tools.looker.entity.entity_explore_builder import (
     EntityLookMLExploreBuilder,
 )
-
-
-class FakePersonModuleContext(EntitiesModuleContext):
-    @classmethod
-    def entities_module(cls) -> ModuleType:
-        return fake_entities
-
-    @classmethod
-    def class_hierarchy(cls) -> list[str]:
-        return [
-            fake_entities.FakePerson.__name__,
-            fake_entities.FakeEntity.__name__,
-            fake_entities.FakeAnotherEntity.__name__,
-        ]
 
 
 class TestEntityLookMLExploreBuilder(unittest.TestCase):
@@ -47,7 +34,8 @@ class TestEntityLookMLExploreBuilder(unittest.TestCase):
 explore: fake_person_template {
   extension: required
   extends: [
-    fake_entity
+    fake_entity,
+    fake_person_external_id
   ]
 
   view_name: fake_person
@@ -56,6 +44,11 @@ explore: fake_person_template {
   group_label: "Fake"
   join: fake_entity {
     sql_on: ${fake_person.fake_person_id} = ${fake_entity.fake_person_id};;
+    relationship: one_to_many
+  }
+
+  join: fake_person_external_id {
+    sql_on: ${fake_person.fake_person_id} = ${fake_person_external_id.fake_person_id};;
     relationship: one_to_many
   }
 
@@ -81,10 +74,14 @@ explore: fake_another_entity_fake_entity_association {
   }
 
 }
+explore: fake_person_external_id {
+  extension: required
+
+}
 """
 
         explores = EntityLookMLExploreBuilder(
-            module_context=FakePersonModuleContext(),
+            module_context=FakeEntitiesModuleContext(),
             root_entity_cls=fake_entities.FakePerson,
             group_label="Fake",
         ).build()

@@ -130,6 +130,18 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
                 SchemaField("full_name", "STRING", "NULLABLE"),
             ],
+            "fake_person_external_id": [
+                SchemaField("external_id", "STRING", "NULLABLE"),
+                SchemaField("id_type", "STRING", "NULLABLE"),
+                SchemaField("state_code", "STRING", "NULLABLE"),
+                SchemaField("fake_person_external_id_id", "INTEGER", "NULLABLE"),
+                SchemaField(
+                    "fake_person_id",
+                    "INTEGER",
+                    "NULLABLE",
+                    description="Foreign key reference to fake_person",
+                ),
+            ],
         }
         schema = get_bq_schema_for_entities_module(fake_entities)
         self.assertEqual(expected_schema, schema)

@@ -42,10 +42,12 @@ from more_itertools import first
 
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
+    attr_field_attribute_for_field_name,
     attr_field_name_storing_referenced_cls_name,
     attr_field_referenced_cls_name_for_field_name,
     attr_field_type_for_field_name,
 )
+from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -911,3 +913,34 @@ def group_has_external_id_entities_by_function(
         grouped_external_ids.append(current_group)
 
     return grouped_external_ids
+
+
+def get_external_id_entity_class(
+    module_context: EntitiesModuleContext,
+    root_entity_cls: Type[Entity],
+) -> Type[ExternalIdEntity]:
+    """Returns the external id entity class associated with the provided root entity"""
+    if not issubclass(root_entity_cls, RootEntity):
+        raise ValueError(
+            f"Entity class [{root_entity_cls.__name__}] is not a root entity."
+        )
+
+    if not issubclass(root_entity_cls, HasMultipleExternalIdsEntity):
+        raise ValueError(
+            f"Entity class [{root_entity_cls.__name__}] does not have associated external ids."
+        )
+
+    external_ids_field_name = "external_ids"
+    external_id_cls_name = get_non_flat_attribute_class_name(
+        attribute=attr_field_attribute_for_field_name(
+            root_entity_cls, external_ids_field_name
+        )
+    )
+    if not external_id_cls_name:
+        raise ValueError(
+            f"Entity class [{root_entity_cls.__name__}] does not have field [{external_ids_field_name}]."
+        )
+
+    return get_entity_class_in_module_with_name(
+        module_context.entities_module(), external_id_cls_name
+    )

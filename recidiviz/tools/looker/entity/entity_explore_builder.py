@@ -42,6 +42,12 @@ from recidiviz.persistence.entity.root_entity_utils import (
 STATE_GROUP_LABEL = "State"
 
 
+def explore_name_for_root_entity(root_entity_cls: Type[Entity]) -> str:
+    """Returns the LookML explore name for the given root entity class.
+    Adds template suffix to make clear that the explore needs to be extended."""
+    return f"{root_entity_cls.get_table_id()}_template"
+
+
 @attr.define
 class EntityLookMLExploreBuilder:
     """Builds a LookML explore template for a root entity class and it's child entities.
@@ -175,8 +181,7 @@ class EntityLookMLExploreBuilder:
         table_id = self.root_entity_cls.get_table_id()
         root_explore = self._table_name_to_explore[table_id]
 
-        # Add template suffix to make clear that explore should be extended
-        root_explore.explore_name = f"{table_id}_template"
+        root_explore.explore_name = explore_name_for_root_entity(self.root_entity_cls)
         # View name needs to be specified since explore name is different
         root_explore.view_name = table_id
         root_explore.parameters = [

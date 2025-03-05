@@ -20,11 +20,20 @@ from typing import Optional
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    ExternalIdEntity,
+    HasMultipleExternalIdsEntity,
+    RootEntity,
+)
 
 
 @attr.define
-class FakePerson(Entity, RootEntity):
+class FakePerson(
+    HasMultipleExternalIdsEntity["FakePersonExternalId"],
+    Entity,
+    RootEntity,
+):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     fake_person_id: int | None = attr.ib(
@@ -34,9 +43,25 @@ class FakePerson(Entity, RootEntity):
 
     entities: list["FakeEntity"] = attr.ib(factory=list)
 
+    external_ids: list["FakePersonExternalId"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+    def get_external_ids(self) -> list["FakePersonExternalId"]:
+        return self.external_ids
+
     @classmethod
     def back_edge_field_name(cls) -> str:
         return "person"
+
+
+@attr.define
+class FakePersonExternalId(ExternalIdEntity, Entity):
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    fake_person_external_id_id: int | None = attr.ib(validator=attr_validators.is_int)
+
+    person: Optional["FakePerson"] = attr.ib(default=None)
 
 
 @attr.define

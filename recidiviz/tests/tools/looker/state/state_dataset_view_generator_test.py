@@ -269,6 +269,64 @@ class StateViewGenerator(unittest.TestCase):
                     ),
                 ],
             ),
+            LookMLView(
+                view_name="fake_person_external_id",
+                table=SqlTableAddress(
+                    address=BigQueryAddress(
+                        dataset_id="state", table_id="fake_person_external_id"
+                    )
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="external_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.external_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="fake_person_external_id_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterPrimaryKey(is_primary_key=True),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(
+                                sql_text="${TABLE}.fake_person_external_id_id"
+                            ),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="fake_person_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterHidden(is_hidden=True),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.fake_person_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="id_type",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.id_type"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="state_code",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.state_code"),
+                        ],
+                    ),
+                    MeasureLookMLViewField(
+                        field_name="count",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.COUNT),
+                            FieldParameterDrillFields(fields=[]),
+                        ],
+                    ),
+                ],
+            ),
         ]
         for i, view in enumerate(
             sorted(generate_state_views(), key=lambda v: v.view_name)
