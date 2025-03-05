@@ -33,16 +33,12 @@ resource "google_storage_bucket" "direct-ingest-bucket" {
   versioning {
     enabled = true
   }
-
-  labels = {
-    "state_code" = var.state_code
-  }
 }
 
 resource "google_storage_notification" "direct-ingest-bucket-notification" {
-  bucket         = google_storage_bucket.direct-ingest-bucket.name
-  topic          = var.raw_data_storage_notification_topic_id
-  event_types    = ["OBJECT_FINALIZE"]
+  bucket = google_storage_bucket.direct-ingest-bucket.name
+  topic  = var.raw_data_storage_notification_topic_id
+  event_types = ["OBJECT_FINALIZE"]
   payload_format = "JSON_API_V1"
 }
 
@@ -64,10 +60,6 @@ resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
   versioning {
     enabled = true
   }
-
-  labels = {
-    "state_code" = var.state_code
-  }
 }
 
 module "secondary-direct-ingest-bucket" {
@@ -76,16 +68,12 @@ module "secondary-direct-ingest-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.direct_ingest_formatted_str}-secondary"
   location    = var.region
-
-  labels = {
-    "state_code" = var.state_code
-  }
 }
 
 resource "google_storage_notification" "secondary-direct-ingest-bucket-notification" {
-  bucket         = module.secondary-direct-ingest-bucket.name
-  topic          = var.raw_data_storage_notification_topic_id
-  event_types    = ["OBJECT_FINALIZE"]
+  bucket = module.secondary-direct-ingest-bucket.name
+  topic  = var.raw_data_storage_notification_topic_id
+  event_types = ["OBJECT_FINALIZE"]
   payload_format = "JSON_API_V1"
 }
 
@@ -97,7 +85,4 @@ module "supplemental-data-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.direct_ingest_formatted_str}-supplemental"
   location    = var.region
-  labels = {
-    "state_code" = var.state_code
-  }
 }
