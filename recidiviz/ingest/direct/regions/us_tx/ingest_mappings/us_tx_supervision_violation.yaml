@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  VIOLATION_ID: STRING
+  SID_Number: STRING
+  VIOLATION_DATE: DATE
+  response_list: STRING
+  VIOLATION_STATUS: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id: VIOLATION_ID
+          violation_date: VIOLATION_DATE
+          violation_metadata:
+            $normalized_values_json_dict:
+              ViolationStatus: VIOLATION_STATUS
+          supervision_violation_responses:
+            - $foreach:
+                $iterable:
+                  $split_json: response_list
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - $json_extract:
+                              $key: HEARING_PERIOD_ID
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: RESPONSE_DATE
+                              $json: $iter_item
+                    response_date:
+                      $json_extract:
+                        $key: RESPONSE_DATE
+                        $json: $iter_item
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: VIOLATION_RESULT
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - CONTINUE WARRANT IN EFFECT
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - AWAITING BPP VOTE
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - REVOKE
+                                  - RETURN FOR CORRECTIONS
+                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                  - NO VIOLATION RECOMENDATION OCCURRED
