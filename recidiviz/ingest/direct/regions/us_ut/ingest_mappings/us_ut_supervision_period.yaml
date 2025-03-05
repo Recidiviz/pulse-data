@@ -11,7 +11,7 @@ input_columns:
   end_reason: STRING
   lgl_stat_desc: STRING
   body_loc_desc: STRING
-  sprvsn_lvl_cd: STRING
+  sprvsn_lvl_desc: STRING
   agnt_id: STRING
 unused_columns: []
 output:
@@ -29,49 +29,58 @@ output:
                 - period_id
           start_date: start_date
           termination_date: end_date
-          # TODO(#37075): Get a code table so we can properly map these values.
           supervision_level:
             $enum_mapping:
-              $raw_text: sprvsn_lvl_cd
+              $raw_text: sprvsn_lvl_desc
               $mappings:
+                StateSupervisionLevel.WARRANT:
+                  - FUGITIVE
+                  - DORA FUGITIVE # Drug Offender Reform Act
+                StateSupervisionLevel.MAXIMUM:
+                  - MAXIMUM FELONY
+                  - MAXIMUM SUPERVISION
+                  - MAXIMUM PAROLE
+                  - MAXIMUM MISDEMEANOR
+                StateSupervisionLevel.HIGH:
+                  - INTENSIVE
+                  - DORA INTENSIVE
+                  - HIGH
+                  - ISP I # Intensive Supervision Probation (ISP)
+                  - ISP II # Intensive Supervision Probation (ISP)
+                StateSupervisionLevel.MEDIUM:
+                  - MEDIUM PAROLE
+                  - MEDIUM SUPERVISION
+                  - MODERATE
+                  - MEDIUM FELONY
+                StateSupervisionLevel.LOW_MEDIUM:
+                  - MIN/MED MISDEMEANOR
+                StateSupervisionLevel.MINIMUM:
+                  - LOW
+                  - MINIMUM SUPERVISION
+                  - MINIMUM PAROLE
+                  - MINIMUM FELONY
+                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
+                  - TELEPHONIC
+                  - ADMINISTRATION
+                StateSupervisionLevel.RESIDENTIAL_PROGRAM:
+                  - RESIDENTIAL
+                  - DORA RESIDENTIAL # Drug Offender Reform Act
+                  - DORA INCARCERATED # Drug Offender Reform Act
+                  - INCARCERATED
+                StateSupervisionLevel.INTERSTATE_COMPACT:
+                  - COMPACT OUT
+                StateSupervisionLevel.UNSUPERVISED:
+                  - COLLECTION ONLY
+                StateSupervisionLevel.EXTERNAL_UNKNOWN:
+                  - UNKNOWN
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  - "100"
-                  - "1000"
-                  - "1200"
-                  - "1300"
-                  - "1400"
-                  - "1500"
-                  - "1600"
-                  - "1700"
-                  - "1800"
-                  - "2000"
-                  - "2100"
-                  - "2200"
-                  - "2300"
-                  - "2301"
-                  - "2500"
-                  - "2600"
-                  - "2700"
-                  - "2800"
-                  - "2900"
-                  - "300"
-                  - "3000"
-                  - "3100"
-                  - "3500"
-                  - "3555"
-                  - "3556"
-                  - "3557"
-                  - "3558"
-                  - "3559"
-                  - "400"
-                  - "500"
-                  - "501"
-                  - "550"
-                  - "551"
-                  - "600"
-                  - "700"
-                  - "800"
-                  - "900"
+                  - IDS I
+                  - IDS II
+                  - SPECIAL NEEDS OFFNDR
+                  - SEX OFFENDER I
+                  - SEX OFFENDER II
+                  - SEX OFFENDER III
+                  - APPEAL
           supervising_officer_staff_external_id: agnt_id
           supervising_officer_staff_external_id_type:
             $conditional:

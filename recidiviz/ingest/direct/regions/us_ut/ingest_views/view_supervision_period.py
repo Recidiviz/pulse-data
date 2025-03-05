@@ -101,11 +101,13 @@ location_periods AS (
 supervision_level AS (
     SELECT DISTINCT
         ofndr_num,
-        sprvsn_lvl_cd,
+        cd.sprvsn_lvl_desc,
         'Supervision Level Change' as reason,
         CAST(strt_dt AS DATETIME) AS start_date,
         CAST(IF(end_dt = '(null)', NULL, end_dt) AS DATETIME) AS end_date,
     FROM {ofndr_sprvsn}
+    LEFT JOIN {sprvsn_lvl_cd} cd
+    USING(sprvsn_lvl_cd)
 ),
 -- Create supervision level periods using all supervision level updates.
 supervision_level_periods AS (
@@ -114,7 +116,7 @@ supervision_level_periods AS (
         start_date,
         end_date,
         reason,
-        sprvsn_lvl_cd,
+        sprvsn_lvl_desc,
     FROM (
         SELECT
             ofndr_num,
@@ -122,12 +124,12 @@ supervision_level_periods AS (
             date_gap_id,
             MIN(start_date) OVER w AS start_date,
             IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
-            sprvsn_lvl_cd,
+            sprvsn_lvl_desc,
             reason
         FROM (
             SELECT
                 *,
-                SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY ofndr_num, CAST(sprvsn_lvl_cd AS STRING) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+                SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY ofndr_num, sprvsn_lvl_desc ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
                 SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY ofndr_num ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
             FROM (
                 SELECT
@@ -135,10 +137,10 @@ supervision_level_periods AS (
                     start_date,
                     IFNULL(end_date, "9999-12-31") AS end_date,
                     -- Define a session boundary if there is no prior adjacent span with the same attribute columns
-                    COALESCE(LAG(end_date) OVER (PARTITION BY ofndr_num, CAST(sprvsn_lvl_cd AS STRING) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                    COALESCE(LAG(end_date) OVER (PARTITION BY ofndr_num, sprvsn_lvl_desc ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
                     -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
                     COALESCE(LAG(end_date) OVER (PARTITION BY ofndr_num ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
-                    sprvsn_lvl_cd,
+                    sprvsn_lvl_desc,
                     reason
                 FROM supervision_level
             )
@@ -146,7 +148,7 @@ supervision_level_periods AS (
         -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
         WHERE TRUE
         QUALIFY ROW_NUMBER() OVER w = 1
-        WINDOW w AS (PARTITION BY ofndr_num, session_id, CAST(sprvsn_lvl_cd AS STRING))
+        WINDOW w AS (PARTITION BY ofndr_num, session_id, sprvsn_lvl_desc)
     )
 ),
 -- Collect all client <> agent assignments and the dates they were made.
@@ -288,7 +290,7 @@ periods_with_attributes AS (
         IF(p.start_date = sl.start_date, sl.reason, NULL) AS level_start_reason,
         IF(p.end_date = sl.end_date, sl.reason, NULL) AS level_end_reason,
 
-        sl.sprvsn_lvl_cd,
+        sl.sprvsn_lvl_desc,
 
         -- Only populate agent change reasons if this period matches the agent change date
         -- This prevents us from improperly setting the admission reason for subsequent
@@ -336,7 +338,7 @@ supervision_periods AS (
     COALESCE(location_end_reason, legal_status_end_reason, level_end_reason, agent_end_reason) AS end_reason,
     lgl_stat_desc,
     body_loc_desc,
-    sprvsn_lvl_cd,
+    sprvsn_lvl_desc,
     agnt_id,
     FROM periods_with_attributes
     LEFT JOIN {lgl_stat_chg_cd} start_reason

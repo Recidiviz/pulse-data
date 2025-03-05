@@ -527,7 +527,7 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
 
 def parse_role_subtype(raw_text: str) -> StateStaffRoleSubtype:
     """
-    Lead Officer" is a supervisor of other officers.
+    "Lead Officer" is a supervisor of other officers.
     It is common for these staff members to also supervise clients directly.
     "Case Manager" and "Community Corrections Agent" are designations for staff members
     who only supervise clients, not other officers.
