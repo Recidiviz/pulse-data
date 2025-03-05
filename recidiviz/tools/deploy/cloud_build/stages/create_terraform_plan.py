@@ -266,10 +266,10 @@ class CreateTerraformPlan(DeploymentStageInterface):
         return BuildConfiguration(
             steps=build_steps,
             uses_source=True,
-            # 90 min timeout for the overall job - we expect most runs to take much less
+            # 4 hour timeout for the overall job - we expect most runs to take much less
             # time than this, but some infrastructure updates may take a long time and
             # we don't want to fail those in the middle.
-            timeout_seconds=90 * 60,
+            timeout_seconds=4 * 60 * 60,
             secrets=[PAGERDUTY_SECRET_NAME],
             machine_type=assert_type(
                 BuildOptions.MachineType.E2_HIGHCPU_32,
