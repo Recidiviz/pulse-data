@@ -292,6 +292,14 @@ WHERE
             ],
         ),
         DimensionLookMLViewField(
+            field_name="metric_month_truncated",
+            parameters=[
+                LookMLFieldParameter.description("Metric Month Truncated"),
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.sql("FORMAT_DATE('%Y-%m', ${TABLE}.metric_month)"),
+            ],
+        ),
+        DimensionLookMLViewField(
             field_name="metric_year",
             parameters=[
                 LookMLFieldParameter.description("Metric Year"),
