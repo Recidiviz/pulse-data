@@ -110,7 +110,6 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
                 )
             )
             | pipeline.GenerateEntities(
-                state_code=self.state_code(),
                 ingest_view_manifest=ingest_view_manifest,
                 ingest_view_context=IngestViewContentsContext.build_for_tests(),
             )

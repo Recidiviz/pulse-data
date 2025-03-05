@@ -221,7 +221,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 ingest_view_results
                 | f"Generate {ingest_view} entities."
                 >> GenerateEntities(
-                    state_code=state_code,
                     ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
                         ingest_view
                     ],

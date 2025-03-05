@@ -99,6 +99,26 @@ class IngestViewManifest:
             if isinstance(node, EntityTreeManifest)
         }
 
+    def parse_row_into_entity(
+        self,
+        row: dict[str, str],
+        context: IngestViewContentsContext,
+        row_num: int = 0,
+    ) -> Entity:
+        if not self.should_launch(context):
+            raise ValueError(
+                f"Cannot parse results for ingest view [{self.ingest_view_name}] "
+                f"because should_launch is false."
+            )
+        input_column_names = set(self.input_column_to_type.keys())
+        self._validate_row_columns(
+            row_number=row_num, row=row, expected_columns=input_column_names
+        )
+        output_tree = self.output.build_from_row(row, context)
+        if not output_tree:
+            raise ValueError("Unexpected null output tree for row.")
+        return output_tree
+
     def parse_contents(
         self,
         *,
@@ -112,35 +132,17 @@ class IngestViewManifest:
         entities.
         """
         result = []
-        if not self.should_launch(context):
-            raise ValueError(
-                f"Cannot parse results for ingest view [{self.ingest_view_name}] "
-                f"because should_launch is false."
-            )
-
-        input_column_names = set(self.input_column_to_type.keys())
-
         for i, row in enumerate(contents_iterator):
-
-            self._validate_row_columns(
-                row_number=i, row=row, expected_columns=input_column_names
-            )
-
             try:
-                output_tree = self.output.build_from_row(row, context)
+                output_tree = self.parse_row_into_entity(row, context, i)
             except Exception as e:
                 if result_callable:
                     result_callable(i, row, e)
                     # If the callable does not raise the exception, just skip that result.
                     continue
                 raise e
-
-            if not output_tree:
-                raise ValueError("Unexpected null output tree for row.")
-
             if result_callable:
                 result_callable(i, row, output_tree)
-
             result.append(output_tree)
         return result
 
