@@ -39,7 +39,7 @@ base AS (
     SC_EPISODE_ID,
     task_subtype,
     -- Filter out invalid date values
-    IF(cs_end_date BETWEEN '1900-01-01' AND '2100-01-01', cs_end_date, NULL) AS cs_end_date,
+    cs_end_date,
     update_datetime,
     FROM (
       SELECT DISTINCT 
@@ -48,14 +48,17 @@ base AS (
       --  1. Manual Lock (Entered manually by an officer)
       --  2. Adjusted Release Date (Calculated by ACIS to avoid releases falling on holidays and weekends)
       --  3. Original release date, no suffix (Calculated by ACIS without adjustments)
-        CAST(COALESCE(
+        IFNULL(CAST(COALESCE(
           COMMUNITY_SUPV_END_DTM_ML,
           COMMUNITY_SUPV_END_DTM_ARD, 
-          COMMUNITY_SUPV_END_DTM) AS DATETIME) AS cs_end_date,
+          COMMUNITY_SUPV_END_DTM) AS DATETIME), 
+          -- Create a magic date to identify stints that have never had a CSED date.
+          CAST('0001-01-01' AS DATETIME)) AS cs_end_date,
         CAST(COALESCE(
           off.UPDT_DTM_ML, 
           off.UPDT_DTM_ARD, 
-          off.UPDT_DTM) AS DATETIME) AS update_datetime,
+          off.UPDT_DTM,
+          off.CREATE_DTM) AS DATETIME) AS update_datetime,
         ep.PERSON_ID,
         ep.DOC_ID,
         sc.FINAL_OFFENSE_ID,
@@ -82,9 +85,9 @@ dedup_base AS (
       MAX(cs_end_date) OVER (PARTITION BY PERSON_ID, DOC_ID, SC_EPISODE_ID, FINAL_OFFENSE_ID, update_datetime) AS cs_end_date,
       update_datetime,
   FROM base
-)
-
+),
 -- Maintain rows where the CSED changed; discard the rest. 
+changed_rows_only AS (
 SELECT 
   * EXCEPT (prev_cs_end_date)
 FROM (
@@ -104,6 +107,20 @@ FROM (
 -- if release date changed, add a row to the ledger
 WHERE 
   cs_end_date IS DISTINCT FROM prev_cs_end_date
+)
+
+SELECT * FROM (
+  SELECT * EXCEPT (cs_end_date),
+  -- Change the magic NULL date values back to actual NULLs.
+  CASE 
+    WHEN cs_end_date = '0001-01-01' THEN CAST(NULL AS DATETIME)
+    ELSE cs_end_date
+  END AS cs_end_date,
+FROM changed_rows_only
+)
+-- Filter invalid dates
+WHERE 
+  cs_end_date IS NULL OR (cs_end_date BETWEEN '1900-01-01' AND '2100-01-01')
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
