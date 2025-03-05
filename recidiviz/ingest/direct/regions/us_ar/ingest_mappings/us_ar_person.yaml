@@ -65,6 +65,7 @@ output:
                     StatePersonAliasType.AFFILIATION_NAME: "8" # Moniker
                     StatePersonAliasType.INTERNAL_UNKNOWN:
                       - SPECIAL_TYPE # 5: Marital, 6: Adopted, 7: TRUE (?), 9: Clemency Application
+                      - "0" # TODO(#39103): Find definition for this value and update mapping as needed
               full_name:
                 $person_name:
                   $given_names:
