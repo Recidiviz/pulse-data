@@ -20,8 +20,13 @@ project.
 from typing import List, Set
 
 
+def get_metadata_maintenance_dag_id(project_id: str) -> str:
+    """Returns the id of the calculation DAG defined in metadata_maintenance_dag.py."""
+    return f"{project_id}_metadata_maintenance_dag"
+
+
 def get_calculation_dag_id(project_id: str) -> str:
-    """Returns the id of the calculation DAG defined in calcualtion_dag.py."""
+    """Returns the id of the calculation DAG defined in calculation_dag.py."""
     return f"{project_id}_calculation_dag"
 
 
@@ -49,6 +54,7 @@ def get_all_dag_ids(project_id: str) -> List[str]:
         get_calculation_dag_id(project_id),
         get_sftp_dag_id(project_id),
         get_raw_data_import_dag_id(project_id),
+        get_metadata_maintenance_dag_id(project_id),
     ]
 
 
@@ -73,6 +79,8 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
             "ingest_instance",
             "state_code_filter",
         }
+    if dag_id == get_metadata_maintenance_dag_id(project_id):
+        return set()
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
 
 
@@ -91,4 +99,6 @@ def get_discrete_configuration_parameters(project_id: str, dag_id: str) -> List[
         return []
     if dag_id == get_raw_data_import_dag_id(project_id):
         return ["ingest_instance"]
+    if dag_id == get_metadata_maintenance_dag_id(project_id):
+        return []
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
