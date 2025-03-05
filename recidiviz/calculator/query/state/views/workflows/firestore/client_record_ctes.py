@@ -160,6 +160,20 @@ _CLIENT_RECORD_SUPERVISION_LEVEL_CTE = f"""
     """
 
 
+_CLIENT_RECORD_CASE_TYPE_CTE = """
+    case_type AS (
+        SELECT
+            state_code,
+            person_id,
+            case_type,
+        FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
+        WHERE state_code IN ({workflows_supervision_states})
+            AND CURRENT_DATE('US/Eastern') >= start_date
+            AND CURRENT_DATE('US/Eastern') < COALESCE(end_date_exclusive, '9999-09-09')
+    ),
+    """
+
+
 _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
     supervision_super_sessions AS (
         
@@ -825,6 +839,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sc.supervision_type,
           sc.officer_id,
           sc.district,
+          ct.case_type,
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
@@ -858,6 +873,9 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         LEFT JOIN fines_fees_payment_info pp
             ON sc.state_code = pp.state_code
             AND sc.person_external_id = pp.person_external_id
+        LEFT JOIN case_type ct
+            ON ct.state_code = sc.state_code
+            AND ct.person_id = sc.person_id
         
     ),
     """
@@ -871,6 +889,7 @@ _CLIENTS_CTE = """
             c.state_code,
             person_name,
             officer_id,
+            case_type,
             supervision_type,
             supervision_level,
             supervision_level_start,
@@ -911,6 +930,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_US_OR_CASELOAD_CTE}
     {_CLIENT_RECORD_SUPERVISION_CTE}
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
+    {_CLIENT_RECORD_CASE_TYPE_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {_CLIENT_RECORD_DISPLAY_IDS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}

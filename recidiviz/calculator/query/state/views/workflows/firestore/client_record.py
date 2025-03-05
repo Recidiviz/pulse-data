@@ -56,6 +56,7 @@ client_record_fields = [
     "state_code",
     "person_name",
     "officer_id",
+    "case_type",
     "supervision_type",
     "supervision_level",
     "supervision_level_start",
