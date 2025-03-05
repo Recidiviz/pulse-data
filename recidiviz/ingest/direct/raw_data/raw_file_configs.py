@@ -876,7 +876,7 @@ class DirectIngestRawFileConfig:
         return None
 
     def is_exempt_from_raw_data_pruning(self) -> bool:
-        # Map tracking file tags to the reasons they are exempt from raw data pruning.
+        """Map tracking file tags to the reasons they are exempt from raw data pruning."""
         exempt_files: Dict[StateCode, Dict[str, str]] = {
             StateCode.US_OR: {
                 "RCDVZ_PRDDTA_OP013P": "We use this in views with @ALL",
@@ -886,6 +886,14 @@ class DirectIngestRawFileConfig:
             StateCode.US_ND: {
                 # TODO(#33357): Account for these incrementals before rolling out automatic raw data pruning.
                 "docstars_offenders": "There are some incremental files included in the history of transfers of this table."
+            },
+            StateCode.US_TN: {
+                "Sentence": "We use this in views with @ALL",
+                "ISCSentence": "We use this in views with @ALL",
+                "Diversion": "We use this in views with @ALL",
+                "Staff": "We use this in views with @ALL",
+                "StaffEmailByAlias": "We use this in views with @ALL",
+                "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": "We use this in views with @ALL",
             },
         }
 
