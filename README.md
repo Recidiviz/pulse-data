@@ -1,32 +1,15 @@
 # Recidiviz Data Platform
 
-[![Coverage Status](https://coveralls.io/repos/github/Recidiviz/pulse-data/badge.svg?branch=main)](https://coveralls.io/github/Recidiviz/pulse-data?branch=main)
-
 At the center of Recidiviz is our platform for tracking granular criminal
 justice metrics in real time. It includes a system for the ingest of corrections
 records from different source data systems, and for calculation of various
 metrics from the ingested records.
-
-Read more on data ingest in [`/recidiviz/ingest`](./recidiviz/ingest) and
-calculation in [`/recidiviz/calculator`](./recidiviz/calculator).
 
 ## License
 
 This project is licensed under the terms of the GNU General Public License as
 published by the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-
-## Data Access
-
-The data that we have gathered from criminal justice systems has been sanitized,
-de-duplicated, and standardized in a single schema. This processed data is
-central to our purposes but may be useful to others, as well. If you would like
-access to the processed data, in whole or in part, please reach out to us at
-`hello@recidiviz.org`. We evaluate such requests on a case-by-case basis, in
-conjunction with our partners.
-
-Calculated metrics can also be made available through the same process, though
-we anticipate publishing our analysis in various forms and channels over time.
 
 ## Forking
 

@@ -36,6 +36,7 @@ mirror/**
 .github/actions/**
 .github/workflows/**
 .nightfalldlp/**
+recidiviz/calculator/README.md
 recidiviz/ingest/direct/regions/us_*/raw_data/migrations/**
 recidiviz/ingest/direct/regions/us_*/ingest_views/validation_notebooks/**
 recidiviz/tests/calculator/calculation_documentation_generator_test.py
