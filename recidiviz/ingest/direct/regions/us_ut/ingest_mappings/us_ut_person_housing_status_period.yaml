@@ -28,8 +28,7 @@ output:
                 $in:
                   $value: addr_typ_cd
                   $options:
-                    - $literal("M") # Mailing address
-                    - $literal("H") # Prison / Jail
+                    - $literal("M") # Mailing
             $then:
               StatePersonHousingStatusPeriod:
                 housing_status_start_date: strt_dt
@@ -45,19 +44,16 @@ output:
                         $enum_mapping:
                           $raw_text: addr_typ_cd
                           $mappings:
-                            # TODO(#37852) These are all guesses, we need to hear back
-                            # from UT. See known_values on ofndr_addr_hist table for
-                            # code descriptions.
                             StatePersonHousingStatusType.PERMANENT_RESIDENCE:
-                              - P
-                              - F
+                              - P # Primary Physical
                             StatePersonHousingStatusType.FACILITY:
-                              - H
-                              - J
-                              - I
-                              - C
+                              - J # Jail
+                              - I # Facility
+                              - C # CCC/Program
                             StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
-                              - T
-                              - S
+                              - T # Temporary
+                              - S # Other Physical
                             StatePersonHousingStatusType.INTERNAL_UNKNOWN:
-                              - N
+                              - N # Potential
+                              - H # Historical
+                              - F # Future
