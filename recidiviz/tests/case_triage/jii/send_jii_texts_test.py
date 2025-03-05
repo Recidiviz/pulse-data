@@ -87,16 +87,14 @@ class TestSendJIITexts(TestCase):
         initial_doc_one = self.test_schema_objects.test_text_message_document_A
         eligibility_doc_one = self.test_schema_objects.test_text_message_document_B
 
-        mock_firestore_impl.get_collection_group.return_value.where.return_value.where.return_value.stream.return_value = [
+        mock_firestore_impl.get_collection_group.return_value.where.return_value.stream.return_value = [
             initial_doc_one,
             eligibility_doc_one,
         ]
         (
             initial_text_document_ids,
             eligibility_text_document_ids_to_text_timestamp,
-        ) = get_initial_and_eligibility_doc_ids(
-            firestore_client=mock_firestore_impl, state_code="us_test"
-        )
+        ) = get_initial_and_eligibility_doc_ids(firestore_client=mock_firestore_impl)
 
         mock_firestore_impl.get_collection_group.assert_called_once()
         self.assertEqual(
@@ -113,12 +111,12 @@ class TestSendJIITexts(TestCase):
     def test_get_opt_out_document_ids(self, mock_firestore_impl: MagicMock) -> None:
         jii_doc_a = self.test_schema_objects.test_jii_document_A
 
-        mock_firestore_impl.get_collection.return_value.where.return_value.where.return_value.stream.return_value = [
+        mock_firestore_impl.get_collection.return_value.where.return_value.stream.return_value = [
             jii_doc_a
         ]
 
         opt_out_document_ids = get_opt_out_document_ids(
-            firestore_client=mock_firestore_impl, state_code="us_test"
+            firestore_client=mock_firestore_impl
         )
 
         mock_firestore_impl.get_collection.assert_called_once()
@@ -140,7 +138,7 @@ class TestSendJIITexts(TestCase):
         # We are attempting redelivery of previously undelivered texts, and the previous message was delivered
         send_text = attempt_to_send_text(
             redeliver_failed_messages=True,
-            document_id="us_test_123456789",
+            document_ids=set(["us_test_123456789"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.INITIAL_TEXT.value,
@@ -153,7 +151,7 @@ class TestSendJIITexts(TestCase):
         # We are attempting redelivery of previously undelivered texts, and the previous message was undelivered
         send_text = attempt_to_send_text(
             redeliver_failed_messages=True,
-            document_id="us_test_888888888",
+            document_ids=set(["us_test_888888888"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.INITIAL_TEXT.value,
@@ -166,7 +164,7 @@ class TestSendJIITexts(TestCase):
         # The user has opted out
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_808080808",
+            document_ids=set(["us_test_808080808"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.ELIGIBILITY_TEXT.value,
@@ -178,7 +176,7 @@ class TestSendJIITexts(TestCase):
         # This is an initial/welcome text, and the individual has already received an initial/welcome text in the past
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_606228781",
+            document_ids=set(["us_test_606228781"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.INITIAL_TEXT.value,
@@ -190,7 +188,7 @@ class TestSendJIITexts(TestCase):
         # This is an initial/welcome text, and the individual has not received an initial/welcome text in the past
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_098765432",
+            document_ids=set(["us_test_098765432"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.INITIAL_TEXT.value,
@@ -202,7 +200,7 @@ class TestSendJIITexts(TestCase):
         # This is an eligibility text, and the individual has not received an initial/welcome text in the past
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_098765432",
+            document_ids=set(["us_test_098765432"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.ELIGIBILITY_TEXT.value,
@@ -214,7 +212,7 @@ class TestSendJIITexts(TestCase):
         # This is an eligibility text, and the individual has received an initial/welcome text in the past
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_606228781",
+            document_ids=set(["us_test_606228781"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.ELIGIBILITY_TEXT.value,
@@ -226,7 +224,7 @@ class TestSendJIITexts(TestCase):
         # This is an eligibility text, and the individual has received an eligibility text in the past 90 days
         send_text = attempt_to_send_text(
             redeliver_failed_messages=False,
-            document_id="us_test_123456789",
+            document_ids=set(["us_test_123456789"]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=MessageType.ELIGIBILITY_TEXT.value,

@@ -277,34 +277,26 @@ def send_jii_texts(
     (
         initial_text_document_ids,
         eligibility_text_document_ids_to_text_timestamp,
-    ) = get_initial_and_eligibility_doc_ids(
-        firestore_client=firestore_client, state_code=state_code
-    )
+    ) = get_initial_and_eligibility_doc_ids(firestore_client=firestore_client)
 
     logging.info(
-        "%s individuals from %s have already received initial/welcome texts.",
+        "%s individuals have already received initial/welcome texts.",
         len(initial_text_document_ids),
-        state_code,
     )
     logging.info(
-        "Document ids of individuals from %s who have received initial/welcome texts: ",
-        state_code,
+        "Document ids of individuals who have received initial/welcome texts: ",
     )
     logging.info(initial_text_document_ids)
     logging.info(
-        "%s individuals from %s have already received eligibility texts.",
+        "%s individuals have already received eligibility texts.",
         len(eligibility_text_document_ids_to_text_timestamp),
-        state_code,
     )
     logging.info(
-        "Document ids of individuals from %s who have received eligibility texts: ",
-        state_code,
+        "Document ids of individuals who have received eligibility texts: ",
     )
     logging.info(eligibility_text_document_ids_to_text_timestamp.keys())
 
-    opt_out_document_ids = get_opt_out_document_ids(
-        firestore_client=firestore_client, state_code=state_code
-    )
+    opt_out_document_ids = get_opt_out_document_ids(firestore_client=firestore_client)
 
     # Generate the list of dictionaries that contains external ids, phone numbers, and text strings
     logging.info(
@@ -341,13 +333,15 @@ def send_jii_texts(
         po_name = text_messages_dict["po_name"]
         district = text_messages_dict["district"]
 
-        document_id = f"{state_code}_{external_id}"
-        logging.info("document_id: %s", document_id)
+        document_id_us_xx = f"{state_code}_{external_id}"
+        document_id_us_id = f"us_id_{external_id}"
+        logging.info("document_id: %s", document_id_us_xx)
+        logging.info("document_id: %s", document_id_us_id)
 
         attempt_to_send_text_bool = attempt_to_send_text(
             previous_batch_id=previous_batch_id,
             redeliver_failed_messages=redeliver_failed_messages,
-            document_id=document_id,
+            document_ids=set([document_id_us_xx, document_id_us_id]),
             external_ids_to_retry=external_ids_to_retry,
             opt_out_document_ids=opt_out_document_ids,
             message_type=message_type,
@@ -370,7 +364,7 @@ def send_jii_texts(
         if dry_run is True:
             logging.info(
                 "DRY RUN: Would send the following text to individual with document id: %s",
-                document_id,
+                document_id_us_xx,
             )
             with open(f"{current_batch_id}_texts.txt", "a", encoding="utf-8") as file:
                 file.write(phone_number)
@@ -381,8 +375,10 @@ def send_jii_texts(
                 file.close()
             continue
         # Send text message to individual
-        logging.info("Sending text to individual with document id: %s", document_id)
-        firestore_individual_path = f"twilio_messages/{document_id}"
+        logging.info(
+            "Sending text to individual with document id: %s", document_id_us_xx
+        )
+        firestore_individual_path = f"twilio_messages/{document_id_us_xx}"
         try:
             response = twilio_client.messages.create(
                 body=text_body,
@@ -394,7 +390,7 @@ def send_jii_texts(
             # Store the individual's phone number in their individual level doc
             logging.info(
                 "Updating individual's phone_numbers with document id: %s",
-                document_id,
+                document_id_us_xx,
             )
             firestore_client.set_document(
                 document_path=firestore_individual_path,
@@ -411,10 +407,10 @@ def send_jii_texts(
             )
 
             # Next, update their message level doc
-            firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
+            firestore_message_path = f"twilio_messages/{document_id_us_xx}/lsu_eligibility_messages/eligibility_{current_batch_id}"
             logging.info(
                 "Updating individual's message level doc with document id: %s",
-                document_id,
+                document_id_us_xx,
             )
             firestore_client.set_document(
                 document_path=firestore_message_path,
@@ -448,23 +444,20 @@ def send_jii_texts(
             )
 
 
-def get_opt_out_document_ids(
-    firestore_client: FirestoreClientImpl, state_code: str
-) -> set[str]:
+def get_opt_out_document_ids(firestore_client: FirestoreClientImpl) -> set[str]:
     """Get all document ids of jii level documents associated with individuals that
     have opted out of text messages.
     """
     twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
     doc_query = twilio_ref.where(
         filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
-    ).where(filter=FieldFilter("state_code", "==", state_code))
+    )
     opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
     logging.info(
-        "%s individuals from %s have opted-out of texts.",
+        "%s individuals have opted-out of texts.",
         len(opt_out_document_ids),
-        state_code,
     )
-    logging.info("Document ids of individuals who have opted-out from %s: ", state_code)
+    logging.info("Document ids of individuals who have opted-out: ")
     logging.info(opt_out_document_ids)
     return opt_out_document_ids
 
@@ -500,7 +493,7 @@ def store_batch_id(
 
 def attempt_to_send_text(
     redeliver_failed_messages: bool,
-    document_id: str,
+    document_ids: set,
     external_ids_to_retry: set,
     opt_out_document_ids: set,
     message_type: str,
@@ -515,14 +508,14 @@ def attempt_to_send_text(
     """
     if previous_batch_id is not None and redeliver_failed_messages is True:
         # Filter to only send texts to individuals if previous text failed
-        if document_id not in external_ids_to_retry:
+        if len(document_ids.intersection(external_ids_to_retry)) == 0:
             return False
 
     # Check that current document_id has not opted-out
-    if document_id in opt_out_document_ids:
+    if len(document_ids.intersection(opt_out_document_ids)) > 0:
         logging.info(
-            "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
-            document_id,
+            "JII with document_ids %s has opted-out of receiving texts. Will not attempt to send message.",
+            document_ids,
         )
         return False
 
@@ -530,10 +523,10 @@ def attempt_to_send_text(
     # received an initial/welcome text in the past, do not attempt to send
     # them an initial/welcome text
     if message_type == MessageType.INITIAL_TEXT.value:
-        if document_id in initial_text_document_ids:
+        if len(document_ids.intersection(initial_text_document_ids)) > 0:
             logging.info(
-                "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
-                document_id,
+                "Individual with document_ids [%s] has already received initial text. Do not attempt to send initial text.",
+                document_ids,
             )
             return False
 
@@ -541,32 +534,33 @@ def attempt_to_send_text(
     # received an initial/welcome text in the past, do not attempt to send
     # them an eligibility text
     if message_type == MessageType.ELIGIBILITY_TEXT.value:
-        if document_id not in initial_text_document_ids:
+        if len(document_ids.intersection(initial_text_document_ids)) == 0:
             logging.info(
-                "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
-                document_id,
+                "Individual with document_ids [%s] has not received initial text. Do not attempt to send eligibility text.",
+                document_ids,
             )
             return False
 
     # If this is an eligibility text, and the individual has
     # received an eligibility text (all time), do not attempt to send
     # them an eligibility text
-    if (
-        message_type == MessageType.ELIGIBILITY_TEXT.value
-        and eligibility_text_document_ids_to_text_timestamp.get(document_id) is not None
-    ):
-        logging.info(
-            "Individual with document id [%s] has already received an eligibility text. Do not attempt to send eligibility text.",
-            document_id,
-        )
-        return False
+    if message_type == MessageType.ELIGIBILITY_TEXT.value:
+        for document_id in document_ids:
+            if (
+                eligibility_text_document_ids_to_text_timestamp.get(document_id)
+                is not None
+            ):
+                logging.info(
+                    "Individual with document id [%s] has already received an eligibility text. Do not attempt to send eligibility text.",
+                    document_id,
+                )
+                return False
 
     return True
 
 
 def get_initial_and_eligibility_doc_ids(
     firestore_client: FirestoreClientImpl,
-    state_code: str,
 ) -> Tuple[set, Dict]:
     """Get all document_ids for individuals who already received a text (initial or eligibility).
     Store and return document_ids for initial text messages as a set.
@@ -580,7 +574,7 @@ def get_initial_and_eligibility_doc_ids(
     )
     message_query = message_ref.where(
         filter=FieldFilter("status", "==", ExternalSystemRequestStatus.SUCCESS.value)
-    ).where(filter=FieldFilter("state_code", "==", state_code))
+    )
     initial_text_document_ids = set()
     eligibility_text_document_ids_to_text_timestamp: Dict[
         str, datetime.datetime
