@@ -49,6 +49,7 @@ const sidebarComponentNames = [
   "ClientEmployer",
   "Milestones",
   "ClientProfileDetails",
+  "UsUtDates",
 ];
 
 export const SidebarComponentsView: MultiEntryChild = ({ name, ...field }) => (
