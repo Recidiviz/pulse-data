@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
+from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (

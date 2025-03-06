@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    transfer_to_limited_supervision,
+from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
+    release_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import not_serving_for_sexual_offense
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
@@ -57,8 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         mental_health_score_3_or_below.VIEW_BUILDER,
         # TODO(#38159): Make sure we're including all of the relevant cases
     ],
-    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
-    # TODO(#38160): Add the right completion event
+    completion_event_builder=release_to_limited_supervision.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

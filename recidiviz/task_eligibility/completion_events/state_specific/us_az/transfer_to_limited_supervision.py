@@ -14,37 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all transfer to limited supervision events for any person,
-across all states.
-"""
-from recidiviz.calculator.query.state import dataset_config
+"""Identifies people on supervision who have been transferred from a higher level of supervision
+to LIMITED in AZ"""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all transfer to limited supervision events
-for any person, across all states."""
-
-_QUERY_TEMPLATE = """
-SELECT
-    state_code,
-    person_id,
-    start_date AS completion_event_date,
-FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
-WHERE supervision_level = "LIMITED"
+_QUERY_TEMPLATE = """SELECT
+  state_code,
+  person_id,
+  start_date AS completion_event_date,
+FROM `{project_id}.sessions.supervision_level_raw_text_sessions_materialized`
+WHERE state_code = 'US_AZ'
+  AND supervision_level = 'LIMITED'
+  -- This extracts the string within the first and second '@@', which will tell us
+  -- if the person was transferred from a higher level of supervision
+  AND REGEXP_EXTRACT(supervision_level_raw_text, r'@@([^@]+)@@') = 'NONE'
 """
-
-VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder(
+        state_code=StateCode.US_AZ,
         completion_event_type=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=dataset_config.SESSIONS_DATASET,
-        states_to_exclude=[StateCode.US_TN, StateCode.US_AZ],
     )
 )
 

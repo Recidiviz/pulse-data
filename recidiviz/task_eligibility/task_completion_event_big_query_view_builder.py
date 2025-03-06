@@ -48,6 +48,7 @@ class TaskCompletionEventType(Enum):
     )
     EARLY_RELEASE_TO_DRUG_PROGRAM_OVERDUE = "EARLY_RELEASE_TO_DRUG_PROGRAM_OVERDUE"
     TRANSFER_TO_LIMITED_SUPERVISION = "TRANSFER_TO_LIMITED_SUPERVISION"
+    RELEASE_TO_LIMITED_SUPERVISION = "RELEASE_TO_LIMITED_SUPERVISION"
     SUPERVISION_LEVEL_DOWNGRADE = "SUPERVISION_LEVEL_DOWNGRADE"
     CUSTODY_LEVEL_DOWNGRADE = "CUSTODY_LEVEL_DOWNGRADE"
     CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE = (
@@ -119,6 +120,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
+            TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
@@ -217,6 +219,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
+            TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
         ]:
             return DecarceralImpactType.TRANSFER_TO_LIMITED_SUPERVISION
         if self in [
@@ -266,6 +269,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
+            TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
         ]:
             return True
         if self in [
@@ -325,6 +329,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
+            TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
         ]:
             return False
         raise ValueError(
