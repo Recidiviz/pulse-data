@@ -632,7 +632,13 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         return jsonify(
             {
-                "officers": [officer.to_json() for officer in officers],
+                "officers": [
+                    convert_nested_dictionary_keys(
+                        officer.to_json(),
+                        snake_to_camel,
+                    )
+                    for officer in officers
+                ],
             }
         )
 
