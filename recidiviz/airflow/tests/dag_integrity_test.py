@@ -33,6 +33,9 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
 )
+from recidiviz.airflow.dags.monitoring.job_run_history_delegate_factory import (
+    JobRunHistoryDelegateFactory,
+)
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 
 _PROJECT_ID = "recidiviz-testing"
@@ -126,3 +129,12 @@ class TestDagIntegrity(AirflowIntegrationTest):
                         error_message=None,
                     )
                 )
+
+    def test_all_tasks_have_delegate(self) -> None:
+        """
+        Verify task ids are valid and can be parsed by our task alerting routing code
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        self.assertNotEqual(len(dag_bag.dags), 0)
+        for dag in dag_bag.dags.values():
+            JobRunHistoryDelegateFactory.build(dag_id=dag.dag_id)
