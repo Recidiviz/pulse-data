@@ -213,6 +213,12 @@ events_with_reference_data AS (
       END AS due_assessment_type,
     CAST(COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS INT64) AS due_assessment_months,
     DATE_ADD(event_date, INTERVAL CAST(COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS INT64) MONTH) AS due_assessment_date,
+    CASE 
+        WHEN COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) = "1" 
+            THEN "1 MONTH"
+        ELSE
+            CONCAT(CAST(COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS STRING), " MONTHS") 
+    END AS frequency
   FROM event_triggers
   LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_RiskAssessmentEvents_latest` as event_ref
     USING (event_type, case_type)
@@ -238,7 +244,8 @@ next_events AS (
     due_assessment_type,
     LEAD(event_date) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_event_date,
     LEAD(event_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_event_type,
-    LEAD(this_assessment_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_assessment_type
+    LEAD(this_assessment_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_assessment_type,
+    frequency
 FROM events_with_reference_data
 ),
 
@@ -263,6 +270,7 @@ meets_criteria_true_records AS (
         next_event_date,
         next_event_type,
         next_assessment_type,
+        frequency,
         TO_JSON(STRUCT(
           event_date,
           event_type,
@@ -274,7 +282,8 @@ meets_criteria_true_records AS (
           due_assessment_type,
           next_event_date,
           next_event_type,
-          next_assessment_type
+          next_assessment_type,
+          frequency
         )) AS reason
     FROM next_events
 ),
@@ -296,6 +305,7 @@ meets_criteria_false_records AS (
         next_event_date,
         next_event_type,
         next_assessment_type,
+        frequency,
         TO_JSON(STRUCT(
           event_date,
           event_type,
@@ -307,7 +317,8 @@ meets_criteria_false_records AS (
           due_assessment_type,
           next_event_date,
           next_event_type,
-          next_assessment_type
+          next_assessment_type,
+          frequency
         )) AS reason
     FROM next_events
     WHERE next_event_date IS NULL OR next_event_date > due_assessment_date
@@ -383,6 +394,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
             name="next_assessment_type",
             type=bigquery.enums.StandardSqlTypeNames.STRING,
             description="If the next event was a completed assessment, the type of that assessment.",
+        ),
+        ReasonsField(
+            name="frequency",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The amount of time after the triggering event that the next assessment should be completed.",
         ),
     ],
 )
