@@ -23,10 +23,7 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
-)
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
 )
@@ -49,24 +46,30 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone has completed half their full term supervision or supervision out of state sentence"""
 
 _QUERY_TEMPLATE = f"""
-WITH critical_date_spans AS (
-    SELECT
-        span.state_code,
-        span.person_id,
-        span.start_date AS start_datetime,
-        span.end_date AS end_datetime,
-        (DATE_ADD(MAX(sent.effective_date),INTERVAL
-            CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"])} 
-    WHERE
+WITH critical_date_spans AS 
+(
+SELECT
+    state_code,
+    person_id,
+    start_date AS start_datetime,
+    end_date_exclusive AS end_datetime,
+    (DATE_ADD(MAX(effective_date),INTERVAL
+            CAST(CEILING(DATE_DIFF(MAX(sentence_projected_full_term_release_date_max),MAX(effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
+UNNEST(sentence_array)
+JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
+    USING(person_id, state_code, sentence_id)
+JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_start_date_materialized`
+    USING(person_id, state_code, sentence_id)
+WHERE
     -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
     -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 
-        effective_date < projected_completion_date_max
+        effective_date < sentence_projected_full_term_release_date_max
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
         -- separately in supervision sentences
-        AND (sent.state_code NOT IN ({{excluded_incarceration_states}}) OR sent.sentence_type = "SUPERVISION")
-    GROUP BY 1, 2, 3, 4
+        AND (state_code NOT IN ({{excluded_incarceration_states}}) OR sentence_type IN ("PAROLE","PROBATION","COMMUNITY_CORRECTIONS"))
+GROUP BY 1, 2, 3, 4
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
@@ -100,7 +103,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_name=_CRITERIA_NAME,
     description=_DESCRIPTION,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     excluded_incarceration_states=list_to_query_string(
         string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,

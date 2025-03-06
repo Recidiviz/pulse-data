@@ -37,6 +37,7 @@ has completed half their minimum term incarceration sentence."""
 
 _QUERY_TEMPLATE = f"""
 --TODO(#37417): Consider refactoring to use sentence imposed groups
+--TODO(#39106): Migrate CTE to `sentence_first_serving_date` view
 WITH sentence_serving_starts AS
 (
 SELECT 

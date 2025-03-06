@@ -43,6 +43,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period import (
     SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_start_date import (
+    SENTENCE_SERVING_START_DATE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_status_raw_text_sessions import (
     SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
 )
@@ -64,6 +67,8 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
     # Combined sentence and charge metadata
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
+    # Date that a sentence starts being served
+    SENTENCE_SERVING_START_DATE_VIEW_BUILDER,
     # Periods of time when a sentence is being served
     SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
     # Spans of time with overlapping serving sentences
