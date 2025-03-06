@@ -1066,6 +1066,23 @@ def no_absconsion_within_time_interval_criteria_builder(
     )
 
 
+def custom_tuple(input_list: list) -> str:
+    """
+    Converts a list to a string that looks like a tuple. If the list has only one element,
+    returns a single-element string tuple. If the list has more than one element, returns a
+    string tuple with all elements.
+
+    Args:
+        input_list (list): The input list.
+
+    Returns:
+        str: The tuple as a string.
+    """
+    if len(input_list) == 1:
+        return "('" + input_list[0] + "')"
+    return str(tuple(input_list))
+
+
 def employed_for_at_least_x_time_criteria_builder(
     criteria_name: str,
     description: str,
@@ -1089,7 +1106,7 @@ def employed_for_at_least_x_time_criteria_builder(
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="{project_id}.normalized_state.state_employment_period",
-        additional_where_clause=f"""AND employment_status IN {tuple(employment_status_values)}""",
+        additional_where_clause=f"""AND employment_status IN {custom_tuple(employment_status_values)}""",
         date_interval=date_interval,
         date_part=date_part,
         start_date="start_date",
@@ -1134,7 +1151,7 @@ def housed_for_at_least_x_time_criteria_builder(
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="{project_id}.normalized_state.state_person_housing_status_period",
-        additional_where_clause=f"""AND housing_status_type IN {tuple(housing_status_values)}""",
+        additional_where_clause=f"""AND housing_status_type IN {custom_tuple(housing_status_values)}""",
         date_interval=date_interval,
         date_part=date_part,
         start_date="housing_status_start_date",

@@ -47,8 +47,9 @@ WITH all_current_spans AS (
 ),
 
 all_current_spans_with_tab_names AS (
+    # Almost eligible
     SELECT 
-        *,
+        * EXCEPT(reasons_unnested),
         CASE 
             WHEN reasons_unnested = 'SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE' THEN 'EARLY_REQUESTS'
             WHEN reasons_unnested IN ('SUPERVISION_CONTINUOUS_EMPLOYMENT_FOR_3_MONTHS', 'US_UT_HAS_COMPLETED_ORDERED_ASSESSMENTS') THEN 'REPORT_DUE_ALMOST_ELIGIBLE'
@@ -56,6 +57,7 @@ all_current_spans_with_tab_names AS (
         END AS metadata_tab_name
     FROM all_current_spans, 
     UNNEST(ineligible_criteria) AS reasons_unnested
+    WHERE is_almost_eligible
     -- This is to future-proof this query. If we ever allow people to be almost eligible
     -- for two or more criteria, this will make sure we don't have duplicates in our final query.
     -- Additionally, it will make sure anyone who is missing the half-time date criteria
@@ -65,6 +67,13 @@ all_current_spans_with_tab_names AS (
         ORDER BY CASE reasons_unnested
             WHEN 'SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE' THEN 1
             ELSE 2 END) = 1
+    
+    UNION ALL 
+
+    SELECT *, 'REPORT_DUE_ELIGIBLE' AS metadata_tab_name
+    FROM all_current_spans
+    WHERE is_eligible
+
 ),
 
 case_notes_cte AS (

@@ -39,17 +39,24 @@ def at_least_X_time_since_drug_screen(
     date_interval: int,
     date_part: str = "MONTH",
     where_clause: str = "",
+    meets_criteria_during_time_frame: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
+    The function is designed to help identify and manage periods where individuals meet
+    or do not meet certain criteria based on their drug screen history.
+
     Args:
         criteria_name (str): Name of the criteria
-        date_interval (int): Number of <date_part> when the positive drug screen
+        date_interval (int): Number of <date_part> when the drug screen
             will be counted as valid.
         date_part (str): Supports any of the BigQuery date_part values:
             "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
         where_clause (str): Additional WHERE clause to filter the drug screens.
+        meets_criteria_during_time_frame (bool): If True, the criteria is met when the
+            person has a recent drug screen within the time frame. If False, the criteria is
+            met when the person does not have a recent drug screen within the time frame.
     Returns:
-        f-string: Spans of time where the criteria is met
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
     """
 
     query_template = f"""WITH drug_test_sessions_cte AS
@@ -59,7 +66,7 @@ def at_least_X_time_since_drug_screen(
             person_id,
             drug_screen_date AS start_date,
             DATE_ADD(drug_screen_date, INTERVAL {date_interval} {date_part}) AS end_date,
-            FALSE AS meets_criteria,
+            {meets_criteria_during_time_frame} AS meets_criteria,
             drug_screen_date AS latest_drug_screen_date,
         FROM
             `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
@@ -114,7 +121,7 @@ def at_least_X_time_since_drug_screen(
         criteria_spans_query_template=query_template,
         description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
+        meets_criteria_default=not meets_criteria_during_time_frame,
         reasons_fields=[
             ReasonsField(
                 name="most_recent_positive_test_date",

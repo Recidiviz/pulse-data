@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.criteria.general import (
     at_least_3_months_since_most_recent_positive_drug_test,
     on_supervision_at_least_6_months,
     supervision_continuous_employment_for_3_months,
-    supervision_housing_is_permanent_or_temporary_for_3_months,
+    supervision_housing_is_permanent_for_3_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     has_completed_ordered_assessments,
@@ -73,7 +73,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
         ),
         # 3. Compliance and stability
-        supervision_housing_is_permanent_or_temporary_for_3_months.VIEW_BUILDER,
+        supervision_housing_is_permanent_for_3_months.VIEW_BUILDER,
         supervision_continuous_employment_for_3_months.VIEW_BUILDER,
         no_medhigh_supervision_violation_within_3_months.VIEW_BUILDER,
         on_supervision_at_least_6_months.VIEW_BUILDER,
@@ -99,7 +99,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             #     description="Only missing the past ET Review date/half-time date criteria",
             # ),
         ],
-        at_most_n_conditions_true=1,
+        at_most_n_conditions_true=2,
     ),
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
