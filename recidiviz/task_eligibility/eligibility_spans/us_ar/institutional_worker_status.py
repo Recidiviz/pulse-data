@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ar import (
 from recidiviz.task_eligibility.criteria.general import (
     age_25_years_or_older,
     incarcerated_at_least_6_months,
-    incarceration_within_45_months_of_parole_eligibility_date,
+    incarceration_within_10_years_of_parole_eligibility_date,
     no_incarceration_sanctions_within_90_days,
     not_serving_a_life_sentence,
 )
@@ -72,7 +72,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarcerated_at_least_6_months.VIEW_BUILDER,
         no_incarceration_sanctions_within_90_days.VIEW_BUILDER,
         not_serving_a_life_sentence.VIEW_BUILDER,
-        incarceration_within_45_months_of_parole_eligibility_date.VIEW_BUILDER,
+        incarceration_within_10_years_of_parole_eligibility_date.VIEW_BUILDER,
         no_filed_but_undisposed_detainers.VIEW_BUILDER,
     ],
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,

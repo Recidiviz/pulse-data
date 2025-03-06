@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 6 months of their parole eligibility date.
+someone is incarcerated within 4 years of their parole eligibility date.
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -27,22 +27,18 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_42_MONTHS_OF_PAROLE_ELIGIBILITY_DATE"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_4_YEARS_OF_PAROLE_ELIGIBILITY_DATE"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 42 months of their parole eligibility date.
-"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         compartment_level_1_filter="INCARCERATION",
-        meets_criteria_leading_window_time=42,
-        date_part="MONTH",
+        meets_criteria_leading_window_time=4,
+        date_part="YEAR",
         critical_date_column="parole_eligibility_date",
         critical_date_name_in_reason="parole_eligibility_date",
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
     )
 )
 
