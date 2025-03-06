@@ -178,6 +178,7 @@ eligible_population AS (
      reasons,
      is_eligible,
      is_almost_eligible,
+     ineligible_criteria
    FROM `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized`
    WHERE (is_eligible OR is_almost_eligible)
     AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND DATE_SUB(end_date, INTERVAL 1 DAY)
@@ -227,6 +228,7 @@ individual_sentence_ranks AS (
     te.reasons, 
     te.is_eligible,
     te.is_almost_eligible,
+    te.ineligible_criteria,
    COUNT(*) OVER(PARTITION BY person_external_id) AS number_of_sentences
   FROM dataflow_metrics dm
   INNER JOIN eligible_population te
@@ -263,6 +265,7 @@ SELECT
     sa.phone_office as form_information_states_attorney_phone_number,
     sa.email_1 as form_information_states_attorney_email_address,
     reasons,
+    ineligible_criteria,
     is_eligible,
     is_almost_eligible,
     number_of_sentences > 1 AS metadata_multiple_sentences,
