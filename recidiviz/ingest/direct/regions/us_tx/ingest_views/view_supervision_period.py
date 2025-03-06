@@ -35,11 +35,31 @@ clean_cte AS (
     -- Confusing column naming but this means that the record is not deleted.
     WHERE UPPER(Deleted_Flag) = "ACTIVE"
 ),
+-- There are a few, ~25 periods, associated with more than one SID_Number. In these cases,
+-- the periods are usually associated to two ClientData records with the same person info 
+-- but different SID numbers, or in some cases one of the extraneous SID numbers isn't even 
+-- found in the client data. This CTE ranks those SID_Numbers associated with a given 
+-- Period_ID_Number. Taking into consideration whether that SID_Number is in the 
+-- ClientData file and when the SID_Number was last seen.
+sid_number_rank_cte AS (
+    SELECT
+        SID_Number,
+        Period_ID_Number,
+        RANK() OVER (
+            PARTITION BY PERIOD_ID_Number 
+            ORDER BY 
+                sp.update_datetime DESC
+        ) AS rnk
+    FROM clean_cte sp
+    LEFT JOIN  `{{ClientData}}` c
+        USING (SID_Number)
+    WHERE c.SID_Number IS NOT NULL
+),
 -- The lag_cte grabs the traits of the previous period record to filter to only records 
 -- that contain a change.
 lag_cte AS (
     SELECT 
-        SID_Number,
+        SID.SID_Number,
         Period_ID_Number,
         Supervision_Officer,
         Special_Conditions,
@@ -55,7 +75,9 @@ lag_cte AS (
         LAG(Case_Type) OVER w AS prev_Case_Type,
         LAG(Max_Termination_Date) OVER w AS prev_Max_Termination_Date,
     FROM clean_cte
-    WHERE rn = 1 AND Start_Date != "0001-01-01 00:00:00"
+    LEFT JOIN sid_number_rank_cte sid
+        USING(Period_ID_Number)
+    WHERE rn = 1 AND Start_Date IS NOT NULL AND rnk = 1
     WINDOW w AS (PARTITION BY Period_ID_Number ORDER BY update_datetime asc)
 ),
 -- Filters down to the records that contain a change to the supervision period. Also uses
@@ -255,7 +277,8 @@ final_periods AS (SELECT
     ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number ORDER BY start_date) AS rn
 FROM period_info_agg
 LEFT JOIN officer_cte
-    ON Supervision_Officer = Staff_ID_Number)
+    ON Supervision_Officer = Staff_ID_Number
+)
 SELECT 
     *
 FROM final_periods
