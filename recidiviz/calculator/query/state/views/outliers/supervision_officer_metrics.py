@@ -17,6 +17,9 @@
 """Aggregated metrics at the officer-level for supervision-related metrics"""
 from typing import List
 
+from recidiviz.aggregated_metrics.configuration.collections.zero_grants import (
+    ZERO_GRANT_OPPORTUNITY_CONFIGURATIONS,
+)
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
@@ -37,10 +40,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers
 )
 from recidiviz.calculator.query.state.views.outliers.utils import (
     officer_aggregated_metrics_plus_inclusion,
-)
-from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
-    WORKFLOWS_OPPORTUNITY_CONFIGS,
-    PersonRecordType,
 )
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import OutliersMetricValueType, OutliersVitalsMetricConfig
@@ -181,9 +180,7 @@ AND period = "YEAR"
 -- For opportunity completions, we only need the most recent month's data.
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
 """
-    for opp_config in WORKFLOWS_OPPORTUNITY_CONFIGS
-    if opp_config.state_code.value in get_outliers_enabled_states_for_bigquery()
-    and opp_config.person_record_type == PersonRecordType.CLIENT
+    for opp_config in ZERO_GRANT_OPPORTUNITY_CONFIGURATIONS
 )
 
 _PROP_PERIOD_WITH_CRITICAL_CASELOAD_METRICS = f"""

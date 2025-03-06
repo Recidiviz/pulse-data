@@ -1415,6 +1415,7 @@ class OutliersQuerier:
                         # filter for officers who have had a caseload the whole year
                         SupervisionOfficerMetric.metric_id
                         == "prop_period_with_critical_caseload",
+                        # TODO(#35714): Change this >= to 1.0
                         SupervisionOfficerMetric.metric_value == 1.0,
                         SupervisionOfficerMetric.category_type == "ALL",
                         # Look at relevant end_date
