@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Assessment scores with range of dates for each score"""
+"""Assessment scores with range of dates for each score.
+
+Spans are non-overlapping by person-`assessment_type`-`assessment_class`. Note that for
+ORAS scores, this non-overlapping condition holds across all ORAS assessment types as if
+they are one common assessment, which may lead to unexpected assessment frequency or
+score-change metrics if calculated from this table.
+"""
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
@@ -25,27 +32,22 @@ INCARCERATION_ASSESSMENT_TYPES = ["CAF", "ORAS_PRISON_INTAKE"]
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_NAME = "assessment_score_sessions"
 
-ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
-    "Assessment scores with range of dates for each score. Spans are non-overlapping "
-    "by person-assessment_type. Note that for ORAS scores, this non-overlapping "
-    "condition holds across all ORAS assessment types as if they are one common "
-    "assessment, which may lead to unexpected assessment frequency or score change "
-    "metrics if calculated from this table."
-)
-
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
 WITH state_assessment AS (
-    SELECT 
+    SELECT
+        state_code,
         person_id,
         assessment_id,
-        state_code,
         assessment_date,
         assessment_type,
         CASE
             WHEN assessment_type LIKE "ORAS%" THEN "ORAS"
-            ELSE assessment_type END AS assessment_type_short,
-        -- Flags assessments that are only used in facilities, not supervision. Some instruments,
-        -- e.g. LSIR can be used in both supervision and incarceration settings
+            ELSE assessment_type
+            END
+            AS assessment_type_short,
+        /* Flag assessments that are only used in facilities (not supervision). Some
+        instruments (e.g., LSIR) can be used in both supervision and incarceration
+        settings. */
         assessment_type IN ('{incarceration_assessment}') AS is_incarceration_only_assessment_type,
         assessment_class,
         assessment_score,
@@ -53,7 +55,7 @@ WITH state_assessment AS (
         assessment_level_raw_text,
         assessment_score_bucket,
         assessment_metadata,
-        sequence_num
+        sequence_num,
     FROM
         `{project_id}.{normalized_state_dataset}.state_assessment`
     WHERE
@@ -87,27 +89,22 @@ WITH state_assessment AS (
             assessment_score IS NOT NULL
             OR assessment_level IS NOT NULL
         )
-    -- Keep the latest assessment per person-assessment_type per day
-    QUALIFY
-        ROW_NUMBER() OVER(
-            PARTITION BY person_id, assessment_type_short, assessment_date
-            ORDER BY sequence_num DESC
-        ) = 1
-    )
-
+    -- keep the latest assessment per person-type-class per day
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY state_code, person_id, assessment_type_short, assessment_class, assessment_date
+        ORDER BY sequence_num DESC
+    ) = 1
+)
 SELECT
+    state_code,
     person_id,
     assessment_id,
-    state_code,
     assessment_date,
-    -- Use a person's subsequent assessment date for a given assessment type as the session end date.
-    -- Combines all ORAS assessment types into a single category.
-    LEAD(assessment_date) OVER(
-        PARTITION BY person_id, assessment_type_short ORDER BY assessment_date ASC
-    ) AS score_end_date_exclusive,
-    LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(
-        PARTITION BY person_id, assessment_type_short ORDER BY assessment_date ASC
-    ) AS score_end_date,
+    /* Use a person's subsequent assessment date for a given assessment type & class as
+    the session end date. We combine all ORAS assessment types into a single category
+    here. */
+    LEAD(assessment_date) OVER (person_type_class_window) AS score_end_date_exclusive,
+    LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER (person_type_class_window) AS score_end_date,
     assessment_type,
     is_incarceration_only_assessment_type,
     assessment_class,
@@ -116,15 +113,18 @@ SELECT
     assessment_level_raw_text,
     assessment_score_bucket,
     assessment_metadata,
-FROM
-    state_assessment
+FROM state_assessment
+WINDOW person_type_class_window AS (
+    PARTITION BY state_code, person_id, assessment_type_short, assessment_class
+    ORDER BY assessment_date ASC
+)
 """
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=ASSESSMENT_SCORE_SESSIONS_VIEW_NAME,
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
-    description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
+    description=__doc__,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
     incarceration_assessment="', '".join(INCARCERATION_ASSESSMENT_TYPES),
