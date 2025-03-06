@@ -378,6 +378,7 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
     assert opp_name.upper() in ["TPR", "DTP"], "Opportunity Name must be TPR or DTP"
     return f"""
     -- Fast track: ACIS TPR/DTP date within 1 days and 30 days
+    -- Approved by Time Comp (Eligible Now): ACIS TPR/DTP date within 30 to 180 days
     SELECT
         * EXCEPT(criteria_reason),
         CASE
@@ -397,7 +398,7 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
     WHERE "US_AZ_INCARCERATION_PAST_ACIS_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
         AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_{opp_name.upper()}_DATE"
         AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_{opp_name.lower()}_date') AS DATE) BETWEEN 
-            DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 30 DAY)
+            DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
 
     UNION ALL
 
