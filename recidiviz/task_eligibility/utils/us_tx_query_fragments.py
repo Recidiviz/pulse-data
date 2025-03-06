@@ -117,6 +117,7 @@ empty_periods as (
         supervision_level,
         case_type,
         quantity,
+        frequency_in_months,
         -- For each span, calculate the starting month and ending month
         month_start + INTERVAL x * frequency_in_months MONTH AS month_start,
         -- Calculate the end of the span (last day of the month)
@@ -132,6 +133,7 @@ lookback_cte AS
         p.case_type,
         p.contact_type,
         p.supervision_level,
+        p.frequency_in_months,
         ci.contact_date,
         month_start,
         month_end,
@@ -150,6 +152,7 @@ critical_dates as (
         month_end,
         contact_type,
         quantity,
+        frequency_in_months,
         month_start as critical_date,
     FROM lookback_cte
     UNION ALL 
@@ -159,6 +162,7 @@ critical_dates as (
         month_end,
         contact_type,
         quantity,
+        frequency_in_months,
         month_end as critical_date,
     FROM lookback_cte
     UNION ALL
@@ -168,6 +172,7 @@ critical_dates as (
         month_end,
         contact_type,
         quantity,
+        frequency_in_months,
         contact_date as critical_date,
     FROM lookback_cte
     WHERE contact_date IS NOT NULL
@@ -179,6 +184,7 @@ divided_periods as (
         person_id,
         contact_type,
         quantity,
+        frequency_in_months,
         critical_date as period_start,
         LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
     FROM (SELECT DISTINCT * FROM critical_dates)
@@ -193,13 +199,14 @@ divided_periods_with_contacts as (
         p.contact_type,
         month_end,
         quantity,
+        frequency_in_months,
     FROM divided_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
         AND ci.contact_date BETWEEN p.month_start and DATE_SUB(p.period_end, INTERVAL 1 DAY)
         AND ci.contact_type = "{contact_type}"
     WHERE period_end is not null
-    GROUP BY p.person_id, month_start, month_end, period_start, period_end, contact_type, quantity
+    GROUP BY p.person_id, month_start, month_end, period_start, period_end, contact_type, quantity, frequency_in_months
 ),
 -- Creates periods of time in which a person is compliance given a contact and it's cadence
 compliance_periods as (
@@ -212,6 +219,7 @@ compliance_periods as (
         month_start,
         month_end,
         quantity,
+        frequency_in_months,
     FROM divided_periods_with_contacts
 ),
 -- Creates final periods of compliance
@@ -235,12 +243,18 @@ periods AS (
         period_end as end_date,
         max(contact_date) as last_contact_date,
         TO_JSON(STRUCT(contact_count >= quantity AS compliance)) AS reason,
+        CASE 
+            WHEN frequency_in_months = 1 
+                THEN "1 MONTH"
+            ELSE
+                CONCAT(frequency_in_months, " MONTHS") 
+        END AS frequency,
     FROM compliance_periods lc
     LEFT JOIN contact_info ci
         ON lc.person_id = ci.person_id
         AND ci.contact_type = lc.contact_type
         AND ci.contact_date < period_end
-    GROUP BY person_id,month_start,month_end,lc.contact_type,contact_count,quantity, period_start, period_end
+    GROUP BY person_id,month_start,month_end,lc.contact_type,contact_count,quantity, period_start, period_end, frequency_in_months
 )
 SELECT 
   *
@@ -286,6 +300,11 @@ FROM periods
                 name="period_type",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Type of period.",
+            ),
+            ReasonsField(
+                name="frequency",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Contact cadence.",
             ),
         ],
     )

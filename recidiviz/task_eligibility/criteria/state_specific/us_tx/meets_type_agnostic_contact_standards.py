@@ -149,6 +149,7 @@ empty_periods AS (
         contact_types_accepted,
         supervision_level,
         case_type,
+        frequency_in_months,
         -- For each span, calculate the starting month and ending month
         month_start + INTERVAL period_index * frequency_in_months MONTH AS month_start,
         -- Calculate the end of the span (last day of the month)
@@ -162,6 +163,7 @@ lookback_cte AS
  SELECT
         p.person_id,
         p.case_type,
+        p.frequency_in_months,
         p.contact_types_accepted,
         p.supervision_level,
         ci.contact_date,
@@ -184,6 +186,7 @@ critical_dates as (
         null as contact_type,
         month_start as critical_date,
         case_type,
+        frequency_in_months,
         supervision_level,
         "START" as period_type,
     FROM lookback_cte
@@ -196,6 +199,7 @@ critical_dates as (
         null as contact_type,
         month_end as critical_date,
         case_type,
+        frequency_in_months,
         supervision_level,
         "END" as period_type,
     FROM lookback_cte
@@ -208,6 +212,7 @@ critical_dates as (
         contact_type,
         contact_date as critical_date,
         case_type,
+        frequency_in_months,
         supervision_level,
         "CONTACT" as period_type,
     FROM lookback_cte
@@ -224,6 +229,7 @@ divided_periods AS (
         critical_date as period_start,
         LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
         case_type,
+        frequency_in_months,
         supervision_level,
         period_type,
     FROM (SELECT DISTINCT * FROM critical_dates)
@@ -238,6 +244,7 @@ divided_periods_with_contacts as (
         p.contact_type,
         month_end,
         case_type,
+        frequency_in_months,
         supervision_level,
         contact_types_accepted,
         period_type,
@@ -294,8 +301,14 @@ compliance_check AS (
         )) AS types_and_amounts_done,
         types_and_amounts_due,
         period_type,
+        CASE 
+            WHEN cc.frequency_in_months = 1 
+                THEN "1 MONTH"
+            ELSE
+                CONCAT(cc.frequency_in_months, " MONTHS") 
+        END AS frequency
     FROM contact_count cc
-        LEFT JOIN contact_required
+    LEFT JOIN contact_required
         USING (supervision_level, case_type)
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` caa
          USING(supervision_level, case_type)
@@ -319,6 +332,7 @@ finalized_periods AS (
             THEN TRUE
             ELSE FALSE
         END AS overdue_flag,
+        frequency,
     FROM compliance_check cc
     LEFT JOIN contact_info ci
       ON cc.person_id = ci.person_id
@@ -370,6 +384,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
                 name="overdue_flag",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Flag that indicates whether contact was missed.",
+            ),
+            ReasonsField(
+                name="frequency",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Contact cadence.",
             ),
         ],
     )
