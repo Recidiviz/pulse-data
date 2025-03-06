@@ -97,6 +97,7 @@ def _top_level_condition_expression_score(
             expr.Ordered,
             expr.Select,
             expr.Star,
+            expr.Tuple,
             expr.Unnest,
             expr.WindowSpec,
             expr.JSONKeyValue,

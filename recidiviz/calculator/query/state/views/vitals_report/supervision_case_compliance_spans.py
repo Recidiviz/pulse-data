@@ -23,10 +23,6 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.vitals_report.supervision_population_by_po_by_day import (
-    contact_population_by_state,
-    risk_assessment_population_by_state,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,22 +35,27 @@ on various compliance metrics.
 certain properties (like supervision level) that require regular contacts/assessments, not that they
 are required to have that done immediately (that comes from the *_overdue fields)."""
 
-risk_assessment_query_fragment = "\n\tUNION ALL\n".join(
-    f"\tSELECT '{state_code}' AS state_code, [{list_to_query_string(supervision_levels, quoted=True)}] AS supervision_levels"
-    for state_code, supervision_levels in risk_assessment_population_by_state.items()
-)
+compliance_metric_eligible_supervision_levels_by_state = {
+    "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
+    "US_IX": (
+        "MINIMUM",
+        "MEDIUM",
+        "HIGH",
+        "MAXIMUM",
+        "DIVERSION",
+        "INTERSTATE_COMPACT",
+        "INTERNAL_UNKNOWN",
+    ),
+}
 
-contact_query_fragment = "\n\tUNION ALL\n".join(
+eligible_supervision_levels_query_fragment = "\n\tUNION ALL\n".join(
     f"\tSELECT '{state_code}' AS state_code, [{list_to_query_string(supervision_levels, quoted=True)}] AS supervision_levels"
-    for state_code, supervision_levels in contact_population_by_state.items()
+    for state_code, supervision_levels in compliance_metric_eligible_supervision_levels_by_state.items()
 )
 
 SUPERVISION_CASE_COMPLIANCE_SPANS_TEMPLATE = f"""
-WITH risk_assessment_eligibility_levels_by_state AS (
-{risk_assessment_query_fragment}
-)
-, contact_eligibility_levels_by_state AS (
-{contact_query_fragment}
+WITH eligible_supervision_levels_by_state AS (
+{eligible_supervision_levels_query_fragment}
 )
 , compliance_metrics AS (
     SELECT
@@ -62,7 +63,7 @@ WITH risk_assessment_eligibility_levels_by_state AS (
         m.person_id,
         date_of_supervision AS start_date,
         DATE_ADD(date_of_supervision, INTERVAL 1 DAY) AS end_date_exclusive,
-        supervision_level IN UNNEST(r.supervision_levels) AS assessment_required,
+        supervision_level IN UNNEST(c.supervision_levels) AS assessment_required,
         -- If there are multiple rows for a person on a day and any row says they're overdue, consider them overdue
         LOGICAL_OR(IFNULL(next_recommended_assessment_date < date_of_supervision, FALSE)) AS assessment_overdue,
         supervision_level IN UNNEST(c.supervision_levels) AS contact_required,
@@ -70,10 +71,7 @@ WITH risk_assessment_eligibility_levels_by_state AS (
     FROM
         `{{project_id}}.shared_metric_views.supervision_case_compliance_metrics_materialized` m
     INNER JOIN
-        risk_assessment_eligibility_levels_by_state r
-        USING (state_code)
-    INNER JOIN
-        contact_eligibility_levels_by_state c
+        eligible_supervision_levels_by_state c
         USING (state_code)
     LEFT JOIN `{{project_id}}.sessions.location_sessions_materialized` l
         ON m.person_id = l.person_id

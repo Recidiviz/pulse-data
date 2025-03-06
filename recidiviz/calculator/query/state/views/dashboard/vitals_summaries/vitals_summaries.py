@@ -16,6 +16,8 @@
 # =============================================================================
 """Daily summaries of vitals metrics, at the state, district, and PO level."""
 
+from typing import Optional
+
 import attr
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -51,8 +53,10 @@ class VitalsEntity:
     aggregated_metrics_entity: str
     # States to include metrics for this entity
     enabled_states: list[str]
-    # Whether we need to join to a table of staff data to get additional information about this entity, for example to fill in the parent_entity_id_field
-    include_staff_join: bool = False
+    # Query fragment for a join statement that gets additional information about this entity, for example to fill in the parent_entity_id_field
+    join_query_fragment: str = ""
+    # Query fragment that filters out certain entites of this type
+    exclusion_query_fragment: Optional[str] = None
 
 
 @attr.define(frozen=True)
@@ -76,7 +80,21 @@ VITALS_ENTITIES = [
         parent_entity_id_field="staff.district",
         aggregated_metrics_entity="officer",
         enabled_states=["US_ND", "US_IX"],
-        include_staff_join=True,
+        join_query_fragment=f"""
+  INNER JOIN
+    `{{project_id}}.reference_views.product_staff_materialized` staff
+  ON
+    today.state_code = staff.state_code
+    AND today.officer_id = staff.external_id
+    AND today.start_date BETWEEN staff.start_date AND {nonnull_end_date_exclusive_clause("end_date_exclusive")}
+    AND staff.is_supervision_officer
+    """,
+        exclusion_query_fragment="""
+    -- exclude staff in pretrial districts or central office
+    NOT (staff.state_code="US_ND" AND (IFNULL(staff.district, "") LIKE "%PRETRIAL" OR IFNULL(staff.district, "") = "CENTRAL OFFICE"))
+    -- exclude staff without a district, transitional officers, and supervisors
+    AND NOT (staff.state_code="US_IX" AND (staff.district IS NULL OR IFNULL(staff.specialized_caseload_type_primary, "") = "TRANSITIONAL" OR IFNULL(staff.is_supervision_officer_supervisor, FALSE)))
+    """,
     ),
     VitalsEntity(
         entity_type="level_1_supervision_location",
@@ -86,6 +104,7 @@ VITALS_ENTITIES = [
         parent_entity_id_field='"STATE_DOC"',
         aggregated_metrics_entity="office",
         enabled_states=["US_ND"],
+        exclusion_query_fragment='NOT (today.state_code="US_ND" AND (today.office_name LIKE "%PRETRIAL%" OR today.office_name IN ("CENTRAL OFFICE", "EXTERNAL_UNKNOWN")))',
     ),
     VitalsEntity(
         entity_type="level_2_supervision_location",
@@ -95,6 +114,7 @@ VITALS_ENTITIES = [
         parent_entity_id_field='"STATE_DOC"',
         aggregated_metrics_entity="district",
         enabled_states=["US_IX"],
+        exclusion_query_fragment='NOT (today.state_code="US_IX" AND today.district IN ("PAROLE COMMISSION OFFICE", "DISTRICT 0", "EXTERNAL_UNKNOWN", "OUT OF STATE"))',
     ),
     VitalsEntity(
         entity_type="state",
@@ -145,15 +165,21 @@ def calculate_rate_for_metric(
     table_name: str,
     vitals_metric: VitalsMetric,
     suffix: str | None = None,
+    round_to: int | None = None,
 ) -> str:
     rate_calc_string = f"100 * (1 - IFNULL(SAFE_DIVIDE({table_name}.{vitals_metric.aggregated_metric_name}, {table_name}.{vitals_metric.aggregated_metric_denominator}), 0))"
-    return f"IF(today.state_code IN ({list_to_query_string(vitals_metric.enabled_states, quoted=True)}), {rate_calc_string}, NULL) AS {vitals_metric.vitals_metric_name}{f'_{suffix}' if suffix else ''},"
+    rate_calc = f"IF(today.state_code IN ({list_to_query_string(vitals_metric.enabled_states, quoted=True)}), {rate_calc_string}, NULL)"
+    if round_to:
+        rate_calc = f"ROUND({rate_calc}, {round_to})"
+    return f"{rate_calc} AS {vitals_metric.vitals_metric_name}{f'_{suffix}' if suffix else ''},"
 
 
-def calculate_rate_query_fragment(table_name: str, suffix: str | None = None) -> str:
+def calculate_rate_query_fragment(
+    table_name: str, suffix: str | None = None, round_to: int | None = None
+) -> str:
     return "\n    ".join(
         [
-            calculate_rate_for_metric(table_name, vitals_metric, suffix)
+            calculate_rate_for_metric(table_name, vitals_metric, suffix, round_to)
             for vitals_metric in VITALS_METRICS
         ]
     )
@@ -162,17 +188,6 @@ def calculate_rate_query_fragment(table_name: str, suffix: str | None = None) ->
 def vitals_summaries_query() -> str:
     """Query representing summaries of vitals metrics, at the state, district, and PO level."""
 
-    staff_join_fragment = f"""
-  INNER JOIN
-    `{{project_id}}.reference_views.product_staff_materialized` staff
-  ON
-    today.state_code = staff.state_code
-    AND today.officer_id = staff.external_id
-    AND today.start_date BETWEEN staff.start_date AND {nonnull_end_date_exclusive_clause("end_date_exclusive")}
-    AND staff.is_supervision_officer
-    AND NOT (staff.state_code="US_ND" AND (IFNULL(staff.district, "") LIKE "%PRETRIAL" OR IFNULL(staff.district, "") = "CENTRAL OFFICE"))
-    AND NOT (staff.state_code="US_IX" AND (staff.district IS NULL OR IFNULL(staff.specialized_caseload_type_primary, "") = "TRANSITIONAL" OR IFNULL(staff.is_supervision_officer_supervisor, FALSE)))
-"""
     summary_ctes = "\n,".join(
         [
             f"""
@@ -203,10 +218,11 @@ def vitals_summaries_query() -> str:
     AND today.{vitals_entity.entity_id_join_field} = ninety_days_ago.{vitals_entity.entity_id_join_field}
     AND DATE_SUB(today.end_date, INTERVAL 90 DAY) = ninety_days_ago.end_date
     AND today.period = ninety_days_ago.period
-  {staff_join_fragment if vitals_entity.include_staff_join else ''}
+  {vitals_entity.join_query_fragment}
   WHERE
     today.end_date = CURRENT_DATE("US/Eastern")
     AND today.period = "DAY"
+    {f'AND {vitals_entity.exclusion_query_fragment}' if vitals_entity.exclusion_query_fragment else ""}
 )
 """
             for vitals_entity in VITALS_ENTITIES
@@ -248,10 +264,7 @@ SELECT
 {past("90d")}
   END AS overall_90d
 FROM {vitals_entity.aggregated_metrics_entity}_values
-WHERE
-    NOT (state_code="US_ND" AND (entity_id LIKE "%PRETRIAL%" OR entity_id IN ("CENTRAL_OFFICE", "EXTERNAL_UNKNOWN")))
-    AND NOT (state_code="US_IX" AND entity_id IN ("PAROLE_COMMISSION_OFFICE", "DISTRICT_0", "EXTERNAL_UNKNOWN", "OUT_OF_STATE"))
-{f"AND state_code IN ({list_to_query_string(vitals_entity.enabled_states, quoted=True)})"}
+WHERE {f"state_code IN ({list_to_query_string(vitals_entity.enabled_states, quoted=True)})"}
 """
             for vitals_entity in VITALS_ENTITIES
         ]
