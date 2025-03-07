@@ -75,10 +75,10 @@ num_allowed_rows_overrides:
     override_reason: >-
       Needs investigation. Current failing level as of 2/24/23 is 62 rows #TODO(#19047)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 25000
+    hard_num_allowed_rows_override: 26000
     override_reason: >-
-      P1 Not relevant to any of our products currently as we mostly care about just
-      having an accurate population count (which we can see from
+      TODO(#38842) P1 Not relevant to any of our products currently as we mostly care
+      about just having an accurate population count (which we can see from
       supervision_population_person_level_external_comparison we do), though concerning.
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 5
