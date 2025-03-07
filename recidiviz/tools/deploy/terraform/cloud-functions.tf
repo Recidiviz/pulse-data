@@ -48,6 +48,7 @@ resource "google_cloudfunctions2_function" "trigger_calculation_dag" {
 
   service_config {
     max_instance_count = 3000
+    available_memory   = "512M"
     ingress_settings   = "ALLOW_INTERNAL_ONLY"
     environment_variables = {
       # This is an output variable from the composer environment, relevant docs:
