@@ -124,7 +124,7 @@ products:
       - state_code: US_TN
         environment: production
       - state_code: US_TX
-        environment: staging
+        environment: production
       - state_code: US_UT
         environment: production
   - name: Insights
