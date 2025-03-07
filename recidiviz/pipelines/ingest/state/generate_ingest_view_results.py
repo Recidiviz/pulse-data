@@ -17,15 +17,13 @@
 """A PTransform that generates ingest view results for a given ingest view."""
 import datetime
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 from dateutil import parser
 
 from recidiviz.big_query.big_query_utils import datetime_clause
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -33,9 +31,6 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
 from recidiviz.utils.string import StrictStringFormatter
@@ -50,78 +45,53 @@ SELECT *,
 FROM view_results;
 """
 
-INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE = f"""
-SELECT
-    MAX(update_datetime) AS {UPPER_BOUND_DATETIME_COL_NAME}
-FROM (
-        {{raw_data_tables}}
-);"""
-
-INDIVIDUAL_TABLE_QUERY_TEMPLATE = """SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `{project_id}.{raw_data_dataset}.{file_tag}`"""
-INDIVIDUAL_TABLE_QUERY_WHERE_CLAUSE = " WHERE update_datetime <= '{upper_bound_date}'"
-INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE = " LIMIT 0"
-INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE = (
-    f"{INDIVIDUAL_TABLE_QUERY_TEMPLATE}{INDIVIDUAL_TABLE_QUERY_WHERE_CLAUSE}"
-)
-INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE = (
-    f"{INDIVIDUAL_TABLE_QUERY_TEMPLATE}{INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE}"
-)
-
 
 class GenerateIngestViewResults(beam.PTransform):
     """Generates ingest view results for a given ingest view based on provided parameters."""
 
     def __init__(
         self,
-        project_id: str,
-        state_code: StateCode,
-        ingest_view_name: str,
-        raw_data_tables_to_upperbound_dates: Dict[str, str],
+        ingest_view_builder: DirectIngestViewQueryBuilder,
+        raw_data_tables_to_upperbound_dates: dict[str, str],
         raw_data_source_instance: DirectIngestInstance,
-        resource_labels: dict[str, str] | None = None,
+        resource_labels: dict[str, str],
     ) -> None:
         super().__init__()
 
-        if not raw_data_tables_to_upperbound_dates:
-            raise ValueError(
-                f"Must define raw_data_tables_to_upperbound_dates for view "
-                f"[{ingest_view_name}]"
-            )
+        if not resource_labels:
+            raise ValueError("Received no resource_labels in GenerateIngestViewResults")
 
-        self.project_id = project_id
-        self.state_code = state_code
-        self.region = direct_ingest_regions.get_direct_ingest_region(
-            region_code=state_code.value
-        )
-        self.ingest_view_name = ingest_view_name
-        self.view_builder: DirectIngestViewQueryBuilder = (
-            DirectIngestViewQueryBuilderCollector(
-                self.region, [ingest_view_name]
-            ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
-        )
-        parsed_upperbound_dates = {
-            parser.isoparse(upper_bound_date_str)
-            for upper_bound_date_str in raw_data_tables_to_upperbound_dates.values()
-        }
-        self.upper_bound_datetime_inclusive: datetime.datetime = max(
-            parsed_upperbound_dates
+        self.ingest_view_builder = ingest_view_builder
+        self.ingest_view_name = ingest_view_builder.ingest_view_name
+        # If we're using a raw data table that has no data, that
+        # is bad and we want to yell.
+        self.upper_bound_datetime_inclusive = self.get_upper_bound_datetime_inclusive(
+            raw_data_tables_to_upperbound_dates
         )
         self.raw_data_source_instance = raw_data_source_instance
-        self.resource_labels = resource_labels or {}
+        self.resource_labels = resource_labels
 
-    def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
-        # If upper_bound_datetime_inclusive is None, that means that none of the raw table dependencies of this view
-        # have imported any data, so we skip the view.
-        if not self.upper_bound_datetime_inclusive:
-            return (
-                input_or_inputs
-                | f"Skip querying {self.ingest_view_name} - no raw data"
-                >> beam.Create([])
+    def get_upper_bound_datetime_inclusive(
+        self, upperbounds_by_table: dict[str, str]
+    ) -> datetime.datetime:
+        """Returns the max upper bound datetime across raw data dependencies. Throws if any are missing"""
+        tables_with_missing_upperbound = set()
+        all_upper_bounds = set()
+        for table in self.ingest_view_builder.raw_data_table_dependency_file_tags:
+            if upperbound := upperbounds_by_table.get(table):
+                all_upper_bounds.add(parser.isoparse(upperbound))
+            else:
+                tables_with_missing_upperbound.add(table)
+        if tables_with_missing_upperbound:
+            raise ValueError(
+                f"Ingest View [{self.ingest_view_name}] has raw data dependencies "
+                f"with missing upper bound datetimes: {','.join(tables_with_missing_upperbound)}"
             )
+        return max(all_upper_bounds)
 
+    def expand(self, input_or_inputs: PBegin) -> beam.PCollection[dict[str, Any]]:
         query = self.generate_ingest_view_query(
-            view_builder=self.view_builder,
+            view_builder=self.ingest_view_builder,
             raw_data_source_instance=self.raw_data_source_instance,
             upper_bound_datetime_inclusive=self.upper_bound_datetime_inclusive,
         )
@@ -143,29 +113,24 @@ class GenerateIngestViewResults(beam.PTransform):
         raw_data_source_instance: DirectIngestInstance,
         upper_bound_datetime_inclusive: datetime.datetime,
     ) -> str:
-        """Returns a version of the ingest view query for the provided args that can
+        """
+        Returns a version of the ingest view query for the provided args that can
         be run in Dataflow. Augments the ingest view query with metadata columns that
         will be output to materialized ingest view results tables.
 
         A note that this query for Dataflow cannot use materialized tables or temporary
-        tables."""
-        view_query = (
-            view_builder.build_query(
-                query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_source_instance=raw_data_source_instance,
-                    raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
-                )
+        tables.
+        """
+        view_query = view_builder.build_query(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=raw_data_source_instance,
+                raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
             )
-            .rstrip()
-            .rstrip(";")
-        )
-
-        upper_bound_datetime_inclusive_clause = datetime_clause(
-            upper_bound_datetime_inclusive
-        )
-
+        ).rstrip(" ;")
         return StrictStringFormatter().format(
             INGEST_VIEW_OUTPUT_QUERY_TEMPLATE,
             view_query=view_query,
-            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_clause,
+            upper_bound_datetime_inclusive=datetime_clause(
+                upper_bound_datetime_inclusive
+            ),
         )

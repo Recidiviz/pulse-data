@@ -155,20 +155,23 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             else all_launchable_views
         )
 
-        for ingest_view in ingest_views_to_run:
-            if ingest_view not in all_launchable_views:
+        for ingest_view_name in ingest_views_to_run:
+            if ingest_view_name not in all_launchable_views:
                 raise ValueError(
-                    f"Found invalid ingest view for {state_code}: {ingest_view}"
+                    f"Found invalid ingest view for {state_code}: {ingest_view_name}"
                 )
 
-            query_builder = view_collector.get_query_builder_by_view_name(ingest_view)
+            ingest_view_query_builder = view_collector.get_query_builder_by_view_name(
+                ingest_view_name
+            )
 
             raw_files_with_data = set(raw_data_upper_bound_dates)
             if dependencies_missing_data := (
-                query_builder.raw_data_table_dependency_file_tags - raw_files_with_data
+                ingest_view_query_builder.raw_data_table_dependency_file_tags
+                - raw_files_with_data
             ):
                 raise ValueError(
-                    f"Found dependency table(s) of ingest view [{ingest_view}] with no "
+                    f"Found dependency table(s) of ingest view [{ingest_view_name}] with no "
                     f"data: {dependencies_missing_data}"
                 )
 
@@ -187,48 +190,50 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             IngestViewName,
             beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
         ] = {}
-        for ingest_view in ingest_views_to_run:
-            query_builder = view_collector.get_query_builder_by_view_name(ingest_view)
+        for ingest_view_name in ingest_views_to_run:
+            ingest_view_query_builder = view_collector.get_query_builder_by_view_name(
+                ingest_view_name
+            )
 
-            ingest_view_results: beam.PCollection[
-                Dict[str, Any]
-            ] = p | f"Materialize {ingest_view} results" >> GenerateIngestViewResults(
-                project_id=self.pipeline_parameters.project,
-                state_code=state_code,
-                ingest_view_name=ingest_view,
-                raw_data_tables_to_upperbound_dates={
-                    # Filter down to only the tags referenced by this view.
-                    file_tag: raw_data_upper_bound_dates[file_tag]
-                    for file_tag in query_builder.raw_data_table_dependency_file_tags
-                },
-                raw_data_source_instance=raw_data_source_instance,
-                resource_labels=self.pipeline_parameters.resource_labels,
+            ingest_view_results: beam.PCollection[Dict[str, Any]] = (
+                p
+                | f"Materialize {ingest_view_name} results"
+                >> GenerateIngestViewResults(
+                    ingest_view_builder=ingest_view_query_builder,
+                    raw_data_tables_to_upperbound_dates={
+                        # Filter down to only the tags referenced by this view.
+                        file_tag: raw_data_upper_bound_dates[file_tag]
+                        for file_tag in ingest_view_query_builder.raw_data_table_dependency_file_tags
+                    },
+                    raw_data_source_instance=raw_data_source_instance,
+                    resource_labels=self.pipeline_parameters.resource_labels,
+                )
             )
 
             _ = (
                 ingest_view_results
-                | f"Write {ingest_view} results to table."
+                | f"Write {ingest_view_name} results to table."
                 >> WriteToBigQuery(
                     output_dataset=self.pipeline_parameters.ingest_view_results_output,
-                    output_table=ingest_view,
+                    output_table=ingest_view_name,
                     write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                 )
             )
             if self.pipeline_parameters.ingest_view_results_only:
                 continue
 
-            merged_root_entities_with_dates_per_ingest_view[ingest_view] = (
+            merged_root_entities_with_dates_per_ingest_view[ingest_view_name] = (
                 ingest_view_results
-                | f"Generate {ingest_view} entities."
+                | f"Generate {ingest_view_name} entities."
                 >> GenerateEntities(
                     ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
-                        ingest_view
+                        ingest_view_name
                     ],
                     ingest_view_context=ingest_view_context,
                 )
-                | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
+                | f"Merge {ingest_view_name} entities using IngestViewTreeMerger within same date and external ID."
                 >> MergeIngestViewRootEntityTrees(
-                    ingest_view_name=ingest_view,
+                    ingest_view_name=ingest_view_name,
                     state_code=state_code,
                 )
             )

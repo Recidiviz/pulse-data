@@ -49,11 +49,16 @@ INGEST_VIEW_RESULTS_SCHEMA_COLUMNS = [
         UPPER_BOUND_DATETIME_COL_NAME,
         field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
         mode="REQUIRED",
+        description=(
+            "Of all raw data inputs to this ingest view, this value is the most recent time that any "
+            "of those raw data tables received new data (using update_datetime)."
+        ),
     ),
     bigquery.SchemaField(
         MATERIALIZATION_TIME_COL_NAME,
         field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
         mode="REQUIRED",
+        description="This datetime (UTC) is when the data in this table was materialized.",
     ),
 ]
 INGEST_VIEW_RESULTS_SCHEMA_COLUMN_NAMES = {

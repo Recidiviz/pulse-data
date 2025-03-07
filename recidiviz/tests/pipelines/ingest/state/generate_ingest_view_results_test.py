@@ -36,9 +36,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.tests.big_query.big_query_emulator_test_case import (
-    BQ_EMULATOR_PROJECT_ID,
-)
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
     StateIngestPipelineTestCase,
@@ -75,7 +72,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
     def setup_single_ingest_view_raw_data_bq_tables(
         self, ingest_view_name: str, test_name: str
-    ) -> None:
+    ) -> DirectIngestViewQueryBuilder:
         ingest_view_builder = (
             self.ingest_view_collector().get_query_builder_by_view_name(
                 ingest_view_name
@@ -86,6 +83,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             ingest_test_identifier=f"{test_name}.csv",
             create_tables=False,
         )
+        return ingest_view_builder
 
     @staticmethod
     def validate_ingest_view_results(
@@ -120,13 +118,32 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
         return _validate_ingest_view_results_output
 
+    def test_empty_raw_data_upper_bounds_yell_at_us(self) -> None:
+        view_builder = self.setup_single_ingest_view_raw_data_bq_tables(
+            ingest_view_name="ingest12", test_name="ingest12"
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Ingest View \[ingest12\] has raw data dependencies with missing upper bound datetimes: table1",
+        ):
+            pipeline.GenerateIngestViewResults(
+                ingest_view_builder=view_builder,
+                raw_data_tables_to_upperbound_dates={
+                    # MyPy doesn't like this, but we want to double check
+                    "table1": None,  # type: ignore
+                    "table2": datetime.fromisoformat("2022-07-04:00:00:00").isoformat(),
+                },
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                resource_labels={"for": "testing"},
+            )
+
     # TODO(#22059): Standardize ingest view fixtures for ingest tests.
     # This is testing ingest view materialization,
     # so either separate these fixtures in a way that the
     # this test likes, or really explicitly handle
     # meatadata so we can consistently test it.
     def test_materialize_ingest_view_results(self) -> None:
-        self.setup_single_ingest_view_raw_data_bq_tables(
+        view_builder = self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12"
         )
         expected_ingest_view_output = self.get_ingest_view_results_from_fixture(
@@ -134,9 +151,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
 
         output = self.test_pipeline | pipeline.GenerateIngestViewResults(
-            project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code=self.state_code(),
-            ingest_view_name="ingest12",
+            ingest_view_builder=view_builder,
             raw_data_tables_to_upperbound_dates={
                 "table1": datetime.fromisoformat(
                     "2022-07-04:00:00:00.000000"
@@ -144,6 +159,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
                 "table2": datetime.fromisoformat("2022-07-04:00:00:00").isoformat(),
             },
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            resource_labels={"for": "testing"},
         )
         assert_that(
             output,

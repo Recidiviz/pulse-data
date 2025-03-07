@@ -21,11 +21,13 @@ from unittest.mock import patch
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
@@ -39,19 +41,17 @@ PIPELINE_INTEGRATION_TEST_NAME = "pipeline_integration"
 class FakeGenerateIngestViewResults(GenerateIngestViewResults):
     def __init__(
         self,
-        project_id: str,
-        state_code: StateCode,
-        ingest_view_name: str,
+        ingest_view_builder: DirectIngestViewQueryBuilder,
         raw_data_tables_to_upperbound_dates: dict[str, str],
         raw_data_source_instance: DirectIngestInstance,
+        resource_labels: dict[str, str],
         fake_ingest_view_results: Iterable[dict[str, Any]],
     ) -> None:
         super().__init__(
-            project_id,
-            state_code,
-            ingest_view_name,
+            ingest_view_builder,
             raw_data_tables_to_upperbound_dates,
             raw_data_source_instance,
+            resource_labels,
         )
         self.fake_ingest_view_results = fake_ingest_view_results
 
@@ -91,24 +91,20 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
 
     def generate_ingest_view_results_for_one_date(
         self,
-        project_id: str,
-        state_code: StateCode,
-        ingest_view_name: str,
+        ingest_view_builder: DirectIngestViewQueryBuilder,
         raw_data_tables_to_upperbound_dates: dict[str, str],
         raw_data_source_instance: DirectIngestInstance,
-        # pylint: disable=unused-argument
         resource_labels: dict[str, str],
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
         return FakeGenerateIngestViewResults(
-            project_id,
-            state_code,
-            ingest_view_name,
+            ingest_view_builder,
             raw_data_tables_to_upperbound_dates,
             raw_data_source_instance,
+            resource_labels,
             self.get_ingest_view_results_from_fixture(
-                ingest_view_name=ingest_view_name,
-                test_name=ingest_view_name,
+                ingest_view_name=ingest_view_builder.ingest_view_name,
+                test_name=ingest_view_builder.ingest_view_name,
                 fixture_has_metadata_columns=False,
                 generate_default_metadata=True,
                 use_results_fixture=False,
