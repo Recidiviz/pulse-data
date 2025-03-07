@@ -39,27 +39,27 @@ TASK_CONFIGS = [
         "due_date_field": "event_date",
     },
     {
-        "type": "usTxFieldContact",
+        "type": "usTxFieldContactScheduled",
         "table": "meets_scheduled_field_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
     {
-        "type": "usTxFieldContact",
+        "type": "usTxFieldContactUnscheduled",
         "table": "meets_unscheduled_field_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
     {
-        "type": "usTxHomeContact",
+        "type": "usTxHomeContactScheduled",
         "table": "meets_scheduled_home_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
     {
-        "type": "usTxHomeContact",
+        "type": "usTxHomeContactUnscheduled",
         "table": "meets_unscheduled_home_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
     {
-        "type": "usTxElectronicContact",
+        "type": "usTxElectronicContactScheduled",
         "table": "meets_scheduled_electronic_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
