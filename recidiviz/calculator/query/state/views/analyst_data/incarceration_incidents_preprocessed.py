@@ -17,7 +17,11 @@
 """Materialized view for incarceration_incidents built on ingested entities"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -27,7 +31,8 @@ INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_NAME = "incarceration_incidents_prepro
 INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_DESCRIPTION = (
     """Materialized view for incarceration_incidents built on ingested entities"""
 )
-INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
+INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = f"""
+WITH all_incidents AS (
     SELECT 
     #TODO(#35459) Clean up incarceration incidents preprocessed 
         p.state_code, 
@@ -49,7 +54,7 @@ INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
         p.infraction_type_raw_text,
         p.hearing_date,
         p.assault_score
-    FROM `{project_id}.{analyst_dataset}.us_tn_incarceration_incidents_preprocessed` p
+    FROM `{{project_id}}.{{analyst_dataset}}.us_tn_incarceration_incidents_preprocessed` p
 
     UNION ALL 
     
@@ -61,7 +66,7 @@ INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
         NULL AS infraction_type_raw_text,
         NULL AS hearing_date,
         NULL AS assault_score,
-    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_incident` inc
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` inc
     WHERE state_code = 'US_MI'
     
     UNION ALL 
@@ -74,13 +79,21 @@ INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
         NULL AS infraction_type_raw_text,
         NULL AS hearing_date,
         NULL AS assault_score,
-    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_incident` inc
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` inc
     WHERE state_code = 'US_IX'
-        
+)
+SELECT
+    a.*,
+    cl.custody_level
+FROM all_incidents a
+LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized` cl
+    ON a.person_id = cl.person_id
+    AND a.incident_date BETWEEN cl.start_date AND {nonnull_end_date_exclusive_clause('cl.end_date_exclusive')}
 """
 
 INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_NAME,

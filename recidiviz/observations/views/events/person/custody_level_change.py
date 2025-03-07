@@ -31,6 +31,8 @@ SELECT
     cl.custody_level_num_change,
     months_between_assessment_due_and_downgrade,
     IF(custody_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
+    LAG(IF(custody_downgrade > 0, "DOWNGRADE", "UPGRADE")) 
+        OVER(PARTITION BY cl.person_id, cl.compartment_level_0_super_session_id ORDER BY start_date) AS previous_change_type,
     cl.previous_custody_level,
     cl.custody_level AS new_custody_level,
     cl.start_date
@@ -50,6 +52,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[
         "change_type",
+        "previous_change_type",
         "previous_custody_level",
         "new_custody_level",
         "custody_level_num_change",
