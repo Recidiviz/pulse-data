@@ -85,5 +85,6 @@ def assessment_scores_with_first_score_ctes(
         USING(person_id, state_code, assessment_type)
     WHERE ass.assessment_date BETWEEN fads.start_date AND {nonnull_end_date_clause('fads.end_date')}
         AND ass.assessment_type = {assessment_types_string}
+        AND ass.assessment_class = 'RISK'
     )
 """

@@ -51,20 +51,21 @@ _QUERY_TEMPLATE = f"""WITH min_assessment_during_supervision AS (
     ),
 
     assessment_scores_with_min_score AS (
-    SELECT 
-        ass.state_code,
-        ass.person_id,
-        mads.supervision_super_session_id,
-        ass.assessment_date AS start_date,
-        ass.score_end_date_exclusive AS end_date,
-        ass.assessment_score,
-        mads.min_assessment_score,
-        SAFE_DIVIDE(mads.min_assessment_score - ass.assessment_score, mads.min_assessment_score)*100 AS assessment_score_percent_reduction,
-    FROM min_assessment_during_supervision mads
-    INNER JOIN `{{project_id}}.sessions.assessment_score_sessions_materialized` ass
-        USING(person_id, state_code, assessment_type)
-    WHERE ass.assessment_date BETWEEN mads.start_date AND IFNULL(mads.end_date, '9999-12-31')
-        AND ass.assessment_type = 'LS_RNR'
+        SELECT 
+            ass.state_code,
+            ass.person_id,
+            mads.supervision_super_session_id,
+            ass.assessment_date AS start_date,
+            ass.score_end_date_exclusive AS end_date,
+            ass.assessment_score,
+            mads.min_assessment_score,
+            SAFE_DIVIDE(mads.min_assessment_score - ass.assessment_score, mads.min_assessment_score)*100 AS assessment_score_percent_reduction,
+        FROM min_assessment_during_supervision mads
+        INNER JOIN `{{project_id}}.sessions.assessment_score_sessions_materialized` ass
+            USING(person_id, state_code, assessment_type)
+        WHERE ass.assessment_date BETWEEN mads.start_date AND IFNULL(mads.end_date, '9999-12-31')
+            AND ass.assessment_type = 'LS_RNR'
+            AND ass.assessment_class = 'RISK'
     )
 
     SELECT 
