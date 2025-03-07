@@ -40,21 +40,21 @@ meet risk assessment standards.
 _QUERY_TEMPLATE = f"""
 WITH
 -- Create periods with case type and supervision level information
-comp_sub_sessions AS (
-   SELECT 
-      person_id,
-      state_code,
-      start_date,
-      end_date_exclusive,
-      case_type
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` AS sub_sessions
-    WHERE case_type is not null
-        AND state_code ='US_TX'
+supervision_periods AS (
+    SELECT
+        state_supervision_period.person_id,
+        state_supervision_period.state_code,
+        start_date,
+        termination_date as end_date_exclusive,
+        case_type_raw_text as case_type
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` AS state_supervision_period
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry`
+        USING (supervision_period_id)
 ),
 -- Aggregate above periods by case_type
 case_type_periods AS (
     {aggregate_adjacent_spans(
-        table_name='comp_sub_sessions',
+        table_name='supervision_periods',
         attribute=['case_type'],
         session_id_output_name='case_type_periods',
         end_date_field_name='end_date_exclusive'
@@ -226,6 +226,8 @@ events_with_reference_data AS (
     ON event_triggers.assessment_level = cadence_ref.last_assessment_level
       AND event_triggers.assessment_type = cadence_ref.last_assessment_type
       AND CAST(event_ref.use_whats_next_table AS BOOL) = TRUE
+    WHERE event_ref.use_whats_next_table is not null
+        AND event_date is not null
 ),
 
 next_events AS (
