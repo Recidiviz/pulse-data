@@ -37,54 +37,71 @@ WITH
 -- Collect identifiers for sentences to ingest.
 base_sentences AS ({VALID_PEOPLE_AND_SENTENCES}),
 
--- For the time being, assign statuses to cases based only on whether they have a 
--- termination date included in the crt_case table.
-statuses AS (
-SELECT 
+-- Collect all sentence dates to understand when a sentence began being served.
+sentence_starts AS (
+SELECT DISTINCT
   ofndr_num,
   intr_case_num,
-  sentence_type,
-  CASE 
-    WHEN sent_dt IS NOT NULL AND crt_trmn_dt IS NULL THEN 'SERVING'
-    WHEN sent_dt IS NOT NULL AND crt_trmn_dt IS NOT NULL THEN 'COMPLETE'
-    ELSE 'UNKNOWN'
-  END AS status,
-CAST(updt_dt AS DATETIME) AS updt_dt
-FROM 
+  CAST(sent_dt AS DATETIME) as updt_dt,
+  'SERVING' AS status,
+FROM
   base_sentences
 JOIN
-  {{crt_case@ALL}} crt
+  {{crt_case}} crt
+USING
+  (ofndr_num,
+    intr_case_num)
+WHERE
+  sent_dt IS NOT NULL 
+),
+
+-- Collect all sentence termination dates to understand when a sentence was completed.
+sentence_ends AS (
+SELECT DISTINCT
+  ofndr_num,
+  intr_case_num,
+  CAST(crt_trmn_dt AS DATETIME) as updt_dt,
+  'COMPLETE' AS status,
+FROM
+  base_sentences
+JOIN
+  {{crt_case}} crt
 USING
   (ofndr_num, intr_case_num)
+WHERE crt_trmn_dt IS NOT NULL
 ),
--- Keep statuses that are different from the previous status for that sentence,
--- and discard any that are invalid. TODO(#38008): Clarify with Utah that we are 
--- handling these correctly.
-filter_invalid_statuses AS (
-SELECT 
+
+-- Combine sentencing dates and court termination dates to create a ledger of status updates.
+combined AS (
+  SELECT * FROM sentence_starts
+  UNION ALL 
+  SELECT * FROM sentence_ends
+)
+
+SELECT
   ofndr_num,
   intr_case_num,
   status,
   updt_dt,
-  -- There are 6 sentences with multiple statuses entered into the UT database with the 
+  -- There are 6 sentences with multiple statuses entered into the UT database with the
   -- exact same timestamp. Order these manually so that the SERVING status comes before
   -- the COMPLETE status.
-  ROW_NUMBER() OVER (PARTITION BY ofndr_num, intr_case_num, sentence_type ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS sequence
+  ROW_NUMBER() OVER (PARTITION BY ofndr_num, intr_case_num ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS sequence
   FROM (
-    SELECT *, 
-    LAG(status) OVER (PARTITION BY ofndr_num, intr_case_num, sentence_type ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS prev_status
-    FROM statuses
+    SELECT *,
+    LAG(status) OVER (PARTITION BY ofndr_num, intr_case_num ORDER BY updt_dt, IF(status='COMPLETE',1,0)) AS prev_status
+    FROM combined
   )
-  WHERE status IS DISTINCT FROM prev_status
-  AND 
-  -- This is the case in 87 out of 591,669 resulting rows. 
-  -- It does not seem like the norm, and appears to be a data entry error in a majority
-  -- of cases. Exclude these cases for the time being and revisit once we have
-  -- more context from UT. TODO(#38008)
-    (NOT (status = 'SERVING' AND prev_status = 'COMPLETE') OR prev_status IS NULL)
-)
-SELECT * FROM filter_invalid_statuses
-WHERE NOT (status = 'COMPLETE' AND sequence > 1)
+WHERE 
+  status IS DISTINCT FROM prev_status
+AND
+-- This is the case in 247 out of 661,445 resulting rows.
+-- It does not seem like the norm, and appears to be a data entry error in a majority
+-- of cases. Exclude these cases for the time being and revisit once we have
+-- more context from UT. TODO(#38008)
+  (NOT (status = 'SERVING' AND prev_status = 'COMPLETE') OR prev_status IS NULL)
+AND 
+  updt_dt BETWEEN CAST('1900-01-02' AS DATETIME) AND @update_timestamp
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

@@ -30,5 +30,3 @@ output:
                         - SERVING
                       StateSentenceStatus.COMPLETED:
                         - COMPLETE
-                      StateSentenceStatus.INTERNAL_UNKNOWN:
-                        - UNKNOWN
