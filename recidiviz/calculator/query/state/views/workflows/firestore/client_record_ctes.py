@@ -61,8 +61,30 @@ _CLIENT_RECORD_US_OR_CASELOAD_CTE = """
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
     us_ca_most_recent_client_data AS (
         {US_CA_MOST_RECENT_CLIENT_DATA}
-    )
-    , supervision_cases AS (
+    ), 
+
+    us_ut_projected_completion_dates_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+            MAX(sentence_projected_full_term_release_date_max) AS projected_completion_date_max
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
+        UNNEST(sentence_array)
+        JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
+            USING(person_id, state_code, sentence_id)
+        JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_start_date_materialized`
+            USING(person_id, state_code, sentence_id)
+        WHERE
+            -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
+            -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 
+                effective_date < sentence_projected_full_term_release_date_max
+                AND state_code = "US_UT"
+        GROUP BY 1, 2, 3, 4
+    ),
+
+    supervision_cases AS (
         SELECT
           sessions.person_id,
           sessions.state_code,
@@ -82,6 +104,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           IFNULL(
             projected_end.projected_completion_date_max,
             COALESCE(
+                projected_end_ut.projected_completion_date_max,
                 LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
                 ca_pp.EarnedDischargeDate,
                 ca_pp.ControllingDischargeDate
@@ -100,6 +123,12 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             AND CURRENT_DATE('US/Eastern')
                 BETWEEN projected_end.start_date
                     AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
+        LEFT JOIN us_ut_projected_completion_dates_spans projected_end_ut
+            ON sessions.state_code = projected_end_ut.state_code
+            AND sessions.person_id = projected_end_ut.person_id
+            AND CURRENT_DATE('US/Eastern')
+                BETWEEN projected_end_ut.start_date
+                    AND {nonnull_end_date_exclusive_clause('projected_end_ut.end_date')}
         -- Remove clients who previously had an active officer, but no longer do.
         INNER JOIN (
             SELECT DISTINCT

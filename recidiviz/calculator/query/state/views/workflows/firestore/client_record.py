@@ -23,6 +23,7 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
     PersonRecordType,
@@ -150,6 +151,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     dataflow_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     us_ca_task_eligibility_spans_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_CA
     ),
