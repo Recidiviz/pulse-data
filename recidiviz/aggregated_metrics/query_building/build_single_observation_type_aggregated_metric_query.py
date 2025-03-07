@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper for building single observation type aggregated metrics queries."""
+from typing import Optional
+
 from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
     AssignmentsByTimePeriodViewBuilder,
 )
@@ -70,13 +72,16 @@ def _get_referenced_attributes(
     return sorted(referenced_attributes)
 
 
-def _build_observations_query_template_for_metrics(
+def build_observations_query_template_for_metrics(
     observation_type: ObservationTypeT,
     # All of these have selectors that reference the same observation_type
     single_observation_type_metrics: list[AggregatedMetric[ObservationTypeT]],
+    additional_attribute_column_clauses: Optional[list[str]] = None,
+    include_project_id_format_arg: bool = True,
 ) -> str:
-    """Returns a query template (with a project_id format arg) that will return
-    observation rows for every observation relevant to ANY of the given metrics.
+    """Returns a query template (with option to include project_id format arg) that will return
+    observation rows for every observation relevant to ANY of the given metrics,
+    along with any additional attribute columns.
     """
     if not single_observation_type_metrics:
         raise ValueError(
@@ -95,13 +100,26 @@ def _build_observations_query_template_for_metrics(
     selectors = [
         metric.observation_selector for metric in single_observation_type_metrics
     ]
+    referenced_attributes = _get_referenced_attributes(single_observation_type_metrics)
+    additional_attribute_column_clauses_dedup = (
+        [
+            col
+            for col in additional_attribute_column_clauses
+            if col not in referenced_attributes
+        ]
+        if additional_attribute_column_clauses
+        else []
+    )
+    all_output_attribute_columns = [
+        *referenced_attributes,
+        *additional_attribute_column_clauses_dedup,
+    ]
 
     return ObservationSelector.build_selected_observations_query_template(
         observation_type=observation_type,
         observation_selectors=selectors,
-        output_attribute_columns=_get_referenced_attributes(
-            single_observation_type_metrics
-        ),
+        output_attribute_columns=all_output_attribute_columns,
+        include_project_id_format_arg=include_project_id_format_arg,
     )
 
 
@@ -212,17 +230,20 @@ def _observation_to_assignment_periods_join_logic(
     raise ValueError(f"Unexpected metric class type: [{metric_class}]")
 
 
-def _build_observations_by_assignments_query_template(
+def build_observations_by_assignments_query_template(
     observation_type: ObservationTypeT,
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
     single_observation_type_metrics: list[AggregatedMetric[ObservationTypeT]],
     assignments_by_time_period_cte_name: str,
+    additional_assignment_attribute_columns: Optional[list[str]] = None,
+    additional_observation_attribute_columns: Optional[list[str]] = None,
 ) -> str:
     """Returns a query template (with a project_id format arg) that will return
     rows for every observation relevant to ANY of the given metrics, joined with any
     assignments that those observations should be associated with.
     """
+
     unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     assignments_columns = AssignmentsByTimePeriodViewBuilder.get_output_columns(
         unit_of_analysis=unit_of_analysis,
@@ -230,6 +251,10 @@ def _build_observations_by_assignments_query_template(
             type=observation_type.unit_of_observation_type
         ),
         metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
+    ) + (
+        additional_assignment_attribute_columns
+        if additional_assignment_attribute_columns
+        else []
     )
     assignment_column_strs = [
         f"{assignments_by_time_period_cte_name}.{col}" for col in assignments_columns
@@ -252,10 +277,20 @@ def _build_observations_by_assignments_query_template(
         raise ValueError(f"Unexpected observation_type [{observation_type}]")
 
     observation_columns += _get_referenced_attributes(single_observation_type_metrics)
+    if additional_observation_attribute_columns:
+        observation_columns += [
+            col
+            for col in additional_observation_attribute_columns
+            if col not in observation_columns
+        ]
+
+    observation_cols_dedup = [
+        col for col in observation_columns if col not in assignments_columns
+    ]
 
     column_strs = assignment_column_strs + [
         f"{OBSERVATIONS_CTE_NAME}.{col}"
-        for col in observation_columns
+        for col in observation_cols_dedup
         if col not in assignments_columns
     ]
 
@@ -359,15 +394,15 @@ def build_single_observation_type_aggregated_metric_query_template(
         if metric.observation_type != observation_type:
             raise ValueError(
                 f"Found metric [{metric.name}] which has observation_type "
-                f"[{observation_type}] which is not the expected type "
+                f"[{metric.observation_type}] which is not the expected type "
                 f"[{observation_type}]"
             )
 
-    observations_cte = _build_observations_query_template_for_metrics(
+    observations_cte = build_observations_query_template_for_metrics(
         observation_type, single_observation_type_metrics
     )
 
-    observations_by_assignments_cte = _build_observations_by_assignments_query_template(
+    observations_by_assignments_cte = build_observations_by_assignments_query_template(
         observation_type,
         unit_of_analysis_type,
         metric_class,

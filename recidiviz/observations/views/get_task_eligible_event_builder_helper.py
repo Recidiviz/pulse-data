@@ -57,7 +57,7 @@ def get_task_eligible_event_observation_view_builder(
         a.task_type,
         COALESCE(c.surfaced, FALSE) AS after_tool_action,
         -- Flag if person was previously almost eligible before becoming fully eligible
-        IFNULL(prev_eligibility_span.is_almost_eligible, FALSE)  AS after_almost_eligible,
+        IFNULL(prev_eligibility_span.is_almost_eligible, FALSE) AS after_almost_eligible,
         d.system_type,
         d.decarceral_impact_type,
         d.is_jii_decarceral_transition,

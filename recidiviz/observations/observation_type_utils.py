@@ -16,6 +16,7 @@
 # =============================================================================
 """Utils for getting information about a given observation type (EventType or SpanType).
 """
+from functools import cache
 from typing import TypeVar
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -23,6 +24,9 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.observation_big_query_view_collector import (
+    ObservationBigQueryViewCollector,
+)
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
@@ -123,3 +127,37 @@ def materialized_view_address_for_observation(
         f"Unexpected type [{type(observation_type)}] for observation_type "
         f"[{observation_type}]"
     )
+
+
+@cache
+def get_observation_builders_by_observation_type() -> dict[
+    EventType | SpanType,
+    EventObservationBigQueryViewBuilder | SpanObservationBigQueryViewBuilder,
+]:
+    """Returns a mapping of observation type to the view builder for those observation
+    rows.
+    """
+    collector = ObservationBigQueryViewCollector()
+    builders_by_observation_type: dict[
+        EventType | SpanType,
+        EventObservationBigQueryViewBuilder | SpanObservationBigQueryViewBuilder,
+    ] = {}
+    for b in collector.collect_view_builders():
+        if isinstance(b, EventObservationBigQueryViewBuilder):
+            builders_by_observation_type[b.event_type] = b
+        elif isinstance(b, SpanObservationBigQueryViewBuilder):
+            builders_by_observation_type[b.span_type] = b
+        else:
+            raise ValueError(f"Unexpected builder type [{type(b)}]")
+
+    return builders_by_observation_type
+
+
+def attribute_cols_for_observation_type(
+    observation_type: ObservationTypeT,
+) -> list[str]:
+    """Returns the attribute columns associated with an observation type"""
+
+    return get_observation_builders_by_observation_type()[
+        observation_type
+    ].attribute_cols

@@ -329,7 +329,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _additional_output_columns_for_join_type(
+    def additional_output_columns_for_join_type(
         cls,
         metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> list[str]:
@@ -389,7 +389,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             ],
         )
         columns.extend(
-            cls._additional_output_columns_for_join_type(
+            cls.additional_output_columns_for_join_type(
                 metric_time_period_to_assignment_join_type
             )
         )
@@ -397,19 +397,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         return columns
 
     @classmethod
-    def _get_output_column_clauses(
-        cls,
-        unit_of_analysis: MetricUnitOfAnalysis,
-        unit_of_observation: MetricUnitOfObservation,
-        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
-    ) -> list[str]:
-        """Returns output column clauses for the assignments by time period query."""
-        output_columns = cls.get_output_columns(
-            unit_of_analysis=unit_of_analysis,
-            unit_of_observation=unit_of_observation,
-            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
-        )
-
+    def get_date_output_column_clauses(cls, output_columns: list[str]) -> list[str]:
         output_column_clauses = []
         for output_column in output_columns:
             if output_column == cls.INTERSECTION_START_DATE_COLUMN_NAME:
@@ -436,6 +424,21 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             output_column_clauses.append(output_column)
 
         return output_column_clauses
+
+    @classmethod
+    def _get_output_column_clauses(
+        cls,
+        unit_of_analysis: MetricUnitOfAnalysis,
+        unit_of_observation: MetricUnitOfObservation,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
+    ) -> list[str]:
+        """Returns output column clauses for the assignments by time period query."""
+        output_columns = cls.get_output_columns(
+            unit_of_analysis=unit_of_analysis,
+            unit_of_observation=unit_of_observation,
+            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
+        )
+        return cls.get_date_output_column_clauses(output_columns)
 
     @classmethod
     def _intersection_start_date_clause(cls) -> str:
@@ -494,7 +497,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _get_join_condition_clause(
+    def get_join_condition_clause(
         cls,
         metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> str:
@@ -556,7 +559,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             metric_time_period_to_assignment_join_type,
         )
         columns_str = ",\n".join(columns)
-        join_clause = cls._get_join_condition_clause(
+        join_clause = cls.get_join_condition_clause(
             metric_time_period_to_assignment_join_type
         )
 

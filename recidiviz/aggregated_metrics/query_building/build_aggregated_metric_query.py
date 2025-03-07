@@ -74,7 +74,7 @@ def _query_as_cte(*, cte_name: str, query: str) -> str:
 )"""
 
 
-def _get_assignments_by_time_period_cte_name(
+def get_assignments_by_time_period_cte_name(
     unit_of_observation_type: MetricUnitOfObservationType,
 ) -> str:
     """Returns the name of the CTE that contains assignment by time period rows for the
@@ -125,7 +125,7 @@ def _build_single_observation_type_cte_queries(
             unit_of_analysis_type=unit_of_analysis_type,
             metric_class=metric_class,
             single_observation_type_metrics=metrics,
-            assignments_by_time_period_cte_name=_get_assignments_by_time_period_cte_name(
+            assignments_by_time_period_cte_name=get_assignments_by_time_period_cte_name(
                 observation_type.unit_of_observation_type
             ),
         )
@@ -134,7 +134,7 @@ def _build_single_observation_type_cte_queries(
     return cte_queries_by_name
 
 
-def _metric_output_column_clause(metric: AggregatedMetric) -> str:
+def metric_output_column_clause(metric: AggregatedMetric) -> str:
     """Returns the clause that should be used in the final select to produce this metric
     value.
     """
@@ -276,7 +276,7 @@ def _build_unit_of_observation_aggregated_metric_query_template(
         unit_of_analysis_type=unit_of_analysis_type,
         metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
     )
-    assignments_by_time_period_cte_name = _get_assignments_by_time_period_cte_name(
+    assignments_by_time_period_cte_name = get_assignments_by_time_period_cte_name(
         unit_of_observation_type
     )
     cte_queries_by_name[
@@ -317,7 +317,7 @@ def _build_unit_of_observation_aggregated_metric_query_template(
     def _output_col_clause_fn(col: str) -> str:
         clause = col
         if col in metric_name_to_metric:
-            clause = _metric_output_column_clause(metric_name_to_metric[col])
+            clause = metric_output_column_clause(metric_name_to_metric[col])
         return (
             f"{clause} AS {output_column_aliases[col]}"
             if output_column_aliases and col in output_column_aliases

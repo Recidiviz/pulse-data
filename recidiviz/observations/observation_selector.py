@@ -137,6 +137,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
         observation_type: ObservationType,
         observation_selectors: Sequence["ObservationSelector"],
         output_attribute_columns: list[str],
+        include_project_id_format_arg: bool = True,
     ) -> str:
         """Given a set of ObservationSelector that *all have the same observation_type*,
         returns a query template (with a project_id format arg) that will select any
@@ -148,6 +149,9 @@ class ObservationSelector(Generic[ObservationTypeT]):
             output_attribute_columns: The set of attribute columns to include in the
                 result. All primary key columns for |observation_type| will also be
                 returned.
+            include_project_id_format_arg: If True, includes project_id in all bigquery
+                view addresses. This should generally be True unless the query template
+                is being used in the Looker context.
         """
         if not observation_selectors:
             raise ValueError("Must provide at least one selector.")
@@ -189,12 +193,13 @@ class ObservationSelector(Generic[ObservationTypeT]):
             *sorted(output_attribute_columns),
         ]
         output_columns_str = ",\n".join(output_columns)
+        project_id_str = "{project_id}." if include_project_id_format_arg else ""
 
         return f"""
 SELECT
 {fix_indent(output_columns_str, indent_level=4)}
 FROM 
-    `{{project_id}}.{observations_address.to_str()}`
+    `{project_id_str}{observations_address.to_str()}`
 WHERE
 {fix_indent(filters_str, indent_level=4)}
 """
