@@ -156,6 +156,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
                     RawTableColumnInfo(
                         name="COL1",
                         state_code=StateCode.US_XX,
+                        file_tag=raw_file_config.file_tag,
                         # Long description does not crash
                         description=("a" * length),
                         is_pii=False,

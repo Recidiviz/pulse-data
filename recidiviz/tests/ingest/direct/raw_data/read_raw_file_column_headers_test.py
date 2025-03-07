@@ -220,6 +220,7 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="COL1",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     description="is primary key",
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,

@@ -89,6 +89,7 @@ ORDER BY
             is_pii=False,
             description="TKTK",
             state_code=StateCode(state_code),
+            file_tag=file_name,
         )
         columns_by_file[file_name].append(column_info)
 

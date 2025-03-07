@@ -67,9 +67,11 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
         self.root_entity_external_ids: List[str] = []
         self.root_entity_external_id_columns: List[str] = []
         self.columns_to_randomize: List[str] = []
+
+        file_tag = "raw_data_table"
         raw_table_config = DirectIngestRawFileConfig(
             state_code=StateCode(self.region_code.upper()),
-            file_tag="raw_data_table",
+            file_tag=file_tag,
             file_path="some path",
             file_description="some description",
             data_classification=RawDataClassification.SOURCE,
@@ -78,6 +80,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="Primary_Key_Col",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     description="primary key description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -85,6 +88,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="External_Id_Col",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -92,6 +96,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="External_Id_Col_2",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     description="description 2",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -99,6 +104,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="External_Id_Col_3",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     description="description 3",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,

@@ -51,9 +51,10 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.state_code = StateCode.US_XX
+        file_tag = "table_name"
         self.raw_file_config = DirectIngestRawFileConfig(
             state_code=self.state_code,
-            file_tag="table_name",
+            file_tag=file_tag,
             file_path="path/to/file.yaml",
             file_description="file description",
             data_classification=RawDataClassification.SOURCE,
@@ -62,6 +63,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="col1",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
@@ -69,6 +71,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="col2",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col2 description",
@@ -76,6 +79,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="col3",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col3 description",
@@ -86,6 +90,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="undocumented_column",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,
@@ -93,6 +98,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="undocumented_column_2",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -100,6 +106,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 RawTableColumnInfo(
                     name="col6",
                     state_code=self.state_code,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="deleted column should have no effect",
@@ -587,6 +594,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="datetime_col",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col3 description",
@@ -597,6 +605,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="undocumented_column",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,
@@ -604,6 +613,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="undocumented_column_2",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -658,6 +668,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="datetime_col",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="description",
@@ -669,6 +680,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="documented_column",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="description",
@@ -677,6 +689,7 @@ FROM filtered_rows
                 RawTableColumnInfo(
                     name="undocumented_column",
                     state_code=self.state_code,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,

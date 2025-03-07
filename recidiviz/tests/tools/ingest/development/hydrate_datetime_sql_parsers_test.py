@@ -73,6 +73,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="dateCol1",
                     state_code=StateCode.US_XX,
+                    file_tag=self.sparse_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -80,6 +81,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="dateCol2",
                     state_code=StateCode.US_XX,
+                    file_tag=self.sparse_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -176,6 +178,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="dateCol1",
                     state_code=StateCode.US_XX,
+                    file_tag=self.input_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -184,6 +187,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="dateCol2",
                     state_code=StateCode.US_XX,
+                    file_tag=self.input_config.file_tag,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",

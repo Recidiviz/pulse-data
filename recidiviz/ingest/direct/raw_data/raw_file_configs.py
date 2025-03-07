@@ -217,7 +217,7 @@ class ColumnUpdateInfo:
             raise ValueError("Must include timezone in update_history update_datetime")
 
 
-@attr.s
+@attr.define(kw_only=True)
 class RawTableColumnInfo:
     """Stores information about a single raw data table column."""
 
@@ -225,6 +225,8 @@ class RawTableColumnInfo:
     state_code: StateCode = attr.ib(
         validator=attr.validators.instance_of(StateCode),
     )
+    # The raw data file tag for the file this column belongs to
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
 
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -687,6 +689,20 @@ class DirectIngestRawFileConfig:
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
     def __attrs_post_init__(self) -> None:
+        for c in self._columns:
+            if c.file_tag != self.file_tag:
+                raise ValueError(
+                    f"Found column [{c.name}] in raw data file [{self.file_tag}] which "
+                    f"has mismatched file_tag [{c.file_tag}]."
+                )
+
+            if c.state_code != self.state_code:
+                raise ValueError(
+                    f"Found column [{c.name}] in raw data file [{self.file_tag}] which "
+                    f"has state_code [{c.state_code}] which does not match the "
+                    f"state_code for this file [{self.state_code}]."
+                )
+
         self._validate_primary_keys()
 
         column_names = [column.name for column in self._columns]
@@ -1114,6 +1130,7 @@ class DirectIngestRawFileConfig:
             column_infos.append(
                 RawTableColumnInfo(
                     state_code=state_code,
+                    file_tag=file_tag,
                     name=column_name,
                     field_type=(
                         RawTableColumnFieldType(field_type_str)

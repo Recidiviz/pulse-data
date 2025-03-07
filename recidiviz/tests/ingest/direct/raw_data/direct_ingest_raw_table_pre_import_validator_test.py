@@ -77,6 +77,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 RawTableColumnInfo(
                     name=self.column_name,
                     state_code=StateCode.US_XX,
+                    file_tag=self.file_tag,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -86,6 +87,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 RawTableColumnInfo(
                     name="Col2",
                     state_code=StateCode.US_XX,
+                    file_tag=self.file_tag,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -101,6 +103,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 RawTableColumnInfo(
                     name="Col3",
                     state_code=StateCode.US_XX,
+                    file_tag=self.file_tag,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -176,6 +179,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 RawTableColumnInfo(
                     name=self.column_name,
                     state_code=StateCode.US_XX,
+                    file_tag=self.raw_file_config.file_tag,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,

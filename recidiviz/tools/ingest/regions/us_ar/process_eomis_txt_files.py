@@ -248,6 +248,7 @@ def _get_col_details_from_ref_sheet(
     if code_mappings.empty:
         return RawTableColumnInfo(
             state_code=StateCode.US_AR,
+            file_tag=column.file_tag,
             name=column.name,
             description=column.description,
             field_type=ft,
@@ -273,6 +274,7 @@ def _get_col_details_from_ref_sheet(
             )
     return RawTableColumnInfo(
         state_code=StateCode.US_AR,
+        file_tag=column.file_tag,
         name=column.name,
         description=coldesc,
         field_type=ft,

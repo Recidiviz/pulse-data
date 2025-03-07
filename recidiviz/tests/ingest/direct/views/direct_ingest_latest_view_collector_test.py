@@ -118,9 +118,10 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.project_id
+        file_tag = "table_name"
         self.raw_file_config = DirectIngestRawFileConfig(
             state_code=StateCode.US_XX,
-            file_tag="table_name",
+            file_tag=file_tag,
             file_path="path/to/file.yaml",
             file_description="file description",
             data_classification=RawDataClassification.SOURCE,
@@ -129,6 +130,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="col1",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
@@ -136,6 +138,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="col2",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col2 description",
@@ -143,6 +146,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="undocumented_col",
                     state_code=StateCode.US_XX,
+                    file_tag=file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -290,6 +294,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="col1",
                     state_code=StateCode.US_XX,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -297,6 +302,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="col2",
                     state_code=StateCode.US_XX,
+                    file_tag=self.raw_file_config.file_tag,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,

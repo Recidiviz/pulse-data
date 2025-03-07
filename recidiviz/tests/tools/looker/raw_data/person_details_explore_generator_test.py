@@ -78,6 +78,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="COL1",
                     state_code=StateCode.US_XX,
+                    file_tag="myFile",
                     field_type=RawTableColumnFieldType.STRING,
                     description="test description",
                     is_pii=False,
@@ -104,6 +105,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
                 RawTableColumnInfo(
                     name="primary column",
                     state_code=StateCode.US_XX,
+                    file_tag=self.sparse_config.file_tag,
                     field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                     is_pii=True,
                     description="test description",
@@ -147,9 +149,20 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         secondary_table = attr.evolve(
             self.sparse_config,
             file_tag="myFile2",
+            columns=[
+                attr.evolve(c, file_tag="myFile2")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[self.sparse_relationship.invert()],
         )
-        third_table = attr.evolve(self.sparse_config, file_tag="myFile3")
+        third_table = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile3",
+            columns=[
+                attr.evolve(c, file_tag="myFile3")
+                for c in self.sparse_config.all_columns
+            ],
+        )
         one_relationship = get_table_relationship_edges(
             primary_table,
             {
@@ -192,16 +205,28 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         file2 = attr.evolve(
             self.primary_person_table_config,
             file_tag="myFile2",
+            columns=[
+                attr.evolve(c, file_tag="myFile2")
+                for c in self.primary_person_table_config.all_columns
+            ],
             table_relationships=[file1_file2_edge.invert(), file2_file4_edge],
         )
         file3 = attr.evolve(
             self.sparse_config,
             file_tag="myFile3",
+            columns=[
+                attr.evolve(c, file_tag="myFile3")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[file1_file3_edge.invert()],
         )
         file4 = attr.evolve(
             self.sparse_config,
             file_tag="myFile4",
+            columns=[
+                attr.evolve(c, file_tag="myFile4")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[file2_file4_edge.invert()],
         )
         relationships = get_table_relationship_edges(
@@ -216,6 +241,10 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         file2 = attr.evolve(
             self.sparse_config,
             file_tag="myFile2",
+            columns=[
+                attr.evolve(c, file_tag="myFile2")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[file1_file2_edge.invert(), file2_file4_edge],
         )
         relationships = get_table_relationship_edges(
@@ -255,11 +284,19 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         file2 = attr.evolve(
             self.primary_person_table_config,
             file_tag="myFile2",
+            columns=[
+                attr.evolve(c, file_tag="myFile2")
+                for c in self.primary_person_table_config.all_columns
+            ],
             table_relationships=[file2_file3_edge],
         )
         file3 = attr.evolve(
             self.sparse_config,
             file_tag="myFile3",
+            columns=[
+                attr.evolve(c, file_tag="myFile3")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[file1_file3_edge.invert()],
         )
         relationships = get_table_relationship_edges(
@@ -312,11 +349,19 @@ class RawDataTreeEdgesTest(unittest.TestCase):
         file2 = attr.evolve(
             self.sparse_config,
             file_tag="myFile2",
+            columns=[
+                attr.evolve(c, file_tag="myFile2")
+                for c in self.sparse_config.all_columns
+            ],
             table_relationships=[file1_file2_edge.invert(), file2_file3_edge],
         )
         file3 = attr.evolve(
             self.primary_person_table_config,
             file_tag="myFile3",
+            columns=[
+                attr.evolve(c, file_tag="myFile3")
+                for c in self.primary_person_table_config.all_columns
+            ],
             table_relationships=[file2_file3_edge.invert()],
         )
         relationships = get_table_relationship_edges(

@@ -49,6 +49,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         self.happy_col = RawTableColumnInfo(
             name=self.happy_col_name,
             state_code=StateCode.US_XX,
+            file_tag=self.file_tag,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
@@ -57,6 +58,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         self.sad_col = RawTableColumnInfo(
             name=self.sad_col_name,
             state_code=StateCode.US_XX,
+            file_tag=self.file_tag,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,

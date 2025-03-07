@@ -97,9 +97,10 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
 @attr.s
 class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
     def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
+        state_code = StateCode(self.region_code.upper())
         return {
             "tagFullyEmptyFile": DirectIngestRawFileConfig(
-                state_code=StateCode(self.region_code.upper()),
+                state_code=state_code,
                 file_tag="tagFullyEmptyFile",
                 file_path="path/to/tagFullyEmptyFile.yaml",
                 file_description="file description",
@@ -108,7 +109,8 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
-                        state_code=StateCode.US_XX,
+                        state_code=state_code,
+                        file_tag="tagFullyEmptyFile",
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -128,7 +130,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 is_code_file=False,
             ),
             "tagHeadersNoContents": DirectIngestRawFileConfig(
-                state_code=StateCode(self.region_code.upper()),
+                state_code=state_code,
                 file_tag="tagHeadersNoContents",
                 file_path="path/to/tagHeadersNoContents.yaml",
                 file_description="file description",
@@ -137,7 +139,8 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
-                        state_code=StateCode.US_XX,
+                        state_code=state_code,
+                        file_tag="tagHeadersNoContents",
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -157,7 +160,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 is_code_file=False,
             ),
             "tagBasicData": DirectIngestRawFileConfig(
-                state_code=StateCode(self.region_code.upper()),
+                state_code=state_code,
                 file_tag="tagBasicData",
                 file_path="path/to/tagBasicData.yaml",
                 file_description="file description",
@@ -166,7 +169,8 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
-                        state_code=StateCode.US_XX,
+                        state_code=state_code,
+                        file_tag="tagBasicData",
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -186,7 +190,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 is_code_file=False,
             ),
             "tagMoreBasicData": DirectIngestRawFileConfig(
-                state_code=StateCode(self.region_code.upper()),
+                state_code=state_code,
                 file_tag="tagMoreBasicData",
                 file_path="path/to/tagMoreBasicData.yaml",
                 file_description="file description",
@@ -195,7 +199,8 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
-                        state_code=StateCode.US_XX,
+                        state_code=state_code,
+                        file_tag="tagMoreBasicData",
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -215,7 +220,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 is_code_file=False,
             ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
-                state_code=StateCode(self.region_code.upper()),
+                state_code=state_code,
                 file_tag="tagWeDoNotIngest",
                 file_path="path/to/tagWeDoNotIngest.yaml",
                 data_classification=RawDataClassification.SOURCE,

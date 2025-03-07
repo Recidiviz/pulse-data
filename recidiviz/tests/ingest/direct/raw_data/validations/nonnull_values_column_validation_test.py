@@ -70,6 +70,7 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
         col1 = RawTableColumnInfo(
             name="Col1",
             state_code=StateCode.US_XX,
+            file_tag=self.file_tag,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
@@ -77,6 +78,7 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
         col2 = RawTableColumnInfo(
             name="Col2",
             state_code=StateCode.US_XX,
+            file_tag=self.file_tag,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
