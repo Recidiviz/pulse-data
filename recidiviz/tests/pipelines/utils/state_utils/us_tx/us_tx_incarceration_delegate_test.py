@@ -22,7 +22,7 @@ from recidiviz.pipelines.utils.state_utils.us_tx.us_tx_incarceration_delegate im
     UsTxIncarcerationDelegate,
 )
 
-_STATE_CODE = StateCode.US_MA.value
+_STATE_CODE = StateCode.US_TX.value
 
 
 class TestUsTxIncarcerationDelegate(unittest.TestCase):

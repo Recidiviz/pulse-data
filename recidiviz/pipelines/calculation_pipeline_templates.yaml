@@ -267,12 +267,10 @@ metric_pipelines:
     state_code: US_TX
     metric_types: SUPERVISION_POPULATION_SPAN
     region: us-central1
-    staging_only: True
   - pipeline: supervision_metrics
     state_code: US_TX
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-central1
-    staging_only: True
 
   # Full US_IA calculations with no time limit
   - pipeline: population_span_metrics

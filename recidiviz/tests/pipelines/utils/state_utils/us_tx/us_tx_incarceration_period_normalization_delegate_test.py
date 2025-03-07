@@ -22,7 +22,7 @@ from recidiviz.pipelines.utils.state_utils.us_tx.us_tx_incarceration_period_norm
     UsTxIncarcerationNormalizationDelegate,
 )
 
-_STATE_CODE = StateCode.US_MA.value
+_STATE_CODE = StateCode.US_TX.value
 
 
 class TestUsTxIncarcerationNormalizationDelegate(unittest.TestCase):

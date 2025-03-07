@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_MA implementation of the StateSpecificViolationDelegate."""
+"""Contains US_TX implementation of the StateSpecificViolationDelegate."""
 
 
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (

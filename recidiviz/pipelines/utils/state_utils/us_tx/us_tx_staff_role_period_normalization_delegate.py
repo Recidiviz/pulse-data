@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_MA implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
+"""Contains US_TX implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StateSpecificStaffRolePeriodNormalizationDelegate,
 )
@@ -23,4 +23,4 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff
 class UsTxStaffRolePeriodNormalizationDelegate(
     StateSpecificStaffRolePeriodNormalizationDelegate
 ):
-    """US_MA implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
+    """US_TX implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""

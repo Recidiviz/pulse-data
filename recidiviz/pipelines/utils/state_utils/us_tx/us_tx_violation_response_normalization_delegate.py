@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_MA implementation of the StateSpecificViolationResponseNormalizationDelegate."""
+"""Contains US_TX implementation of the StateSpecificViolationResponseNormalizationDelegate."""
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
