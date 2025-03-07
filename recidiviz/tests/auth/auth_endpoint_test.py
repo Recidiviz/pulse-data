@@ -985,9 +985,9 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "blockedOn": datetime.isoformat(
-                        datetime.now(tz=timezone.utc) + timedelta(weeks=1)
-                    ),
+                    "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
+                    .astimezone(timezone.utc)
+                    .isoformat(),
                     "district": "",
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -1117,9 +1117,9 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "blockedOn": (
-                        datetime.now(tz=timezone.utc) + timedelta(weeks=1)
-                    ).isoformat(),
+                    "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
+                    .astimezone(timezone.utc)
+                    .isoformat(),
                     "district": "District A",
                     "emailAddress": "facilities_staff@testdomain.com",
                     "externalId": None,

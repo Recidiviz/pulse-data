@@ -503,9 +503,9 @@ class AuthUsersEndpointTestCase(TestCase):
             "allowedSupervisionLocationIds": "",
             "allowedSupervisionLocationLevel": "",
             "blocked": False,
-            "blockedOn": datetime.isoformat(
-                datetime.now(tz=timezone.utc) + timedelta(weeks=1)
-            ),
+            "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
+            .astimezone(timezone.utc)
+            .isoformat(),
             "district": None,
             "emailAddress": "parameter@testdomain.com",
             "externalId": "XXXX",
