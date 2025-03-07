@@ -274,8 +274,6 @@ class RawTableColumnInfo:
     )
 
     DATETIME_PARSER_EXEMPTIONS: Set[StateCode] = {
-        # TODO(#12174): Hydrate datetime_parsers for US_AR then remove this exemption
-        StateCode.US_AR,
         # TODO(#12174): Hydrate datetime_parsers for US_AZ then remove this exemption
         StateCode.US_AZ,
         # TODO(#12174): Hydrate datetime_parsers for US_CA then remove this exemption
@@ -434,14 +432,20 @@ class RawTableColumnInfo:
                 f"Expected datetime_sql_parsers to be null if is_datetime is False for {self.name}"
             )
 
+        if not self.is_datetime:
+            # This isn't a datetime field and there are no parsers defined - nothing more to check.
+            return
+
         if not self.datetime_sql_parsers:
             # TODO(#12174): Remove this if-check once DATETIME_PARSER_EXEMPTIONS is empty.
             if self.state_code in self.DATETIME_PARSER_EXEMPTIONS:
                 return
             raise ValueError(
-                f"State {self.state_code}: Expected datetime_sql_parsers to be set for datetime field {self.name}"
+                f"State {self.state_code.value}: Expected datetime_sql_parsers to be set for datetime field {self.name} with field type: {self.field_type}"
             )
 
+        # Now we know that the field is a datetime field AND there are parsers defined
+        # - make sure each parser is valid.
         for parser in self.datetime_sql_parsers:
             if not (
                 re.match(
