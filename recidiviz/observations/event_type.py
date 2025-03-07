@@ -90,6 +90,8 @@ class EventType(Enum):
     WORKFLOWS_USER_LOGIN = "WORKFLOWS_USER_LOGIN"
     # Event where the user visited a workflows page
     WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
+    # Event where the user triggered a new snooze status
+    WORKFLOWS_USER_SNOOZE_ACTION = "WORKFLOWS_USER_SNOOZE_ACTION"
 
     US_AR_OVG_TRANCHE_CHANGES = "US_AR_OVG_TRANCHE_CHANGES"
     US_AR_INCENTIVES = "US_AR_INCENTIVES"
@@ -154,6 +156,7 @@ class EventType(Enum):
             EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             EventType.WORKFLOWS_USER_LOGIN,
             EventType.WORKFLOWS_USER_PAGE,
+            EventType.WORKFLOWS_USER_SNOOZE_ACTION,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER
         if self in [

@@ -28,6 +28,9 @@ from recidiviz.observations.views.events.workflows_primary_user.workflows_user_c
 from recidiviz.observations.views.events.workflows_primary_user.workflows_user_page import (
     VIEW_BUILDER as WORKFLOWS_USER_PAGE_VIEW_BUILDER,
 )
+from recidiviz.observations.views.events.workflows_primary_user.workflows_user_snooze_action import (
+    VIEW_BUILDER as WORKFLOWS_USER_SNOOZE_ACTION_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -85,6 +88,23 @@ WITH combined_usage_events AS (
         task_type_is_fully_launched,
         person_external_id,
     FROM `{{project_id}}.{WORKFLOWS_USER_PAGE_VIEW_BUILDER.table_for_query.to_str()}`
+    
+    UNION ALL
+    
+    SELECT
+        state_code,
+        email_address,
+        event_date,
+        event_type,
+        task_type,
+        system_type,
+        decarceral_impact_type,
+        is_jii_decarceral_transition,
+        has_mandatory_due_date,
+        task_type_is_live,
+        task_type_is_fully_launched,
+        person_external_id,
+    FROM `{{project_id}}.{WORKFLOWS_USER_SNOOZE_ACTION_VIEW_BUILDER.table_for_query.to_str()}`
     
 )
 SELECT

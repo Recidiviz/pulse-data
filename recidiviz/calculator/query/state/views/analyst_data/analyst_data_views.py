@@ -351,6 +351,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_person_assignment_sessions import (
     WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_snooze_starts import (
+    WORKFLOWS_USER_SNOOZE_STARTS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
@@ -464,4 +467,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
     INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
     INSIGHTS_OFFICER_OUTLIER_USAGE_COHORT_VIEW_BUILDER,
+    WORKFLOWS_USER_SNOOZE_STARTS_VIEW_BUILDER,
 ]
