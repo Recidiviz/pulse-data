@@ -53,16 +53,35 @@ WITH sanctions_and_locations AS (
  It then unions all disciplinary solitary confinement sessions and sets a default sanction expiration date of the 
  start date of that session. (This ensures that a resident is surfaced as eligible if they are in disciplinary 
  solitary confinement with no sanction). */
+ #TODO(#39224) revert once punishment length days is hydrated for restrictions
     SELECT DISTINCT
         state_code,
         person_id,
         date_effective AS start_date, 
-        LEAST(projected_end_date, DATE_ADD(date_effective, INTERVAL  LEAST(punishment_length_days, 20) DAY)) AS end_date,
+        LEAST(projected_end_date, DATE_ADD(date_effective, INTERVAL 20 DAY)) AS end_date,
+        --set the critical date to the projected end date or 20 days after the start, whichever comes earlier
+        LEAST(projected_end_date, DATE_ADD(date_effective, INTERVAL 20 DAY))  AS critical_date
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
+    WHERE outcome_type = 'RESTRICTED_CONFINEMENT'
+        AND external_id LIKE '%RESTRICTION%'
+        AND date_effective IS NOT NULL
+        AND state_code = 'US_MI'
+        --do not include zero day sanctions
+        AND date_effective != {nonnull_end_date_clause('projected_end_date')}
+
+    UNION ALL
+
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        date_effective AS start_date, 
+        LEAST(projected_end_date, DATE_ADD(date_effective, INTERVAL LEAST(punishment_length_days, 20) DAY)) AS end_date,
         --if the sanction is greater than 20 days, we convert it to 20 as per policy
         DATE_ADD(date_effective, INTERVAL LEAST(punishment_length_days, 20) DAY) AS critical_date
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
     WHERE outcome_type = 'RESTRICTED_CONFINEMENT'
         AND punishment_length_days IS NOT NULL
+        AND external_id NOT LIKE '%RESTRICTION%'
         AND date_effective IS NOT NULL
         AND state_code = 'US_MI'
         --do not include zero day sanctions
