@@ -57,7 +57,7 @@ INNER JOIN
 ON
     logins.state_code = registration_sessions.state_code
     AND logins.email_address = registration_sessions.email_address
-    AND logins.login_date BETWEEN registration_sessions.start_date AND {nonnull_end_date_clause("registration_sessions.end_date")}
+    AND CAST(logins.login_date AS DATE) BETWEEN registration_sessions.start_date AND {nonnull_end_date_clause("registration_sessions.end_date")}
     AND task_type_is_live = "true"
 """
 

@@ -30,6 +30,7 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_intersection_spans,
+    create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.workflows.types import WorkflowsSystemType
@@ -202,13 +203,61 @@ inferred_facility_location_sessions AS (
 )
 ,
 registration_sessions_with_inferred_location AS (
-    {create_intersection_spans(
-        table_1_name="registration_sessions",
-        table_2_name="inferred_facility_location_sessions",
+    SELECT
+        state_code,
+        {product_name_str}_user_email_address,
+        start_date,
+        end_date_exclusive,
+        system_type,
+        is_registered,
+        is_primary_user,
+        location_id,
+        CAST(NULL AS STRING) AS facility_inferred
+    FROM
+        registration_sessions
+    UNION ALL
+    SELECT
+        state_code,
+        {product_name_str}_user_email_address,
+        start_date,
+        end_date_exclusive,
+        CAST(NULL AS STRING) AS system_type,
+        NULL AS is_registered,
+        NULL AS is_primary_user,
+        CAST(NULL AS STRING) AS location_id,
+        facility_inferred
+    FROM
+        inferred_facility_location_sessions
+)
+,
+{create_sub_sessions_with_attributes(
+    table_name="registration_sessions_with_inferred_location",
+    index_columns=["state_code", f"{product_name_str}_user_email_address"],
+    end_date_field_name="end_date_exclusive",
+)}
+,
+sub_sessions_dedup AS (
+    SELECT
+        state_code,
+        {product_name_str}_user_email_address,
+        start_date,
+        end_date_exclusive,
+        MAX(system_type) AS system_type,
+        MAX(location_id) AS location_id,
+        MAX(is_registered) AS is_registered,
+        MAX(is_primary_user) AS is_primary_user,
+        MAX(facility_inferred) AS facility_inferred,
+    FROM
+        sub_sessions_with_attributes
+    GROUP BY 1, 2, 3, 4
+)
+,
+aggregated_registration_sessions_with_inferred_location AS (
+    {aggregate_adjacent_spans(
+        table_name='sub_sessions_dedup',
         index_columns=["state_code", f"{product_name_str}_user_email_address"],
-        use_left_join=True,
-        table_1_columns=["system_type", "location_id", "is_primary_user", "is_registered"],
-        table_2_columns=["facility_inferred"]
+        attribute=['system_type', 'location_id', 'is_registered', 'is_primary_user', 'facility_inferred'],
+        end_date_field_name='end_date_exclusive',
     )}
 )
 SELECT
@@ -235,7 +284,7 @@ SELECT
         WHEN "INCARCERATION" THEN facility_name END
     ) AS location_name,
 FROM
-    registration_sessions_with_inferred_location registration_sessions
+    aggregated_registration_sessions_with_inferred_location registration_sessions
 LEFT JOIN
     `{{project_id}}.normalized_state.state_staff` staff
 ON
