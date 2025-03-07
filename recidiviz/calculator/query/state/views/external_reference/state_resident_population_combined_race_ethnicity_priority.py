@@ -35,7 +35,11 @@ WITH sub_population_totals AS (
 SELECT
     state_code,
     race_or_ethnicity,
-    ROW_NUMBER() OVER (PARTITION BY state_code ORDER BY population) AS representation_priority
+    ROW_NUMBER() OVER (
+        PARTITION BY state_code
+        -- force "EXTERNAL_UNKNOWN" to be last in priority list
+        ORDER BY race_or_ethnicity = "EXTERNAL_UNKNOWN", population
+    ) AS representation_priority
 FROM sub_population_totals
 """
 
