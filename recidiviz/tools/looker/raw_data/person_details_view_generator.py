@@ -49,13 +49,13 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
     LookMLFieldDatatype,
     LookMLFieldParameter,
     LookMLViewField,
     MeasureLookMLViewField,
     ParameterLookMLViewField,
+    TimeDimensionGroupLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldType,
@@ -144,7 +144,7 @@ def _generate_shared_fields_view(
         value_builder=lambda s: update_datetime_options[s],
         indentation_level=3,
     )
-    update_datetime_dimension_group = DimensionGroupLookMLViewField(
+    update_datetime_dimension_group = TimeDimensionGroupLookMLViewField(
         field_name=UPDATE_DATETIME_COL_NAME,
         parameters=[
             LookMLFieldParameter.description(UPDATE_DATETIME_COL_DESCRIPTION),
@@ -286,7 +286,7 @@ def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
         # If there are multiple parsers, use COALESCE to fall back in order
         sql_text = "COALESCE(" + ", ".join(parsers) + ")"
 
-    return DimensionGroupLookMLViewField(
+    return TimeDimensionGroupLookMLViewField(
         field_name=col.name,
         parameters=[
             LookMLFieldParameter.description(

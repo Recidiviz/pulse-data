@@ -21,7 +21,11 @@ import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.looker.lookml_utils import write_lookml_file
-from recidiviz.looker.lookml_view_field import DimensionLookMLViewField, LookMLViewField
+from recidiviz.looker.lookml_view_field import (
+    DimensionGroupLookMLViewField,
+    DimensionLookMLViewField,
+    LookMLViewField,
+)
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -46,9 +50,8 @@ class LookMLView:
     extension_required: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
-        field_names = [field.field_name for field in self.fields]
-        if len(set(field_names)) != len(field_names):
-            raise ValueError(f"Duplicate field names found in {field_names}")
+        if len(self._field_name_list) != len(self.field_names):
+            raise ValueError(f"Duplicate field names found in {self._field_name_list}")
 
     @classmethod
     def for_big_query_table(
@@ -64,14 +67,43 @@ class LookMLView:
         )
 
     @property
+    def _field_name_list(self) -> List[str]:
+        """Return a list of field names in this view, including all dimensions created by dimension groups"""
+        nested_dimension_group_names = [
+            field.dimension_names
+            for field in self.fields
+            if isinstance(field, DimensionGroupLookMLViewField)
+        ]
+        dimension_group_names = [
+            name for names in nested_dimension_group_names for name in names
+        ]
+
+        non_dimension_group_names = [
+            field.field_name
+            for field in self.fields
+            if not isinstance(field, DimensionGroupLookMLViewField)
+        ]
+
+        return non_dimension_group_names + dimension_group_names
+
+    @property
     def field_names(self) -> Set[str]:
-        """Return a set of field names in this view"""
-        return {field.field_name for field in self.fields}
+        """Return a set of field names in this view, including all dimensions created by dimension groups"""
+        return set(self._field_name_list)
+
+    @property
+    def dimension_group_fields(self) -> List[DimensionGroupLookMLViewField]:
+        """Return a list of dimension group fields in this view"""
+        return [
+            field
+            for field in self.fields
+            if isinstance(field, DimensionGroupLookMLViewField)
+        ]
 
     def qualified_name_for_field(self, field_name: str) -> str:
         """Return a string with the format view_name.field_name
         or raises an error if the field is not in this view"""
-        if not any(field.field_name == field_name for field in self.fields):
+        if not any(f == field_name for f in self.field_names):
             raise ValueError(
                 f"Field name {field_name} does not exist in {self.view_name}"
             )

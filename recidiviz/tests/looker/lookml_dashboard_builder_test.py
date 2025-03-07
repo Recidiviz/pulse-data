@@ -27,8 +27,8 @@ from recidiviz.looker.lookml_dashboard_builder import (
 from recidiviz.looker.lookml_dashboard_element import LookMLDashboardElement
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
+    TimeDimensionGroupLookMLViewField,
 )
 
 
@@ -40,7 +40,7 @@ class TestDashboardElementMetadata(unittest.TestCase):
             view_name="test_view",
             fields=[
                 DimensionLookMLViewField(field_name="dimension_field", parameters=[]),
-                DimensionGroupLookMLViewField.for_date_column(
+                TimeDimensionGroupLookMLViewField.for_date_column(
                     column_name="dimension_group_field"
                 ),
             ],
@@ -49,11 +49,11 @@ class TestDashboardElementMetadata(unittest.TestCase):
         self.assertEqual(metadata.name, "Test View")
         self.assertEqual(
             metadata.fields,
-            ["test_view.dimension_field", "test_view.dimension_group_field"],
+            ["test_view.dimension_field", "test_view.dimension_group_field_date"],
         )
         self.assertEqual(len(metadata.sort_fields), 1)
         self.assertEqual(
-            metadata.sort_fields[0].field, "test_view.dimension_group_field"
+            metadata.sort_fields[0].field, "test_view.dimension_group_field_date"
         )
 
 

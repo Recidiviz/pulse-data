@@ -20,8 +20,8 @@ from typing import List, Optional
 from google.cloud import bigquery
 
 from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
+    TimeDimensionGroupLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldParameter,
@@ -55,7 +55,7 @@ def lookml_field_type_for_bq_type(
 def lookml_view_field_for_schema_field(
     schema_field: bigquery.SchemaField,
     custom_params: Optional[List[LookMLFieldParameter]] = None,
-) -> DimensionLookMLViewField | DimensionGroupLookMLViewField:
+) -> DimensionLookMLViewField | TimeDimensionGroupLookMLViewField:
     """
     Converts a BigQuery schema field into a LookML view field.
 
@@ -74,11 +74,11 @@ def lookml_view_field_for_schema_field(
     """
     field_type = bigquery.enums.SqlTypeNames(schema_field.field_type)
     if field_type == bigquery.enums.SqlTypeNames.DATETIME:
-        return DimensionGroupLookMLViewField.for_datetime_column(
+        return TimeDimensionGroupLookMLViewField.for_datetime_column(
             schema_field.name, custom_params
         )
     if field_type == bigquery.enums.SqlTypeNames.DATE:
-        return DimensionGroupLookMLViewField.for_date_column(
+        return TimeDimensionGroupLookMLViewField.for_date_column(
             schema_field.name, custom_params
         )
     return DimensionLookMLViewField.for_column(

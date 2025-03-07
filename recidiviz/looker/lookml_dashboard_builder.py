@@ -39,10 +39,7 @@ from recidiviz.looker.lookml_dashboard_parameter import (
     LookMLDashboardParameter,
 )
 from recidiviz.looker.lookml_view import LookMLView
-from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
-    DimensionLookMLViewField,
-)
+from recidiviz.looker.lookml_view_field import TimeDimensionGroupLookMLViewField
 
 
 @attr.define
@@ -65,23 +62,20 @@ class LookMLDashboardElementMetadata:
     def from_view(cls, view: LookMLView) -> "LookMLDashboardElementMetadata":
         """
         Builds a dashboard element metadata from a LookML view.
-        Only includes dimension and dimension group fields in the element.
-        Only includes dimension group fields (fields representing a time or duration - typically a date or datetime)
-        in the sort fields, sorting each field in descending order.
+        Includes dimensions and the date dimension created by time-based dimension groups as fields.
+        Includes the date dimension created by time-based dimension groups in the sort fields,
+        sorting each field in descending order.
         """
+        date_field_names = [
+            view.qualified_name_for_field(dimension_group.date_dimension_name)
+            for dimension_group in view.dimension_group_fields
+            if isinstance(dimension_group, TimeDimensionGroupLookMLViewField)
+        ]
         return cls(
             name=snake_to_title(view.view_name),
-            fields=[
-                view.qualified_name_for_field(f.field_name)
-                for f in view.fields
-                if isinstance(
-                    f, (DimensionGroupLookMLViewField, DimensionLookMLViewField)
-                )
-            ],
+            fields=view.qualified_dimension_names() + date_field_names,
             sort_fields=[
-                LookMLSort(view.qualified_name_for_field(f.field_name), desc=True)
-                for f in view.fields
-                if isinstance(f, DimensionGroupLookMLViewField)
+                LookMLSort(field_name, desc=True) for field_name in date_field_names
             ],
         )
 

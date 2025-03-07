@@ -19,10 +19,10 @@
 import unittest
 
 from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
     MeasureLookMLViewField,
     ParameterLookMLViewField,
+    TimeDimensionGroupLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldParameter,
@@ -82,7 +82,7 @@ class LookMLViewTest(unittest.TestCase):
 
     def test_view_field_empty_timeframes_throw(self) -> None:
         with self.assertRaises(ValueError):
-            _ = DimensionGroupLookMLViewField(
+            _ = TimeDimensionGroupLookMLViewField(
                 field_name="my_dimension_group",
                 parameters=[
                     LookMLFieldParameter.timeframes([]),
@@ -154,7 +154,7 @@ class LookMLViewTest(unittest.TestCase):
         self.assertEqual(view_field, expected_view_field)
 
     def test_view_field_dimension_group_timeframes_one_option(self) -> None:
-        view_field = DimensionGroupLookMLViewField(
+        view_field = TimeDimensionGroupLookMLViewField(
             field_name="my_dimension_group",
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.TIME),
@@ -171,7 +171,7 @@ class LookMLViewTest(unittest.TestCase):
         self.assertEqual(view_field, expected_view_field)
 
     def test_view_field_dimension_group_timeframes(self) -> None:
-        view_field = DimensionGroupLookMLViewField(
+        view_field = TimeDimensionGroupLookMLViewField(
             field_name="my_dimension_group",
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.TIME),
@@ -195,26 +195,11 @@ class LookMLViewTest(unittest.TestCase):
     def test_view_field_dimension_group_missing_type_throw(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"Type parameter must be `duration` or `time` for a `dimension_group`.",
+            r"too few items in iterable \(expected 1\)",
         ):
-            _ = DimensionGroupLookMLViewField(
+            _ = TimeDimensionGroupLookMLViewField(
                 field_name="my_dimension_group",
                 parameters=[
-                    LookMLFieldParameter.timeframes(
-                        [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
-                    ),
-                ],
-            )
-
-    def test_view_field_timeframes_wrong_type_throw(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"`timeframes` may only be used when type parameter is `time`.",
-        ):
-            _ = DimensionGroupLookMLViewField(
-                field_name="my_dimension_group",
-                parameters=[
-                    LookMLFieldParameter.type(LookMLFieldType.DURATION),
                     LookMLFieldParameter.timeframes(
                         [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
                     ),
@@ -259,7 +244,7 @@ class LookMLViewTest(unittest.TestCase):
         self.assertEqual(view_field, expected_view_field)
 
     def test_datetime_view_field(self) -> None:
-        view_field = DimensionGroupLookMLViewField.for_datetime_column(
+        view_field = TimeDimensionGroupLookMLViewField.for_datetime_column(
             column_name="my_datetime"
         ).build()
         expected_view_field = """
@@ -281,11 +266,8 @@ class LookMLViewTest(unittest.TestCase):
         self.assertEqual(view_field, expected_view_field)
 
     def test_date_view_field(self) -> None:
-        view_field = DimensionGroupLookMLViewField.for_date_column(
-            column_name="my_date"
-        ).build()
         expected_view_field = """
-  dimension_group: my_date {
+  dimension_group: my {
     type: time
     timeframes: [
       raw,
@@ -299,4 +281,18 @@ class LookMLViewTest(unittest.TestCase):
     datatype: date
     sql: ${TABLE}.my_date ;;
   }"""
-        self.assertEqual(view_field, expected_view_field)
+        expected_dimensions = [
+            "my_raw",
+            "my_date",
+            "my_week",
+            "my_month",
+            "my_quarter",
+            "my_year",
+        ]
+
+        view_field = TimeDimensionGroupLookMLViewField.for_date_column(
+            column_name="my_date"
+        )
+
+        self.assertEqual(view_field.build(), expected_view_field)
+        self.assertEqual(view_field.dimension_names, expected_dimensions)

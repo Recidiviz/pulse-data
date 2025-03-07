@@ -233,74 +233,95 @@ class ParameterLookMLViewField(LookMLViewField):
 
 @attr.define
 class DimensionGroupLookMLViewField(LookMLViewField):
-    """Defines a LookML dimension group field object."""
+    """Defines a LookML dimension group field object.
+
+    A dimension group is used to create a set of individual dimensions for different intervals or timeframes.
+    https://cloud.google.com/looker/docs/reference/param-field-dimension-group
+    """
+
+    field_category = LookMLFieldCategory.DIMENSION_GROUP
+
+    @property
+    @abc.abstractmethod
+    def dimension_names(self) -> List[str]:
+        """Returns a list of dimension names created by the dimension group"""
+
+
+@attr.define
+class TimeDimensionGroupLookMLViewField(DimensionGroupLookMLViewField):
+    """Defines a LookML dimension group used to create a set of time-based dimensions."""
+
+    field_category = LookMLFieldCategory.DIMENSION_GROUP
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
 
-        # Enforce that type is always time or duration
-        has_type_time = any(
-            isinstance(param, FieldParameterType)
-            and param.field_type is LookMLFieldType.TIME
-            for param in self.parameters
+        type_param = one(
+            param for param in self.parameters if isinstance(param, FieldParameterType)
         )
-
-        has_type_duration = any(
-            isinstance(param, FieldParameterType)
-            and param.field_type is LookMLFieldType.DURATION
-            for param in self.parameters
-        )
-
-        if not has_type_time and not has_type_duration:
+        if type_param.field_type != LookMLFieldType.TIME:
             raise ValueError(
-                "Type parameter must be `duration` or `time` for a `dimension_group`."
+                f"Type parameter must be `time`, got [{type_param.field_type}]."
             )
-
-        # Enforce that timeframes is always used with type: time
-        if (
-            any(
-                isinstance(param, FieldParameterTimeframes) for param in self.parameters
-            )
-            and not has_type_time
-        ):
-            raise ValueError(
-                "`timeframes` may only be used when type parameter is `time`."
-            )
-
         # Enforce that datatype exists when type is date
         enforce_has_datatype_if_date_field(self.parameters)
 
-    field_category = LookMLFieldCategory.DIMENSION_GROUP
+    @classmethod
+    def for_column(
+        cls,
+        column_name: str,
+        datatype: LookMLFieldDatatype,
+        timeframe_options: List[LookMLTimeframesOption],
+        custom_params: List[LookMLFieldParameter] | None = None,
+    ) -> "TimeDimensionGroupLookMLViewField":
+        """
+        Generates a dimension group for a column.
+        Looker automatically appends each timeframe to the end of the field name,
+        so we need to strip out any suffix that matches one of the timeframe options
+        to get the base field name. This isn't strictly necessary but is best practice.
+        """
+
+        def _extract_base_field_name(column_name: str) -> str:
+            for option in timeframe_options:
+                suffix = f"_{option.value.lower()}"
+                if column_name.endswith(suffix):
+                    return column_name[: -len(suffix)]
+            return column_name
+
+        return cls(
+            field_name=_extract_base_field_name(column_name),
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.TIME),
+                LookMLFieldParameter.timeframes(timeframe_options),
+                LookMLFieldParameter.convert_tz(False),
+                LookMLFieldParameter.datatype(datatype),
+                LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
+            ]
+            + (custom_params or []),
+        )
 
     @classmethod
     def for_datetime_column(
         cls,
         column_name: str,
         custom_params: List[LookMLFieldParameter] | None = None,
-    ) -> "DimensionGroupLookMLViewField":
+    ) -> "TimeDimensionGroupLookMLViewField":
         """
         Generates a dimension group for a datetime column.
         """
-        return DimensionGroupLookMLViewField(
-            field_name=column_name,
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.TIME),
-                LookMLFieldParameter.timeframes(
-                    [
-                        LookMLTimeframesOption.RAW,
-                        LookMLTimeframesOption.TIME,
-                        LookMLTimeframesOption.DATE,
-                        LookMLTimeframesOption.WEEK,
-                        LookMLTimeframesOption.MONTH,
-                        LookMLTimeframesOption.QUARTER,
-                        LookMLTimeframesOption.YEAR,
-                    ]
-                ),
-                LookMLFieldParameter.convert_tz(False),
-                LookMLFieldParameter.datatype(LookMLFieldDatatype.DATETIME),
-                LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
-            ]
-            + (custom_params or []),
+        return cls.for_column(
+            column_name=column_name,
+            datatype=LookMLFieldDatatype.DATETIME,
+            timeframe_options=[
+                LookMLTimeframesOption.RAW,
+                LookMLTimeframesOption.TIME,
+                LookMLTimeframesOption.DATE,
+                LookMLTimeframesOption.WEEK,
+                LookMLTimeframesOption.MONTH,
+                LookMLTimeframesOption.QUARTER,
+                LookMLTimeframesOption.YEAR,
+            ],
+            custom_params=custom_params,
         )
 
     @classmethod
@@ -308,27 +329,76 @@ class DimensionGroupLookMLViewField(LookMLViewField):
         cls,
         column_name: str,
         custom_params: List[LookMLFieldParameter] | None = None,
-    ) -> "DimensionGroupLookMLViewField":
+    ) -> "TimeDimensionGroupLookMLViewField":
         """
         Generates a dimension group for a date column.
         """
-        return DimensionGroupLookMLViewField(
-            field_name=column_name,
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.TIME),
-                LookMLFieldParameter.timeframes(
-                    [
-                        LookMLTimeframesOption.RAW,
-                        LookMLTimeframesOption.DATE,
-                        LookMLTimeframesOption.WEEK,
-                        LookMLTimeframesOption.MONTH,
-                        LookMLTimeframesOption.QUARTER,
-                        LookMLTimeframesOption.YEAR,
-                    ]
-                ),
-                LookMLFieldParameter.convert_tz(False),
-                LookMLFieldParameter.datatype(LookMLFieldDatatype.DATE),
-                LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
-            ]
-            + (custom_params or []),
+        return cls.for_column(
+            column_name=column_name,
+            datatype=LookMLFieldDatatype.DATE,
+            timeframe_options=[
+                LookMLTimeframesOption.RAW,
+                LookMLTimeframesOption.DATE,
+                LookMLTimeframesOption.WEEK,
+                LookMLTimeframesOption.MONTH,
+                LookMLTimeframesOption.QUARTER,
+                LookMLTimeframesOption.YEAR,
+            ],
+            custom_params=custom_params,
+        )
+
+    @property
+    def timeframe_options(self) -> list[LookMLTimeframesOption]:
+        return one(
+            param
+            for param in self.parameters
+            if isinstance(param, FieldParameterTimeframes)
+        ).timeframe_options
+
+    def _dimension_name_for_timeframe(self, timeframe: LookMLTimeframesOption) -> str:
+        """Returns the field name for the given timeframe"""
+        if timeframe not in self.timeframe_options:
+            raise ValueError(
+                f"Timeframe {timeframe.value} not found in {self.timeframe_options}"
+            )
+
+        return f"{self.field_name}_{timeframe.value.lower()}"
+
+    @property
+    def dimension_names(self) -> list[str]:
+        """Returns a list of dimension names created by the dimension group"""
+        return [
+            self._dimension_name_for_timeframe(timeframe)
+            for timeframe in self.timeframe_options
+        ]
+
+    @property
+    def date_dimension_name(self) -> str:
+        """Returns the dimension name for the date timeframe"""
+        return self._dimension_name_for_timeframe(LookMLTimeframesOption.DATE)
+
+
+@attr.define
+class DurationDimensionGroupLookMLViewField(DimensionGroupLookMLViewField):
+    """Defines a LookML dimension group used to create a set of interval-based dimensions."""
+
+    field_category = LookMLFieldCategory.DIMENSION_GROUP
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+
+        type_param = one(
+            param for param in self.parameters if isinstance(param, FieldParameterType)
+        )
+        if type_param.field_type != LookMLFieldType.DURATION:
+            raise ValueError(
+                f"Type parameter must be `duration`, got [{type_param.field_type}]."
+            )
+        # Enforce that datatype exists when type is date
+        enforce_has_datatype_if_date_field(self.parameters)
+
+    @property
+    def dimension_names(self) -> list[str]:
+        raise NotImplementedError(
+            "DurationDimensionGroupLookMLViewField.dimension_names not implemented"
         )
