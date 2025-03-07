@@ -31,6 +31,36 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
 EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
 
+FACE_TO_FACE_CONTACTS = ["FAC1", "FAC2", "FACA", "FACF", "FACI", "FACO"]
+
+# Combines state_supervision_violation_response with state_supervision_violation_response_decision_entry
+# to keep person-date level sanctions. We filter out certain types of decisions that don't result in an impact
+# on a client's supervision.
+supervision_sanctions_cte = """
+    SELECT
+        state_code,
+        person_id,
+        vr.response_date AS sanction_date,
+    FROM `{project_id}.normalized_state.state_supervision_violation_response` vr
+    /* NB: while (as of the time of writing this) in some states there are violation
+    responses with multiple decision entries, in TN there are not instances where a
+    single violation response is associated with multiple decision entries. As a
+    result, even though we are joining in the response-decision data here, because
+    we are only considering TN data in this query, we won't end up introducing any
+    excess rows (where the same response is joined to multiple decisions) via this
+    LEFT JOIN. */
+    LEFT JOIN
+        `{project_id}.normalized_state.state_supervision_violation_response_decision_entry` vrde
+    USING (state_code, person_id, supervision_violation_response_id)
+    WHERE state_code='US_TN'
+        /* Here, we want to exclude violation responses that did not result in
+        changes to a client's supervision. Again, because there is currently a 1:1
+        relationship between responses and decision entries in TN, we can simply
+        filter by decision here without needing to worry about aggregating across
+        decisions. */
+        AND COALESCE(vrde.decision, 'NO_DECISION') NOT IN ('CONTINUANCE', 'DELAYED_ACTION', 'VIOLATION_UNFOUNDED')
+"""
+
 
 def no_positive_arrest_check_within_time_interval(
     *,

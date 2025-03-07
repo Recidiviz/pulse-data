@@ -34,14 +34,16 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_NAME = (
 )
 
 # TODO(#37903): This is a placeholder. Replace with new opp record query
+# TODO(#38953): Include the Low-Intake group when TN rolls launches that part of new policy
 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
     WITH eligible AS (
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_TN'", 
-        tes_task_query_view = 'transfer_to_compliant_reporting_2025_policy_materialized',
+        tes_task_query_view = 'transfer_low_medium_group_to_compliant_reporting_2025_policy_materialized',
         id_type = "'US_TN_DOC'",
-        eligible_only=True,
+        eligible_and_almost_eligible_only=True,
     )}
+    
     )
     SELECT *
     FROM eligible

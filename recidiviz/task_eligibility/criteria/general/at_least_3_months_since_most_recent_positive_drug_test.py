@@ -21,7 +21,7 @@ past 3 months.
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
     at_least_X_time_since_drug_screen,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

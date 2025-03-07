@@ -183,8 +183,8 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.general.supervision_level_is_low_moderate_for_6_months import (
-    VIEW_BUILDER as SUPERVISION_LEVEL_IS_LOW_MODERATE_FOR_6_MONTHS,
+from recidiviz.task_eligibility.criteria.general.on_minimum_after_unassigned import (
+    VIEW_BUILDER as ON_MINIMUM_AFTER_UNASSIGNED,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -463,10 +463,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
         "details (see looker#616) (Jenna Bellassai 11/18/2024)"
     ),
-    SUPERVISION_LEVEL_IS_LOW_MODERATE_FOR_6_MONTHS.address: (
-        "This criteria will eventually be reworked and used in TN's revamped compliant reporting policy when new"
-        "supervision levels are rolled out. See #37898. (Damini Sharma, 2025-01-30"
-    ),
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER.address: (
         "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
         " (Justine Kunz 12/03/2024)"
@@ -493,6 +489,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         dataset_id="unit_of_analysis_assignments_by_time_period",
         table_id="supervision__person_to_officer__by_intersection_extended__years_rolling_last_1_days",
     ): "Will be referenced by the supervision officer metrics insights product view (Gina 2/28/2025)",
+    ON_MINIMUM_AFTER_UNASSIGNED.address: (
+        "Will be used after TN launches full new policy B. See #38953 (Damini Sharma 03/03/2025)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

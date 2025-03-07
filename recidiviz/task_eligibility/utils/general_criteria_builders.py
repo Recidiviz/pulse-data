@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,6 +43,185 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    supervision_violations_cte,
+)
+
+
+def at_least_X_time_since_drug_screen(
+    criteria_name: str,
+    date_interval: int,
+    date_part: str = "MONTH",
+    where_clause: str = "",
+    meets_criteria_during_time_frame: bool = False,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    The function is designed to help identify and manage periods where individuals meet
+    or do not meet certain criteria based on their drug screen history.
+
+    Args:
+        criteria_name (str): Name of the criteria
+        date_interval (int): Number of <date_part> when the drug screen
+            will be counted as valid.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        where_clause (str): Additional WHERE clause to filter the drug screens. e.g. "WHERE is_positive_result"
+            to filter on positive results only or "WHERE not is_positive_result" to filter on negative results only
+        meets_criteria_during_time_frame (bool): If True, the criteria is met when the
+            person has a recent drug screen within the time frame. If False, the criteria is
+            met when the person does not have a recent drug screen within the time frame.
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
+    """
+
+    query_template = f"""WITH drug_test_sessions_cte AS
+    (
+        SELECT
+            state_code,
+            person_id,
+            drug_screen_date AS start_date,
+            DATE_ADD(drug_screen_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            {meets_criteria_during_time_frame} AS meets_criteria,
+            drug_screen_date AS latest_drug_screen_date,
+        FROM
+            `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+        {where_clause}
+    )
+    ,
+    /*
+    If a person has more than 1 positive test in an X month period, they will have overlapping sessions
+    created in the above CTE. Therefore we use `create_sub_sessions_with_attributes` to break these up
+    */
+    {create_sub_sessions_with_attributes('drug_test_sessions_cte')}
+    ,
+    dedup_cte AS
+    /*
+    If a person has more than 1 relevant test in an X month period, they will have duplicate sub-sessions for 
+    the period of time where there were more than 1 tests. For example, if a person has a test on Jan 1 and March 1
+    there would be duplicate sessions for the period March 1 - Dec 31 because both tests are relevant at that time.
+    We deduplicate below so that we surface the most-recent test that is relevant at each time. 
+    */
+    (
+    SELECT
+        *,
+    FROM sub_sessions_with_attributes
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
+        ORDER BY latest_drug_screen_date DESC) = 1
+    )
+    ,
+    sessionized_cte AS 
+    /*
+    Sessionize so that we have continuous periods of time for which a person is/is not eligible due to a relevant test. A
+    new session exists either when a person becomes eligible, or if a person has an additional test within a 12-month
+    period which changes the "latest_drug_screen_date" value.
+    */
+    (
+    {aggregate_adjacent_spans(table_name='dedup_cte',
+                       attribute=['latest_drug_screen_date','meets_criteria'],
+                       end_date_field_name='end_date')}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        -- Note, this criteria builder actually works for any specified relevant test - positive or negative - 
+        -- so this reason name is not 100% accurate. 
+        -- TODO(#39094): update reasons blob and ensure downstream references don't break
+        TO_JSON(STRUCT(latest_drug_screen_date AS most_recent_positive_test_date)) AS reason,
+        latest_drug_screen_date AS most_recent_positive_test_date,
+    FROM sessionized_cte
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=__doc__,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=not meets_criteria_during_time_frame,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_positive_test_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of most recent positive drug test",
+            )
+        ],
+    )
+
+
+def latest_drug_test_is_negative(
+    criteria_name: str,
+    description: str,
+    meets_criteria_default: bool = False,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query builder that has spans of time when a client's latest drug screen is negative.
+    The logic looks at all drug screens over all time, so someone could return to supervision after a period on liberty
+    and if their last drug test on a prior period was positive, they wouldn't meet this criteria.
+
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        meets_criteria_default (bool): Determines whether people who don't have a drug screen are considered eligible
+            or not
+    """
+
+    criteria_query = """
+        WITH screens AS (
+        SELECT
+            state_code,
+            person_id,
+            drug_screen_date AS start_date,
+            LEAD(drug_screen_date) OVER(PARTITION BY person_id ORDER BY drug_screen_date ASC) AS end_date,
+            NOT is_positive_result AS meets_criteria,
+            result_raw_text_primary AS latest_drug_screen_result,
+            drug_screen_date AS latest_drug_screen_date,
+        FROM
+            (
+                SELECT *
+                FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
+                -- The preprocessed view can have multiple tests per person-day if there are different sample types.
+                -- For the purposes of this criteria we just want to keep 1 test per person-day and prioritize positive
+                -- results
+                QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive_result DESC,
+                                                                                            sample_type) = 1
+            )
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+            latest_drug_screen_result AS latest_drug_screen_result,
+            latest_drug_screen_date AS latest_drug_screen_date
+        )) AS reason,
+        latest_drug_screen_result,
+        latest_drug_screen_date,
+    FROM screens
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        meets_criteria_default=meets_criteria_default,
+        sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_drug_screen_result",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Result of latest drug screen",
+            ),
+            ReasonsField(
+                name="latest_drug_screen_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of latest drug screen",
+            ),
+        ],
+    )
 
 
 def raise_error_if_invalid_compartment_level_1_filter(
@@ -583,63 +762,14 @@ def supervision_violations_within_time_interval_criteria_builder(
         period specified by the user (<date_interval> and <date_part>).
     """
 
-    violation_type_join = f"""
-    INNER JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` vt
-        ON v.supervision_violation_id = vt.supervision_violation_id
-        AND v.person_id = vt.person_id
-        AND v.state_code = vt.state_code
-        {violation_type}
-    """
-
     # TODO(#35354): Account for violation decisions when considering which violations
     # should disqualify someone from eligibility.
     criteria_query = f"""
     WITH supervision_violations AS (
-        /* Select violations that we want to count for this criterion. Violations are
-        filtered based on any specified violation-level attributes and any aggregated
-        attributes of violation responses (since there can be multiple responses per
-        violation). */
-        SELECT
-            v.state_code,
-            v.person_id,
-            v.supervision_violation_id,
-            /* If there is no `violation_date` value, we treat the earliest date of any
-            response(s) as the violation date. (We take the MIN of `violation_date`
-            below just because we have to aggregate the `violation_date` field in this
-            expression, but note that because the violation-to-response ratio can be
-            one-to-many, every row should have the same `violation_date`, and this
-            therefore will just return the original `violation_date` value if there is
-            one.) */
-            COALESCE(MIN(v.violation_date), MIN(vr.response_date)) AS violation_date,
-        FROM `{{project_id}}.normalized_state.state_supervision_violation` v
-        {violation_type_join if violation_type else ""}
-        /* NB: there can be multiple responses per violation, so this LEFT JOIN can
-        create multiple rows per violation (where each row is a unique violation
-        response). */
-        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_response` vr
-            ON v.supervision_violation_id = vr.supervision_violation_id
-            AND v.person_id = vr.person_id
-            AND v.state_code = vr.state_code
-        /* NB: the WHERE clause is typically evaluated after the FROM clause but before
-        GROUP BY and aggregation, per BigQuery documentation. This means that any
-        filtering applied in this WHERE clause will apply to the pre-grouped data. */
-        WHERE
-            CASE v.state_code
-                /* In ME, only violations with a `response_type` of 'PERMANENT_DECISION'
-                or 'VIOLATION_REPORT' are considered to be violations that would ever
-                impact a client's eligibility for any opportunity. From the set of ME
-                violations & responses, then, we therefore drop rows without one of
-                these specified response types. Note that this means that if a violation
-                in ME did not have any response with one of these types, it will get
-                entirely dropped (and will therefore not disqualify a client from
-                eligibility). */
-                WHEN 'US_ME' THEN vr.response_type IN ('PERMANENT_DECISION', 'VIOLATION_REPORT')
-                ELSE TRUE
-                END
-            {where_clause_addition}
-        /* Group by violation, so that we get one row per violation coming out of this
-        CTE. */
-        GROUP BY 1, 2, 3
+        {supervision_violations_cte(
+        violation_type,
+        where_clause_addition,
+        )}
     ),
     supervision_violation_ineligibility_spans AS (
         /* With our selected violations, we create spans of *ineligibility*, covering

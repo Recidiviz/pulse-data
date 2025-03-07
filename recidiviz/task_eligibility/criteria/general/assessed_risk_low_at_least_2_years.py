@@ -45,6 +45,7 @@ _QUERY_TEMPLATE = f"""
             score_end_date_exclusive AS end_date,
             assessment_level,
         FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
+        -- TODO(#38876): Handle upcoming StrongR 2.0 Case in TN preemptively
         WHERE assessment_class='RISK'
             /* TODO(#34751): Decide how to handle assessments with null
             `assessment_level` values. Note that the following filter will currently

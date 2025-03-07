@@ -25,21 +25,78 @@ TN but could in the future be used in other states
 
 from google.cloud import bigquery
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS"
+# TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = state_agnostic_placeholder_criteria_view_builder(
+STRONG_R_ASSESSMENT_METADATA_KEYS = [
+    "FRIENDS_NEED_LEVEL",
+    "ATTITUDE_BEHAVIOR_NEED_LEVEL",
+    "AGGRESSION_NEED_LEVEL",
+    "MENTAL_HEALTH_NEED_LEVEL",
+    "ALCOHOL_DRUG_NEED_LEVEL",
+    "RESIDENT_NEED_LEVEL",
+    "FAMILY_NEED_LEVEL",
+    "EMPLOYMENT_NEED_LEVEL",
+    "EDUCATION_NEED_LEVEL",
+]
+
+_CRITERIA_NAME = "US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS"
+
+_QUERY_TEMPLATE = f"""
+    WITH unnested_needs AS (
+      SELECT
+        state_code,
+        person_id,
+        assessment_date AS start_date,
+        assessment_date,
+        assessment_metadata,
+        score_end_date_exclusive AS end_date,
+        need,
+        /* UNNEST returns one row per key in a column called "need"
+         PARSE_JSON(assessment_metadata)[need] extracts the JSON value associated with the key
+         from the need column, and JSON_VALUE formats this as a string
+        */
+        NULLIF(JSON_VALUE(PARSE_JSON(assessment_metadata)[need]),'') AS need_level,
+      FROM 
+        `{{project_id}}.sessions.assessment_score_sessions_materialized`,
+      UNNEST({STRONG_R_ASSESSMENT_METADATA_KEYS}) AS need
+      WHERE
+        -- TODO(#38876): Handle upcoming StrongR 2.0 Case in TN preemptively
+        assessment_type='STRONG_R'
+    )
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      end_date,
+      assessment_date,
+      assessment_metadata,
+      TO_JSON(
+        STRUCT(
+            assessment_date,
+            assessment_metadata
+        )
+       ) AS reason,
+      LOGICAL_AND(COALESCE(need_level,"MISSING") != 'HIGH') AS meets_criteria
+    FROM 
+        unnested_needs
+    GROUP BY 1,2,3,4,5,6
+"""
+
+
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     description=__doc__,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    meets_criteria_default=False,
+    state_code=StateCode.US_TN,
     reasons_fields=[
         ReasonsField(
             name="assessment_date",
@@ -53,7 +110,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = state_agnostic_plac
         ),
     ],
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

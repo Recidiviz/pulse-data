@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criterion span view that shows spans of time during which there have been
-no supervision violations since starting supervision.
+"""Defines a criterion span view that shows spans of time during which someone is on Minimum supervision level
+directly after Unassigned level.
 """
 
 from google.cloud import bigquery
@@ -24,34 +24,44 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_REPORT_SINCE_STARTING_SUPERVISION"
+# TODO(#37898): Replace "Minimum" with "Low" after Low SL exists in TN (or expand to capture Low from raw text to
+# distinguish from former Minimum)
 
-# TODO(#37440): Replace with actual criteria. Can re-use no supervision violation report logic but need to add a
-# join to supervision sessions
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = state_agnostic_placeholder_criteria_view_builder(
+_CRITERIA_NAME = "ON_MINIMUM_AFTER_UNASSIGNED"
+
+_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        TRUE AS meets_criteria,
+        TO_JSON(STRUCT(
+            start_date AS supervision_level_start_date
+        )) AS reason,
+        supervision_level,
+        start_date AS supervision_level_start_date
+    FROM `{project_id}.sessions.supervision_level_sessions_materialized`
+    # TODO(#37898): Replace "Minimum" with "Low" after Low SL exists in TN
+    WHERE supervision_level = 'MINIMUM' AND previous_supervision_level = 'UNASSIGNED'
+"""
+
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     description=__doc__,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    meets_criteria_default=False,
     reasons_fields=[
         ReasonsField(
-            name="latest_violations_resulting_in_violation_reports_since_supervision",
-            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="Date(s) when the violation(s) occurred",
-        ),
-        ReasonsField(
-            name="supervision_start_date",
+            name="supervision_level_start_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Date when the most recent period of supervision began",
+            description="Date when the client started minimum directly following unassigned level",
         ),
     ],
 )
-
-
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

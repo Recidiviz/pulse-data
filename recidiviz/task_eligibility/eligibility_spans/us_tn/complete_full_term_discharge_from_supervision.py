@@ -41,7 +41,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in TN is eligible
-for full term discharge from supervision or is 60 days away from being eligible.
+for full term discharge from supervision or is 1 day away from being eligible.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(

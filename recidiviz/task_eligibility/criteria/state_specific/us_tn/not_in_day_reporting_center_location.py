@@ -14,33 +14,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans of time during which a client in TN has not had any supervision sanctions in
-the past 3 months.
+"""Spans of time during which a client in TN is not at a DRC (Day Reporting Center) site
 """
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    no_supervision_sanction_within_time_interval,
-)
-from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
-    supervision_sanctions_cte,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_NO_SUPERVISION_SANCTION_WITHIN_3_MONTHS"
+_CRITERIA_NAME = "US_TN_NOT_IN_DAY_REPORTING_CENTER_LOCATION"
 
-_QUERY_TEMPLATE = no_supervision_sanction_within_time_interval(
-    date_interval=3,
-    date_part="MONTH",
-    supervision_sanctions_cte=supervision_sanctions_cte,
+_QUERY_TEMPLATE = f"""
+WITH drc_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        FALSE AS meets_criteria,
+        supervision_office
+    FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
+    WHERE supervision_office LIKE 'DRC%'
+        AND state_code = "US_TN"
 )
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date_exclusive AS end_date,
+    FALSE AS meets_criteria,
+    TO_JSON(STRUCT(supervision_office AS drc_location)) AS reason,
+    supervision_office AS drc_location
+FROM ({aggregate_adjacent_spans(table_name='drc_sessions',
+                                    attribute=['supervision_office'],
+                                    end_date_field_name="end_date_exclusive")})
+
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
@@ -52,14 +67,9 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     meets_criteria_default=True,
     reasons_fields=[
         ReasonsField(
-            name="sanction_dates",
-            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="Date(s) of any sanction(s) within the past year",
-        ),
-        ReasonsField(
-            name="latest_sanction_expiration_date",
-            type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Date on which latest sanction(s) will age out of lookback period",
+            name="drc_location",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="DRC supervision office name",
         ),
     ],
 )

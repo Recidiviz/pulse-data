@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,73 +20,22 @@ Note that if a client has not yet had any drug screens, they will not yet meet t
 criterion.
 """
 
-from google.cloud import bigquery
-
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    latest_drug_test_is_negative,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "LATEST_DRUG_TEST_IS_NEGATIVE"
 
-_QUERY_TEMPLATE = """
-    WITH screens AS (
-        SELECT
-            state_code,
-            person_id,
-            drug_screen_date AS start_date,
-            LEAD(drug_screen_date) OVER(PARTITION BY person_id ORDER BY drug_screen_date ASC) AS end_date,
-            NOT is_positive_result AS meets_criteria,
-            result_raw_text_primary AS latest_drug_screen_result,
-            drug_screen_date AS latest_drug_screen_date,
-        FROM
-            (
-                SELECT *
-                FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
-                -- The preprocessed view can have multiple tests per person-day if there are different sample types.
-                -- For the purposes of this criteria we just want to keep 1 test per person-day and prioritize positive
-                -- results
-                QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive_result DESC,
-                                                                                            sample_type) = 1
-            )
-    )
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        meets_criteria,
-        TO_JSON(STRUCT(
-            latest_drug_screen_result AS latest_drug_screen_result,
-            latest_drug_screen_date AS latest_drug_screen_date
-        )) AS reason,
-        latest_drug_screen_result,
-        latest_drug_screen_date,
-    FROM screens
-"""
-
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=__doc__,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="latest_drug_screen_result",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Result of latest drug screen",
-            ),
-            ReasonsField(
-                name="latest_drug_screen_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of latest drug screen",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = latest_drug_test_is_negative(
+    criteria_name=_CRITERIA_NAME,
+    description=__doc__,
+    # Setting this means that people who have not had any drug screens will not be considered eligible
+    meets_criteria_default=False,
 )
 
 if __name__ == "__main__":

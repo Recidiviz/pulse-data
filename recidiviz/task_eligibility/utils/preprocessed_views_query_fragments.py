@@ -17,119 +17,14 @@
 """Helper SQL fragments that do standard queries against pre-processed views.
 """
 
-from google.cloud import bigquery
-
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
-)
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.task_eligibility.reasons_field import ReasonsField
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 
 # TODO(#20230): Deprecate this view and move functions to state_data_query_fragments when relevant data is ingested
 # TODO(#20231): Ingest drug screens data into state_drug_screen
-
-
-def at_least_X_time_since_drug_screen(
-    criteria_name: str,
-    date_interval: int,
-    date_part: str = "MONTH",
-    where_clause: str = "",
-    meets_criteria_during_time_frame: bool = False,
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
-    """
-    The function is designed to help identify and manage periods where individuals meet
-    or do not meet certain criteria based on their drug screen history.
-
-    Args:
-        criteria_name (str): Name of the criteria
-        date_interval (int): Number of <date_part> when the drug screen
-            will be counted as valid.
-        date_part (str): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-        where_clause (str): Additional WHERE clause to filter the drug screens.
-        meets_criteria_during_time_frame (bool): If True, the criteria is met when the
-            person has a recent drug screen within the time frame. If False, the criteria is
-            met when the person does not have a recent drug screen within the time frame.
-    Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
-    """
-
-    query_template = f"""WITH drug_test_sessions_cte AS
-    (
-        SELECT
-            state_code,
-            person_id,
-            drug_screen_date AS start_date,
-            DATE_ADD(drug_screen_date, INTERVAL {date_interval} {date_part}) AS end_date,
-            {meets_criteria_during_time_frame} AS meets_criteria,
-            drug_screen_date AS latest_drug_screen_date,
-        FROM
-            `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
-        {where_clause}
-    )
-    ,
-    /*
-    If a person has more than 1 positive test in an X month period, they will have overlapping sessions
-    created in the above CTE. Therefore we use `create_sub_sessions_with_attributes` to break these up
-    */
-    {create_sub_sessions_with_attributes('drug_test_sessions_cte')}
-    ,
-    dedup_cte AS
-    /*
-    If a person has more than 1 positive test in an X month period, they will have duplicate sub-sessions for 
-    the period of time where there were more than 1 tests. For example, if a person has a test on Jan 1 and March 1
-    there would be duplicate sessions for the period March 1 - Dec 31 because both tests are relevant at that time.
-    We deduplicate below so that we surface the most-recent test that is relevant at each time. 
-    */
-    (
-    SELECT
-        *,
-    FROM sub_sessions_with_attributes
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
-        ORDER BY latest_drug_screen_date DESC) = 1
-    )
-    ,
-    sessionized_cte AS 
-    /*
-    Sessionize so that we have continuous periods of time for which a person is not eligible due to a positive test. A
-    new session exists either when a person becomes eligible, or if a person has an additional test within a 12-month
-    period which changes the "latest_drug_screen_date" value.
-    */
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                       attribute=['latest_drug_screen_date','meets_criteria'],
-                       end_date_field_name='end_date')}
-    )
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        meets_criteria,
-        TO_JSON(STRUCT(latest_drug_screen_date AS most_recent_positive_test_date)) AS reason,
-        latest_drug_screen_date AS most_recent_positive_test_date,
-    FROM sessionized_cte
-    """
-
-    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        criteria_spans_query_template=query_template,
-        description=__doc__,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=not meets_criteria_during_time_frame,
-        reasons_fields=[
-            ReasonsField(
-                name="most_recent_positive_test_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of most recent positive drug test",
-            )
-        ],
-    )
+# TODO(#38834): Clean up query fragments vs. criteria builders
 
 
 def has_at_least_x_negative_tests_in_time_interval(

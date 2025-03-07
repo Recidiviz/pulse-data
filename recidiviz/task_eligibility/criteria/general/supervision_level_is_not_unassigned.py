@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#39036): Build this as an inversion to SUPERVISION_LEVEL_IS_NOT_UNASSIGNED or vice versa
 _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_UNASSIGNED"
 
 _DESCRIPTION = """This criteria view builder defines spans of time, where clients do not have a supervision level of

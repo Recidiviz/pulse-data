@@ -422,6 +422,65 @@ WHERE meets_criteria
 """
 
 
+# TODO(#35405): Turn this into a general criteria builder, rather than string output
+def no_supervision_sanction_within_time_interval(
+    *,
+    date_interval: int,
+    date_part: str,
+    supervision_sanctions_cte: str,
+) -> str:
+    """Identify spans of time during which individuals in TN have NOT had a supervision sanction
+    within a specified time interval (e.g., within the past 2 years).
+
+    Args:
+        date_interval (int): Number of <date_part> when a sanction will
+        remain valid/relevant.
+        date_part (str): Supports any of the BigQuery `date_part` values: "DAY", "WEEK",
+            "MONTH", "QUARTER", or "YEAR".
+        supervision_sanctions_cte: Any state/context specific configuration or filtering of sanctions.
+            Expected output should have state_code, person_id, and sanction_date
+    Returns:
+        str: SQL query as a string.
+    """
+
+    return f"""
+    WITH supervision_sanctions AS (
+        SELECT
+            state_code,
+            person_id,
+            sanction_date,
+            sanction_date AS start_date,            
+            /* For our selected violation responses, we create spans of *ineligibility*
+            by setting span start and end dates here, covering the periods of time
+            during which someone will not meet this criterion because the response in
+            question remains relevant/valid. */
+            DATE_ADD(sanction_date, INTERVAL {date_interval} {date_part}) AS sanction_expiration_date,
+            DATE_ADD(sanction_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            FALSE AS meets_criteria,
+        FROM (
+            {supervision_sanctions_cte}
+        )
+    ),
+    /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
+    still-relevant sanctions at once). */
+    {create_sub_sessions_with_attributes('supervision_sanctions')}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(meets_criteria) AS meets_criteria,
+        TO_JSON(STRUCT(
+            ARRAY_AGG(sanction_date IGNORE NULLS ORDER BY sanction_date DESC) AS sanction_dates,
+            MAX(sanction_expiration_date) AS latest_sanction_expiration_date
+        )) AS reason,
+        ARRAY_AGG(sanction_date IGNORE NULLS ORDER BY sanction_date DESC) AS sanction_dates,
+        MAX(sanction_expiration_date) AS latest_sanction_expiration_date,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1, 2, 3, 4
+    """
+
+
 def sentence_attributes() -> str:
     """
     Get time span and other critical attributes for each sentence.
@@ -668,4 +727,72 @@ def supervision_type_raw_text_is_not(
         ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type_raw_text,
     FROM sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
+    """
+
+
+def supervision_violations_cte(
+    violation_type: str = "",
+    where_clause_addition: str = "",
+) -> str:
+    """
+    Combine state_supervision_violation and state_supervision_violation_response to select violations that
+    we want to count for supervision violation related criteria. Violations are filtered based on any
+    specified violation-level attributes and any aggregated attributes of violation responses
+    (since there can be multiple responses per violation).
+
+    Returns:
+        str: SQL query as a string.
+    """
+
+    violation_type_join = f"""
+        INNER JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` vt
+            ON v.supervision_violation_id = vt.supervision_violation_id
+            AND v.person_id = vt.person_id
+            AND v.state_code = vt.state_code
+            {violation_type}
+        """
+    return f"""
+        # TODO(#35354): Account for violation decisions when considering which violations
+        # should disqualify someone from eligibility.    
+        SELECT
+            v.state_code,
+            v.person_id,
+            v.supervision_violation_id,
+            /* If there is no `violation_date` value, we treat the earliest date of any
+            response(s) as the violation date. (We take the MIN of `violation_date`
+            below just because we have to aggregate the `violation_date` field in this
+            expression, but note that because the violation-to-response ratio can be
+            one-to-many, every row should have the same `violation_date`, and this
+            therefore will just return the original `violation_date` value if there is
+            one.) */
+            COALESCE(MIN(v.violation_date), MIN(vr.response_date)) AS violation_date,
+        FROM `{{project_id}}.normalized_state.state_supervision_violation` v
+        {violation_type_join if violation_type else ""}
+        /* NB: there can be multiple responses per violation, so this LEFT JOIN can
+        create multiple rows per violation (where each row is a unique violation
+        response). */
+        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_response` vr
+            ON v.supervision_violation_id = vr.supervision_violation_id
+            AND v.person_id = vr.person_id
+            AND v.state_code = vr.state_code
+        /* NB: the WHERE clause is typically evaluated after the FROM clause but before
+        GROUP BY and aggregation, per BigQuery documentation. This means that any
+        filtering applied in this WHERE clause will apply to the pre-grouped data. */
+        WHERE
+            CASE v.state_code
+                /* In ME, only violations with a `response_type` of 'PERMANENT_DECISION'
+                or 'VIOLATION_REPORT' are considered to be violations that would ever
+                impact a client's eligibility for any opportunity. From the set of ME
+                violations & responses, then, we therefore drop rows without one of
+                these specified response types. Note that this means that if a violation
+                in ME did not have any response with one of these types, it will get
+                entirely dropped (and will therefore not disqualify a client from
+                eligibility). */
+                WHEN 'US_ME' THEN vr.response_type IN ('PERMANENT_DECISION', 'VIOLATION_REPORT')
+                ELSE TRUE
+                END
+            {where_clause_addition}
+        /* Group by violation, so that we get one row per violation coming out of this
+        CTE. */
+        GROUP BY 1, 2, 3
     """
