@@ -17,17 +17,20 @@
 """Tests for the SftpToGcsOperator"""
 import datetime
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pytz
+from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
     RecidivizSftpToGcsOperator,
 )
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeSftpDownloadDelegateFactory,
     FakeUsXxSftpDownloadDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
@@ -36,7 +39,7 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 @patch.object(
     SftpDownloadDelegateFactory, "build", return_value=FakeUsXxSftpDownloadDelegate()
 )
-class TestSftpToGcsOperator(unittest.TestCase):
+class TestSftpToGcsOperatorProperty(unittest.TestCase):
     """Tests for the SftpToGcsOperator"""
 
     def test_creates_correct_download_path(
@@ -77,4 +80,47 @@ class TestSftpToGcsOperator(unittest.TestCase):
         )
         self.assertEqual(
             expected_file.abs_path(), operator.build_download_path().abs_path()
+        )
+
+
+class TestSftpToGcsOperator(unittest.TestCase):
+    """Tests for the SftpToGcsOperator"""
+
+    def setUp(self) -> None:
+        self.fs = FakeGCSFileSystem()
+        self.gcsfs_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.get_gcsfs_from_hook",
+            return_value=self.fs,
+        )
+        self.gcsfs_patcher.start()
+        self.hook_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.RecidivizSFTPHook",
+        )
+        self.hook_mock = self.hook_patcher.start()
+        self.delegate_factory_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.SftpDownloadDelegateFactory",
+            FakeSftpDownloadDelegateFactory,
+        )
+        self.delegate_factory_patcher.start()
+        self.mock_context = create_autospec(Context)
+
+    def tearDown(self) -> None:
+        self.gcsfs_patcher.stop()
+        self.hook_patcher.stop()
+        self.delegate_factory_patcher.stop()
+
+    def test_remove_files_called(self) -> None:
+        operator = RecidivizSftpToGcsOperator(
+            task_id="test-task",
+            project_id="recidiviz-testing",
+            region_code="US_LL",
+            remote_file_path="outside_folder/inside-folder-with-dash/file-with-dash.txt",
+            sftp_timestamp=int(
+                datetime.datetime(2023, 1, 1, 1, 0, 0, 0, tzinfo=pytz.UTC).timestamp()
+            ),
+        )
+        operator.execute(self.mock_context)
+
+        self.hook_mock().client.remove.assert_called_once_with(
+            "outside_folder/inside-folder-with-dash/file-with-dash.txt"
         )

@@ -18,6 +18,8 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
+import paramiko
+
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
@@ -87,3 +89,8 @@ class UsNeSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 successfully received with sftp but hangs with Paramiko.
         """
         return {MAX_CONCURRENT_READ_THREADS: 1}
+
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        pass

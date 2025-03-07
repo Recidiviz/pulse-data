@@ -20,6 +20,8 @@ import re
 from typing import Any, Dict, List
 from zipfile import ZipFile, is_zipfile
 
+import paramiko
+
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
@@ -116,3 +118,8 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
+
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        pass

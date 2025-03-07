@@ -17,8 +17,14 @@
 """Unit tests for the SFTP download delegates."""
 
 import unittest
+from unittest.mock import create_autospec
+
+import paramiko
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.sftp.remote_file_cleanup_mixin import (
+    RemoteFileCleanupMixin,
+)
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
@@ -36,3 +42,23 @@ class SftpDownloadDelegateTest(unittest.TestCase):
             except ValueError:
                 continue
             self.assertTrue(delegate.root_directory([]).startswith("/"))
+
+    def test_all_delegates_with_remote_file_cleanup_mixin_only_enabled_for_one_project(
+        self,
+    ) -> None:
+        """Tests that all sftp download delegates"""
+        for state_code in StateCode:
+            try:
+                delegate = SftpDownloadDelegateFactory.build(
+                    region_code=state_code.value
+                )
+            except ValueError:
+                continue
+
+            if not issubclass(delegate.__class__, RemoteFileCleanupMixin):
+                continue
+
+            mock_sftp_client = create_autospec(paramiko.SFTPClient)
+            delegate.post_download_actions(
+                sftp_client=mock_sftp_client, remote_path="123"
+            )

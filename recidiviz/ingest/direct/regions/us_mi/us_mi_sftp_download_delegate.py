@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 from zipfile import ZipFile, is_zipfile
 
+import paramiko
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
@@ -120,3 +121,8 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
+
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        pass

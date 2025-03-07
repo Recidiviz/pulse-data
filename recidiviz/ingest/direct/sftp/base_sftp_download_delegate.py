@@ -18,6 +18,8 @@
 import abc
 from typing import Any, Dict, List
 
+import paramiko
+
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
@@ -57,4 +59,12 @@ class BaseSftpDownloadDelegate(abc.ABC):
     def get_read_kwargs(self) -> Dict[str, Any]:
         """State-specific kwargs to be passed to paramiko's SFTPClient.getfo to help
         configure file reading settings.
+        """
+
+    @abc.abstractmethod
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        """Should be implemented to execute any actions needed after a remote file has
+        been successfully downloaded to a GCS.
         """

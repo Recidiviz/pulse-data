@@ -17,11 +17,16 @@
 """Shared testing utilities for sftp operators"""
 from typing import Any, Dict, List
 
+import paramiko
+
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.remote_file_cleanup_mixin import (
+    RemoteFileCleanupMixin,
 )
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -64,8 +69,13 @@ class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
 
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        pass
 
-class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate):
+
+class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
     def root_directory(self, candidate_paths: List[str]) -> str:
         return "/"
 
@@ -87,3 +97,12 @@ class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
+
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        self.remove_remote_file(
+            sftp_client=sftp_client,
+            remote_path=remote_path,
+            supported_environments=self.supported_environments(),
+        )

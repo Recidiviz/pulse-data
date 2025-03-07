@@ -117,6 +117,11 @@ class RecidivizSftpToGcsOperator(BaseOperator):
             self.download_path.abs_path(),
         )
 
+        self.delegate.post_download_actions(
+            sftp_client=sftp_hook.client,
+            remote_path=self.remote_file_path,
+        )
+
         return {
             REMOTE_FILE_PATH: self.remote_file_path,
             SFTP_TIMESTAMP: self.sftp_timestamp,

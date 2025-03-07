@@ -18,6 +18,8 @@
 import re
 from typing import Any, Dict, List
 
+import paramiko
+
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
@@ -27,10 +29,13 @@ from recidiviz.ingest.direct.sftp.metadata import (
     DISABLED_ALGORITHMS_KWARG,
     SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
-from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.ingest.direct.sftp.remote_file_cleanup_mixin import (
+    RemoteFileCleanupMixin,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 
-class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate):
+class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
     """Class containing logic for how US_TX SFTP downloads are handled."""
 
     CURRENT_ROOT = "/"
@@ -100,10 +105,22 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return [downloaded_path.abs_path()]
 
     def supported_environments(self) -> List[str]:
-        return DATA_PLATFORM_GCP_PROJECTS
+        return [GCP_PROJECT_STAGING]
 
     def get_transport_kwargs(self) -> Dict[str, Any]:
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}
 
     def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
+
+    def post_download_actions(
+        self, *, sftp_client: paramiko.SFTPClient, remote_path: str
+    ) -> None:
+        """Texas has requested that we remove files from their SFTP server after
+        downloading them as they don't want transfers piling up as time goes on.
+        """
+        self.remove_remote_file(
+            sftp_client=sftp_client,
+            remote_path=remote_path,
+            supported_environments=self.supported_environments(),
+        )
