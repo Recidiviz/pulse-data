@@ -162,6 +162,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.CLIENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_IA,
+        opportunity_type="usIaEarlyDischarge",
+        experiment_id="US_IA_EARLY_DISCHARGE",
+        opportunity_record_view_name="us_ia_complete_early_discharge_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_ia_complete_early_discharge_form_record.json",
+        export_collection_name="US_IA-earlyDischarge",
+        opportunity_type_path_str="earlyDischarge",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_IX,
         opportunity_type="earnedDischarge",
         experiment_id="US_IX_LSU_ED_DISCHARGE_WORKFLOWS",
