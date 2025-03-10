@@ -251,6 +251,13 @@ period_info_agg AS (
         index_columns=['Period_ID_Number','SID_Number']
     )}
 ),
+-- Remove periods with '0001-01-01' start dates
+cleaned_period_info_agg AS (
+    SELECT
+        *
+    FROM period_info_agg
+    WHERE start_date != "0001-01-01"
+),
 -- Gather all of the officer IDs so that we only hydrate the field for officers
 -- received in the officer data. 
 officer_cte AS (
@@ -275,7 +282,7 @@ final_periods AS (SELECT
     end_date,
     assessment_level,
     ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number ORDER BY start_date) AS rn
-FROM period_info_agg
+FROM cleaned_period_info_agg
 LEFT JOIN officer_cte
     ON Supervision_Officer = Staff_ID_Number
 )
