@@ -109,9 +109,9 @@ def us_tn_classification_forms(
         WHERE
             assault_score IS NOT NULL
             AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {disciplinary_history_month_lookback} MONTH)
-    
+
         UNION ALL
-        
+
         SELECT 
             person_id,
             "PRIOR RECORD OFFENSES" AS criteria,
@@ -119,9 +119,9 @@ def us_tn_classification_forms(
             description AS note_title,
             CAST(NULL AS STRING) AS note_body,
         FROM `{{project_id}}.{{analyst_dataset}}.us_tn_prior_record_preprocessed_materialized`
-        
+
         UNION ALL
-        
+
         SELECT 
             person_id,
             "TN, ISC, DIVERSION SENTENCES" AS criteria,
@@ -352,7 +352,7 @@ def us_tn_classification_forms(
             AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
 
         UNION DISTINCT 
-    
+
         SELECT
             DISTINCT
             IncompatibleOffenderID AS OffenderID,
@@ -629,4 +629,194 @@ def keep_contact_codes(
     )
     USING (person_id, contact_date)
     {qualify}
+    """
+
+
+def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
+    """Helper method that returns a CTE getting information shared by the original
+    us_tn_transfer_to_compliant_reporting_record as well as
+    us_tn_transfer_to_compliant_reporting_2025_policy_record
+    """
+
+    return f"""
+    WITH contacts AS (
+      SELECT
+        external_id,
+        contact_date,
+        contact_type,
+        STRUCT(contact_date,contact_type) AS contact,
+        contact_type_category
+      FROM (
+          SELECT OffenderID AS external_id, 
+                  CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
+                  ContactNoteType AS contact_type,
+                  CASE 
+                      WHEN ContactNoteType IN ("ARRP","ARRN","XARR") THEN "arrest_check"
+                      WHEN ContactNoteType IN ("SPET","SPEC","XSPE") THEN "spe_note"
+                      WHEN ContactNoteType IN ("CCFT","CCFM") THEN "court_costs_note"
+                  END AS contact_type_category
+          FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest`
+          WHERE ContactNoteType IN ("ARRP", "ARRN", "XARR", "SPET","SPEC","XSPE","CCFT","CCFM")
+      )
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id,
+                                              contact_type_category
+                                ORDER BY contact_date DESC,
+                                    CASE WHEN contact_type = 'SPET' THEN 0
+                                         WHEN contact_type = 'SPEC' THEN 1
+                                         ELSE 2
+                                         END) = 1
+    ),
+    pivoted_contacts AS (
+        SELECT
+            external_id,
+            contact_type_arrest_check,
+            contact_type_spe_note,
+            contact_type_court_costs_note,
+        FROM (SELECT external_id, contact, contact_type_category FROM contacts)
+        PIVOT(ANY_VALUE(contact) AS contact_type FOR contact_type_category IN ("arrest_check","spe_note","court_costs_note"))
+    ),
+    restitution AS (
+        SELECT 
+            person_id,
+            SUM(COALESCE(CAST(vic.TotalRestitution AS FLOAT64),0)) AS restitution_amt,
+            SUM(COALESCE(CAST(vic.MonthlyRestitution AS FLOAT64 ),0)) AS restitution_monthly_payment,
+            ARRAY_AGG(DISTINCT vic.VictimName IGNORE NULLS ORDER BY vic.VictimName) AS restitution_monthly_payment_to,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` pp
+        LEFT JOIN
+            `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.JOVictim_latest` vic
+        ON pp.external_id = CONCAT(vic.OffenderID, '-', vic.ConvictionCounty,'-', vic.CaseYear, '-', vic.CaseNumber, '-', vic.CountNumber,  '-', 'SENTENCE')
+        WHERE
+            state_code = "US_TN"
+            AND pp.status_raw_text NOT IN ('IN')
+        GROUP BY 1
+    ),
+    {us_tn_fines_fees_info()}
+    current_offense_info AS (
+        SELECT 
+            off.*,
+            DATE_DIFF(expiration_date,sentence_start_date,DAY) AS sentence_length_days, 
+        FROM ({us_tn_get_offense_information(in_projected_completion_array=True)}) off
+    ),
+    all_offenses_cte AS (
+        SELECT 
+            person_id,
+            ARRAY_AGG(offense IGNORE NULLS ORDER BY offense) AS all_offenses,
+        FROM (
+            SELECT 
+                person_id,
+                description AS offense,
+            FROM `{{project_id}}.{{analyst_dataset}}.us_tn_prior_record_preprocessed_materialized`
+
+            UNION DISTINCT
+
+            SELECT 
+                person_id,
+                description AS offense
+            FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+            WHERE state_code = 'US_TN' 
+        )
+        GROUP BY 1
+    ),
+    permanent_exemptions AS (
+        SELECT
+            person_id,
+            permanent_exemption_reasons
+        FROM `{{project_id}}.{{analyst_dataset}}.permanent_exemptions_preprocessed_materialized`
+        WHERE state_code = 'US_TN'
+            AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+    ),
+    all_exemptions AS (
+        SELECT
+            person_id,
+            TO_JSON(
+                ARRAY_AGG(
+                STRUCT(
+                    ReasonCode AS exemption_reason,
+                    end_date AS exemption_end_date
+                )
+                ORDER BY start_date, end_date, ReasonCode
+            )) AS current_exemptions,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_tn_exemptions_preprocessed`
+        WHERE state_code = 'US_TN'
+            AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
+        GROUP BY 1
+    )
+    SELECT
+        base.metadata_task_name,
+        base.external_id,
+        base.state_code,
+        base.reasons,
+        base.ineligible_criteria,
+        base.is_eligible,
+        base.is_almost_eligible,
+        pc.contact_type_arrest_check AS metadata_most_recent_arrest_check,
+        pc.contact_type_spe_note AS metadata_most_recent_spe_note,
+        att.DriverLicenseNumber AS form_information_drivers_license,
+        null AS form_information_drivers_license_suspended,
+        null AS form_information_drivers_license_revoked,
+        current_offense_info.conviction_counties AS metadata_conviction_counties,
+        all_offenses_cte.all_offenses AS metadata_all_offenses,
+        expired_offenses.ineligible_offenses_expired As metadata_ineligible_offenses_expired,
+        restitution.restitution_amt AS form_information_restitution_amt,
+        restitution.restitution_monthly_payment AS form_information_restitution_monthly_payment,
+        restitution.restitution_monthly_payment_to AS form_information_restitution_monthly_payment_to,
+        CASE WHEN pc.contact_type_court_costs_note.contact_type = "CCFT" THEN TRUE
+             WHEN pc.contact_type_court_costs_note.contact_type = "CCFM" THEN FALSE
+             END AS form_information_court_costs_paid, 
+        latest_balance.current_balance AS form_information_supervision_fee_assessed,
+        latest_balance.current_balance > 0 AS form_information_supervision_fee_arrearaged,
+        latest_balance.current_balance AS form_information_supervision_fee_arrearaged_amount,
+        all_exemptions.current_exemptions AS form_information_current_exemptions_and_expiration,
+        permanent_exemptions.permanent_exemption_reasons IS NOT NULL AS form_information_supervision_fee_waived,
+        current_offense_info.docket_numbers AS form_information_docket_numbers,
+        current_offense_info.current_offenses AS form_information_current_offenses,        
+        current_offense_info.judicial_district AS form_information_judicial_district,
+        current_offense_info.sentence_start_date AS form_information_sentence_start_date,
+        current_offense_info.expiration_date AS form_information_expiration_date,
+        current_offense_info.sentence_length_days AS form_information_sentence_length_days,
+    FROM base
+    LEFT JOIN 
+        `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.OffenderAttributes_latest` att
+    ON
+        base.external_id = att.OffenderID
+    LEFT JOIN
+        pivoted_contacts pc
+    ON
+        base.external_id = pc.external_id
+    LEFT JOIN
+        restitution
+    ON
+        base.person_id = restitution.person_id
+    LEFT JOIN
+        fines_fees_balance_info latest_balance
+    ON
+        base.person_id = latest_balance.person_id
+    LEFT JOIN
+        all_exemptions
+    ON
+        base.person_id = all_exemptions.person_id
+    LEFT JOIN permanent_exemptions
+    ON
+        base.person_id = permanent_exemptions.person_id
+    LEFT JOIN current_offense_info
+    ON
+        base.person_id = current_offense_info.person_id
+    LEFT JOIN all_offenses_cte
+    ON
+        base.person_id = all_offenses_cte.person_id
+    -- TODO(#22357): Remove this workaround when TES infra supports hydrating spans with previous spans' reasons 
+    LEFT JOIN 
+        ( 
+            SELECT
+                person_id,
+                ARRAY_AGG(
+                    DISTINCT JSON_EXTRACT_SCALAR(ineligible_offenses)
+                    ORDER BY JSON_EXTRACT_SCALAR(ineligible_offenses)
+                ) AS ineligible_offenses_expired
+            FROM `{{project_id}}.task_eligibility_criteria_us_tn.ineligible_offenses_expired_materialized`,
+            UNNEST(JSON_EXTRACT_ARRAY(reason,"$.ineligible_offenses")) AS ineligible_offenses
+            GROUP BY 1
+        ) expired_offenses
+    ON
+        base.person_id = expired_offenses.person_id
     """

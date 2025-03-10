@@ -1489,8 +1489,12 @@ US_TN:
     workflows_views.us_tn_suspension_of_direct_supervision_record: |-
       Used to get county names from county codes; county names are then used in the
       opportunity form.
+    workflows_views.us_tn_transfer_to_compliant_reporting_2025_policy_record: |-
+      Used to get county names from county codes; county names are then used in the
+      opportunity form.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to get county names from county codes; county names are then used in the
+      opportunity form.
   ContactNoteComment:
     analyst_data.us_tn_contact_comments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1530,8 +1534,10 @@ US_TN:
       Needed to pull risk assessment refusal codes and we don't ingest contact information.
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Needed to pull risk assessment refusal codes and we don't ingest contact information.
+    workflows_views.us_tn_transfer_to_compliant_reporting_2025_policy_record: |-
+      Used to pull various notes to population opportunity form. We don't ingest contact codes.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to pull various notes to population opportunity form. We don't ingest contact codes.
   DailyCommunitySupervisionForRecidiviz:
     us_tn_validation.supervision_population_person_level: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1568,8 +1574,10 @@ US_TN:
     sessions.us_tn_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   JOVictim:
+    workflows_views.us_tn_transfer_to_compliant_reporting_2025_policy_record: |-
+      Used to pull restitution information for opportunity form.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to pull restitution information for opportunity form.
   MentalHealthServices:
     workflows_views.us_tn_annual_reclassification_review_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1586,8 +1594,10 @@ US_TN:
     analyst_data.us_tn_payments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   OffenderAttributes:
+    workflows_views.us_tn_transfer_to_compliant_reporting_2025_policy_record: |-
+      Used to pull driver's license information into opportunity form, which we don't ingest.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to pull driver's license information into opportunity form, which we don't ingest.
   OffenderExemptions:
     analyst_data.us_tn_exemptions_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

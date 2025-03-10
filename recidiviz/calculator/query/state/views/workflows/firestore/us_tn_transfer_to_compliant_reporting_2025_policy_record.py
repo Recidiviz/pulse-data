@@ -17,12 +17,22 @@
 """Query for relevant metadata needed to support compliant reporting opportunity in Tennessee, 2025 policy
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     join_current_task_eligibility_spans_with_external_id,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
+    keep_contact_codes,
+    us_tn_compliant_reporting_shared_opp_record_fragment,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.criteria.state_specific.us_tn.assessed_not_high_on_strong_r_domains import (
+    STRONG_R_ASSESSMENT_METADATA_KEYS,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -33,21 +43,151 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_NAME = (
     "us_tn_transfer_to_compliant_reporting_2025_policy_record"
 )
 
-# TODO(#37903): This is a placeholder. Replace with new opp record query
+# TODO(#38984): Update with new form when available
 # TODO(#38953): Include the Low-Intake group when TN rolls launches that part of new policy
 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
-    WITH eligible AS (
-    {join_current_task_eligibility_spans_with_external_id(
-        state_code= "'US_TN'", 
-        tes_task_query_view = 'transfer_low_medium_group_to_compliant_reporting_2025_policy_materialized',
-        id_type = "'US_TN_DOC'",
-        eligible_and_almost_eligible_only=True,
-    )}
-    
-    )
-    SELECT *
-    FROM eligible
+    WITH base AS (
+        SELECT
+            "LOW-MODERATE" AS metadata_task_name,
+            external_id,
+            person_id,
+            state_code,
+            reasons,
+            ineligible_criteria,
+            is_eligible,
+            is_almost_eligible,
+        FROM (
+        {join_current_task_eligibility_spans_with_external_id(
+            state_code= "'US_TN'", 
+            tes_task_query_view = 'transfer_low_medium_group_to_compliant_reporting_2025_policy_materialized',
+            id_type = "'US_TN_DOC'",
+            eligible_and_almost_eligible_only=True,
+        )}
+        )
+    ), 
+    relevant_contact_codes AS (
+        SELECT
+            contact.person_id,
+            contact_type,
+            contact_date,
+        FROM `{{project_id}}.analyst_data.us_tn_relevant_contact_codes_materialized` contact
+        LEFT JOIN `{{project_id}}.sessions.prioritized_supervision_sessions_materialized` pss
+            ON contact.person_id = pss.person_id
+            AND contact.contact_date >= pss.start_date
+        WHERE CURRENT_DATE('US/Eastern') BETWEEN pss.start_date 
+            AND {nonnull_end_date_exclusive_clause('pss.end_date_exclusive')}
+    ),
+    comments_clean AS (
+        SELECT
+            person_id,
+            contact_date,
+            contact_comment
+        FROM `{{project_id}}.analyst_data.us_tn_contact_comments_preprocessed_materialized`
+    ),
+    latest_assessment AS (
+    -- Metadata to show all domains of latest StrongR where someone has at least 1 domain that's High
+        SELECT
+            person_id,
+            need,
+            CAST(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_date') AS DATE) AS metadata_latest_strong_r_date,
+            -- /* UNNEST returns one row per key in a column called "need"
+            --  PARSE_JSON(assessment_metadata)[need] extracts the JSON value associated with the key
+            --  from the need column, and JSON_VALUE formats this as a string
+            -- */
+            NULLIF(JSON_VALUE(PARSE_JSON(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_metadata'))[need]),'') AS need_level       
+        FROM base,
+        UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason,
+        UNNEST({STRONG_R_ASSESSMENT_METADATA_KEYS}) AS need    
+        WHERE 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS' IN UNNEST(ineligible_criteria)
+            AND STRING(single_reason.criteria_name) = 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS'
+    ),
+    case_notes_array AS (
+        SELECT person_id,
+                TO_JSON(
+                    ARRAY_AGG(
+                        IF(note_title IS NOT NULL,
+                            STRUCT(note_title, note_body, event_date, criteria),
+                            NULL
+                        )
+                    IGNORE NULLS
+                    ORDER BY criteria, event_date
+                    )
+                ) AS case_notes    
+        FROM (
+            SELECT person_id,
+                  need AS note_title,
+                  metadata_latest_strong_r_date AS event_date,
+                  need_level AS note_body,
+                  "LATEST STRONG R DOMAINS" AS criteria,
+            FROM latest_assessment
 
+            UNION ALL
+
+            -- We don't have data on pending felony charges but recent VWAR (violation warrant) codes can be an indicator
+            -- that there might be a pending charge
+            SELECT person_id,
+                  contact_type AS note_title,
+                  contact_date AS event_date,
+                  contact_comment AS note_body,
+                  "VIOLATION WARRANTS" AS criteria,
+            FROM ({keep_contact_codes(
+                    codes_cte="relevant_contact_codes",
+                    comments_cte="comments_clean",
+                    where_clause_codes_cte="WHERE contact_type IN ('VWAR')",
+                    keep_last=False
+                )})
+        )
+        GROUP BY 1
+    ),
+    compliant_reporting_form_query_fragment AS (
+        SELECT *
+        FROM ({us_tn_compliant_reporting_shared_opp_record_fragment()})
+    )
+    SELECT
+        c.metadata_task_name,
+        c.external_id,
+        c.state_code,
+        reasons,
+        ineligible_criteria,
+        -- used to create almost eligible categories
+        CONCAT('MISSING_', CAST(ARRAY_LENGTH(ineligible_criteria) AS STRING), '_CRITERIA') AS metadata_tab_name,
+        is_eligible,
+        is_almost_eligible,
+        -- case notes
+        a.case_notes,
+        -- metadata
+        metadata_most_recent_arrest_check,
+        metadata_most_recent_spe_note,
+        -- metadata also shared by form
+        metadata_conviction_counties,
+        metadata_all_offenses,
+        metadata_ineligible_offenses_expired,
+        -- form information
+        form_information_drivers_license,
+        form_information_drivers_license_suspended,
+        form_information_drivers_license_revoked,
+        form_information_restitution_amt,
+        form_information_restitution_monthly_payment,
+        form_information_restitution_monthly_payment_to,
+        form_information_court_costs_paid, 
+        form_information_supervision_fee_assessed,
+        form_information_supervision_fee_arrearaged,
+        form_information_supervision_fee_arrearaged_amount,
+        form_information_current_exemptions_and_expiration,
+        form_information_supervision_fee_waived,
+        form_information_docket_numbers,
+        form_information_current_offenses,        
+        form_information_judicial_district,
+        form_information_sentence_start_date,
+        form_information_expiration_date,
+        form_information_sentence_length_days,
+    FROM compliant_reporting_form_query_fragment c
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON c.external_id = pei.external_id
+        AND pei.state_code = "US_TN"
+        AND pei.id_type = "US_TN_DOC"
+    LEFT JOIN case_notes_array a
+        USING(person_id)
 """
 
 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -59,6 +199,12 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER = SimpleBi
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_TN
     ),
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
+    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
 )
 
