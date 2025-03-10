@@ -23,7 +23,10 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
     LocationMetadataKey,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -160,7 +163,7 @@ SELECT
         CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
       )
     ) AS location_metadata,
-FROM (SELECT DISTINCT DO_Orgcode, Org_Name FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_staff_roster_latest`)
+FROM (SELECT DISTINCT DO_Orgcode, Org_Name FROM `{{project_id}}.{{us_pa_raw_data}}.RECIDIVIZ_REFERENCE_staff_roster`)
 -- Do not duplicate entries
 WHERE DO_Orgcode NOT IN (
     SELECT DISTINCT location_external_id 
@@ -184,6 +187,9 @@ US_PA_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_PA_LOCATION_METADATA_QUERY_TEMPLATE,
     description=US_PA_LOCATION_METADATA_DESCRIPTION,
     us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_pa_raw_data=raw_tables_dataset_for_region(
         state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,

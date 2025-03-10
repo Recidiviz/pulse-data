@@ -915,6 +915,9 @@ class DirectIngestRawFileConfig:
                 "StaffEmailByAlias": "We use this in views with @ALL",
                 "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": "We use this in views with @ALL",
             },
+            StateCode.US_PA: {
+                "RECIDIVIZ_REFERENCE_staff_roster": "We want to use this in views w/ @ALL"
+            },
         }
 
         if self.file_tag in exempt_files.get(self.state_code, {}):
