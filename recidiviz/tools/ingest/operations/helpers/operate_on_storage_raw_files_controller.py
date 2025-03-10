@@ -46,6 +46,8 @@ class IngestFilesOperationType(Enum):
         return self.value.rstrip("E") + "ING"
 
 
+# TODO(##37517) make start_date_bound -> state_datetime_inclusive and make it datetime | None instead of string
+# TODO(##37517) in _do_file_operation filter by datetime too
 @attr.define
 class OperateOnStorageRawFilesController:
     """Class with functionality to copy or move raw files consumed by ingest from

@@ -189,6 +189,7 @@ class MoveFilesToDeprecatedController:
         ).run()
 
 
+# TODO(##37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead, etc
 def parse_arguments() -> argparse.Namespace:
     """Parses and validates the arguments for the deprecate_raw_data script."""
     parser = argparse.ArgumentParser(

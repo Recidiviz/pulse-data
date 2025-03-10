@@ -44,6 +44,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.params import str_to_bool
 
 
+# TODO(##37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead, etc
 def main() -> None:
     """Executes the main flow of the script."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")

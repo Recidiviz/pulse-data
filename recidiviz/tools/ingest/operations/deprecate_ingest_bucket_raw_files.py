@@ -26,16 +26,27 @@ gs://recidiviz-staging-direct-ingest-state-storage/us_nd/deprecated/deprecated_o
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.deprecate_ingest_bucket_raw_files \
-    --state-code US_ND --start-date-bound  2019-08-12 \
-    --end-date-bound 2019-08-17 --project-id recidiviz-staging \
-    --ingest-instance PRIMARY [--dry-run False] \
+    --project-id recidiviz-staging \
+    --state-code US_ND \
+    --ingest-instance PRIMARY \
+    --start-datetime-inclusive 2019-08-12 \
+    [--dry-run False] \
     [--file-tag-filters docstars_contacts elite_offenders]
+
+python -m recidiviz.tools.ingest.operations.deprecate_ingest_bucket_raw_files \
+    --project-id recidiviz-staging \
+    --state-code US_ND \
+    --ingest-instance PRIMARY \
+    --start-datetime-inclusive 2019-08-12T12:00:00Z \
+    --end-datetime-exclusive 2019-08-12T18:00:00Z \
+    --file-tag-filters docstars_contacts elite_offenders
 """
 import argparse
 import datetime
 import logging
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import parse_opt_datetime_maybe_add_tz
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
@@ -85,15 +96,17 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--start-date-bound",
-        help="The lower bound date to start from, inclusive. For partial moving of ingested files. "
-        "E.g. 2019-09-23.",
+        "--start-datetime-inclusive",
+        help="The lower bound datetime to start from (inclusive). If a date format is "
+        "specified (e.g. 2019-09-23), it will be converted into a datetime with 0s filled "
+        "in; otherwise, please specify a valid ISO datetime (e.g. 2019-09-03T12:00:00Z)",
     )
 
     parser.add_argument(
-        "--end-date-bound",
-        help="The upper bound date to end at, inclusive. For partial moving of ingested files. "
-        "E.g. 2019-09-23.",
+        "--end-datetime-exclusive",
+        help="The upper bound datetime to end at (exclusive). If a date format is "
+        "specified (e.g. 2019-09-23), it will be converted into a datetime with 0s filled "
+        "in; otherwise, please specify a valid ISO datetime (e.g. 2019-09-03T12:00:00Z)",
     )
 
     parser.add_argument(
@@ -112,17 +125,21 @@ def main(
     project_id: str,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    start_date_bound: datetime.date | None,
-    end_date_bound: datetime.date | None,
+    start_datetime_inclusive: datetime.datetime | None,
+    end_datetime_exclusive: datetime.datetime | None,
     file_tag_filters: list[str],
     dry_run: bool,
 ) -> None:
     """Move files matching the given criteria from the ingest bucket to deprecated storage,
     and invalidate any relevant rows from the metadata tables in the operations db.
     """
-    if start_date_bound and end_date_bound and start_date_bound > end_date_bound:
+    if (
+        start_datetime_inclusive
+        and end_datetime_exclusive
+        and start_datetime_inclusive > end_datetime_exclusive
+    ):
         raise ValueError(
-            f"The start date bound [{start_date_bound}] must be less than or equal to the end date bound [{end_date_bound}]."
+            f"The start date bound [{start_datetime_inclusive}] must be less than or equal to the end date bound [{end_datetime_exclusive}]."
         )
 
     (
@@ -132,8 +149,8 @@ def main(
         state_code=state_code,
         project_id=project_id,
         ingest_instance=ingest_instance,
-        start_date_bound=start_date_bound,
-        end_date_bound=end_date_bound,
+        start_datetime_inclusive=start_datetime_inclusive,
+        end_datetime_exclusive=end_datetime_exclusive,
         file_tag_filters=file_tag_filters,
         dry_run=dry_run,
     ).run()
@@ -175,15 +192,11 @@ if __name__ == "__main__":
             project_id=args.project_id,
             state_code=args.state_code,
             ingest_instance=args.ingest_instance,
-            start_date_bound=(
-                datetime.date.fromisoformat(args.start_date_bound)
-                if args.start_date_bound is not None
-                else None
+            start_datetime_inclusive=parse_opt_datetime_maybe_add_tz(
+                args.start_datetime_inclusive, tz_to_add=datetime.UTC
             ),
-            end_date_bound=(
-                datetime.date.fromisoformat(args.end_date_bound)
-                if args.end_date_bound is not None
-                else None
+            end_datetime_exclusive=parse_opt_datetime_maybe_add_tz(
+                args.end_datetime_exclusive, tz_to_add=datetime.UTC
             ),
             file_tag_filters=args.file_tag_filters,
             dry_run=args.dry_run,

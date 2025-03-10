@@ -17,10 +17,12 @@
 """Tests for date.py"""
 import datetime
 import unittest
+import unittest.mock
 from typing import Optional
 
 import attr
 import pandas as pd
+import pytest
 import pytz
 from freezegun import freeze_time
 from parameterized import parameterized
@@ -44,9 +46,12 @@ from recidiviz.common.date import (
     first_day_of_next_year,
     first_day_of_week,
     is_date_str,
+    is_datetime_in_opt_range,
     last_day_of_month,
     merge_sorted_date_ranges,
     munge_date_string,
+    parse_datetime_maybe_add_tz,
+    parse_opt_datetime_maybe_add_tz,
     safe_strptime,
     split_range_by_birthdate,
 )
@@ -1382,3 +1387,136 @@ def test_date_ranges_overlap() -> None:
     )
     assert not date_ranges_overlap([first, second])
     assert not date_ranges_overlap([second, first])
+
+
+def test_parse_datetime_maybe_add_tz() -> None:
+    assert parse_datetime_maybe_add_tz("2024-01-01") == datetime.datetime(2024, 1, 1)
+    # adds tz
+    assert parse_datetime_maybe_add_tz(
+        "2024-01-01", tz_to_add=datetime.UTC
+    ) == datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
+    # adds tz
+    assert parse_datetime_maybe_add_tz(
+        "2024-01-01T09:09:09", tz_to_add=datetime.UTC
+    ) == datetime.datetime(2024, 1, 1, 9, 9, 9, tzinfo=datetime.UTC)
+    # does not add tz
+    assert parse_datetime_maybe_add_tz(
+        "2024-01-01T09:09:09+05:00", tz_to_add=datetime.UTC
+    ) == datetime.datetime(
+        2024, 1, 1, 9, 9, 9, tzinfo=datetime.timezone(datetime.timedelta(hours=5))
+    )
+
+    with pytest.raises(TypeError, match=r"fromisoformat: argument must be str"):
+        parse_datetime_maybe_add_tz(None, tz_to_add=datetime.UTC)  # type: ignore
+
+    assert parse_opt_datetime_maybe_add_tz(None, tz_to_add=datetime.UTC) is None
+
+
+def test_is_datetime_in_opt_range() -> None:
+    """unit tests for the is_datetime_in_opt_range utility function"""
+    # both null, vacuously True
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=None,
+        )
+        is True
+    )
+
+    # lower is null, becomes less than exclusive
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+        )
+        is False
+    )
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=datetime.datetime(
+                2024, 1, 1, 2, tzinfo=datetime.UTC
+            ),
+        )
+        is True
+    )
+
+    # upper is null, becomes more than inclusive
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=None,
+        )
+        is True
+    )
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            end_datetime_exclusive=None,
+        )
+        is True
+    )
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=None,
+        )
+        is False
+    )
+
+    # both
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=datetime.datetime(
+                2024, 1, 1, 2, tzinfo=datetime.UTC
+            ),
+        )
+        is True
+    )
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            end_datetime_exclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+        )
+        is False
+    )
+    assert (
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=datetime.datetime(
+                2024, 1, 1, 2, tzinfo=datetime.UTC
+            ),
+        )
+        is False
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid date range: range start \[.*\] cannot be before or on range end \[.*\]",
+    ):
+        is_datetime_in_opt_range(
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            start_datetime_inclusive=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            end_datetime_exclusive=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+        )

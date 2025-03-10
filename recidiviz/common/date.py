@@ -763,6 +763,7 @@ def is_date_str(potential_date_str: str) -> bool:
         return False
 
 
+# TODO(##37517) deprecate once not used
 def is_between_date_strs_inclusive(
     *,
     upper_bound_date: Optional[str],
@@ -884,3 +885,55 @@ def date_ranges_overlap(date_ranges: list[PotentiallyOpenDateRange]) -> bool:
         ((a.lower_bound_inclusive_date in b) or (b.lower_bound_inclusive_date in a))
         for (a, b) in itertools.combinations(date_ranges, 2)
     )
+
+
+def parse_datetime_maybe_add_tz(
+    datetime_str: str, *, tz_to_add: datetime.timezone | None = None
+) -> datetime.datetime:
+    """Parses an ISO-formatted date string, optionally adding a timezone if one is not
+    present.
+    """
+    new_datetime = datetime.datetime.fromisoformat(datetime_str)
+    return (
+        new_datetime.replace(tzinfo=tz_to_add)
+        if tz_to_add is not None and new_datetime.tzinfo is None
+        else new_datetime
+    )
+
+
+def parse_opt_datetime_maybe_add_tz(
+    opt_datetime_str: str | None, *, tz_to_add: datetime.timezone | None = None
+) -> datetime.datetime | None:
+    """Parses an ISO-formatted date string if it is not None, optionally adding a
+    timezone if one is not present.
+    """
+    if opt_datetime_str is None:
+        return None
+    return parse_datetime_maybe_add_tz(
+        datetime_str=opt_datetime_str, tz_to_add=tz_to_add
+    )
+
+
+def is_datetime_in_opt_range(
+    value: datetime.datetime,
+    *,
+    start_datetime_inclusive: datetime.datetime | None,
+    end_datetime_exclusive: datetime.datetime | None,
+) -> bool:
+    """Returns True if |value| is greater than or equal to |start_datetime_inclusive| and
+    less than |end_datetime_exclusive|, if they are provided.
+    """
+    if (
+        start_datetime_inclusive
+        and end_datetime_exclusive
+        and start_datetime_inclusive >= end_datetime_exclusive
+    ):
+        raise ValueError(
+            f"Invalid date range: range start [{start_datetime_inclusive}] cannot be before or on range end [{end_datetime_exclusive}]"
+        )
+
+    if start_datetime_inclusive and start_datetime_inclusive > value:
+        return False
+    if end_datetime_exclusive and end_datetime_exclusive <= value:
+        return False
+    return True

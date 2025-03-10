@@ -167,6 +167,7 @@ def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     return f"{parts[-3]}-{parts[-2]}-{parts[-1]}"
 
 
+# TODO(##37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead
 def _subdir_is_in_date_range(
     subdir: str, upper_bound_date: Optional[str], lower_bound_date: Optional[str]
 ) -> bool:
@@ -205,6 +206,9 @@ def _get_filters(
     return []
 
 
+# TODO(#37517) need to make these date instead of string and then have the callees convert
+# from datetime to date and truncate start_datetime to date and bump end datetime
+# exclusive to next day, if it's not padded with 0s
 def gsutil_get_storage_subdirs_containing_raw_files(
     storage_bucket_path: GcsfsDirectoryPath,
     upper_bound_date: Optional[str],

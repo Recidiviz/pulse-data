@@ -67,8 +67,8 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
             destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
                 bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
             ),
-            start_date_bound=None,
-            end_date_bound=None,
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=None,
             file_tag_filters=None,
             dry_run=True,
             log_output_path="log_output_path",
@@ -90,8 +90,8 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
             destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
                 bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
             ),
-            start_date_bound=None,
-            end_date_bound=None,
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=None,
             file_tag_filters=["file_tag"],
             dry_run=True,
             log_output_path="log_output_path",
@@ -111,6 +111,61 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
         )
         self.assertEqual(0, len(failed_files))
 
+    def test_move_ingest_bucket_raw_files_to_deprecated_controller_at_bounds(
+        self,
+    ) -> None:
+
+        controller = MoveIngestBucketRawFilesToDeprecatedController(
+            source_ingest_bucket=GcsfsBucketPath("test_bucket"),
+            destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
+                bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
+            ),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 11, 12, 12, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=datetime.datetime(
+                2024, 12, 12, 12, tzinfo=datetime.UTC
+            ),
+            file_tag_filters=["file_tag"],
+            dry_run=True,
+            log_output_path="log_output_path",
+        )
+        successful_files, failed_files = controller.run()
+
+        self.assertEqual(1, len(successful_files))
+        self.assertEqual(
+            "gs://test_bucket/unprocessed_2024-11-12T12:00:00:000000_raw_file_tag.csv",
+            successful_files[0].uri(),
+        )
+        self.assertEqual(0, len(failed_files))
+
+        controller = MoveIngestBucketRawFilesToDeprecatedController(
+            source_ingest_bucket=GcsfsBucketPath("test_bucket"),
+            destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
+                bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
+            ),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 11, 12, 12, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=datetime.datetime(
+                2024, 12, 12, 12, 0, 0, 1, tzinfo=datetime.UTC
+            ),
+            file_tag_filters=["file_tag"],
+            dry_run=True,
+            log_output_path="log_output_path",
+        )
+        successful_files, failed_files = controller.run()
+
+        self.assertEqual(2, len(successful_files))
+        self.assertEqual(
+            [
+                "gs://test_bucket/unprocessed_2024-11-12T12:00:00:000000_raw_file_tag.csv",
+                "gs://test_bucket/unprocessed_2024-12-12T12:00:00:000000_raw_file_tag.csv",
+            ],
+            sorted([file.uri() for file in successful_files]),
+        )
+        self.assertEqual(0, len(failed_files))
+
     def test_move_ingest_bucket_raw_files_to_deprecated_controller_with_date_filter(
         self,
     ) -> None:
@@ -120,8 +175,10 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
             destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
                 bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
             ),
-            start_date_bound=datetime.date(2024, 12, 12),
-            end_date_bound=datetime.date(2024, 12, 12),
+            start_datetime_inclusive=datetime.datetime(
+                2024, 12, 12, tzinfo=datetime.UTC
+            ),
+            end_datetime_exclusive=datetime.datetime(2024, 12, 13, tzinfo=datetime.UTC),
             file_tag_filters=["file_tag"],
             dry_run=True,
             log_output_path="log_output_path",
@@ -134,6 +191,47 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
             successful_files[0].uri(),
         )
         self.assertEqual(0, len(failed_files))
+
+    def test_invalid_bounds(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"start_datetime_inclusive and end_datetime_exclusive are both set to \[2024-12-12 00:00:00\+00:00\] which will exclude all files; please provide two distinct values",
+        ):
+            _ = MoveIngestBucketRawFilesToDeprecatedController(
+                source_ingest_bucket=GcsfsBucketPath("test_bucket"),
+                destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
+                    bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
+                ),
+                start_datetime_inclusive=datetime.datetime(
+                    2024, 12, 12, tzinfo=datetime.UTC
+                ),
+                end_datetime_exclusive=datetime.datetime(
+                    2024, 12, 12, tzinfo=datetime.UTC
+                ),
+                file_tag_filters=None,
+                dry_run=False,
+                log_output_path="log_output_path",
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"start_datetime_inclusive \[2024-12-13 00:00:00\+00:00\] is after than end_datetime_exclusive \[2024-12-12 00:00:00\+00:00\]; please specify a start value that is before the provided end time",
+        ):
+            _ = MoveIngestBucketRawFilesToDeprecatedController(
+                source_ingest_bucket=GcsfsBucketPath("test_bucket"),
+                destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
+                    bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
+                ),
+                start_datetime_inclusive=datetime.datetime(
+                    2024, 12, 13, tzinfo=datetime.UTC
+                ),
+                end_datetime_exclusive=datetime.datetime(
+                    2024, 12, 12, tzinfo=datetime.UTC
+                ),
+                file_tag_filters=None,
+                dry_run=False,
+                log_output_path="log_output_path",
+            )
 
     def test_move_ingest_bucket_raw_files_to_deprecated_controller_error(
         self,
@@ -154,8 +252,8 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
                 destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
                     bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
                 ),
-                start_date_bound=None,
-                end_date_bound=None,
+                start_datetime_inclusive=None,
+                end_datetime_exclusive=None,
                 file_tag_filters=None,
                 dry_run=False,
                 log_output_path="log_output_path",
@@ -190,8 +288,8 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
             destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
                 bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
             ),
-            start_date_bound=None,
-            end_date_bound=None,
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=None,
             file_tag_filters=None,
             dry_run=True,
             log_output_path="log_output_path",

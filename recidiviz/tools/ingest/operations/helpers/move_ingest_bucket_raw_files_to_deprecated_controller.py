@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements a controller used to move raw files matching the provided filters from the ingest bucket to the 
+"""Implements a controller used to move raw files matching the provided filters from the ingest bucket to the
 deprecated storage directory for a given state."""
 import datetime
 import logging
@@ -29,6 +29,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import is_datetime_in_opt_range
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
@@ -49,11 +50,30 @@ class MoveIngestBucketRawFilesToDeprecatedController:
 
     source_ingest_bucket: GcsfsBucketPath
     destination_region_deprecated_storage_dir_path: GcsfsDirectoryPath
-    start_date_bound: Optional[datetime.date]
-    end_date_bound: Optional[datetime.date]
+    start_datetime_inclusive: Optional[datetime.datetime]
+    end_datetime_exclusive: Optional[datetime.datetime]
     file_tag_filters: Optional[List[str]]
     log_output_path: str
     dry_run: bool
+
+    def __attrs_post_init__(self) -> None:
+        if (
+            self.start_datetime_inclusive is not None
+            and self.end_datetime_exclusive is not None
+            and self.start_datetime_inclusive == self.end_datetime_exclusive
+        ):
+            raise ValueError(
+                f"start_datetime_inclusive and end_datetime_exclusive are both set to [{self.end_datetime_exclusive}] which will exclude all files; please provide two distinct values"
+            )
+
+        if (
+            self.start_datetime_inclusive is not None
+            and self.end_datetime_exclusive is not None
+            and self.start_datetime_inclusive > self.end_datetime_exclusive
+        ):
+            raise ValueError(
+                f"start_datetime_inclusive [{self.start_datetime_inclusive}] is after than end_datetime_exclusive [{self.end_datetime_exclusive}]; please specify a start value that is before the provided end time"
+            )
 
     @classmethod
     def create_controller(
@@ -62,8 +82,8 @@ class MoveIngestBucketRawFilesToDeprecatedController:
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
         project_id: str,
-        start_date_bound: Optional[datetime.date] = None,
-        end_date_bound: Optional[datetime.date] = None,
+        start_datetime_inclusive: Optional[datetime.datetime] = None,
+        end_datetime_exclusive: Optional[datetime.datetime] = None,
         file_tag_filters: Optional[List[str]] = None,
         dry_run: bool,
     ) -> "MoveIngestBucketRawFilesToDeprecatedController":
@@ -84,14 +104,14 @@ class MoveIngestBucketRawFilesToDeprecatedController:
                     project_id=project_id,
                 )
             ),
-            start_date_bound=start_date_bound,
-            end_date_bound=end_date_bound,
+            start_datetime_inclusive=start_datetime_inclusive,
+            end_datetime_exclusive=end_datetime_exclusive,
             file_tag_filters=file_tag_filters,
             dry_run=dry_run,
             log_output_path=make_log_output_path(
                 operation_name="move_ingest_bucket_raw_files",
                 region_code=state_code.value,
-                date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
+                date_string=f"start_bound_{start_datetime_inclusive}_end_bound_{end_datetime_exclusive}",
                 dry_run=dry_run,
             ),
         )
@@ -135,13 +155,11 @@ class MoveIngestBucketRawFilesToDeprecatedController:
         if self.file_tag_filters and file_parts.file_tag not in self.file_tag_filters:
             return False
 
-        file_upload_date = file_parts.utc_upload_datetime.date()
-        if self.start_date_bound and file_upload_date < self.start_date_bound:
-            return False
-        if self.end_date_bound and file_upload_date > self.end_date_bound:
-            return False
-
-        return True
+        return is_datetime_in_opt_range(
+            file_parts.utc_upload_datetime,
+            start_datetime_inclusive=self.start_datetime_inclusive,
+            end_datetime_exclusive=self.end_datetime_exclusive,
+        )
 
     def _find_ingest_bucket_raw_files(
         self,
