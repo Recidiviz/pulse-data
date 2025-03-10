@@ -29,7 +29,6 @@ from recidiviz.task_eligibility.criteria.general import (
     on_supervision_at_least_6_months,
     supervision_continuous_employment_for_3_months,
     supervision_housing_is_permanent_for_3_months,
-    supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     has_completed_ordered_assessments,
@@ -38,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     risk_level_reduction_of_one_or_more,
     risk_level_stayed_moderate_or_low,
     risk_score_reduction_5_percent_or_more,
+    supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
