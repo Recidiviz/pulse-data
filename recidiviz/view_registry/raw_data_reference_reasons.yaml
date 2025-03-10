@@ -518,8 +518,6 @@ US_IX:
   ref_Location:
     reference_views.us_ix_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    sentencing_views.sentencing_case_record: |-
-      Used for sentencing PSI tool, we need it as a reference for case county. 5/21/24
     sentencing_views.sentencing_client_record: |-
       Used for sentencing PSI tool, we need it as a reference for client's county. 5/21/24
     validation_views.supervisor_roster_exclusions: |-

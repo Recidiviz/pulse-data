@@ -27,17 +27,13 @@ WITH
     DueDate AS due_date,
     CompletedDate AS completion_date,
     AssignedDate AS assigned_date,
-    lmm.location_name AS county,
+    SPLIT(UPPER(lmm.location_name), ' - ')[SAFE_OFFSET(0)] AS county,
     PSIReportId AS external_id,
     id.person_id,
     JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') AS district,
     ist.InvestigationStatusDesc AS investigation_status
   FROM
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
-  LEFT JOIN
-    `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc
-  USING
-    (LocationId)
   LEFT JOIN
     `{project_id}.{normalized_state_dataset}.state_person_external_id` id
   ON
@@ -51,8 +47,8 @@ WITH
     `{project_id}.reference_views.location_metadata_materialized` lmm
   ON
     lmm.state_code = "US_IX"
-    AND location_type = "CITY_COUNTY"
-    AND lmm.location_external_id = CONCAT("ATLAS-",loc.ParentCountyId)
+    AND location_type = "COURT"
+    AND lmm.location_external_id = CONCAT("ATLAS-", psi.CourtId)
   LEFT JOIN
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_InvestigationStatus_latest` ist
   USING
