@@ -167,7 +167,6 @@ ofndr_agnt AS (
         -- TODO(#37223): Refine logic used to deduplicate
         WHERE usr_typ_cd IN ("A") -- Most common type, maybe active?
             AND UPPER(agnt_id) != 'NONE' -- Eliminates some duplicates, doesn't seem like useful information
-            AND agcy_id = '3' -- Most common agency, probably UDC?
     )
     WHERE start_date != IFNULL(end_date, '9999-01-01') -- Eliminates some duplicates
 ),
