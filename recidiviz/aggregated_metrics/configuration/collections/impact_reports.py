@@ -25,13 +25,19 @@ from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
 from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
     collect_aggregated_metric_view_builders_for_collection,
 )
-from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configurations import (
+from recidiviz.aggregated_metrics.metric_time_period_config import (
+    MetricTimePeriodConfig,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_DAILY_POPULATION,
     AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
     DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS,
@@ -40,14 +46,6 @@ from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configuratio
     DISTINCT_ACTIVE_USERS_SUPERVISION,
     DISTINCT_REGISTERED_USERS_INCARCERATION,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
-)
-from recidiviz.aggregated_metrics.metric_time_period_config import (
-    MetricTimePeriodConfig,
-)
-from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
-    AVG_DAILY_POPULATION,
-    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
-    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,

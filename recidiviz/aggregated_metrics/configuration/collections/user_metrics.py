@@ -24,14 +24,12 @@ from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
 from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
     collect_aggregated_metric_view_builders_for_collection,
 )
-from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_configurations import (
-    DISTINCT_REGISTERED_USERS_SUPERVISION,
-)
 from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriod,
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    DISTINCT_REGISTERED_USERS_SUPERVISION,
     WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
     WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS,
     WORKFLOWS_PRIMARY_USER_LOGINS,

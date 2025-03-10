@@ -29,12 +29,16 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
+    EventDistinctUnitCountMetric,
     EventValueMetric,
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
+)
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
+    USAGE_EVENTS_DICT,
 )
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JusticeImpactType,
@@ -2173,6 +2177,12 @@ VIOLATIONS_BY_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
+VIOLATIONS_ABSCONSION = next(
+    metric
+    for metric in VIOLATIONS_BY_TYPE_METRICS
+    if metric.name == "violations_absconsion"
+)
+
 VIOLATION_RESPONSES = EventCountMetric(
     name="violation_responses",
     display_name="Violation Responses: All",
@@ -2231,5 +2241,817 @@ WORKFLOWS_PRIMARY_USER_LOGINS = EventCountMetric(
     event_selector=EventSelector(
         event_type=EventType.WORKFLOWS_USER_LOGIN,
         event_conditions_dict={},
+    ),
+)
+
+DISTINCT_PROVISIONED_WORKFLOWS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_workflows_users",
+    display_name="Distinct Provisioned Workflows Users",
+    description="Number of distinct Workflows users who are provisioned to have tool access (regardless of role type)",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_REGISTERED_PROVISIONED_WORKFLOWS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_provisioned_workflows_users",
+    display_name="Distinct Registered Provisioned Workflows Users",
+    description=(
+        "Number of distinct Workflows users who are provisioned to have tool access (regardless of role type) "
+        "who have signed up/logged into Workflows at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+DISTINCT_PROVISIONED_PRIMARY_WORKFLOWS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_workflows_users",
+    display_name="Distinct Provisioned Primary Workflows Users",
+    description="Number of distinct primary Workflows users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_workflows_users",
+    display_name="Distinct Registered Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_workflows_users",
+    display_name="Distinct Logged In Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_workflows_users",
+    display_name="Distinct Active Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users having at least one usage event for the "
+    "task type during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
+LOGINS_BY_PRIMARY_WORKFLOWS_USER = EventCountMetric(
+    name="logins_primary_workflows_user",
+    display_name="Logins, Primary Workflows Users",
+    description="Number of logins performed by primary Workflows users",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+FIRST_TOOL_ACTIONS = EventCountMetric(
+    name="first_tool_actions_workflows",
+    display_name="First Tool Actions, Workflows",
+    description="Number of unique instances of the first action taken in the workflows tool after a client is "
+    "newly surfaced for the selected task type",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        event_conditions_dict={
+            "is_first_tool_action": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+# Outcome metrics
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_population_task_almost_eligible",
+    display_name="Average Population: Task Almost Eligible",
+    description="Average daily count of clients almost eligible for selected task type",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+)
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_FUNNEL_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_task_almost_eligible_{k.lower()}",
+        display_name=f"Average Population: Task Almost Eligible And {snake_to_title(k)}",
+        description=f"Average daily count of clients almost eligible for selected task type with funnel status "
+        f"{snake_to_title(k).lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
+    )
+    for k in USAGE_EVENTS_DICT
+]
+AVG_DAILY_POPULATION_TASK_ELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_population_task_eligible",
+    display_name="Average Population: Task Eligible",
+    description="Average daily count of clients eligible for selected task type",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_FUNNEL_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_task_eligible_{k.lower()}",
+        display_name=f"Average Population: Task Eligible And {snake_to_title(k)}",
+        description=f"Average daily count of clients eligible for selected task type with funnel status "
+        f"{snake_to_title(k).lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
+    )
+    for k in USAGE_EVENTS_DICT
+]
+
+PERSON_DAYS_TASK_ELIGIBLE = SumSpanDaysMetric(
+    name="person_days_task_eligible",
+    display_name="Person-Days Eligible for Opportunity",
+    description="Total number of person-days spent eligible for opportunities of selected task type",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+TASK_COMPLETIONS = EventCountMetric(
+    name="task_completions",
+    display_name="Task Completions",
+    description="Number of task completions of selected task type",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+TASK_COMPLETIONS_AFTER_TOOL_ACTION = EventCountMetric(
+    name="task_completions_after_tool_action",
+    display_name="Task Completions After Tool Action",
+    description="Number of task completions for selected task type occurring after an action was taken in the tool",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE = EventCountMetric(
+    name="task_completions_while_almost_eligible",
+    display_name="Task Completions While Almost Eligible",
+    description="Number of task completions for selected task type occurring while almost eligible for opportunity",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION = EventCountMetric(
+    name="task_completions_while_almost_eligible_after_tool_action",
+    display_name="Task Completions While Almost Eligible After Tool Action",
+    description="Number of task completions occurring while client is almost eligible for selected task type, "
+    "occurring after an action was taken in the tool",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+            "is_almost_eligible": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+TASK_COMPLETIONS_WHILE_ELIGIBLE = EventCountMetric(
+    name="task_completions_while_eligible",
+    display_name="Task Completions While Eligible",
+    description="Number of task completions for selected task type occurring while eligible for opportunity",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION = EventValueMetric(
+    name="days_eligible_at_first_tool_action",
+    display_name="Days Eligible At First Workflows Tool Action",
+    description="Number of days spent eligible for selected opportunity at time of first action in Workflows tool",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        event_conditions_dict={
+            "is_first_tool_action": ["true"],
+        },
+    ),
+    event_value_numeric="days_eligible",
+    event_count_metric=FIRST_TOOL_ACTIONS,
+)
+
+DAYS_ELIGIBLE_AT_TASK_COMPLETION = EventValueMetric(
+    name="days_eligible_at_task_completion",
+    display_name="Days Eligible At Task Completion",
+    description="Number of days spent eligible for selected opportunity at task completion",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="days_eligible",
+    event_count_metric=TASK_COMPLETIONS,
+)
+
+TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION = EventCountMetric(
+    name="task_eligibility_starts_while_almost_eligible_after_tool_action",
+    display_name="Task Eligibility Starts While Almost Eligible After Tool Action",
+    description="Number of task eligibility starts occurring while client is almost eligible for selected task type, "
+    "occurring after an action was taken in the tool",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_ELIGIBILITY_START,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+            "after_almost_eligible": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+# Officer Opportunities metrics
+DISTINCT_OFFICERS_WITH_CANDIDATE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_candidate_caseload",
+    display_name="Distinct Officers With Candidate Caseload",
+    description="Number of distinct officers with a client/resident considered a potential candidate for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_ELIGIBLE_OR_ALMOST_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_eligible_or_almost_eligible_caseload",
+    display_name="Distinct Officers With Eligible Or Almost Eligible Caseload",
+    description="Number of distinct officers with a client/resident eligible or almost eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_eligible_or_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_eligible_caseload",
+    display_name="Distinct Officers With Eligible Caseload",
+    description="Number of distinct officers with a client/resident eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_ALMOST_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_almost_eligible_caseload",
+    display_name="Distinct Officers With Almost Eligible Caseload",
+    description="Number of distinct officers with a client/resident almost eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed",
+    display_name="Distinct Officers With Tasks Completed",
+    description="Number of distinct officers that completed at least one task for an opportunity",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ELIGIBLE_OR_ALMOST_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_eligible_or_almost_eligible",
+    display_name="Distinct Officers With Tasks Completed While Eligible Or Almost Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was eligible or almost eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible_or_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_eligible",
+    display_name="Distinct Officers With Tasks Completed While Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ALMOST_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_almost_eligible",
+    display_name="Distinct Officers With Tasks Completed While Almost Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was almost eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_AFTER_TOOL_ACTION = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_after_tool_action",
+    display_name="Distinct Officers With Tasks Completed After Tool Action",
+    description="Number of distinct officers that completed at least one task after a corresponding tool action",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PROVISIONED_INSIGHTS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_insights_users",
+    display_name="Distinct Provisioned Supervisor Homepage Users",
+    description="Number of distinct Supervisor Homepage users who are provisioned to have tool access (regardless of role type)",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_REGISTERED_PROVISIONED_INSIGHTS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_provisioned_insights_users",
+    display_name="Distinct Registered Provisioned Supervisor Homepage Users",
+    description=(
+        "Number of distinct Supervisor Homepage users who are provisioned to have tool access (regardless of role type) "
+        "who have signed up/logged into Supervisor Homepage at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+
+DISTINCT_PROVISIONED_PRIMARY_INSIGHTS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_insights_users",
+    display_name="Distinct Provisioned Primary Supervisor Homepage Users",
+    description="Number of distinct primary Supervisor Homepage users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_INSIGHTS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_insights_users",
+    display_name="Distinct Total Registered Primary Supervisor Homepage Users",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who have signed up/logged into Supervisor Homepage at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_INSIGHTS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_insights_users",
+    display_name="Distinct Logged In Primary Supervisor Homepage Users",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who logged into Supervisor Homepage",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users",
+    display_name="Distinct Active Primary Supervisor Homepage Users",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users having at least one active usage event "
+    "during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users_with_outliers_visible_in_tool",
+    display_name="Distinct Active Primary Supervisor Homepage Users with Outliers Visible in Tool",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who had outliers and had at least one active usage event "
+    "during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"has_outlier_officers": ["true"]},
+    ),
+)
+
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users_without_outliers_visible_in_tool",
+    display_name="Distinct Active Primary Supervisor Homepage Users without Outliers Visible in Tool",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who did not have outliers and had at least one active usage event "
+    "during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"has_outlier_officers": ["false"]},
+    ),
+)
+
+LOGINS_PRIMARY_INSIGHTS_USERS = EventCountMetric(
+    name="logins_primary_insights_user",
+    display_name="Logins, Primary Supervisor Homepage Users",
+    description="Number of logins performed by primary Supervisor Homepage users",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_LOGGED_IN = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_logged_in",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Logged In",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and logged in",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_supervisor_page": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL_LOGGED_IN = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_without_outliers_visible_in_tool_logged_in",
+    display_name="Distinct Primary Supervisor Homepage Users without Outliers Visible in Tool - Logged In",
+    description="Number of primary supervisor homepage users who did not have outliers visible in the tool and logged in",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["false"],
+            "viewed_supervisor_page": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={"has_outlier_officers": ["true"]},
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_without_outliers_visible_in_tool",
+    display_name="Distinct Primary Supervisor Homepage Users without Outliers Visible in Tool",
+    description="Number of primary supervisor homepage users who did not have outliers visible in the tool",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={"has_outlier_officers": ["false"]},
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_STAFF_MEMBER_PAGE = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_staff_member_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Staff Member Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a staff member page",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_page": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_STAFF_MEMBER_METRIC_PAGE = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_staff_member_metric_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Staff Member Metric Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a staff member metric page",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_metric": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_CLIENT_PAGE = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_client_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Client Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a client page from the "
+    "list of revocations or the list of incarcerations",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_client_page": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_ACTION_STRATEGY_POP_UP = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_action_strategy_pop_up",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed Action Strategy Pop-up",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed the action strategy pop-up",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_action_strategy_popup": ["true"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_ANY_PAGE_FOR_30_SECONDS = EventDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_any_page_for_30_seconds",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed Any Page for 30 Seconds",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed any page for 30 seconds",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "event": ["VIEWED_PAGE_30_SECONDS"],
+        },
+    ),
+)
+
+DISTINCT_PRIMARY_INSIGHTS_USERS_VIEWED_ANY_PAGE_FOR_30_SECONDS = EventDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_viewed_any_page_for_30_seconds",
+    display_name="Distinct Primary Supervisor Homepage Users Who Viewed Any Page for 30 Seconds",
+    description="Number of primary supervisor homepage users who viewed any page for 30 seconds",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": ["VIEWED_PAGE_30_SECONDS"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Marked Ineligible, {b.task_title}",
+        description=f"Average daily count of residents marked ineligible for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "marked_ineligible": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Marked Ineligible, {b.task_title}",
+        description=f"Average daily count of residents marked ineligible for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "marked_ineligible": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
+        description=f"Average daily count of residents almost eligible for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and viewed for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["true"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and viewed for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["true"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Not Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and not viewed for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Not Viewed, {b.task_title}",
+        description=f"Average daily count of residents eligible and not viewed for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
+        description=f"Average daily count of residents almost eligible for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+DISTINCT_ACTIVE_USERS_INCARCERATION = [
+    EventDistinctUnitCountMetric(
+        name=f"distinct_active_users_{b.task_type_name.lower()}",
+        display_name="Distinct Active Users",
+        description="Number of distinct Workflows users having at least one usage event for the "
+        f"task of type {b.task_title.lower()} during the time period",
+        event_selector=EventSelector(
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+DISTINCT_ACTIVE_USERS_SUPERVISION = [
+    EventDistinctUnitCountMetric(
+        name=f"distinct_active_users_{b.task_type_name.lower()}",
+        display_name="Distinct Active Users",
+        description="Number of distinct Workflows users having at least one usage event for the "
+        f"task of type {b.task_title.lower()} during the time period",
+        event_selector=EventSelector(
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+supervision_task_types = [
+    b.task_type_name
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_active_users_supervision",
+    display_name="Distinct Active Users",
+    description="Number of distinct supervision Workflows users having at least one usage event during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"task_type": supervision_task_types},
+    ),
+)
+
+incarceration_task_types = [
+    b.task_type_name
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_active_users_incarceration",
+    display_name="Distinct Active Users",
+    description="Number of distinct incarceration Workflows users having at least one usage event during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"task_type": incarceration_task_types},
+    ),
+)
+
+DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
+    name="distinct_registered_users_supervision",
+    display_name="Distinct Total Registered Users",
+    description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={"system_type": ["SUPERVISION"]},
+    ),
+)
+
+DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
+    name="distinct_registered_users_incarceration",
+    display_name="Distinct Total Registered Users",
+    description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={"system_type": ["INCARCERATION"]},
     ),
 )
