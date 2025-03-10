@@ -14,10 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Base delegate class for handling state-specific raw data download logic"""
+"""Raw data import download delegate for US_NE"""
 
-import abc
-
+from recidiviz.ingest.direct.raw_data.base_raw_data_import_delegate import (
+    BaseRawDataImportDelegate,
+    skipped_error_for_unrecognized_file_tag_for_chunked_files,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawDataFilesSkippedError,
@@ -25,32 +27,11 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 )
 
 
-class BaseRawDataImportDelegate:
-    """Base delegate class for handling state-specific raw data download logic"""
-
-    @abc.abstractmethod
+class UsNeRawDataImportDelegate(BaseRawDataImportDelegate):
     def coalesce_chunked_files(
         self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-        """Given a |file_tag|, either groups the chunked GCS files into a single
-        "conceptual" BigQuery files, or returns a RawDataFilesSkippedError indicating
-        that we were unable to group the files together.
-        """
-
-
-def skipped_error_for_unrecognized_file_tag_for_chunked_files(
-    *, file_tag: str, gcs_files: list[RawGCSFileMetadata]
-) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-    """Utility method for building a response when a file tag is not recognized or is
-    not a known chunked file.
-    """
-    return [], [
-        RawDataFilesSkippedError(
-            file_paths=[gcs_file.path for gcs_file in gcs_files],
-            skipped_message=f"No known way of coalescing files for {file_tag}",
-            file_tag=file_tag,
-            update_datetime=max(
-                gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
-            ),
+        """As of 3/6/2025, there are no chunked files in US_NE"""
+        return skipped_error_for_unrecognized_file_tag_for_chunked_files(
+            file_tag=file_tag, gcs_files=gcs_files
         )
-    ]
