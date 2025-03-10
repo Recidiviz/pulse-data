@@ -174,7 +174,8 @@ class WorkbookUploader:
         )
         for different_key in unique_key_difference:
             # datapoint that previously did not exist has been added to report
-            self.num_new_datapoints += 1
+            if get_value(existing_datapoints_dict_changed[different_key]) is not None:
+                self.num_new_datapoints += 1
             agency_id = different_key[2]
 
             # If a user tried to upload monthly data for a metric that is configured as
