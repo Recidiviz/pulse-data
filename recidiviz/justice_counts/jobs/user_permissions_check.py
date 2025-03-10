@@ -233,10 +233,10 @@ def construct_user_infos(
         child_agencies = []
         individual_agencies = []
         for agency_assoc in user.agency_assocs:
+            agency_names.append(agency_assoc.agency.name)
             if is_demo_agency(agency_assoc.agency.name):
                 continue
             states.add(agency_assoc.agency.state_code)
-            agency_names.append(agency_assoc.agency.name)
             if agency_assoc.agency.is_superagency is True:
                 superagencies.append(agency_assoc.agency)
             elif agency_assoc.agency.super_agency_id is not None:
