@@ -2793,7 +2793,7 @@ DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_ACTION_STRA
         span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
             "has_outlier_officers": ["true"],
-            "viewed_staff_action_strategy_popup": ["true"],
+            "viewed_action_strategy_popup": ["true"],
         },
     ),
 )
