@@ -21,6 +21,7 @@ from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
     COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS,
     COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS,
     COLUMN_DOCUMENTATION_STATE_LEVEL_EXEMPTIONS,
+    DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS,
     FILE_DOCUMENTATION_EXEMPTIONS,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -136,4 +137,66 @@ class TestDocumentationExemptions(unittest.TestCase):
                         f"Found invalid file_tags listed in "
                         f"COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS for state "
                         f"[{state_code}]: {invalid_file_tags}"
+                    )
+
+            if state_code in DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS:
+                exempt_file_tags = set(
+                    DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS[state_code]
+                )
+
+                if invalid_file_tags := exempt_file_tags - valid_file_tags:
+                    raise ValueError(
+                        f"Found invalid file_tags listed in "
+                        f"DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS for state "
+                        f"[{state_code}]: {invalid_file_tags}"
+                    )
+
+    def test_duplicate_column_description_exemptions(
+        self,
+    ) -> None:
+        for (
+            state_code,
+            exemptions_by_file,
+        ) in DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS.items():
+            region_config = get_region_raw_file_config(state_code.value)
+            for (
+                file_tag,
+                description_to_exempt_columns,
+            ) in exemptions_by_file.items():
+                column_to_expected_description = {}
+                for description, columns in description_to_exempt_columns.items():
+                    if sorted(set(columns)) != sorted(columns):
+                        raise ValueError(
+                            f"Found duplicates in the columns list in "
+                            f"DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS for [{file_tag}] "
+                            f"in state [{state_code.value}] for description "
+                            f"[{description}]."
+                        )
+
+                    for column_name in columns:
+                        if column_name in column_to_expected_description:
+                            raise ValueError(
+                                f"Found column [{column_name}] listed in multiple places in "
+                                f"DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS for file_tag "
+                                f"[{file_tag}] in state [{state_code}]."
+                            )
+
+                        column_to_expected_description[column_name] = description
+
+                raw_file_config = region_config.raw_file_configs[file_tag]
+                for column in raw_file_config.all_columns:
+                    if column.name not in column_to_expected_description:
+                        continue
+                    if (
+                        column.description
+                        == column_to_expected_description[column.name]
+                    ):
+                        continue
+                    raise ValueError(
+                        f"Found column [{column.name}] in file [{file_tag}] in "
+                        f"state [{state_code.value}] with description "
+                        f"[{column.description}] which does not match the description "
+                        f"for that column in DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS. "
+                        f"Either remove the exemption entirely (ideal) or update the "
+                        f"exemption."
                     )

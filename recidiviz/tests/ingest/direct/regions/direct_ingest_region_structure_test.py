@@ -19,8 +19,8 @@ import abc
 import inspect
 import os
 import re
-import unittest
 import unittest.mock
+from collections import defaultdict
 from datetime import datetime
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -73,10 +73,14 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
+from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
+    DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawTableColumnFieldType,
+    is_meaningful_docstring,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -203,7 +207,7 @@ class DirectIngestRegionDirStructureBase:
 
     @property
     def region_dir_names(self) -> List[str]:
-        return [state_code.value.lower() for state_code in self.state_codes]
+        return sorted(state_code.value.lower() for state_code in self.state_codes)
 
     @property
     @abc.abstractmethod
@@ -327,6 +331,7 @@ class DirectIngestRegionDirStructureBase:
             config_file_tags = set()
             possible_external_id_types = get_external_id_types()
             for config in raw_file_manager.raw_file_configs.values():
+                self.assertNoDuplicateColumnDescriptions(config)
                 self.test.assertTrue(
                     config.file_tag not in config_file_tags,
                     f"Multiple raw file configs defined with the same "
@@ -504,6 +509,47 @@ class DirectIngestRegionDirStructureBase:
             f"Found column [{col_name}] listed as a filter column in a migration for file "
             f"tag [{file_tag}] which either not listed or missing a docstring.",
         )
+
+    @staticmethod
+    def assertNoDuplicateColumnDescriptions(
+        raw_file_config: DirectIngestRawFileConfig,
+    ) -> None:
+        """Asserts that all columns with a description have a description that is unique
+        to all columns in that file. If docstrings are duplicated it indicates that
+        there was a copy-paste error or that someone is using a placeholder docstring
+        that is not already caught by our is_meaningful_docstring() check.
+        """
+        exemptions_by_description = DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS.get(
+            raw_file_config.state_code, {}
+        ).get(raw_file_config.file_tag, {})
+
+        columns_by_description = defaultdict(list)
+        for column in raw_file_config.all_columns:
+            if not is_meaningful_docstring(column.description):
+                continue
+
+            columns_by_description[column.description].append(column.name)
+
+        duplicated_descriptions = {
+            description: columns
+            for description, columns in columns_by_description.items()
+            if len(columns) > 1 and description not in exemptions_by_description
+        }
+
+        for description, columns in duplicated_descriptions.items():
+            raise ValueError(
+                f"Found more than one column in raw data file "
+                f"[{raw_file_config.file_tag}] with description [{description}]: "
+                f"{columns}. If you are adding placeholder descriptions so that "
+                f"someone  can explore that data in a *_latest view, they should "
+                f"instead use recidiviz.tools.load_raw_data_latest_views_to_sandbox to "
+                f"load the sandbox versions of the views with all columns included. If "
+                f"this description is a meaningful / useful comment but is still the "
+                f"same as another column in the file, try to update the description to "
+                f"make clear why these two columns are different. Descriptions like "
+                f"'Unused' can be converted to descriptions like 'Column X is unused' "
+                f"to differentiate."
+            )
 
 
 class DirectIngestRegionDirStructure(
