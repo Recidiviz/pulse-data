@@ -946,6 +946,8 @@ def build_custom_metrics_lookml_view(
 
     all_json_field_key_subqueries = [
         f"""SELECT DISTINCT
+    -- dummy in case there are no json field filters
+    NULL AS dummy,
 {fix_indent(json_field_filters_with_liquid_wrap, indent_level=4)}
 FROM
     {unit_of_observation_type.value.lower()}_{metrics[0].metric_time_period_to_assignment_join_type().value.lower()}_metrics"""
