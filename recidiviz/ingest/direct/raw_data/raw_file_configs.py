@@ -33,6 +33,12 @@ from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
+    COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS,
+    COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS,
+    COLUMN_DOCUMENTATION_STATE_LEVEL_EXEMPTIONS,
+    FILE_DOCUMENTATION_EXEMPTIONS,
+)
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
@@ -151,6 +157,24 @@ class RawDataExportLookbackWindow(Enum):
     UNKNOWN_INCREMENTAL_LOOKBACK = "UNKNOWN_INCREMENTAL_LOOKBACK"
 
 
+def is_meaningful_docstring(docstring: str | None) -> bool:
+    """Returns true if the provided docstring gives meaningful information, i.e. it is
+    non-empty and does not start with an obvious placeholder.
+    """
+    if not docstring:
+        return False
+
+    stripped_docstring = docstring.strip()
+    if not stripped_docstring:
+        return False
+
+    return (
+        # Split up into TO and DO to avoid lint errors
+        not stripped_docstring.startswith("TO" + "DO")
+        and not stripped_docstring.startswith("XXX")
+    )
+
+
 @attr.s
 class ColumnEnumValueInfo:
     # The literal enum value
@@ -237,6 +261,37 @@ class RawTableColumnInfo:
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+
+    def is_documented(self) -> bool:
+        """Returns True if this column has meaningful documentation, i.e. a non-empty
+        description that is not clearly a TO-DO to fill in the documentation later.
+        """
+        if not self.description:
+            return False
+
+        if self.state_code in COLUMN_DOCUMENTATION_STATE_LEVEL_EXEMPTIONS:
+            return True
+
+        if (
+            exempt_file_tags := COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS.get(
+                self.state_code
+            )
+        ) and self.file_tag in exempt_file_tags:
+            return True
+
+        if (
+            (
+                file_tags_with_exemptions := COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS.get(
+                    self.state_code
+                )
+            )
+            and (column_exemptions := file_tags_with_exemptions.get(self.file_tag))
+            and self.name in column_exemptions
+        ):
+            return True
+
+        return is_meaningful_docstring(self.description)
+
     # Describes possible enum values for this column if known
     known_values: Optional[List[ColumnEnumValueInfo]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
@@ -827,7 +882,7 @@ class DirectIngestRawFileConfig:
     @property
     def current_documented_columns(self) -> List[RawTableColumnInfo]:
         """Filters to only current columns with descriptions."""
-        return [column for column in self.current_columns if column.description]
+        return [column for column in self.current_columns if column.is_documented()]
 
     @property
     def current_datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
@@ -848,9 +903,24 @@ class DirectIngestRawFileConfig:
         """Returns true if the raw file config does not provide enough information for this
         table to be used in ingest views or *latest views.
         """
-        return not self.current_documented_columns or (
-            len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys
+
+        if not self.current_documented_columns:
+            return True
+
+        if len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys:
+            return True
+
+        if is_meaningful_docstring(self.file_description):
+            return False
+
+        files_with_file_docstring_exemptions = (
+            FILE_DOCUMENTATION_EXEMPTIONS.get(self.state_code) or set()
         )
+
+        if self.file_tag in files_with_file_docstring_exemptions:
+            return False
+
+        return True
 
     @property
     def line_terminator(self) -> str:
