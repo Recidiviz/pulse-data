@@ -52,6 +52,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normaliz
 from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
     LegacyDirectIngestRawFileImportManager,
 )
+from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
+    RawDataImportDelegateFactory,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -65,6 +68,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
+    RawDataFilesSkippedError,
     RawFileBigQueryLoadConfig,
     RawFileImport,
     RawGCSFileMetadata,
@@ -131,6 +135,16 @@ class SandboxConceptualFileImportResult:
 
     def format_for_print(self) -> str:
         return f"[{self.status.name}] {','.join([path.blob_name for path in self.paths])} {self.suffix}"
+
+    @classmethod
+    def from_skipped_file_error(
+        cls, *, skipped_error: RawDataFilesSkippedError
+    ) -> "SandboxConceptualFileImportResult":
+        return SandboxConceptualFileImportResult(
+            paths=skipped_error.file_paths,
+            status=SandboxImportStatus.SKIPPED,
+            error_message=skipped_error.skipped_message,
+        )
 
 
 @attr.define
@@ -461,6 +475,9 @@ def _build_bq_metadata(
     represented in RawGCSFileMetadata objects.
     """
 
+    delegate = RawDataImportDelegateFactory.build(
+        region_code=region_raw_file_config.region_code
+    )
     conceptual_files: List[RawBigQueryFileMetadata] = []
     skipped_files: List[SandboxConceptualFileImportResult] = []
     chunked_files: Dict[
@@ -491,21 +508,14 @@ def _build_bq_metadata(
 
         for file_tag, upload_date_to_gcs_files in chunked_files.items():
 
-            expected_chunk_count = region_raw_file_config.raw_file_configs[
-                file_tag
-            ].expected_number_of_chunks
-
             for upload_date in sorted(upload_date_to_gcs_files):
 
                 gcs_files = upload_date_to_gcs_files[upload_date]
 
-                if allow_incomplete_chunked_files or expected_chunk_count == len(
-                    upload_date_to_gcs_files[upload_date]
-                ):
+                if allow_incomplete_chunked_files:
                     logging.info(
-                        "Found %s/%s paths for %s on %s -- grouping %s",
+                        "Found %s paths for %s on %s -- grouping %s",
                         len(gcs_files),
-                        expected_chunk_count,
                         file_tag,
                         upload_date.isoformat(),
                         [f.path.file_name for f in gcs_files],
@@ -520,18 +530,25 @@ def _build_bq_metadata(
                             ).parts.utc_upload_datetime,
                         )
                     )
+
                 else:
-                    skipped_files.append(
-                        SandboxConceptualFileImportResult(
-                            paths=[file.path for file in gcs_files],
-                            status=SandboxImportStatus.SKIPPED,
-                            error_message=(
-                                f"Skipping grouping for [{file_tag}] on [{upload_date.isoformat()}], "
-                                f"found [{len(gcs_files)}] but expected [{expected_chunk_count}] "
-                                f"paths: {[f.path.file_name for f in gcs_files]}"
-                            ),
-                        )
+                    (
+                        conceptual_files_for_file_tag,
+                        skipped_errors_for_file_tag,
+                    ) = delegate.coalesce_chunked_files(
+                        file_tag=file_tag, gcs_files=gcs_files
                     )
+
+                    conceptual_files.extend(conceptual_files_for_file_tag)
+                    if skipped_errors_for_file_tag:
+                        skipped_files.extend(
+                            [
+                                SandboxConceptualFileImportResult.from_skipped_file_error(
+                                    skipped_error=skipped_error_for_file_tag
+                                )
+                                for skipped_error_for_file_tag in skipped_errors_for_file_tag
+                            ]
+                        )
 
     return conceptual_files, skipped_files
 

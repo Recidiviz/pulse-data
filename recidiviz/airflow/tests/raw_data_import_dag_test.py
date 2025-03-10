@@ -45,6 +45,9 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
 )
 from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
+from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
+    FakeRawDataImportDelegateFactory,
+)
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failing_operator_constructor,
@@ -454,6 +457,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
 
+        self.delegate_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
+            FakeRawDataImportDelegateFactory,
+        )
+        self.delegate_patcher.start()
+
         self.fs = FakeGCSFileSystem()
         self.gcsfs_patcher = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
@@ -479,6 +488,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.cloud_sql_db_hook_patcher.stop()
         self.gcs_operator_patcher.stop()
         self.region_module_patch.stop()
+        self.delegate_patcher.stop()
         self.gcsfs_patcher.stop()
         self.region_module_patch.stop()
         self.header_reader_patcher.stop()
@@ -960,6 +970,12 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
 
         # task interaction mocks ---
 
+        self.delegate_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
+            FakeRawDataImportDelegateFactory,
+        )
+        self.delegate_patcher.start()
+
         self.fake_gcs_patch = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build"
         )
@@ -975,6 +991,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.kpo_operator_patcher.stop()
         self.file_chunking_args_patcher.stop()
         self.verify_file_chunks_patcher.stop()
+        self.delegate_patcher.stop()
         self.fake_gcs_patch.stop()
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
@@ -2496,6 +2513,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.region_module_patch:
             patcher.start()
 
+        self.delegate_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
+            FakeRawDataImportDelegateFactory,
+        )
+        self.delegate_patcher.start()
+
         # operator mocks ---
 
         self.cloud_sql_db_hook_patcher = patch(
@@ -2575,6 +2598,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
         self.dag_kick_off_patcher.stop()
+        self.delegate_patcher.stop()
         # task interactions
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
@@ -3225,6 +3249,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".us_ll_primary_import_branch\..*",
                 ],
             )
+            import_ready_files_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+                session=session,
+                key="skipped_file_errors",
+            )
+            print("booya")
+            print(import_ready_files_jsonb)
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
             # conditions for success for a single file that successfully imported:
@@ -3234,13 +3265,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ).abs_path()
             assert set(self.fs.all_paths) == {
                 GcsfsFilePath.from_absolute_path(
-                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-0.csv"
-                ),
-                GcsfsFilePath.from_absolute_path(
                     f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv"
                 ),
                 GcsfsFilePath.from_absolute_path(
                     f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-3.csv"
                 ),
             }
 
@@ -3345,13 +3376,13 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ).abs_path()
             assert set(self.fs.all_paths) == {
                 GcsfsFilePath.from_absolute_path(
-                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-0.csv"
-                ),
-                GcsfsFilePath.from_absolute_path(
                     f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1.csv"
                 ),
                 GcsfsFilePath.from_absolute_path(
                     f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-2.csv"
+                ),
+                GcsfsFilePath.from_absolute_path(
+                    f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-3.csv"
                 ),
                 GcsfsFilePath.from_absolute_path(
                     f"{storage_path}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv"

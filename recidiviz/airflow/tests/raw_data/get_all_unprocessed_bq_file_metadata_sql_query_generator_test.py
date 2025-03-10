@@ -35,6 +35,9 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_q
 from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metadata_sql_query_generator import (
     WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator,
 )
+from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
+    FakeRawDataImportDelegateFactory,
+)
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -63,6 +66,11 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             fake_regions,
         )
         self.region_module_patch.start()
+        self.delegate_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
+            FakeRawDataImportDelegateFactory,
+        )
+        self.delegate_patcher.start()
 
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
         self.generator = GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
@@ -80,6 +88,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def tearDown(self) -> None:
         self.region_module_patch.stop()
+        self.delegate_patcher.stop()
         return super().tearDown()
 
     def _validate_results(
@@ -308,21 +317,14 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         inputs = self._insert_rows_into_gcs(paths)
 
         self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
-        with self.assertLogs("raw_data", level="INFO") as logs:
-            results = self.generator.execute_postgres_query(
-                self.mock_operator, self.mock_pg_hook, self.mock_context
-            )
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
 
         # they all have the same file_id
         assert len({r[0] for r in results}) == 1
 
         self._validate_results(results, inputs)
-
-        assert len(logs.output) == 1
-        self.assertRegex(
-            logs.output[0],
-            r"INFO:raw_data:Found 3\/3 paths for tagChunkedFile on 2024-01-25 -- grouping \[.*\]",
-        )
 
     def test_wrong_number_chunks(self) -> None:
         paths = [
@@ -342,7 +344,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[2\] but expected \[3\] paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\]; Expected \[3\] chunks, but found \[2\]",
         )
 
         new_paths = [
@@ -362,7 +364,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[4\] but expected \[3\] paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\]; Expected \[3\] chunks, but found \[4\]",
         )
 
     def test_incorrect_chunk_count_subsequent_fail(self) -> None:
@@ -391,7 +393,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[2\] but expected \[3\] paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\]; Expected \[3\] chunks, but found \[2\]",
         )
         self.assertRegex(
             logs.output[1],

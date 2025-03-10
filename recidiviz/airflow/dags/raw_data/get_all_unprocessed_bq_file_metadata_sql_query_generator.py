@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A CloudSQLQueryGenerator that processes raw gcs file metadata and returns 
+"""A CloudSQLQueryGenerator that processes raw gcs file metadata and returns
 raw big query file metadata"""
 import datetime
 from collections import defaultdict
@@ -34,6 +34,9 @@ from recidiviz.airflow.dags.raw_data.utils import (
     get_direct_ingest_region_raw_config,
     logger,
     partition_as_list,
+)
+from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
+    RawDataImportDelegateFactory,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -122,6 +125,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             get_all_unprocessed_gcs_file_metadata_task_id
         )
         self._region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None
+        self._delegate = RawDataImportDelegateFactory.build(region_code=region_code)
 
     @property
     def region_raw_file_config(self) -> DirectIngestRegionRawFileConfig:
@@ -328,53 +332,19 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         if chunked_files:
 
             for file_tag, upload_date_to_gcs_files in chunked_files.items():
+                for _upload_date, gcs_files in upload_date_to_gcs_files.items():
+                    (
+                        conceptual_files_for_file_tag,
+                        skipped_errors_for_file_tag,
+                    ) = self._delegate.coalesce_chunked_files(
+                        file_tag=file_tag, gcs_files=gcs_files
+                    )
 
-                expected_chunk_count = self.region_raw_file_config.raw_file_configs[
-                    file_tag
-                ].expected_number_of_chunks
-
-                for upload_date in sorted(upload_date_to_gcs_files):
-
-                    gcs_files = upload_date_to_gcs_files[upload_date]
-
-                    if expected_chunk_count == len(
-                        upload_date_to_gcs_files[upload_date]
-                    ):
-                        logger.info(
-                            "Found %s/%s paths for %s on %s -- grouping %s",
-                            len(gcs_files),
-                            expected_chunk_count,
-                            file_tag,
-                            upload_date.isoformat(),
-                            [f.path.file_name for f in gcs_files],
-                        )
-                        conceptual_files.append(
-                            RawBigQueryFileMetadata(
-                                gcs_files=gcs_files,
-                                file_tag=file_tag,
-                                update_datetime=max(
-                                    gcs_files,
-                                    key=lambda x: x.parts.utc_upload_datetime,
-                                ).parts.utc_upload_datetime,
-                            )
-                        )
-                    else:
-                        skipped_error = RawDataFilesSkippedError(
-                            file_paths=[gcs_file.path for gcs_file in gcs_files],
-                            file_tag=file_tag,
-                            update_datetime=max(
-                                gcs_file.parts.utc_upload_datetime
-                                for gcs_file in gcs_files
-                            ),
-                            skipped_message=(
-                                f"Skipping grouping for [{file_tag}] on [{upload_date.isoformat()}], "
-                                f"found [{len(gcs_files)}] but expected [{expected_chunk_count}] "
-                                f"paths: {[f.path.file_name for f in gcs_files]}"
-                            ),
-                        )
-
-                        logger.error(skipped_error.skipped_message)
-                        skipped_files.append(skipped_error)
+                    conceptual_files.extend(conceptual_files_for_file_tag)
+                    skipped_files.extend(skipped_errors_for_file_tag)
+                    if skipped_errors_for_file_tag:
+                        for skipped_error_for_file_tag in skipped_errors_for_file_tag:
+                            logger.error(skipped_error_for_file_tag.skipped_message)
 
         return conceptual_files, skipped_files
 
