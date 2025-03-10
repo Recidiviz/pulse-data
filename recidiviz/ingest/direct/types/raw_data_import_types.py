@@ -306,6 +306,23 @@ class RawDataFilesSkippedError(BaseError):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
 
+    @classmethod
+    def from_gcs_files_and_message(
+        cls,
+        *,
+        skipped_message: str,
+        gcs_files: list["RawGCSFileMetadata"],
+        file_tag: str,
+    ) -> "RawDataFilesSkippedError":
+        return RawDataFilesSkippedError(
+            file_paths=[gcs_file.path for gcs_file in gcs_files],
+            skipped_message=skipped_message,
+            file_tag=file_tag,
+            update_datetime=max(
+                gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
+            ),
+        )
+
     def serialize(self) -> str:
         result_dict = {
             "file_paths": [path.uri() for path in self.file_paths],

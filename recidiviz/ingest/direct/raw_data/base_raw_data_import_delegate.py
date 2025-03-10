@@ -45,12 +45,9 @@ def skipped_error_for_unrecognized_file_tag_for_chunked_files(
     not a known chunked file.
     """
     return [], [
-        RawDataFilesSkippedError(
-            file_paths=[gcs_file.path for gcs_file in gcs_files],
+        RawDataFilesSkippedError.from_gcs_files_and_message(
             skipped_message=f"No known way of coalescing files for {file_tag}",
+            gcs_files=gcs_files,
             file_tag=file_tag,
-            update_datetime=max(
-                gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
-            ),
         )
     ]
