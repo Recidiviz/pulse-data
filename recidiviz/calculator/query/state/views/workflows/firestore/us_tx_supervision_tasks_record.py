@@ -78,7 +78,8 @@ def generate_query_from_config(config: Dict[str, str]) -> str:
                 reason_v2 AS details
             )) AS task,
         FROM `{{project_id}}.task_eligibility_criteria_us_tx.{config['table']}`
-        WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-09-09')
+        WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND COALESCE(end_date, '9999-09-09')
+            AND COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
             AND state_code = "US_TX"
             AND NOT meets_criteria
     """
