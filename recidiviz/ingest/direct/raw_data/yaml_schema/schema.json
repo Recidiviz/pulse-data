@@ -255,10 +255,6 @@
       "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
       "type": "boolean"
     },
-    "expected_number_of_chunks": {
-      "description": "The number of distinct files (chunks) we expect to compose this file tag in each file transer",
-      "type": "integer"
-    },
     "import_blocking_validation_exemptions": {
       "description": "A list of dictionaries representing import-blocking validation types that should be exempted for this table.",
       "type": "array",

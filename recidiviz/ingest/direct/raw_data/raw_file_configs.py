@@ -674,13 +674,6 @@ class DirectIngestRawFileConfig:
     # file id in the operations database.
     is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
 
-    # TODO(#30138) make the mechanism of knowing when we have all file chunks less brittle
-    # The number of distinct csv files we expect the state to send us for this file tag
-    # in every dump.
-    expected_number_of_chunks: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
     # Can include table-level validation exemptions and/or column-level exemptions to apply
     # to all relevant columns in this table.
     # Values are applied in addition to any default_import_blocking_validation_exemptions
@@ -751,18 +744,6 @@ class DirectIngestRawFileConfig:
             raise ValueError(
                 f"Table marked as primary person table, but no primary external ID"
                 f" column was specified for file [{self.file_tag}]"
-            )
-
-        if not self.is_chunked_file and self.expected_number_of_chunks:
-            raise ValueError(
-                f"Raw data config not marked as is_chunked_file should not have "
-                f"an expected number of chunks: [{self.expected_number_of_chunks}]"
-            )
-
-        if self.is_chunked_file and not self.expected_number_of_chunks:
-            raise ValueError(
-                "Raw data config marked as is_chunked_file must have an expected "
-                "number of chunks"
             )
 
     @property
@@ -1208,9 +1189,6 @@ class DirectIngestRawFileConfig:
         is_chunked_file = (
             file_config_dict.pop_optional("is_chunked_file", bool) or False
         )
-        expected_number_of_chunks = (
-            file_config_dict.pop_optional("expected_number_of_chunks", int) or None
-        )
 
         if len(file_config_dict) > 0:
             raise ValueError(
@@ -1264,7 +1242,6 @@ class DirectIngestRawFileConfig:
             is_primary_person_table=is_primary_person_table,
             is_code_file=is_code_file,
             is_chunked_file=is_chunked_file,
-            expected_number_of_chunks=expected_number_of_chunks,
             import_blocking_validation_exemptions=(
                 import_blocking_validation_exemptions
                 if import_blocking_validation_exemptions is not None

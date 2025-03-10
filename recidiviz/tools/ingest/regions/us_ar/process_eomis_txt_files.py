@@ -360,7 +360,6 @@ def _update_config_using_sheet(
         update_cadence=original_config.update_cadence,
         is_code_file=original_config.is_code_file,
         is_chunked_file=original_config.is_chunked_file,
-        expected_number_of_chunks=original_config.expected_number_of_chunks,
     )
 
 

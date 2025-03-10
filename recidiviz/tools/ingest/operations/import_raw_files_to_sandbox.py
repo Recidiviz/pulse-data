@@ -427,9 +427,8 @@ def parse_arguments() -> argparse.Namespace:
         "--allow-incomplete-chunked-files",
         help=(
             "Allows incomplete chunked files, meaning that we don't enforce that the "
-            "expected_number_of_chunks specified for in chunked file's config matches"
-            "the number of chunks for each day when grouping files marked is_chunked_file "
-            "in the raw file config."
+            "the RawDataImportDelegate.coalesce_chunked_files logic for each day when "
+            "grouping files marked as is_chunked_fil=True in the raw file config."
         ),
         action="store_true",
     )
@@ -445,9 +444,11 @@ if __name__ == "__main__":
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
-            infra_type=SandboxImportInfraType(known_args.infra_type)
-            if known_args.infra_type
-            else None,
+            infra_type=(
+                SandboxImportInfraType(known_args.infra_type)
+                if known_args.infra_type
+                else None
+            ),
             infer_schema_from_csv=known_args.infer_schema_from_csv,
             skip_blocking_validations=known_args.skip_blocking_validations,
             skip_raw_data_migrations=known_args.skip_raw_data_migrations,

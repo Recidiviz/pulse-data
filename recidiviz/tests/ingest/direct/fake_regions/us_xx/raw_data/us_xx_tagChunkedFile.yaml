@@ -12,4 +12,3 @@ columns:
   - name: update_date
 ignore_quotes: True
 is_chunked_file: True
-expected_number_of_chunks: 3

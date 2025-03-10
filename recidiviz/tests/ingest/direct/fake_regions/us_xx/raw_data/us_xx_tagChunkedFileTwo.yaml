@@ -11,4 +11,3 @@ columns:
   - name: termination_code
   - name: update_date
 is_chunked_file: True
-expected_number_of_chunks: 4

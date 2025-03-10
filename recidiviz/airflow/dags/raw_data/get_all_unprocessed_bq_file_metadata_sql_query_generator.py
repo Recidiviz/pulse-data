@@ -327,6 +327,9 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                 )
             )
 
+        # TODO(#30138) make the mechanism of knowing when we have all file chunks less brittle
+        # (i.e. if two files are split between two days 11:59 and 12:01 we won't group
+        # them properly).
         # --- if relevant, determine if chunked file groups are complete ---------------
 
         if chunked_files:

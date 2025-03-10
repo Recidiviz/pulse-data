@@ -1765,7 +1765,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         )
         self.assertFalse(simple_file_config.is_code_file)
         self.assertFalse(simple_file_config.is_chunked_file)
-        self.assertIsNone(simple_file_config.expected_number_of_chunks)
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
                 default_config.default_import_blocking_validation_exemptions,
@@ -1798,7 +1797,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual(RawDataFileUpdateCadence.DAILY, file_config.update_cadence)
         self.assertTrue(file_config.is_code_file)
         self.assertTrue(file_config.is_chunked_file)
-        self.assertIsNotNone(file_config.expected_number_of_chunks)
         # import_blocking_validation_exemptions should be appended to the default_import_blocking_validation_exemptions
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
@@ -2206,20 +2204,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             custom_terminator.line_terminator
             == custom_terminator.custom_line_terminator
         )
-
-    def test_unexpected_number_of_chuks(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Raw data config not marked as is_chunked_file should not have an expected number of chunks: \[\d+\]",
-        ):
-            attr.evolve(self.sparse_config, expected_number_of_chunks=10)
-
-    def test_no_expected_number_of_chuks(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Raw data config marked as is_chunked_file must have an expected number of chunks",
-        ):
-            attr.evolve(self.sparse_config, is_chunked_file=True)
 
     def test_is_exempt_from_validation(self) -> None:
         column_name = "Col1"
