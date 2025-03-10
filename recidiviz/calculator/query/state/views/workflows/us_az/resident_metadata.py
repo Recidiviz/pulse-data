@@ -16,6 +16,7 @@
 # =============================================================================
 """Arizona resident metadata"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -25,12 +26,12 @@ US_AZ_RESIDENT_METADATA_VIEW_NAME = "us_az_resident_metadata"
 US_AZ_RESIDENT_METADATA_VIEW_DESCRIPTION = """
 Arizona resident metadata
 """
-US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
+US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     WITH all_residents AS (
         SELECT
             state_code,
             person_id,
-        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
         WHERE state_code = 'US_AZ'
         AND compartment_level_1 = 'INCARCERATION'
         AND end_date_exclusive IS NULL
@@ -41,9 +42,9 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
             state_code,
             projected_full_term_release_date_max as sed_date,
         FROM all_residents
-        LEFT JOIN `{project_id}.{us_az_normalized_state_dataset}.state_sentence_group`
+        LEFT JOIN `{{project_id}}.{{us_az_normalized_state_dataset}}.state_sentence_group`
         USING (state_code, person_id)
-        LEFT JOIN `{project_id}.{sentence_sessions_dataset}.sentence_inferred_group_projected_date_sessions_materialized`
+        LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_inferred_group_projected_date_sessions_materialized`
         USING (state_code, person_id, sentence_inferred_group_id)
         QUALIFY ROW_NUMBER()
             OVER (PARTITION BY person_id, state_code, sentence_inferred_group_id ORDER BY start_date DESC) = 1
@@ -55,6 +56,24 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
             MAX(sed_date) AS sed_date,
         FROM all_sed_dates
         GROUP BY 1, 2
+    ), projected_tpr_visible_in_tool AS (
+        SELECT
+            state_code,
+            person_id,
+        FROM
+            `{{project_id}}.task_eligibility_spans_us_az.overdue_for_recidiviz_tpr_request_materialized`
+        WHERE
+            (is_eligible OR is_almost_eligible)
+            AND CURRENT_DATE("US/Eastern") BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
+    ), projected_dtp_visible_in_tool AS (
+        SELECT
+            state_code,
+            person_id,
+        FROM
+            `{{project_id}}.task_eligibility_spans_us_az.overdue_for_recidiviz_dtp_request_materialized`
+        WHERE
+            (is_eligible OR is_almost_eligible)
+            AND CURRENT_DATE("US/Eastern") BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
     )
 
     SELECT
@@ -65,12 +84,26 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
         csbd_date,
         projected_csbd_date,
         acis_tpr_date,
-        projected_tpr_date,
+        IF(
+            projected_tpr_visible_in_tool.person_id IS NOT NULL
+                AND acis_tpr_date IS NULL,
+            projected_tpr_date,
+            NULL
+        ) AS projected_tpr_date,
         acis_dtp_date,
-        projected_dtp_date,
+        IF(
+            projected_dtp_visible_in_tool.person_id IS NOT NULL
+                AND acis_dtp_date IS NULL,
+            projected_dtp_date,
+            NULL
+        ) AS projected_dtp_date,
         csed_date,
     FROM sed_dates
-    LEFT JOIN `{project_id}.{analyst_data_dataset}.us_az_projected_dates_materialized`
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_az_projected_dates_materialized`
+    USING (state_code, person_id)
+    LEFT JOIN projected_tpr_visible_in_tool
+    USING (state_code, person_id)
+    LEFT JOIN projected_dtp_visible_in_tool
     USING (state_code, person_id)
     WHERE end_date IS NULL
     """
