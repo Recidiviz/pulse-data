@@ -66,6 +66,17 @@ class LookMLView:
             fields=fields,
         )
 
+    @classmethod
+    def for_derived_table(
+        cls, view_name: str, derived_table_query: str, fields: List[LookMLViewField]
+    ) -> "LookMLView":
+        """Create a LookMLView object for a derived table"""
+        return cls(
+            view_name=view_name,
+            table=LookMLViewSourceTable.derived_table(derived_table_query),
+            fields=fields,
+        )
+
     @property
     def _field_name_list(self) -> List[str]:
         """Return a list of field names in this view, including all dimensions created by dimension groups"""

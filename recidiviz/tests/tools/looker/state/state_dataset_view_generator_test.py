@@ -74,11 +74,20 @@ class StateViewGenerator(unittest.TestCase):
         return_value=(fake_entities.FakeAnotherEntity, fake_entities.FakeEntity),
     )
     @patch(
+        "recidiviz.tools.looker.state.state_dataset_view_generator._get_custom_views",
+        return_value=[],
+    )
+    @patch(
         "recidiviz.tools.looker.state.state_dataset_view_generator.StateEntityLookMLCustomFieldProvider",
         spec=StateEntityLookMLCustomFieldProvider,
     )
     def test_generate_lookml_views(
-        self, mock_field_provider: MagicMock, _: MagicMock, _1: MagicMock, _2: MagicMock
+        self,
+        mock_field_provider: MagicMock,
+        _: MagicMock,
+        _1: MagicMock,
+        _2: MagicMock,
+        _3: MagicMock,
     ) -> None:
         mock_field_provider.return_value.get.return_value = [
             EntityLookMLFieldFactory.count_measure()

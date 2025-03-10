@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A script for generating one LookML view for each state schema table"""
-from typing import List
-
 from google.cloud import bigquery
 
 from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
@@ -35,6 +33,9 @@ from recidiviz.tools.looker.entity.entity_field_builders import (
     EntityLookMLFieldBuilder,
     LookMLFieldBuilder,
 )
+from recidiviz.tools.looker.state.custom_views.person_periods import (
+    PersonPeriodsLookMLViewBuilder,
+)
 from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
     BigQuerySchemaValidator,
     StateEntityLookMLCustomFieldProvider,
@@ -43,18 +44,21 @@ from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
 ENTITIES_MODULE = state_entities
 
 
-def generate_state_views() -> List[LookMLView]:
+def _get_custom_views(
+    schema_map: dict[str, list[bigquery.SchemaField]]
+) -> list[LookMLView]:
+    return [PersonPeriodsLookMLViewBuilder.from_schema(schema_map).build()]
+
+
+def generate_state_views() -> list[LookMLView]:
     """Generates LookML views for all state entities and association tables."""
-    # TODO(#23292): Either auto-generate or don't delete the person_periods view
-    # TODO(#23292): Add `actions` dimension to state_person view
-    # TODO(#23292): Custom formatting for open (null end date) supervision / incarceration periods
     schema_map = get_bq_schema_for_entities_module(ENTITIES_MODULE)
     field_provider = StateEntityLookMLCustomFieldProvider(
         field_validator=BigQuerySchemaValidator(schema_map)
     )
 
     def build_lookml_view(
-        table_id: str, schema_fields: List[bigquery.SchemaField]
+        table_id: str, schema_fields: list[bigquery.SchemaField]
     ) -> LookMLView:
         """Constructs a LookML view for a given table."""
         if is_association_table(table_id):
@@ -82,7 +86,9 @@ def generate_state_views() -> List[LookMLView]:
             fields=builder.build_view_fields(),
         )
 
-    return [
+    views_derived_from_schema = [
         build_lookml_view(table_id, schema_fields)
         for table_id, schema_fields in schema_map.items()
     ]
+
+    return views_derived_from_schema + _get_custom_views(schema_map)

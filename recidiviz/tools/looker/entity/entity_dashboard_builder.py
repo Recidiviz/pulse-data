@@ -111,9 +111,16 @@ class EntityLookMLDashboardBuilder:
             if is_association_table(table_name=view.view_name):
                 continue
 
-            entity_cls = get_entity_class_in_module_with_table_id(
-                self.module_context.entities_module(), table_id=view.view_name
-            )
+            try:
+                entity_cls = get_entity_class_in_module_with_table_id(
+                    self.module_context.entities_module(), table_id=view.view_name
+                )
+            except LookupError:
+                # If the view does not correspond to an entity class, it is a custom view
+                # so skip it and it can be added to the dashboard as a custom element if need be
+                # TODO(#23292): check view is one of the known custom views
+                continue
+
             # TODO(#23292): aggregate EnumEntity type tables as lists on the parent entity
             if get_root_entity_class_for_entity(
                 entity_cls

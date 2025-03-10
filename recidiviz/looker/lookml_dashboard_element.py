@@ -265,6 +265,7 @@ class LookMLDashboardElement:
             if field_name not in view_name_to_field_names[view]:
                 raise ValueError(
                     f"Field [{field_name}] is not defined in view [{view}]."
+                    f" Valid fields: [{view_name_to_field_names[view]}]"
                 )
 
     @property
