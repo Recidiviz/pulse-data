@@ -34,8 +34,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, TypedDict
 
-import airflow
 import dateutil.parser
+import pendulum
 from airflow import settings
 from airflow.models import (
     DAG,
@@ -51,6 +51,7 @@ from airflow.models import (
 from airflow.operators.python import PythonOperator
 from airflow.utils import timezone
 from airflow.version import version as airflow_version
+from pendulum import DateTime
 from sqlalchemy import Column, desc, sql, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Query, Session
@@ -65,7 +66,7 @@ now = timezone.utcnow
 
 # airflow-db-cleanup
 DAG_ID = get_metadata_maintenance_dag_id(get_project_id())
-START_DATE = airflow.utils.dates.days_ago(1)
+START_DATE = pendulum.today("UTC").add(days=-1)  # type: DateTime
 # How often to Run. @daily - Once a day at Midnight (UTC)
 SCHEDULE_INTERVAL = "@daily"
 # Who is listed as the owner of this DAG in the Airflow Web Server
@@ -249,7 +250,7 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    schedule_interval=SCHEDULE_INTERVAL,
+    schedule=SCHEDULE_INTERVAL,
     start_date=START_DATE,
     render_template_as_native_obj=True,
 )
@@ -292,7 +293,6 @@ def print_configuration_function(**context: dict[Any, Any]) -> None:
 print_configuration = PythonOperator(
     task_id="print_configuration",
     python_callable=print_configuration_function,
-    provide_context=True,
     dag=dag,
 )
 
@@ -367,7 +367,7 @@ def print_query(query: Query, airflow_db_model: Base, age_check_column: Column) 
     )
 
 
-def cleanup_function(**context: dict[Any, Any]) -> None:
+def cleanup_function(**context: dict[Any, Any | ParamsType]) -> None:
     """Performs the deletion"""
     session = settings.Session()
 
@@ -378,9 +378,8 @@ def cleanup_function(**context: dict[Any, Any]) -> None:
     )
     max_date = dateutil.parser.parse(max_date)  # stored as iso8601 str in xcom
 
-    params = assert_type(context["params"], ParamsType)
+    params: ParamsType = context["params"]  # type: ignore
     airflow_db_model = assert_type(params.get("airflow_db_model"), Base)
-    state = params.get("state")
     age_check_column = params.get("age_check_column")
     keep_last = params.get("keep_last")
     keep_last_filters = params.get("keep_last_filters")
@@ -391,7 +390,6 @@ def cleanup_function(**context: dict[Any, Any]) -> None:
     logging.info("enable_delete:            %s", str(ENABLE_DELETE))
     logging.info("session:                  %s", str(session))
     logging.info("airflow_db_model:         %s", str(airflow_db_model))
-    logging.info("state:                    %s", str(state))
     logging.info("age_check_column:         %s", str(age_check_column))
     logging.info("keep_last:                %s", str(keep_last))
     logging.info("keep_last_filters:        %s", str(keep_last_filters))
@@ -464,8 +462,7 @@ def cleanup_sessions() -> None:
     try:
         logging.info("Deleting sessions...")
         count_statement = (
-            "SELECT COUNT(*) AS cnt FROM session "
-            + "WHERE expiry < now()::timestamp(0);"
+            "SELECT COUNT(*) AS cnt FROM session WHERE expiry < now()::timestamp(0);"
         )
         before = session.execute(text(count_statement)).one_or_none()["cnt"]
         session.execute(text("DELETE FROM session WHERE expiry < now()::timestamp(0);"))
@@ -486,13 +483,12 @@ def analyze_db() -> None:
 
 
 analyze_op = PythonOperator(
-    task_id="analyze_query", python_callable=analyze_db, provide_context=True, dag=dag
+    task_id="analyze_query", python_callable=analyze_db, dag=dag
 )
 
 cleanup_session_op = PythonOperator(
     task_id="cleanup_sessions",
     python_callable=cleanup_sessions,
-    provide_context=True,
     dag=dag,
 )
 
@@ -503,7 +499,6 @@ for db_object in DATABASE_OBJECTS:
         task_id="cleanup_" + str(db_object["airflow_db_model"].__name__),
         python_callable=cleanup_function,
         params=db_object,
-        provide_context=True,
         dag=dag,
     )
 
