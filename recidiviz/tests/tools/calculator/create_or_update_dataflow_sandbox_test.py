@@ -69,7 +69,6 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 region_code, region_module_override=fake_regions_module
             )
         )
-        # TODO(#36168) Remove this once we have a better way to handle row access policy queries in the emulator
         self.bq_client_patcher = patch(
             f"{create_or_update_dataflow_sandbox_module.__name__}.BigQueryClientImpl",
             return_value=self.bq_client,
