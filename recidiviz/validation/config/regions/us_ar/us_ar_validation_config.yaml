@@ -4,7 +4,7 @@ region_code: US_AR
 exclusions: []
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
-  - validation_name: location_metadata_missing_locations
+  - validation_name: location_metadata_missing_staff_location_period_locations
     hard_num_allowed_rows_override: 10
     override_reason:
       AR location metadata pulls locations from the ORGANIZATIONPROF table, but doesn't

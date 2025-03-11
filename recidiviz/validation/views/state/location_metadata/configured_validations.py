@@ -34,8 +34,11 @@ from recidiviz.validation.views.state.location_metadata.location_metadata_invali
 from recidiviz.validation.views.state.location_metadata.location_metadata_invalid_metadata_key import (
     LOCATION_METADATA_INVALID_METADATA_KEY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.location_metadata.location_metadata_missing_locations import (
-    LOCATION_METADATA_MISSING_LOCATIONS_VIEW_BUILDER,
+from recidiviz.validation.views.state.location_metadata.location_metadata_missing_person_staff_relationship_period_locations import (
+    LOCATION_METADATA_MISSING_PERSON_STAFF_RELATIONSHIP_PERIOD_LOCATIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.location_metadata.location_metadata_missing_staff_location_period_locations import (
+    LOCATION_METADATA_MISSING_STAFF_LOCATION_PERIOD_LOCATIONS_VIEW_BUILDER,
 )
 
 
@@ -61,7 +64,11 @@ def get_all_location_metadata_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=LOCATION_METADATA_MISSING_LOCATIONS_VIEW_BUILDER,
+            view_builder=LOCATION_METADATA_MISSING_STAFF_LOCATION_PERIOD_LOCATIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=LOCATION_METADATA_MISSING_PERSON_STAFF_RELATIONSHIP_PERIOD_LOCATIONS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]
