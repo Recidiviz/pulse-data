@@ -7,6 +7,12 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#28864) Hydrate new sentencing entities
 max_allowed_error_overrides:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
+    hard_max_allowed_error_override: 0.035
+    override_reason: >-
+      Likely won't get to this super soon, but would like the validation to fail again
+      if this increases. Actually fixing the underlying issue being tracked here
+      TODO(#39347)
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: 0.45
     override_reason: >-
@@ -44,8 +50,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 1.00
     override_reason: >-
       P2 I think this is may be a simple mapping error with what we consider districts
-      internally and externally. More details here:
-      https://docs.google.com/document/d/1z3SSsvStnGZyOLE3ZUR4v2CCAuqseH03Y4AiWoa34FY/edit#bookmark=id.9cmtjvmc91wg.
+      internally and externally.
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.3
     override_reason: >-
