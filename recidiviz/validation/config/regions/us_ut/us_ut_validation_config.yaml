@@ -12,6 +12,25 @@ exclusions:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: UT is being hydrated only with v2 sentences
+    # TODO(#37991) Remove all stable counts exclusions once UT transfers are automated.
+  - validation_name: state_supervision_violation_by_violation_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
+  - validation_name: state_supervision_violation_response_by_response_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
+  - validation_name: state_supervision_period_by_termination_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
+  - validation_name: state_incarceration_period_by_admission_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods

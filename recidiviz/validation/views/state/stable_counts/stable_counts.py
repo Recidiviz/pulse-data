@@ -62,13 +62,6 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_OR: [
                         date(2023, 1, 1),
                     ],  # Expect some level of fluctuation for new year
-                    StateCode.US_UT: [
-                        # TODO(#37991) Remove this once UT sends data for after
-                        # 2024-09-01.
-                        date(2024, 9, 1),
-                        date(2024, 10, 1),
-                        date(2024, 11, 1),
-                    ],
                 },
             )
         ]
@@ -358,13 +351,6 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_IX: [
                         # The number of violation responses had increased higher in 10/2024, and 11/2024 is slightly lower than usual but not abnormally low
                         # and only triggered this validation because 10/2024 was abnormally high.
-                        date(2024, 11, 1),
-                    ],
-                    StateCode.US_UT: [
-                        # TODO(#37991) Remove this once UT sends data for after
-                        # 2024-09-01.
-                        date(2024, 9, 1),
-                        date(2024, 10, 1),
                         date(2024, 11, 1),
                     ],
                 },
