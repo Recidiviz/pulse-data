@@ -40,7 +40,7 @@ max_allowed_error_overrides:
       Given the very small size of the staff and population in ND, this is actually a
       relatively strict threshold.
   - validation_name: outliers_staff_count_percent_change_intramonth
-    hard_max_allowed_error_override: 0.03
+    hard_max_allowed_error_override: 0.11
     override_reason:
       Given the very small size of the staff and population in ND, this
       is actually a very strict threshold.

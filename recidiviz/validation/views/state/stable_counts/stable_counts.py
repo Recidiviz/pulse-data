@@ -62,6 +62,12 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_OR: [
                         date(2023, 1, 1),
                     ],  # Expect some level of fluctuation for new year
+                    StateCode.US_ND: [
+                        # The stable number of violations per month is low enough in ND that
+                        # a short month with a long weekend is enough to cause this validation
+                        # to fail. Exclude February 2025.
+                        date(2025, 2, 1),
+                    ],
                 },
             )
         ]
