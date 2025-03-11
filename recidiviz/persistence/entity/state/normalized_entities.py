@@ -123,6 +123,7 @@ from recidiviz.common.constants.state.state_supervision_violated_condition impor
     StateSupervisionViolatedConditionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationSeverity,
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
@@ -2562,6 +2563,13 @@ class NormalizedStateSupervisionViolation(NormalizedStateEntity, HasExternalIdEn
         default=None, validator=attr_validators.is_opt_bool
     )
     violation_metadata: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    violation_severity: StateSupervisionViolationSeverity | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateSupervisionViolationSeverity),
+    )
+    violation_severity_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

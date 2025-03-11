@@ -200,7 +200,7 @@ _STATE_INCARCERATION_INCIDENT_SEVERITY_VALUE_DESCRIPTIONS: Dict[
     StateIncarcerationIncidentSeverity.SIXTH_HIGHEST: "Sixth highest incident severity level."
     "Incidents with the sixth highest severity level should always be mapped to this value,"
     "regardless of the state's naming / numbering scheme for incident severity.",
-    StateIncarcerationIncidentSeverity.SEVENTH_HIGHEST: "Sevent highest incident severity level."
+    StateIncarcerationIncidentSeverity.SEVENTH_HIGHEST: "Seventh highest incident severity level."
     "Incidents with the seventh highest severity level should always be mapped to this value,"
     "regardless of the state's naming / numbering scheme for incident severity.",
 }

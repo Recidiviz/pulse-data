@@ -110,7 +110,7 @@ class TestStateSchema(unittest.TestCase):
 
             if missing_columns := bq_column_names - sqlalchemy_column_names:
                 raise ValueError(
-                    f"Table [{table_id}] has missing these columns from the "
+                    f"Table [{table_id}] is missing these columns from the "
                     f"state/schema.py definition: {missing_columns}"
                 )
 
@@ -177,6 +177,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violated_condition_type": state_supervision_violated_condition.StateSupervisionViolatedConditionType,
             "state_supervision_contact_method": state_supervision_contact.StateSupervisionContactMethod,
             "state_supervision_violation_type": state_supervision_violation.StateSupervisionViolationType,
+            "state_supervision_violation_severity": state_supervision_violation.StateSupervisionViolationSeverity,
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,

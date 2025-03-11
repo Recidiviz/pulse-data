@@ -95,3 +95,63 @@ _STATE_SUPERVISION_VIOLATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "itself a criminal offense. Used when there is failure to comply with a "
     "condition of supervision.",
 }
+
+
+@unique
+class StateSupervisionViolationSeverity(StateEntityEnum):
+    """Possible State Supervision Violation Severity Levels"""
+
+    HIGHEST = state_enum_strings.state_supervision_violation_severity_highest
+    SECOND_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_second_highest
+    )
+    THIRD_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_third_highest
+    )
+    FOURTH_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_fourth_highest
+    )
+    FIFTH_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_fifth_highest
+    )
+    SIXTH_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_sixth_highest
+    )
+    SEVENTH_HIGHEST = (
+        state_enum_strings.state_supervision_violation_severity_seventh_highest
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "An enum indicating the severity of an incident."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SUPERVISION_VIOLATION_SEVERITY_VALUE_DESCRIPTIONS
+
+
+_STATE_SUPERVISION_VIOLATION_SEVERITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSupervisionViolationSeverity.HIGHEST: "Highest violation severity level."
+    "violations with the highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.SECOND_HIGHEST: "Second highest violation severity level."
+    "violations with the second highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.THIRD_HIGHEST: "Third highest violation severity level."
+    "violations with the third highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.FOURTH_HIGHEST: "Fourth highest violation severity level."
+    "violations with the fourth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.FIFTH_HIGHEST: "Fifth highest violation severity level."
+    "violations with the fifth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.SIXTH_HIGHEST: "Sixth highest violation severity level."
+    "violations with the sixth highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+    StateSupervisionViolationSeverity.SEVENTH_HIGHEST: "Seventh highest violation severity level."
+    "violations with the seventh highest severity level should always be mapped to this value,"
+    "regardless of the state's naming / numbering scheme for violation severity.",
+}

@@ -678,6 +678,8 @@ state_supervision_violation:
       Arbitrary JSON-formatted metadata relevant to a fine understanding
       of a particular violation. It can be provided in any format, but will be transformed
       into JSON prior to persistence.
+    violation_severity: The severity of the violation.
+    violation_severity_raw_text: The raw text value of the violation severity.
 
 state_supervision_violation_response:
   fields:

@@ -481,6 +481,15 @@ state_supervision_violation_type_misdemeanor = "MISDEMEANOR"
 state_supervision_violation_type_municipal = "MUNICIPAL"
 state_supervision_violation_type_technical = "TECHNICAL"
 
+state_supervision_violation_severity_highest = "HIGHEST"
+state_supervision_violation_severity_second_highest = "SECOND_HIGHEST"
+state_supervision_violation_severity_third_highest = "THIRD_HIGHEST"
+state_supervision_violation_severity_fourth_highest = "FOURTH_HIGHEST"
+state_supervision_violation_severity_fifth_highest = "FIFTH_HIGHEST"
+state_supervision_violation_severity_sixth_highest = "SIXTH_HIGHEST"
+state_supervision_violation_severity_seventh_highest = "SEVENTH_HIGHEST"
+
+
 # state_supervision_violated_condition.py
 state_supervision_violated_condition_type_employment = "EMPLOYMENT"
 state_supervision_violated_condition_type_failure_to_notify = "FAILURE_TO_NOTIFY"

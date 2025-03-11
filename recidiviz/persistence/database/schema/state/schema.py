@@ -542,6 +542,20 @@ state_supervision_violation_type = Enum(
     name="state_supervision_violation_type",
 )
 
+state_supervision_violation_severity = Enum(
+    state_enum_strings.state_supervision_violation_severity_highest,
+    state_enum_strings.state_supervision_violation_severity_second_highest,
+    state_enum_strings.state_supervision_violation_severity_third_highest,
+    state_enum_strings.state_supervision_violation_severity_fourth_highest,
+    state_enum_strings.state_supervision_violation_severity_fifth_highest,
+    state_enum_strings.state_supervision_violation_severity_sixth_highest,
+    state_enum_strings.state_supervision_violation_severity_seventh_highest,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_supervision_violation_severity",
+)
+
+
 state_supervision_violated_condition_type = Enum(
     state_enum_strings.state_supervision_violated_condition_type_employment,
     state_enum_strings.state_supervision_violated_condition_type_failure_to_notify,
@@ -1469,6 +1483,8 @@ class StateSupervisionViolationTypeEntry(
     state_code = Column(String(255), nullable=False, index=True)
     violation_type = Column(state_supervision_violation_type, nullable=False)
     violation_type_raw_text = Column(String(255))
+    violation_type = Column(state_supervision_violation_type, nullable=False)
+    violation_type_raw_text = Column(String(255))
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
@@ -1533,6 +1549,8 @@ class StateSupervisionViolation(StateBase, _ReferencesStatePersonSharedColumns):
     is_violent = Column(Boolean)
     is_sex_offense = Column(Boolean)
     violation_metadata = Column(Text)
+    violation_severity = Column(state_supervision_violation_severity)
+    violation_severity_raw_text = Column(String(255))
 
     supervision_violation_types = relationship(
         "StateSupervisionViolationTypeEntry",

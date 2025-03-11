@@ -272,7 +272,7 @@ class TestNormalizedViolationResponsesFromProcessedVersions(unittest.TestCase):
 
         expected_normalized_supervision_violation = NormalizedStateSupervisionViolation(
             external_id="sv1",
-            supervision_violation_id=9065654955711543502,
+            supervision_violation_id=9059634249231648050,
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry(
