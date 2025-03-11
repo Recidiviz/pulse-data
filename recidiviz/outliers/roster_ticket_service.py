@@ -16,7 +16,6 @@
 # =============================================================================
 """Roster Ticket Service that handles ticket requests between Insights and Intercom"""
 
-from enum import Enum
 from functools import cached_property
 from typing import Callable, Iterable, List, TypeVar
 
@@ -26,7 +25,12 @@ from more_itertools import flatten
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import IntercomTicket, OutliersProductConfiguration
+from recidiviz.outliers.types import (
+    IntercomTicket,
+    IntercomTicketResponse,
+    OutliersProductConfiguration,
+    RosterChangeType,
+)
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerSupervisor,
@@ -35,10 +39,6 @@ from recidiviz.utils.secrets import get_secret
 
 REPORT_INCORRECT_ROSTER_TICKET_TYPE = 1
 T = TypeVar("T")
-# Consider moving when there's a request schema built for the endpoint
-class RosterChangeType(str, Enum):
-    ADD = "ADD"
-    REMOVE = "REMOVE"
 
 
 @attrs.define
@@ -68,7 +68,7 @@ class IntercomAPIClient:
     )
     def create_ticket(
         self, title: str, description: str, requester_email: str
-    ) -> IntercomTicket:
+    ) -> IntercomTicketResponse:
         url = f"{self._BASE_URL}/tickets"
         ticket_payload = IntercomTicket(
             REPORT_INCORRECT_ROSTER_TICKET_TYPE,
@@ -79,7 +79,7 @@ class IntercomAPIClient:
 
         response = self._session.post(url, json=ticket_payload, timeout=10.0)
         response.raise_for_status()
-        return IntercomTicket.from_intercom_dict(response.json())
+        return IntercomTicketResponse.from_intercom_dict(response.json())
 
 
 @attrs.define(kw_only=True)
@@ -90,7 +90,7 @@ class RosterTicketService:
     intercom_api_client: IntercomAPIClient = IntercomAPIClient()
 
     @cached_property
-    def _querier_product_config(self) -> OutliersProductConfiguration:
+    def _get_querier_product_config(self) -> OutliersProductConfiguration:
         return self.querier.get_product_configuration()
 
     def _fetch_entities(
@@ -130,7 +130,7 @@ class RosterTicketService:
         def format_supervisor_into_bullet_point(s: SupervisionOfficerSupervisor) -> str:
             return f"- {s.full_name}\n"
 
-        product_config = self._querier_product_config
+        product_config = self._get_querier_product_config
         action = "added to" if change_type == RosterChangeType.ADD else "removed from"
 
         return (
@@ -153,9 +153,9 @@ class RosterTicketService:
         target_supervisor_id: str,
         officer_ids: List[str],
         note: str,
-    ) -> IntercomTicket:
+    ) -> IntercomTicketResponse:
         """Creates a roster change request ticket."""
-        officer_label = self._querier_product_config.supervision_officer_label
+        officer_label = self._get_querier_product_config.supervision_officer_label
         officers = self._fetch_entities(
             officer_ids,
             self.querier.get_supervision_officers_by_external_ids,
@@ -165,7 +165,7 @@ class RosterTicketService:
         supervisor_ids = {target_supervisor_id} | set(
             flatten(o.supervisor_external_ids for o in officers)
         )
-        supervisor_label = self._querier_product_config.supervision_supervisor_label
+        supervisor_label = self._get_querier_product_config.supervision_supervisor_label
         supervisors = self._fetch_entities(
             supervisor_ids,
             self.querier.get_supervision_officer_supervisors_by_external_ids,

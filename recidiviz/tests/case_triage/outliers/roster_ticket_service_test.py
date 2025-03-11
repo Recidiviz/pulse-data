@@ -26,10 +26,10 @@ import requests
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.roster_ticket_service import (
     IntercomAPIClient,
-    IntercomTicket,
     RosterChangeType,
     RosterTicketService,
 )
+from recidiviz.outliers.types import IntercomTicketResponse
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerSupervisor,
@@ -123,6 +123,7 @@ def test_create_ticket(
     Ensures the correct payload is sent and response is parsed properly.
     """
     mock_response_data = {
+        "id": 1,
         "ticket_type_id": 1,
         "contacts": [{"email": email}],
         "ticket_attributes": {
@@ -136,11 +137,9 @@ def test_create_ticket(
     result_ticket = intercom_api_client.create_ticket(title, description, email)
 
     # Assert
-    assert isinstance(result_ticket, IntercomTicket)
-    assert result_ticket.ticket_type_id == 1
+    assert isinstance(result_ticket, IntercomTicketResponse)
+    assert result_ticket.id == 1
     assert result_ticket.email == email
-    assert result_ticket.default_title == title
-    assert result_ticket.default_description == description
 
     # Verify the POST call
     intercom_api_client._session.post.assert_called_once()  # type: ignore # pylint: disable=protected-access
@@ -305,6 +304,7 @@ def test_request_roster_change(
     test_supervisor_id = mock_entities["supervisors"][0].external_id
 
     api_response = {
+        "id": 1,
         "ticket_type_id": 1,
         "contacts": [{"email": "requester@example.com"}],
         "ticket_attributes": {
@@ -329,8 +329,8 @@ def test_request_roster_change(
     )
 
     # validate
-    assert isinstance(result, IntercomTicket)
-    assert result == IntercomTicket.from_intercom_dict(api_response)
+    assert isinstance(result, IntercomTicketResponse)
+    assert result == IntercomTicketResponse.from_intercom_dict(api_response)
 
 
 @pytest.mark.parametrize(

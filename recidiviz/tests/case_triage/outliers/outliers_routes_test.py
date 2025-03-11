@@ -18,7 +18,7 @@
 import os
 from datetime import date, datetime
 from http import HTTPStatus
-from typing import Callable, Optional
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from unittest import mock
 from unittest.mock import MagicMock, call, patch
 
@@ -46,6 +46,7 @@ from recidiviz.outliers.types import (
     ActionStrategyType,
     CaseloadCategory,
     ExcludedSupervisionOfficerEntity,
+    IntercomTicketResponse,
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersProductConfiguration,
@@ -5072,3 +5073,199 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_active_feature_variants"
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_supervisor_entities",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states"
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.RosterTicketService.request_roster_change"
+    )
+    def test_submit_roster_change_request(
+        self,
+        mock_request_roster_change: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisors: MagicMock,
+        mock_get_fv: MagicMock,
+    ) -> None:
+        """Test multiple scenarios for submit_roster_change_request using subTest."""
+
+        TEST_CASES: List[
+            Tuple[
+                str,  # Description of the request
+                str,  # external id
+                bool,  # can access all supervisors
+                str,  # pseudo id for target supervisor
+                Dict[str, Union[bool, Dict]],  # Feature variant
+                Optional[Dict[str, Union[List, str]]],  # request schema
+                HTTPStatus,  # expected response
+            ]
+        ] = [
+            (
+                "Valid request from supervisor with all supervisor access",
+                "101",  # external id
+                True,  # can access all supervisors
+                "hash1",  # pseudo id for target supervisor
+                {"reportIncorrectRosters": True},  # feature variant
+                {  # request schema
+                    "requester_name": "Name1",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_change_type": "ADD",
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.OK,  # expected response
+            ),
+            (
+                "Valid request from supervisor",
+                "101",
+                False,
+                "hash1",
+                {"reportIncorrectRosters": {}},
+                {
+                    "requester_name": "Name2",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_change_type": "ADD",
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.OK,
+            ),
+            (
+                "Unauthorized user",
+                "random_user",
+                False,
+                "hash1",
+                {"reportIncorrectRosters": {}},
+                {
+                    "requester_name": "Name3",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_change_type": "ADD",
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.UNAUTHORIZED,
+            ),
+            (
+                "Unauthorized user without feature variant",
+                "101",  # real user
+                False,
+                "hash1",
+                {},  # feature variant
+                {
+                    "requester_name": "Name4",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_change_type": "ADD",
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.UNAUTHORIZED,
+            ),
+            (
+                "Missing request body",
+                "101",
+                True,
+                "hash1",
+                {"reportIncorrectRosters": {}},
+                None,  # missing body
+                HTTPStatus.BAD_REQUEST,
+            ),
+            (
+                "Bad request incomplete body",
+                "101",
+                False,
+                "hash1",
+                {"reportIncorrectRosters": {}},
+                {  # missing attribute
+                    "requester_name": "Name6",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.BAD_REQUEST,
+            ),
+            (
+                "Target supervisor not found",
+                "101",
+                False,
+                "badhash",  # bad pseudo id
+                {"reportIncorrectRosters": {}},
+                {
+                    "requester_name": "Name5",
+                    "affected_officers_external_ids": ["off1", "off2"],
+                    "request_change_type": "ADD",
+                    "request_note": "Adding officers",
+                },
+                HTTPStatus.NOT_FOUND,
+            ),
+        ]
+
+        for (
+            test_message,
+            user_external_id,
+            can_access_all_supervisors,
+            supervisor_pseudo_id,
+            feature_variants,
+            request_payload,
+            expected_status,
+        ) in TEST_CASES:
+
+            with SessionFactory.using_database(self.insights_database_key) as session:
+                supervisors = (
+                    session.query(SupervisionOfficerSupervisor)
+                    .filter(
+                        SupervisionOfficerSupervisor.pseudonymized_id
+                        == supervisor_pseudo_id
+                    )
+                    .all()
+                )
+
+                mock_get_supervisors.return_value = [
+                    SupervisionOfficerSupervisorEntity(
+                        full_name=PersonName(**record.full_name),
+                        external_id=record.external_id,
+                        pseudonymized_id=record.pseudonymized_id,
+                        supervision_location_for_list_page=record.supervision_location_for_list_page,
+                        supervision_location_for_supervisor_page=record.supervision_location_for_supervisor_page,
+                        email=record.email,
+                        has_outliers=True,
+                    )
+                    for record in supervisors
+                ]
+
+            mock_enabled_states.return_value = ["US_PA"]
+            mock_get_fv.return_value = feature_variants
+
+            with self.subTest(msg=test_message):
+                # Mock user authorization context
+                self.mock_authorization_handler.side_effect = self.auth_side_effect(
+                    state_code="us_pa",
+                    external_id=user_external_id,
+                    pseudonymized_id="pseudo123",
+                    can_access_all_supervisors=can_access_all_supervisors,
+                    allowed_states=["US_PA"],
+                )
+
+                request_return_value = None
+
+                if expected_status is HTTPStatus.OK:
+                    request_return_value = IntercomTicketResponse(
+                        id="1",
+                        email="mock_email",
+                    )
+
+                mock_request_roster_change.return_value = request_return_value
+
+                response = self.test_client.post(
+                    f"outliers/US_PA/supervisor/{supervisor_pseudo_id}/roster_change_request",
+                    headers={
+                        "Origin": "http://localhost:3000",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_payload,
+                )
+
+                print(test_message, response.status_code, expected_status)
+
+                self.assertEqual(response.status_code, expected_status)
+                self.snapshot.assert_match(response.json, name=test_message)  # type: ignore[attr-defined]

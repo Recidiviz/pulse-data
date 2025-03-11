@@ -3,7 +3,6 @@ Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py
 Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update    
 Remember to include a docstring like this after updating the snapshots for Pylint purposes    
 """
-
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -11,6 +10,39 @@ from __future__ import unicode_literals
 from snapshottest import Snapshot
 
 snapshots = Snapshot()
+
+snapshots["TestOutliersRoutes.TestOutliersRoutes Bad request incomplete body"] = {
+    "message": "Invalid request data: missing 1 required positional argument: 'request_change_type'"
+}
+
+snapshots["TestOutliersRoutes.TestOutliersRoutes Missing request body"] = {
+    "code": 400,
+    "description": "The browser (or proxy) sent a request that this server could not understand.",
+    "name": "Bad Request",
+}
+
+snapshots["TestOutliersRoutes.TestOutliersRoutes Target supervisor not found"] = {
+    "message": "Target supervisor with pseudonymized_id, badhash, not found."
+}
+
+snapshots["TestOutliersRoutes.TestOutliersRoutes Unauthorized user"] = {
+    "message": "User with pseudonymized_id pseudo123 cannot make roster change request."
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes Unauthorized user without feature variant"
+] = {
+    "message": "User with pseudonymized_id pseudo123 cannot make roster change request."
+}
+
+snapshots["TestOutliersRoutes.TestOutliersRoutes Valid request from supervisor"] = {
+    "email": "mock_email",
+    "id": "1",
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes Valid request from supervisor with all supervisor access"
+] = {"email": "mock_email", "id": "1"}
 
 snapshots[
     "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_officer_when_can_access_all_supervisors"

@@ -723,11 +723,15 @@ class ActionStrategySurfacedEvent:
 
 @attr.frozen
 class IntercomTicket:
-    """Represents an Intercom ticket."""
+    """Represents an Intercom ticket request schema."""
 
+    # The ID of the type of ticket you want to create
     ticket_type_id: int
+    # The email you have defined for the contact who is being added as a participant. If a contact with this email does not exist, one will be created.
     email: str
+    # Title of the ticket
     default_title: str
+    # Description for the ticket
     default_description: str
 
     def to_dict(self) -> Dict[str, Any]:
@@ -741,14 +745,45 @@ class IntercomTicket:
             },
         }
 
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.frozen
+class IntercomTicketResponse:
+    """Represents an Intercom ticket response schema."""
+
+    # The id for the created ticket
+    id: str
+    # Email for the client
+    email: str
+
     @classmethod
-    def from_intercom_dict(cls, data: Dict[str, Any]) -> "IntercomTicket":
+    def from_intercom_dict(cls, data: Dict[str, Any]) -> "IntercomTicketResponse":
         """Converts the response back to an object"""
-        ticket_attrs = data.get("ticket_attributes", {})
         contacts = data.get("contacts", [])
         return cls(
-            ticket_type_id=data.get("ticket_type_id", 1),
+            id=data.get("id", ""),
             email=contacts[0].get("email", "") if contacts else "",
-            default_title=ticket_attrs.get("_default_title_", ""),
-            default_description=ticket_attrs.get("_default_description_", ""),
         )
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+class RosterChangeType(str, Enum):
+    ADD = "ADD"
+    REMOVE = "REMOVE"
+
+
+@attr.s(auto_attribs=True)
+class RosterChangeRequestSchema:
+    """Schema that represents a request to make a roster change."""
+
+    affected_officers_external_ids: List[str]
+    request_change_type: RosterChangeType
+    request_note: str
+    requester_name: str
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)

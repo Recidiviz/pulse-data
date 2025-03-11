@@ -39,9 +39,11 @@ from recidiviz.outliers.outliers_action_strategy_qualifier import (
     OutliersActionStrategyQualifier,
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.roster_ticket_service import RosterTicketService
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     PersonName,
+    RosterChangeRequestSchema,
     SupervisionOfficerEntity,
     VitalsMetric,
 )
@@ -1167,6 +1169,70 @@ def create_outliers_api_blueprint() -> Blueprint:
                 convert_nested_dictionary_keys(metric.to_json(), snake_to_camel)
                 for metric in vitals_metrics
             ]
+        )
+
+    @api.post("/<state>/supervisor/<supervisor_pseudonymized_id>/roster_change_request")
+    def submit_roster_change_request(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+        roster_ticket_service = RosterTicketService(querier=querier)
+
+        user_context: UserContext = g.user_context
+
+        user_external_id = user_context.user_external_id
+        email_address = user_context.email_address
+        has_feature_variant = "reportIncorrectRosters" in user_context.feature_variants
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        target_supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
+            supervisor_pseudonymized_id
+        )
+
+        if target_supervisor is None:
+            return jsonify_response(
+                f"Target supervisor with pseudonymized_id, {supervisor_pseudonymized_id}, not found.",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        if (not has_feature_variant and user_external_id != "RECIDIVIZ") or (
+            not user_context.can_access_all_supervisors
+            and not querier.supervisor_exists_with_external_id(user_external_id)
+        ):
+            return jsonify_response(
+                f"User with pseudonymized_id {user_pseudonymized_id} cannot make roster change request.",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        if not request.json:
+            return jsonify_response("Missing request body.", HTTPStatus.BAD_REQUEST)
+
+        try:
+            # Validate request body against schema
+            request_data = request.get_json()
+            roster_change_request_schema = RosterChangeRequestSchema(**request_data)
+
+        except TypeError as e:
+            human_err = re.sub(r"^.*RosterChangeRequestSchema\S*\s*", "", str(e))
+            return jsonify_response(
+                f"Invalid request data: {human_err}", HTTPStatus.BAD_REQUEST
+            )
+
+        # Call the request_roster_change method
+        roster_ticket_service_response = roster_ticket_service.request_roster_change(
+            requester=roster_change_request_schema.requester_name,
+            email=email_address,
+            change_type=roster_change_request_schema.request_change_type,
+            target_supervisor_id=target_supervisor.external_id,
+            officer_ids=roster_change_request_schema.affected_officers_external_ids,
+            note=roster_change_request_schema.request_note,
+        )
+
+        return jsonify(
+            convert_nested_dictionary_keys(
+                roster_ticket_service_response.to_json(), snake_to_camel
+            )
         )
 
     return api

@@ -3,6 +3,7 @@ Snapshots for recidiviz/tests/case_triage/outliers/snapshots/snap_roster_ticket_
 Update snapshots automatically by running `pytest recidiviz/tests/admin_panel/routes/outliers_test.py --snapshot-update	
 Remember to include a docstring like this after updating the snapshots for Pylint purposes	
 """
+
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
