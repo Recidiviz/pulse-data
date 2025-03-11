@@ -15,17 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Shows spans of time during which a client has no open supervision modifiers"""
-# TODO(#39019) - create criterion for open supervision modifiers
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,11 +36,43 @@ _CRITERIA_NAME = "US_IA_NO_OPEN_SUPERVISION_MODIFIERS"
 
 _DESCRIPTION = __doc__
 
+_REASON_QUERY = f"""
+WITH modifiers AS (
+/* pull spans of time where a client has an open supervision modifier */
+    SELECT state_code,
+      person_id, 
+      DATE(SupervisionModifierStartDt) AS start_date,
+      DATE(SupervisionModifierEndDt) AS end_date,
+      False AS meets_criteria,
+      SupervisionModifier AS modifier,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.IA_DOC_Supervision_Modifiers_latest` mod
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei 
+      ON mod.OffenderCd = pei.external_id
+      AND pei.state_code = 'US_IA'
+      AND pei.id_type = 'US_IA_OFFENDERCD'
+    WHERE DATE(SupervisionModifierStartDt) IS DISTINCT FROM DATE(SupervisionModifierEndDt) -- remove 0-day spans 
+), 
+/* sub-sessionize and aggregate for cases where a client has multiple open supervision modifiers at once */
+{create_sub_sessions_with_attributes('modifiers')}
+SELECT * EXCEPT(modifier),
+    TO_JSON(STRUCT(ARRAY_AGG(DISTINCT modifier ORDER BY modifier) AS open_supervision_modifiers)) AS reason,
+    ARRAY_AGG(DISTINCT modifier ORDER BY modifier) AS open_supervision_modifiers,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5
+"""
+
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         state_code=StateCode.US_IA,
+        criteria_spans_query_template=_REASON_QUERY,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_IA,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
                 name="open_supervision_modifiers",
