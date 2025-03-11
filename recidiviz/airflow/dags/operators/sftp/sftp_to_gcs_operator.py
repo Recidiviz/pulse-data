@@ -118,7 +118,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
         )
 
         self.delegate.post_download_actions(
-            sftp_client=sftp_hook.client,
+            sftp_client=sftp_hook.get_conn(),
             remote_path=self.remote_file_path,
         )
 

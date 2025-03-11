@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Mixin class for deleting files on a remote SFTP server"""
+import logging
+
 import paramiko
 
 
@@ -40,4 +42,5 @@ class RemoteFileCleanupMixin:
                 f"environment"
             )
 
+        logging.info("Removing [%s] from remote sftp server", remote_path)
         sftp_client.remove(remote_path)

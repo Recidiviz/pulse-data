@@ -121,6 +121,6 @@ class TestSftpToGcsOperator(unittest.TestCase):
         )
         operator.execute(self.mock_context)
 
-        self.hook_mock().client.remove.assert_called_once_with(
+        self.hook_mock().get_conn().remove.assert_called_once_with(
             "outside_folder/inside-folder-with-dash/file-with-dash.txt"
         )
