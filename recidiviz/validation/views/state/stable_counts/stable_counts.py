@@ -235,7 +235,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_MO: [
                         # The number of supervision periods in MO increased slightly in 1/25, resulting in the error level very narrowly exceeding the threshold.
                         # Because it appears to be a normal fluctuation in supervision data, rather than the result of an ingest bug or raw data issues, this month is exempted.
-                        date(2025, 1, 1)
+                        # 2/25 is also exempted, because the number of periods for this month is very typical, but as 1/25 is an outlier, when supervision periods fall back
+                        # down to typical levels it results in an error.
+                        date(2025, 1, 1),
+                        date(2025, 2, 1),
                     ],
                 },
             ),
@@ -315,7 +318,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_MO: [
                         # The number of supervision periods in MO increased slightly in 1/25, resulting in the error level very narrowly exceeding the threshold.
                         # Because it appears to be a normal fluctuation in supervision data, rather than the result of an ingest bug or raw data issues, this month is exempted.
-                        date(2025, 1, 1)
+                        # 2/25 is also exempted, because the number of periods for this month is very typical, but as 1/25 is an outlier, when supervision periods fall back
+                        # down to typical levels it results in an error.
+                        date(2025, 1, 1),
+                        date(2025, 2, 1),
                     ],
                 },
             ),
