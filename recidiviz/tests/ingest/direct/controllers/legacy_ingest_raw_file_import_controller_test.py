@@ -63,7 +63,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.ingest.direct import legacy_fixture_path
 from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     run_task_queues_to_empty,
 )
@@ -172,7 +172,7 @@ def add_paths_with_tags(
         )
 
     for file_tag in file_tags:
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename=f"{file_tag}.{file_extension}",
@@ -835,7 +835,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             )
 
         # Upload two new files without triggering the controller
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagMoreBasicData.csv",
@@ -843,7 +843,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             region_code=controller.region_code(),
             fail_handle_file_call=True,
         )
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagHeadersNoContents.csv",
@@ -859,7 +859,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         )
 
         # Later file that succeeds will trigger proper upload of all files
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagBasicData.csv",
@@ -894,7 +894,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             )
 
         # Upload new files without triggering the controller
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagMoreBasicData.csv",
@@ -902,7 +902,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             region_code=controller.region_code(),
             fail_handle_file_call=True,
         )
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagHeadersNoContents.csv",
@@ -910,7 +910,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             region_code=controller.region_code(),
             fail_handle_file_call=True,
         )
-        fixture_util.add_direct_ingest_path(
+        legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagBasicData.csv",
@@ -1115,7 +1115,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         ]
 
         for path_name, has_fixture in path_names:
-            fixture_util.add_direct_ingest_path(
+            legacy_fixture_path.add_direct_ingest_path(
                 fs=controller.fs.gcs_file_system,
                 bucket_path=controller.raw_data_bucket_path,
                 filename=path_name,
@@ -1186,7 +1186,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             + [DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS],
             run_async=False,
         )
-        raw_data_path = fixture_util.add_direct_ingest_path(
+        raw_data_path = legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="tagMoreBasicData.csv",
@@ -1220,7 +1220,7 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             run_async=False,
         )
         add_paths_with_tags(controller, ["someDuplicate"])
-        raw_data_path = fixture_util.add_direct_ingest_path(
+        raw_data_path = legacy_fixture_path.add_direct_ingest_path(
             fs=controller.fs.gcs_file_system,
             bucket_path=controller.raw_data_bucket_path,
             filename="someDuplicate.csv",

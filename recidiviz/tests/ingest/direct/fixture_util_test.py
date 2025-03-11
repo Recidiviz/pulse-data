@@ -23,6 +23,8 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     ENUM_PARSING_FIXTURE_SUBDIR,
     INGEST_MAPPING_OUTPUT_SUBDIR,
+)
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
 )
 

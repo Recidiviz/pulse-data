@@ -44,9 +44,9 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
+from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
-    load_dataframe_from_path,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     DEFAULT_UPDATE_DATETIME,
@@ -99,66 +99,32 @@ class IngestRegionTestMixin(abc.ABC):
             cls.launchable_ingest_views(),
         )
 
-    def get_ingest_view_results_from_fixture(
+    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
+    # TODO(#22059): Remove this method and replace with the implementation on
+    # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
+    def read_legacy_extract_and_merge_fixture(
         self,
         *,
         ingest_view_name: str,
         test_name: str,
-        fixture_has_metadata_columns: bool = True,
-        generate_default_metadata: bool = False,
-        use_results_fixture: bool = True,
     ) -> Iterable[Dict[str, Any]]:
-        """Reads in an ingest view fixture to be used in tests.
-
-        If the ingest view fixture has metadata in the CSV,
-        fixture_has_metadata_columns should be True.
-
-        If the fixture CSV does not have metadata, but we would
-        like to generate default values, then generate_default_metadata
-        should be True.
-
-        If we're loading an ingest view *result* fixture, then
-        use_results_fixture should be True. If we are using
-        an "extract and merge" fixture, it should be False.
-
-        TODO(#22059): Standardize ingest view fixtures and simplify
-                      this method. Ideally a pipeline test will only
-                      need to read ingest view result fixtures, and
-                      we can deprecate "extract and merge" fixtures.
         """
-        if fixture_has_metadata_columns and generate_default_metadata:
-            raise ValueError(
-                "Can't read metadata from fixture and also generate default values!"
-            )
+        Reads in an "extract and merge fixture" to be used in
+        legacy integration tests.
+        """
         fixture_columns = (
             self.ingest_view_manifest_collector()
             .ingest_view_to_manifest[ingest_view_name]
             .input_columns
         )
-        if fixture_has_metadata_columns:
-            fixture_columns.extend(
-                [MATERIALIZATION_TIME_COL_NAME, UPPER_BOUND_DATETIME_COL_NAME]
-            )
-
-        if use_results_fixture:
-            fixture_path = (
-                DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                    region_code=self.region().region_code,
-                    ingest_view_name=ingest_view_name,
-                    file_name=f"{test_name}.csv",
-                ).full_path()
-            )
-        else:
-            fixture_path = DirectIngestTestFixturePath.for_extract_and_merge_fixture(
-                region_code=self.state_code().value,
-                file_name=f"{test_name}.csv",
-            ).full_path()
-
+        fixture_path = DirectIngestTestFixturePath.for_extract_and_merge_fixture(
+            region_code=self.state_code().value,
+            file_name=f"{test_name}.csv",
+        ).full_path()
         df = load_dataframe_from_path(
             fixture_path,
             fixture_columns,
         )
-        if generate_default_metadata:
-            df[MATERIALIZATION_TIME_COL_NAME] = datetime.now().isoformat()
-            df[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
+        df[MATERIALIZATION_TIME_COL_NAME] = datetime.now().isoformat()
+        df[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
         return df.to_dict("records")

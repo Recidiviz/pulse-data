@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a based class for ingest pipeline integration tests"""
+import os
 from typing import Any, Iterable
 from unittest.mock import patch
 
 import apache_beam as beam
+import pandas as pd
 from apache_beam.pvalue import PBegin
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -30,6 +32,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
+)
+from recidiviz.tests.ingest.direct.fixture_util import (
+    ingest_view_results_directory,
+    read_ingest_view_results_fixture,
 )
 from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
     StateIngestPipelineTestCase,
@@ -89,7 +95,8 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         self.context_patcher_fn.stop()
         super().tearDown()
 
-    def generate_ingest_view_results_for_one_date(
+    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
+    def legacy_generate_ingest_view_results_for_one_date(
         self,
         ingest_view_builder: DirectIngestViewQueryBuilder,
         raw_data_tables_to_upperbound_dates: dict[str, str],
@@ -102,20 +109,80 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
             raw_data_tables_to_upperbound_dates,
             raw_data_source_instance,
             resource_labels,
-            self.get_ingest_view_results_from_fixture(
+            self.read_legacy_extract_and_merge_fixture(
                 ingest_view_name=ingest_view_builder.ingest_view_name,
                 test_name=ingest_view_builder.ingest_view_name,
-                fixture_has_metadata_columns=False,
-                generate_default_metadata=True,
-                use_results_fixture=False,
             ),
         )
 
+    def generate_ingest_view_results_for_one_date(
+        self,
+        ingest_view_builder: DirectIngestViewQueryBuilder,
+        raw_data_tables_to_upperbound_dates: dict[str, str],
+        raw_data_source_instance: DirectIngestInstance,
+        resource_labels: dict[str, str],
+    ) -> FakeGenerateIngestViewResults:
+        """
+        Returns a Transform that generates ingest view results for
+        a given ingest view assuming a single date.
+
+        Data is taken from the results of our ingest view tests, specifically
+        from fixtures in direct_ingest_fixtures/us_xx/us_xx_ingest_view_results
+        """
+        # TODO(#38258) Decide on if/how we subset the amount of
+        # data used for integration tests.
+        ingest_view_name = ingest_view_builder.ingest_view_name
+        view_dir = os.path.join(
+            ingest_view_results_directory(self.state_code()), ingest_view_name
+        )
+        # We can stack the data here because we assume each ingest view test
+        # case an independent root entity. Using the same root entity in
+        # multiple ingest view tests means they should be able to merge
+        # in our integration tests (and in production!)
+        ingest_view_results = pd.concat(
+            [
+                read_ingest_view_results_fixture(
+                    self.state_code(), ingest_view_name, fixture_name
+                )
+                for fixture_name in os.listdir(view_dir)
+                if fixture_name.endswith(".csv")
+            ],
+            axis=0,  # stack data
+        )
+        return FakeGenerateIngestViewResults(
+            ingest_view_builder,
+            raw_data_tables_to_upperbound_dates,
+            raw_data_source_instance,
+            resource_labels,
+            ingest_view_results.to_dict("records"),
+        )
+
+    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
     # TODO(#22059): Remove this method and replace with the implementation on
     # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
-    def run_test_state_pipeline(self, create_expected: bool = False) -> None:
+    def run_legacy_test_state_pipeline_from_deprecated_fixtures(
+        self, create_expected: bool = False
+    ) -> None:
         """This runs a test for an ingest pipeline where the ingest view results are
         passed in directly.
+        """
+        with patch(
+            "recidiviz.pipelines.ingest.state.pipeline.GenerateIngestViewResults",
+            self.legacy_generate_ingest_view_results_for_one_date,
+        ):
+            self.run_test_ingest_pipeline(
+                test_name=PIPELINE_INTEGRATION_TEST_NAME,
+                create_expected=create_expected,
+                build_for_integration_test=True,
+            )
+
+    def run_state_ingest_pipeline_integration_test(
+        self, create_expected_output: bool = False
+    ) -> None:
+        """
+        This runs a an ingest pipeline against us_xx_ingest_view_results
+        data passed in directly (for performance). These fixtures are
+        the results of individual ingest view tests.
         """
         with patch(
             "recidiviz.pipelines.ingest.state.pipeline.GenerateIngestViewResults",
@@ -123,6 +190,6 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         ):
             self.run_test_ingest_pipeline(
                 test_name=PIPELINE_INTEGRATION_TEST_NAME,
-                create_expected=create_expected,
+                create_expected=create_expected_output,
                 build_for_integration_test=True,
             )

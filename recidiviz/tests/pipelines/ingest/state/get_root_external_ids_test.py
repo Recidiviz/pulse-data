@@ -32,6 +32,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
@@ -60,21 +61,19 @@ class TestGetRootExternalIdClusterEdges(
         self,
         *,
         ingest_view_name: str,
-        test_name: str,
+        file_name_w_suffix: str,
     ) -> Iterable[Entity]:
-        rows = list(
-            self.get_ingest_view_results_from_fixture(
-                ingest_view_name=ingest_view_name,
-                test_name=test_name,
-                fixture_has_metadata_columns=False,
-                generate_default_metadata=False,
-            )
+        df = read_ingest_view_results_fixture(
+            self.state_code(),
+            ingest_view_name,
+            file_name_w_suffix,
+            generate_metadata=False,
         )
         return (
             self.ingest_view_manifest_collector()
             .ingest_view_to_manifest[ingest_view_name]
             .parse_contents(
-                contents_iterator=iter(rows),
+                contents_iterator=df.to_dict("records"),
                 context=IngestViewContentsContext.build_for_tests(),
             )
         )
@@ -88,7 +87,8 @@ class TestGetRootExternalIdClusterEdges(
             self.test_pipeline
             | beam.Create(
                 self.build_root_entities_from_fixture(
-                    ingest_view_name="ingest12", test_name="ingest12"
+                    ingest_view_name="ingest12",
+                    file_name_w_suffix="for_get_root_external_id_cluster_edges_test.csv",
                 )
             )
             | beam.ParDo(pipeline.GetRootExternalIdClusterEdges())
@@ -114,7 +114,7 @@ class TestGetRootExternalIdClusterEdges(
             | beam.Create(
                 self.build_root_entities_from_fixture(
                     ingest_view_name="ingestMultipleRootExternalIds",
-                    test_name="ingestMultipleRootExternalIds",
+                    file_name_w_suffix="for_get_root_external_id_cluster_edges_test.csv",
                 )
             )
             | beam.ParDo(pipeline.GetRootExternalIdClusterEdges())

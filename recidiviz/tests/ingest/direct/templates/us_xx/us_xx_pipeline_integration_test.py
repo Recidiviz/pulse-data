@@ -43,5 +43,5 @@ class UsXxPipelineIntegrationTest(StateSpecificIngestPipelineIntegrationTestCase
 
         # If your test is failing because you changed ingest logic and fixture files
         # containing expected results need to be upgraded, run this function with
-        # `create_expected=True` to update the fixture files.
-        self.run_test_state_pipeline()
+        # `create_expected_output=True` to update the fixture files.
+        self.run_state_ingest_pipeline_integration_test()

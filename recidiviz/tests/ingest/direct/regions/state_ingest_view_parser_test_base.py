@@ -53,9 +53,11 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
     ingest_mappingest_json_schema_path,
+)
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
+    DirectIngestTestFixturePath,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.utils import environment

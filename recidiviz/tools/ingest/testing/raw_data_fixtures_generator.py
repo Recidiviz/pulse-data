@@ -52,7 +52,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
-from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
+    DirectIngestTestFixturePath,
+)
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 Faker.seed(0)

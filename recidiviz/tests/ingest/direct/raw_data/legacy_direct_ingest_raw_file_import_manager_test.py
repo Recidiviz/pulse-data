@@ -67,7 +67,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
-from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.ingest.direct import legacy_fixture_path
 from recidiviz.tests.ingest.direct.fake_regions.us_xx.raw_data.migrations import (
     migrations_tagBasicData,
 )
@@ -172,7 +172,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
         has_fixture: bool = True,
         dt: Optional[datetime.datetime] = None,
     ) -> GcsfsFilePath:
-        return fixture_util.add_direct_ingest_path(
+        return legacy_fixture_path.add_direct_ingest_path(
             fs=self.fs.gcs_file_system,
             bucket_path=self.ingest_bucket_path,
             filename=filename,
@@ -903,7 +903,7 @@ class DirectIngestRawFileReaderTest(unittest.TestCase):
         has_fixture: bool = True,
         dt: Optional[datetime.datetime] = None,
     ) -> GcsfsFilePath:
-        return fixture_util.add_direct_ingest_path(
+        return legacy_fixture_path.add_direct_ingest_path(
             fs=self.fs.gcs_file_system,
             bucket_path=self.ingest_bucket_path,
             filename=filename,

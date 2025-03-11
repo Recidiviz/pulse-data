@@ -17,14 +17,12 @@
 """Tests the MergeIngestViewRootEntityTrees PTransform."""
 from datetime import date, datetime
 from types import ModuleType
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
-from dateutil import parser
 from mock import patch
-from more_itertools import one
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -36,9 +34,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    UPPER_BOUND_DATETIME_COL_NAME,
-)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
@@ -48,13 +43,14 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.pipelines.ingest.state.constants import (
-    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
-)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    DEFAULT_UPDATE_DATETIME,
+)
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
@@ -80,37 +76,25 @@ class TestMergeIngestViewRootEntityTrees(
         return fake_regions
 
     def _get_input_root_entities_with_upperbound_dates(
-        self, *, ingest_view_name: str, test_name: str
+        self, *, ingest_view_name: str, file_name_w_suffix: str
     ) -> Iterable[Tuple[float, Entity]]:
         """Reads fake ingest view input rows from the fixture file associated with the
         provided |ingest_view_name| and |test_name|, then parses the rows into root
         entity trees, returning those along with their associated upper bound date.
         """
         parser_context = IngestViewContentsContext.build_for_tests()
-        rows = list(
-            self.get_ingest_view_results_from_fixture(
-                ingest_view_name=ingest_view_name, test_name=test_name
-            )
+        df = read_ingest_view_results_fixture(
+            self.state_code(), ingest_view_name, file_name_w_suffix, False
         )
-        results: List[Tuple[float, Entity]] = []
-        for row in rows:
-            upper_bound_date = parser.isoparse(row[UPPER_BOUND_DATETIME_COL_NAME])
-            for column in INGEST_VIEW_RESULTS_SCHEMA_COLUMNS:
-                row.pop(column.name)
-            results.append(
-                (
-                    upper_bound_date.timestamp(),
-                    one(
-                        self.ingest_view_manifest_collector()
-                        .ingest_view_to_manifest[ingest_view_name]
-                        .parse_contents(
-                            contents_iterator=iter([row]),
-                            context=parser_context,
-                        )
-                    ),
-                )
+        return [
+            (DEFAULT_UPDATE_DATETIME.timestamp(), row)
+            for row in self.ingest_view_manifest_collector()
+            .ingest_view_to_manifest[ingest_view_name]
+            .parse_contents(
+                contents_iterator=df.to_dict("records"),
+                context=parser_context,
             )
-        return iter(results)
+        ]
 
     def test_merge_root_entity_trees(self) -> None:
         expected_output = [
@@ -118,7 +102,7 @@ class TestMergeIngestViewRootEntityTrees(
                 ("ID1", "US_DD_ID_TYPE"),
                 (
                     (
-                        datetime(2022, 7, 4, 0, 0).timestamp(),
+                        DEFAULT_UPDATE_DATETIME.timestamp(),
                         "ingestMultipleChildren",
                         StatePerson(
                             state_code=self.state_code().value,
@@ -173,7 +157,7 @@ class TestMergeIngestViewRootEntityTrees(
             | beam.Create(
                 self._get_input_root_entities_with_upperbound_dates(
                     ingest_view_name="ingestMultipleChildren",
-                    test_name="ingestMultipleChildren",
+                    file_name_w_suffix="for_merge_ingest_view_root_entity_trees_test.csv",
                 )
             )
             | pipeline.MergeIngestViewRootEntityTrees(

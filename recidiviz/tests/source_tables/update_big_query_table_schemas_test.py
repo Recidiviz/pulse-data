@@ -1560,8 +1560,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_oz_ingest_view_results.eg_person",
     "us_oz_ingest_view_results.egt_person",
     "us_oz_ingest_view_results.egt_vacations",
-    "us_oz_ingest_view_results.gloFS_periods",
-    "us_oz_ingest_view_results.gloFS_person",
     "us_oz_ingest_view_results.hunger_games_people",
     "us_oz_ingest_view_results.hunger_games_periods",
     "us_oz_ingest_view_results.internDS_initialtable",

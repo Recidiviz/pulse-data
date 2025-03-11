@@ -52,9 +52,9 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
+from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
-    fixture_path_for_address,
 )
 from recidiviz.tests.ingest.direct.regions.base_ingest_test_cases import (
     BaseStateIngestTestCase,

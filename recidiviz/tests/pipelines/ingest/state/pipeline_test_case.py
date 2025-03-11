@@ -51,7 +51,9 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
+    DirectIngestTestFixturePath,
+)
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryWithEmulator,
     FakeWriteToBigQueryEmulator,

@@ -16,20 +16,19 @@
 # =============================================================================
 """Testing the GenerateIngestViewResults PTransform"""
 import unittest
-from copy import deepcopy
 from datetime import datetime
 from types import ModuleType
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Optional
 
+import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that
-from apache_beam.testing.util import BeamAssertException
+from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 from mock import patch
+from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
-    UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -37,6 +36,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    DEFAULT_UPDATE_DATETIME,
+)
 from recidiviz.tests.pipelines.ingest.state.pipeline_test_case import (
     StateIngestPipelineTestCase,
 )
@@ -85,39 +88,6 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         return ingest_view_builder
 
-    @staticmethod
-    def validate_ingest_view_results(
-        expected_output: Iterable[Dict[str, Any]],
-        _output_table: str,
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Allows for validating the output of ingest view results without worrying about
-        the output of the materialization time."""
-
-        def _validate_ingest_view_results_output(
-            output: Iterable[Dict[str, Any]]
-        ) -> None:
-            # TODO(#22059): Remove this once all states can start an ingest integration
-            # test using raw data fixtures.
-            if not expected_output:
-                return
-            copy_of_expected_output = deepcopy(expected_output)
-            for record in copy_of_expected_output:
-                record.pop(MATERIALIZATION_TIME_COL_NAME)
-            copy_of_output = deepcopy(output)
-            for record in copy_of_output:
-                if not MATERIALIZATION_TIME_COL_NAME in record:
-                    raise BeamAssertException("Missing materialization time column")
-                record.pop(MATERIALIZATION_TIME_COL_NAME)
-                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
-                    record[UPPER_BOUND_DATETIME_COL_NAME]
-                ).isoformat()
-            if copy_of_output != copy_of_expected_output:
-                raise BeamAssertException(
-                    f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
-                )
-
-        return _validate_ingest_view_results_output
-
     def test_empty_raw_data_upper_bounds_yell_at_us(self) -> None:
         view_builder = self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12"
@@ -137,34 +107,37 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
                 resource_labels={"for": "testing"},
             )
 
-    # TODO(#22059): Standardize ingest view fixtures for ingest tests.
-    # This is testing ingest view materialization,
-    # so either separate these fixtures in a way that the
-    # this test likes, or really explicitly handle
-    # meatadata so we can consistently test it.
     def test_materialize_ingest_view_results(self) -> None:
         view_builder = self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12"
         )
-        expected_ingest_view_output = self.get_ingest_view_results_from_fixture(
-            ingest_view_name="ingest12", test_name="ingest12"
+        df = read_ingest_view_results_fixture(
+            self.state_code(), "ingest12", "for_generate_ingest_view_results_test.csv"
         )
+        now_ = one(set(df[MATERIALIZATION_TIME_COL_NAME].to_list()))
+        expected_output = df.to_dict("records")
 
-        output = self.test_pipeline | pipeline.GenerateIngestViewResults(
-            ingest_view_builder=view_builder,
-            raw_data_tables_to_upperbound_dates={
-                "table1": datetime.fromisoformat(
-                    "2022-07-04:00:00:00.000000"
-                ).isoformat(),
-                "table2": datetime.fromisoformat("2022-07-04:00:00:00").isoformat(),
-            },
-            raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            resource_labels={"for": "testing"},
+        output = (
+            self.test_pipeline
+            | pipeline.GenerateIngestViewResults(
+                ingest_view_builder=view_builder,
+                raw_data_tables_to_upperbound_dates={
+                    "table1": DEFAULT_UPDATE_DATETIME.isoformat(),
+                    "table2": DEFAULT_UPDATE_DATETIME.isoformat(),
+                },
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                resource_labels={"for": "testing"},
+            )
+            # The emulator's 'now' call is just slightly different than when
+            # we generate the data, so we overrite that here.
+            | apache_beam.Map(
+                lambda row: {
+                    k: now_ if k == MATERIALIZATION_TIME_COL_NAME else v
+                    for k, v in row.items()
+                }
+            )
         )
-        assert_that(
-            output,
-            self.validate_ingest_view_results(expected_ingest_view_output, "ingest12"),
-        )
+        assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
 

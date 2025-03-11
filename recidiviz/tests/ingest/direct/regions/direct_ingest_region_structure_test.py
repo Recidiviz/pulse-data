@@ -101,9 +101,11 @@ from recidiviz.tests.ingest.direct import regions as regions_tests_module
 from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     INGEST_MAPPING_OUTPUT_SUBDIR,
-    DirectIngestTestFixturePath,
     fixture_path_for_address,
     ingest_mapping_output_fixture_path,
+)
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
+    DirectIngestTestFixturePath,
 )
 from recidiviz.tests.ingest.direct.regions.base_ingest_test_cases import (
     StateIngestMappingTestCase,
@@ -117,6 +119,7 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 )
 from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
     PIPELINE_INTEGRATION_TEST_NAME,
+    StateSpecificIngestPipelineIntegrationTestCase,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
@@ -812,10 +815,49 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
 
             if not fixture_file_names and ingest_view_names:
+                integration_test_module = ModuleCollectorMixin.get_relative_module(
+                    regions_tests_module,
+                    [
+                        region_code.value.lower(),
+                        f"{region_code.value.lower()}_pipeline_integration_test",
+                    ],
+                )
+                integration_test = one(
+                    test_class
+                    for _cls_name, test_class in inspect.getmembers(
+                        integration_test_module, inspect.isclass
+                    )
+                    if issubclass(
+                        test_class, StateSpecificIngestPipelineIntegrationTestCase
+                    )
+                    and _cls_name
+                    != StateSpecificIngestPipelineIntegrationTestCase.__name__
+                )
+                test_method = one(
+                    t for t in dir(integration_test) if t.startswith("test_")
+                )
+                test_source = inspect.getsource(getattr(integration_test, test_method))
+                if (
+                    "self.run_legacy_test_state_pipeline_from_deprecated_fixtures"
+                    in test_source
+                ):
+                    raise ValueError(
+                        f"[{region_code.value}] Found no integration test fixture files "
+                        f"in [{fixtures_directory}] even though there are ingest views for "
+                        f"this state - is this test looking in the right place?"
+                        "Have you migrated this integration test to the new version?"
+                    )
+                if "self.run_state_ingest_pipeline_integration_test" in test_source:
+                    return
                 raise ValueError(
-                    f"[{region_code.value}] Found no integration test fixture files "
-                    f"in [{fixtures_directory}] even though there are ingest views for "
-                    f"this state - is this test looking in the right place?"
+                    "\n".join(
+                        [
+                            f"{integration_test}.{test_method} did not call expected test method.",
+                            "Expected one of: ",
+                            "self.run_legacy_test_state_pipeline_from_deprecated_fixtures",
+                            "self.run_state_ingest_pipeline_integration_test",
+                        ]
+                    )
                 )
 
 

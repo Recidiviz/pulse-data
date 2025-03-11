@@ -55,9 +55,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
+from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
+from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
-    load_dataframe_from_path,
 )
 from recidiviz.utils import csv
 

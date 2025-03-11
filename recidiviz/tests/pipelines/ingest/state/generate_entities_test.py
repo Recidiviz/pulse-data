@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing the GenerateEntities PTransform."""
-from datetime import datetime
 from types import ModuleType
 from typing import Optional
 
@@ -42,6 +41,11 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.ingest.direct.fake_regions.us_dd.ingest_views import view_ingest12
+from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    DEFAULT_UPDATE_DATETIME,
+)
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
@@ -65,9 +69,11 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
         return fake_regions
 
     def test_generate_entities(self) -> None:
+        view_builder = view_ingest12.VIEW_BUILDER
+        ingest_view_name = view_builder.ingest_view_name
         expected_output = [
             (
-                datetime.fromisoformat("2022-07-04T00:00:00").timestamp(),
+                DEFAULT_UPDATE_DATETIME.timestamp(),
                 StatePerson(
                     state_code="US_DD",
                     external_ids=[
@@ -81,7 +87,7 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
                 ),
             ),
             (
-                datetime.fromisoformat("2022-07-04T00:00:00").timestamp(),
+                DEFAULT_UPDATE_DATETIME.timestamp(),
                 StatePerson(
                     state_code="US_DD",
                     external_ids=[
@@ -98,16 +104,17 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
         manifest_compiler = IngestViewManifestCompiler(
             delegate=StateSchemaIngestViewManifestCompilerDelegate(region=self.region())
         )
-        ingest_view_name = "ingest12"
         ingest_view_manifest = manifest_compiler.compile_manifest(
             ingest_view_name=ingest_view_name
         )
         output = (
             self.test_pipeline
             | beam.Create(
-                self.get_ingest_view_results_from_fixture(
-                    ingest_view_name=ingest_view_name, test_name="ingest12"
-                )
+                read_ingest_view_results_fixture(
+                    self.state_code(),
+                    ingest_view_name,
+                    "for_generate_entities_test.csv",
+                ).to_dict("records")
             )
             | pipeline.GenerateEntities(
                 ingest_view_manifest=ingest_view_manifest,
