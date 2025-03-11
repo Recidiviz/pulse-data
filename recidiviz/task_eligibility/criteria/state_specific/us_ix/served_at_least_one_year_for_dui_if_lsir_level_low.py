@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has served one year
-on supervision for a DUI offense and their LSI-R score is LOW. Before the year is up, policy states
+"""Defines a criteria span view that shows spans of time during which someone has served one year under the supervision
+authority for a DUI offense and their LSI-R score is LOW. Before the year is up, policy states
 that their LSI-R score should be overridden to MODERATE.
 """
 from google.cloud import bigquery
@@ -41,8 +41,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_IX_SERVED_AT_LEAST_ONE_YEAR_FOR_DUI_IF_LSIR_LEVEL_LOW"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has served one year
-on supervision for a DUI offense and their LSI-R score is LOW. Before the year is up, policy states
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has served one year under the supervision
+authority for a DUI offense and their LSI-R score is LOW. Before the year is up, policy states
 that their LSI-R score should be overridden to MODERATE.
 """
 _QUERY_TEMPLATE = f"""
@@ -51,9 +51,11 @@ WITH supervision_starts AS (
     state_code,
     person_id,
     start_date AS supervision_start_date,
-  FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
+  FROM `{{project_id}}.{{sessions_dataset}}.custodial_authority_sessions_materialized`
   WHERE state_code = "US_IX"
-    AND compartment_level_1 = "SUPERVISION"
+  --here we look at custodial authority sessions because we do not want to count time spent on home confinement (XCRC)
+  --towards the one year on supervision supervised at LOW
+    AND custodial_authority = "SUPERVISION_AUTHORITY"
 ),
 sentences AS (
 /* This CTE creates active sentence spans for any DUI sentences starting from the sentence imposed date to the latest
