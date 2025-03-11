@@ -92,7 +92,7 @@ def scc_form(
 release_dates AS (
 /* Queries raw data for the min and max release dates */ 
     SELECT 
-        offender_number,
+        LPAD(offender_number, 7, "0") AS offender_number,
         MAX(pmi_sgt_min_date) AS pmi_sgt_min_date, 
         MAX(pmx_sgt_max_date) AS pmx_sgt_max_date,
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_OFFENDER_SENTENCE_latest`
@@ -279,7 +279,7 @@ temp_opt_stg_information AS (
     INNER JOIN (
             SELECT MAX(date_of_stay) AS date_of_stay FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized`
         ) USING(date_of_stay)     
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest` coms ON orc.person_external_id = LTRIM(coms.Offender_Number, '0') 
+    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest` coms ON orc.person_external_id = coms.Offender_Number 
     -- this should always be true
     WHERE external_id_type = 'US_MI_DOC'
 ),
@@ -294,7 +294,7 @@ case_notes_cte AS (
     INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest` 
         USING(Offender_Number, Case_Note_Id)
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON LTRIM(cn.Offender_Number, '0') = pei.external_id 
+        ON cn.Offender_Number = pei.external_id 
         AND id_type = 'US_MI_DOC'
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` s
         ON s.person_id = pei.person_id 

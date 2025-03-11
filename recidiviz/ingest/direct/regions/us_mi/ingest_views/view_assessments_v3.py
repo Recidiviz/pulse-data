@@ -43,10 +43,12 @@ COMPAS_unagg as (
   select 
         'COMPAS' as source,
         coassessment.RecId,
-        -- starting sometime in Feb 2023, it seems like the format of OffenderNumber in ADH_SHOFFENDER changed such that there
-        -- are now leading zeroes.  In order to make sure we can still join with ADH_OFFENDER correctly (which has no leading zeroes)
-        -- we must trim all leading zeroes off of OffenderNumber
-        LTRIM(shoffender.OffenderNumber, '0') as OffenderNumber,
+        -- We pad OffenderNumber with 0's to make sure they're uniformly 7 digits 
+        -- (though there are a small number of rows with offender numbers greater than length 7;
+        -- for those, we disregard and assume as errant)
+        CASE WHEN LENGTH(shoffender.OffenderNumber) > 7 THEN CAST(NULL AS STRING)
+              ELSE LPAD(shoffender.OffenderNumber, 7, '0')
+              END AS OffenderNumber,
         FkCoSyScale as FkCoSyScale_raw,
         -- when the FkCoSyScale is in one of these pairs, then we want to consider each pair a single assessment score
         case when FkCoSyScale in ('8042', '8043') then '8042/8043'
@@ -118,10 +120,12 @@ STATIC_STABLE as (
   SELECT  
           'STATIC_STABLE' as source,
           screening.RecId,   
-          -- starting sometime in Feb 2023, it seems like the format of OffenderNumber in ADH_SHOFFENDER changed such that there
-          -- are now leading zeroes.  In order to make sure we can still join with ADH_OFFENDER correctly (which has no leading zeroes)
-          -- we must trim all leading zeroes off of OffenderNumber
-          LTRIM(shoffender.OffenderNumber, '0') as OffenderNumber,
+          -- We pad OffenderNumber with 0's to make sure they're uniformly 7 digits 
+          -- (though there are a small number of rows with offender numbers greater than length 7;
+          -- for those, we disregard and assume as errant)
+          CASE WHEN LENGTH(shoffender.OffenderNumber) > 7 THEN CAST(NULL AS STRING)
+               ELSE LPAD(shoffender.OffenderNumber, 7, '0')
+               END AS OffenderNumber,
           FkCoSyScale,
           -- there are no applicable scale sets for STATIC/STABLE
           CAST(NULL as string) as corfscaleset_name,
@@ -176,9 +180,7 @@ from (
   union all
   (select * from STATIC_STABLE)
 ) unioned
-left join {ADH_OFFENDER} off on unioned.OffenderNumber = off.offender_number
-inner join (select distinct offender_id from {ADH_OFFENDER_BOOKING}) book on off.offender_id = book.offender_id
-
+where OffenderNumber IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

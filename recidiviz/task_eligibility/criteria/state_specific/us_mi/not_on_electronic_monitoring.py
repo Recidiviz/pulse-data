@@ -79,7 +79,7 @@ includes electronic monitoring */
         TRUE AS is_electronic_monitoring
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Specialties_latest`
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON LTRIM(Offender_Number, '0')= pei.external_id
+        ON Offender_Number = pei.external_id
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
     WHERE Specialty = 'GPS Monitoring'

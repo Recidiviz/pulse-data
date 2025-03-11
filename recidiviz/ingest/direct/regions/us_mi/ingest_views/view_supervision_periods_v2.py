@@ -296,7 +296,7 @@ COMS_levels AS (
         LEFT JOIN coms_levels_b b 
             on p.Offender_Number = b.Offender_Number
                 AND b.level_start_date <= p.coms_start_date AND p.coms_end_date <= b.level_end_date
-        INNER JOIN {ADH_OFFENDER} off on LTRIM(p.Offender_Number, '0') = off.offender_number
+        INNER JOIN {ADH_OFFENDER} off on p.Offender_Number = LPAD(off.offender_number, 7, "0")
         INNER JOIN {ADH_OFFENDER_BOOKING} USING(offender_id)
         WHERE 
             p.coms_start_date <> DATE(9999,9,9)
@@ -349,7 +349,7 @@ modifiers_periods AS (
     Modifier,
     (DATE(Entered_Date)) as Entered_Date
     FROM {COMS_Modifiers} mod
-    INNER JOIN {ADH_OFFENDER} off ON LTRIM(mod.Offender_Number, '0') = off.offender_number
+    INNER JOIN {ADH_OFFENDER} off ON mod.Offender_Number = LPAD(off.offender_number, 7, "0")
 )
 """
 
@@ -364,7 +364,7 @@ specialties_periods as (
     Specialty,
     (DATE(Entered_Date)) as Entered_Date
   FROM {COMS_Specialties} spec
-  INNER JOIN {ADH_OFFENDER} off ON LTRIM(spec.Offender_Number, '0') = off.offender_number
+  INNER JOIN {ADH_OFFENDER} off ON spec.Offender_Number = LPAD(off.offender_number, 7, "0")
 ) 
 """
 
@@ -427,7 +427,7 @@ COMS_assignments as (
             (date(coms.End_Date)) AS employee_end,
             CAST(Entered_Date as DATETIME) as Entered_Date
         from {COMS_Case_Managers} coms
-        inner join {ADH_OFFENDER} off on LTRIM(coms.Offender_Number, '0') = off.offender_number
+        inner join {ADH_OFFENDER} off on coms.Offender_Number = LPAD(off.offender_number, 7, "0")
         INNER JOIN {ADH_OFFENDER_BOOKING} USING(offender_id)
         WHERE Case_Manager_Omnni_Employee_Id is not NULL -- not sure if this is a concern for real data, but it's sometimes null in sample data
     ) sub

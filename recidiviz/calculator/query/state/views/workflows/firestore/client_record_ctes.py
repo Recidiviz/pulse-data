@@ -835,7 +835,7 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
             state_code,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_latest` mi_raw
         INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            ON mi_raw.offender_number = pei.person_external_id
+            ON LPAD(mi_raw.offender_number, 7, "0") = pei.person_external_id
             AND pei.state_code = "US_MI"
             AND pei.system_type = "SUPERVISION"
         

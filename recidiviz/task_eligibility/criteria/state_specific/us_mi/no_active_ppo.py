@@ -65,7 +65,7 @@ WITH ppo_data_parsed AS(
       COALESCE(DATE(Expiration_Date), "9999-12-31") as expiration_date
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Personal_Protection_Orders_latest` o
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON LTRIM(o.Offender_Number, '0')= pei.external_id
+      ON o.Offender_Number = pei.external_id
       AND pei.state_code = 'US_MI'
       AND pei.id_type = "US_MI_DOC"
 

@@ -27,7 +27,7 @@ VIEW_QUERY_TEMPLATE = """
 SELECT
   DISTINCT
   Security_Standards_Toxin_Id,
-  LTRIM(coms.Offender_Number, '0') as Offender_Number,
+  Offender_Number,
   Security_Standard_Toxin_Type,
   Conducted_Date,
   Result_Date,

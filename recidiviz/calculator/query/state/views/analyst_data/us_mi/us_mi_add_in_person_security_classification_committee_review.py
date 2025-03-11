@@ -28,7 +28,7 @@ FROM `{project_id}.{raw_data_up_to_date_views_dataset}.COMS_Supervision_Schedule
 INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
     ON pei.state_code = 'US_MI'
     AND pei.id_type = 'US_MI_DOC'
-    AND pei.external_id = LTRIM(schedule.Offender_Number, '0')
+    AND pei.external_id = schedule.Offender_Number
 WHERE schedule.Activity = 'SCC – ADD – 12 Month Review'
 AND completed_date IS NOT NULL
 """

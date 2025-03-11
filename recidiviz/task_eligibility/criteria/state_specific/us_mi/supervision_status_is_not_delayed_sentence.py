@@ -51,7 +51,7 @@ WITH delayed_spans AS (
         INNER JOIN
           `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON
-          LTRIM(Offender_Number, '0')= pei.external_id
+          Offender_Number = pei.external_id
           AND pei.state_code = 'US_MI'
           AND pei.id_type = "US_MI_DOC"
         WHERE

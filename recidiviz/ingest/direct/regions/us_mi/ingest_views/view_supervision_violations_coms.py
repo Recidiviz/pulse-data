@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """,
     charges AS (
         SELECT 
             Violation_Incident_Id,
-            LTRIM(Offender_Number, '0') AS Offender_Number,
+            Offender_Number,
             STRING_AGG(DISTINCT Technical_Non_Technical ORDER BY Technical_Non_Technical) as charge_violation_types
         FROM {COMS_Violation_Incident_Charges} charges
         WHERE Technical_Non_Technical <> 'Predates COMS as System of Record'
@@ -40,7 +40,7 @@ VIEW_QUERY_TEMPLATE = """,
     probation_and_violation_joined_incidents AS (
         SELECT 
             incidents.Violation_Incident_Id,
-            LTRIM(incidents.Offender_Number, '0') AS Offender_Number,
+            incidents.Offender_Number,
             incidents.Incident_Date,
             -- as of 8/1/24, there are no cases where both charge_violation_types and parole.violation_type is both valued
             COALESCE(charges.charge_violation_types, parole.Violation_Type) AS Violation_Type,

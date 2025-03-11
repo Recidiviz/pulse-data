@@ -283,7 +283,7 @@ def _query_template(date_of_data: date) -> str:
 
     if _is_v1_schema(date_of_data):
         query = f"""SELECT
-            Offender_Number AS person_external_id,
+            LPAD(Offender_Number, 7, "0") AS person_external_id,
             DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, 
             Location AS facility,
             Confinement_Level,
@@ -297,7 +297,7 @@ def _query_template(date_of_data: date) -> str:
         """
     else:
         query = f"""SELECT
-            Offender_Number AS person_external_id,
+            LPAD(Offender_Number, 7, "0") AS person_external_id,
             DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay,
             Location AS facility,
             Confinement_Level,

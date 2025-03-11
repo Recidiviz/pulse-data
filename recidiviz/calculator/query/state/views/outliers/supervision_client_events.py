@@ -212,7 +212,7 @@ treatment_referrals AS (
     INNER JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Intervention_Referral_Program_and_Service_Type_Combinations_latest` coms_combo 
       USING(Intervention_Referral_Id, Offender_Number)
     LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei 
-      ON LTRIM(coms_treat.Offender_Number, '0') = pei.external_id AND pei.id_type = 'US_MI_DOC'
+      ON coms_treat.Offender_Number = pei.external_id AND pei.id_type = 'US_MI_DOC'
     
     UNION ALL
 

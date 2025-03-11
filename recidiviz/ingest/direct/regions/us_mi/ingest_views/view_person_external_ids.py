@@ -24,7 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
   select
-    offender_number,
+    LPAD(offender_number, 7, "0") AS offender_number,
     book.offender_id,
     STRING_AGG(offender_booking_id, "," ORDER BY offender_booking_id) as offender_booking_ids
   from {ADH_OFFENDER_BOOKING} book

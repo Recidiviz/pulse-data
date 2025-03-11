@@ -25,7 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT DISTINCT
   Employment_Id,
-  LTRIM(emp.offender_number, '0') as Offender_Number,
+  Offender_Number,
   Job_Status,
   Job_Title,
   -- Let's start all employment periods on 8-14-2023 since that's when employment periods data got moved to COMS
@@ -36,8 +36,6 @@ SELECT DISTINCT
   DATE(Employment_End_Date) as Employment_End_Date,
   Reason_For_Leaving
 FROM {COMS_Employment} emp
-LEFT JOIN {ADH_OFFENDER} off on LTRIM(emp.offender_number, '0') = off.Offender_Number
-INNER JOIN {ADH_OFFENDER_BOOKING} book on off.offender_id = book.offender_id
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

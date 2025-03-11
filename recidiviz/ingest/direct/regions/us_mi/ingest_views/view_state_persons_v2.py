@@ -36,7 +36,7 @@ latest_booking_profiles AS (
   GROUP BY offender_booking_id
 )
 SELECT DISTINCT
-  p.offender_number,
+  LPAD(p.offender_number, 7, "0") AS offender_number,
   p.last_name,
   p.first_name,
   p.middle_name,
