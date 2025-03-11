@@ -225,6 +225,14 @@ class TestProductConfigs(unittest.TestCase):
         )
         self.assertFalse(export_config)
 
+    def test_get_states_with_export_enabled_in_any_env(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml", "../fixtures")
+        )
+        states = product_configs.get_states_with_export_enabled_in_any_env("EXPORT")
+        expected = {"US_WW", "US_YY", "US_XX"}
+        self.assertEqual(expected, states)
+
 
 class TestRealProductConfigs(unittest.TestCase):
     """Tests for the products.yaml configuration."""

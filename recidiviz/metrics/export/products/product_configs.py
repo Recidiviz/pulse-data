@@ -25,6 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import products as products_module
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 PRODUCTS_CONFIG_PATH = os.path.join(
@@ -162,6 +163,19 @@ class ProductConfigs:
             for export in self.get_all_export_configs()
             if export["state_code"] is None
         ]
+
+    def get_states_with_export_enabled_in_any_env(
+        self, export_job_name: str
+    ) -> set[str]:
+        """Returns a set of string state codes for states that have the given
+        |export_job_name| export job enabled in any environment (staging-only or staging
+         and production).
+        """
+        return {
+            assert_type(c["state_code"], str)
+            for c in self.get_export_configs_for_job_filter(export_job_name)
+            if c["state_code"]
+        }
 
     def is_export_launched_in_env(
         self,
