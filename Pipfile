@@ -255,6 +255,7 @@ pygit2 = "*"
 matplotx = "*"
 sqlglot = "==23.11.2"
 tabulate = "*"
+tenacity="*"
 
 
 [requires]
