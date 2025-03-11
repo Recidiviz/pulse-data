@@ -147,7 +147,7 @@ SELECT
         -- the P&P directory entirely, close their employment period on the last date we 
         -- receive data that included them as an active officer. 
         WHEN LEAD(edge_date) OVER person_window IS NULL 
-            AND edge_date < last_appearance_datetime
+            AND edge_date < last_file_update_datetime
             THEN last_appearance_datetime 
         -- If there is a more recent update to this person's role, close the existing
         -- period on the date of the update.

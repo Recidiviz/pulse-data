@@ -35,65 +35,27 @@ staff_from_docstars AS (
         STATUS
     FROM {docstars_officers@ALL} 
 ),
--- This CTE filters the raw data to include only the rows that are relevant to the
--- location periods we are constructing. These are rows where an officer just started working
--- or changed locations. We also include all rows where the edge date is the last update
--- we have about a given officer, to account for rows that signify an officer becoming inactive.
+-- This CTE creates windows where particular statuses and locations were active.
 critical_dates AS (
-SELECT * FROM (
-    SELECT
-        OFFICER,
-        location,
-        LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
-        edge_date,
-        STATUS,
-        LAG(STATUS) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_status, 
-    FROM staff_from_docstars) cd
-WHERE 
-    -- officer just started working 
-    (cd.prev_location IS NULL AND cd.location IS NOT NULL) 
-    -- officer changed locations
-    OR cd.prev_location != location
-    -- officer's employment status changed (RecDate in these rows is officers' hire/termination date)
-    OR (cd.prev_status != STATUS)
-), 
--- This CTE constructs periods using the compiled critical dates. End dates follow this 
--- logic: 
-    -- 1. If a person stopped working, close their employment period on the last date we 
-    --    receive data that included them as an active employee.
-    -- 2. If there is a subsequent row showing a person changed locations, close the existing 
-    --    period on the date of that change.
-    -- 3. If a there is no subsequent row, and the edge date is the same as the most 
-    --    recent date the person has appeared in the data, then leave the period open
-    --    to signify that the existing period is still active.
-all_periods AS (
+SELECT
+    OFFICER,
+    location,
+    edge_date AS start_date,
+    LEAD(edge_date) OVER person_window AS end_date,
+    STATUS,
+FROM staff_from_docstars cd
+WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date)
+)
+
 SELECT 
     OFFICER,
     location,
-    STATUS,
-    -- if status is 0, RecDate is previous period's end date, there should not be a period with that as start date
-    edge_date AS start_date,
-    CASE 
-        -- There is a more recent update to this person's location
-        WHEN LEAD(edge_date) OVER person_window IS NOT NULL 
-            THEN LEAD(edge_date) OVER person_window 
-        -- All currently-employed staff will appear in the latest raw data
-        ELSE CAST(NULL AS DATETIME)
-    END AS end_date,
-FROM critical_dates
-WHERE STATUS IS NOT NULL
-AND STATUS != '0' -- exclude periods that start with employment termination
-WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date)
-)
-SELECT 
-    OFFICER,
-    location, 
-    -- reset period_seq_num after excluding periods start dates of inactive periods
     start_date,
     end_date,
     ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
-FROM all_periods
-WHERE location IS NOT NULL
+FROM critical_dates
+-- if a person is no longer employed by DOCR, there should not be a period starting on the date of that transition
+WHERE STATUS != '0'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
