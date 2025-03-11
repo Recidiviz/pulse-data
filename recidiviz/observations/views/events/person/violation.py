@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,8 +42,9 @@ SELECT
     v.gender,
     v.prioritized_race_or_ethnicity,
     MIN(response_date) AS response_date,
-    -- This should already be unique since we're pulling from sub-sessions
+    -- These should already be unique since we're pulling from sub-sessions
     ANY_VALUE(css.correctional_level) AS supervision_level,
+    ANY_VALUE(css.correctional_level_raw_text) AS supervision_level_raw_text,
 FROM
     `{{project_id}}.dataflow_metrics_materialized.most_recent_violation_with_response_metrics_materialized` v
 LEFT JOIN
@@ -70,6 +71,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "gender",
         "prioritized_race_or_ethnicity",
         "supervision_level",
+        "supervision_level_raw_text",
     ],
     event_date_col="event_date",
 )
