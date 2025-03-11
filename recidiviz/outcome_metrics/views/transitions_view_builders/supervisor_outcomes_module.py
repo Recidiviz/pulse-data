@@ -78,7 +78,9 @@ transitions_with_experiment_assignments AS (
         `{{project_id}}.transitions.all_full_state_launch_dates_materialized` launches
     ON
         transitions.state_code = launches.state_code
-        AND launches.experiment_id LIKE "%OUTLIERS%"
+        AND (launches.experiment_id LIKE "%OUTLIERS%"
+            -- For MI, exclude the SUPERVISOR_HOMEPAGE_OUTCOMES_V2 launch and use US_MI_OUTLIERS_WEB_TOOL_CARCERAL_SUPERVISION_METRICS instead
+            OR (launches.experiment_id LIKE '%SUPERVISOR_HOMEPAGE_OUTCOMES_V2%' AND launches.state_code != 'US_MI'))
 )
 SELECT * FROM transitions_with_experiment_assignments
 """
