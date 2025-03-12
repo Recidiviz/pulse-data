@@ -34,8 +34,9 @@ from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECT
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
-# Firestore client caps us at 500 records per batch
-MAX_FIRESTORE_RECORDS_PER_BATCH = 499
+# Firestore client caps us at 500 records per batch. We've run into transaction size limits with
+# this being set to 499, so it's now set to 400.
+MAX_FIRESTORE_RECORDS_PER_BATCH = 400
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -168,11 +169,16 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 if num_records_to_write >= MAX_FIRESTORE_RECORDS_PER_BATCH:
                     batch.commit()
                     batch = firestore_client.batch()
+                    logging.info(
+                        '%d total records written to Firestore collection "%s".',
+                        total_records_written,
+                        collection_name,
+                    )
                     num_records_to_write = 0
 
         batch.commit()
         logging.info(
-            '%d records written to Firestore collection "%s".',
+            '%d total records written to Firestore collection "%s".',
             total_records_written,
             collection_name,
         )
