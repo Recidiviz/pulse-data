@@ -63,6 +63,7 @@ WITH
 uniform_charges AS (
     SELECT
         charge.state_code,
+        charge.person_id,
         charge.charge_v2_id,
         charge.external_id,    
         charge.classification_type,
@@ -78,7 +79,7 @@ uniform_charges AS (
         clean_offense.ncic_code_uniform
     FROM 
         `{{project_id}}.normalized_state.state_charge_v2` AS charge
-    JOIN
+    LEFT JOIN
         `{{project_id}}.{CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER.table_for_query.to_str()}` AS clean_offense
     ON
         charge.description = clean_offense.offense_description
@@ -98,6 +99,8 @@ initial_sentence_lengths AS (
 -- Aggregates offense and sentence characteristics by imposed group
 aggregated_sentence_charge_data AS (
     SELECT
+        imposed_groups.state_code,
+        imposed_groups.person_id,
         imposed_groups.sentence_imposed_group_id,
         imposed_groups.most_severe_charge_v2_id,
         imposed_groups.sentencing_authority,
@@ -107,6 +110,7 @@ aggregated_sentence_charge_data AS (
         LOGICAL_OR(all_charges.is_violent_uniform) AS any_is_violent,
         LOGICAL_OR(all_charges.is_drug_uniform) AS any_is_drug,
         LOGICAL_OR(sentences.is_life) AS any_is_life,
+        # TODO(#38539): respect NULLs from life sentences here
         MAX(initial_sentence_lengths.projected_completion_date_min_external) AS projected_completion_date_min, 
         MAX(initial_sentence_lengths.projected_completion_date_max_external) AS projected_completion_date_max
     FROM 
@@ -119,7 +123,7 @@ aggregated_sentence_charge_data AS (
         `{{project_id}}.normalized_state.state_charge_v2_state_sentence_association` AS charge_to_sentence
     USING 
         (sentence_id)
-    JOIN 
+    LEFT JOIN
         uniform_charges AS all_charges
     USING 
         (charge_v2_id)
@@ -128,10 +132,11 @@ aggregated_sentence_charge_data AS (
     ON
         sentences.sentence_id = initial_sentence_lengths.sentence_id
     GROUP BY
-        sentence_imposed_group_id, most_severe_charge_v2_id, sentencing_authority, serving_start_date, imposed_date
+        state_code, person_id, sentence_imposed_group_id, most_severe_charge_v2_id, sentencing_authority, serving_start_date, imposed_date
 )
 SELECT
-    most_severe_charge.state_code,
+    imposed_group.state_code,
+    imposed_group.person_id,
     imposed_group.sentence_imposed_group_id,
     imposed_group.most_severe_charge_v2_id,
     imposed_group.sentencing_authority,
@@ -168,7 +173,7 @@ SELECT
 
 FROM
     aggregated_sentence_charge_data AS imposed_group
-JOIN
+LEFT JOIN
     uniform_charges AS most_severe_charge
 ON
     imposed_group.most_severe_charge_v2_id = most_severe_charge.charge_v2_id

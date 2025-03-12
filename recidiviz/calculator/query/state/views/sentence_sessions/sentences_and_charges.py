@@ -65,6 +65,7 @@ sentences_and_charges AS (
         sent.sentence_inferred_group_id,
         sent_group.sentence_group_id,
         sent.sentence_group_external_id,
+        sent.sentence_imposed_group_id,
         sent.sentence_type,
         sent.sentence_type_raw_text,
         sent.sentencing_authority,
@@ -136,6 +137,7 @@ sentences_and_charges AS (
         NULL AS sentence_inferred_group_id,
         NULL AS sentence_group_id,
         NULL AS sentence_group_external_id,
+        NULL AS sentence_imposed_group_id,
         -- Use the V1 sentence_type values to mimic the V2 sentence_type enums
         CASE
             WHEN sent.sentence_type = "INCARCERATION" THEN "STATE_PRISON"

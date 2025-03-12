@@ -316,6 +316,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "sentencing_authority": "STATE",
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
@@ -364,6 +365,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "imposed_date": imposed_group.imposed_date,
                 "serving_start_date": imposed_group.serving_start_date,
                 "any_is_sex_offense": False,
@@ -454,6 +456,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "sentencing_authority": "STATE",
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
@@ -554,6 +557,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "sentencing_authority": "STATE",
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
@@ -644,6 +648,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "sentencing_authority": "STATE",
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
@@ -736,6 +741,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             {
                 "sentence_imposed_group_id": imposed_group.sentence_imposed_group_id,
                 "most_severe_charge_v2_id": imposed_group.most_severe_charge_v2_id,
+                "person_id": person.person_id,
                 "sentencing_authority": "STATE",
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
