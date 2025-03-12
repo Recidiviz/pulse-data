@@ -1,0 +1,18 @@
+config:
+  sftpd:
+    max_auth_retries: 10
+
+services:
+  sftp-public:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    loadBalancerIP: "!!LOADBALANCERIP!!"
+    annotations:
+      cloud.google.com/l4-rbs: "enabled"
+      networking.gke.io/weighted-load-balancing: "pods-per-node"
+    spec:
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+    ports:
+      sftp:
+        port: 22

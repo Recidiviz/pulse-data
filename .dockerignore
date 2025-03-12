@@ -223,3 +223,14 @@ recidiviz/justice_counts/control_panel/local/**/*
 
 # Terraform cache
 recidiviz/tools/deploy/terraform/.terraform
+
+# Terraform / Atmos created files
+.atmos
+.terraform
+.terraform.lock.hcl
+*.tf.json
+*.tfvars.json
+*.planfile
+*.tfplan
+.decrypted*
+release.out

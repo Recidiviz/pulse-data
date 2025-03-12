@@ -3,6 +3,13 @@ repos:
     rev: v2.3.0
     hooks:
       - id: check-yaml
+        exclude: "recidiviz/tools/deploy/atmos"
+      - id: check-yaml
+        name: check-atmos-yaml
+        files: "recidiviz/tools/deploy/atmos"
+        # Only parse the files rather than loading them, avoiding an error when the YAML
+        # includes `!function` tags
+        args: ["--unsafe"]
   - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:

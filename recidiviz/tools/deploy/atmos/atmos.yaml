@@ -1,0 +1,38 @@
+base_path: "./"
+
+components:
+  terraform:
+    base_path: "components/terraform"
+    # If desired, approval of plans prior to apply can be skipped automatically
+    apply_auto_approve: false
+    # When running `atmos deploy` initialize the Terraform backend
+    deploy_run_init: true
+    # When initializing Terraform backends, reconfigure the backend
+    init_run_reconfigure: true
+    # Automatically create a backend.tf HCL file based off of the configured `providers` blocks in our atmos YAML
+    auto_generate_backend_file: true
+
+  helmfile:
+    base_path: "components/helmfile"
+    # Disable AWS-specific helper features
+    use_eks: false
+# Configuration on where to find stacks
+stacks:
+  base_path: "stacks"
+  # Include all .yaml files underneath the stacks folder
+  included_paths:
+    - "**/*.yaml"
+  # For each of the YAML files, group their components into stacks based on the project and product
+  name_template: "{{.settings.context.project_id}}"
+
+templates:
+  settings:
+    # Enable gomplates in Atmos stack manifests
+    enabled: true
+    evaluations: 3
+    gomplate:
+      enabled: true
+
+logs:
+  file: "/dev/stderr"
+  level: Info

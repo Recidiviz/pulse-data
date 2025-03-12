@@ -191,3 +191,14 @@ recidiviz/tests/big_query/fixtures/
 logs/
 get-pip.py
 *.code-workspace
+
+# Terraform / Atmos created files
+.atmos
+.terraform
+.terraform.lock.hcl
+*.tf.json
+*.tfvars.json
+*.planfile
+*.tfplan
+.decrypted*
+release.out

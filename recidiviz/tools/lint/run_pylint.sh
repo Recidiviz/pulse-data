@@ -51,7 +51,7 @@ fi
 #Query logical CPUs on Mac
 if num_cpus=$(sysctl -n hw.ncpu 2> /dev/null)
 then
-    echo "Configured to run with $num_cpus CPUs"
+    echo "Configured to run with ${num_cpus} CPUs"
 #Query logical CPUs on Linux
 elif [[ -d /sys/devices/system/cpu/ ]];
 then
@@ -62,7 +62,7 @@ then
         -regex "/sys/devices/system/cpu/cpu[0-9]+$" | \
         wc -l
     )
-    echo "Configured to run with $num_cpus CPUs"
+    echo "Configured to run with ${num_cpus} CPUs"
 #Fallback
 else
     num_cpus=0
@@ -76,7 +76,7 @@ exit_code=0
 if [[ ${merge_base_hash} == "${current_head_hash}" || ${pylint_config_may_have_changed} == true ]]
 then
     echo "Running FULL pylint for branch $current_head_branch_name. Pylint config changed=[$pylint_config_may_have_changed]";
-    pylint recidiviz -j $num_cpus
+    pylint recidiviz -j "${num_cpus}"
 else
 
     declare -a changed_python_files
@@ -90,7 +90,7 @@ else
         echo "Changed files:"
         echo "${changed_python_files[@]}" | tr ' ' '\n'
 
-        pylint "${changed_python_files[@]}" -j $num_cpus
+        pylint "${changed_python_files[@]}" -j "${num_cpus}"
     fi
 fi
 exit_code=$((exit_code + $?))
@@ -107,6 +107,7 @@ invalid_lines=$(${changed_files_cmd} \
     | grep --invert-match -e 'find_todos.py' \
     | grep --invert-match -e 'issue_references.py' \
     | grep --invert-match -e 'bandit-baseline.json' \
+    | grep --invert-match -e 'recidiviz/tools/deploy/atmos/components/terraform/vendor' \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
     | grep --invert-match -e '/templates/' \

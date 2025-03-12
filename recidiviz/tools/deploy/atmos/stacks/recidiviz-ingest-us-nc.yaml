@@ -1,0 +1,55 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-nc project
+settings:
+  context:
+    project_id: recidiviz-ingest-us-nc
+    organization_id: 448885369991
+    folder_id: 751846899284 # HIPAA
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+
+terraform:
+  # Describes where the Terraform state file for these centrally-managed components is stored
+  # https://atmos.tools/core-concepts/components/terraform/backends#google-cloud-storage-backend
+  backend_type: gcs
+  backend:
+    gcs:
+      bucket: recidiviz-devops-tf-state
+      prefix: "projects/{{ .settings.context.project_id }}/{{ .component }}"
+  # This provides the default configuration for our Terraform providers
+  # https://atmos.tools/core-concepts/components/terraform/providers
+  providers:
+    google:
+      project: "{{ .settings.context.project_id }}"
+
+components:
+  terraform:
+    # Provisions the recidiviz-ingest-uc-nc project
+    vendor/core-project-factory:
+      vars:
+        name: "{{ .settings.context.project_id }}"
+        org_id: "{{ .settings.context.organization_id }}"
+        folder_id: "{{ .settings.context.folder_id }}"
+        billing_account: !exec gcloud billing accounts list --filter 'displayName:"Recidiviz Commit 2.0"' --format yaml | yq '.name | split("/") | .[1]'
+        default_service_account: deprivilege
+        deletion_policy: PREVENT
+        activate_apis:
+          - compute.googleapis.com # GCE
+          - container.googleapis.com # GKE
+
+    # Provision the cluster and resources separately so that the cluster can be recreated
+    # without the dependent helm resources preventing it if necessary
+    sftpgo-kubernetes-cluster:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        zones:
+          - us-central1-b
+
+    sftpgo-kubernetes-resources:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: !terraform.output sftpgo-kubernetes-cluster {{.stack}} region
+        kubernetes_endpoint: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
+        kubernetes_ca_certificate: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate

@@ -1,0 +1,19 @@
+apiVersion: atmos/v1
+kind: AtmosVendorConfig
+metadata:
+  name: Vendor configuration for security-operations-automation
+spec:
+  sources:
+    - component: "gke-public-cluster"
+      source: "github.com/terraform-google-modules/terraform-google-kubernetes-engine.git//modules/beta-public-cluster/?ref={{.Version}}"
+      version: "v36.0.2"
+      included_paths:
+        - "**/*.tf"
+        - "**/README.md"
+      targets:
+        - components/terraform/vendor/{{.Component}}
+    - component: "core-project-factory"
+      source: "github.com/terraform-google-modules/terraform-google-project-factory.git?ref={{.Version}}"
+      version: "v18.0.0"
+      targets:
+        - components/terraform/vendor/{{.Component}}
