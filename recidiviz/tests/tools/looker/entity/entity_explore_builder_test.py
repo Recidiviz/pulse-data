@@ -17,6 +17,10 @@
 """Tests for entity_explore_builder.py."""
 import unittest
 
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,
@@ -88,3 +92,17 @@ explore: fake_person_external_id {
         explore_str = "\n".join([e.build() for e in explores])
 
         self.assertEqual(expected_explore.strip(), explore_str.strip())
+
+
+class TestStateExploreBuilder(unittest.TestCase):
+    """Tests for build state entity explores"""
+
+    def test_build_state_explores(self) -> None:
+        module_context = entities_module_context_for_module(state_entities)
+        root_entities = [state_entities.StatePerson, state_entities.StateStaff]
+        for root_entity_cls in root_entities:
+            # Assert doesn't crash
+            _ = EntityLookMLExploreBuilder(
+                module_context=module_context,
+                root_entity_cls=root_entity_cls,
+            ).build()

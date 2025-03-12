@@ -20,15 +20,37 @@ Run the following to write files to the specified directory DIR:
 python -m recidiviz.tools.looker.state.state_dataset_lookml_writer --looker_repo_root [DIR]
 
 """
-
 import argparse
 import os
 
+from recidiviz.looker.lookml_explore import write_explores_to_file
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.root_entity_utils import (
+    get_root_entity_classes_in_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.tools.looker.constants import (
+    DASHBOARDS_DIR,
+    EXPLORES_DIR,
+    LOOKER_REPO_NAME,
+    VIEWS_DIR,
+)
+from recidiviz.tools.looker.entity.entity_dashboard_builder import (
+    EntityLookMLDashboardBuilder,
+)
+from recidiviz.tools.looker.entity.entity_explore_builder import (
+    EntityLookMLExploreBuilder,
+)
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.tools.looker.state.state_dataset_view_generator import (
     generate_state_views,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+
+STATE_SUBDIR = "state"
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -46,31 +68,57 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _write_state_views(looker_dir: str) -> None:
-    """
-    Write LookML View files for the state dataset to .view.lkml files in looker_dir/views/state/
-
-    looker_dir: Local path to root directory of the Looker repo
-    """
-    state_dir = os.path.join(looker_dir, "views", "state")
-    remove_lookml_files_from(state_dir)
-
-    for lookml_view in generate_state_views():
-        lookml_view.write(state_dir, source_script_path=__file__)
-
-
 def write_lookml_files(looker_dir: str) -> None:
     """
-    Write state raw data LookML views, explores and dashboards to the given directory,
+    Write state LookML views, explores and dashboards to the given directory,
     which should be a path to the local copy of the looker repo
     """
-    if os.path.basename(looker_dir).lower() != "looker" and not prompt_for_confirmation(
+    if os.path.basename(looker_dir).lower() != LOOKER_REPO_NAME:
+        raise ValueError(
+            f"Expected looker_dir to be at the root of [{LOOKER_REPO_NAME}] repo, but instead got [{looker_dir}]"
+        )
+
+    prompt_for_confirmation(
         f"Warning: .lkml files will be deleted/overwritten in {looker_dir}\nProceed?"
-    ):
-        return
-    # TODO(#23292): Generate explores and dashboard files
+    )
+
+    for subdir in [VIEWS_DIR, EXPLORES_DIR, DASHBOARDS_DIR]:
+        remove_lookml_files_from(os.path.join(looker_dir, subdir, STATE_SUBDIR))
+
     # TODO(#23292): Generate normalized state views
-    _write_state_views(looker_dir)
+    state_views = generate_state_views()
+    for view in state_views:
+        view.write(
+            output_directory=os.path.join(looker_dir, VIEWS_DIR, STATE_SUBDIR),
+            source_script_path=__file__,
+        )
+
+    module_context = entities_module_context_for_module(state_entities)
+
+    for root_entity_cls in get_root_entity_classes_in_module(state_entities):
+        if not issubclass(root_entity_cls, Entity):
+            raise ValueError(
+                f"Expected root entity class [{root_entity_cls}] to be a subclass of [{Entity}]"
+            )
+        write_explores_to_file(
+            explores=EntityLookMLExploreBuilder(
+                module_context=module_context,
+                root_entity_cls=root_entity_cls,
+            ).build(),
+            top_level_explore_name=root_entity_cls.get_table_id(),
+            output_directory=os.path.join(looker_dir, EXPLORES_DIR, STATE_SUBDIR),
+            source_script_path=__file__,
+        )
+
+        dashboard = EntityLookMLDashboardBuilder(
+            module_context=module_context,
+            root_entity_cls=root_entity_cls,
+            views=state_views,
+        ).build_and_validate()
+        dashboard.write(
+            output_directory=os.path.join(looker_dir, DASHBOARDS_DIR, STATE_SUBDIR),
+            source_script_path=__file__,
+        )
 
 
 if __name__ == "__main__":

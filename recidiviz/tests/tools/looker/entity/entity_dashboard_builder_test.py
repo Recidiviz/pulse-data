@@ -45,10 +45,17 @@ from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterValueFormat,
 )
 from recidiviz.looker.lookml_view_source_table import SqlTableAddress
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,
+)
+from recidiviz.tests.tools.looker.state.state_dataset_view_generator_test import (
+    generate_state_views,
 )
 from recidiviz.tools.looker.entity.entity_dashboard_builder import (
     EntityLookMLDashboardBuilder,
@@ -480,3 +487,19 @@ class EntityDashboardBuilderTest(unittest.TestCase):
         ).build_and_validate()
 
         self.assertEqual(dashboard.build(), expected_dashboard)
+
+
+class TestStateDashboardBuilder(unittest.TestCase):
+    """Tests for building state entity dashboards."""
+
+    def test_generate_state_dashboards(self) -> None:
+        views = generate_state_views()
+        module_context = entities_module_context_for_module(state_entities)
+        root_entities = [state_entities.StatePerson, state_entities.StateStaff]
+        for root_entity_cls in root_entities:
+            # Assert doesn't crash
+            _ = EntityLookMLDashboardBuilder(
+                module_context=module_context,
+                root_entity_cls=root_entity_cls,
+                views=views,
+            ).build_and_validate()

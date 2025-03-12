@@ -14,22 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for state_dataset_explore_generator.py."""
-import unittest
+"""Constants for Looker generation scripts."""
 
-from recidiviz.tools.looker.state.state_dataset_explore_generator import (
-    generate_state_person_lookml_explore,
-    generate_state_staff_lookml_explore,
-)
-
-
-class TestStateDatasetExploreGenerator(unittest.TestCase):
-    """Tests for state_dataset_explore_generator.py."""
-
-    def test_generate_state_person(self) -> None:
-        # Assert doesn't crash
-        _ = generate_state_person_lookml_explore()
-
-    def test_generate_state_staff(self) -> None:
-        # Assert doesn't crash
-        _ = generate_state_staff_lookml_explore()
+LOOKER_REPO_NAME = "looker"
+VIEWS_DIR = "views"
+DASHBOARDS_DIR = "dashboards"
+EXPLORES_DIR = "explores"

@@ -98,3 +98,21 @@ class LookMLExplore:
             source_script_path=source_script_path,
             file_body=self.build(),
         )
+
+
+def write_explores_to_file(
+    explores: List[LookMLExplore],
+    top_level_explore_name: str,
+    output_directory: str,
+    source_script_path: str,
+) -> None:
+    """Writes multiple LookML explores to a single file in the specified output directory,
+    with a header indicating the date and script source of the auto-generated explores.
+    """
+    file_name = f"{top_level_explore_name}.explore.lkml"
+    write_lookml_file(
+        output_directory=output_directory,
+        file_name=file_name,
+        source_script_path=source_script_path,
+        file_body="\n".join([explore.build() for explore in explores]),
+    )
