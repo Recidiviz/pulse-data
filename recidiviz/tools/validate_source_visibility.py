@@ -467,6 +467,8 @@ def main() -> int:
         "recidiviz.utils.encoding",
         "recidiviz.utils.metadata",
         "recidiviz.utils.size",
+        "recidiviz.utils.github",
+        "recidiviz.utils.secrets",
     }
 
     success &= check_dependencies_for_entrypoint(

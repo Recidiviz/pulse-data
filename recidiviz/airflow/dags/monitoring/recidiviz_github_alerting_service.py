@@ -26,10 +26,11 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
-    RecidivzAlertingService,
+    RecidivizAlertingService,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import get_environment_for_project
+from recidiviz.utils.github import format_region_specific_ticket_title
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type
@@ -43,30 +44,36 @@ DATAFLOW_DEFAULT_LABELS = ["Dataflow Pipeline Failure", "Team: State Pod"]
 
 
 @attr.define
-class RecidivizGitHubService(RecidivzAlertingService):
+class RecidivizGitHubService(RecidivizAlertingService):
     """An alerting service that creates and updates issues in GitHub."""
 
     name: str
+    state_code: StateCode
+    project_id: str
     issue_labels: list[str]
 
     def __attrs_post_init__(self) -> None:
         self._hook = GithubHook()
         self._repo = self._hook.get_conn().get_repo(RECIDIVIZ_DATA_REPO)
 
+    @property
+    def environment(self) -> str:
+        return get_environment_for_project(self.project_id).value
+
     @classmethod
     def raw_data_service_for_state_code(
         cls, *, project_id: str, state_code: StateCode
     ) -> "RecidivizGitHubService":
-        label_for_project = (
-            "Prod" if project_id == GCP_PROJECT_PRODUCTION else "Staging"
-        )
+        label_for_environment = get_environment_for_project(project_id).value.title()
         label_for_state_code = f"Region: {state_code.value}"
         return RecidivizGitHubService(
             name=f"Raw Data {state_code.value} Github Service",
+            state_code=state_code,
+            project_id=project_id,
             issue_labels=[
                 *RAW_DATA_DEFAULT_LABELS,
                 label_for_state_code,
-                label_for_project,
+                label_for_environment,
             ],
         )
 
@@ -74,16 +81,16 @@ class RecidivizGitHubService(RecidivzAlertingService):
     def dataflow_service_for_state_code(
         cls, *, project_id: str, state_code: StateCode
     ) -> "RecidivizGitHubService":
-        label_for_project = (
-            "Prod" if project_id == GCP_PROJECT_PRODUCTION else "Staging"
-        )
+        label_for_environment = get_environment_for_project(project_id).value.title()
         label_for_state_code = f"Region: {state_code.value}"
         return RecidivizGitHubService(
             name=f"Dataflow {state_code.value} Github Service",
+            state_code=state_code,
+            project_id=project_id,
             issue_labels=[
                 *DATAFLOW_DEFAULT_LABELS,
                 label_for_state_code,
-                label_for_project,
+                label_for_environment,
             ],
         )
 
@@ -105,8 +112,12 @@ class RecidivizGitHubService(RecidivzAlertingService):
         )
 
         for issue in matching_issues:
-            # match by unique_incident_id
-            if issue.title == incident.unique_incident_id:
+            # TODO(#39156) remove match by unique_incident_id legacy 42 days after
+            # creating new issues using _get_issue_title_from_incident is merged
+            if (
+                issue.title == incident.unique_incident_id
+                or issue.title == self._get_issue_title_from_incident(incident)
+            ):
                 return issue
 
         return None
@@ -176,6 +187,12 @@ class RecidivizGitHubService(RecidivzAlertingService):
                 f"is [{len(full_message)}] chars - cannot create issue."
             )
         return full_message
+
+    def _get_issue_title_from_incident(self, incident: AirflowAlertingIncident) -> str:
+        title = f'{incident.job_id}, started: {incident.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")}'
+        return format_region_specific_ticket_title(
+            region_code=self.state_code.value, environment=self.environment, title=title
+        )
 
     def _open_new_issue(self, incident: AirflowAlertingIncident) -> None:
         body = self._format_incident_error_message(

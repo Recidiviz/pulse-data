@@ -38,6 +38,7 @@ from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.environment import GCPEnvironment
 
 _PROJECT_ID = "recidiviz-456"
 
@@ -51,9 +52,15 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook",
         )
         self.github_hook_patcher.start()
+        self.env_for_project_patch = patch(
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.get_environment_for_project",
+            return_value=GCPEnvironment.STAGING,
+        )
+        self.env_for_project_patch.start()
 
     def tearDown(self) -> None:
         self.github_hook_patcher.stop()
+        self.env_for_project_patch.stop()
 
     @staticmethod
     def _make_incident(dag_id: str, job_id: str) -> AirflowAlertingIncident:

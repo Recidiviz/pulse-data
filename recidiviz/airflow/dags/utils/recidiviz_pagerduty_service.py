@@ -23,14 +23,14 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
-    RecidivzAlertingService,
+    RecidivizAlertingService,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 
 
 @attr.define
-class RecidivizPagerDutyService(RecidivzAlertingService):
+class RecidivizPagerDutyService(RecidivizAlertingService):
     """Structure holding information about a service managed by the Recidiviz repo.
     For the full list of services, see
     https://recidiviz.pagerduty.com/service-directory.

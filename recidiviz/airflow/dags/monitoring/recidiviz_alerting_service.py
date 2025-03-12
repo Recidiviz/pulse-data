@@ -22,7 +22,7 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 )
 
 
-class RecidivzAlertingService:
+class RecidivizAlertingService:
 
     name: str
 

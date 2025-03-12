@@ -41,7 +41,11 @@ from recidiviz.utils.environment import (
     get_admin_panel_base_url,
     get_environment_for_project,
 )
-from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
+from recidiviz.utils.github import (
+    RECIDIVIZ_DATA_REPO,
+    format_region_specific_ticket_title,
+    github_helperbot_client,
+)
 from recidiviz.validation.configured_validations import (
     get_all_deployed_validations,
     get_validation_global_config,
@@ -369,8 +373,11 @@ def _file_tickets_for_failing_validations(
         for validation in validations:
             name = validation.validation_job.validation.validation_name
             name_str = f"`{name}`"
-            env_str = f"[{env}]"
-            title_str = f"{env_str}[{region}] {name_str}"
+            title_str = format_region_specific_ticket_title(
+                region_code=region,
+                environment=env,
+                title=name_str,
+            )
             ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
 Admin Panel link: {get_admin_panel_base_url()}/admin/validation_metadata/status/details/{name}?stateCode={region}
 Failure details: {validation.result_details.failure_description()}

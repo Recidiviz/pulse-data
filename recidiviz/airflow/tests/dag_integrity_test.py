@@ -37,6 +37,7 @@ from recidiviz.airflow.dags.monitoring.job_run_history_delegate_factory import (
     JobRunHistoryDelegateFactory,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
+from recidiviz.utils.environment import GCPEnvironment
 
 _PROJECT_ID = "recidiviz-testing"
 
@@ -55,10 +56,16 @@ class TestDagIntegrity(AirflowIntegrationTest):
             "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook.get_conn",
         )
         self.github_client_patch.start()
+        self.env_for_project_patch = patch(
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.get_environment_for_project",
+            return_value=GCPEnvironment.STAGING,
+        )
+        self.env_for_project_patch.start()
         super().setUp()
 
     def tearDown(self) -> None:
         self.github_client_patch.stop()
+        self.env_for_project_patch.stop()
         super().tearDown()
 
     def test_dag_bag_import(self) -> None:

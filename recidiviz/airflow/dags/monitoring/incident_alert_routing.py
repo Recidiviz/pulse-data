@@ -33,7 +33,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
-    RecidivzAlertingService,
+    RecidivizAlertingService,
 )
 from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
     RecidivizGitHubService,
@@ -120,7 +120,7 @@ def _job_is_task_branching_start_or_end(job_id: str) -> bool:
 
 def get_alerting_services_for_incident(
     incident: AirflowAlertingIncident,
-) -> list[RecidivzAlertingService]:
+) -> list[RecidivizAlertingService]:
     """Returns the service that the given alerting incident should be sent to."""
     project_id = get_project_id()
     dag_id = incident.dag_id
