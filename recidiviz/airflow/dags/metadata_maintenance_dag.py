@@ -32,7 +32,7 @@ https://github.com/teamclairvoyant/airflow-maintenance-dags/tree/master/db-clean
 # pylint: disable=ungrouped-imports disable=wrong-import-order
 import logging
 from datetime import datetime, timedelta
-from typing import Any, TypedDict
+from typing import Any
 
 import dateutil.parser
 import pendulum
@@ -60,7 +60,6 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_metadata_maintenance_dag_id,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.utils.types import assert_type
 
 now = timezone.utcnow
 
@@ -87,15 +86,6 @@ PRINT_DELETES = False
 # Whether the job should delete the db entries or not. Included if you want to
 # temporarily avoid deleting the db entries.
 ENABLE_DELETE = True
-
-
-class ParamsType(TypedDict):
-    airflow_db_model: Base
-    age_check_column: Column
-    keep_last: bool
-    keep_last_filters: list | None
-    keep_last_group_by: Column | None
-    do_not_delete_by_dag_id: bool | None
 
 
 # List of all the objects that will be deleted. Comment out the DB objects you
@@ -260,9 +250,9 @@ if hasattr(dag, "catchup"):
     dag.catchup = False
 
 
-def print_configuration_function(**context: dict[Any, Any]) -> None:
+def print_configuration_function(**context: dict[str, Any]) -> None:
     logging.info("Loading Configurations...")
-    dag_run = assert_type(context.get("dag_run"), DagRun)
+    dag_run: Any = context.get("dag_run")
     dag_run_conf = dag_run.conf
     logging.info("dag_run.conf: %s", str(dag_run_conf))
     max_db_entry_age_in_days = None
@@ -275,7 +265,7 @@ def print_configuration_function(**context: dict[Any, Any]) -> None:
             str(DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS),
         )
         max_db_entry_age_in_days = DEFAULT_MAX_DB_ENTRY_AGE_IN_DAYS
-    max_date = now() + timedelta(-assert_type(max_db_entry_age_in_days, int))
+    max_date = now() + timedelta(-max_db_entry_age_in_days)
     logging.info("Finished Loading Configurations")
     logging.info("")
 
@@ -286,7 +276,7 @@ def print_configuration_function(**context: dict[Any, Any]) -> None:
     logging.info("")
 
     logging.info("Setting max_execution_date to XCom for Downstream Processes")
-    task_instance = assert_type(context["ti"], TaskInstance)
+    task_instance: Any = context["ti"]
     task_instance.xcom_push(key="max_date", value=max_date.isoformat())
 
 
@@ -367,19 +357,19 @@ def print_query(query: Query, airflow_db_model: Base, age_check_column: Column) 
     )
 
 
-def cleanup_function(**context: dict[Any, Any | ParamsType]) -> None:
+def cleanup_function(**context: dict[Any, Any]) -> None:
     """Performs the deletion"""
     session = settings.Session()
 
     logging.info("Retrieving max_execution_date from XCom")
-    task_instance = assert_type(context["ti"], TaskInstance)
+    task_instance: Any = context["ti"]
     max_date = task_instance.xcom_pull(
         task_ids=print_configuration.task_id, key="max_date"
     )
     max_date = dateutil.parser.parse(max_date)  # stored as iso8601 str in xcom
 
-    params: ParamsType = context["params"]  # type: ignore
-    airflow_db_model = assert_type(params.get("airflow_db_model"), Base)
+    params: Any = context["params"]
+    airflow_db_model = params.get("airflow_db_model")
     age_check_column = params.get("age_check_column")
     keep_last = params.get("keep_last")
     keep_last_filters = params.get("keep_last_filters")
