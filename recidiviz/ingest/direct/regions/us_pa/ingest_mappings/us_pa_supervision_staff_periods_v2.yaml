@@ -162,6 +162,11 @@ output:
                         - "Program Analyst 3"
                         - "Director, Bureau of Central Services, Corrections"
                         - "Network Specialist 2"
+                        - "Network Administrator 2"
+                        - "Information Technology Generalist 2"
+                        - "Human Resource Assistant 2"
+                        - "Records Specialist 2"
+                        - "Non-Commonwealth Traveler/Board Member"
                 role_subtype:
                   $enum_mapping:
                     $raw_text: role_description
@@ -268,6 +273,11 @@ output:
                         - "Program Analyst 3"
                         - "Director, Bureau of Central Services, Corrections"
                         - "Network Specialist 2"
+                        - "Network Administrator 2"
+                        - "Information Technology Generalist 2"
+                        - "Human Resource Assistant 2"
+                        - "Records Specialist 2"
+                        - "Non-Commonwealth Traveler/Board Member"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER:
                         - "Parole Agent 1"
                         - "Parole Agent 2"
