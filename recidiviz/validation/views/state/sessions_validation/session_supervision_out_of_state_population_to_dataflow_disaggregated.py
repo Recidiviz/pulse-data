@@ -53,10 +53,15 @@ SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMP
         population_date,
         person_id,
         1 AS in_dataflow
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` out_of_state
+    FROM (
+        SELECT state_code, person_id, start_date_inclusive, end_date_exclusive
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` 
+        WHERE NOT included_in_state_population
+    ) out_of_state
     JOIN population_dates
-        ON out_of_state.date_of_supervision = population_dates.population_date
-    WHERE NOT out_of_state.included_in_state_population
+        ON population_dates.population_date 
+            BETWEEN out_of_state.start_date_inclusive 
+                AND COALESCE(DATE_SUB(out_of_state.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
     )
     ,
     sessions_population AS

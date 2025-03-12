@@ -19,6 +19,7 @@
 provided by the state."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,25 +32,29 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_VIEW_NAME = (
 SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_DESCRIPTION = """ Comparison of internal and external supervision population counts by supervision type """
 
 
-SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
+SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
     WITH external_validation_dates_and_supervision_types AS (
         -- Only compare states and months for which we have external validation data
         SELECT DISTINCT state_code, date_of_supervision, supervision_type FROM
-        `{project_id}.{external_accuracy_dataset}.supervision_population_by_type_materialized`
-    ), internal_supervision_population AS (
-        SELECT
-            state_code, date_of_supervision,
-            COUNT(DISTINCT(person_id)) as internal_population_count,
-            supervision_type
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
-        WHERE included_in_state_population
-        GROUP BY state_code, date_of_supervision, supervision_type
+        `{{project_id}}.{{external_accuracy_dataset}}.supervision_population_by_type_materialized`
     ), relevant_internal_supervision_population AS (
-        SELECT * FROM
-          external_validation_dates_and_supervision_types      
-        LEFT JOIN
-          internal_supervision_population        
-        USING(state_code, date_of_supervision, supervision_type)
+        SELECT
+            external_metrics.state_code, 
+            external_metrics.date_of_supervision,
+            external_metrics.supervision_type,
+            COUNT(DISTINCT(person_id)) as internal_population_count,
+        FROM external_validation_dates_and_supervision_types external_metrics
+        LEFT JOIN (
+          SELECT state_code, supervision_type, person_id, start_date_inclusive, end_date_exclusive
+          FROM`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
+          WHERE included_in_state_population
+        ) internal_metrics
+        ON internal_metrics.state_code = external_metrics.state_code 
+          AND internal_metrics.supervision_type = external_metrics.supervision_type
+          AND date_of_supervision 
+            BETWEEN internal_metrics.start_date_inclusive 
+                AND {nonnull_end_date_exclusive_clause("internal_metrics.end_date_exclusive")}
+        GROUP BY state_code, date_of_supervision, supervision_type
     ),
     comparison AS (
         SELECT
@@ -59,7 +64,7 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           IFNULL(population_count, 0) as external_population_count,
           IFNULL(internal_population_count, 0) as internal_population_count
         FROM
-          `{project_id}.{external_accuracy_dataset}.supervision_population_by_type_materialized`
+          `{{project_id}}.{{external_accuracy_dataset}}.supervision_population_by_type_materialized`
         FULL OUTER JOIN
           relevant_internal_supervision_population
         USING (state_code, date_of_supervision, supervision_type)
