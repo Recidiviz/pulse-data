@@ -598,6 +598,11 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
                 AS start_date,
                 denial.description AS denied_reason,
                 dtp.DENIED_OTHER_COMMENT AS denied_comment,
+                -- Setting dummy values for the following which, when using the variables from the second section of 
+                --the union to filter in a later CTE, will not affect the output of this first section
+                'BYPASS' as task_metadata,
+                CAST('9999-12-31' AS DATE) as update_datetime,
+                CAST('9999-12-31' AS DATE) as eligible_date,
             FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_TABLE}_latest` dtp
             LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_ELIG_TABLE}_latest` tpe
                 USING({_ID_MAP})
@@ -619,29 +624,52 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
                 DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
                 "Denied ACIS TPR" AS denied_reason,
                 "No TPR Date" AS denied_comment,
+                -- Keeping the following for use in filtering in later CTEs
+                task_metadata,
+                update_datetime,
+                eligible_date,
             FROM
                 `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
             WHERE
                 state_code = 'US_AZ'
                 AND task_subtype = "{task_subtype}"
-                AND (JSON_EXTRACT(task_metadata, '$.status') = '"DENIED"'
-                    OR JSON_EXTRACT(task_metadata, '$.status') = '"APPROVED"' AND eligible_date is null)
         ),
         
-        incarceration_with_denials_spans AS (
+        most_recent_statuses AS (
             SELECT 
                 den.state_code,
                 den.person_id,
                 den.start_date,
                 iss.end_date_exclusive AS end_date,
                 den.denied_reason,
-                den.denied_comment
+                den.denied_comment,
+                task_metadata,
+                eligible_date,
             FROM denials den
-            LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+            INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
             ON iss.person_id = den.person_id
                 AND iss.state_code = den.state_code
                 AND den.start_date BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date_exclusive')}
                 AND iss.state_code = 'US_AZ'
+            -- Filters to grab the most recent denied reason status for a given resident in a given incarceration stint
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY den.person_id, den.state_code, iss.incarceration_super_session_id 
+                                        ORDER BY den.update_datetime DESC ) = 1
+        ),
+        
+        incarceration_with_denials_spans AS (
+            SELECT 
+                state_code,
+                person_id,
+                start_date,
+                end_date,
+                denied_reason,
+                denied_comment,
+            FROM most_recent_statuses 
+            -- The first half of this where clause checks for denials in the native eligibility tables
+            WHERE (JSON_EXTRACT(task_metadata, '$.status') = '"DENIED"' 
+                        OR JSON_EXTRACT(task_metadata, '$.status') = '"APPROVED"' AND eligible_date is null)
+            -- This second half brings in all residents from the first half of the above denials cte who remain unaffected
+                  OR (task_metadata = 'BYPASS')
         ),
         
         {create_sub_sessions_with_attributes('incarceration_with_denials_spans')}
