@@ -168,5 +168,4 @@ def _get_unioned_observation_builders() -> list[UnionAllBigQueryViewBuilder]:
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     return [
         *ObservationBigQueryViewCollector().collect_view_builders(),
-        *_get_unioned_observation_builders(),
     ]

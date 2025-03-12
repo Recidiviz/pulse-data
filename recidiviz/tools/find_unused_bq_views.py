@@ -172,6 +172,12 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
+from recidiviz.observations.event_observation_big_query_view_builder import (
+    MetricUnitOfObservationType,
+)
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_type import SpanType
 from recidiviz.outcome_metrics.dataset_config import TRANSITIONS_DATASET
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
@@ -204,27 +210,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
     #  deleted.
     PROJECTED_DISCHARGES_VIEW_BUILDER.address,
-    # TODO(#35917): Remove once Looker queries from observation-specific tables
-    BigQueryAddress(
-        dataset_id="observations__officer_span", table_id="all_officer_spans"
-    ),
-    # TODO(#35917): Remove once Looker queries from observation-specific tables
-    BigQueryAddress(
-        dataset_id="observations__officer_event", table_id="all_officer_events"
-    ),
-    # TODO(#29291): Remove once Looker queries from observation-specific tables
-    BigQueryAddress(
-        dataset_id="observations__person_event", table_id="all_person_events"
-    ),
-    # TODO(#35917): Remove once Looker queries from observation-specific tables
-    BigQueryAddress(
-        dataset_id="observations__person_span", table_id="all_person_spans"
-    ),
-    # TODO(#35917): Remove once Looker queries from observation-specific tables
-    BigQueryAddress(
-        dataset_id="observations__workflows_primary_user_span",
-        table_id="all_workflows_primary_user_spans",
-    ),
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
@@ -402,50 +387,8 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER.address: (
         "Will be used for MO RH eligibility spans (see #31337) (Daniel Allen 7/24/24)"
     ),
-    BigQueryAddress(
-        dataset_id="observations__workflows_surfaceable_caseload_span",
-        table_id="all_workflows_surfaceable_caseload_spans",
-    ): (
-        "This view will eventually be referenced by impact metrics related to "
-        "surfaceable caseloads (see #32152) (Mayuka Sarukkai 10/11/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="observations__insights_primary_user_span",
-        table_id="all_insights_primary_user_spans",
-    ): (
-        "This view will eventually be referenced by impact metrics related to "
-        "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="observations__insights_primary_user_event",
-        table_id="all_insights_primary_user_events",
-    ): (
-        "This view will eventually be referenced by impact metrics related to "
-        "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
-    ),
     CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
         "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="observations__workflows_surfaceable_caseload_event",
-        table_id="all_workflows_surfaceable_caseload_events",
-    ): (
-        "This view will eventually be referenced in looker explore "
-        "(see #34100) (Mayuka Sarukkai 10/11/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="observations__workflows_provisioned_user_span",
-        table_id="all_workflows_provisioned_user_spans",
-    ): (
-        "This view will eventually be referenced by impact metrics related to "
-        "workflows early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
-    ),
-    BigQueryAddress(
-        dataset_id="observations__insights_provisioned_user_span",
-        table_id="all_insights_provisioned_user_spans",
-    ): (
-        "This view will eventually be referenced by impact metrics related to "
-        "insights early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
     ),
     BigQueryAddress(
         dataset_id="task_eligibility_criteria_us_tx",
@@ -512,6 +455,16 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     PLATFORM_KPIS_DATASET,
     # Views in the dataset are used for org-wide impact tracking
     TRANSITIONS_DATASET,
+    # Views in observation span and event datasets are used for generating
+    # custom metrics in looker or analyst notebooks
+    *[
+        dataset_for_observation_type_cls(unit_of_observation_type, EventType)
+        for unit_of_observation_type in MetricUnitOfObservationType
+    ],
+    *[
+        dataset_for_observation_type_cls(unit_of_observation_type, SpanType)
+        for unit_of_observation_type in MetricUnitOfObservationType
+    ],
 }
 
 

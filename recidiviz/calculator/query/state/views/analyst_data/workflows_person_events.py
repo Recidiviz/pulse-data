@@ -83,12 +83,10 @@ USAGE_EVENTS_DICT: Dict[str, EventSelector] = {
 def get_usage_status_case_statement(
     usage_event_selectors: Dict[str, EventSelector]
 ) -> str:
-    # TODO(#29291): When we migrate workflows_person_events to use observation-specific
-    #  views, flip to read_attributes_from_json=False
     return "\n".join(
         [
             f"""
-        WHEN {v.generate_observation_conditions_query_fragment(filter_by_observation_type=True, read_attributes_from_json=True, strip_newlines=False)}
+        WHEN {v.generate_observation_conditions_query_fragment(filter_by_observation_type=False, read_attributes_from_json=False, strip_newlines=False)}
         THEN "{k}"
     """
             for k, v in usage_event_selectors.items()
@@ -107,25 +105,17 @@ WITH usage_events AS (
     SELECT
         a.state_code,
         b.person_id,
-        c.completion_event_type AS task_type,
+        a.task_type,
         a.event_date AS start_date,
         CASE
             {get_usage_status_case_statement(USAGE_EVENTS_DICT)}
-        END AS usage_event_type,
-        event_attributes
+        END AS usage_event_type
     FROM
-        -- TODO(#29291): Refactor this view so it queries from observation-specific views
-        `{{project_id}}.observations__workflows_primary_user_event.all_workflows_primary_user_events_materialized` a
+        `{{project_id}}.observations__workflows_primary_user_event.workflows_active_usage_event_materialized` a
     INNER JOIN
         `{{project_id}}.workflows_views.person_id_to_external_id_materialized` b
-    ON
-        JSON_EXTRACT_SCALAR(a.event_attributes, "$.person_external_id") = b.person_external_id
-        AND a.state_code = b.state_code
-        AND JSON_EXTRACT_SCALAR(a.event_attributes, "$.system_type") = b.system_type
-    INNER JOIN
-        `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` c
-    ON
-        JSON_EXTRACT_SCALAR(a.event_attributes, "$.opportunity_type") = c.opportunity_type
+    USING
+        (person_external_id, state_code, system_type)
 )
 -- Only include events that have been configured
 SELECT * FROM usage_events WHERE usage_event_type IS NOT NULL

@@ -196,8 +196,6 @@ _UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
 # grouped by the population they should be calculated for.
 # Metrics should be added only if necessary for products or analyses, since additions
 # will have a meaningful impact on view update performance.
-# TODO(#35917): Make this private once legacy agg metrics definitions no
-#  longer reference it.
 METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
         # Average daily population

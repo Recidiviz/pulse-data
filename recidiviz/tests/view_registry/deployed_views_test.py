@@ -42,9 +42,6 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibili
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
-    WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
@@ -372,9 +369,6 @@ class ViewDagInvariantTests(unittest.TestCase):
         # TODO(#29291): Update these exemptions to explicitly list which parent UNION
         #  ALL view is allowed.
         allowed_union_all_view_children = {
-            # TODO(#29291): Refactor to query observation-specific views rather than
-            #  the all_workflows_primary_user_events view.
-            WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER.address,
             # These views produce generic analysis based on all TES spans.
             CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
             WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,

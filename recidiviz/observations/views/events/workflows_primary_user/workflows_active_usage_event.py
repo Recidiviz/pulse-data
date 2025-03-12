@@ -53,6 +53,7 @@ WITH combined_usage_events AS (
         task_type_is_live,
         task_type_is_fully_launched,
         person_external_id,
+        CAST(NULL AS STRING) AS new_status,
     FROM `{{project_id}}.{WORKFLOWS_USER_ACTION_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -70,6 +71,7 @@ WITH combined_usage_events AS (
         task_type_is_live,
         task_type_is_fully_launched,
         person_external_id,
+        new_status,
     FROM `{{project_id}}.{WORKFLOWS_USER_CLIENT_STATUS_UPDATE_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -87,6 +89,7 @@ WITH combined_usage_events AS (
         task_type_is_live,
         task_type_is_fully_launched,
         person_external_id,
+        CAST(NULL AS STRING) AS new_status,
     FROM `{{project_id}}.{WORKFLOWS_USER_PAGE_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -104,6 +107,7 @@ WITH combined_usage_events AS (
         task_type_is_live,
         task_type_is_fully_launched,
         person_external_id,
+        CAST(NULL AS STRING) AS new_status,
     FROM `{{project_id}}.{WORKFLOWS_USER_SNOOZE_ACTION_VIEW_BUILDER.table_for_query.to_str()}`
     
 )
@@ -120,6 +124,7 @@ SELECT
     task_type_is_live,
     task_type_is_fully_launched,
     person_external_id,
+    new_status,
 FROM combined_usage_events
 """
 
@@ -137,6 +142,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "task_type_is_live",
         "task_type_is_fully_launched",
         "person_external_id",
+        "new_status",
     ],
     event_date_col="event_date",
 )
