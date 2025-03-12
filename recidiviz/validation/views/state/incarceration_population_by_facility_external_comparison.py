@@ -19,6 +19,7 @@
 provided by the state."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,25 +35,34 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_NAME = (
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = """ Comparison of internal and external incarceration population counts by facility """
 
 
-INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
+INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
         SELECT DISTINCT state_code, date_of_stay FROM
-        `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
-    ), internal_incarceration_population AS (
+        `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_by_facility_materialized`
+    ), 
+    relevant_internal_incarceration_population AS (
         SELECT
-            state_code, date_of_stay,
-            {state_specific_dataflow_facility_name_transformation},
-            COUNT(DISTINCT(person_id)) as internal_population_count
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
-        WHERE included_in_state_population
+            external_metrics.state_code, 
+            external_metrics.date_of_stay,
+            facility,
+            COUNT(DISTINCT(person_id)) as internal_population_count,
+        FROM external_validation_dates external_metrics
+        LEFT JOIN (
+          SELECT 
+            state_code, 
+            {{state_specific_dataflow_facility_name_transformation}},
+            person_id,
+            start_date_inclusive,
+            end_date_exclusive
+          FROM`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
+          WHERE included_in_state_population
+        ) internal_metrics
+        ON internal_metrics.state_code = external_metrics.state_code 
+          AND date_of_stay 
+            BETWEEN internal_metrics.start_date_inclusive 
+                AND {nonnull_end_date_exclusive_clause("internal_metrics.end_date_exclusive")}
         GROUP BY state_code, date_of_stay, facility
-    ), relevant_internal_incarceration_population AS (
-        SELECT * FROM
-          external_validation_dates      
-        LEFT JOIN
-          internal_incarceration_population        
-        USING(state_code, date_of_stay)
     ),
     comparison AS (
         SELECT
@@ -62,7 +72,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           IFNULL(population_count, 0) as external_population_count,
           IFNULL(internal_population_count, 0) as internal_population_count
         FROM
-          `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
+          `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_by_facility_materialized`
         FULL OUTER JOIN
           relevant_internal_incarceration_population
         USING (state_code, date_of_stay, facility)

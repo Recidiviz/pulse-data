@@ -24,6 +24,7 @@ day but extends to at least the next day.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,29 +42,67 @@ periods with different PFI values than the PFI on another period that starts on 
 day but extends to at least the next day.
 """
 
-ADMISSION_PFI_POP_PFI_MISMATCH_QUERY_TEMPLATE = """
-SELECT state_code, state_code as region_code, person_id, metric_date, included_in_state_population, admission_pfi, population_pfi 
+ADMISSION_PFI_POP_PFI_MISMATCH_QUERY_TEMPLATE = f"""
+SELECT state_code, state_code as region_code, person_id, metric_date, included_in_state_population, admission_pfi, population_pfi
 FROM
 (
-    SELECT * FROM
-    (SELECT state_code, person_id, admission_date as metric_date, included_in_state_population, specialized_purpose_for_incarceration as admission_pfi
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`)
-LEFT JOIN
-    (SELECT state_code, person_id, date_of_stay as metric_date, included_in_state_population, purpose_for_incarceration as population_pfi
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`)
-USING (state_code, person_id, metric_date, included_in_state_population)
+    SELECT 
+        admission_metrics.state_code,
+        admission_metrics.person_id,
+        metric_date,
+        admission_metrics.included_in_state_population,
+        admission_pfi,
+        population_pfi
+    FROM (
+        SELECT 
+            state_code,
+            person_id,
+            admission_date as metric_date, 
+            included_in_state_population,
+            specialized_purpose_for_incarceration as admission_pfi
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
+    ) admission_metrics
+    LEFT JOIN (
+        SELECT state_code, person_id, start_date_inclusive, end_date_exclusive, included_in_state_population, purpose_for_incarceration as population_pfi
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
+    ) pop_metrics
+    ON 
+        admission_metrics.state_code = pop_metrics.state_code
+        AND admission_metrics.person_id = pop_metrics.person_id
+        AND admission_metrics.included_in_state_population = pop_metrics.included_in_state_population        
+        AND metric_date 
+            BETWEEN pop_metrics.start_date_inclusive 
+                AND {nonnull_end_date_exclusive_clause("pop_metrics.end_date_exclusive")}
 
-UNION ALL
+    UNION ALL
 
-    SELECT * FROM
-    (SELECT state_code, person_id, admission_date as metric_date, included_in_state_population, specialized_purpose_for_incarceration as admission_pfi
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_not_included_in_state_population_materialized`)
-LEFT JOIN
-    (SELECT state_code, person_id, date_of_stay as metric_date, included_in_state_population, purpose_for_incarceration as 
-    population_pfi
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`)
-USING (state_code, person_id, metric_date, included_in_state_population)
-
+    SELECT 
+        admission_metrics.state_code,
+        admission_metrics.person_id,
+        metric_date,
+        admission_metrics.included_in_state_population,
+        admission_pfi,
+        population_pfi
+    FROM (
+        SELECT 
+            state_code,
+            person_id,
+            admission_date as metric_date, 
+            included_in_state_population,
+            specialized_purpose_for_incarceration as admission_pfi
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_admission_metrics_not_included_in_state_population_materialized`
+    ) admission_metrics
+    LEFT JOIN (
+        SELECT state_code, person_id, start_date_inclusive, end_date_exclusive, included_in_state_population, purpose_for_incarceration as population_pfi
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
+    ) pop_metrics
+    ON 
+        admission_metrics.state_code = pop_metrics.state_code
+        AND admission_metrics.person_id = pop_metrics.person_id
+        AND admission_metrics.included_in_state_population = pop_metrics.included_in_state_population
+        AND metric_date 
+            BETWEEN pop_metrics.start_date_inclusive 
+                AND {nonnull_end_date_exclusive_clause("pop_metrics.end_date_exclusive")}
 )
 WHERE admission_pfi != population_pfi
 """
