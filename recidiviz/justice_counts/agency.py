@@ -51,6 +51,7 @@ class AgencyInterface:
         agency_id: Optional[int],
         is_dashboard_enabled: Optional[bool],
         is_superagency: Optional[bool] = None,
+        is_stepping_up_agency: Optional[bool] = None,
         with_users: bool = False,
     ) -> schema.Agency:
         """If there is an existing agency, meaning that agency_id is not None,
@@ -87,6 +88,7 @@ class AgencyInterface:
             existing_agency.fips_county_code = fips_county_code
             existing_agency.is_dashboard_enabled = is_dashboard_enabled
             existing_agency.is_superagency = is_superagency
+            existing_agency.is_stepping_up_agency = is_stepping_up_agency
             session.commit()
             return existing_agency
 
@@ -99,6 +101,7 @@ class AgencyInterface:
             super_agency_id=super_agency_id,
             created_at=datetime.now(tz=timezone.utc),
             is_dashboard_enabled=is_dashboard_enabled,
+            is_stepping_up_agency=is_stepping_up_agency,
         )
 
         session.add(agency)

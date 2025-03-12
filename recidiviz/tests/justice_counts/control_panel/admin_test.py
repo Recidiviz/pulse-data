@@ -614,6 +614,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         metrics = response_json["metrics"]
         self.assertEqual(agency_json["name"], agency.name)
         self.assertEqual(agency_json["id"], agency.id)
+        self.assertIsNone(agency_json["is_stepping_up_agency"])
         self.assertTrue(len(metrics) > 0)
         self.assertEqual(metrics[0]["sector"], "LAW ENFORCEMENT")
 
@@ -639,6 +640,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "team": [{"user_account_id": user_A_id, "role": "AGENCY_ADMIN"}],
                 "child_agency_ids": [],
                 "is_dashboard_enabled": False,
+                "is_stepping_up_agency": False,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -661,6 +663,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             agency.user_account_assocs[0].role,
             schema.UserAccountRole.AGENCY_ADMIN,
         )
+        self.assertFalse(agency.is_stepping_up_agency)
 
         # Update name, users, and child agency, and turn on dashboard
         response = self.client.put(
@@ -679,6 +682,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                     {"user_account_id": user_A_id, "role": "JUSTICE_COUNTS_ADMIN"},
                 ],
                 "is_dashboard_enabled": True,
+                "is_stepping_up_agency": True,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -694,6 +698,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(agency)
         self.assertTrue(agency.is_superagency)
         self.assertTrue(agency.is_dashboard_enabled)
+        self.assertTrue(agency.is_stepping_up_agency)
         self.assertEqual(
             agency.systems,
             [schema.System.LAW_ENFORCEMENT.value, schema.System.JAILS.value],

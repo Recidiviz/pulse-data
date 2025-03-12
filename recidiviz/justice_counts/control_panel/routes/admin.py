@@ -377,6 +377,7 @@ def get_admin_blueprint(
             fips_county_code=request_json.get("fips_county_code"),
             super_agency_id=request_json["super_agency_id"],
             is_dashboard_enabled=request_json["is_dashboard_enabled"],
+            is_stepping_up_agency=request_json.get("is_stepping_up_agency"),
             with_users=True,
         )
 

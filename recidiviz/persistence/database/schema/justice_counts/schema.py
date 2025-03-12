@@ -340,6 +340,8 @@ class Agency(Source):
     # Custom name for the agency, which is a child agency, that
     # will be used during Bulk Upload
     custom_child_agency_name = Column(String(255), nullable=True)
+    # Indicates whether the agency is part of BJA's Stepping Up initiative.
+    is_stepping_up_agency = Column(Boolean, nullable=True)
 
     @validates("state_code")
     def validate_state_code(self, _: Any, state_code: str) -> str:
@@ -428,6 +430,7 @@ class Agency(Source):
                 "is_superagency": self.is_superagency,
                 "super_agency_id": self.super_agency_id,
                 "is_dashboard_enabled": self.is_dashboard_enabled,
+                "is_stepping_up_agency": self.is_stepping_up_agency,
                 "created_at": self.created_at,
             },
         }
