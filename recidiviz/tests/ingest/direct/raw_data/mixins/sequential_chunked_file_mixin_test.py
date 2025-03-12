@@ -31,6 +31,21 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 class TestSequentialChunkedFileMixin(TestCase):
     """Unit tests for SequentialChunkedFileMixin"""
 
+    def test_bad_inputs(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"n must a positive integer; found \[0\]"
+        ):
+            SequentialChunkedFileMixin.group_n_files_with_sequential_suffixes(
+                n=0, gcs_files=[], file_tag=""
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Must provide at least one file to group; found none."
+        ):
+            SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
+                gcs_files=[], file_tag=""
+            )
+
     def test_file_counts_differ(self) -> None:
         (
             bq_files,

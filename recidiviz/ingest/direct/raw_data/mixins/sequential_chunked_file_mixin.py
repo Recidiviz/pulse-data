@@ -16,6 +16,8 @@
 # =============================================================================
 """Logic for validating and grouping chunked files that are sequentially numbered"""
 
+import logging
+
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawDataFilesSkippedError,
@@ -37,6 +39,9 @@ class SequentialChunkedFileMixin:
         """Validates that |gcs_files| have numerically ascending file suffixes from 1
         to n.
         """
+        if len(gcs_files) == 0:
+            raise ValueError("Must provide at least one file to group; found none.")
+
         actual_suffixes: set[int] = set()
         for gcs_file in gcs_files:
             try:
@@ -71,6 +76,11 @@ class SequentialChunkedFileMixin:
                 )
             ]
 
+        logging.info(
+            "Found [%s] files on [%s] w/ ascending numerical suffixes, grouping...",
+            len(gcs_files),
+            gcs_files[0].parts.utc_upload_datetime.date(),
+        )
         return [RawBigQueryFileMetadata.from_gcs_files(gcs_files=gcs_files)], []
 
     @classmethod
@@ -85,6 +95,9 @@ class SequentialChunkedFileMixin:
         ascending file suffixes from 1 to n.
         """
 
+        if n <= 0:
+            raise ValueError(f"n must a positive integer; found [{n}]")
+
         if len(gcs_files) != n:
             return [], [
                 RawDataFilesSkippedError.from_gcs_files_and_message(
@@ -97,6 +110,12 @@ class SequentialChunkedFileMixin:
                 )
             ]
 
+        logging.info(
+            "Found [%s]/[%s] files on [%s]",
+            len(gcs_files),
+            n,
+            gcs_files[0].parts.utc_upload_datetime.date(),
+        )
         return cls.group_files_with_sequential_suffixes(
             gcs_files=gcs_files, file_tag=file_tag
         )

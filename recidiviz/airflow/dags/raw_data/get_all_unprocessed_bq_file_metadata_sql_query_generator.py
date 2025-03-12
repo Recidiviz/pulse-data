@@ -335,7 +335,15 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         if chunked_files:
 
             for file_tag, upload_date_to_gcs_files in chunked_files.items():
-                for _upload_date, gcs_files in upload_date_to_gcs_files.items():
+                for upload_date, gcs_files in upload_date_to_gcs_files.items():
+
+                    logger.info(
+                        "Found [%s] files for [%s] on [%s]; attempting to coalesce...",
+                        len(gcs_files),
+                        file_tag,
+                        upload_date,
+                    )
+
                     (
                         conceptual_files_for_file_tag,
                         skipped_errors_for_file_tag,
