@@ -51,13 +51,13 @@ clean_name_cte AS
         NULLIF(SID_Number, '00000000') AS SID_Number,
         NULLIF(TDCJ_Number, '00000000') AS TDCJ_Number,
         Creation_Date
-    FROM {ClientData}
+    FROM {ClientData@ALL}
 ),
 -- Aggregates all of the TDCJ_Number IDs
 agg_ids_cte AS (
     SELECT
         SID_Number,
-        STRING_AGG(TDCJ_Number) as aggs
+        STRING_AGG(DISTINCT TDCJ_Number) as aggs
     FROM clean_name_cte
     GROUP BY SID_Number
 )
@@ -69,11 +69,11 @@ SELECT DISTINCT
     SID_Number,
     Address,
     Phone_Number,
-    aggs AS TDCJ_Numbers
+    aggs AS TDCJ_Numbers,
 FROM clean_name_cte
 LEFT JOIN agg_ids_cte USING (SID_Number)
 WHERE SID_Number IS NOT NULL
-QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY Creation_Date desc) = 1
+QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY Creation_Date desc, CASE WHEN Address IS NULL THEN 1 ELSE 0 END, CASE WHEN Phone_Number IS NULL THEN 1 ELSE 0 END) = 1;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
