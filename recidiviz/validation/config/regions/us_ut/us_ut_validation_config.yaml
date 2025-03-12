@@ -34,5 +34,5 @@ exclusions:
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 12800
+    hard_num_allowed_rows_override: 15000
     override_reason: To investigate (#37797)

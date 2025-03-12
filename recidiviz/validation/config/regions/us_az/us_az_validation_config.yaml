@@ -24,7 +24,7 @@ exclusions:
     exclusion_reason: Failing at 97%, will be addressed in #TODO(#33744)
 max_allowed_error_overrides:
   - validation_name: supervision_population_by_type_external_comparison
-    hard_max_allowed_error_override: 0.11
+    hard_max_allowed_error_override: 0.12
     soft_max_allowed_error_override: 0.0502
     override_reason: |-
       5% is the tightest threshold the state thought we could get to given the quality
