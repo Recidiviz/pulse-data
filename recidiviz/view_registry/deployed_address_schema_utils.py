@@ -19,9 +19,6 @@ tables.
 """
 from functools import cache
 
-from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
-    METRIC_TIME_PERIODS_VIEW_BUILDER,
-)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
@@ -159,7 +156,6 @@ STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS = {
     COMPARTMENT_LEVEL_1_DEDUP_PRIORITY_VIEW_BUILDER.address,
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER.address,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
-    METRIC_TIME_PERIODS_VIEW_BUILDER.address,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER.address,
     SIMULATION_RUN_DATES_VIEW_BUILDER.address,
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER.address,

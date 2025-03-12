@@ -29,9 +29,6 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
 )
 from recidiviz.aggregated_metrics.configuration import collections as collections_module
-from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
-    METRIC_TIME_PERIODS_VIEW_BUILDER,
-)
 from recidiviz.aggregated_metrics.supervision_officer_caseload_count_spans import (
     SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
 )
@@ -95,8 +92,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     """
     all_collections = collect_aggregated_metrics_collection_configs()
     return [
-        # TODO(#35914): Delete this view once it is no longer used
-        METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         *collect_assignment_sessions_view_builders(),
         *collect_assignments_by_time_period_builders_for_collections(all_collections),

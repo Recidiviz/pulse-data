@@ -232,6 +232,7 @@ def _build_unit_of_observation_aggregated_metric_query_template(
     metrics: list[AggregatedMetric],
     time_period: MetricTimePeriodConfig,
     output_column_aliases: dict[str, str] | None,
+    read_from_cached_assignments_by_time_period: bool = True,
 ) -> str:
     """Returns a query template (with a project_id format arg) that can be used to
     calculate metrics for the provided metric configurations and the specified
@@ -269,19 +270,31 @@ def _build_unit_of_observation_aggregated_metric_query_template(
     # BUILD UP CTES
     cte_queries_by_name = {}
 
-    assignments_address = AssignmentsByTimePeriodViewBuilder.build_materialized_address(
-        time_period=time_period,
-        population_type=population_type,
-        unit_of_observation_type=unit_of_observation_type,
-        unit_of_analysis_type=unit_of_analysis_type,
-        metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
-    )
     assignments_by_time_period_cte_name = get_assignments_by_time_period_cte_name(
         unit_of_observation_type
     )
-    cte_queries_by_name[
-        assignments_by_time_period_cte_name
-    ] = assignments_address.select_query_template()
+    if read_from_cached_assignments_by_time_period:
+        assignments_address = AssignmentsByTimePeriodViewBuilder.build_materialized_address(
+            time_period=time_period,
+            population_type=population_type,
+            unit_of_observation_type=unit_of_observation_type,
+            unit_of_analysis_type=unit_of_analysis_type,
+            metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
+        )
+        cte_queries_by_name[
+            assignments_by_time_period_cte_name
+        ] = assignments_address.select_query_template()
+
+    else:
+        cte_queries_by_name[
+            assignments_by_time_period_cte_name
+        ] = AssignmentsByTimePeriodViewBuilder.build_assignments_by_time_period_query_template(
+            time_period=time_period,
+            population_type=population_type,
+            unit_of_observation_type=unit_of_observation_type,
+            unit_of_analysis_type=unit_of_analysis_type,
+            metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
+        )
 
     metric_primary_key_columns_clause = list_to_query_string(
         metric_group_by_columns(unit_of_analysis_type)
@@ -347,6 +360,7 @@ def build_aggregated_metric_query_template(
     metric_class: AggregatedMetricClassType,
     metrics: list[AggregatedMetric],
     time_period: MetricTimePeriodConfig,
+    read_from_cached_assignments_by_time_period: bool = True,
 ) -> str:
     """Returns a query template (with a project_id format arg) that can be used to
     calculate metrics for the provided metric configurations and the specified
@@ -395,6 +409,7 @@ def build_aggregated_metric_query_template(
             metrics=unit_metrics,
             time_period=time_period,
             output_column_aliases=output_column_aliases,
+            read_from_cached_assignments_by_time_period=read_from_cached_assignments_by_time_period,
         )
 
     # BUILD UP CTES
@@ -413,6 +428,7 @@ def build_aggregated_metric_query_template(
             metrics=unit_metrics,
             time_period=time_period,
             output_column_aliases=None,
+            read_from_cached_assignments_by_time_period=read_from_cached_assignments_by_time_period,
         )
         cte_name = (
             f"all_metrics__{unit_of_observation_type.short_name}_unit_of_observation"

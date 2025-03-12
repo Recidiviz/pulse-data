@@ -76,6 +76,7 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 )
 from recidiviz.observations.observation_selector import ObservationTypeT
 from recidiviz.observations.observation_type_utils import (
+    ObservationType,
     attribute_cols_for_observation_type,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
@@ -666,10 +667,10 @@ def _generate_all_assignments_by_time_period_ctes(
     return ",\n".join(sorted(set(all_assignments_by_time_period_ctes)))
 
 
-def _get_metrics_by_observation_type_and_metric_class(
+def get_metrics_by_observation_type_and_metric_class(
     metrics: List[AggregatedMetric],
 ) -> defaultdict[
-    tuple[MetricUnitOfObservationType, AggregatedMetricClassType],
+    tuple[ObservationType, AggregatedMetricClassType],
     list[AggregatedMetric],
 ]:
     metrics_by_observation_type_and_metric_class = defaultdict(list)
@@ -889,7 +890,7 @@ def build_custom_metrics_lookml_view(
     supporting a provided set of assignment types and json field filters."""
 
     metrics_by_unit_of_observation_type_and_metric_class = (
-        _get_metrics_by_observation_type_and_metric_class(metrics)
+        get_metrics_by_observation_type_and_metric_class(metrics)
     )
 
     all_metric_ctes = [

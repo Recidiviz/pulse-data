@@ -25,9 +25,6 @@ from typing import List, Optional
 
 import pandas as pd
 
-from recidiviz.aggregated_metrics.legacy.custom_aggregated_metrics_template import (
-    get_legacy_custom_aggregated_metrics_query_template,
-)
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models import aggregated_metric_configurations as amc
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
@@ -39,6 +36,9 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
+)
+from recidiviz.aggregated_metrics.query_building.custom_aggregated_metrics_template import (
+    get_custom_aggregated_metrics_query_template,
 )
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.observations.observation_type_utils import (
@@ -62,9 +62,7 @@ def get_custom_aggregated_metrics(
     project_id: str = "recidiviz-staging",
 ) -> pd.DataFrame:
     """Returns a dataframe consisting of all metrics for specified unit of analysis, population, and time periods"""
-    # TODO(#35909): Migrate to use an optimized custom metrics template builder
-    #  once it exists.
-    query_template = get_legacy_custom_aggregated_metrics_query_template(
+    query_template = get_custom_aggregated_metrics_query_template(
         metrics,
         unit_of_analysis_type,
         population_type,

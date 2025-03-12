@@ -57,13 +57,8 @@ _QUERY_TEMPLATE = f"""
 WITH
 latest_year_time_period AS (
     SELECT
-        population_start_date,
-        population_end_date,
-    FROM
-        `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
-    WHERE 
-        period = "YEAR"
-    QUALIFY ROW_NUMBER() OVER (ORDER BY population_start_date DESC) = 1
+        DATE_SUB(DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH), INTERVAL 1 YEAR) AS population_start_date,
+        DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH) AS population_end_date,
 ),
 events_with_metric_id AS (
 {fix_indent(format_state_specific_person_events_filters(), indent_level=4)}
