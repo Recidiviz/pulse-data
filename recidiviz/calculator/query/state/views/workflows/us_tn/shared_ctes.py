@@ -651,7 +651,7 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
                   CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
                   ContactNoteType AS contact_type,
                   CASE 
-                      WHEN ContactNoteType IN ("ARRP","ARRN","XARR") THEN "arrest_check"
+                      WHEN ContactNoteType IN ("ARRN") THEN "negative_arrest_check"
                       WHEN ContactNoteType IN ("SPET","SPEC","XSPE") THEN "spe_note"
                       WHEN ContactNoteType IN ("CCFT","CCFM") THEN "court_costs_note"
                   END AS contact_type_category
@@ -669,11 +669,11 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
     pivoted_contacts AS (
         SELECT
             external_id,
-            contact_type_arrest_check,
+            contact_type_negative_arrest_check,
             contact_type_spe_note,
             contact_type_court_costs_note,
         FROM (SELECT external_id, contact, contact_type_category FROM contacts)
-        PIVOT(ANY_VALUE(contact) AS contact_type FOR contact_type_category IN ("arrest_check","spe_note","court_costs_note"))
+        PIVOT(ANY_VALUE(contact) AS contact_type FOR contact_type_category IN ("negative_arrest_check","spe_note","court_costs_note"))
     ),
     restitution AS (
         SELECT 
@@ -749,8 +749,9 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
-        pc.contact_type_arrest_check AS metadata_most_recent_arrest_check,
-        pc.contact_type_spe_note AS metadata_most_recent_spe_note,
+        base.metadata_eligible_date,
+        pc.contact_type_negative_arrest_check AS metadata_latest_negative_arrest_check,
+        pc.contact_type_spe_note AS metadata_latest_spe_note,
         att.DriverLicenseNumber AS form_information_drivers_license,
         null AS form_information_drivers_license_suspended,
         null AS form_information_drivers_license_revoked,

@@ -108,6 +108,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             b.reasons,
             a.is_eligible,
             a.is_almost_eligible,
+            NULL AS metadata_eligible_date,
         FROM eligible_discretion_and_almost a
         LEFT JOIN ({join_current_task_eligibility_spans_with_external_id(
     state_code="'US_TN'",
