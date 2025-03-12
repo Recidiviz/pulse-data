@@ -85,7 +85,9 @@ if [[ -n ${DEBUG_BUILD_NAME} ]]; then
 fi
 DOCKER_IMAGE_TAG=${VERSION_TAG}
 
-script_prompt "Have you completed all Pre-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+if [[ -n ${PROMOTE} ]]; then
+  script_prompt "Have you completed all Pre-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
@@ -246,6 +248,17 @@ else
     echo "Deploy succeeded - skipping post deploy triggers for no promote build."
 fi
 
+if [[ -z ${DEBUG_BUILD_NAME} ]]; then
+  echo "Deploy succeeded - creating local tag ${VERSION_TAG}"
+  verify_hash "${COMMIT_HASH}"
+  run_cmd git tag -m "Version $VERSION_TAG release - $(date +'%Y-%m-%d %H:%M:%S')" "${VERSION_TAG}"
+
+  echo "Pushing tags to remote"
+  run_cmd git push origin --tags
+fi
+
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
-script_prompt "Have you completed all Post-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+if [[ -n ${PROMOTE} ]]; then
+  script_prompt "Have you completed all Post-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+fi

@@ -28,11 +28,4 @@ tip of branch [main]. Continue?"
 
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${NEW_VERSION}" -c "${COMMIT_HASH}" -b main -p || exit_on_fail
 
-echo "Deploy succeeded - creating local tag ${NEW_VERSION}"
-verify_hash "${COMMIT_HASH}"
-run_cmd git tag -m "Version $NEW_VERSION release - $(date +'%Y-%m-%d %H:%M:%S')" "${NEW_VERSION}"
-
-echo "Pushing tags to remote"
-run_cmd git push origin --tags
-
 echo "Alpha staging deploy complete."

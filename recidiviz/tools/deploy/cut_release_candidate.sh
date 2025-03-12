@@ -98,13 +98,6 @@ the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
   -c "${COMMIT_HASH}" \
   -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
 
-echo "Deploy succeeded - creating local tag [${RELEASE_VERSION_TAG}]"
-verify_hash "${COMMIT_HASH}"
-run_cmd git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d %H:%M:%S')" "${RELEASE_VERSION_TAG}"
-
-echo "Pushing tags to remote"
-run_cmd git push origin --tags
-
 # Create and push a new releases branch
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
     declare -a NEW_VERSION_PARTS
