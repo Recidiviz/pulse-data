@@ -102,18 +102,23 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
     -- Metadata to show all domains of latest StrongR where someone has at least 1 domain that's High
         SELECT
             person_id,
-            need,
+            -- Formatting for front end
+            INITCAP(REPLACE(need,'_',' ')) AS need,
             CAST(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_date') AS DATE) AS metadata_latest_strong_r_date,
-            -- /* UNNEST returns one row per key in a column called "need"
-            --  PARSE_JSON(assessment_metadata)[need] extracts the JSON value associated with the key
-            --  from the need column, and JSON_VALUE formats this as a string
-            -- */
+            /* UNNEST returns one row per key in a column called "need"
+              PARSE_JSON(assessment_metadata)[need] extracts the JSON value associated with the key
+              from the need column, and JSON_VALUE formats this as a string
+             */
             NULLIF(JSON_VALUE(PARSE_JSON(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_metadata'))[need]),'') AS need_level       
         FROM base,
         UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason,
         UNNEST({STRONG_R_ASSESSMENT_METADATA_KEYS}) AS need    
         WHERE 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS' IN UNNEST(ineligible_criteria)
             AND STRING(single_reason.criteria_name) = 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS'
+    ),
+    compliant_reporting_form_query_fragment AS (
+        SELECT *
+        FROM ({us_tn_compliant_reporting_shared_opp_record_fragment()})
     ),
     case_notes_array AS (
         SELECT person_id,
@@ -129,10 +134,20 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
                 ) AS case_notes    
         FROM (
             SELECT person_id,
+                  offense AS note_title,
+                  NULL AS event_date,
+                  NULL AS note_body,
+                  "CURRENT OFFENSES" AS criteria,
+            FROM compliant_reporting_form_query_fragment,
+            UNNEST(form_information_current_offenses) AS offense
+            
+            UNION ALL
+            
+            SELECT person_id,
                   need AS note_title,
                   metadata_latest_strong_r_date AS event_date,
                   need_level AS note_body,
-                  "LATEST STRONG R DOMAINS" AS criteria,
+                  "LATEST STRONG-R DOMAINS" AS criteria,
             FROM latest_assessment
 
             UNION ALL
@@ -143,7 +158,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
                   contact_type AS note_title,
                   contact_date AS event_date,
                   contact_comment AS note_body,
-                  "VIOLATION WARRANTS" AS criteria,
+                  "RELEVANT CONTACT CODES - VIOLATION WARRANTS" AS criteria,
             FROM ({keep_contact_codes(
                     codes_cte="relevant_contact_codes",
                     comments_cte="comments_clean",
@@ -152,10 +167,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
                 )})
         )
         GROUP BY 1
-    ),
-    compliant_reporting_form_query_fragment AS (
-        SELECT *
-        FROM ({us_tn_compliant_reporting_shared_opp_record_fragment()})
     )
     SELECT
         c.metadata_task_name,
@@ -197,10 +208,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
         form_information_expiration_date,
         form_information_sentence_length_days,
     FROM compliant_reporting_form_query_fragment c
-    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-        ON c.external_id = pei.external_id
-        AND pei.state_code = "US_TN"
-        AND pei.id_type = "US_TN_DOC"
     LEFT JOIN case_notes_array a
         USING(person_id)
 """

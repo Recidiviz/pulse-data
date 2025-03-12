@@ -742,6 +742,7 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
         GROUP BY 1
     )
     SELECT
+        base.person_id,
         base.metadata_task_name,
         base.external_id,
         base.state_code,
