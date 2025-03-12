@@ -745,12 +745,15 @@ def generate_agency_summary_csv(
     if dry_run is False:
         now = datetime.datetime.now()
         today_str = f"{now.month}-{now.day}-{now.year}"
+        generate_excluded_agencies_sheet(
+            google_credentials=google_credentials,
+        )
         generate_and_write_scoreboard(
             df=df,
             updated=today_str,
             google_credentials=google_credentials,
         )
-        # Index is 2 since we have Key and Scoreboard sheets
+        # Index is 4 since we have Key, Excluded Agencies, and Scoreboard sheets
         write_data_to_spreadsheet(
             google_credentials=google_credentials,
             df=df,
@@ -758,8 +761,25 @@ def generate_agency_summary_csv(
             spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
             new_sheet_title=today_str,
             logger=logger,
-            index=3,
+            index=4,
         )
+
+
+def generate_excluded_agencies_sheet(google_credentials: Credentials) -> None:
+    """
+    Generates and writes a spreadsheet containing agencies excluded from the CSG Data Pull.
+    """
+    df = pd.DataFrame(AGENCIES_TO_EXCLUDE.items(), columns=["agency_id", "agency_name"])
+    write_data_to_spreadsheet(
+        df=df,
+        columns=["Agency ID", "Agency Name"],
+        google_credentials=google_credentials,
+        spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
+        index=1,
+        logger=logger,
+        new_sheet_title="Excluded Agencies",
+        overwrite_sheets=True,
+    )
 
 
 def generate_and_write_scoreboard(
