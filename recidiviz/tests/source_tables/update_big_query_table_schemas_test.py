@@ -1876,6 +1876,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_state.state_task_deadline",
     "us_tx_ingest_view_results.assessments",
     "us_tx_ingest_view_results.state_person",
+    "us_tx_ingest_view_results.state_sentence",
     "us_tx_ingest_view_results.state_staff",
     "us_tx_ingest_view_results.supervision_contacts",
     "us_tx_ingest_view_results.supervision_period",

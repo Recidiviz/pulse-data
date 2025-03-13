@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_sentence`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFF_SID_NO: STRING
+  OFF_CAUSE_NO: STRING
+  OFF_COUNT: STRING
+  OFF_CAUSE_CNTY_NO: STRING
+  OFF_SENT_DATE: DATE
+  OFF_NCIC_CODE: STRING
+  OFF_DESC: STRING
+  OFF_STAT_CITATION: STRING
+  is_violent_bool: BOOLEAN
+  is_sex_offense_bool: BOOLEAN
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFF_SID_NO
+          id_type: $literal("US_TX_SID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFF_SID_NO
+                - OFF_CAUSE_NO
+                - OFF_COUNT
+                - OFF_CAUSE_CNTY_NO
+              $separator: "##"
+          imposed_date: OFF_SENT_DATE
+          sentence_type: $literal_enum(StateSentenceType.PAROLE)
+          sentencing_authority: $literal_enum(StateSentencingAuthority.STATE)
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - OFF_SID_NO
+                      - OFF_CAUSE_NO
+                      - OFF_COUNT
+                      - OFF_CAUSE_CNTY_NO
+                    $separator: "##"
+                description: OFF_DESC
+                is_violent:
+                  $equal:
+                    - is_violent_bool
+                    - $literal("True")
+                is_sex_offense:
+                  $equal:
+                    - is_sex_offense_bool
+                    - $literal("True")
+                ncic_code: OFF_NCIC_CODE
+                statute: OFF_STAT_CITATION
+                # TX sends us the data at the count level
+                counts: $literal("1")
+                #All charges we recieve are convicted charges
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
