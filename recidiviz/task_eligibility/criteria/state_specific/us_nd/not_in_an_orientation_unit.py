@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time during which someone in ND is not
-in an orientation unit or has been in an orientation unit for 3 weeks. 
-These are units that house people who have just arrived to the DOC and are not yet 
-eligible for many opportunities because of this.
+"""
+Orientation units house people who have just arrived to the DOC's custody. This criteria
+is used to determine if someone has been in an orientation unit for long enough (3 weeks)
+to be eligible for certain opportunities.
 """
 from google.cloud import bigquery
 

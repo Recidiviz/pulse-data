@@ -63,7 +63,7 @@ WITH eligible_and_almost_eligible AS (
     {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ND'", 
     tes_task_query_view = 'transfer_to_minimum_facility_form_materialized',
     id_type = "'US_ND_ELITE'",
-    eligible_only=True)}
+    eligible_and_almost_eligible_only=True)}
 ),
 
 eligible_and_almost_eligible_minus_referrals AS (

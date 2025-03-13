@@ -18,7 +18,7 @@
 Shows the spans of time during which someone in ND is for a transfer into a 
 minimum security facility.
 """
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -40,6 +40,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     not_in_an_orientation_unit,
     not_in_minimum_security_facility,
     not_in_wtru_btc,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -79,6 +84,29 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT,
         no_detainers_or_warrants.VIEW_BUILDER,
     ],
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=incarceration_within_42_months_of_full_term_completion_date.VIEW_BUILDER,
+                reasons_date_field="full_term_completion_date",
+                interval_length=43,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within 43 months of full-term completion date",
+            ),
+            TimeDependentCriteriaCondition(
+                criteria=not_in_an_orientation_unit.VIEW_BUILDER,
+                reasons_date_field="housing_unit_start_date",
+                interval_length=-2,
+                interval_date_part=BigQueryDateInterval.WEEK,
+                description="Currently in an orientation unit, less than a week from reaching the 3-week mark",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=not_enrolled_in_relevant_program.VIEW_BUILDER,
+                description="Enrolled in a relevant program",
+            ),
+        ],
+        at_most_n_conditions_true=1,
+    ),
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
 
