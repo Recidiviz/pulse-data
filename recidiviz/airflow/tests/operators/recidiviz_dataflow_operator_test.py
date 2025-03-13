@@ -102,5 +102,5 @@ class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
             'resource.type="dataflow_step"\n'
             'resource.labels.job_id="2023-09-18_07_09_47-16912541725945987225"\n'
             'timestamp >= "2023-09-18T14:09:47.864426Z"\n'
-            "severity >= ERROR\n",
+            '(severity >= ERROR OR "Error:")\n',
         )

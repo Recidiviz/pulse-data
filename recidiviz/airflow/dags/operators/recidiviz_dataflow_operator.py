@@ -40,7 +40,7 @@ DATAFLOW_ERROR_LOGS_QUERY = """
 resource.type="dataflow_step"
 resource.labels.job_id="{job_id}"
 timestamp >= "{job_creation_time}"
-severity >= ERROR
+(severity >= ERROR OR "Error:")
 """
 
 
