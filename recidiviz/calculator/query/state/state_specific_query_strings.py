@@ -234,6 +234,8 @@ def state_specific_supervision_external_id_type(state_code_table_prefix: str) ->
           THEN 'US_AZ_PERSON_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_CA'
           THEN 'US_CA_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_IA'
+          THEN 'US_IA_OFFENDERCD'
           WHEN {state_code_table_prefix}.state_code = 'US_ID'
           THEN 'US_ID_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_IX'
