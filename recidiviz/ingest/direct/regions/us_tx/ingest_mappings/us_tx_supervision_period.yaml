@@ -5,10 +5,9 @@ manifest_language: 1.0.0
 input_columns:
   SID_Number: STRING
   Period_ID_Number: STRING
-  Supervision_Officer: STRING
-  Special_Conditions: STRING
-  Custodial_Authority: STRING
-  Case_Type: STRING
+  supervision_officer: STRING
+  status: STRING
+  case_type: STRING
   start_date: DATETIME
   end_date: STRING
   assessment_level: STRING
@@ -30,28 +29,25 @@ output:
           start_date: start_date
           #Todo(#35059 Consider early release when hydrating termination date)
           termination_date: end_date
-          supervision_site: Custodial_Authority
-          supervising_officer_staff_external_id: Supervision_Officer
+          supervision_period_metadata:
+            $normalized_values_json_dict:
+              status: status
+          supervising_officer_staff_external_id: supervision_officer
           supervising_officer_staff_external_id_type:
             $conditional:
               - $if:
-                  $not_null: Supervision_Officer
+                  $not_null: supervision_officer
                 $then: $literal("US_TX_STAFF_ID")
           supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
-          conditions: Special_Conditions
-          custodial_authority:
-            $enum_mapping:
-              $raw_text: Custodial_Authority
-              $custom_parser: us_tx_custom_enum_parsers.parse_custodial_auth
           supervision_level:
             $conditional:
               - $if:
                   $equal:
-                    - Case_Type
+                    - case_type
                     - $literal("Annual")
                 $then:
                   $enum_mapping:
-                    $raw_text: Case_Type
+                    $raw_text: case_type
                     $mappings:
                       StateSupervisionLevel.LIMITED:
                         - Annual
@@ -74,7 +70,7 @@ output:
             - StateSupervisionCaseTypeEntry:
                 case_type:
                   $enum_mapping:
-                    $raw_text: Case_Type
+                    $raw_text: case_type
                     $mappings:
                       StateSupervisionCaseType.GENERAL:
                         - Regular
@@ -82,8 +78,6 @@ output:
                         - Sex offender
                       StateSupervisionCaseType.DRUG_COURT:
                         - Substance abuse
-                      StateSupervisionCaseType.MENTAL_HEALTH_COURT:
-                        - Mentally ill
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
                         - Administrative
                         - Annual
@@ -94,12 +88,13 @@ output:
                         - Unknown
                       StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY:
                         - Intellectually Disabled
+                        - Mentally ill
                       StateSupervisionCaseType.ELECTRONIC_MONITORING:
                         - Electronic monitoring
                       StateSupervisionCaseType.INTENSE_SUPERVISION:
                         - Super-intensive supervision
-                        - Medically recommended intensive supervision
                       StateSupervisionCaseType.DAY_REPORTING:
                         - Day/district resource center
                       StateSupervisionCaseType.PHYSICAL_ILLNESS_OR_DISABILITY:
                         - Terminally Ill / Physically Handicapped
+                        - Medically recommended intensive supervision
