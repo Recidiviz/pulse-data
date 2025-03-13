@@ -78,7 +78,7 @@ acis_tpr_date_approaching AS (
     TO_JSON(ARRAY_CONCAT( 
         JSON_QUERY_ARRAY(acis_tpr_wo_reasons.reasons, '$'), 
         JSON_QUERY_ARRAY(tes.reasons, '$') )) AS reasons,
-    acis_tpr_wo_reasons.ineligible_criteria,
+    ARRAY_CONCAT(acis_tpr_wo_reasons.ineligible_criteria, tes.ineligible_criteria) AS ineligible_criteria,
     acis_tpr_wo_reasons.is_eligible,
     acis_tpr_wo_reasons.is_almost_eligible,
   FROM

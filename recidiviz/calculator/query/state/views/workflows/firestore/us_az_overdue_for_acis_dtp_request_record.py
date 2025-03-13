@@ -65,7 +65,7 @@ eligible AS (
     TO_JSON(ARRAY_CONCAT( 
         JSON_QUERY_ARRAY(eligible_wo_reasons.reasons, '$'), 
         JSON_QUERY_ARRAY(tes.reasons, '$') )) AS reasons,
-    eligible_wo_reasons.ineligible_criteria,
+    ARRAY_CONCAT(eligible_wo_reasons.ineligible_criteria, tes.ineligible_criteria) AS ineligible_criteria,
     eligible_wo_reasons.is_eligible,
     eligible_wo_reasons.is_almost_eligible,
   FROM

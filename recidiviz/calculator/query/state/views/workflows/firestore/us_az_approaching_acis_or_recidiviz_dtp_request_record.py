@@ -78,13 +78,13 @@ acis_dtp_date_approaching AS (
     TO_JSON(ARRAY_CONCAT( 
         JSON_QUERY_ARRAY(acis_dtp_wo_reasons.reasons, '$'), 
         JSON_QUERY_ARRAY(tes.reasons, '$') )) AS reasons,
-    acis_dtp_wo_reasons.ineligible_criteria,
+    ARRAY_CONCAT(acis_dtp_wo_reasons.ineligible_criteria, tes.ineligible_criteria) AS ineligible_criteria,
     acis_dtp_wo_reasons.is_eligible,
     acis_dtp_wo_reasons.is_almost_eligible,
   FROM
     acis_dtp_wo_reasons
   LEFT JOIN
-    `{{project_id}}.{{task_eligibility_dataset}}.overdue_for_recidiviz_tpr_request_materialized` tes
+    `{{project_id}}.{{task_eligibility_dataset}}.overdue_for_recidiviz_dtp_request_materialized` tes
   USING
     (person_id,
       state_code)
