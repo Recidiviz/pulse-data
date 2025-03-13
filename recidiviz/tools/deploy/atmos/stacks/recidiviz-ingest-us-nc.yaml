@@ -62,6 +62,6 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         region: !terraform.output sftpgo-kubernetes-cluster {{.stack}} region
         state_code: "{{ .settings.context.state_code }}"
-        sftp_bucket_name: !terraform.output state-specific-gcs {{.stack}} bucket_name
+        sftp_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
         kubernetes_endpoint: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
         kubernetes_ca_certificate: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate
