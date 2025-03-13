@@ -37,6 +37,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "disposition",
         "incident_type",
         "incident_type_raw_text",
+        "custody_level",
     ],
     event_date_col="incident_date",
 )
