@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     local = {
-      source = "hashicorp/local"
+      source  = "hashicorp/local"
       version = "~> 2.5.2"
     }
 
@@ -23,6 +23,11 @@ terraform {
     helm = {
       source  = "hashicorp/helm"
       version = ">= 2.0"
+    }
+
+    sftpgo = {
+      source  = "drakkan/sftpgo"
+      version = ">= 0.0.12"
     }
   }
 }

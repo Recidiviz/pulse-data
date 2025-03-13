@@ -17,3 +17,11 @@ spec:
       version: "v18.0.0"
       targets:
         - components/terraform/vendor/{{.Component}}
+    - component: "cloud-storage-bucket"
+      source: "github.com/terraform-google-modules/terraform-google-cloud-storage.git?ref={{.Version}}"
+      version: "v9.0.0"
+      included_paths:
+        - "**/*.tf"
+        - "**/README.md"
+      targets:
+        - components/terraform/vendor/{{.Component}}

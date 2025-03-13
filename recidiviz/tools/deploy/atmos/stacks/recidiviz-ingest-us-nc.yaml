@@ -4,10 +4,12 @@ settings:
     project_id: recidiviz-ingest-us-nc
     organization_id: 448885369991
     folder_id: 751846899284 # HIPAA
+    state_code: US_NC
 
 # The variables set here are automatically provided to any components used in this stack.
 vars:
   project_id: "{{ .settings.context.project_id }}"
+  state_code: "{{ .settings.context.state_code }}"
 
 terraform:
   # Describes where the Terraform state file for these centrally-managed components is stored
@@ -37,6 +39,14 @@ components:
         activate_apis:
           - compute.googleapis.com # GCE
           - container.googleapis.com # GKE
+          - secretmanager.googleapis.com
+          - storagetransfer.googleapis.com
+
+    isolated-direct-ingest-bucket-with-replication:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        state_code: "{{ .settings.context.state_code }}"
 
     # Provision the cluster and resources separately so that the cluster can be recreated
     # without the dependent helm resources preventing it if necessary
@@ -51,5 +61,7 @@ components:
       vars:
         project_id: "{{ .settings.context.project_id }}"
         region: !terraform.output sftpgo-kubernetes-cluster {{.stack}} region
+        state_code: "{{ .settings.context.state_code }}"
+        sftp_bucket_name: !terraform.output state-specific-gcs {{.stack}} bucket_name
         kubernetes_endpoint: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
         kubernetes_ca_certificate: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate

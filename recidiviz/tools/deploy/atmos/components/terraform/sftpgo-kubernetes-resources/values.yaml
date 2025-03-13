@@ -1,4 +1,6 @@
 config:
+  data_provider:
+    create_default_admin: True
   sftpd:
     max_auth_retries: 10
 
@@ -14,5 +16,7 @@ services:
       type: LoadBalancer
       externalTrafficPolicy: Local
     ports:
+      http:
+        port: 8080
       sftp:
         port: 22
