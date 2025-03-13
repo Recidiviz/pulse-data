@@ -900,6 +900,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.include_in_outcomes,
+                    SupervisionOfficer.email,
                 )
             ).all()
 
@@ -912,6 +913,7 @@ class OutliersQuerier:
                     supervisor_external_ids=officer.supervisor_external_ids,
                     district=officer.supervision_district,
                     include_in_outcomes=officer.include_in_outcomes,
+                    email=officer.email,
                 )
                 for officer in officers
             ]
@@ -1272,6 +1274,7 @@ class OutliersQuerier:
                 SupervisionOfficer.supervisor_external_id,
                 SupervisionOfficer.supervisor_external_ids,
                 SupervisionOfficer.supervision_district,
+                SupervisionOfficer.email,
                 SupervisionOfficer.earliest_person_assignment_date,
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
@@ -1295,6 +1298,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
+                    SupervisionOfficer.email,
                     SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
                     include_in_outcomes_subquery.c.include_in_outcomes,
@@ -1394,6 +1398,7 @@ class OutliersQuerier:
                     supervisor_external_id=record.supervisor_external_id,
                     supervisor_external_ids=record.supervisor_external_ids,
                     district=record.supervision_district,
+                    email=record.email,
                     earliest_person_assignment_date=record.earliest_person_assignment_date,
                     avg_daily_population=record.avg_daily_population,
                     zero_grant_opportunities=(

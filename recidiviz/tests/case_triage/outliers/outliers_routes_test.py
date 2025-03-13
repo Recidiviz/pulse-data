@@ -413,6 +413,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -424,6 +425,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_ids=["103"],
                     district="Hogwarts",
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -498,6 +500,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=["usPaAdminSupervision"],
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -512,6 +515,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=[],
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -561,6 +565,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -573,6 +578,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -894,6 +900,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 # Officer without outcomes
                 SupervisionOfficerEntity(
@@ -907,6 +914,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=False,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -1001,6 +1009,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1013,6 +1022,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -1092,6 +1102,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1104,6 +1115,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -1206,6 +1218,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1218,6 +1231,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -1349,6 +1363,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1361,6 +1376,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
             ]
 
@@ -1472,6 +1488,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer123@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1484,6 +1501,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer678@recidiviz.org",
                 ),
             ]
 
@@ -1657,6 +1675,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer567@recidiviz.org",
                 ),
                 # This officer is ineligible for ACTION_STRATEGY_OUTLIER_3_MONTHS because neither ACTION_STRATEGY_OUTLIER or ACTION_STRATEGY_60_PERC_OUTLIERS surfaced
                 SupervisionOfficerEntity(
@@ -1670,6 +1689,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer789@recidiviz.org",
                 ),
                 # # This officer is ineligible for ACTION_STRATEGY_OUTLIER_3_MONTHS because outlier status is not consecutive for 3+ months
                 SupervisionOfficerEntity(
@@ -1683,6 +1703,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer890@recidiviz.org",
                 ),
             ]
 
@@ -1876,6 +1897,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer456@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1888,6 +1910,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer678@recidiviz.org",
                 ),
             ]
 
@@ -2061,6 +2084,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer1@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -2073,6 +2097,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer2@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -2085,6 +2110,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer3@recidiviz.org",
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -2097,6 +2123,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer4@recidiviz.org",
                 ),
             ]
 
@@ -2248,6 +2275,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer1@recidiviz.org",
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event + outlier 3 months
                 # Should return ACTION_STRATEGY_OUTLIER_3_MONTHS
@@ -2262,6 +2290,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer2@recidiviz.org",
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event + is absconsion metric
                 # Should return ACTION_STRATEGY_OUTLIER_ABSCONSION
@@ -2276,6 +2305,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer3@recidiviz.org",
                 ),
                 # Not an outlier, should return None
                 SupervisionOfficerEntity(
@@ -2289,6 +2319,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
+                    email="officer4@recidiviz.org",
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event, ACTION_STRATEGY_OUTLIER_ABSCONSION, and ACTION_STRATEGY_OUTLIER_3_MONTHS events
                 # Should return ACTION_STRATEGY_OUTLIER_NEW_OFFICER
@@ -2304,6 +2335,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
                     include_in_outcomes=True,
+                    email="officer5@recidiviz.org",
                 ),
                 # Has seen all of the action strategies, should return None
                 SupervisionOfficerEntity(
@@ -2318,6 +2350,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
                     include_in_outcomes=True,
+                    email="officer6@recidiviz.org",
                 ),
             ]
 
@@ -2663,6 +2696,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         # The supervisor exists, but doesn't match the supervisor of the officer
@@ -2726,6 +2760,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -2812,6 +2847,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
         # No outcomes found for officer
         mock_get_officer_outcomes.return_value = None
@@ -2871,6 +2907,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -2934,6 +2971,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -3012,6 +3050,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -3101,6 +3140,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -3194,6 +3234,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -3287,6 +3328,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
@@ -3405,6 +3447,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         # The supervisor exists but doesn't match the supervisor of the officer
@@ -3464,6 +3507,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_supervisor_exists.return_value = False
@@ -3525,6 +3569,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             avg_daily_population=10.0,
             include_in_outcomes=True,
+            email="officer123@recidiviz.org",
         )
 
         mock_supervisor_exists.return_value = False
@@ -4831,6 +4876,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Some District",
             avg_daily_population=5,
             include_in_outcomes=True,
+            email="officer2@recidiviz.org",
         )
 
         mock_vitals = [
@@ -4906,6 +4952,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Some District",
             avg_daily_population=5,
             include_in_outcomes=True,
+            email="officer2@recidiviz.org",
         )
 
         mock_vitals = [
@@ -4976,6 +5023,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Some District",
             avg_daily_population=5,
             include_in_outcomes=True,
+            email="officer2@recidiviz.org",
         )
 
         response = self.test_client.get(

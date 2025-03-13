@@ -449,8 +449,10 @@ class SupervisionOfficerEntity:
     supervisor_external_id: str = attr.ib()
     # The officer's supervisor's external ids
     supervisor_external_ids: List[str] = attr.ib()
-    # The district the officer
+    # The district of the officer
     district: str = attr.ib()
+    # The officer's email
+    email: str = attr.ib()
     # Whether this officer is included in outcomes calculations
     include_in_outcomes: bool = attr.ib()
     # The officer's avg caseload size in the latest period

@@ -168,6 +168,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"]
             "avgDailyPopulation": None,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
+            "email": "officer123@recidiviz.org",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -185,6 +186,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"]
             "avgDailyPopulation": None,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
+            "email": "officer456@recidiviz.org",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -393,6 +395,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
         "avgDailyPopulation": 10.0,
         "district": "Guts",
         "earliestPersonAssignmentDate": None,
+        "email": "officer123@recidiviz.org",
         "externalId": "123",
         "fullName": {
             "givenNames": "Olivia",
@@ -414,6 +417,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
+            "email": "officer123@recidiviz.org",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -431,6 +435,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "avgDailyPopulation": 10.0,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
+            "email": "officer456@recidiviz.org",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",
@@ -455,6 +460,7 @@ snapshots[
             "avgDailyPopulation": 10.0,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
+            "email": "officer123@recidiviz.org",
             "externalId": "123",
             "fullName": {
                 "givenNames": "Harry",
@@ -472,6 +478,7 @@ snapshots[
             "avgDailyPopulation": 10.0,
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
+            "email": "officer456@recidiviz.org",
             "externalId": "456",
             "fullName": {
                 "givenNames": "Ron",

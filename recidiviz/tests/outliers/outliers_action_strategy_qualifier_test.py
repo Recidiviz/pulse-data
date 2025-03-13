@@ -905,6 +905,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -974,6 +975,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
             # Within 15 months of today
@@ -1015,6 +1017,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
             # More than 15 months from today
@@ -1056,6 +1059,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -1095,6 +1099,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
@@ -1141,6 +1146,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
+            email="officer1@recidiviz.org",
             avg_daily_population=10.0,
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
