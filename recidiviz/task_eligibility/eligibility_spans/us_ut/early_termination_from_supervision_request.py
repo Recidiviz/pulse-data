@@ -18,7 +18,7 @@
 Shows the spans of time during which someone in UT is eligible
 for an Early Termination from Supevision
 """
-
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
@@ -42,6 +42,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -84,21 +85,32 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
     ],
     almost_eligible_condition=PickNCompositeCriteriaCondition(
+        # There are two separate ways to become almost eligible:
+        #   1) You are missing one or both of the treatment or employment criteria
+        #   2) You are within 2 years of your half-time date
         sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=has_completed_ordered_assessments.VIEW_BUILDER,
-                description="Only missing the completion of ordered assessments/treatment/programming criteria",
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    NotEligibleCriteriaCondition(
+                        criteria=has_completed_ordered_assessments.VIEW_BUILDER,
+                        description="Only missing the completion of ordered assessments/treatment/programming criteria",
+                    ),
+                    NotEligibleCriteriaCondition(
+                        criteria=supervision_continuous_employment_for_3_months.VIEW_BUILDER,
+                        description="Only missing the continuous employment for 3 months criteria",
+                    ),
+                ],
+                at_most_n_conditions_true=2,
             ),
-            NotEligibleCriteriaCondition(
-                criteria=supervision_continuous_employment_for_3_months.VIEW_BUILDER,
-                description="Only missing the continuous employment for 3 months criteria",
-            ),
-            NotEligibleCriteriaCondition(
+            TimeDependentCriteriaCondition(
                 criteria=supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
-                description="Only missing the past ET Review date/half-time date criteria",
+                reasons_date_field="half_full_term_release_date",
+                interval_length=2,
+                interval_date_part=BigQueryDateInterval.YEAR,
+                description="Within 2 years of 1/2 full term release date",
             ),
         ],
-        at_most_n_conditions_true=2,
+        at_most_n_conditions_true=1,
     ),
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
