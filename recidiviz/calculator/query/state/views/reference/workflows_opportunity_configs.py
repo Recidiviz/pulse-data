@@ -273,6 +273,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_ME,
+        opportunity_type="usMeOverdueForDischarge",
+        experiment_id="US_ME_OVERDUE_FOR_DISCHARGE_WORKFLOWS",
+        opportunity_record_view_name="us_me_overdue_for_discharge_record_materialized",
+        task_completion_event=TaskCompletionEventType.FULL_TERM_DISCHARGE,
+        source_filename="us_me_overdue_for_discharge_record.json",
+        export_collection_name="US_ME-overdueForDischargeReferrals",
+        opportunity_type_path_str="overdueForDischarge",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_ME,
         opportunity_type="usMeSCCP",
         experiment_id="US_ME_SCCP_WORKFLOWS",
         opportunity_record_view_name="us_me_complete_transfer_to_sccp_form_record_materialized",
