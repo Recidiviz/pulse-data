@@ -46,10 +46,12 @@ def parse_employment_status(
     signify that they are unemployed, we assume their appearance in the emplymt raw data
     table means they are employed in some capacity."""
     hours_per_week, job_title, comment = raw_text.split("@@")
+    if "STUDENT" in job_title.upper() or "STUDENT" in comment.upper():
+        return StateEmploymentPeriodEmploymentStatus.STUDENT
     if (
         "UNEMPL" in job_title.upper()
         or job_title.upper() == "NONE"
-        or "UNEMPL" in comment
+        or "UNEMPL" in comment.upper()
     ):
         return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
     if hours_per_week != "NONE":
