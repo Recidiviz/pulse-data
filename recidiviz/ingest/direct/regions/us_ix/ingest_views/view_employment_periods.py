@@ -39,6 +39,7 @@ LEFT JOIN {ref_Employer}
     USING (EmployerId)
 LEFT JOIN {ref_EmploymentStatus}
     USING (EmploymentStatusId)
+WHERE LENGTH(StartDate) = 8
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
