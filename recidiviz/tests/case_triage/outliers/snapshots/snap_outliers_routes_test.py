@@ -1,7 +1,7 @@
-"""    
-Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py    
-Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update    
-Remember to include a docstring like this after updating the snapshots for Pylint purposes    
+"""
+Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py
+Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update
+Remember to include a docstring like this after updating the snapshots for Pylint purposes
 """
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
@@ -385,39 +385,6 @@ snapshots[
             "supervisionStartDate": None,
             "supervisionType": "PROBATION",
         }
-    ]
-}
-
-snapshots[
-    "TestOutliersRoutes.TestOutliersRoutes test_get_excluded_officers_for_supervisor"
-] = {
-    "officers": [
-        {
-            "district": "Hogwarts",
-            "externalId": "123",
-            "fullName": {
-                "givenNames": "Harry",
-                "middleNames": None,
-                "nameSuffix": None,
-                "surname": "Potter",
-            },
-            "pseudonymizedId": "hashhash",
-            "supervisorExternalId": "102",
-            "supervisorExternalIds": ["102"],
-        },
-        {
-            "district": "Hogwarts",
-            "externalId": "456",
-            "fullName": {
-                "givenNames": "Ron",
-                "middleNames": None,
-                "nameSuffix": None,
-                "surname": "Weasley",
-            },
-            "pseudonymizedId": "hashhashhash",
-            "supervisorExternalId": "102",
-            "supervisorExternalIds": ["102"],
-        },
     ]
 }
 

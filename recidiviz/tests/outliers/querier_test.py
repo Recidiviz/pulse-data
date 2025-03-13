@@ -232,12 +232,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor_without_workflows_info")  # type: ignore[attr-defined]
 
-    def test_get_excluded_officers_for_supervisor(self) -> None:
-        actual = OutliersQuerier(StateCode.US_PA).get_excluded_officers_for_supervisor(
-            supervisor_external_id="102"
-        )
-        self.snapshot.assert_match(actual, name="test_get_excluded_officers_for_supervisor")  # type: ignore[attr-defined]
-
     def test_get_officer_outcomes_for_supervisor(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_officer_outcomes_for_supervisor(
             supervisor_external_id="102",
@@ -637,24 +631,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
 
         self.assertIsNone(actual)
-
-    def test_get_excluded_supervision_officer_entity_found_match(self) -> None:
-        # Return matching excluded supervision officer entity
-        actual = OutliersQuerier(
-            StateCode.US_PA
-        ).get_excluded_supervision_officer_entity(
-            pseudonymized_officer_id="officerhash10",
-        )
-        self.snapshot.assert_match(actual, name="test_get_excluded_supervision_officer_entity_found_match")  # type: ignore[attr-defined]
-
-    def test_get_excluded_supervision_officer_entity_no_match(self) -> None:
-        # Return matching excluded supervision officer entity
-        actual = OutliersQuerier(
-            StateCode.US_PA
-        ).get_excluded_supervision_officer_entity(
-            pseudonymized_officer_id="invalidhash",
-        )
-        self.assertIsNone(actual)  # type: ignore[attr-defined]
 
     def test_supervisor_exists_with_external_id_found_match(self) -> None:
         # Return matching supervisor

@@ -434,8 +434,10 @@ class OfficerSupervisorReportData:
 
 
 @attr.s
-class SupervisionOfficerEntityBase:
-    """Base class for supervision officer types."""
+class SupervisionOfficerEntity:
+    """Represents a supervision officer for the insights product. The officer may or
+    may not have been included in outcomes calculations and may or may not be an
+    outlier themselves."""
 
     # The full name of the officer
     full_name: PersonName = attr.ib()
@@ -449,16 +451,6 @@ class SupervisionOfficerEntityBase:
     supervisor_external_ids: List[str] = attr.ib()
     # The district the officer
     district: str = attr.ib()
-
-    def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
-
-
-@attr.s
-class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
-    """Represents an officer we have included in our benchmarks and outlier status
-    calculations. These officers may or may not be outliers themselves."""
-
     # Whether this officer is included in outcomes calculations
     include_in_outcomes: bool = attr.ib()
     # The officer's avg caseload size in the latest period
@@ -470,12 +462,6 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
-
-
-@attr.s
-class ExcludedSupervisionOfficerEntity(SupervisionOfficerEntityBase):
-    """An officer that was excluded from benchmark and outlier status
-    calculations."""
 
 
 @attr.s

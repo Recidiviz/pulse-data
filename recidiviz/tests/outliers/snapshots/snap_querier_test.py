@@ -274,23 +274,6 @@ snapshots[
 ]
 
 snapshots[
-    "TestOutliersQuerier.TestOutliersQuerier test_get_excluded_officers_for_supervisor"
-] = [
-    GenericRepr(
-        "ExcludedSupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='10', middle_names='', name_suffix=''), external_id='10', pseudonymized_id='officerhash10', supervisor_external_id='102', supervisor_external_ids=['102'], district=None)"
-    ),
-    GenericRepr(
-        "ExcludedSupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='11', middle_names='', name_suffix=''), external_id='11', pseudonymized_id='officerhash11', supervisor_external_id='102', supervisor_external_ids=['102'], district=None)"
-    ),
-]
-
-snapshots[
-    "TestOutliersQuerier.TestOutliersQuerier test_get_excluded_supervision_officer_entity_found_match"
-] = GenericRepr(
-    "ExcludedSupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='10', middle_names='', name_suffix=''), external_id='10', pseudonymized_id='officerhash10', supervisor_external_id='102', supervisor_external_ids=['102'], district=None)"
-)
-
-snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_most_recent_action_strategy_surfaced_event_for_supervisor"
 ] = GenericRepr(
     "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id=None, action_strategy='ACTION_STRATEGY_60_PERC_OUTLIERS', timestamp=datetime.date(2024, 6, 1))"

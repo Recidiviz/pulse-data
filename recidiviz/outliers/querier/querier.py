@@ -42,7 +42,6 @@ from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     ConfigurationStatus,
-    ExcludedSupervisionOfficerEntity,
     MetricContext,
     MetricOutcome,
     OfficerMetricEntity,
@@ -545,57 +544,6 @@ class OutliersQuerier:
         )
         return list(id_to_entities.values())
 
-    def get_excluded_officers_for_supervisor(
-        self,
-        supervisor_external_id: str,
-    ) -> List[ExcludedSupervisionOfficerEntity]:
-        """
-        Returns a list of ExcludedSupervisionOfficerEntity objects that represent the supervisor's officers that
-        are currently excluded from metric calculations (see supervision_officer_metric_exclusions clause).
-
-        :param supervisor_external_id: The external id of the supervisor to get outlier information for
-        :rtype: List[ExcludedSupervisionOfficerEntity]
-        """
-        with self.insights_database_session() as session:
-            officer_status_query = (
-                session.query(SupervisionOfficer)
-                .outerjoin(
-                    SupervisionOfficerOutlierStatus,
-                    SupervisionOfficer.external_id
-                    == SupervisionOfficerOutlierStatus.officer_id,
-                )
-                .filter(
-                    SupervisionOfficer.supervisor_external_ids.any(
-                        supervisor_external_id
-                    ),
-                    SupervisionOfficerOutlierStatus.officer_id.is_(None),
-                )
-                .with_entities(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.full_name,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficer.supervisor_external_id,
-                    SupervisionOfficer.supervisor_external_ids,
-                    SupervisionOfficer.supervision_district,
-                )
-            )
-
-            officer_status_records = officer_status_query.all()
-
-            return [
-                (
-                    ExcludedSupervisionOfficerEntity(
-                        full_name=PersonName(**record.full_name),
-                        external_id=record.external_id,
-                        pseudonymized_id=record.pseudonymized_id,
-                        supervisor_external_id=record.supervisor_external_id,
-                        supervisor_external_ids=record.supervisor_external_ids,
-                        district=record.supervision_district,
-                    )
-                )
-                for record in officer_status_records
-            ]
-
     def get_officer_outcomes_for_supervisor(
         self,
         supervisor_external_id: str,
@@ -967,55 +915,6 @@ class OutliersQuerier:
                 )
                 for officer in officers
             ]
-
-    def get_excluded_supervision_officer_entity(
-        self,
-        pseudonymized_officer_id: str,
-    ) -> Optional[ExcludedSupervisionOfficerEntity]:
-        """
-        Get the ExcludedSupervisionOfficerEntity object for the requested officer, an entity that does not include metric information.
-
-        :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
-        :rtype: Optional[ExcludedSupervisionOfficerEntity]
-        """
-        with self.insights_database_session() as session:
-
-            excluded_officer = (
-                session.query(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.full_name,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficer.supervisor_external_id,
-                    SupervisionOfficer.supervisor_external_ids,
-                    SupervisionOfficer.supervision_district,
-                )
-                .outerjoin(
-                    SupervisionOfficerOutlierStatus,
-                    SupervisionOfficer.external_id
-                    == SupervisionOfficerOutlierStatus.officer_id,
-                )
-                .filter(
-                    SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id,
-                    SupervisionOfficerOutlierStatus.officer_id.is_(None),
-                )
-                .one_or_none()
-            )
-
-            if excluded_officer is None:
-                logging.info(
-                    "Requested officer with provided pseudonymized_id not found: %s",
-                    pseudonymized_officer_id,
-                )
-                return None
-
-            return ExcludedSupervisionOfficerEntity(
-                full_name=PersonName(**excluded_officer.full_name),
-                external_id=excluded_officer.external_id,
-                pseudonymized_id=excluded_officer.pseudonymized_id,
-                district=excluded_officer.supervision_district,
-                supervisor_external_id=excluded_officer.supervisor_external_id,
-                supervisor_external_ids=excluded_officer.supervisor_external_ids,
-            )
 
     def get_supervision_officer_outcomes(
         self,
