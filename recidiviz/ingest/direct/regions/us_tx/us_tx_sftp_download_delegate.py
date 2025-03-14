@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.sftp.metadata import (
 from recidiviz.ingest.direct.sftp.remote_file_cleanup_mixin import (
     RemoteFileCleanupMixin,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
@@ -105,7 +105,7 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin)
         return [downloaded_path.abs_path()]
 
     def supported_environments(self) -> List[str]:
-        return [GCP_PROJECT_STAGING]
+        return [GCP_PROJECT_PRODUCTION]
 
     def get_transport_kwargs(self) -> Dict[str, Any]:
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}
