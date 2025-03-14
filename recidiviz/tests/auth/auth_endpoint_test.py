@@ -499,14 +499,12 @@ class AuthEndpointTests(TestCase):
         override_user_delete = generate_fake_user_overrides(
             email="parameter@testdomain.com",
             region_code="US_MO",
-            blocked=True,
             blocked_on=BLOCKED_ON_DATE,
         )
         override_only_delete = generate_fake_user_overrides(
             email="user@testdomain.com",
             region_code="US_MO",
             roles=[LEADERSHIP_ROLE],
-            blocked=True,
             blocked_on=BLOCKED_ON_DATE,
         )
         override_keep = generate_fake_user_overrides(
@@ -723,11 +721,10 @@ class AuthEndpointTests(TestCase):
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
-            expected = [
+            expected: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
@@ -744,7 +741,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "supervision_staff@testdomain.com",
@@ -761,7 +757,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D2",
                     "emailAddress": "user@testdomain.com",
@@ -846,11 +841,10 @@ class AuthEndpointTests(TestCase):
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
-            expected = [
+            expected: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
@@ -867,7 +861,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "supervision_staff@testdomain.com",
@@ -884,7 +877,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D2",
                     "emailAddress": "user@testdomain.com",
@@ -963,11 +955,10 @@ class AuthEndpointTests(TestCase):
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
-            expected = [
+            expected: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
@@ -984,7 +975,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
                     .astimezone(timezone.utc)
                     .isoformat(),
@@ -1003,7 +993,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "supervision_staff@testdomain.com",
@@ -1020,7 +1009,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D2",
                     "emailAddress": "user@testdomain.com",
@@ -1112,11 +1100,10 @@ class AuthEndpointTests(TestCase):
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
-            expected = [
+            expected: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
                     .astimezone(timezone.utc)
                     .isoformat(),
@@ -1135,7 +1122,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
@@ -1152,7 +1138,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "supervision_staff@testdomain.com",
@@ -1169,7 +1154,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D2",
                     "emailAddress": "user@testdomain.com",

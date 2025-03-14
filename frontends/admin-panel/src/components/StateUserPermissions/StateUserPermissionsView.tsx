@@ -97,9 +97,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     selectedRowKeys,
     onChange: onSelectChange,
     getCheckboxProps: (record: StateUserPermissionsResponse) => ({
-      disabled:
-        record.blocked === true ||
-        (!!record.blockedOn && isDateInPast(record.blockedOn)),
+      disabled: !!record.blockedOn && isDateInPast(record.blockedOn),
     }),
   };
 
@@ -159,7 +157,6 @@ const StateUserPermissionsView = (): JSX.Element => {
       userHash: userToEnable.userHash,
       stateCode: userToEnable.stateCode,
       reason,
-      blocked: false,
       blockedOn: null,
     });
     finishPromises([checkResponse(updatedUser)], "Enabled");

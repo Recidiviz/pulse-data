@@ -160,7 +160,6 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 func.coalesce(UserOverride.last_name, Roster.last_name).label(
                     "last_name"
                 ),
-                func.coalesce(UserOverride.blocked, False).label("blocked"),
                 UserOverride.blocked_on.label("blocked_on"),
                 (
                     aggregated_permissions_cte.c.routes
@@ -495,9 +494,10 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 )
                 if value := existing_override.first():
                     existing_override.update(
-                        {"blocked": True, "blocked_on": datetime.now(tzlocal())},
+                        {"blocked_on": datetime.now(tzlocal())},
                         synchronize_session=False,
                     )
+                    current_session.commit()
                     email = value.email_address
                 else:
                     roster_user = (
@@ -513,7 +513,6 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                     user_override = UserOverride(
                         state_code=roster_user.state_code,
                         email_address=roster_user.email_address,
-                        blocked=True,
                         blocked_on=datetime.now(tzlocal()),
                         user_hash=roster_user.user_hash,
                     )

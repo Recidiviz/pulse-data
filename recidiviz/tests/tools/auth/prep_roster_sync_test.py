@@ -338,7 +338,7 @@ class PrepRosterSyncTest(TestCase):
         # The recently logged in user should get an override, and the other user should be removed
         expected_overrides = [
             {
-                "blocked": False,
+                "blocked_on": None,
                 "district": "D2",
                 "email_address": "recently_logged_in_user@testdomain.com",
                 "external_id": "123",
@@ -390,7 +390,7 @@ class PrepRosterSyncTest(TestCase):
         # The user to keep unchanged should be kept
         expected_overrides: list[dict] = [
             {
-                "blocked": None,
+                "blocked_on": None,
                 "district": "D12",
                 "email_address": "user_to_keep_unchanged@testdomain.com",
                 "external_id": "1234",
@@ -455,7 +455,7 @@ class PrepRosterSyncTest(TestCase):
         # original user should be removed, and the recently added user should be ignored
         expected_overrides = [
             {
-                "blocked": False,
+                "blocked_on": None,
                 "district": "D2",
                 "email_address": "recently_logged_in_user@testdomain.com",
                 "external_id": "123",
@@ -467,7 +467,7 @@ class PrepRosterSyncTest(TestCase):
                 "user_hash": "On9z4tx1lZK9NfTUmCrAucJRuDsvNDZvT4JknYfHlUU=",
             },
             {
-                "blocked": None,
+                "blocked_on": None,
                 "district": "D12",
                 "email_address": "user_to_keep_unchanged@testdomain.com",
                 "external_id": "1234",
@@ -534,7 +534,6 @@ class PrepRosterSyncTest(TestCase):
                 "first_name": "Test",
                 "last_name": "User",
                 "user_hash": "user1hash",
-                "blocked": True,
                 "blocked_on": datetime.fromisoformat("2025-01-09T14:00:00").replace(
                     tzinfo=timezone.utc
                 ),

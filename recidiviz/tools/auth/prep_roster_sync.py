@@ -69,7 +69,7 @@ _EXISTING_USER_QUERY = select(
     func.coalesce(UserOverride.district, Roster.district).label("district"),
     func.coalesce(UserOverride.first_name, Roster.first_name).label("first_name"),
     func.coalesce(UserOverride.last_name, Roster.last_name).label("last_name"),
-    UserOverride.blocked,
+    UserOverride.blocked_on,
     func.coalesce(
         UserOverride.user_hash,
         Roster.user_hash,

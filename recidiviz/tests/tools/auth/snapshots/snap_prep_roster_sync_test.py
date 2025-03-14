@@ -14,17 +14,17 @@ snapshots = Snapshot()
 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_add_user_overrides"] = [
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user1@testdomain.com, external_id=1234, roles=['leadership_role'], district=District 7, first_name=Test, last_name=User, blocked=True, blocked_on=2025-01-09T14:00:00+00:00)"
+        "UserOverride(state_code=US_XX, email_address=user1@testdomain.com, external_id=1234, roles=['leadership_role'], district=District 7, first_name=Test, last_name=User, blocked_on=2025-01-09T14:00:00+00:00)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user2@testdomain.com, external_id=None, roles=['leadership_role'], district=None, first_name=None, last_name=None, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user2@testdomain.com, external_id=None, roles=['leadership_role'], district=None, first_name=None, last_name=None, blocked_on=None)"
     ),
 ]
 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = [
     (
         GenericRepr(
-            "UserOverride(state_code=US_XX, email_address=user_with_equivalent_role@testdomain.com, external_id=789, roles=['supervision_staff', 'tt group'], district=D7, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+            "UserOverride(state_code=US_XX, email_address=user_with_equivalent_role@testdomain.com, external_id=789, roles=['supervision_staff', 'tt group'], district=D7, first_name=Test, last_name=User, blocked_on=None)"
         ),
         {
             "email_address": "user_with_equivalent_role@testdomain.com",
@@ -35,7 +35,7 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = 
     ),
     (
         GenericRepr(
-            "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=D9, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+            "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=D9, first_name=Test, last_name=User, blocked_on=None)"
         ),
         {
             "district": "changed district",
@@ -47,7 +47,7 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = 
     ),
     (
         GenericRepr(
-            "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['leadership_role', 'tt group'], district=D8, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+            "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['leadership_role', 'tt group'], district=D8, first_name=Test, last_name=User, blocked_on=None)"
         ),
         {
             "email_address": "user_with_different_role@testdomain.com",
@@ -58,7 +58,7 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_find_and_handle_diffs"] = 
     ),
     (
         GenericRepr(
-            "UserOverride(state_code=US_XX, email_address=user_in_sync_query@testdomain.com, external_id=234, roles=['supervision_staff'], district=D2, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+            "UserOverride(state_code=US_XX, email_address=user_in_sync_query@testdomain.com, external_id=234, roles=['supervision_staff'], district=D2, first_name=Test, last_name=User, blocked_on=None)"
         ),
         {
             "email_address": "user_in_sync_query@testdomain.com",
@@ -80,27 +80,27 @@ snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_roster"] = [
 
 snapshots["PrepRosterSyncTest.PrepRosterSyncTest test_full_user_override"] = [
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=recently_created_user@testdomain.com, external_id=345, roles=['supervision_line_staff'], district=D3, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=recently_created_user@testdomain.com, external_id=345, roles=['supervision_line_staff'], district=D3, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=recently_logged_in_user@testdomain.com, external_id=123, roles=['supervision_line_staff', 'custom_role'], district=D2, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=recently_logged_in_user@testdomain.com, external_id=123, roles=['supervision_line_staff', 'custom_role'], district=D2, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_to_keep_unchanged@testdomain.com, external_id=1234, roles=['supervision_staff'], district=D12, first_name=Test, last_name=User, blocked=None, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_to_keep_unchanged@testdomain.com, external_id=1234, roles=['supervision_staff'], district=D12, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_with_multiple_diffs@testdomain.com, external_id=012, roles=['supervision_line_staff'], district=changed district, first_name=changed name, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_with_multiple_diffs@testdomain.com, external_id=012, roles=['supervision_line_staff'], district=changed district, first_name=changed name, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_with_equivalent_role@testdomain.com, external_id=789, roles=['supervision_line_staff', 'tt group'], district=D7, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_with_equivalent_role@testdomain.com, external_id=789, roles=['supervision_line_staff', 'tt group'], district=D7, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=changed district, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_with_different_district@testdomain.com, external_id=901, roles=['supervision_staff'], district=changed district, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['leadership_role', 'supervision_line_staff', 'tt group'], district=D8, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_with_different_role@testdomain.com, external_id=890, roles=['leadership_role', 'supervision_line_staff', 'tt group'], district=D8, first_name=Test, last_name=User, blocked_on=None)"
     ),
     GenericRepr(
-        "UserOverride(state_code=US_XX, email_address=user_in_sync_query@testdomain.com, external_id=234, roles=['leadership_role', 'supervision_staff'], district=D2, first_name=Test, last_name=User, blocked=False, blocked_on=None)"
+        "UserOverride(state_code=US_XX, email_address=user_in_sync_query@testdomain.com, external_id=234, roles=['leadership_role', 'supervision_staff'], district=D2, first_name=Test, last_name=User, blocked_on=None)"
     ),
 ]

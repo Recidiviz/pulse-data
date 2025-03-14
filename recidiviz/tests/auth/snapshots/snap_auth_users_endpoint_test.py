@@ -16,7 +16,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "District",
         "emailAddress": "add_user@testdomain.com",
@@ -33,7 +32,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
     {
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
-        "blocked": False,
         "blockedOn": None,
         "district": "1, 2",
         "emailAddress": "parameter@testdomain.com",
@@ -55,7 +53,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "District",
         "emailAddress": "add_user@testdomain.com",
@@ -72,7 +69,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
-        "blocked": False,
         "blockedOn": None,
         "district": "1, 2",
         "emailAddress": "parameter@testdomain.com",
@@ -91,7 +87,6 @@ snapshots[
 snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user_repeat_email"
 ] = {
-    "blocked": False,
     "blockedOn": None,
     "district": "D1",
     "emailAddress": "parameter@testdomain.com",
@@ -107,7 +102,6 @@ snapshots[
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] = {
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
-    "blocked": False,
     "blockedOn": None,
     "district": "District",
     "emailAddress": "parameter@testdomain.com",
@@ -128,7 +122,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "District 4",
         "emailAddress": "leadership@testdomain.com",
@@ -150,7 +143,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": True,
         "blockedOn": "2025-01-09T14:00:00+00:00",
         "district": "D1",
         "emailAddress": "leadership@testdomain.com",
@@ -167,7 +159,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "D3",
         "emailAddress": "supervision_staff@testdomain.com",
@@ -189,7 +180,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "4, 10A",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
-        "blocked": False,
         "blockedOn": None,
         "district": "4, 10A",
         "emailAddress": "leadership@testdomain.com",
@@ -211,7 +201,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -233,7 +222,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -259,7 +247,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": True,
         "blockedOn": "2025-01-09T14:00:00+00:00",
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -280,7 +267,6 @@ snapshots[
 ] = {
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
-    "blocked": False,
     "blockedOn": None,
     "district": None,
     "emailAddress": "parameter@testdomain.com",
@@ -301,7 +287,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "D1",
         "emailAddress": "parameter@testdomain.com",
@@ -323,7 +308,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "parameter@testdomain.com",
@@ -344,7 +328,6 @@ snapshots[
 ] = {
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
-    "blocked": False,
     "blockedOn": None,
     "district": None,
     "emailAddress": "parameter@testdomain.com",
@@ -363,7 +346,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "D1",
         "emailAddress": "parameter@testdomain.com",
@@ -380,7 +362,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "user@testdomain.com",
@@ -400,7 +381,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "ABC",
         "emailAddress": "facilities_staff@testdomain.com",
@@ -417,7 +397,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -434,7 +413,6 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "supervision_staff@testdomain.com",
@@ -456,7 +434,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "NEW DISTRICT",
         "emailAddress": "leadership@testdomain.com",
@@ -478,7 +455,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "ABC",
         "emailAddress": "facilities_staff@testdomain.com",
@@ -495,7 +471,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -512,7 +487,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "supervision_staff@testdomain.com",
@@ -534,7 +508,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "ABC",
         "emailAddress": "facilities_staff@testdomain.com",
@@ -551,7 +524,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": None,
         "emailAddress": "leadership@testdomain.com",
@@ -568,7 +540,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "D1",
         "emailAddress": "supervision_staff@testdomain.com",
@@ -585,7 +556,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "D2",
         "emailAddress": "user@testdomain.com",
@@ -607,7 +577,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "",
         "emailAddress": "leadership@testdomain.com",
@@ -624,7 +593,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "",
         "emailAddress": "supervision_staff@testdomain.com",
@@ -646,7 +614,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "",
         "emailAddress": "leadership@testdomain.com",
@@ -668,7 +635,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "",
         "emailAddress": "leadership@testdomain.com",
@@ -690,7 +656,6 @@ snapshots[
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
-        "blocked": False,
         "blockedOn": None,
         "district": "",
         "emailAddress": "leadership@testdomain.com",

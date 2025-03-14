@@ -41,7 +41,7 @@ import argparse
 import logging
 import sys
 
-from sqlalchemy import and_, delete, or_, select, text, update
+from sqlalchemy import and_, delete, func, or_, select, text, update
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import BinaryExpression
 
@@ -148,7 +148,10 @@ def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> 
             .where(
                 and_(
                     *similar_clauses,
-                    UserOverride.blocked.is_not(True),
+                    or_(
+                        UserOverride.blocked_on.is_(None),
+                        UserOverride.blocked_on > func.now(),
+                    ),
                     Roster.state_code == state_code
                 )
             )
@@ -169,7 +172,10 @@ def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> 
                     ],
                     # Blocked users are kept track of in User Overrides, so a blocked user can still
                     # have all other attributes be null
-                    UserOverride.blocked.is_not(True),
+                    or_(
+                        UserOverride.blocked_on.is_(None),
+                        UserOverride.blocked_on > func.now(),
+                    ),
                     UserOverride.state_code == state_code
                 )
             )

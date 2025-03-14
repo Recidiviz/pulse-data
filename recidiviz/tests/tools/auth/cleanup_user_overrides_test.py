@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for the script that cleans up extra data in the UserOverride table."""
 
+from datetime import datetime
 from unittest import TestCase
 
 import pytest
@@ -352,7 +353,7 @@ class CleanupUserOverridesTest(TestCase):
             generate_fake_user_overrides(
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
-                blocked=True,
+                blocked_on=datetime.fromisoformat("2023-01-01"),
             )
         )
         cleanup_user_overrides(

@@ -216,7 +216,6 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_ND",
             external_id="user_1_override.external_id",
             roles=["user_1_override.role"],
-            blocked=True,
             blocked_on=self.blocked_on_date,
             pseudonymized_id="hashed-user_1_override",
         )
@@ -292,7 +291,6 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@testdomain.com",
             region_code="US_ME",
             external_id="A1B2",
-            blocked=True,
             blocked_on=self.blocked_on_date,
         )
         default_1 = generate_fake_default_permissions(
@@ -465,7 +463,6 @@ class AuthUsersEndpointTestCase(TestCase):
             external_id="ABC",
             roles=["leadership_role"],
             district="District",
-            blocked=True,
             blocked_on=datetime.fromisoformat("2023-01-01"),
         )
 
@@ -499,10 +496,9 @@ class AuthUsersEndpointTestCase(TestCase):
             self.user,
             headers=self.headers,
         )
-        expected = {
+        expected: Dict[str, Any] = {
             "allowedSupervisionLocationIds": "",
             "allowedSupervisionLocationLevel": "",
-            "blocked": False,
             "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
             .astimezone(timezone.utc)
             .isoformat(),
@@ -713,11 +709,10 @@ class AuthUsersEndpointTestCase(TestCase):
                 self.users(),
                 headers=self.headers,
             )
-            expected_response = [
+            expected_response: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": True,
                     "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
@@ -762,11 +757,10 @@ class AuthUsersEndpointTestCase(TestCase):
                 self.users(),
                 headers=self.headers,
             )
-            expected_response = [
+            expected_response: List[Dict[str, Any]] = [
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": True,
                     "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
@@ -841,7 +835,6 @@ class AuthUsersEndpointTestCase(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
@@ -912,7 +905,6 @@ class AuthUsersEndpointTestCase(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
@@ -1012,7 +1004,6 @@ class AuthUsersEndpointTestCase(TestCase):
                 {
                     "allowedSupervisionLocationIds": "D1",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "parameter@testdomain.com",
@@ -1072,7 +1063,6 @@ class AuthUsersEndpointTestCase(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
                     "blockedOn": None,
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",

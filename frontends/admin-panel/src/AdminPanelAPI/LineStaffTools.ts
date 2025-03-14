@@ -122,20 +122,15 @@ type UserUpdate = {
   district?: string;
   firstName?: string;
   lastName?: string;
-  blocked?: boolean;
   blockedOn?: string | null;
   reason: string;
 };
 
 export const updateUser = async (update: UserUpdate): Promise<Response> => {
-  const { userHash, ...req } = update;
-  const transformedRequest = {
-    ...req,
-    blocked: update.blocked ?? false,
-  };
+  const { userHash } = update;
   return patchAuthWithURLAndBody(
     `/users/${encodeURIComponent(userHash)}`,
-    transformedRequest
+    update
   );
 };
 

@@ -90,10 +90,7 @@ export const formatText = (
   text: string | boolean,
   record: StateUserPermissionsResponse
 ): string | boolean | JSX.Element => {
-  if (
-    record.blocked === true ||
-    (!!record.blockedOn && isDateInPast(record.blockedOn))
-  ) {
+  if (!!record.blockedOn && isDateInPast(record.blockedOn)) {
     return (
       <Text type="secondary" italic>
         {text}

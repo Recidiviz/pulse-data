@@ -1,5 +1,5 @@
-US_ID,ayesha@recidiviz.org,,D4,Ayesha S.,,,"Qeo/aoA+TDB3U5J3UpFfQlvNPhNMYvgKdhLksNqai28=",2023-03-22,2023-03-22,,{supervision_line_staff}
-US_TN,test@recidiviz.org,new,another_district,,,TRUE,"WP/YPndlvZ49y006IOlzo40CSXH6LO6E9J5P84Goag4=",2023-03-22,2023-03-22,,{}
-US_CO,jane@testdomain.com,1234,District 7,,,TRUE,"hHzvOw+i5Lf0/NKtZiqUWk9JQhl9HVXJnOqPtVPCnHQ=",2023-03-22,2023-03-22,,{}
-US_MI,not_in_roster@testdomain.com,XYZ,D5,New,User,FALSE,"S6Koyt77B5fqWaFDqNZdESCgzFQX41vyp7z6VrWwzVE=",2023-03-22,2023-03-22,,{facilities_leadership}
-US_MO,put_parameter@testdomain.com,,,,,,"w4XWD9nQWvXsTI1S0JhZC3ivBm4s45emscJCwLnoezM=",2023-03-22,2023-03-22,,{supervision_line_staff}
+US_ID,ayesha@recidiviz.org,,D4,Ayesha S.,,"Qeo/aoA+TDB3U5J3UpFfQlvNPhNMYvgKdhLksNqai28=",2023-03-22,2023-03-22,,{supervision_line_staff},
+US_TN,test@recidiviz.org,new,another_district,,,"WP/YPndlvZ49y006IOlzo40CSXH6LO6E9J5P84Goag4=",2023-03-22,2023-03-22,,{},2023-03-22T09:00:00-04:00
+US_CO,jane@testdomain.com,1234,District 7,,,"hHzvOw+i5Lf0/NKtZiqUWk9JQhl9HVXJnOqPtVPCnHQ=",2023-03-22,2023-03-22,,{}, 2023-03-22T09:00:00-04:00
+US_MI,not_in_roster@testdomain.com,XYZ,D5,New,User,"S6Koyt77B5fqWaFDqNZdESCgzFQX41vyp7z6VrWwzVE=",2023-03-22,2023-03-22,,{facilities_leadership},
+US_MO,put_parameter@testdomain.com,,,,,"w4XWD9nQWvXsTI1S0JhZC3ivBm4s45emscJCwLnoezM=",2023-03-22,2023-03-22,,{supervision_line_staff},
