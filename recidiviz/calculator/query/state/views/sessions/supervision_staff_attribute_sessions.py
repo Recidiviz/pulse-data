@@ -22,6 +22,7 @@ from typing import Dict, List
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     generate_largest_value_query_fragment,
     nonnull_end_date_clause,
@@ -63,6 +64,9 @@ _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
     ],
     "supervisor_staff_id": ["supervisor_staff_external_id", "supervisor_staff_id"],
 }
+
+# Must be a subset of the keys of _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS
+_SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS_NUMERIC = ["supervisor_staff_id"]
 
 SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_staff_attribute_periods AS (
@@ -326,9 +330,11 @@ attribute_arrays AS (
         staff_id,
         start_date,
         end_date AS end_date_exclusive,
+        -- Aggregate them into sorted JSON strings to make it possible to aggregate adjacent spans
+        -- after.
         {list_to_query_string(
             [
-                f"ARRAY_AGG(DISTINCT {attr} IGNORE NULLS ORDER BY {attr}) AS {attr}_array"
+                f"TO_JSON_STRING(ARRAY_AGG(DISTINCT {attr} IGNORE NULLS ORDER BY {attr})) AS {attr}_json_array"
                 for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS
             ]
         )}
@@ -338,21 +344,49 @@ attribute_arrays AS (
     WHERE
         start_date < {nonnull_end_date_clause("end_date")}
     GROUP BY 1, 2, 3, 4
+),
+full_staff_data AS (
+    SELECT
+        b.external_id AS officer_id,
+        a.*,
+        {list_to_query_string([f"c.{attr}_json_array" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS])},
+    FROM
+        sub_sessions_dedup a
+    LEFT JOIN
+        `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
+    USING
+        (state_code, staff_id)
+    LEFT JOIN
+        attribute_arrays c
+    USING
+        (state_code, staff_id, start_date)
+),
+aggregated_data AS (
+    {aggregate_adjacent_spans(
+        table_name="full_staff_data",
+        index_columns=["state_code", "staff_id", "officer_id"],
+        attribute=list(_SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS)
+            + [f"{attr}_primary" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS]
+            + [f"{attr}_json_array" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS],
+        end_date_field_name='end_date_exclusive'
+    )}
 )
 SELECT
-    b.external_id AS officer_id,
-    a.*,
-    {list_to_query_string([f"c.{attr}_array" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS])},
-FROM
-    sub_sessions_dedup a
-LEFT JOIN
-    `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
-USING
-    (state_code, staff_id)
-LEFT JOIN
-    attribute_arrays c
-USING
-    (state_code, staff_id, start_date)
+    -- Turn JSON arrays back into regular arrays
+    * EXCEPT ({list_to_query_string([f"{attr}_json_array" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS])}),
+    {list_to_query_string(
+        [
+            f"JSON_VALUE_ARRAY({attr}_json_array) AS {attr}_array"
+            for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS if attr not in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS_NUMERIC
+        ]
+    )},
+    {list_to_query_string(
+        [
+            f"ARRAY(SELECT CAST(element AS INT64) FROM UNNEST(JSON_VALUE_ARRAY({attr}_json_array)) AS element) AS {attr}_array"
+            for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS_NUMERIC
+        ]
+    )},
+FROM aggregated_data
 """
 
 SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
