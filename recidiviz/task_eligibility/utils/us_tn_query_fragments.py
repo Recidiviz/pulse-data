@@ -33,6 +33,21 @@ EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
 
 FACE_TO_FACE_CONTACTS = ["FAC1", "FAC2", "FACA", "FACF", "FACI", "FACO"]
 
+# TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
+STRONG_R_ASSESSMENT_METADATA_KEYS = [
+    "FRIENDS_NEED_LEVEL",
+    "ATTITUDE_BEHAVIOR_NEED_LEVEL",
+    "AGGRESSION_NEED_LEVEL",
+    "MENTAL_HEALTH_NEED_LEVEL",
+    "ALCOHOL_DRUG_NEED_LEVEL",
+    "RESIDENT_NEED_LEVEL",
+    "FAMILY_NEED_LEVEL",
+    "EMPLOYMENT_NEED_LEVEL",
+    "EDUCATION_NEED_LEVEL",
+]
+# TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
+STRONG_R2_ASSESSMENT_METADATA_KEYS = STRONG_R_ASSESSMENT_METADATA_KEYS
+
 # Combines state_supervision_violation_response with state_supervision_violation_response_decision_entry
 # to keep person-date level sanctions. We filter out certain types of decisions that don't result in an impact
 # on a client's supervision.

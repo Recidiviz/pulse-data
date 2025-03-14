@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criterion span view that shows spans of time during which someone's
-assessed risk level was `LOW` after Unassigned supervision level
+assessed risk level was `LOW` after Unassigned supervision level. This criterion
+considers all assessments in the 'RISK' class and is not specific to the type of
+assessment.
 """
 
 from google.cloud import bigquery
@@ -33,36 +35,62 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "ASSESSED_RISK_LOW_AFTER_UNASSIGNED_SUPERVISION_LEVEL"
 
-# TODO(#39124): This criteria currently creates overlapping spans for TX because of upstream issues in how
-# assessment data is ingested and should not be used without resolving that (either in this criteria or a state
-# specific one)
+# TODO(#34751): Decide how to handle assessments with null `assessment_level` values.
 _QUERY_TEMPLATE = f"""
-    WITH risk_level_spans AS (
-        SELECT 
+    WITH risk_assessments_prioritized AS (
+        /* Though `assessment_score_sessions_materialized` is already sessionized, there
+        can be overlapping sessions there if multiple assessment types have been used to
+        assess risk in a state. To work around this, we'll take the assessment data from
+        that view but end up constructing criterion-specific spans later in this query,
+        since we want to avoid having overlapping spans. */
+        SELECT
             state_code,
             person_id,
-            assessment_date,
-            score_end_date_exclusive,
+            assessment_type,
             assessment_level,
+            assessment_date,
         FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
         WHERE assessment_class='RISK'
-        /* TODO(#34751): Decide how to handle assessments with null
-            `assessment_level` values. Note that the following filter will currently
-            drop these sessions. This means that, if someone went from 'LOW' to NULL and
-            back to 'LOW', that NULL session would interrupt the clock and force a
-            restart on accruing time toward meeting this criterion. We should check to
-            see if this is always the behavior we want, just in case there are scenarios
-            where we think the NULL session actually shouldn't have that effect. */
-            AND assessment_level='LOW'
+        /* If someone has an assessment with a null `assessment_level` or a non-'LOW'
+        `assessment_level` on a given day, prioritize that assessment over any 'LOW'
+        assessment on the same day. Because we're just checking for 'LOW' vs. non-'LOW'
+        in this criterion, it doesn't matter which of the non-'LOW' assessments we
+        choose in case there are multiple. We just need to know whether it was 'LOW' or
+        not. */
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY state_code, person_id, assessment_date
+            ORDER BY 
+                CASE
+                    WHEN COALESCE(assessment_level, 'UNKNOWN')!='LOW' THEN 1
+                    ELSE 2
+                    END
+        ) = 1
+    ),
+    risk_level_spans AS (
+        /* Create risk-assessment spans. We create non-overlapping spans such that if a
+        person has a previous risk assessment of one type, that span will end when a
+        subsequent risk assessment is completed, even if the subsequent assessment is of
+        a different type (as long as it's still a risk assessment). */
+        SELECT
+            state_code,
+            person_id,
+            assessment_type,
+            assessment_level,
+            assessment_date,
+            LEAD(assessment_date) OVER (
+                PARTITION BY state_code, person_id
+                ORDER BY assessment_date
+            ) AS score_end_date_exclusive,
+        FROM risk_assessments_prioritized
     ),
     unassigned_sessions AS (
         SELECT 
-           state_code,
-           person_id,
-           start_date,
-           start_date AS unassigned_start_date,
-           end_date_exclusive,
-        FROM `{{project_id}}.sessions.supervision_level_sessions_materialized` sl
+            state_code,
+            person_id,
+            start_date,
+            start_date AS unassigned_start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.sessions.supervision_level_sessions_materialized`
         WHERE supervision_level = 'UNASSIGNED'
     )
     SELECT
@@ -72,23 +100,25 @@ _QUERY_TEMPLATE = f"""
         -- Span ends when either there's another score or the unassigned span ends
         -- Use nonnull_end_date_clause because we don't want to subtract 1 day from these dates
         LEAST(
-          {nonnull_end_date_clause("score_end_date_exclusive")},
-          {nonnull_end_date_clause("u.end_date_exclusive")}
+            {nonnull_end_date_clause("r.score_end_date_exclusive")},
+            {nonnull_end_date_clause("u.end_date_exclusive")}
         ) AS end_date,
-        -- We've already limited to LOW assessments and so as long as they happen after the start of an unassigned
-        -- period, the criteria is met 
-        TRUE AS meets_criteria,
+        (assessment_level='LOW') AS meets_criteria,
         assessment_date,
         unassigned_start_date,
+        assessment_type,
         assessment_level,
         TO_JSON(STRUCT(
             assessment_date,
-            assessment_level,
-            unassigned_start_date
+            unassigned_start_date,
+            assessment_type,
+            assessment_level
         )) AS reason,        
     FROM unassigned_sessions u
     INNER JOIN risk_level_spans r
-        ON u.person_id = r.person_id
+        ON u.state_code = r.state_code
+        AND u.person_id = r.person_id
+        -- restrict to assessments happening after the start of an unassigned period
         AND r.assessment_date BETWEEN u.start_date AND {nonnull_end_date_exclusive_clause('u.end_date_exclusive')}
 """
 
@@ -100,9 +130,9 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=[
             ReasonsField(
-                name="assessment_level",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Assessed risk level",
+                name="assessment_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Assessment date",
             ),
             ReasonsField(
                 name="unassigned_start_date",
@@ -110,9 +140,14 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
                 description="Start date of latest unassigned session",
             ),
             ReasonsField(
-                name="assessment_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Assessment date",
+                name="assessment_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Assessment type",
+            ),
+            ReasonsField(
+                name="assessment_level",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Assessed risk level",
             ),
         ],
     )
