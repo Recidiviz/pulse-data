@@ -111,6 +111,14 @@ The denominator is the average daily caseload for the officer over the given tim
                 ),
             ]
         },
+        client_events=[
+            OutliersClientEventConfig.build(
+                event=VIOLATIONS, display_name="Violations"
+            ),
+            OutliersClientEventConfig.build(
+                event=VIOLATION_RESPONSES, display_name="Sanctions"
+            ),
+        ],
     ),
     StateCode.US_PA: OutliersBackendConfig(
         metrics=[
