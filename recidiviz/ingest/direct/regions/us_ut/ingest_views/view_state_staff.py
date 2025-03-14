@@ -37,6 +37,29 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- Clean staff emails from raw data.
+email_cleaned AS (
+  SELECT 
+  UPPER(usr_id) AS usr_id,
+  CASE  
+  -- There are often some erroneous characters or dates following the email address in 
+  -- this field. These functions find the index of the web extension in the email address
+  -- and remove everything after it to leave only the valid email address.
+    WHEN lower(email_addr) LIKE "%.gov%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'.gov')+3)
+    WHEN lower(email_addr) LIKE "%ut.us%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'ut.us')+4)
+    WHEN lower(email_addr) LIKE "%.net%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'.net')+3)
+    WHEN lower(email_addr) LIKE "%.com%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'.com')+3)
+    WHEN lower(email_addr) LIKE "%.org%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'.org')+3)
+    WHEN lower(email_addr) LIKE "%.edu%" THEN LEFT(email_addr, STRPOS(lower(email_addr), r'.edu')+3)
+  END AS email_addr
+FROM {applc_usr_email}
+-- Ensure email addresses contain exactly one @
+WHERE email_addr LIKE "%@%"
+AND LENGTH(email_addr) - LENGTH(REGEXP_REPLACE(email_addr, '@', '')) = 1
+),
+-- Clean staff names from raw data
+name_cleaned AS (
 SELECT DISTINCT
   usr_id,
   name_array[SAFE_OFFSET(0)] AS fname,
@@ -61,6 +84,18 @@ FROM (
 WHERE usr_id IS NOT NULL
 -- There is one instance of a USR_ID value being reused. This guarantees that we store the most recent name associated with the ID.
 QUALIFY ROW_NUMBER() OVER (PARTITION BY usr_id ORDER BY updt_dt DESC) = 1
+)
+SELECT 
+  usr_id, 
+  fname,
+  mname,
+  lname,
+  email_addr
+FROM name_cleaned
+LEFT JOIN email_cleaned
+USING(usr_id)
+-- Ensure email addresses do not contain whitespace
+WHERE email_addr NOT LIKE "% %"
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
