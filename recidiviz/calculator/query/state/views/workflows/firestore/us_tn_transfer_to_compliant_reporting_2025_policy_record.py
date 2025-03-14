@@ -124,7 +124,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
         SELECT person_id,
                 TO_JSON(
                     ARRAY_AGG(
-                        IF(note_title IS NOT NULL,
+                        IF(note_body IS NOT NULL,
                             STRUCT(note_title, note_body, event_date, criteria),
                             NULL
                         )
@@ -134,9 +134,9 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
                 ) AS case_notes    
         FROM (
             SELECT person_id,
-                  offense AS note_title,
+                  NULL AS note_title,
                   NULL AS event_date,
-                  NULL AS note_body,
+                  offense AS note_body,
                   "CURRENT OFFENSES" AS criteria,
             FROM compliant_reporting_form_query_fragment,
             UNNEST(form_information_current_offenses) AS offense
