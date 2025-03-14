@@ -81,6 +81,8 @@ _QUERY_TEMPLATE = f"""
             COALESCE(assessment_date, DATE_ADD(sss.start_date, INTERVAL 45 DAY)) AS end_date_exclusive,
             TRUE AS awaiting_assessment
         FROM sss_sessions sss
+        --if the assessment data occurs on the supervision start date, exclude this zero day span
+        WHERE start_date != assessment_date
         
         UNION ALL 
             
