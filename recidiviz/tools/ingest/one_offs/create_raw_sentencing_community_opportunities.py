@@ -18,7 +18,7 @@
 Local script for taking individual CSV files for sentencing community opportunities by district and combining them into a single CSV file with a new delimiter.
 
 Example Usage:
-    python -m recidiviz.tools.ingest.one_offs.create_raw_sentencing_community_opportunities --input_file_names district-1.csv district-2.csv --output_file_name output.csv --exclude_capacity_columns
+    python -m recidiviz.tools.ingest.one_offs.create_raw_sentencing_community_opportunities --input_file_paths district-1.csv district-2.csv --output_file_name RECIDIVIZ_REFERENCE_community_opportunities.csv
 """
 
 import argparse
@@ -60,7 +60,6 @@ NEW_LINE_DELIMITER = "‡"
 def create_raw_sentencing_community_opportunities(
     input_file_paths: List[str],
     output_file_path: str,
-    exclude_capacity_columns: bool = False,
 ) -> None:
     """Creates a new CSV file with the specified delimiter for the provided files."""
 
@@ -93,13 +92,6 @@ def create_raw_sentencing_community_opportunities(
                 extra_columns = [
                     "lastUpdatedDate",
                 ]
-                if not exclude_capacity_columns:
-                    extra_columns.extend(
-                        [
-                            "CapacityTotal",
-                            "CapacityAvailable",
-                        ]
-                    )
 
                 mapped_columns.extend(extra_columns)
 
@@ -110,8 +102,6 @@ def create_raw_sentencing_community_opportunities(
 
                 # Add the district and last updated date, and capacity columns if they shouldn't be excluded
                 extra_values = [date]
-                if not exclude_capacity_columns:
-                    extra_values.extend(["", ""])
 
                 cleaned_row.extend(extra_values)
                 modified_rows.append(cleaned_row)
@@ -145,13 +135,6 @@ def parse_arguments() -> argparse.Namespace:
         help="The filepath of the output CSV file.",
     )
 
-    parser.add_argument(
-        "--exclude_capacity_columns",
-        required=False,
-        action=argparse.BooleanOptionalAction,
-        help="Whether to include capacity columns.",
-    )
-
     return parser.parse_args()
 
 
@@ -160,5 +143,5 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     create_raw_sentencing_community_opportunities(
-        args.input_file_paths, args.output_file_path, args.exclude_capacity_columns
+        args.input_file_paths, args.output_file_path
     )
