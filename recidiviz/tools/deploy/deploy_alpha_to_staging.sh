@@ -28,4 +28,15 @@ tip of branch [main]. Continue?"
 
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${NEW_VERSION}" -c "${COMMIT_HASH}" -b main -p || exit_on_fail
 
+NEW_ALPHA_DEPLOY_BRANCH="alpha/${NEW_VERSION}"
+
+echo "Checking out new alpha deploy branch [$NEW_ALPHA_DEPLOY_BRANCH]"
+run_cmd git checkout -b "${NEW_ALPHA_DEPLOY_BRANCH}"
+
+echo "Pushing new alpha deploy branch [$NEW_ALPHA_DEPLOY_BRANCH] to remote"
+run_cmd git push --set-upstream origin "${NEW_ALPHA_DEPLOY_BRANCH}"
+
+echo "Returning to main"
+run_cmd safe_git_checkout_remote_branch main
+
 echo "Alpha staging deploy complete."
