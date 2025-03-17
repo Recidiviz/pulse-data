@@ -1723,6 +1723,18 @@ US_TX:
   RECIDIVIZ_REFERENCE_RiskAssessmentEvents:
     task_eligibility_criteria_us_tx.meets_risk_assessment_standards: |-
       Used as a reference table to determine the next due assessment based event type and case type. 02/13/2025.
+  ViolationResponses:
+    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
+      |-
+      Policy references warrants which "sustain a violation" which we cannot interpret from normalized data. 03/13/2025.
+  Violations:
+    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
+      |-
+      Policy references warrants which "sustain a violation" which we cannot interpret from normalized data. 03/13/2025.
+  Warrants:
+    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
+      |-
+      Policy references warrant dates which we do not yet have normalized state data for. 03/13/2025.
 US_UT:
   ofndr_tst:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-

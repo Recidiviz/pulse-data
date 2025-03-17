@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     on_minimum_supervision_at_least_1_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
+    no_warrant_with_sustained_violation_within_7_years,
     not_convicted_of_ineligible_offense_for_ars,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -52,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         on_minimum_supervision_at_least_1_year.VIEW_BUILDER,
         not_convicted_of_ineligible_offense_for_ars.VIEW_BUILDER,
+        no_warrant_with_sustained_violation_within_7_years.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
