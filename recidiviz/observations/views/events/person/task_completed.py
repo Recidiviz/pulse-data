@@ -82,7 +82,7 @@ ON
     e.person_id = f.person_id
     AND e.completion_event_type = f.task_type
     AND DATETIME_SUB(DATETIME(DATE_ADD(e.completion_event_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
-        BETWEEN f.start_date AND {nonnull_end_date_clause("f.end_date")}
+        BETWEEN f.start_date AND {nonnull_end_date_clause("f.end_date_exclusive")}
 -- If completion event falls exactly on the border between two sessions, take the eligibility
 -- attributes associated with the first span (i.e., the span that ended, rather than the span that started).
 -- Uses RANK so that if there are multiple completion events for the same task type on the same day,

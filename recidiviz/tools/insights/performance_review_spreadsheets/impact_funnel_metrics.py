@@ -34,7 +34,7 @@ WITH impact_funnel_data AS (
         person_id,
         task_type,
         start_date,
-        end_date AS end_date_exclusive,
+        end_date_exclusive,
         is_eligible,
         marked_ineligible
     FROM `recidiviz-123.analyst_data.workflows_person_impact_funnel_status_sessions_materialized`

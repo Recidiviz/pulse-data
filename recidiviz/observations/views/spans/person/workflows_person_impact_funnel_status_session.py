@@ -53,7 +53,7 @@ SELECT
     {_USAGE_EVENTS_COLUMNS_STR},
     denial_reasons,
     start_date,
-    end_date
+    end_date_exclusive,
 FROM
     `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` funnel
 LEFT JOIN
@@ -87,7 +87,7 @@ VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBu
         "denial_reasons",
     ],
     span_start_date_col="start_date",
-    span_end_date_col="end_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":

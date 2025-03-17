@@ -67,7 +67,7 @@ LEFT JOIN
 ON
     b.state_code = prev_status.state_code
     AND b.person_id = prev_status.person_id
-    AND b.start_date = prev_status.end_date
+    AND b.start_date = prev_status.end_date_exclusive
     AND b.task_type = prev_status.task_type
 LEFT JOIN
     `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` c

@@ -43,7 +43,7 @@ WITH marked_ineligible_funnel_status_sessions AS (
         INITCAP(JSON_EXTRACT_SCALAR(full_name, "$.surname")) AS last_name,
         task_type,
         start_date,
-        end_date,
+        end_date_exclusive,
         is_eligible,
         is_almost_eligible
     FROM
@@ -61,7 +61,7 @@ WITH marked_ineligible_funnel_status_sessions AS (
 marked_ineligible_funnel_status_sessions_aggregated AS (
 {aggregate_adjacent_spans(table_name = "marked_ineligible_funnel_status_sessions",
                           attribute = ["first_name","last_name","task_type"],
-                          end_date_field_name = "end_date")}
+                          end_date_field_name = "end_date_exclusive")}
 )
 ,
 clients_snooze_spans AS (
@@ -124,7 +124,7 @@ SELECT
     status_sessions_aggregated.person_id,
     status_sessions_aggregated.state_code,
     status_sessions_aggregated.start_date AS marked_ineligible_status_session_start_date,
-    status_sessions_aggregated.end_date AS marked_ineligible_status_session_end_date,
+    status_sessions_aggregated.end_date_exclusive AS marked_ineligible_status_session_end_date,
     status_sessions_aggregated.first_name,
     status_sessions_aggregated.last_name,
     status_sessions_aggregated.task_type,

@@ -75,7 +75,7 @@ def get_task_eligible_event_observation_view_builder(
         a.person_id = c.person_id
         AND a.task_type = c.task_type
         AND DATETIME_SUB(DATETIME(DATE_ADD(a.start_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
-            BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
+            BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date_exclusive")}
     INNER JOIN
         `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
     ON
