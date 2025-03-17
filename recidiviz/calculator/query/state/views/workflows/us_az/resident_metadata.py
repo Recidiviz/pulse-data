@@ -40,11 +40,11 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
         SELECT
             person_id,
             state_code,
-            projected_full_term_release_date_max as sed_date,
+            group_projected_full_term_release_date_max as sed_date,
         FROM all_residents
         LEFT JOIN `{{project_id}}.{{us_az_normalized_state_dataset}}.state_sentence_group`
         USING (state_code, person_id)
-        LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_inferred_group_projected_date_sessions_materialized`
+        LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
         USING (state_code, person_id, sentence_inferred_group_id)
         QUALIFY ROW_NUMBER()
             OVER (PARTITION BY person_id, state_code, sentence_inferred_group_id ORDER BY start_date DESC) = 1

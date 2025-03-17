@@ -37,8 +37,10 @@ from recidiviz.validation.views.state.sentences.sentence_inferred_group_projecte
 
 _SCHEMA = [
     bigquery.SchemaField("state_code", "STRING"),
+    bigquery.SchemaField("person_id", "INT"),
     bigquery.SchemaField("sentence_inferred_group_id", "INTEGER"),
-    bigquery.SchemaField("inferred_group_update_datetime", "DATETIME"),
+    bigquery.SchemaField("start_date", "DATE"),
+    bigquery.SchemaField("end_date_exclusive", "DATE"),
     bigquery.SchemaField("parole_eligibility_date", "DATE"),
     bigquery.SchemaField("projected_parole_release_date", "DATE"),
     bigquery.SchemaField("projected_full_term_release_date_min", "DATE"),
@@ -58,6 +60,7 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
 
     state_code = StateCode.US_XX
     inferred_group_id = 42
+    person_id = 123
 
     critical_date_1 = datetime.datetime(2022, 1, 1, 6)
     critical_date_2 = datetime.datetime(2022, 2, 1, 12, 30)
@@ -82,8 +85,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -100,8 +105,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         group_lvl_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -117,8 +124,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         input_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -134,8 +143,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -145,8 +156,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         group_lvl = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 2, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -163,7 +176,19 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
                     "state_code": self.state_code.value,
                     "region_code": self.state_code.value,
                     "sentence_inferred_group_id": self.inferred_group_id,
-                    "inferred_group_update_datetime": self.critical_date_1,
+                    "person_id": self.person_id,
+                    "start_date": self.critical_date_1.date(),
+                    "end_date_exclusive": None,
+                    "parole_eligibility_date__sentence": datetime.date(2022, 3, 1),
+                    "parole_eligibility_date__sentence_group": datetime.date(
+                        2022, 2, 1
+                    ),
+                    "projected_parole_release_date__sentence": None,
+                    "projected_parole_release_date__sentence_group": None,
+                    "projected_full_term_release_date_min__sentence": None,
+                    "projected_full_term_release_date_min__sentence_group": None,
+                    "projected_full_term_release_date_max__sentence": None,
+                    "projected_full_term_release_date_max__sentence_group": None,
                 },
             ],
         )
@@ -172,8 +197,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -182,8 +209,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
             # This row won't appear because it isn't in the other table
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -192,8 +221,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
             # We expect data from this row.
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": datetime.date(2023, 3, 1),
                 "projected_full_term_release_date_min": None,
@@ -203,8 +234,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
         group_lvl = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": None,
@@ -213,8 +246,10 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
             # We expect data from this row.
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
                 "parole_eligibility_date": datetime.date(2022, 3, 1),
                 "projected_parole_release_date": datetime.date(2023, 4, 1),
                 "projected_full_term_release_date_min": None,
@@ -231,7 +266,23 @@ class InferredProjectedDatesValidationTest(SimpleBigQueryViewBuilderTestCase):
                     "state_code": self.state_code.value,
                     "region_code": self.state_code.value,
                     "sentence_inferred_group_id": self.inferred_group_id,
-                    "inferred_group_update_datetime": self.critical_date_3,
+                    "person_id": self.person_id,
+                    "start_date": self.critical_date_3.date(),
+                    "end_date_exclusive": None,
+                    "parole_eligibility_date__sentence": datetime.date(2022, 3, 1),
+                    "parole_eligibility_date__sentence_group": datetime.date(
+                        2022, 3, 1
+                    ),
+                    "projected_parole_release_date__sentence": datetime.date(
+                        2023, 3, 1
+                    ),
+                    "projected_parole_release_date__sentence_group": datetime.date(
+                        2023, 4, 1
+                    ),
+                    "projected_full_term_release_date_min__sentence": None,
+                    "projected_full_term_release_date_min__sentence_group": None,
+                    "projected_full_term_release_date_max__sentence": None,
+                    "projected_full_term_release_date_max__sentence_group": None,
                 },
             ],
         )

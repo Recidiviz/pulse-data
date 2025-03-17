@@ -110,7 +110,7 @@ aggregated_sentence_charge_data AS (
         LOGICAL_OR(all_charges.is_violent_uniform) AS any_is_violent,
         LOGICAL_OR(all_charges.is_drug_uniform) AS any_is_drug,
         LOGICAL_OR(sentences.is_life) AS any_is_life,
-        # TODO(#38539): respect NULLs from life sentences here
+        # TODO(#39603): respect NULLs from life sentences here
         MAX(initial_sentence_lengths.projected_completion_date_min_external) AS projected_completion_date_min, 
         MAX(initial_sentence_lengths.projected_completion_date_max_external) AS projected_completion_date_max
     FROM 

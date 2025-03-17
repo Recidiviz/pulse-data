@@ -22,6 +22,10 @@ This occurs when the aggregated sentence level projected dates do not match
 the state provided group level projected dates for an inferred sentence group.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
 )
@@ -32,52 +36,92 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-
-def are_different(col_name: str) -> str:
-    return f"""
-    (
-       sentence.{col_name} IS NOT NULL
-       AND
-       sentence_group.{col_name} IS NOT NULL
-       AND
-       sentence.{col_name} != sentence_group.{col_name}
-    )
-    """
-
-
 # Will return all inferred groups at a point in time where the
 # aggregated sentence level projected dates are not the same as
 # the group level projected dates. There should be no returned rows.
 QUERY = f"""
-SELECT DISTINCT
-    sentence.state_code,
-    sentence.state_code AS region_code,
-    sentence.sentence_inferred_group_id,
-    sentence.inferred_group_update_datetime
-FROM
-    `{{project_id}}.{INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER.table_for_query.to_str()}`
-AS
-    sentence_group
-JOIN
-    `{{project_id}}.{INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query.to_str()}`
-AS
-    sentence
-ON
-    sentence.state_code = sentence_group.state_code
-AND
-    sentence.sentence_inferred_group_id = sentence_group.sentence_inferred_group_id
-AND
-    sentence.inferred_group_update_datetime = sentence_group.inferred_group_update_datetime
-AND (
-{
-    'OR'.join(are_different(col_name) for col_name in [
-        'parole_eligibility_date',
-        'projected_parole_release_date',
-        'projected_full_term_release_date_min',
-        'projected_full_term_release_date_max',
-    ])
-}
+WITH _unioned_cte AS
+(
+SELECT
+    state_code,
+    state_code AS region_code,
+    person_id,
+    sentence_inferred_group_id,
+    start_date,
+    end_date_exclusive,
+    parole_eligibility_date,
+    projected_parole_release_date,
+    projected_full_term_release_date_min,
+    projected_full_term_release_date_max,
+    "SENTENCE_GROUP" AS source_view,
+FROM `{{project_id}}.{INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER.table_for_query.to_str()}`
+
+UNION ALL 
+
+SELECT
+    state_code,
+    state_code AS region_code,
+    person_id,
+    sentence_inferred_group_id,
+    start_date,
+    end_date_exclusive,
+    parole_eligibility_date,
+    projected_parole_release_date,
+    projected_full_term_release_date_min,
+    projected_full_term_release_date_max,
+    "SENTENCE" AS source_view,
+FROM `{{project_id}}.{INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query.to_str()}`
 )
+,
+{create_sub_sessions_with_attributes(
+    table_name = '_unioned_cte',
+    index_columns=['state_code','region_code','person_id','sentence_inferred_group_id'],
+    end_date_field_name='end_date_exclusive')
+}
+, 
+_deduped_cte AS
+(
+SELECT 
+    state_code,
+    region_code,
+    person_id,
+    sentence_inferred_group_id,
+    start_date,
+    end_date_exclusive,
+    ANY_VALUE(IF(source_view = 'SENTENCE',parole_eligibility_date, NULL)) AS parole_eligibility_date__sentence,
+    ANY_VALUE(IF(source_view = 'SENTENCE_GROUP',parole_eligibility_date, NULL)) AS parole_eligibility_date__sentence_group,
+    ANY_VALUE(IF(source_view = 'SENTENCE',projected_parole_release_date, NULL)) AS projected_parole_release_date__sentence,
+    ANY_VALUE(IF(source_view = 'SENTENCE_GROUP',projected_parole_release_date, NULL)) AS projected_parole_release_date__sentence_group, 
+    ANY_VALUE(IF(source_view = 'SENTENCE',projected_full_term_release_date_min, NULL)) AS projected_full_term_release_date_min__sentence,
+    ANY_VALUE(IF(source_view = 'SENTENCE_GROUP',projected_full_term_release_date_min, NULL)) AS projected_full_term_release_date_min__sentence_group, 
+    ANY_VALUE(IF(source_view = 'SENTENCE',projected_full_term_release_date_max, NULL)) AS projected_full_term_release_date_max__sentence,
+    ANY_VALUE(IF(source_view = 'SENTENCE_GROUP',projected_full_term_release_date_max, NULL)) AS projected_full_term_release_date_max__sentence_group,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5,6
+)
+SELECT 
+    * EXCEPT(session_id, date_gap_id)
+FROM
+    (
+    {aggregate_adjacent_spans(table_name = '_deduped_cte',
+                              index_columns=['state_code','region_code','person_id','sentence_inferred_group_id'],
+                              attribute = ['parole_eligibility_date__sentence',
+                                           'parole_eligibility_date__sentence_group',
+                                           'projected_parole_release_date__sentence',
+                                           'projected_parole_release_date__sentence_group',
+                                           'projected_full_term_release_date_min__sentence',
+                                           'projected_full_term_release_date_min__sentence_group',
+                                           'projected_full_term_release_date_max__sentence',
+                                           'projected_full_term_release_date_max__sentence_group'],
+                              end_date_field_name = "end_date_exclusive"
+                              )
+    
+    }
+    )
+    WHERE parole_eligibility_date__sentence != parole_eligibility_date__sentence_group
+        OR projected_parole_release_date__sentence!=parole_eligibility_date__sentence_group
+        OR projected_full_term_release_date_min__sentence!=projected_full_term_release_date_min__sentence_group 
+        OR projected_full_term_release_date_max__sentence!=projected_full_term_release_date_max__sentence_group
 """
 
 SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VALIDATION_VIEW_BUILDER = (

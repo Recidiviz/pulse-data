@@ -21,19 +21,16 @@ state provided sentence groups in an inferred sentence group.
 Note that this is an aggregation of NormalizedStateSentenceGroupLength values 
 and does not include any NormalizedStateSentenceLength data.
 
-Related views are:
-- inferred_group_aggregated_sentence_projected_dates
-- sentence_inferred_group_projected_date_sessions
-- inferred_group_aggregated_projected_dates_validation
-
 Output fields for this view are:
-
-    - sentence_inferred_group_id: 
+    - sentence_inferred_group_id:
         The ID for the inferred sentence group. This can be used to link back to the
         constituent sentences and state provided sentence groups.
 
-    - inferred_group_update_datetime:
-        This is the datetime where the values in this row begin to be valid.
+    - start_date:
+        This is the date where the values in this row begin to be valid.
+
+    - end_date_exclusive:
+        This is the date where the values in this row become no longer valid.
 
     - parole_eligibility_date:
         The maximum parole eligibility date across the NormalizedStateSentenceGroupLength
@@ -41,21 +38,29 @@ Output fields for this view are:
 
     - projected_parole_release_date:
         The maximum projected parole release date across the NormalizedStateSentenceGroupLength
-        entities affiliated with this inferred group. This is when we expect the affiliated 
+        entities affiliated with this inferred group. This is when we expect the affiliated
         person to be released from incarceration to parole.
 
     - projected_full_term_release_date_min:
-        The maximum full term release date (min) across the NormalizedStateSentenceGroupLength
-        entities affiliated with this inferred group. This is earliest time we expect all sentences 
+        The minimum projected completion date (min) across the NormalizedStateSentenceGroupLength
+        entities affiliated with this inferred group. This is earliest time we expect all sentences
         of the affiliated person to be completed and that person to be released to liberty.
 
     - projected_full_term_release_date_max
-        The maximum full term release date (max) across the NormalizedStateSentenceGroupLength
-        entities affiliated with this inferred group. This is latest time we expect all sentences 
+        The maximum projected completion date (max) across the NormalizedStateSentenceGroupLength
+        entities affiliated with this inferred group. This is latest time we expect all sentences
         of the affiliated person to be completed and that person to be released to liberty.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -64,73 +69,74 @@ INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID = (
     "inferred_sentence_group_aggregated_sentence_group_projected_dates"
 )
 
-QUERY_TEMPLATE = """
-WITH
-group_lengths AS (
-    SELECT
-        state_code,
-        person_id,
-        group_update_datetime, 
-        sentence_group_id,
-        sentence_inferred_group_id,
-        parole_eligibility_date_external,
-        projected_parole_release_date_external,
-        projected_full_term_release_date_min_external,
-        projected_full_term_release_date_max_external
-    FROM 
-        `{project_id}.normalized_state.state_sentence_group_length`
-    JOIN 
-        `{project_id}.normalized_state.state_sentence_group`
-    USING 
-        (state_code, person_id, sentence_group_id)
-),
--- We need this to get all critical dates
-_inferred_group_level AS (
-    SELECT DISTINCT state_code, person_id, group_update_datetime, sentence_inferred_group_id
-    FROM group_lengths
-),
--- We need this to get all critical dates
-_external_groups_by_inferred_group AS (
-    SELECT DISTINCT state_code, person_id, sentence_group_id, sentence_inferred_group_id
-    FROM group_lengths
-),
--- This gives us all external group projected dates for each inferred group critical date
-forward_filled_data AS (
-    SELECT
-        state_code,
-        person_id,
-        group_update_datetime,
-        sentence_group_id,
-        sentence_inferred_group_id,
-        LAST_VALUE(parole_eligibility_date_external IGNORE NULLS) OVER group_window AS parole_eligibility_date_external,
-        LAST_VALUE(projected_parole_release_date_external IGNORE NULLS) OVER group_window AS projected_parole_release_date_external,
-        LAST_VALUE(projected_full_term_release_date_min_external IGNORE NULLS) OVER group_window AS projected_full_term_release_date_min_external,
-        LAST_VALUE(projected_full_term_release_date_max_external IGNORE NULLS) OVER group_window AS projected_full_term_release_date_max_external
-    FROM
-        _inferred_group_level
-    FULL JOIN
-        _external_groups_by_inferred_group
-    USING
-        (state_code, person_id, sentence_inferred_group_id)
-    LEFT JOIN
-        group_lengths
-    USING
-        (state_code, person_id, sentence_group_id, sentence_inferred_group_id, group_update_datetime)
-    WINDOW group_window AS (PARTITION BY sentence_group_id ORDER BY group_update_datetime)
-)
+QUERY_TEMPLATE = f"""
+WITH sentence_group_projected_dates AS
+(
 SELECT
+    p.*,
+    s.sentence_inferred_group_id,
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_group_projected_date_sessions_materialized` p
+JOIN `{{project_id}}.normalized_state.state_sentence_group` s
+    USING(state_code, person_id, sentence_group_id)
+)
+,
+{create_sub_sessions_with_attributes(
+    table_name="sentence_group_projected_dates",
+    end_date_field_name="end_date_exclusive",
+    index_columns=['state_code','person_id','sentence_inferred_group_id']
+)}
+,
+aggregated_cte AS
+(
+SELECT 
     state_code,
     person_id,
     sentence_inferred_group_id,
-    group_update_datetime AS inferred_group_update_datetime,
-    MAX(parole_eligibility_date_external) as parole_eligibility_date,
-    MAX(projected_parole_release_date_external) as projected_parole_release_date,
-    MAX(projected_full_term_release_date_min_external) as projected_full_term_release_date_min,
-    MAX(projected_full_term_release_date_max_external) as projected_full_term_release_date_max
-FROM
-    forward_filled_data
-GROUP BY
-    state_code, person_id, sentence_inferred_group_id, group_update_datetime
+    start_date,
+    end_date_exclusive,
+    MAX({nonnull_end_date_clause('parole_eligibility_date')}) AS parole_eligibility_date,
+    MAX({nonnull_end_date_clause('projected_parole_release_date')}) AS projected_parole_release_date,
+    MAX({nonnull_end_date_clause('projected_full_term_release_date_min')}) AS projected_full_term_release_date_min,
+    MAX({nonnull_end_date_clause('projected_full_term_release_date_max')}) AS projected_full_term_release_date_max,   
+    ARRAY_AGG(
+        STRUCT(
+            sentence_group_id,
+            parole_eligibility_date AS sentence_group_parole_eligibility_date,
+            projected_parole_release_date AS sentence_group_projected_parole_release_date,
+            projected_full_term_release_date_min AS sentence_group_projected_full_term_release_date_min,
+            projected_full_term_release_date_max AS sentence_group_projected_full_term_release_date_max
+            )
+        ORDER BY
+            sentence_group_id
+    ) AS sentence_group_array 
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5
+)
+SELECT 
+    state_code,
+    person_id,
+    sentence_inferred_group_id,
+    start_date,
+    end_date_exclusive,
+    {revert_nonnull_end_date_clause('parole_eligibility_date')} AS parole_eligibility_date,
+    {revert_nonnull_end_date_clause('projected_parole_release_date')} AS projected_parole_release_date,
+    {revert_nonnull_end_date_clause('projected_full_term_release_date_min')} AS projected_full_term_release_date_min, 
+    {revert_nonnull_end_date_clause('projected_full_term_release_date_max')} AS projected_full_term_release_date_max,
+    sentence_group_array,
+FROM 
+(
+{aggregate_adjacent_spans(
+    table_name = 'aggregated_cte',
+    index_columns = ['state_code','person_id','sentence_inferred_group_id'],
+    attribute = ['parole_eligibility_date',
+                 'projected_parole_release_date',
+                 'projected_full_term_release_date_min',
+                 'projected_full_term_release_date_max',
+                 'sentence_group_array'],
+    struct_attribute_subset = 'sentence_group_array',
+    end_date_field_name='end_date_exclusive')
+}
+)
 """
 
 
@@ -139,6 +145,7 @@ INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER = (
         dataset_id=SENTENCE_SESSIONS_DATASET,
         view_id=INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID,
         view_query_template=QUERY_TEMPLATE,
+        sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         description=__doc__,
         should_materialize=True,
     )

@@ -14,20 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the inferred_group_aggregated_sentence_projected_dates view in sentence_sessions."""
-import datetime
+"""Tests the inferred_sentence_group_aggregated_sentence_projected_dates view in sentence_sessions."""
+from datetime import date, datetime, timedelta
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
 )
-from recidiviz.common.constants.state.state_sentence import (
-    StateSentenceStatus,
-    StateSentenceType,
-    StateSentencingAuthority,
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
+    SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -41,42 +40,37 @@ from recidiviz.persistence.entity.state import (
     normalized_entities as normalized_state_module,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStatePerson,
     NormalizedStateSentence,
-    NormalizedStateSentenceLength,
-    NormalizedStateSentenceStatusSnapshot,
-)
-from recidiviz.tests.big_query.load_entities_to_emulator_via_pipeline import (
-    write_root_entities_to_emulator,
 )
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
-    TableRow,
 )
 from recidiviz.utils.types import assert_subclass
 
 
-class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
-    """
-    Tests the INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER.
+class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
+    """Tests the inferred_sentence_group_aggregated_sentence_projected_dates view in sentence_sessions."""
 
-    For simplicity, all tests are in the same inferred group
-    with three critical dates. The final test has extended critical dates
-    to test outcomes where the sentence status critical dates do not line
-    up exactly with sentence length or group length critical dates.
-    """
+    sentence_projected_dates_address = (
+        SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query
+    )
+    state_sentence_address = queryable_address_for_normalized_entity(
+        NormalizedStateSentence
+    )
 
     state_code = StateCode.US_XX
     person_id = hash("TEST-PERSON-1")
-    inferred_group_id = 42
+    sentence_id_1 = 123
+    sentence_id_2 = 456
+    inferred_group_id = 888
 
-    critical_date_1 = datetime.datetime(2022, 1, 1, 6)
-    critical_date_2 = datetime.datetime(2022, 2, 1, 12, 30)
-    critical_date_3 = datetime.datetime(2022, 3, 4)
+    critical_date_1 = datetime(2022, 1, 1, 6)
+    critical_date_2 = datetime(2022, 2, 1, 12, 30)
+    critical_date_3 = datetime(2022, 3, 4)
 
     # These are used on tests with interleaved length and status updates
-    suspended_dt = critical_date_1 + datetime.timedelta(days=4)
-    back_to_serving_dt = critical_date_2 + datetime.timedelta(days=4)
+    suspended_dt = critical_date_1 + timedelta(days=4)
+    back_to_serving_dt = critical_date_2 + timedelta(days=4)
     # Sanity check our dates are in an order we want for this test.
     assert (
         critical_date_1
@@ -86,20 +80,17 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         < critical_date_3
     )
 
-    projected_date_1_min = datetime.date(2025, 1, 1)
-    projected_date_2_min = datetime.date(2024, 8, 14)
-    projected_date_3_min = datetime.date(2024, 8, 1)
+    projected_date_1_min = date(2025, 1, 1)
+    projected_date_2_min = date(2024, 8, 14)
+    projected_date_3_min = date(2024, 8, 1)
 
-    projected_date_1_med = projected_date_1_min + datetime.timedelta(days=15)
-    projected_date_2_med = projected_date_2_min + datetime.timedelta(days=15)
-    projected_date_3_med = projected_date_3_min + datetime.timedelta(days=15)
+    projected_date_1_med = projected_date_1_min + timedelta(days=15)
+    projected_date_2_med = projected_date_2_min + timedelta(days=15)
+    projected_date_3_med = projected_date_3_min + timedelta(days=15)
 
-    projected_date_1_max = projected_date_1_min + datetime.timedelta(days=30)
-    projected_date_2_max = projected_date_2_min + datetime.timedelta(days=30)
-    projected_date_3_max = projected_date_3_min + datetime.timedelta(days=30)
-
-    # Show full diffs on test failure
-    maxDiff = None
+    projected_date_1_max = projected_date_1_min + timedelta(days=30)
+    projected_date_2_max = projected_date_2_min + timedelta(days=30)
+    projected_date_3_max = projected_date_3_min + timedelta(days=30)
 
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
@@ -108,700 +99,298 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
     @property
     def parent_schemas(self) -> dict[BigQueryAddress, list[bigquery.SchemaField]]:
         return {
-            queryable_address_for_normalized_entity(
-                entity
-            ): get_bq_schema_for_entity_table(
-                normalized_state_module, assert_subclass(entity, Entity).get_table_id()
-            )
-            for entity in [
-                NormalizedStateSentence,
-                NormalizedStateSentenceLength,
-                NormalizedStateSentenceStatusSnapshot,
-            ]
+            self.sentence_projected_dates_address: [
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("sentence_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date_exclusive", date),
+                schema_field_for_type("parole_eligibility_date", date),
+                schema_field_for_type("projected_parole_release_date", date),
+                schema_field_for_type("projected_full_term_release_date_min", date),
+                schema_field_for_type("projected_full_term_release_date_max", date),
+                schema_field_for_type("sentence_length_days_min", int),
+                schema_field_for_type("sentence_length_days_max", int),
+                schema_field_for_type("good_time_days", int),
+                schema_field_for_type("earned_time_days", int),
+            ],
+            self.state_sentence_address: get_bq_schema_for_entity_table(
+                normalized_state_module,
+                assert_subclass(NormalizedStateSentence, Entity).get_table_id(),
+            ),
         }
 
-    def _make_sentence(self, id_: int) -> NormalizedStateSentence:
-        return NormalizedStateSentence(
-            state_code=self.state_code.value,
-            external_id="SENTENCE-1",
-            sentence_id=id_,
-            sentence_group_external_id=None,
-            sentence_imposed_group_id=None,
-            sentence_inferred_group_id=self.inferred_group_id,
-            sentence_type=StateSentenceType.STATE_PRISON,
-            sentencing_authority=StateSentencingAuthority.STATE,
+    def test_offset_overlapping_sentences_agg(self) -> None:
+        """Tests that overlapping sentences get sub-sessionized and that we take the max across sentences within an
+        inferred group when they overlap"""
+
+        projected_dates_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_3,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+            },
+            # sentence 2 has a larger `projected_full_term_release_date_min` value
+            # and therefore the inferred group should take this value during the overlap
+            # period from critical date 2 to critical date 3 as well as from critical date 3
+            # onward because only group 2 is being served from critical date 3 onward.
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_2,
+                "end_date_exclusive": None,
+                "projected_full_term_release_date_min": self.projected_date_1_max,
+            },
+        ]
+
+        state_sentence_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+            },
+        ]
+
+        expected_data = [
+            # first session has only sentence 1 and the date associated with that sentence is the max of the group
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_min,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            # second session has both sentences and the 2nd sentence's date is the max of the group
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": self.projected_date_1_max,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_min,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            # third session only has the second sentence and the projected date stays the same but the sentence array
+            # changes
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": self.projected_date_1_max,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.state_sentence_address: state_sentence_data,
+            },
+            expected_data,
         )
 
-    def _make_person(self) -> NormalizedStatePerson:
-        return NormalizedStatePerson(
-            state_code=self.state_code.value,
-            person_id=self.person_id,
+    def test_nulls_preserved_in_aggregation(self) -> None:
+        """Tests that when sentences get aggregated to an inferred group, that NULL projected dates are preserved"""
+
+        projected_dates_data = [
+            # Sentence 1 has a NULL `projected_full_term_release_date_min` and we want to see that this value is
+            # preserved for the entire time period that this group is being served (critical date 1 to critical date 3)
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_3,
+                "projected_full_term_release_date_min": None,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_2,
+                "end_date_exclusive": None,
+                "projected_full_term_release_date_min": self.projected_date_1_max,
+            },
+        ]
+
+        state_sentence_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+            },
+        ]
+
+        expected_data = [
+            # first session has only sentence 1 and which has a null projected date
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            # second session has both sentences and the 2nd sentence's date is not null, but the null date from
+            # sentence 1 still overrides it
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            # third session only has the second sentence, and we take the projected date from that sentence
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": self.projected_date_1_max,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.state_sentence_address: state_sentence_data,
+            },
+            expected_data,
         )
-
-    def run_test(
-        self, people: list[NormalizedStatePerson], expected_result: list[TableRow]
-    ) -> None:
-        write_root_entities_to_emulator(
-            emulator_tc=self, schema_mapping=self.parent_schemas, people=people
-        )
-        view = self.view_builder.build()
-        self.run_query_test(view.view_query, expected_result)
-
-    def test_one_sentence_one_length(self) -> None:
-        """
-        The most simple case, a sentence is actively serving and has a single set of
-        projected dates from imposition.
-        """
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.projected_date_1_min,
-                projected_completion_date_max_external=None,
-            )
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-        expected_data = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": None,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1]
-        self.run_test([person], expected_data)
-
-    def test_one_sentence_intermittent_suspension_one_projected_date(self) -> None:
-        """
-        When an inferred group is composed of single sentence and
-        that sentence becomes SUSPENDED, we want to have a row
-        with the inferred_group_update_datetime of the suspension
-        and all null projected dates.
-
-        This way we have the suspension start accounted for in
-        views like projected_full_term_release_date_spans if
-        there is no state provided group level projected date.
-        """
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.projected_date_1_min,
-                projected_completion_date_max_external=None,
-            )
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=self.critical_date_2,
-                status=StateSentenceStatus.SERVING,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=115,
-                status_update_datetime=self.critical_date_2,
-                status_end_datetime=self.critical_date_3,
-                status=StateSentenceStatus.SUSPENDED,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=116,
-                status_update_datetime=self.critical_date_3,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-        expected_data = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": None,
-            },
-            # SUSPENDED, ALL NULL
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": None,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": None,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1]
-        self.run_test([person], expected_data)
-
-    def test_one_sentence_intermittent_suspension_updated_projected_dates(self) -> None:
-        """
-        When an inferred group is composed of single sentence and
-        that sentence becomes SUSPENDED, we want to have a row
-        with the inferred_group_update_datetime of the suspension
-        and all null projected dates.
-
-        This test ensures that interleaved length and status updates result with
-        the correct projected date. Any update_datetime where a sentence is SUSPENDED
-        should be NULL. When the sentence is back to SERVING, we should see the most
-        recent projected dates!
-        """
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.projected_date_1_min,
-                projected_completion_date_max_external=None,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=112,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.projected_date_2_min,
-                projected_completion_date_max_external=None,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=113,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.projected_date_3_min,
-                projected_completion_date_max_external=None,
-            ),
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=self.suspended_dt,
-                status=StateSentenceStatus.SERVING,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=115,
-                status_update_datetime=self.suspended_dt,
-                status_end_datetime=self.back_to_serving_dt,
-                status=StateSentenceStatus.SUSPENDED,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=116,
-                status_update_datetime=self.back_to_serving_dt,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-        expected_data = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": None,
-            },
-            # SUSPENDED, ALL NULL
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.suspended_dt,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": None,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": None,
-            },
-            # BACK TO SERVING, THE MOST RECENT LENGTH UPDATE WAS FROM CRITICAL DATE 2
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.back_to_serving_dt,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_2_min,
-                "projected_full_term_release_date_max": None,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_3_min,
-                "projected_full_term_release_date_max": None,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1]
-        self.run_test([person], expected_data)
-
-    def test_one_sentence_marked_completion_later(self) -> None:
-        """
-        Some states mark a sentence's completion after they
-        have completed that sentence ¯\\_(ツ)_//¯
-
-        This test ensures we do not have empty projected date
-        rows for the statuses before the first projected date.
-        """
-        sentence_1 = self._make_sentence(1)
-        later = self.critical_date_3 + datetime.timedelta(days=1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=later,
-                projected_completion_date_min_external=self.critical_date_3.date(),
-                projected_completion_date_max_external=None,
-            )
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_2,
-                status_end_datetime=None,
-                status=StateSentenceStatus.COMPLETED,
-            ),
-        ]
-        expected_data = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": later,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.critical_date_3.date(),
-                "projected_full_term_release_date_max": None,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1]
-        self.run_test([person], expected_data)
-
-    def test_only_active_sentences(self) -> None:
-        """Tests that we take the maximum value of active sentences at each critical date."""
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.projected_date_1_min,
-                projected_completion_date_max_external=None,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=112,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.projected_date_2_min,
-                projected_completion_date_max_external=None,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=113,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.projected_date_3_min,
-                projected_completion_date_max_external=self.projected_date_3_max,
-            ),
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-
-        sentence_2 = self._make_sentence(2)
-        sentence_2.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=121,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=None,
-                projected_completion_date_max_external=self.projected_date_1_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=122,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.projected_date_2_med,
-                projected_completion_date_max_external=self.projected_date_2_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=123,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.projected_date_3_med,
-                projected_completion_date_max_external=self.projected_date_3_max,
-            ),
-        ]
-        sentence_2.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1, sentence_2]
-
-        expected_result = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": self.projected_date_1_max,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_2_med,
-                "projected_full_term_release_date_max": self.projected_date_2_max,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_3_med,
-                "projected_full_term_release_date_max": self.projected_date_3_max,
-            },
-        ]
-        self.run_test([person], expected_result)
-
-    def test_one_terminated_sentence(self) -> None:
-        """
-        This example is two consecutive sentences, where sentence_1
-        must be completed before sentence_2.
-
-        The inferred group dates are then the values from sentence_2,
-        which must be completed before release.
-        """
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.critical_date_3.date(),
-                projected_completion_date_max_external=self.critical_date_3.date(),
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=112,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.critical_date_3.date(),
-                projected_completion_date_max_external=self.critical_date_3.date(),
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=113,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.critical_date_3.date(),
-                projected_completion_date_max_external=self.critical_date_3.date(),
-            ),
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=self.critical_date_3,
-                status=StateSentenceStatus.SERVING,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=115,
-                status_update_datetime=self.critical_date_3,
-                status_end_datetime=None,
-                status=StateSentenceStatus.COMPLETED,
-            ),
-        ]
-
-        sentence_2 = self._make_sentence(2)
-        sentence_2.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=121,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_min_external=self.projected_date_1_min,
-                projected_completion_date_max_external=self.projected_date_1_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=122,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_min_external=self.projected_date_2_min,
-                projected_completion_date_max_external=self.projected_date_2_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=123,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_min_external=self.projected_date_3_min,
-                projected_completion_date_max_external=self.projected_date_3_max,
-            ),
-        ]
-        # With consecutive sentences we typically see a an initial status at imposition,
-        # we mark it as serving.
-        sentence_2.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-
-        expected_result = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_min,
-                "projected_full_term_release_date_max": self.projected_date_1_max,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_2_min,
-                "projected_full_term_release_date_max": self.projected_date_2_max,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_3_min,
-                "projected_full_term_release_date_max": self.projected_date_3_max,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1, sentence_2]
-        self.run_test([person], expected_result)
-
-    def test_suspended_then_active_sentence(self) -> None:
-        """
-        Tests two concurrent sentences with the same length_update_datetimes,
-        and sentence_1 has larger projected dates than sentence_2.
-
-        sentence_1 gets SUSPENDED between self.suspended_dt and self.back_to_serving_dt,
-        so we should see the smaller projected date values of sentence_2 for that
-        span of time.
-        """
-        sentence_1 = self._make_sentence(1)
-        sentence_1.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=111,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_max_external=self.projected_date_1_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=112,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_max_external=self.projected_date_2_max,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=113,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_max_external=self.projected_date_3_max,
-            ),
-        ]
-        sentence_1.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=114,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=self.suspended_dt,
-                status=StateSentenceStatus.SERVING,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=115,
-                status_update_datetime=self.suspended_dt,
-                status_end_datetime=self.back_to_serving_dt,
-                status=StateSentenceStatus.SUSPENDED,
-            ),
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=116,
-                status_update_datetime=self.back_to_serving_dt,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-
-        sentence_2 = self._make_sentence(2)
-        sentence_2.sentence_lengths = [
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=221,
-                length_update_datetime=self.critical_date_1,
-                projected_completion_date_max_external=self.projected_date_1_min,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=222,
-                length_update_datetime=self.critical_date_2,
-                projected_completion_date_max_external=self.projected_date_2_min,
-            ),
-            NormalizedStateSentenceLength(
-                state_code=self.state_code.value,
-                sentence_length_id=223,
-                length_update_datetime=self.critical_date_3,
-                projected_completion_date_max_external=self.projected_date_3_min,
-            ),
-        ]
-        sentence_2.sentence_status_snapshots = [
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=self.state_code.value,
-                sentence_status_snapshot_id=214,
-                status_update_datetime=self.critical_date_1,
-                status_end_datetime=None,
-                status=StateSentenceStatus.SERVING,
-            ),
-        ]
-
-        expected_result = [
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_1,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": self.projected_date_1_max,
-            },
-            # sentence_1 is SUSPENDED, so now we see sentence_2 projected dates
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.suspended_dt,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": self.projected_date_1_min,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_2,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": self.projected_date_2_min,
-            },
-            # sentence_1 is SERVING, so now we see sentence_1 projected dates
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.back_to_serving_dt,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": self.projected_date_2_max,
-            },
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "inferred_group_update_datetime": self.critical_date_3,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": self.projected_date_3_max,
-            },
-        ]
-        person = self._make_person()
-        person.sentences = [sentence_1, sentence_2]
-        self.run_test([person], expected_result)

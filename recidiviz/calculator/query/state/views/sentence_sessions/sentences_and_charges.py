@@ -116,6 +116,7 @@ sentences_and_charges AS (
     FROM `{project_id}.normalized_state.state_sentence` AS sent
     LEFT JOIN charges
         USING (state_code, sentence_id)
+    --TODO(#38977) Add sentence_group_id to normalized state sentence
     LEFT JOIN `{project_id}.normalized_state.state_sentence_group` AS sent_group
         ON sent.state_code = sent_group.state_code
         AND sent.person_id = sent_group.person_id

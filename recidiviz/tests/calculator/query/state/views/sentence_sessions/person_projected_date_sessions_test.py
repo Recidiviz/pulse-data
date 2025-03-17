@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the sentence_inferred_group_projected_date_sessions view in sentence_sessions."""
-from datetime import date
+"""Tests the PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER."""
+from datetime import date, datetime, timedelta
 from typing import Dict, List
 
 from google.cloud import bigquery
@@ -23,41 +23,74 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
+    INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
+    INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions import (
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_date_sessions import (
-    SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions_v1_states import (
+    PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
-    SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period import (
-    SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
-    SENTENCES_AND_CHARGES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
-    SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
 )
 
 
-class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
-    """Tests the SENTENCE_INFERRED_GROUP_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER."""
+class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
+    """Tests the PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER."""
 
-    serving_period_address = SENTENCE_SERVING_PERIOD_VIEW_BUILDER.table_for_query
-    sentences_and_charges_address = SENTENCES_AND_CHARGES_VIEW_BUILDER.table_for_query
-    sentence_group_projected_dates_address = (
-        SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query
+    aggregated_sentence_group_address = (
+        INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER.table_for_query
     )
-    sentence_projected_dates_address = (
-        SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query
+    aggregated_sentence_address = (
+        INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query
     )
-    sentences_preprocessed_address = SENTENCES_PREPROCESSED_VIEW_BUILDER.table_for_query
+
+    # this is needed because V1 states get unioned in at the end
+    v1_states_address = (
+        PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER.table_for_query
+    )
+
+    state_code = StateCode.US_XX
+    person_id = hash("TEST-PERSON-1")
+    sentence_id_1 = 123
+    sentence_id_2 = 456
+    sentence_group_id_1 = 777
+    sentence_group_id_2 = 999
+    inferred_group_id = 888
+
+    critical_date_1 = datetime(2022, 1, 1, 6)
+    critical_date_2 = datetime(2022, 2, 1, 12, 30)
+    critical_date_3 = datetime(2022, 3, 4)
+
+    # These are used on tests with interleaved length and status updates
+    suspended_dt = critical_date_1 + timedelta(days=4)
+    back_to_serving_dt = critical_date_2 + timedelta(days=4)
+    # Sanity check our dates are in an order we want for this test.
+    assert (
+        critical_date_1
+        < suspended_dt
+        < critical_date_2
+        < back_to_serving_dt
+        < critical_date_3
+    )
+
+    projected_date_1_min = date(2025, 1, 1)
+    projected_date_2_min = date(2024, 8, 14)
+    projected_date_3_min = date(2024, 8, 1)
+
+    projected_date_1_med = projected_date_1_min + timedelta(days=15)
+    projected_date_2_med = projected_date_2_min + timedelta(days=15)
+    projected_date_3_med = projected_date_3_min + timedelta(days=15)
+
+    projected_date_1_max = projected_date_1_min + timedelta(days=30)
+    projected_date_2_max = projected_date_2_min + timedelta(days=30)
+    projected_date_3_max = projected_date_3_min + timedelta(days=30)
 
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
@@ -66,20 +99,7 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
     @property
     def parent_schemas(self) -> dict[BigQueryAddress, list[bigquery.SchemaField]]:
         return {
-            self.serving_period_address: [
-                schema_field_for_type("state_code", str),
-                schema_field_for_type("person_id", int),
-                schema_field_for_type("sentence_id", int),
-                schema_field_for_type("start_date", date),
-                schema_field_for_type("end_date_exclusive", date),
-            ],
-            self.sentences_and_charges_address: [
-                schema_field_for_type("state_code", str),
-                schema_field_for_type("person_id", int),
-                schema_field_for_type("sentence_id", int),
-                schema_field_for_type("sentence_inferred_group_id", int),
-            ],
-            self.sentence_group_projected_dates_address: [
+            self.aggregated_sentence_group_address: [
                 schema_field_for_type("state_code", str),
                 schema_field_for_type("person_id", int),
                 schema_field_for_type("sentence_inferred_group_id", int),
@@ -89,98 +109,160 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
                 schema_field_for_type("projected_parole_release_date", date),
                 schema_field_for_type("projected_full_term_release_date_min", date),
                 schema_field_for_type("projected_full_term_release_date_max", date),
+                bigquery.SchemaField(
+                    "sentence_group_array",
+                    "RECORD",
+                    mode="REPEATED",
+                    fields=(
+                        schema_field_for_type("sentence_group_id", int),
+                        schema_field_for_type(
+                            "sentence_group_parole_eligibility_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_group_projected_parole_release_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_group_projected_full_term_release_date_min", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_group_projected_full_term_release_date_max", date
+                        ),
+                    ),
+                ),
             ],
-            self.sentence_projected_dates_address: [
+            self.aggregated_sentence_address: [
                 schema_field_for_type("state_code", str),
                 schema_field_for_type("person_id", int),
-                schema_field_for_type("sentence_id", int),
+                schema_field_for_type("sentence_inferred_group_id", int),
                 schema_field_for_type("start_date", date),
                 schema_field_for_type("end_date_exclusive", date),
                 schema_field_for_type("parole_eligibility_date", date),
                 schema_field_for_type("projected_parole_release_date", date),
                 schema_field_for_type("projected_full_term_release_date_min", date),
                 schema_field_for_type("projected_full_term_release_date_max", date),
-                schema_field_for_type("sentence_length_days_min", int),
-                schema_field_for_type("sentence_length_days_max", int),
-                schema_field_for_type("good_time_days", int),
-                schema_field_for_type("earned_time_days", int),
+                bigquery.SchemaField(
+                    "sentence_array",
+                    "RECORD",
+                    mode="REPEATED",
+                    fields=(
+                        schema_field_for_type("sentence_id", int),
+                        schema_field_for_type("sentence_parole_eligibility_date", date),
+                        schema_field_for_type(
+                            "sentence_projected_parole_release_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_min", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_max", date
+                        ),
+                        schema_field_for_type("sentence_length_days_min", int),
+                        schema_field_for_type("sentence_length_days_max", int),
+                        schema_field_for_type("sentence_good_time_days", int),
+                        schema_field_for_type("sentence_earned_time_days", int),
+                    ),
+                ),
             ],
-            self.sentences_preprocessed_address: [
+            self.v1_states_address: [
                 schema_field_for_type("state_code", str),
                 schema_field_for_type("person_id", int),
-                schema_field_for_type("sentence_id", int),
-                schema_field_for_type("min_sentence_length_days_calculated", int),
-                schema_field_for_type("max_sentence_length_days_calculated", int),
-                schema_field_for_type("parole_eligibility_date", date),
-                schema_field_for_type("projected_completion_date_min", date),
-                schema_field_for_type("projected_completion_date_max", date),
+                schema_field_for_type("sentence_inferred_group_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date_exclusive", date),
+                schema_field_for_type("group_parole_eligibility_date", date),
+                schema_field_for_type("group_projected_parole_release_date", date),
+                schema_field_for_type(
+                    "group_projected_full_term_release_date_min", date
+                ),
+                schema_field_for_type(
+                    "group_projected_full_term_release_date_max", date
+                ),
+                bigquery.SchemaField(
+                    "sentence_array",
+                    "RECORD",
+                    mode="REPEATED",
+                    fields=(
+                        schema_field_for_type("sentence_id", int),
+                        schema_field_for_type("sentence_parole_eligibility_date", date),
+                        schema_field_for_type(
+                            "sentence_projected_parole_release_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_min", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_max", date
+                        ),
+                        schema_field_for_type("sentence_length_days_min", int),
+                        schema_field_for_type("sentence_length_days_max", int),
+                        schema_field_for_type("sentence_good_time_days", int),
+                        schema_field_for_type("sentence_earned_time_days", int),
+                    ),
+                ),
             ],
         }
 
-    def test_single_period_single_group_nested_within_date_session(self) -> None:
+    def test_single_inferred_group_input_from_both_sources(self) -> None:
         """
-        Test that when the sentence group projected date sessions extend beyond the serving period in either direction
-        that the output gets clipped to the serving period. Additionally check that without sentence level projected
-        dates data that the struct captures the sentence being served but does not have sentence level dates hydrated.
+        Test the case where there is a single inferred group aggregation sourced from sentence groups and a single
+        inferred group aggregation sourced from sentences. The two inferred group aggregations have differing non-null
+        projected dates, and we check that the max value is taken.
         """
-        serving_periods_data = [
+        aggregated_sentence_groups_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_max,
             },
         ]
 
-        sentences_and_charges_data = [
+        aggregated_sentence_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data: List[Dict] = []
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_min,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+        ]
+
+        v1_states_data: List[Dict] = []
+
+        expected_output = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "group_parole_eligibility_date": None,
+                "group_projected_parole_release_date": None,
+                "group_projected_full_term_release_date_min": None,
+                "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -192,77 +274,119 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
 
         self.run_simple_view_builder_query_test_from_data(
             {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
+                self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
+                self.aggregated_sentence_address: aggregated_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
 
-    def test_date_session_starts_after_serving_period_end(self) -> None:
+    def test_multiple_inferred_group_sessions_sourced_from_sentences(self) -> None:
         """
-        Test that when a projected date session starts after the serving period ends that the serving period is not
-        hydrated with the projected date session values.
+        Test the case where there are multiple inferred group sessions sourced from sentences because of a change in the
+        underlying sentence array. The group projected date value does not change in the output, but we get a new row
+        because of the change in the sentence struct.
         """
-        serving_periods_data = [
+        aggregated_sentence_groups_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_max,
             },
         ]
 
-        sentences_and_charges_data = [
+        aggregated_sentence_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2018, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data: List[Dict] = []
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": None,
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_min,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_med,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_med,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+        ]
+
+        v1_states_data: List[Dict] = []
+
+        expected_output = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "group_parole_eligibility_date": None,
+                "group_projected_parole_release_date": None,
+                "group_projected_full_term_release_date_min": None,
+                "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "group_parole_eligibility_date": None,
+                "group_projected_parole_release_date": None,
+                "group_projected_full_term_release_date_min": None,
+                "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_med,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -274,81 +398,103 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
 
         self.run_simple_view_builder_query_test_from_data(
             {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
+                self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
+                self.aggregated_sentence_address: aggregated_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
 
-    def test_single_period_single_group_encompass_date_session(self) -> None:
+    def test_multiple_inferred_group_sessions_from_each_source(self) -> None:
         """
-        Test that when the projected date sessions are nested within a serving period that the output includes the
-        entire serving period with null projected dates.
+        Test the case where there the same inferred group has multiple inferred group sessions sourced from sentences
+        and multiple inferred group sessions sourced from sentence groups because of a change in the projected dates.
+        Check that we take the max across the two sources during the periods of overlap.
         """
-        serving_periods_data = [
+        aggregated_sentence_groups_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_max,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
+                "projected_full_term_release_date_max": self.projected_date_1_min,
             },
         ]
 
-        sentences_and_charges_data = [
+        aggregated_sentence_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_min,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": None,
+                "projected_full_term_release_date_max": self.projected_date_1_med,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_med,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
             },
         ]
 
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data: List[Dict] = []
+        v1_states_data: List[Dict] = []
 
         expected_output = [
-            # first session within serving period has no projected dates
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2016, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
                 "group_parole_eligibility_date": None,
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": None,
+                "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -356,24 +502,23 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
                     },
                 ],
             },
-            # second session within serving period does have projected date
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_2.date(),
+                "end_date_exclusive": self.critical_date_3.date(),
                 "group_parole_eligibility_date": None,
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
+                "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_med,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -381,24 +526,23 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
                     },
                 ],
             },
-            # last session within serving period does not have projected date
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2017, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_3.date(),
+                "end_date_exclusive": None,
                 "group_parole_eligibility_date": None,
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": None,
+                "group_projected_full_term_release_date_max": self.projected_date_1_med,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_med,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -410,90 +554,45 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
 
         self.run_simple_view_builder_query_test_from_data(
             {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
+                self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
+                self.aggregated_sentence_address: aggregated_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
 
-    def test_single_period_single_group_projected_date_change(self) -> None:
+    def test_non_null_date_chosen_over_null(self) -> None:
         """
-        Test that projected date changes update the output
+        Test the case where one source has a null date and the other source has a non-null date (something that occurs
+        when a state has only group projected dates and not sentence projected dates, or vice versa). When aggregating
+        across sources, we want to choose the non-null date.
         """
-        serving_periods_data = [
+        aggregated_sentence_groups_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": None,
             },
         ]
 
-        sentences_and_charges_data = [
+        aggregated_sentence_data = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2017, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": date(2024, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data: List[Dict] = []
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "projected_full_term_release_date_max": self.projected_date_1_min,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -501,23 +600,28 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
                     },
                 ],
             },
+        ]
+
+        v1_states_data: List[Dict] = []
+
+        expected_output = [
             {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2017, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
                 "group_parole_eligibility_date": None,
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2024, 1, 1),
+                "group_projected_full_term_release_date_max": self.projected_date_1_min,
                 "sentence_array": [
                     {
-                        "sentence_id": 123,
+                        "sentence_id": self.sentence_id_1,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
                         "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_min,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -529,516 +633,9 @@ class InferredGroupServingPeriodProjectedDatesTest(SimpleBigQueryViewBuilderTest
 
         self.run_simple_view_builder_query_test_from_data(
             {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
-            },
-            expected_output,
-        )
-
-    def test_overlapping_sentences_within_group(self) -> None:
-        """
-        Test that overlapping sentences within a group get aggregated in the sentence id array
-        """
-        serving_periods_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 456,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
-            },
-        ]
-
-        sentences_and_charges_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 456,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data: List[Dict] = []
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2016, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                    {
-                        "sentence_id": 456,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2017, 1, 1),
-                "end_date_exclusive": date(2018, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 456,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-        ]
-
-        self.run_simple_view_builder_query_test_from_data(
-            {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
-            },
-            expected_output,
-        )
-
-    def test_hydrated_sentence_level_projected_dates(self) -> None:
-        """
-        Test that when a sentence has hydrated projected dates, that the sentence_array struct gets hydrated with that
-        value.
-        """
-        serving_periods_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-            },
-        ]
-
-        sentences_and_charges_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_min": date(2024, 1, 1),
-            },
-        ]
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": date(
-                            2024, 1, 1
-                        ),
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-        ]
-
-        self.run_simple_view_builder_query_test_from_data(
-            {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
-            },
-            expected_output,
-        )
-
-    def test_change_in_sentence_level_projected_dates(self) -> None:
-        """
-        Test that when there is a sentence-level change in projected dates that a new record is created (even without
-        any change in serving period or group level date).
-        """
-        serving_periods_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-            },
-        ]
-
-        sentences_and_charges_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2016, 7, 1),
-                "projected_full_term_release_date_min": date(2024, 1, 1),
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2016, 7, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_min": date(2024, 7, 1),
-            },
-        ]
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2016, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2016, 1, 1),
-                "end_date_exclusive": date(2016, 7, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": date(
-                            2024, 1, 1
-                        ),
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2016, 7, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": date(
-                            2024, 7, 1
-                        ),
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-        ]
-
-        self.run_simple_view_builder_query_test_from_data(
-            {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
-            },
-            expected_output,
-        )
-
-    def test_sentences_not_being_served_or_not_overlapping_do_not_hydrate_dates(
-        self,
-    ) -> None:
-        """
-        Test that when there is sentence level projected dates data for a sentence that is not being served that the
-        array is not hydrated. Additionally test that a sentence level projected date session that does not overlap
-        the serving period does not hydrate the sentence array.
-        """
-        serving_periods_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-            },
-        ]
-
-        sentences_and_charges_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "sentence_inferred_group_id": 888,
-            },
-        ]
-
-        sentence_group_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_max": date(2025, 1, 1),
-            },
-        ]
-
-        sentence_projected_dates_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": date(2002, 1, 1),
-                "projected_full_term_release_date_min": date(2024, 1, 1),
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 456,
-                "start_date": date(2000, 1, 1),
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_min": date(2024, 1, 1),
-            },
-        ]
-
-        sentences_preprocessed_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_id": 123,
-            },
-        ]
-
-        expected_output = [
-            {
-                "state_code": "US_XX",
-                "person_id": 12345,
-                "sentence_inferred_group_id": 888,
-                "start_date": date(2015, 1, 1),
-                "end_date_exclusive": date(2017, 1, 1),
-                "group_parole_eligibility_date": None,
-                "group_projected_parole_release_date": None,
-                "group_projected_full_term_release_date_min": None,
-                "group_projected_full_term_release_date_max": date(2025, 1, 1),
-                "sentence_array": [
-                    {
-                        "sentence_id": 123,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-        ]
-
-        self.run_simple_view_builder_query_test_from_data(
-            {
-                self.serving_period_address: serving_periods_data,
-                self.sentences_and_charges_address: sentences_and_charges_data,
-                self.sentence_group_projected_dates_address: sentence_group_projected_dates_data,
-                self.sentence_projected_dates_address: sentence_projected_dates_data,
-                self.sentences_preprocessed_address: sentences_preprocessed_data,
+                self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
+                self.aggregated_sentence_address: aggregated_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )

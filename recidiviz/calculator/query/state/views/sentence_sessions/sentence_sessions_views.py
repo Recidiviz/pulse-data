@@ -31,11 +31,14 @@ from recidiviz.calculator.query.state.views.sentence_sessions.overlapping_senten
 from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions import (
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions_v1_states import (
+    PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_group_projected_date_sessions import (
+    SENTENCE_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_date_sessions import (
-    SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
@@ -62,9 +65,6 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
     # NormalizedStateSentenceLength aggregated to inferred groups
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
-    # The set of projected dates for every sentence inferred group
-    # to be used in analysis and product.
-    SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
     # Combined sentence and charge metadata
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
     # Date that a sentence starts being served
@@ -75,10 +75,13 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     OVERLAPPING_SENTENCE_SERVING_PERIODS_VIEW_BUILDER,
     # Normalized sentence status raw texts sessionized across sentences
     SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
-    # Sentence group serving periods with projected dates
+    # Sentence inferred group serving periods with projected dates
+    PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
+    # Sentence inferred group serving periods with projected dates
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
     # Sentence serving periods with projected dates
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
     # Characteristics of sentence imposed groups and their most severe charge
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
+    SENTENCE_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 ]
