@@ -144,6 +144,7 @@ products:
     exports:
       - PRODUCT_FAILED_LOGINS
     environment: production
+  # TODO(https://github.com/Recidiviz/recidiviz-dashboards/issues/7303): Remove this export once we have switched over to the new export infrastructure
   - name: Sentencing
     description: Sentencing is (currently) and Idaho product offering that powers tools to assist in the creation of PSIs (Pre-Sentencing Investigations)
     exports:
@@ -151,6 +152,15 @@ products:
     states:
       - state_code: US_IX
         environment: production
+      - state_code: US_ND
+        environment: staging
+  - name: Sentencing v2
+    description: Sentencing is a product offering that powers tools to assist in the creation of PSIs (Pre-Sentencing Investigations)
+    exports:
+      - SENTENCING_DASHBOARDS
+    states:
+      - state_code: US_IX
+        environment: staging
       - state_code: US_ND
         environment: staging
   - name: Vertex Search Case Notes
