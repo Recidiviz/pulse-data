@@ -53,7 +53,7 @@ def push_monitoring_context(
                 "Incorrect call signature; pass evenly matched name/value pairs, or dicts"
             )
 
-    tokens: list[object] = [
+    tokens = [
         context.attach(set_baggage(name, value, context=current_context))
         for name, value in name_value_pairs
     ]
