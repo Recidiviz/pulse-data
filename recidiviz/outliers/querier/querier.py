@@ -50,6 +50,7 @@ from recidiviz.outliers.types import (
     OutlierMetricInfo,
     OutliersBackendConfig,
     OutliersMetricConfig,
+    OutliersMetricValueType,
     OutliersProductConfiguration,
     PersonName,
     SupervisionOfficerEntity,
@@ -506,7 +507,26 @@ class OutliersQuerier:
             ]
 
     @staticmethod
-    def _get_latest_period_end_date(session: Session) -> date:
+    def _get_latest_period_end_date(
+        session: Session, daily_metric: bool = False
+    ) -> date:
+        """
+        Returns the relevant most recent period end date - for either the typical
+        first-of-the-month outcomes metric period OR the daily rolling metric period
+        (e.g. for zero grant metric usage)
+        """
+        if daily_metric:
+            end_date = (
+                session.query(func.max(SupervisionOfficerMetric.end_date))
+                .filter(
+                    # filter for a zero grants metric
+                    SupervisionOfficerMetric.metric_id
+                    == "prop_period_with_critical_caseload"
+                )
+                .scalar()
+            )
+            return end_date
+
         end_date = (
             session.query(func.max(SupervisionOfficerOutlierStatus.end_date))
             .filter(
@@ -1224,6 +1244,10 @@ class OutliersQuerier:
                 else period_end_date
             )
 
+            zero_grants_metrics_end_date = self._get_latest_period_end_date(
+                session, daily_metric=True
+            )
+
             avgs_subquery = (
                 session.query(
                     SupervisionOfficerMetric.officer_id,
@@ -1243,14 +1267,15 @@ class OutliersQuerier:
                 .subquery()
             )
 
+            # TODO(#38094): Make include_in_outcomes a metric row in the SupervisionOfficerMetric table
             # Pull the include_in_outcomes flag value from the SupervisionOfficerMetric
             # table (this table is the final source of truth for whether an officer
             # should be included in outcomes).
             include_in_outcomes_subquery = (
                 session.query(
                     SupervisionOfficerMetric.officer_id,
-                    # All rows for a given officer share the same flag value so we
-                    # can just pull the first value one.
+                    # All rows for a given officer and given end date share the same flag value so we
+                    # can just pull the first value.
                     func.array_agg(SupervisionOfficerMetric.include_in_outcomes)[
                         1
                     ].label("include_in_outcomes"),
@@ -1259,8 +1284,14 @@ class OutliersQuerier:
                     SupervisionOfficerMetric.end_date == end_date,
                     SupervisionOfficerMetric.category_type
                     == category_type_to_compare.value,
-                    # Should exclude vitals metrics rows
+                    # Should exclude vitals and zg metrics rows
                     SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
+                    SupervisionOfficerMetric.value_type.in_(
+                        [
+                            OutliersMetricValueType.RATE.value,
+                            OutliersMetricValueType.AVERAGE.value,
+                        ]
+                    ),
                 )
                 .group_by(SupervisionOfficerMetric.officer_id)
                 .subquery()
@@ -1318,11 +1349,13 @@ class OutliersQuerier:
                         # filter for officers who have had a caseload the whole year
                         SupervisionOfficerMetric.metric_id
                         == "prop_period_with_critical_caseload",
-                        # TODO(#35714): Change this >= to 1.0
-                        SupervisionOfficerMetric.metric_value == 1.0,
+                        # Because this metric is calculated as a float value, it sometimes
+                        # has a value slightly over 1.0 (e.g. 1.000002).
+                        SupervisionOfficerMetric.metric_value >= 1.0,
                         SupervisionOfficerMetric.category_type == "ALL",
                         # Look at relevant end_date
-                        SupervisionOfficerMetric.end_date == end_date,
+                        SupervisionOfficerMetric.end_date
+                        == zero_grants_metrics_end_date,
                     )
                     .subquery()
                 )
@@ -1346,7 +1379,8 @@ class OutliersQuerier:
                         # Filter for zero grants
                         SupervisionOfficerMetric.metric_value == 0,
                         SupervisionOfficerMetric.category_type == "ALL",
-                        SupervisionOfficerMetric.end_date == end_date,
+                        SupervisionOfficerMetric.end_date
+                        == zero_grants_metrics_end_date,
                     )
                     .group_by(SupervisionOfficerMetric.officer_id)
                     .subquery()
