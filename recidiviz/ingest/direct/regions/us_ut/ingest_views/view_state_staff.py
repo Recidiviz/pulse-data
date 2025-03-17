@@ -86,16 +86,15 @@ WHERE usr_id IS NOT NULL
 QUALIFY ROW_NUMBER() OVER (PARTITION BY usr_id ORDER BY updt_dt DESC) = 1
 )
 SELECT 
-  usr_id, 
+  n.usr_id, 
   fname,
   mname,
   lname,
   email_addr
-FROM name_cleaned
-LEFT JOIN email_cleaned
-USING(usr_id)
+FROM name_cleaned n
+LEFT JOIN email_cleaned e
 -- Ensure email addresses do not contain whitespace
-WHERE email_addr NOT LIKE "% %"
+ON(n.usr_id = e.usr_id AND e.email_addr NOT LIKE "% %")
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

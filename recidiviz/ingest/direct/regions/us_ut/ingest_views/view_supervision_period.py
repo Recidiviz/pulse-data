@@ -157,9 +157,7 @@ ofndr_agnt AS (
     FROM (
         SELECT
             ofndr_num,
-            agnt_id,
-            -- agcy_id,
-            -- usr_typ_cd,
+            UPPER(agnt_id) AS agnt_id,
             CAST(agnt_strt_dt AS DATETIME) AS start_date,
             CAST(IF(end_dt = '(null)', NULL, end_dt) AS DATETIME) AS end_date,
             'Supervisor Change' AS reason,
@@ -353,7 +351,13 @@ ROW_NUMBER() OVER (
             ORDER BY start_date, end_date
         ) AS period_id,
 FROM supervision_periods
-WHERE (date(start_date) != date(end_date) or end_date is null)
+WHERE (date(start_date) != date(end_date) or end_date is null
+    OR end_reason LIKE "%DISCHARGED%"
+    OR end_reason LIKE "%DIED%"
+    OR end_reason LIKE "%RELEASE%"
+    OR end_reason LIKE "%EXPIRATION%"
+    OR end_reason LIKE "%RELEASE%"
+    )
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
