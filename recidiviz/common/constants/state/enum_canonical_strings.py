@@ -489,7 +489,6 @@ state_supervision_violation_severity_fifth_highest = "FIFTH_HIGHEST"
 state_supervision_violation_severity_sixth_highest = "SIXTH_HIGHEST"
 state_supervision_violation_severity_seventh_highest = "SEVENTH_HIGHEST"
 
-
 # state_supervision_violated_condition.py
 state_supervision_violated_condition_type_employment = "EMPLOYMENT"
 state_supervision_violated_condition_type_failure_to_notify = "FAILURE_TO_NOTIFY"
@@ -536,6 +535,14 @@ state_supervision_violation_response_deciding_body_parole_board = "PAROLE_BOARD"
 state_supervision_violation_response_deciding_body_type_supervision_officer = (
     "SUPERVISION_OFFICER"
 )
+
+state_supervision_violation_response_severity_highest = "HIGHEST"
+state_supervision_violation_response_severity_second_highest = "SECOND_HIGHEST"
+state_supervision_violation_response_severity_third_highest = "THIRD_HIGHEST"
+state_supervision_violation_response_severity_fourth_highest = "FOURTH_HIGHEST"
+state_supervision_violation_response_severity_fifth_highest = "FIFTH_HIGHEST"
+state_supervision_violation_response_severity_sixth_highest = "SIXTH_HIGHEST"
+state_supervision_violation_response_severity_seventh_highest = "SEVENTH_HIGHEST"
 
 # state_program_assignment.py
 state_program_assignment_participation_status_deceased = "DECEASED"

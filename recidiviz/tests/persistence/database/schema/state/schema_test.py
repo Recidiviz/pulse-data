@@ -181,6 +181,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
+            "state_supervision_violation_response_severity": state_supervision_violation_response.StateSupervisionViolationResponseSeverity,
             "state_system_type": state_system_type.StateSystemType,
             "state_task_type": state_task_deadline.StateTaskType,
             "state_sentence_type": state_sentence.StateSentenceType,

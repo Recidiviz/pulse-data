@@ -127,6 +127,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseSeverity,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
@@ -1722,6 +1723,15 @@ class StateSupervisionViolationResponse(
     )
 
     violation_response_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    violation_response_severity: Optional[
+        StateSupervisionViolationResponseSeverity
+    ] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateSupervisionViolationResponseSeverity),
+    )
+    violation_response_severity_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

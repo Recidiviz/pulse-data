@@ -611,6 +611,19 @@ state_supervision_violation_response_deciding_body_type = Enum(
     name="state_supervision_violation_response_deciding_body_type",
 )
 
+state_supervision_violation_response_severity = Enum(
+    state_enum_strings.state_supervision_violation_response_severity_highest,
+    state_enum_strings.state_supervision_violation_response_severity_second_highest,
+    state_enum_strings.state_supervision_violation_response_severity_third_highest,
+    state_enum_strings.state_supervision_violation_response_severity_fourth_highest,
+    state_enum_strings.state_supervision_violation_response_severity_fifth_highest,
+    state_enum_strings.state_supervision_violation_response_severity_sixth_highest,
+    state_enum_strings.state_supervision_violation_response_severity_seventh_highest,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_supervision_violation_response_severity",
+)
+
 state_program_assignment_participation_status = Enum(
     state_enum_strings.present_without_info,
     state_enum_strings.state_program_assignment_participation_status_deceased,
@@ -1483,8 +1496,6 @@ class StateSupervisionViolationTypeEntry(
     state_code = Column(String(255), nullable=False, index=True)
     violation_type = Column(state_supervision_violation_type, nullable=False)
     violation_type_raw_text = Column(String(255))
-    violation_type = Column(state_supervision_violation_type, nullable=False)
-    violation_type_raw_text = Column(String(255))
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
@@ -1628,6 +1639,8 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
     deciding_body_type_raw_text = Column(String(255))
     deciding_staff_external_id = Column(String(255))
     deciding_staff_external_id_type = Column(String(255))
+    violation_response_severity = Column(state_supervision_violation_response_severity)
+    violation_response_severity_raw_text = Column(String(255))
 
     is_draft = Column(Boolean)
     violation_response_metadata = Column(Text)

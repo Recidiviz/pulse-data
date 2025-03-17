@@ -708,6 +708,8 @@ state_supervision_violation_response:
       Arbitrary JSON-formatted metadata relevant to a fine
       understanding of a particular violation response. It can be provided in any
       format, but will be transformed into JSON prior to persistence.
+    violation_response_severity: The severity of the response.
+    violation_response_severity_raw_text: The raw text value of the response severity.
   normalization_only_fields:
     deciding_staff_id: StateStaff ID for the deciding officer.
     sequence_num: The ordinal position of this violation response in the sequence of all violation responses for this person.

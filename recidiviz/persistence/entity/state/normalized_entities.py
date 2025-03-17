@@ -156,6 +156,7 @@ from recidiviz.persistence.entity.state.entities import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+    StateSupervisionViolationResponseSeverity,
 )
 from recidiviz.persistence.entity.state.entity_field_validators import appears_with
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -2461,6 +2462,15 @@ class NormalizedStateSupervisionViolationResponse(
     is_draft: bool | None = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
     violation_response_metadata: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    violation_response_severity: StateSupervisionViolationResponseSeverity | None = (
+        attr.ib(
+            default=None,
+            validator=attr_validators.is_opt(StateSupervisionViolationResponseSeverity),
+        )
+    )
+    violation_response_severity_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
