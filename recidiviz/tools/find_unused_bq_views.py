@@ -23,12 +23,6 @@ Usage:
 
 from typing import Dict, Optional, Set
 
-from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
-    collect_aggregated_metric_view_builders_for_collection,
-)
-from recidiviz.aggregated_metrics.configuration.collections.zero_grants import (
-    ZERO_GRANTS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
@@ -409,22 +403,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER.address: (
         "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
     ),
-    **{
-        vb.address: (
-            "These views will be referenced by the supervision officer metrics insights product view (Gina 2/28/2025)"
-        )
-        for vb in collect_aggregated_metric_view_builders_for_collection(
-            ZERO_GRANTS_AGGREGATED_METRICS_COLLECTION_CONFIG
-        )
-    },
-    BigQueryAddress(
-        dataset_id="unit_of_analysis_assignments_by_time_period",
-        table_id="supervision__officer_to_officer__by_intersection__years_rolling_last_1_days",
-    ): "Will be referenced by the supervision officer metrics insights product view (Gina 2/28/2025)",
-    BigQueryAddress(
-        dataset_id="unit_of_analysis_assignments_by_time_period",
-        table_id="supervision__person_to_officer__by_intersection_extended__years_rolling_last_1_days",
-    ): "Will be referenced by the supervision officer metrics insights product view (Gina 2/28/2025)",
     ON_MINIMUM_AFTER_UNASSIGNED.address: (
         "Will be used after TN launches full new policy B. See #38953 (Damini Sharma 03/03/2025)"
     ),

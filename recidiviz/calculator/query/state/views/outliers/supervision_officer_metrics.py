@@ -167,34 +167,52 @@ def _supervision_vitals_metric_query_template() -> str:
 
 _OFFICER_VITALS_METRICS = _supervision_vitals_metric_query_template()
 
-_ZERO_GRANTS_METRICS = "\nUNION ALL\n".join(
-    f"""
-SELECT
-    {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER))},
-    "task_completions_{opp_config.opportunity_type}" AS metric_id,
-    task_completions_{opp_config.task_completion_event.value} AS metric_value,
-    "{OutliersMetricValueType.COUNT.value}" AS value_type
-FROM supervision_officer_aggregated_metrics_plus_inclusion
-WHERE state_code = '{opp_config.state_code.value}'
-AND period = "YEAR"
--- For opportunity completions, we only need the most recent month's data.
-AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
-"""
-    for opp_config in ZERO_GRANT_OPPORTUNITY_CONFIGURATIONS
-)
 
-_PROP_PERIOD_WITH_CRITICAL_CASELOAD_METRICS = f"""
-SELECT
-    {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER))},
-    "prop_period_with_critical_caseload" AS metric_id,
-    prop_period_with_critical_caseload AS metric_value,
-    "{OutliersMetricValueType.PROPORTION.value}" AS value_type
-FROM supervision_officer_aggregated_metrics_plus_inclusion
-WHERE state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
-AND period = "YEAR"
--- This will be used in tandem with opportunity completions, so we only need the most recent month's data.
-AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
-"""
+def _zero_grants_metrics_cte() -> str:
+    """Handles zero grants subqueries"""
+    task_completions_subqueries = [
+        f"""
+        SELECT
+            {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER))},
+            "task_completions_{opp_config.opportunity_type}" AS metric_id,
+            task_completions_{opp_config.task_completion_event.value} AS metric_value,
+            "{OutliersMetricValueType.COUNT.value}" AS value_type,
+            "ALL" as caseload_category,
+            "ALL" as category_type
+        FROM zg_agg_metrics
+        WHERE state_code = '{opp_config.state_code.value}'
+        -- For opportunity completions, we only need today's data.
+        AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)
+    """
+        for opp_config in ZERO_GRANT_OPPORTUNITY_CONFIGURATIONS
+    ]
+
+    prop_period_with_critical_caseload_subquery = f"""
+        SELECT
+            {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER))},
+            "prop_period_with_critical_caseload" AS metric_id,
+            prop_period_with_critical_caseload AS metric_value,
+            "{OutliersMetricValueType.PROPORTION.value}" AS value_type,
+            "ALL" as caseload_category,
+            "ALL" as category_type
+        FROM zg_agg_metrics
+        -- This will be used in tandem with opportunity completions, so we only need today's data
+        WHERE end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)
+    """
+
+    zg_officer_metrics = "\nUNION ALL\n".join(
+        task_completions_subqueries + [prop_period_with_critical_caseload_subquery]
+    )
+    return f"""
+        WITH zg_agg_metrics as (
+            SELECT m.* FROM `{{project_id}}.outliers_views.supervision_officer_aggregated_metrics_materialized` m
+            -- only include metrics for current insights supervision officers
+            INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
+                ON m.state_code = o.state_code AND m.officer_id = o.external_id
+            WHERE m.state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
+        )
+        {zg_officer_metrics}
+    """
 
 
 def _include_in_outcomes_cte() -> str:
@@ -234,16 +252,15 @@ supervision_officer_aggregated_metrics_plus_inclusion AS (
 ),
 supervision_officer_metrics AS (
     {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL, cte_source="supervision_officer_or_previous_if_transitional_aggregated_metrics_plus_inclusion")}
-    UNION ALL
-    {_ZERO_GRANTS_METRICS}
-    UNION ALL
-    {_PROP_PERIOD_WITH_CRITICAL_CASELOAD_METRICS}
 ),
 officer_caseload_categories AS (
     {_OFFICER_CASELOAD_CATEGORIES_CTE}
 ),
 officer_vitals_metrics AS (
     {_OFFICER_VITALS_METRICS}
+),
+zero_grants_metrics AS (
+    {_zero_grants_metrics_cte()}
 )
 
 SELECT 
@@ -252,6 +269,8 @@ FROM supervision_officer_metrics
 INNER JOIN officer_caseload_categories
 USING (state_code, officer_id, end_date, period)
 FULL OUTER JOIN officer_vitals_metrics
+USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
+FULL OUTER JOIN zero_grants_metrics
 USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
 """
 
