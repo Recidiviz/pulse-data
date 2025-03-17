@@ -1724,6 +1724,12 @@ US_TX:
     task_eligibility_criteria_us_tx.meets_risk_assessment_standards: |-
       Used as a reference table to determine the next due assessment based event type and case type. 02/13/2025.
 US_UT:
+  ofndr_tst:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display latest assessment information in side-panel notes.
+  ofndr_tst_eval:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display latest assessment information in side-panel notes.
   sprvsn_cntc:
     task_eligibility_criteria_us_ut.has_completed_ordered_assessments: |-
       Created a criteria to find out if someone has completed ordered assessments.

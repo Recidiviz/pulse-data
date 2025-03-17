@@ -77,11 +77,26 @@ all_current_spans_with_tab_names AS (
 ),
 
 case_notes_cte AS (
-    # TODO(#38490): This is a placeholder for now. We need to update this to the actual case notes table
     SELECT 
-    '' AS external_id, '' AS criteria, '' AS note_title, '' AS note_body, '' AS event_date
-    FROM `{{project_id}}.{{task_eligibility_dataset}}.early_termination_from_supervision_request_materialized` tes
-    WHERE False
+        peid.external_id,
+        'Latest LS/RNR' AS criteria,
+        'Score' AS note_title,
+        CONCAT( 
+            SAFE_CAST(ote.tot_score AS STRING), -- Score
+            ' - ',
+            IFNULL( CONCAT( UPPER(ote.override_eval_desc), ' (Override)' ), UPPER(ote.eval_desc)), -- Level, override if available
+            IFNULL( CONCAT(' - ', ote.override_rsn), '') -- Override reason if available
+        ) AS note_body,
+        SAFE_CAST(LEFT(ote.updt_dt, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.ofndr_tst_eval_latest` ote
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.ofndr_tst_latest` ot
+    USING (ofndr_tst_id)
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON peid.state_code = 'US_UT'
+        AND peid.external_id = ot.ofndr_num
+        AND id_type = 'US_UT_DOC'
+    WHERE ote.eval_desc IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id ORDER BY event_date DESC) = 1
 ),
 
 array_case_notes_cte AS (
