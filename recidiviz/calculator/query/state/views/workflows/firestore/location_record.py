@@ -61,18 +61,6 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
         ON rr.facility_id = locations.level_1_incarceration_location_external_id
             AND rr.state_code = locations.state_code
     ),
-    crc_facilities AS (
-        SELECT DISTINCT
-            state_code,
-            system,
-            "crcFacilityId" AS id_type,
-            id,
-            name,
-        FROM facilities
-        WHERE (UPPER(id) LIKE '%COMMUNITY REENTRY CENTER%' OR UPPER(id) = 'TWIN FALLS COMMUNITY WORK CENTER' OR UPPER(id) = "POCATELLO WOMEN'S CORRECTIONAL CENTER")
-        AND state_code = 'US_IX'
-         
-    ),
     facilityUnits AS (
         SELECT DISTINCT
             rr.state_code,
@@ -87,7 +75,6 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
         ON f.state_code = rr.state_code AND f.id = rr.facility_id
     )
     SELECT {columns} FROM facilities
-    UNION ALL SELECT {columns} FROM crc_facilities
     UNION ALL SELECT {columns} FROM facilityUnits
 """
 
