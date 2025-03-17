@@ -28,6 +28,11 @@ SELECT
   ofndr_num,
   ah.ofndr_addr_hist_id,
   addr_typ_cd,
+  addr.address,
+  addr.city,
+  c.county_name,
+  addr.zip,
+  addr.st,
   cmt,
   end_cmt,
   -- If the address is associated with a "homeless" attribute, or there is a comment
@@ -39,6 +44,8 @@ SELECT
   FROM {ofndr_addr_hist} ah
   LEFT JOIN {ofndr_addr_attr} aa USING (ofndr_addr_hist_id)
   LEFT JOIN {addr_attr_cd} aac USING (addr_attr_id)
+  LEFT JOIN {addr} addr USING (addr_id)
+  LEFT JOIN {county} c USING (county_cd)
   WHERE
     (
         ah.strt_dt IS NOT NULL 

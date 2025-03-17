@@ -11,6 +11,11 @@ input_columns:
   cmt: STRING
   end_cmt: STRING
   ofndr_addr_hist_id: STRING
+  address: STRING
+  city: STRING
+  county_name: STRING
+  zip: STRING
+  st: STRING
 unused_columns:
   - ofndr_addr_hist_id
   - cmt
@@ -57,3 +62,35 @@ output:
                               - N # Potential
                               - H # Historical
                               - F # Future
+    address_periods:
+      - $conditional:
+          - $if:
+              $not_null: address
+            $then:
+              StatePersonAddressPeriod:
+                address_start_date: strt_dt
+                address_end_date: end_dt
+                address_type:
+                  $enum_mapping:
+                    $raw_text: addr_typ_cd
+                    $mappings:
+                      StatePersonAddressType.PHYSICAL_RESIDENCE:
+                        - P # Primary Physical
+                      StatePersonAddressType.PHYSICAL_OTHER:
+                        - S # Other Physical
+                        - T # Temporary
+                        - J # Jail
+                        - I # Facility
+                        - C # CCC/Program
+                        - N # Potential
+                        - H # Historical
+                        - F # Future
+                      StatePersonAddressType.MAILING_ONLY:
+                        - M # Mailing
+                address_line_1: address
+                address_city: city
+                address_county: county_name
+                address_zip: zip
+                address_metadata:
+                  $normalized_values_json_dict:
+                    state_residence: st
