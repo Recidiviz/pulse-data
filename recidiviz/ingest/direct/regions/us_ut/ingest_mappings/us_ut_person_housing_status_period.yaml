@@ -90,7 +90,5 @@ output:
                 address_line_1: address
                 address_city: city
                 address_county: county_name
+                address_state: st
                 address_zip: zip
-                address_metadata:
-                  $normalized_values_json_dict:
-                    state_residence: st
