@@ -203,8 +203,8 @@ events_with_reference_data AS (
     assessment_level as last_assessment_level,
     assessment_type as last_assessment_type,
     assessment_date as last_assessment_date,
-    IF(event_type = 'assessment_completed', last_assessment_level, NULL) AS this_assessment_level,
-    IF(event_type = 'assessment_completed', last_assessment_type, NULL) AS this_assessment_type,
+    IF(event_type = 'assessment_completed', assessment_level, NULL) AS this_assessment_level,
+    IF(event_type = 'assessment_completed', assessment_type, NULL) AS this_assessment_type,
     CASE 
       -- Specific rule that SISP can only use CST not CSST
       WHEN case_type = 'SUPER-INTENSIVE SUPERVISION' 
@@ -249,6 +249,8 @@ next_events AS (
     LEAD(this_assessment_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_assessment_type,
     frequency
 FROM events_with_reference_data
+-- If we don't have matching due date logic, don't include in TES as there will be null start dates
+WHERE due_assessment_date is not null
 ),
 
 -- TES output:
