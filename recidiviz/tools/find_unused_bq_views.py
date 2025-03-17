@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_session
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
-    PROJECTED_DISCHARGES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
@@ -206,10 +203,6 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
-    # TODO(Recidiviz/looker#539): This view is only referenced by the
-    #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
-    #  deleted.
-    PROJECTED_DISCHARGES_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,

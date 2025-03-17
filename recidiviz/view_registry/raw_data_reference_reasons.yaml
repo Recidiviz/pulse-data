@@ -1173,9 +1173,6 @@ US_MO:
   LBAKRDTA_TAK023:
     analyst_data.us_mo_program_tracks: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  LBAKRDTA_TAK026:
-    analyst_data.projected_discharges: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK033:
     analyst_data.us_mo_restrictive_housing_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1282,8 +1279,6 @@ US_ND:
     sessions.us_nd_raw_lsir_assessments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   docstars_offendercasestable:
-    analyst_data.projected_discharges: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_nd_early_discharge_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
@@ -1457,9 +1452,6 @@ US_PA:
       Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
     workflows_views.us_pa_transfer_to_administrative_supervision_form_record: |-
       Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
-  dbo_Senrec:
-    analyst_data.projected_discharges: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   dbo_vwCCISAllMvmt:
     experiments_metadata.person_assignments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
