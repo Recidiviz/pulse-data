@@ -26,6 +26,7 @@ early discharges by doing the following:
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -44,7 +45,6 @@ US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
 )
 
 DISCHARGE_REPORT_DIFF_MONTHS = "12"
-# TODO(#38326) - Don't count folks terminated within 30 days of their projected date
 US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
 WITH early_termination_reports AS (
   SELECT 
@@ -75,7 +75,29 @@ successful_terminations AS (
       termination_date,
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
   WHERE state_code = 'US_UT'
-    AND termination_reason_raw_text = 'DISCHARGED/SUCCESSFUL'
+    AND termination_reason_raw_text IN ('DISCHARGED/SUCCESSFUL', 'DISCHARGED/OTHER JURISDICTION')
+),
+
+sentence_spans AS (
+  SELECT
+      state_code,
+      person_id,
+      start_date,
+      end_date_exclusive AS end_date,
+      MAX(sentence_projected_full_term_release_date_max) AS projected_full_term_release_date,
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
+  UNNEST(sentence_array)
+  JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
+      USING(person_id, state_code, sentence_id)
+  JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_start_date_materialized`
+      USING(person_id, state_code, sentence_id)
+  WHERE
+      -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
+      -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 
+          effective_date < sentence_projected_full_term_release_date_max
+          AND sentence_type IN ("PAROLE","PROBATION")
+          AND state_code = 'US_UT'
+  GROUP BY 1, 2, 3, 4
 )
 
 SELECT 
@@ -97,11 +119,17 @@ INNER JOIN successful_terminations st
   ON st.person_id = cs.person_id
     AND st.state_code = cs.state_code
     AND st.termination_date = end_date_exclusive
+LEFT JOIN sentence_spans ss
+  ON cs.state_code = ss.state_code
+    AND cs.person_id = ss.person_id
+    AND cs.end_date BETWEEN ss.start_date AND IFNULL(ss.end_date, '9999-12-31')
 WHERE cs.state_code = 'US_UT'
   AND cs.outflow_to_level_1 = 'LIBERTY'
   AND cs.compartment_level_1 = 'SUPERVISION'
   -- We only count it as an ET if a report was submitted less than 12 months from release
   AND DATE_DIFF(cs.end_date, etr.report_date, DAY)/30 < {DISCHARGE_REPORT_DIFF_MONTHS}
+  -- We only count it as an ET if the person was discharged more than 30 days before their projected release date
+  AND DATE_DIFF(ss.projected_full_term_release_date, cs.end_date, DAY) > 30
 -- If there's more than one report per session, keep the latest one
 QUALIFY ROW_NUMBER() OVER(PARTITION BY cs.state_code, cs.person_id, cs.session_id ORDER BY etr.report_date DESC)= 1
 """
@@ -116,6 +144,7 @@ US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     should_materialize=False,
 )
 
