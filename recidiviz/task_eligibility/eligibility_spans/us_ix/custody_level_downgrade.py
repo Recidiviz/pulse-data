@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_active_discretionary_override,
+    not_in_classification_pilot,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -48,6 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         custody_level_higher_than_recommended.VIEW_BUILDER,
         no_active_discretionary_override.VIEW_BUILDER,
+        not_in_classification_pilot.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
