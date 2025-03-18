@@ -33,6 +33,10 @@ from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
+from recidiviz.aggregated_metrics.models import (
+    aggregated_metric_configurations as metric_config,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
@@ -51,6 +55,7 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import delete_files, get_all_files_recursive
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -67,6 +72,10 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductConfigs,
     ProductName,
 )
+from recidiviz.observations.observation_big_query_view_collector import (
+    ObservationBigQueryViewCollector,
+)
+from recidiviz.observations.observation_type_utils import ObservationType
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -1327,6 +1336,155 @@ class CalculationDocumentationGenerator:
 
         return anything_modified
 
+    def _generate_agregated_metric_table_view(
+        self, metrics: list[AggregatedMetric]
+    ) -> str:
+        """Generates table with each aggregated metric's name, column name, description and observation conditions"""
+        headers = [
+            "**Metric**",
+            "**Column Name**",
+            "**Description**",
+            "**Metric Type**",
+            "**Observation Conditions**",
+        ]
+        table_matrix = [
+            [
+                metric.display_name,
+                metric.name,
+                metric.description,
+                type(metric).__name__,
+                metric.get_observation_conditions_string(
+                    filter_by_observation_type=False,
+                    read_observation_attributes_from_json=False,
+                ),
+            ]
+            for metric in metrics
+        ]
+        writer = MarkdownTableWriter(
+            headers=headers, value_matrix=table_matrix, margin=0
+        )
+        return writer.dumps()
+
+    def _generate_aggregated_metric_summary_markdown(self) -> str:
+        """Generates markdown for all aggregated metrics"""
+        all_aggregated_metrics: List[AggregatedMetric] = []
+        for item in dir(metric_config):
+            metric_object = getattr(metric_config, item)
+            if isinstance(metric_object, AggregatedMetric):
+                all_aggregated_metrics.append(metric_object)
+            elif isinstance(metric_object, list) and all(
+                isinstance(metric, AggregatedMetric) for metric in metric_object
+            ):
+                all_aggregated_metrics.extend(metric_object)
+
+        metrics_by_observation_type: dict[ObservationType, list] = defaultdict(list)
+        for metric in all_aggregated_metrics:
+            metrics_by_observation_type[metric.observation_type].append(metric)
+
+        metrics_by_observation_documentation = []
+        for observation_type, metrics in metrics_by_observation_type.items():
+            documentation = f"""
+# {snake_to_title(observation_type.value)} Metrics
+[{snake_to_title(observation_type.unit_of_observation_type.value)}-Level Observation Type: {observation_type}]({self._get_github_builder_code_url_for_observation_type(observation_type)})
+{self._generate_agregated_metric_table_view(metrics)}
+"""
+            metrics_by_observation_documentation.append(documentation)
+
+        table_of_contents = "\n".join(
+            [
+                f"- [{snake_to_title(observation_type.value)} Metrics](#{observation_type.value.lower()}-metrics)"
+                for observation_type in sorted(
+                    metrics_by_observation_type,
+                    key=lambda observation_type: observation_type.value,
+                )
+            ]
+        )
+        all_tables = "\n".join(sorted(metrics_by_observation_documentation))
+        return f"""
+# Table Of Contents
+{table_of_contents}
+
+
+{all_tables}"""
+
+    def _get_github_builder_code_url_for_observation_type(
+        self, observation_type: ObservationType
+    ) -> str:
+        """Returns a URL for the query builder code associated with an observation type"""
+        observation_type_folder = f"{observation_type.observation_type_category()}s"
+        observation_type_name = observation_type.name.lower()
+        unit_of_observation_name = (
+            observation_type.unit_of_observation_type.value.lower()
+        )
+        return f"https://github.com/Recidiviz/pulse-data/tree/main/recidiviz/observations/views/{observation_type_folder}/{unit_of_observation_name}/{observation_type_name}.py"
+
+    def _generate_events_summary_markdown(self) -> str:
+        headers = [
+            "**Event Observation**",
+            "**Unit of Observation**",
+            "**Attributes**",
+        ]
+        event_builders = ObservationBigQueryViewCollector().collect_event_builders()
+        table_matrix = [
+            [
+                f"[{event.event_type.value}]({self._get_github_builder_code_url_for_observation_type(event.event_type)})",
+                event.event_type.unit_of_observation_type.value,
+                ",<br/>".join(event.attribute_cols),
+            ]
+            for event in sorted(event_builders, key=lambda event: event.event_type.name)
+        ]
+        writer = MarkdownTableWriter(
+            headers=headers, value_matrix=table_matrix, margin=0
+        )
+        return writer.dumps()
+
+    def _generate_spans_summary_markdown(self) -> str:
+        headers = [
+            "**Span Observation**",
+            "**Unit of Observation**",
+            "**Attributes**",
+        ]
+        span_builders = ObservationBigQueryViewCollector().collect_span_builders()
+        table_matrix = [
+            [
+                f"[{span.span_type.value}]({self._get_github_builder_code_url_for_observation_type(span.span_type)})",
+                span.span_type.unit_of_observation_type.value,
+                ",<br/>".join(span.attribute_cols),
+            ]
+            for span in sorted(span_builders, key=lambda span: span.span_type.name)
+        ]
+        writer = MarkdownTableWriter(
+            headers=headers, value_matrix=table_matrix, margin=0
+        )
+        return writer.dumps()
+
+    def _generate_observations_summary_markdown(self) -> str:
+        return f"""
+# Event Observations
+{self._generate_events_summary_markdown()}
+# Span Observations
+{self._generate_spans_summary_markdown()}
+"""
+
+    def generate_aggregated_metric_markdowns(self) -> bool:
+        logging.info("Generating aggregated metric documentation")
+        anything_modified = False
+        metrics_dir_path = os.path.join(self.root_calc_docs_dir, "aggregated_metrics")
+
+        observations_markdown_path = os.path.join(metrics_dir_path, "observations.md")
+        anything_modified |= persist_file_contents(
+            self._generate_observations_summary_markdown(), observations_markdown_path
+        )
+
+        aggregated_metrics_markdown_path = os.path.join(
+            metrics_dir_path, "aggregated_metrics.md"
+        )
+        anything_modified |= persist_file_contents(
+            self._generate_aggregated_metric_summary_markdown(),
+            aggregated_metrics_markdown_path,
+        )
+        return anything_modified
+
 
 def _create_ingest_catalog_calculation_summary(
     docs_generator: CalculationDocumentationGenerator,
@@ -1341,6 +1499,7 @@ def generate_calculation_documentation(
     modified |= docs_generator.generate_states_markdowns()
     modified |= docs_generator.generate_view_markdowns()
     modified |= docs_generator.generate_metric_markdowns()
+    modified |= docs_generator.generate_aggregated_metric_markdowns()
     return modified
 
 
