@@ -35,11 +35,11 @@ filter_term AS (
             THEN TentativeParoleDate
             ELSE NULL
         END AS TentativeParoleDate,
-        InitialParoleHearingDate,
+        DpedApprovedDate,
         update_datetime,
         LAG(FtrdApprovedDate) OVER wind AS prev_FtrdApprovedDate,
         LAG(TentativeParoleDate) OVER wind AS prev_TentativeParoleDate,
-        LAG(InitialParoleHearingDate) OVER wind AS prev_InitialParoleHearingDate,
+        LAG(DpedApprovedDate) OVER wind AS prev_DpedApprovedDate,
         LAG(update_datetime) OVER wind AS prev_updt
     FROM {scl_Term@ALL} term
     -- Make sure all sentence groups created have a corresponding sentence that is an offense sentence 
@@ -60,13 +60,13 @@ filtered_term AS
         TermId,
         FtrdApprovedDate,
         TentativeParoleDate,
-        InitialParoleHearingDate,
+        DpedApprovedDate,
         update_datetime
     FROM filter_term 
     WHERE prev_updt IS NULL 
     OR FtrdApprovedDate IS DISTINCT FROM prev_FtrdApprovedDate 
     OR TentativeParoleDate IS DISTINCT FROM prev_TentativeParoleDate 
-    OR InitialParoleHearingDate IS DISTINCT FROM prev_InitialParoleHearingDate
+    OR DpedApprovedDate IS DISTINCT FROM prev_DpedApprovedDate
 ),
 
 -- get a list of the child SentenceOrderId for each sentence order to determine later on if the child sentence order is an error correction
@@ -107,7 +107,7 @@ SELECT
     FtrdApprovedDate,
     TentativeParoleDate,
     update_datetime,
-    InitialParoleHearingDate,
+    DpedApprovedDate,
     ROW_NUMBER() OVER(PARTITION BY TermId ORDER BY update_datetime) as rn
 FROM
     filtered_term

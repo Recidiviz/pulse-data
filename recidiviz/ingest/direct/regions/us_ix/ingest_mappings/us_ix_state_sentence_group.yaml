@@ -6,7 +6,7 @@ input_columns:
   FtrdApprovedDate: STRING
   TentativeParoleDate: STRING
   update_datetime: DATETIME
-  InitialParoleHearingDate: STRING
+  DpedApprovedDate: STRING
   rn: INTEGER
 unused_columns: []
 output:
@@ -21,7 +21,7 @@ output:
           sentence_group_lengths:
             - StateSentenceGroupLength:
                 group_update_datetime: update_datetime
-                parole_eligibility_date_external: InitialParoleHearingDate
+                parole_eligibility_date_external: DpedApprovedDate
                 projected_full_term_release_date_max_external: FtrdApprovedDate
                 projected_parole_release_date_external: TentativeParoleDate
                 sequence_num: rn
