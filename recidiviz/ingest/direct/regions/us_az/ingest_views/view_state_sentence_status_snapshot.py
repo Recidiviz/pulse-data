@@ -49,6 +49,9 @@ from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -93,7 +96,7 @@ initial_serving_statuses AS (
     ON
         SENTENCE_STATUS_ID = LOOKUP_ID
     WHERE
-        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) < CURRENT_DATE
+        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
 -- This CTE creates statuses for sentences that have terminated.
 -- We preserve the completion reason if it was provided, but most
@@ -133,9 +136,9 @@ completion_statuses AS (
     WHERE
         COALESCE(SENTENCE_END_DTM_ML, SENTENCE_END_DTM) IS NOT NULL
     AND
-        CAST(COALESCE(SENTENCE_END_DTM_ML, SENTENCE_END_DTM) AS DATETIME) < CURRENT_DATE
+        CAST(COALESCE(SENTENCE_END_DTM_ML, SENTENCE_END_DTM) AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
     AND 
-        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) < CURRENT_DATE
+        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 )
 SELECT * FROM initial_serving_statuses
 UNION ALL

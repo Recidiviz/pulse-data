@@ -518,10 +518,6 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1015-10-12.
                     StateCode.US_AR,
-                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0983-03-09.
-                    #  - Found dates as high as 9090-08-03.
-                    StateCode.US_AZ,
                     # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 3502-01-01.
                     StateCode.US_IX,
@@ -689,9 +685,6 @@ class NormalizedStateSentenceStatusSnapshot(
                     # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01 00:00:00.
                     StateCode.US_AR,
-                    # TODO(#38801): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0199-01-13 00:00:00.
-                    StateCode.US_AZ,
                     # TODO(#38803): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1200-10-10 12:00:00.
                     StateCode.US_ND,
@@ -705,18 +698,8 @@ class NormalizedStateSentenceStatusSnapshot(
         default=None,
         # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_datetime`
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_not_future_datetime,
-            state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_datetime(
-                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-                ),
-                exempted_states={
-                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0202-08-14 00:00:00.
-                    StateCode.US_AZ,
-                },
-            ),
+        validator=attr_validators.is_opt_reasonable_past_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
         ),
     )
     # The status of a sentence
@@ -1199,9 +1182,6 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1900-01-01.
                     StateCode.US_AR,
-                    # TODO(#38801): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0199-01-13.
-                    StateCode.US_AZ,
                 },
             ),
         ),
