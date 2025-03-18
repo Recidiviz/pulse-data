@@ -27,6 +27,8 @@ from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
 
+from recidiviz.airflow.dags.utils.config_utils import QueuingActionType
+
 
 class WaitUntilCanContinueOrCancelDelegate:
     @abc.abstractmethod
@@ -96,7 +98,7 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
                 _get_pretty_dag_run_identifier(dag_run),
                 [_get_pretty_dag_run_identifier(d) for d in all_active_dag_runs],
             )
-            return "CANCEL"
+            return QueuingActionType.CANCEL.value
 
         if self.delegate.this_dag_run_can_continue(
             dag_run=dag_run, all_active_dag_runs=all_active_dag_runs
@@ -106,7 +108,7 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
                 _get_pretty_dag_run_identifier(dag_run),
                 [_get_pretty_dag_run_identifier(d) for d in all_active_dag_runs],
             )
-            return "CONTINUE"
+            return QueuingActionType.CONTINUE.value
 
         logging.info(
             "Cannot continue or cancel this DAG - deferring for %s seconds",

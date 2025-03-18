@@ -18,11 +18,24 @@
 Helper functions containing tasks that are shared by mutliple dags.
 """
 import logging
+from enum import Enum
 from typing import Optional
 
 from airflow.decorators import task
 from airflow.models import DagRun
 from airflow.utils.trigger_rule import TriggerRule
+
+
+class QueuingActionType(Enum):
+    """Possible queuing action return types from WaitUntilCanContinueOrCancelSensorAsync."""
+
+    # CONTINUE means that the queued DagRun will proceed normally, starting with tasks
+    # directly downstream from `handle_queueing_result`
+    CONTINUE = "CONTINUE"
+    # CANCEL means that all tasks in the queued DagRun will be skipped by `handle_queueing_result`
+    # effectively canceling the current DagRun.
+    CANCEL = "CANCEL"
+
 
 INGEST_INSTANCE = "ingest_instance"
 SANDBOX_PREFIX = "sandbox_prefix"
@@ -47,14 +60,22 @@ def handle_params_check(
 def handle_queueing_result(action_type: Optional[str]) -> bool:
     """Returns True if the DAG should continue, otherwise short circuits."""
     if action_type is None:
-        logging.info(
+        logging.error(
             "Found null action_type, indicating that the queueing sensor failed "
             "(crashed) failed - do not continue."
         )
         return False
 
-    logging.info("Found action_type [%s]", action_type)
-    return action_type == "CONTINUE"
+    try:
+        action_type_enum = QueuingActionType(action_type)
+    except Exception:
+        logging.error(
+            "Found unrecognized action_type [%s] -- do not continue.", action_type
+        )
+        return False
+
+    logging.info("Found action_type [%s]", action_type_enum)
+    return action_type_enum == QueuingActionType.CONTINUE
 
 
 def get_ingest_instance(dag_run: DagRun) -> Optional[str]:

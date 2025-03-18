@@ -25,6 +25,7 @@ from airflow.exceptions import TaskDeferred
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     WaitUntilCanContinueOrCancelSensorAsync,
 )
+from recidiviz.airflow.dags.utils.config_utils import QueuingActionType
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
     SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate,
     StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate,
@@ -199,7 +200,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # continue since first
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         # defer since second
         with self.assertRaises(TaskDeferred):
@@ -207,7 +208,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # continue, since only SECONDARY in teh queue
         results = self.operator.execute(context={"dag_run": dag_run_3})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
     def test_agnostic_middle_of_queue(self) -> None:
         dag_run = Mock()
@@ -227,7 +228,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         results = self.operator.execute(context={"dag_run": dag_run})
 
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
     def test_agnostic_cancel_logic(self) -> None:
         dag_run = Mock()
@@ -261,11 +262,11 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # first in secondary queue, can go
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         # first in primary queue, can go
         results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         # last in primary queue, will defer
         with self.assertRaises(TaskDeferred):
@@ -273,7 +274,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # second in secondary queue, will cancel
         results = self.operator.execute(context={"dag_run": dag_run_4})
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
         # last in secondary queue, will defer
         with self.assertRaises(TaskDeferred):
@@ -306,11 +307,11 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # continue since first in queue
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         # cancel since a state-agnostic is in front and matching state-specific is behind
         results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
         # defer since state-agnostic ahead and it's the last matching
         with self.assertRaises(TaskDeferred):
@@ -335,19 +336,19 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # continue since first in queue
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         # cancel since a state-agnostic is in front and state agnostic is behind
         results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
         # cancel since a state-agnostic is in front and state agnostic is behind
         results = self.operator.execute(context={"dag_run": dag_run_3})
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
         # cancel since a state-agnostic is in front and state agnostic is behind
         results = self.operator.execute(context={"dag_run": dag_run_4})
-        self.assertEqual(results, "CANCEL")
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
 
         # defer since last state agnostic
         with self.assertRaises(TaskDeferred):
@@ -385,13 +386,13 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # all continue except 5!! (lol kinda wacky)
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
         results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
         results = self.operator.execute(context={"dag_run": dag_run_3})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
         results = self.operator.execute(context={"dag_run": dag_run_4})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
 
         with self.assertRaises(TaskDeferred):
             self.operator.execute(context={"dag_run": dag_run_5})
@@ -420,7 +421,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
         # fixing this would be quite a bit more complex so we'll just add a test
         # and cede this
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
         # is last, so is okay
         with self.assertRaises(TaskDeferred):
             print(self.operator.execute(context={"dag_run": dag_run_2}))
@@ -445,7 +446,7 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
 
         # both run
         results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
         # this is okay bc we have protection from raw data locks
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
         results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CONTINUE")
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
