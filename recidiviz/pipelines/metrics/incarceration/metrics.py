@@ -195,6 +195,9 @@ If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from par
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # Raw text of the case_type
+    case_type_raw_text: Optional[str] = attr.ib(default=None)
+
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
 

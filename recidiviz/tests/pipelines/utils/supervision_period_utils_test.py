@@ -86,16 +86,23 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code="US_XX",
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                    case_type_raw_text="DV",
                 ),
                 StateSupervisionCaseTypeEntry.new_with_defaults(
-                    state_code="US_XX", case_type=StateSupervisionCaseType.SEX_OFFENSE
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.SEX_OFFENSE,
+                    case_type_raw_text="SO",
                 ),
             ],
         )
 
-        most_severe_case_type = identify_most_severe_case_type(supervision_period)
+        (
+            most_severe_case_type,
+            most_severe_case_type_raw_text,
+        ) = identify_most_severe_case_type(supervision_period)
 
         self.assertEqual(most_severe_case_type, StateSupervisionCaseType.SEX_OFFENSE)
+        self.assertEqual(most_severe_case_type_raw_text, "SO")
 
     def test_identify_most_severe_case_type_test_all_types(self) -> None:
         for case_type in StateSupervisionCaseType:
@@ -110,9 +117,13 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                 ],
             )
 
-            most_severe_case_type = identify_most_severe_case_type(supervision_period)
+            (
+                most_severe_case_type,
+                most_severe_case_type_raw_text,
+            ) = identify_most_severe_case_type(supervision_period)
 
             self.assertEqual(most_severe_case_type, case_type)
+            self.assertEqual(most_severe_case_type_raw_text, None)
 
     def test_identify_most_severe_case_type_no_type_entries(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -122,9 +133,13 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
             case_type_entries=[],
         )
 
-        most_severe_case_type = identify_most_severe_case_type(supervision_period)
+        (
+            most_severe_case_type,
+            most_severe_case_type_raw_text,
+        ) = identify_most_severe_case_type(supervision_period)
 
         self.assertEqual(most_severe_case_type, StateSupervisionCaseType.GENERAL)
+        self.assertEqual(most_severe_case_type_raw_text, None)
 
 
 DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = (

@@ -78,6 +78,7 @@ CommitmentDetails = NamedTuple(
         ("level_1_supervision_location_external_id", Optional[str]),
         ("level_2_supervision_location_external_id", Optional[str]),
         ("case_type", Optional[StateSupervisionCaseType]),
+        ("case_type_raw_text", Optional[str]),
         ("supervision_type", StateSupervisionPeriodSupervisionType),
         ("supervision_level", Optional[StateSupervisionLevel]),
         ("supervision_level_raw_text", Optional[str]),
@@ -137,10 +138,10 @@ def get_commitment_from_supervision_details(
         incarceration_period.purpose_for_incarceration_subtype
     )
 
-    case_type = (
+    case_type, case_type_raw_text = (
         identify_most_severe_case_type(pre_commitment_supervision_period)
         if pre_commitment_supervision_period
-        else StateSupervisionCaseType.GENERAL
+        else (StateSupervisionCaseType.GENERAL, None)
     )
 
     supervision_type = (
@@ -176,6 +177,7 @@ def get_commitment_from_supervision_details(
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         case_type=case_type,
+        case_type_raw_text=case_type_raw_text,
         supervision_type=supervision_type,
         supervision_level=supervision_level,
         supervision_level_raw_text=supervision_level_raw_text,

@@ -98,6 +98,8 @@ class SupervisionPopulationSpan(Span, SupervisionLocationMixin, IncludedInStateM
 
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    case_type_raw_text: Optional[str] = attr.ib(default=None)
+
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
     # StateStaff id of officer who was supervising the person described by this metric

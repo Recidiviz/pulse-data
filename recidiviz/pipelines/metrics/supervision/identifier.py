@@ -319,7 +319,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_period,
             self.supervision_delegate,
         )
-        case_type = identify_most_severe_case_type(supervision_period)
+        case_type, case_type_raw_text = identify_most_severe_case_type(
+            supervision_period
+        )
 
         if not supervision_period.supervision_period_id:
             raise ValueError(
@@ -418,6 +420,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     event_date=event_date,
                     supervision_type=supervision_type,
                     case_type=case_type,
+                    case_type_raw_text=case_type_raw_text,
                     assessment_score=assessment_score,
                     assessment_level=assessment_level,
                     assessment_type=assessment_type,
@@ -555,7 +558,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_period_index,
             incarceration_period_index,
         )
-
+        case_type, case_type_raw_text = identify_most_severe_case_type(
+            supervision_period
+        )
         return SupervisionStartEvent(
             state_code=supervision_period.state_code,
             admission_reason=supervision_period.admission_reason,
@@ -565,7 +570,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             in_incarceration_population_on_date=in_incarceration_population_on_date,
             in_supervision_population_on_date=in_supervision_population_on_date,
             supervision_type=supervision_period.supervision_type,
-            case_type=identify_most_severe_case_type(supervision_period),
+            case_type=case_type,
+            case_type_raw_text=case_type_raw_text,
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
@@ -670,7 +676,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 self.supervision_delegate,
             )
 
-            case_type = identify_most_severe_case_type(supervision_period)
+            case_type, case_type_raw_text = identify_most_severe_case_type(
+                supervision_period
+            )
 
             supervision_type = (
                 supervision_period.supervision_type
@@ -703,6 +711,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 in_supervision_population_on_date=in_supervision_population_on_date,
                 supervision_type=supervision_type,
                 case_type=case_type,
+                case_type_raw_text=case_type_raw_text,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 assessment_score=end_assessment_score,
@@ -886,7 +895,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             self.supervision_delegate,
         )
 
-        case_type = identify_most_severe_case_type(supervision_period)
+        case_type, case_type_raw_text = identify_most_severe_case_type(
+            supervision_period
+        )
 
         last_day_of_projected_month = last_day_of_month(projected_completion_date)
 
@@ -901,6 +912,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             case_type=case_type,
+            case_type_raw_text=case_type_raw_text,
             successful_completion=successful_completion,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,

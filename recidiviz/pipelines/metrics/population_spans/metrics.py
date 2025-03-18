@@ -185,6 +185,9 @@ This metric is derived from the `StateSupervisionPeriod` entities, which store i
     # Case Type
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # Case Type Raw Text
+    case_type_raw_text: Optional[str] = attr.ib(default=None)
+
     # Custodial Authority
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 

@@ -28,8 +28,12 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
+)
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
@@ -81,6 +85,11 @@ StateSupervisionPeriodT = TypeVar(
     bound=(StateSupervisionPeriod | NormalizedStateSupervisionPeriod),
 )
 
+StateSupervisionCaseTypeEntryT = TypeVar(
+    "StateSupervisionCaseTypeEntryT",
+    bound=(StateSupervisionCaseTypeEntry | NormalizedStateSupervisionCaseTypeEntry),
+)
+
 
 def _is_transfer_start(period: StateSupervisionPeriodT) -> bool:
     return (
@@ -111,25 +120,31 @@ def standard_date_sort_for_supervision_periods(
 
 def identify_most_severe_case_type(
     supervision_period: StateSupervisionPeriodT,
-) -> StateSupervisionCaseType:
-    """Identifies the most severe supervision case type that the supervision period
-    is classified as. If there are no case types on the period that are listed in the
-    severity ranking, then StateSupervisionCaseType.GENERAL is returned."""
+) -> tuple[StateSupervisionCaseType, str | None]:
+    """Returns the most severe supervision case type that the supervision period is
+    classified as, along with the raw text value for that case type.
+
+    If there are no case types on the period, then StateSupervisionCaseType.GENERAL is
+    returned with a null raw text value.
+    """
     case_type_entries = supervision_period.case_type_entries
 
-    if case_type_entries:
-        case_types = [entry.case_type for entry in case_type_entries]
-    else:
-        case_types = [StateSupervisionCaseType.GENERAL]
+    if not case_type_entries:
+        return StateSupervisionCaseType.GENERAL, None
 
-    return next(
-        (
-            case_type
-            for case_type in CASE_TYPE_SEVERITY_ORDER
-            if case_type in case_types
-        ),
-        StateSupervisionCaseType.GENERAL,
+    sorted_case_type_entries = sorted(
+        case_type_entries, key=lambda e: CASE_TYPE_SEVERITY_ORDER.index(e.case_type)
     )
+
+    highest_priority_entry = sorted_case_type_entries[0]
+
+    if not isinstance(
+        highest_priority_entry,
+        (StateSupervisionCaseTypeEntry, NormalizedStateSupervisionCaseTypeEntry),
+    ):
+        raise ValueError(f"Unexpected type [{type(highest_priority_entry)}]")
+
+    return highest_priority_entry.case_type, highest_priority_entry.case_type_raw_text
 
 
 def filter_out_supervision_period_types_excluded_from_pre_admission_search(

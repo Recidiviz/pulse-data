@@ -421,6 +421,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             specialized_purpose_for_incarceration=commitment_details.purpose_for_incarceration,
             purpose_for_incarceration_subtype=commitment_details.purpose_for_incarceration_subtype,
             case_type=commitment_details.case_type,
+            case_type_raw_text=commitment_details.case_type_raw_text,
             supervision_level=commitment_details.supervision_level,
             supervision_level_raw_text=commitment_details.supervision_level_raw_text,
             assessment_score=assessment_score,

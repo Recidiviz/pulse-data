@@ -69,6 +69,9 @@ class SupervisionEvent(Event, SupervisionLocationMixin, AssessmentEventMixin):
     # The type of supervision case
     case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
 
+    # Raw text of the case_type
+    case_type_raw_text: Optional[str] = attr.ib(default=None)
+
     # StateStaff id of officer who was supervising the person described by this metric
     supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
 

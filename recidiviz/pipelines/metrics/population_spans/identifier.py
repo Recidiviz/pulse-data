@@ -247,7 +247,9 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             ) = self.supervision_delegate.supervision_location_from_supervision_site(
                 supervision_period.supervision_site
             )
-            case_type = identify_most_severe_case_type(supervision_period)
+            case_type, case_type_raw_text = identify_most_severe_case_type(
+                supervision_period
+            )
             sp_in_state_population_based_on_metadata = self.supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
                 supervision_period
             )
@@ -276,6 +278,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     supervision_type=supervision_type,
                     case_type=case_type,
+                    case_type_raw_text=case_type_raw_text,
                     custodial_authority=supervision_period.custodial_authority,
                     supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                     level_1_supervision_location_external_id=level_1_supervision_location,
