@@ -965,6 +965,7 @@ class DirectIngestRawFileConfig:
                 "Staff": "We use this in views with @ALL",
                 "StaffEmailByAlias": "We use this in views with @ALL",
                 "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": "We use this in views with @ALL",
+                "Address": "We are going to use this with @ALL",
             },
             StateCode.US_PA: {
                 "RECIDIVIZ_REFERENCE_staff_roster": "We want to use this in views w/ @ALL"
