@@ -63,6 +63,11 @@ TASK_CONFIGS = [
         "table": "meets_scheduled_electronic_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
+    {
+        "type": "usTxHomeContactEdgeCase",
+        "table": "meets_edge_case_home_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
 ]
 
 

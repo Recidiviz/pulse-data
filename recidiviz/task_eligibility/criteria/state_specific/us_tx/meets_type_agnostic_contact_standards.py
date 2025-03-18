@@ -24,7 +24,6 @@ from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjace
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -350,7 +349,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_TX,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        normalized_state_dataset="us_tx_normalized_state",
         raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
         ),
