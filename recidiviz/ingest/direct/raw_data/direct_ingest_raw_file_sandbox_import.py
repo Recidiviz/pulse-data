@@ -77,6 +77,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 
+DEFAULT_SANDBOX_CHUNK_SIZE = 10 * 1024 * 1024  # 10 mb
+
 
 def _id_for_file(state_code: StateCode, file_name: str) -> int:
     """Create an id for the file based on the file name.
@@ -319,6 +321,7 @@ def _pre_import_norm_for_path(
         separator=raw_file_config.separator,
         encoding=raw_file_config.encoding,
         quoting_mode=raw_file_config.quoting_mode,
+        chunk_size=DEFAULT_SANDBOX_CHUNK_SIZE,
     ).get_chunks_for_gcs_path(path)
 
     requires_pre_import_norm_file = RequiresPreImportNormalizationFile(
