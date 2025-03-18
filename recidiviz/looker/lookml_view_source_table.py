@@ -43,6 +43,11 @@ class LookMLViewSourceTable:
     def derived_table(cls, sql: str) -> "LookMLViewSourceTable":
         return DerivedTable(sql)
 
+    @property
+    @abc.abstractmethod
+    def is_derived_table(self) -> bool:
+        """Returns True if the source table is a derived table, False otherwise."""
+
 
 @attr.define
 class SqlTableAddress(LookMLViewSourceTable):
@@ -60,6 +65,10 @@ class SqlTableAddress(LookMLViewSourceTable):
             sql_table_name = self.address.to_str()
         return f"  sql_table_name: {sql_table_name} ;;"
 
+    @property
+    def is_derived_table(self) -> bool:
+        return False
+
 
 @attr.define
 class DerivedTable(LookMLViewSourceTable):
@@ -74,3 +83,7 @@ class DerivedTable(LookMLViewSourceTable):
         return f"""  derived_table: {{
     sql: {self.sql} ;;
   }}"""
+
+    @property
+    def is_derived_table(self) -> bool:
+        return True

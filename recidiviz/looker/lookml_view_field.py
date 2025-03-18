@@ -124,6 +124,24 @@ class LookMLViewField:
     def view_label(self) -> FieldParameterViewLabel:
         return one(p for p in self.parameters if isinstance(p, FieldParameterViewLabel))
 
+    @property
+    def referenced_table_fields(self) -> set[str]:
+        return {
+            field
+            for p in self.parameters
+            if p.referenced_table_fields is not None
+            for field in p.referenced_table_fields
+        }
+
+    @property
+    def referenced_view_fields(self) -> set[str]:
+        return {
+            field
+            for p in self.parameters
+            if p.referenced_view_fields is not None
+            for field in p.referenced_view_fields
+        }
+
 
 @attr.define
 class DimensionLookMLViewField(LookMLViewField):

@@ -18,6 +18,7 @@
 from typing import List, Optional, Set
 
 import attr
+from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.looker.lookml_utils import write_lookml_file
@@ -53,13 +54,34 @@ class LookMLView:
         if len(self._field_name_list) != len(self.field_names):
             raise ValueError(f"Duplicate field names found in {self._field_name_list}")
 
+        self._validate_referenced_view_fields_exist()
+
+    def _validate_referenced_view_fields_exist(self) -> None:
+        """If any field references another field within the view, validate that the referenced field exists.
+        This is a basic check that does not support extended views."""
+        if self.extended_views:
+            # If this view extends another then we don't have context for all of the fields that are available
+            return
+        for field in self.fields:
+            if not (referenced_fields := field.referenced_view_fields):
+                continue
+            if missing_fields := referenced_fields - self.field_names:
+                raise ValueError(
+                    f"Fields {missing_fields} referenced in [{field.field_name}]"
+                    f" do not exist in view fields {self.field_names}"
+                )
+
     @classmethod
     def for_big_query_table(
-        cls, dataset_id: str, table_id: str, fields: List[LookMLViewField]
+        cls,
+        dataset_id: str,
+        table_id: str,
+        fields: List[LookMLViewField],
+        view_name: Optional[str] = None,
     ) -> "LookMLView":
         """Create a LookMLView object for a BigQuery table"""
         return cls(
-            view_name=table_id,
+            view_name=view_name or table_id,
             table=LookMLViewSourceTable.sql_table_address(
                 BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
             ),
@@ -110,6 +132,26 @@ class LookMLView:
             for field in self.fields
             if isinstance(field, DimensionGroupLookMLViewField)
         ]
+
+    def validate_referenced_fields_exist_in_schema(
+        self, schema_fields: List[SchemaField]
+    ) -> None:
+        """Validate that all BQ table fields referenced in this view exist in the table's schema fields"""
+        if not self.table:
+            raise ValueError(
+                "Cannot validate schema fields for a view without a table."
+            )
+        if self.table.is_derived_table:
+            raise ValueError("Cannot validate schema fields for a derived table.")
+
+        schema_field_names = {field.name for field in schema_fields}
+        for field in self.fields:
+            if not (referenced_fields := field.referenced_table_fields):
+                continue
+            if missing_fields := referenced_fields - schema_field_names:
+                raise ValueError(
+                    f"Fields {missing_fields} referenced in [{field.field_name}] do not exist in schema fields {schema_field_names}"
+                )
 
     def qualified_name_for_field(self, field_name: str) -> str:
         """Return a string with the format view_name.field_name

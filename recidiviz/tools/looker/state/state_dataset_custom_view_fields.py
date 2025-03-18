@@ -123,7 +123,9 @@ class StateEntityLookMLCustomFieldProvider:
                             "person_id",
                             "state_code",
                             "hearing_date",
-                            "date_effective",
+                            # TODO(#23292) Commenting out for CI to pass
+                            # will uncomment in subsequent PR
+                            # "date_effective_date",
                             "punishment_length_days",
                             "outcome_type",
                             "outcome_type_raw_text",

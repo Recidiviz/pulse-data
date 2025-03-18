@@ -18,6 +18,8 @@
 
 import unittest
 
+from google.cloud.bigquery import SchemaField
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.sessions.sessions_views import (
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
@@ -241,3 +243,95 @@ class LookMLViewTest(unittest.TestCase):
   }
 }"""
         self.assertEqual(view, expected_view)
+
+    def test_referenced_view_fields_exist(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Fields \{'full_name'\} referenced in \[my_field\] do not exist in view fields \{'my_field'\}",
+        ):
+            _ = LookMLView(
+                view_name="my_view",
+                table=LookMLViewSourceTable.sql_table_address(
+                    BigQueryAddress(dataset_id="my_dataset", table_id="my_table")
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="my_field",
+                        parameters=[
+                            LookMLFieldParameter.description("Field description"),
+                            LookMLFieldParameter.sql(
+                                "CONCAT("
+                                'INITCAP(JSON_EXTRACT_SCALAR(${full_name}, "$.given_names")),'
+                                '" ",'
+                                'INITCAP(JSON_EXTRACT_SCALAR(${full_name}, "$.surname"))'
+                                ")"
+                            ),
+                        ],
+                    ),
+                ],
+            )
+
+        # Since we don't have context for all the views that exist
+        # we can't check if the referenced field from another view exists
+        _ = LookMLView(
+            view_name="my_view",
+            table=LookMLViewSourceTable.sql_table_address(
+                BigQueryAddress(dataset_id="my_dataset", table_id="my_table")
+            ),
+            fields=[
+                DimensionLookMLViewField(
+                    field_name="my_field",
+                    parameters=[
+                        LookMLFieldParameter.description("Field description"),
+                        LookMLFieldParameter.sql(
+                            "CONCAT("
+                            'INITCAP(JSON_EXTRACT_SCALAR(another_view.full_name, "$.given_names")),'
+                            '" ",'
+                            'INITCAP(JSON_EXTRACT_SCALAR(another_view.full_name, "$.surname"))'
+                            ")"
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+    def test_table_fields_exist(self) -> None:
+        view = LookMLView(
+            view_name="my_view",
+            table=LookMLViewSourceTable.sql_table_address(
+                BigQueryAddress(dataset_id="my_dataset", table_id="my_table")
+            ),
+            fields=[
+                MeasureLookMLViewField(
+                    field_name="referrals_array",
+                    parameters=[
+                        LookMLFieldParameter.type(LookMLFieldType.STRING),
+                        LookMLFieldParameter.description(
+                            "List in string form of all program referral dates and parenthesized program_id's"
+                        ),
+                        LookMLFieldParameter.sql(
+                            r"""ARRAY_TO_STRING(ARRAY_AGG(
+      DISTINCT CONCAT(CAST(${TABLE}.referral_date AS STRING), " (", ${TABLE}.program_id, ")")
+      ORDER BY CONCAT(CAST(${TABLE}.referral_date AS STRING), " (", ${TABLE}.program_id, ")")
+    ), ";\r\n")"""
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        # Shouldn't crash
+        view.validate_referenced_fields_exist_in_schema(
+            schema_fields=[
+                SchemaField(name="referral_date", field_type="STRING"),
+                SchemaField(name="program_id", field_type="STRING"),
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Fields \{'program_id'\} referenced in \[referrals_array\] do not exist in schema fields \{'referral_date'\}",
+        ):
+            view.validate_referenced_fields_exist_in_schema(
+                schema_fields=[SchemaField(name="referral_date", field_type="STRING")]
+            )

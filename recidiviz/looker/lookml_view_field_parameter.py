@@ -16,6 +16,7 @@
 # =============================================================================
 """Creates LookMLViewFieldParameter object and associated functions"""
 import abc
+import re
 from enum import Enum
 from typing import List, Tuple, Union
 
@@ -23,6 +24,9 @@ import attr
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.looker.parameterized_value import ParameterizedValue
+
+TABLE_FIELD_PATTERN = r"\$\{TABLE\}\.([a-zA-Z0-9_]+)"
+VIEW_FIELD_PATTERN = r"\$\{([a-zA-Z0-9_]+)\}[^.]"
 
 
 class LookMLFieldCategory(Enum):
@@ -93,6 +97,19 @@ class LookMLFieldParameter:
 
     def build(self) -> str:
         return f"{self.key}: {self.value_text}"
+
+    # TODO(#23292) Add property to return referenced fields that belong to another view
+
+    @property
+    @abc.abstractmethod
+    def referenced_table_fields(self) -> set[str] | None:
+        """Returns a set of BQ table fields referenced by the parameter"""
+        return None
+
+    @property
+    @abc.abstractmethod
+    def referenced_view_fields(self) -> set[str] | None:
+        """Returns a set of view fields referenced by the parameter"""
 
     @classmethod
     def description(cls, description: str) -> "LookMLFieldParameter":
@@ -208,6 +225,14 @@ class FieldParameterDescription(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterGroupLabel(LookMLFieldParameter):
@@ -227,6 +252,14 @@ class FieldParameterGroupLabel(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -248,6 +281,14 @@ class FieldParameterViewLabel(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterLabel(LookMLFieldParameter):
@@ -267,6 +308,14 @@ class FieldParameterLabel(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 # FILTER SUGGESTION PARAMETERS
@@ -299,6 +348,14 @@ class FieldParameterAllowedValue(LookMLFieldParameter):
       value: "{self.value_param}"
     }}"""
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterDefaultValue(LookMLFieldParameter):
@@ -321,6 +378,14 @@ class FieldParameterDefaultValue(LookMLFieldParameter):
             LookMLFieldCategory.PARAMETER,
             LookMLFieldCategory.FILTER,
         )
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -348,6 +413,14 @@ class FieldParameterFullSuggestions(LookMLFieldParameter):
             LookMLFieldCategory.PARAMETER,
         )
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 # QUERY PARAMETERS
 @attr.define
@@ -369,6 +442,14 @@ class FieldParameterConvertTz(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterDatatype(LookMLFieldParameter):
@@ -388,6 +469,14 @@ class FieldParameterDatatype(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category != LookMLFieldCategory.PARAMETER
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -413,6 +502,14 @@ class FieldParameterHtml(LookMLFieldParameter):
             LookMLFieldCategory.MEASURE,
         )
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterPrecision(LookMLFieldParameter):
@@ -432,6 +529,14 @@ class FieldParameterPrecision(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.MEASURE
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 # VALUE AND FORMATTING PARAMETERS
@@ -454,6 +559,14 @@ class FieldParameterHidden(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterValueFormat(LookMLFieldParameter):
@@ -473,6 +586,14 @@ class FieldParameterValueFormat(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category != LookMLFieldCategory.PARAMETER
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -498,6 +619,14 @@ class FieldParameterSuggestions(LookMLFieldParameter):
             LookMLFieldCategory.PARAMETER,
         )
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterSql(LookMLFieldParameter):
@@ -516,6 +645,20 @@ class FieldParameterSql(LookMLFieldParameter):
         if isinstance(self.sql_text, ParameterizedValue):
             return f"{self.sql_text.build_liquid_template()} ;;"
         return f"{self.sql_text} ;;"
+
+    @property
+    def referenced_table_fields(self) -> set[str]:
+        """Returns a set of BQ table fields of the form `${TABLE}.field_name` referenced by the parameter"""
+        fields = re.findall(TABLE_FIELD_PATTERN, self.value_text)
+
+        return set(fields)
+
+    @property
+    def referenced_view_fields(self) -> set[str]:
+        """Returns a set of view fields of the form `${field_name}` referenced by the parameter"""
+        fields = re.findall(VIEW_FIELD_PATTERN, self.value_text)
+
+        return set(fields)
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category != LookMLFieldCategory.PARAMETER
@@ -590,6 +733,14 @@ class FieldParameterType(LookMLFieldParameter):
             )
         return False
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 # OTHER PARAMETERS
 @attr.define
@@ -616,6 +767,14 @@ class FieldParameterTimeframes(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.DIMENSION_GROUP
 
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterPrimaryKey(LookMLFieldParameter):
@@ -635,6 +794,14 @@ class FieldParameterPrimaryKey(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.DIMENSION
+
+    @property
+    def referenced_view_fields(self) -> None:
+        return None
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -658,6 +825,14 @@ class FieldParameterDrillFields(LookMLFieldParameter):
             LookMLFieldCategory.DIMENSION,
             LookMLFieldCategory.MEASURE,
         )
+
+    @property
+    def referenced_view_fields(self) -> set[str]:
+        return set(self.fields)
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
 
 
 @attr.define
@@ -683,6 +858,14 @@ class FieldParameterFilters(LookMLFieldParameter):
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.MEASURE
 
+    @property
+    def referenced_view_fields(self) -> set[str]:
+        return {f[0] for f in self.dimension_and_filter_tuples}
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
+
 
 @attr.define
 class FieldParameterListField(LookMLFieldParameter):
@@ -702,3 +885,11 @@ class FieldParameterListField(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.MEASURE
+
+    @property
+    def referenced_view_fields(self) -> set[str]:
+        return {self.list_field_name}
+
+    @property
+    def referenced_table_fields(self) -> None:
+        return None
