@@ -24,6 +24,7 @@ python -m recidiviz.tools.looker.breadth_and_depth.breadth_and_depth_lookml_gene
 
 import argparse
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -50,6 +51,16 @@ BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS = [
     "system_type",
 ]
 
+PARTITION_BY_COLUMNS = [
+    "weight_factor",
+    "delta_direction_factor",
+    "person_id",
+    "event_date",
+    "decarceral_impact_type",
+    "has_mandatory_due_date",
+    "is_jii_transition",
+]
+
 EARLIEST_YEAR_FOR_BASELINE = 2023
 EARLIEST_YEAR_FOR_BREADTH = 2024
 
@@ -69,14 +80,33 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def get_impact_transition_with_launch_order_query_fragment(
+    partition_by_query_fragment: str,
+) -> str:
+    return f"""
+    SELECT
+      *,
+        -- Record whether this transition is the one associated with the earliest full state launch of that task type for the selected attributes. If there are two launches of the same task type on the same day, the workflows launch gets priority
+        DENSE_RANK() OVER(
+            PARTITION BY {partition_by_query_fragment}{list_to_query_string(PARTITION_BY_COLUMNS)}
+            ORDER BY DATE_TRUNC(DATE(full_state_launch_date), MONTH) ASC, (CASE WHEN product_transition_type IN ("workflows_discretionary","workflows_mandatory") THEN 1 ELSE 0 END) DESC, product_transition_type DESC
+        ) AS full_state_launch_order
+    FROM ${{impact_transition.SQL_TABLE_NAME}}
+"""
+
+
 def generate_baseline_source_view(
     attributes_query_fragment: str,
+    partition_by_query_fragment: str,
 ) -> LookMLView:
     """Generates LookMLView for baseline source with selected attribute(s) for depth metrics calculation"""
 
     derived_table_query = f"""
 -- Count weighted monthly transitions, deduped by person, event date, decarceral impact type, is jii transition, and has mandatory due date.
-WITH transitions_by_month_weight_and_direction AS (
+WITH impact_transition_with_launch_order AS (
+    {get_impact_transition_with_launch_order_query_fragment(partition_by_query_fragment)}
+),
+transitions_by_month_weight_and_direction AS (
     SELECT
         {attributes_query_fragment}
         DATE_TRUNC(event_date, YEAR) AS transition_year,
@@ -87,9 +117,10 @@ WITH transitions_by_month_weight_and_direction AS (
         -- This count will be properly deduped as long as we enforce that all transitions with same person_id, event_date, decarceral_impact type, is_jii_transition, has_mandatory_due_date have the same value for weight_factor and the same value for delta_direction_factor.
         CAST(weight_factor AS FLOAT64) * COUNT(DISTINCT CONCAT(person_id, event_date, IFNULL(decarceral_impact_type, "NONE"), IFNULL(is_jii_transition, "NONE"), IFNULL(has_mandatory_due_date, "NONE"))) AS weighted_transitions,
     FROM
-        ${{impact_transition.SQL_TABLE_NAME}}
+        impact_transition_with_launch_order
     WHERE
         EXTRACT(YEAR FROM event_date) >= {EARLIEST_YEAR_FOR_BASELINE}
+        AND full_state_launch_order = 1
     GROUP BY 
         {attributes_query_fragment}transition_year, transition_month, DATE_TRUNC(DATE(full_state_launch_date), MONTH), weight_factor, delta_direction_factor
 )
@@ -263,17 +294,22 @@ ORDER BY {attributes_query_fragment}metric_year, metric_month, weight_factor, de
     )
 
 
-def generate_transitions_breadth_metric_source_view() -> LookMLView:
+def generate_transitions_breadth_metric_source_view(
+    partition_by_query_fragment: str,
+) -> LookMLView:
     """Generates LookMLView for transitions breadth metric source"""
 
     derived_table_query = f"""
+WITH impact_transition_with_launch_order AS (
+    {get_impact_transition_with_launch_order_query_fragment(partition_by_query_fragment)}
+)
 SELECT
     *,
     DATE_TRUNC(event_date, MONTH) AS metric_month,
     DATE_TRUNC(event_date, YEAR) AS metric_year,
     ROW_NUMBER() OVER() as breadth_primary_key
 FROM
-    ${{impact_transition.SQL_TABLE_NAME}}
+    impact_transition_with_launch_order
 WHERE
     EXTRACT(YEAR FROM event_date) >= {EARLIEST_YEAR_FOR_BREADTH}
     AND event_date <= LAST_DAY(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 MONTH))
@@ -327,6 +363,17 @@ WHERE
                 LookMLFieldParameter.sql(
                     "CAST(${TABLE}.delta_direction_factor AS INT64)"
                 ),
+            ],
+        ),
+        DimensionLookMLViewField(
+            field_name="full_state_launch_order",
+            parameters=[
+                LookMLFieldParameter.description(
+                    "Order of the full state launch this transition is associated with, with respect to selected attributes"
+                ),
+                LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+                LookMLFieldParameter.view_label("Dimensions"),
+                LookMLFieldParameter.sql("${TABLE}.full_state_launch_order"),
             ],
         ),
         DimensionLookMLViewField(
@@ -568,13 +615,23 @@ def main(
                 for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
             ]
         )
+
+        partition_by_query_fragment = "".join(
+            [
+                liquid_wrap_json_field(f"{attribute},", attribute, view_name)
+                for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
+                if attribute not in PARTITION_BY_COLUMNS
+            ]
+        )
+
         generate_baseline_source_view(
             attributes_query_fragment,
+            partition_by_query_fragment,
         ).write(output_directory, source_script_path=__file__)
 
-        generate_transitions_breadth_metric_source_view().write(
-            output_directory, source_script_path=__file__
-        )
+        generate_transitions_breadth_metric_source_view(
+            partition_by_query_fragment,
+        ).write(output_directory, source_script_path=__file__)
 
         generate_transitions_depth_metric_source_view(
             attributes_query_fragment,
