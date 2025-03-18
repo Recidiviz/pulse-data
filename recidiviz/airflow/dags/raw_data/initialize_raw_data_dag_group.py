@@ -36,7 +36,7 @@ from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_raw_data_dag_enabled_state_and_instance_pairs,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegate import (
+from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
     StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate,
 )
 from recidiviz.common.constants.states import StateCode
