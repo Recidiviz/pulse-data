@@ -50,6 +50,7 @@ from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_
     RawTableFileCountsDiffQueryGenerator,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.log_helpers import make_log_output_path
 
 LINE_SEPARATOR = "-" * 100
 
@@ -69,41 +70,61 @@ def _get_table_name_prefix(
     return f"{region_code}_src_{src_project_id}_{src_ingest_instance.value}_cmp_{cmp_project_id}_{cmp_ingest_instance.value}_{unix_ts}_"
 
 
-def _log_successes(succeeded_tables: List[str]) -> None:
+def _log_successes(succeeded_tables: List[str]) -> str:
+    success_log = ""
+
     if not succeeded_tables:
-        return
-    logging.info("\nSUCCESSES")
-    logging.error(LINE_SEPARATOR)
+        return success_log
+
+    success_log += "\nSUCCESSES"
+    success_log += LINE_SEPARATOR
+    success_log += "\n"
     for file_tag in succeeded_tables:
-        logging.info("\t- %s", file_tag)
-    logging.info(LINE_SEPARATOR)
+        success_log += f"\t- {file_tag}"
+    success_log += LINE_SEPARATOR
+    logging.info(success_log)
+    return success_log
 
 
 def _log_failures(
     failed_table_results: Dict[str, RawTableDiffQueryResult],
     result_row_display_limit: Optional[int] = None,
-) -> None:
+) -> str:
+    fail_log = ""
+
     if not failed_table_results:
-        return
-    logging.error("\nFAILURES")
-    logging.error(LINE_SEPARATOR)
+        return ""
+
+    fail_log += "\nFAILURES"
+    fail_log += LINE_SEPARATOR
+    fail_log += "\n"
+    fail_log += "see log file or bq table for more details"
+    logging.error(fail_log)
     for file_tag, result in failed_table_results.items():
+        # since these can be so big, only log the file tag with failures
         logging.error("%s:\n", file_tag)
-        logging.error(result.build_result_rows_str(limit=result_row_display_limit))
-        logging.error(LINE_SEPARATOR)
+        fail_log += f"{file_tag}: \n"
+        fail_log += result.build_result_rows_str(limit=result_row_display_limit)
+        fail_log += LINE_SEPARATOR
+        fail_log += "\n"
+    return fail_log
 
 
 def _log_results(
+    logfile_path: str,
     results: RawDataRegionQueryResult,
     result_row_display_limit: Optional[int] = None,
 ) -> None:
-    _log_successes(
+    success_logs = _log_successes(
         succeeded_tables=results.succeeded_tables,
     )
-    _log_failures(
+    failure_logs = _log_failures(
         failed_table_results=results.failed_table_results,
         result_row_display_limit=result_row_display_limit,
     )
+
+    with open(logfile_path, "w", encoding="utf-8") as f:
+        f.writelines([success_logs, failure_logs])
 
 
 def _execute_diff_query(
@@ -223,6 +244,9 @@ def main() -> None:
     )
     logging.info(LINE_SEPARATOR)
 
+    path = make_log_output_path("compare_raw_data", region_code=args.region)
+    logging.info("writing full logs to [%s]", path)
+
     file_tags = args.file_tags
     if not args.skip_file_counts_check:
         results = _execute_diff_query(
@@ -248,7 +272,7 @@ def main() -> None:
             project_id=args.source_project_id,
             file_tags=file_tags,
         )
-        _log_results(results)
+        _log_results(path, results)
         # Only fully compare the data for tables that have the same number of distinct file_ids
         file_tags = results.succeeded_tables
 
@@ -289,6 +313,7 @@ def main() -> None:
         ),
     )
     _log_results(
+        path,
         results,
         result_row_display_limit=(RESULT_ROW_DISPLAY_LIMIT),
     )

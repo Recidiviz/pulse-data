@@ -1961,9 +1961,7 @@ class BigQueryClientImpl(BigQueryClient):
             ]
 
         logging.info(
-            "Inserting into table [%s] result of query: %s",
-            destination_address.to_str(),
-            query,
+            "Inserting into table [%s] result of query", destination_address.to_str()
         )
 
         return self.client.query(
