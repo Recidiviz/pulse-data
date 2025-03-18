@@ -125,3 +125,16 @@ class GrievancesUpheldType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/jails/grievances/type"
+
+
+class BehavioralHealthNeedType(DimensionBase, enum.Enum):
+    MENTAL_HEALTH = "Mental Health Needs"
+    SUBSTANCE_USE = "Substance Use Needs"
+    CO_OCCURRING_DISORDERS = "Co-Occurring Substance Use and Mental Health Needs"
+    OTHER = "Other Behavioral Health Needs"
+    UNKNOWN = "Unknown Behavioral Health Needs"
+    NONE = "No Behavioral Health Needs"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/jails/behavioral_health/type"

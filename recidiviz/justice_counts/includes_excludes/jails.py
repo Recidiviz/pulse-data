@@ -528,3 +528,82 @@ class TotalDailyPopulationIncludesExcludes(Enum):
         "People in jail due to a post-adjudication incarceration sanction imposed by a specialty, treatment, "
         "or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
     )
+
+
+class MentalHealthNeedIncludesExcludes(Enum):
+    SCREENING_TOOL = "Screening tool administered during their jail stay"
+    CLINICAL_ASSESSMENT_JAIL = (
+        "Clinical assessment or evaluation conducted during their jail stay"
+    )
+    SELF_REPORT = "Self-report"
+    CLINICAL_ASSESSMENT_PRIOR = (
+        "Clinical assessment or evaluation conducted prior to admission"
+    )
+    PRIOR_TREATMENT_HISTORY = "Prior history of receiving treatment"
+    PSYCHOTROPIC_MEDICATION = "Psychotropic/psychiatric medication use"
+    JAIL_CLASSIFICATION = (
+        "Jail classification/housing assignment or programming received within the jail"
+    )
+    SUICIDE_RISK_SCREENING = "Positive risk screening for suicide ideation"
+    OTHER_METHOD = "Other methodology"
+
+
+class SubstanceUseNeedIncludesExcludes(Enum):
+    SCREENING_TOOL = "Screening tool administered during their jail stay"
+    CLINICAL_ASSESSMENT_JAIL = (
+        "Clinical assessment or evaluation in jail conducted during their jail stay"
+    )
+    SELF_REPORT = "Self-report"
+    POSITIVE_DRUG_TEST = "Positive drug test at admissions"
+    CLINICAL_ASSESSMENT_PRIOR = (
+        "Clinical assessment or evaluation conducted prior to admission"
+    )
+    PRIOR_TREATMENT_HISTORY = "Prior history of receiving treatment"
+    MAT_RECEIVING = "Receiving Medication Assisted Treatment (MAT)"
+    JAIL_CLASSIFICATION = (
+        "Jail classification/housing assignment or programming received within the jail"
+    )
+    OTHER_METHOD = "Other methodology"
+
+
+class CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes(Enum):
+    MENTAL_HEALTH_AND_SUBSTANCE_USE = (
+        "People with identified mental health need AND substance use need"
+    )
+    ONLY_MENTAL_HEALTH = "People with identified mental health need only"
+    ONLY_SUBSTANCE_USE = "People with identified substance use need only"
+    SUBSTANCE_USE_AND_OTHER_NEED = "People with a substance use need and another need that is not mental health related"
+    MENTAL_HEALTH_AND_OTHER_NEED = "People with an identified mental health need and another need that is not substance use related"
+
+
+class OtherBehavioralHealthNeedIncludesExcludes(Enum):
+    BEHAVIORAL_HEALTH_NEEDS = "People with identified behavioral health needs that does not meet the criteria for mental health or substance use need"
+    COGNITIVE_DISORDERS = (
+        "People with cognitive, neurocognitive/neurodevelopmental disorders"
+    )
+    CHRONIC_DISEASES = "People with chronic diseases"
+    MENTAL_HEALTH_NEED = "People with identified mental health need"
+    SUBSTANCE_USE_NEED = "People with identified substance use need"
+    PSYCHOSOCIAL_PROBLEMS = "People with psychosocial and environmental problems"
+    ECONOMIC_HOUSING_EDUCATION = (
+        "People with economic, housing, or educational problems"
+    )
+    SOCIAL_SUPPORT_PROBLEMS = "People with problems with a primary support group or relating to their social environment"
+
+
+class UnknownBehavioralHealthNeedIncludesExcludes(Enum):
+    NOT_SCREENED_ASSESSED = (
+        "People who have not been screened or assessed for behavioral health needs"
+    )
+    RELEASED_BEFORE_IDENTIFICATION = (
+        "People who were released before a behavioral health need could be identified"
+    )
+
+
+class NoBehavioralHealthNeedIncludesExcludes(Enum):
+    SCREENED_NO_NEED = "People who have been screened or assessed with no identified behavioral health needs"
+    IDENTIFIED_MENTAL_HEALTH_NEED = "People with identified mental health needs"
+    IDENTIFIED_SUBSTANCE_USE_NEED = "People with identified substance use needs"
+    CO_OCCURRING_NEEDS = (
+        "People with co-occurring substance use and mental health needs"
+    )
