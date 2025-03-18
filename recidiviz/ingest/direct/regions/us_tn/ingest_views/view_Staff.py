@@ -52,7 +52,8 @@ WITH
         REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
         LastName,
         FirstName,
-        IF(OutlookEmail IS NOT NULL AND OutlookEmail NOT LIKE '%@%', '', OutlookEmail) AS OutlookEmail
+        -- use regex to keep only the email string in case of other values in that field
+        IF(OutlookEmail IS NOT NULL AND OutlookEmail NOT LIKE '%@%', '', REGEXP_EXTRACT(OutlookEmail, r'(\\S+@\\S+)')) AS OutlookEmail
     FROM most_recent_staff_information si
     LEFT JOIN most_recent_id_for_email sei USING (StaffID)
     WHERE StaffID IS NOT NULL AND si.RecencyRank = 1
