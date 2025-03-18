@@ -35,7 +35,7 @@ _INGEST_FILE_PREFIX_REGEX_PATTERN = (
     r"raw_"  # file_type
 )
 _INGEST_FILE_SUFFIX_REGEX_PATTERN = (
-    r"(?P<filename_suffix_conflict>-\(\d+\))?"  # Optional file conflict suffix (e.g. '-(1)')
+    r"(-(?P<filename_suffix_conflict>\(\d+\)))?"  # Optional file conflict suffix (e.g. '-(1)')
     r"\.(?P<extension>[A-Za-z]+)$"  # Extension
 )
 _RAW_DATA_FILE_NAME_REGEX = re.compile(
@@ -109,5 +109,6 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> DirectIngestRawFilenam
         date_str=utc_upload_datetime.date().isoformat(),
         file_tag=match.group("file_tag"),
         extension=match.group("extension"),
-        filename_suffix=match.group("filename_suffix"),
+        filename_suffix=match.group("filename_suffix")
+        or match.group("filename_suffix_conflict"),
     )

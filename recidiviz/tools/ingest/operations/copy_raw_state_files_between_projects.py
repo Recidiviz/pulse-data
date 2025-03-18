@@ -103,6 +103,14 @@ def main() -> None:
         help="The upper bound date to end at, inclusive. For partial copying of ingested files. "
         "E.g. 2019-09-23.",
     )
+    parser.add_argument(
+        "--file-tag-filters",
+        required=False,
+        default=[],
+        nargs="+",
+        help="Space-separated list of file tags to filter for. "
+        "If neither file-tag-filters or file-tag-regex is set, will move all files.",
+    )
 
     args = parser.parse_args()
 
@@ -120,11 +128,13 @@ def main() -> None:
             project_id=args.destination_project_id,
         )
     )
+
     OperateOnStorageRawFilesController.create_controller(
         region_code=args.region,
         operation_type=IngestFilesOperationType.COPY,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
+        file_tags=args.file_tag_filters,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,
