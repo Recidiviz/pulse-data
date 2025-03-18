@@ -106,10 +106,10 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
             INITCAP(REPLACE(need,'_',' ')) AS need,
             CAST(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_date') AS DATE) AS metadata_latest_strong_r_date,
             /* UNNEST returns one row per key in a column called "need"
-              PARSE_JSON(assessment_metadata)[need] extracts the JSON value associated with the key
+              JSON_EXTRACT(assessment_metadata)[need] extracts the JSON value associated with the key
               from the need column, and JSON_VALUE formats this as a string
              */
-            NULLIF(JSON_VALUE(PARSE_JSON(JSON_EXTRACT_SCALAR(single_reason.reason,'$.assessment_metadata'))[need]),'') AS need_level       
+            NULLIF(JSON_VALUE(JSON_EXTRACT(single_reason.reason,'$.assessment_metadata')[need]),'') AS need_level,       
         FROM base,
         UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason,
         UNNEST({STRONG_R_ASSESSMENT_METADATA_KEYS}) AS need    
