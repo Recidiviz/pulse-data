@@ -153,6 +153,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
+    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
@@ -830,7 +831,7 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
             state_exempted_validator(
                 attr_validators.is_opt_reasonable_date(
                     min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                    max_allowed_date_exclusive=MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
                 ),
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
@@ -842,9 +843,6 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
                     # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 2924-02-01.
                     StateCode.US_NE,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2498-04-26.
-                    StateCode.US_UT,
                 },
             ),
         ),

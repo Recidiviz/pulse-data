@@ -185,6 +185,10 @@ STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1900-0
 # likely are erroneous values (e.g. typos in data).
 STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-01-01")
 
+# Standard upper bound value for maximum date projection fields in our schema.
+# Dates before this date likely are erroneous values (e.g. typos in data).
+MAX_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2500-01-01")
+
 # Standard lower bound value for datetime fields in our schema. Dates before this date
 # likely are erroneous values (e.g. typos in data) or data that is so old that it is too
 # unreliable to ingest.
@@ -3081,7 +3085,7 @@ class StateSentenceLength(
             state_exempted_validator(
                 attr_validators.is_opt_reasonable_date(
                     min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                    max_allowed_date_exclusive=MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
                 ),
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
@@ -3093,9 +3097,6 @@ class StateSentenceLength(
                     # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 2924-02-01.
                     StateCode.US_NE,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2498-04-26.
-                    StateCode.US_UT,
                 },
             ),
         ),

@@ -33,7 +33,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.persistence.entity.state.entities import (
+    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -147,8 +149,8 @@ SELECT * FROM cases_with_prioritized_dates
   -- entries, we exclude them.
   WHERE
     -- Filter to only include rows where
-    ((max_end_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '2500-01-01' OR max_end_dt IS NULL)
-    AND (early_trmn_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '2500-01-01' OR early_trmn_dt IS NULL))
+    ((max_end_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{MAX_DATE_FIELD_REASONABLE_UPPER_BOUND}' OR max_end_dt IS NULL)
+    AND (early_trmn_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND}' OR early_trmn_dt IS NULL))
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
