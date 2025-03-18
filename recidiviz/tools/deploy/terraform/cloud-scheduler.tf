@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_topic" {
-  name        = "schedule_calculation_dag_run_cloud_function"
-  schedule    = "0 3 * * *" # Every day at 3 am Pacific
+# On weekdays, we want to run the calc DAG twice: once at 6 am EST to have data fresh for 
+# the start of the east coast work day (9 am EST) and once at 7 am PST for the start of 
+# the west coast work day (10 am PST, to account for when files actually arrive)
+resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_weekday_run_topic" {
+  name = "schedule_calculation_dag_weekday_run_cloud_function"
+  # in prod, at 3 AM and 7 AM PST on weekdays. in staging just at 3 AM
+  schedule    = local.is_production ? "0 3,7 * * 1-5" : "0 3 * * 1-5"
   description = "Triggers the calculation DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 
@@ -28,6 +32,23 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
     data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
   }
 }
+
+# On weekends, we only need to run this calc DAG once per day.
+resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_weekend_topic" {
+  name = "schedule_calculation_dag_weekend_run_cloud_function"
+  # at 3 AM PST on weekends
+  schedule    = "0 3 * * 6,7"
+  description = "Triggers the calculation DAG via pubsub"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    # topic's full resource name.
+    topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
+    # Run nightly DAG with no state_code filter.
+    data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
+  }
+}
+
 resource "google_cloud_scheduler_job" "schedule_airflow_hourly_monitoring_dag_run_topic" {
   name        = "schedule_airflow_hourly_monitoring_dag_run_cloud_function"
   schedule    = "0 * * * *" # Every hour at the 0 minute
@@ -52,11 +73,30 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   }
 }
 
-# TODO(#38729): make dag scheduling more nuance to ensure that raw data is always
+# TODO(#38729): make dag scheduling more nuanced to ensure that raw data is always
 # as fresh as possible
-resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
-  name        = "schedule_raw_data_import_dag_run_cloud_function"
-  schedule    = "0 2 * * *" # Every day at 2 am Pacific
+
+# On weekdays, we want to run the raw data import DAG twice: once at 5 am EST to have data
+# fresh for the start of the "east coast work day" calc DAG (6 am EST) and once at 
+# 6 am PST to have data fresh for the "west coast work day" calc DAG" (7 am PST)
+resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_weekday_run_topic" {
+  name = "schedule_raw_data_import_dag_weekday_run_cloud_function"
+  # in prod, at 2 AM and 6 AM PST on weekdays. in staging just at 2 AM
+  schedule    = local.is_production ? "0 2,6 * * 1-5" : "0 2 * * 1-5"
+  description = "Triggers the raw data import DAG via pubsub"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
+    # Run raw data import DAG with a PRIMARY filter
+    data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
+  }
+}
+
+resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_weekend_run_topic" {
+  name = "schedule_raw_data_import_dag_weekend_run_cloud_function"
+  # at 2 AM on weekends
+  schedule    = "0 2 * * 6,7"
   description = "Triggers the raw data import DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 
