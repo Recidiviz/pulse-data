@@ -41,6 +41,7 @@ SELECT
     tes.state_code,
     reasons,
     is_eligible,
+    FALSE AS is_almost_eligible
 FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_from_parole_to_annual_reporting_status_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.state_code = pei.state_code 

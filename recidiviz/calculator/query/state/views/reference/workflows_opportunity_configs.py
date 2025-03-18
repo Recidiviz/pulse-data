@@ -614,6 +614,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_TX,
+        opportunity_type="usTxAnnualReportingStatus",
+        experiment_id="US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_WORKFLOWS",
+        opportunity_record_view_name="us_tx_transfer_from_parole_to_annual_reporting_status_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        source_filename="us_tx_transfer_from_parole_to_annual_reporting_status_request_record.json",
+        export_collection_name="US_TX-annualReportingStatusReferrals",
+        opportunity_type_path_str="AnnualReportingStatus",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_UT,
         opportunity_type="usUtEarlyTermination",
         experiment_id="US_UT_EARLY_TERMINATION_FROM_SUPERVISION_WORKFLOWS",
