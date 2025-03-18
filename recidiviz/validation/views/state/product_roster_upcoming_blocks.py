@@ -18,14 +18,16 @@
 A user will have a block date set for one week in the future if they are present in Roster
 but do not appear in the latest roster sync from their state. If the user was mistakenly
 left out of the roster sync, the block will be removed if they appear in the next sync. 
-Alternatively, the block can be removed from the admin panel."""
+Alternatively, the block can be removed from the admin panel.
+
+Users who have only the "unknown" role and no custom permissions are excluded from this
+validation because they don't have access to any products and therefore blocking them 
+doesn't change anything."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-
-CASE_TRIAGE_FEDERATED_DATASET = "case_triage_federated"
 
 PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_NAME = "product_roster_upcoming_blocks"
 
@@ -47,7 +49,13 @@ PRODUCT_ROSTER_UPCOMING_BLOCKS_QUERY_TEMPLATE = """
     pseudonymized_id
   FROM 
     `{project_id}.case_triage_federated.user_override` user_override
-  WHERE blocked_on > CURRENT_TIMESTAMP()
+  LEFT JOIN
+    `{project_id}.case_triage_federated.permissions_override` permissions_override
+  USING(email_address)
+  WHERE 
+    blocked_on > CURRENT_TIMESTAMP() AND
+    NOT (ARRAY_LENGTH(roles) = 1 AND "unknown" IN UNNEST(roles) AND
+      permissions_override.email_address IS NULL)
 """
 
 PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
