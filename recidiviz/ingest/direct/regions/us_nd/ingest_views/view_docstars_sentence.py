@@ -19,10 +19,13 @@
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
 -- This CTE joins basic information about each charge and sentence. This will be used
 -- to populate static fields on the state_sentence, state_sentence_group, and state_sentence
@@ -55,24 +58,29 @@ SELECT DISTINCT
   ot.COUNT,
   ot.REQUIRES_REGISTRATION,  
   ot.MASTER_OFFENSE_IND,
-  ot.OFFENSEDATE,
+  -- NULL out OFFENSEDATE values that are not within a reasonable range.
+  IF(CAST(ot.OFFENSEDATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp, 
+    CAST(ot.OFFENSEDATE AS DATETIME), 
+    CAST(NULL AS DATETIME)) AS OFFENSEDATE,
   oc.JUDGE,
   oc.TB_CTY AS SENTENCING_COUNTY,
   oc.PAROLE_FR,
   oc.DESCRIPTION AS CASE_DESCRIPTION,
 FROM
-  {docstars_offensestable} ot
+  {{docstars_offensestable}} ot
 -- Only ingest entities that have both sentence and charge information. This is all but ~400 rows in docstars_offensestable.
-JOIN {docstars_offendercasestable} oc
+JOIN {{docstars_offendercasestable}} oc
 USING(CASE_NUMBER)
 LEFT JOIN
-  {recidiviz_docstars_cst_ncic_code} xref
+  {{recidiviz_docstars_cst_ncic_code}} xref
 ON
   (COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) = xref.CODE)  
   -- We do not have any charges ingested with a CONVICTED status for sentences that are 
   -- still Pre-Trial, so we do not want to include them here.
   -- For information about pre-trial cases, see the docstars_psi raw data table.
 WHERE oc.DESCRIPTION != 'Pre-Trial'
+-- Filter out parole sentences that have not yet started
+AND CAST(oc.PAROLE_FR AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
 -- This CTE collects all updates made over time to the dates associated with each 
 -- sentence. This information will be used to hydrate the state_sentence_length entity.
@@ -84,7 +92,7 @@ SELECT DISTINCT
   SENT_YY,
   SENT_MM,
   RecDate
-FROM {docstars_offendercasestable@ALL} oc
+FROM {{docstars_offendercasestable@ALL}} oc
 )
 
 SELECT DISTINCT *

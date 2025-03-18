@@ -23,10 +23,13 @@ group) will have the same status information."""
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH
 -- This CTE pulls only the necessary raw data fields from the elite_offenderbookingstable
 -- and joins in SENTENCE_SEQ from elite_offendersentences in order to attach these statuses
@@ -43,16 +46,23 @@ all_entries AS (
     LEAD(ACTIVE_FLAG) OVER (PARTITION BY bookings.OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME)) AS next_status,
     COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME) AS STATUS_UPDATE_DATETIME
   FROM
-    {elite_offenderbookingstable@ALL} bookings
+    {{elite_offenderbookingstable@ALL}} bookings
 -- Inner join these two tables because if a booking does not lead to a sentence, we do not
 -- ingest it.
-  JOIN {elite_offendersentences} sentences
+  JOIN {{elite_offendersentences}} sentences
   ON(REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') = bookings.OFFENDER_BOOK_ID)
 -- Inner join these two tables because if a sentence does not have any charges, we do not
 -- ingest it.
-  JOIN {elite_offenderchargestable} charges
+  JOIN {{elite_offenderchargestable}} charges
   ON(REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') = REPLACE(REPLACE(charges.OFFENDER_BOOK_ID,',',''), '.00', '')
   AND sentences.CHARGE_SEQ = charges.CHARGE_SEQ)
+-- Left join this table because we left join it in the sentence view, and we only use it 
+-- to avoid ingesting status snapshots for sentences we do not ingest.
+  LEFT JOIN {{elite_orderstable}} orders
+  ON(REPLACE(REPLACE(charges.OFFENDER_BOOK_ID,',',''), '.00', '') = REPLACE(REPLACE(orders.OFFENDER_BOOK_ID,',',''), '.00', '')
+  AND charges.ORDER_ID = orders.ORDER_ID)
+  -- Filter out 6 rows where CONVICTION_DATE values are not within a reasonable range.
+  WHERE CAST(orders.CONVICTION_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
 -- Preserve only updates that signify the start or end of a sentence, or a change in 
 -- the status of the sentence. This removes all rows that do not contain a substantive

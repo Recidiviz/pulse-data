@@ -24,10 +24,14 @@ per sentence, and many sentences per booking.
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
 -- The results of this CTE contain one row for each sentence and set of dates associated
 -- with it.
@@ -36,13 +40,21 @@ sentences AS (
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         SENTENCE_SEQ,
         CHARGE_SEQ,
-        PROBABLE_RELEASE_DATE,
-        SENTENCE_EXPIRY_DATE,
+        -- NULL out PROBABLE_RELEASE_DATE values that are not within a reasonable range. This clears 
+        -- the PROBABLE_RELEASE_DATE values in 3 rows. 
+        IF(CAST(sentences.PROBABLE_RELEASE_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND}',
+            CAST(sentences.PROBABLE_RELEASE_DATE AS DATETIME), 
+            CAST(NULL AS DATETIME)) AS PROBABLE_RELEASE_DATE,
+        -- NULL out SENTENCE_EXPIRY_DATE values that are not within a reasonable range. This clears 
+        -- the SENTENCE_EXPIRY_DATE values in the same 3 rows as those that have invalid PROBABLE_RELEASE_DATE values. 
+        IF(CAST(sentences.SENTENCE_EXPIRY_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND}', 
+            CAST(sentences.SENTENCE_EXPIRY_DATE AS DATETIME), 
+            CAST(NULL AS DATETIME)) AS SENTENCE_EXPIRY_DATE,
         START_DATE,
         CONSEC_TO_SENTENCE_SEQ,
         'INCARCERATION' AS sentence_type,
         COALESCE(MODIFY_DATETIME, CREATE_DATETIME) AS SENTENCE_UPDT_DTM
-    FROM {elite_offendersentences@ALL} sentences
+    FROM {{elite_offendersentences@ALL}} sentences
 ),
 -- This CTE pulls only the latest information about whether this is a life sentence.
 -- This is necessarily separate because our schema is not designed to hold updates
@@ -54,7 +66,7 @@ life_status AS (
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         SENTENCE_SEQ,
         SENTENCE_CALC_TYPE
-    FROM {elite_offendersentences}
+    FROM {{elite_offendersentences}}
 ),
 -- This CTE is disjointed from the previous one and will be joined in the final subquery
 -- to factor charge information into the entity. There can be a one to one or a one to
@@ -64,7 +76,11 @@ charges AS (
     SELECT 
         REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         CHARGE_SEQ,
-        OFFENSE_DATE,
+        -- NULL out OFFENSE_DATE values that are not within a reasonable range. This clears 
+        -- the OFFENSE_DATE values in 9 rows. 
+        IF(CAST(OFFENSE_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp, 
+            CAST(OFFENSE_DATE AS DATETIME), 
+            CAST(NULL AS DATETIME)) AS OFFENSE_DATE,
         COUNTY_CODE,
         OFFENCE_TYPE,
         codes.OFFENCE_CODE,
@@ -82,11 +98,13 @@ charges AS (
         -- more than a few days after the conviction order, where one exists, so we use
         -- that as a proxy for date imposed when there is no associated court order.
         charges.CREATE_DATETIME AS CHARGE_CREATE_DTM
-    FROM {elite_offenderchargestable} charges
-    LEFT JOIN {elite_orderstable} orders
+    FROM {{elite_offenderchargestable}} charges
+    LEFT JOIN {{elite_orderstable}} orders
     USING (OFFENDER_BOOK_ID, ORDER_ID)
-    LEFT JOIN {RECIDIVIZ_REFERENCE_offense_codes} codes
+    LEFT JOIN {{RECIDIVIZ_REFERENCE_offense_codes}} codes
     USING(OFFENCE_CODE)
+    -- Filter out 6 rows where CONVICTION_DATE values are not within a reasonable range.
+    WHERE CAST(orders.CONVICTION_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
 -- This CTE collects identifiers for all sentences being served consecutively.
 -- This is a temporary patch that will be removed once we have completed TODO(#35310). 
@@ -103,10 +121,10 @@ FROM (
     REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
     SENTENCE_SEQ,
     STRING_AGG(CONCAT(REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', ''),'-', CONSEC_TO_SENTENCE_SEQ) ORDER BY CONSEC_TO_SENTENCE_SEQ) AS parent_sentence_external_id_array
-  FROM {elite_offendersentences} child
+  FROM {{elite_offendersentences}} child
   GROUP BY OFFENDER_BOOK_ID, SENTENCE_SEQ
 ) child
-LEFT JOIN {elite_offendersentences} parent
+LEFT JOIN {{elite_offendersentences}} parent
 ON(CONCAT(parent.OFFENDER_BOOK_ID, '-', parent.SENTENCE_SEQ) = child.parent_sentence_external_id_array)
 WHERE NOT (child.parent_sentence_external_id_array IS NOT NULL 
 AND parent.OFFENDER_BOOK_ID IS NULL)
@@ -129,7 +147,7 @@ terms AS (
             PARTITION BY OFFENDER_BOOK_ID, SENTENCE_SEQ
             ORDER BY IF(END_DATE IS NULL, 1, 0), START_DATE, END_DATE
         ) AS term_priority
-        FROM {elite_offendersentenceterms}
+        FROM {{elite_offendersentenceterms}}
         -- We avoid bringing in "SUSPENDED" sentences that are placeholders in case someone's 
         -- probation is revoked. We get no info about these sentences other than a length (
         -- start/end dates are null).
@@ -184,7 +202,7 @@ SELECT DISTINCT
     -- aggregate sentence information. This only applies to 12 sentences as of 11/19/24.
     -- Storing this in a separate field in the ingest view results will also allow us
     -- to track the number of sentences to which this caveat applies over time.
-    LEFT JOIN {elite_offendersentenceaggs} aggs
+    LEFT JOIN {{elite_offendersentenceaggs}} aggs
     ON(sentences.OFFENDER_BOOK_ID = REPLACE(REPLACE(aggs.OFFENDER_BOOK_ID,',',''), '.00', ''))
 """
 

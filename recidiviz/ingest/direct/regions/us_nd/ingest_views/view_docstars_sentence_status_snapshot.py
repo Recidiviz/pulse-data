@@ -19,10 +19,13 @@
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH
 -- This CTE cleans the raw data needed for this view. There are a very small number of 
 -- rows where the termination or revocation date listed is in the future; this clears
@@ -44,18 +47,20 @@ docstars_offendercasestable_cleaned AS (
     IF(DATE(oct_all.TERM_DATE) > @update_timestamp, NULL, CAST(oct_all.TERM_DATE AS DATETIME)) AS TERM_DATE,
     IF(DATE(oct_all.REV_DATE) > @update_timestamp, NULL, CAST(oct_all.REV_DATE AS DATETIME)) AS REV_DATE,
     CAST(oct_all.RecDate AS DATETIME) AS RecDate,
-  FROM {docstars_offendercasestable@ALL} oct_all
+  FROM {{docstars_offendercasestable@ALL}} oct_all
   -- There are four cases that appear in the @ALL version of this table but not the _latest
   -- version, so they do not have associated sentences ingested. This is a side effect
   -- of manual raw data pruning and will be resolved once automatic raw data pruning is 
   -- deployed.
-  JOIN {docstars_offendercasestable} oct
+  JOIN {{docstars_offendercasestable}} oct
   USING(CASE_NUMBER)
-  JOIN {docstars_offensestable} ot
+  JOIN {{docstars_offensestable}} ot
   USING(CASE_NUMBER)
   -- We do not have any charges ingested with a CONVICTED status for sentences that are 
   -- still Pre-Trial, so we do not want to include them here.
   WHERE oct.DESCRIPTION != 'Pre-Trial'
+  -- Filter out parole sentences that have not yet started
+  AND CAST(oct.PAROLE_FR AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
 -- This CTE pulls only the necessary raw data fields from the docstars_offendercasestable.
 -- The TERM_DATE and REV_DATE fields, in conjunction with TA_TYPE, allow us to determine
@@ -140,7 +145,7 @@ SELECT DISTINCT
 FROM dates_and_statuses
 LEFT JOIN completion_or_revocation_dates
 USING(SID, CASE_NUMBER, COURT_NUMBER)
-WHERE STATUS_UPDATE_DATETIME <= min_completion_or_revocation_date
+WHERE STATUS_UPDATE_DATETIME BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND min_completion_or_revocation_date
 OR min_completion_or_revocation_date IS NULL
 """
 

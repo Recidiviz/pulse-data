@@ -23,10 +23,13 @@ with the incident itself."""
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
 -- Collect all information available in raw data about each offense and sanction.
 base AS (
@@ -47,9 +50,9 @@ SELECT
     SANCTION_MONTHS,
     SANCTION_DAYS,
     SANCTION_SEQ
-FROM {elite_offense_in_custody_and_pos_report_data}
+FROM {{elite_offense_in_custody_and_pos_report_data}}
 -- Exclude entries with malformed dates that make them appear to have occurred before 1900.
-WHERE CAST(INCIDENT_DATE AS DATETIME) > CAST('1900-01-01' AS DATETIME)
+WHERE CAST(INCIDENT_DATE AS DATETIME) > '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}'
 )
 
 SELECT DISTINCT 
