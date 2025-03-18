@@ -1201,11 +1201,6 @@ class BigQueryClientImpl(BigQueryClient):
         # Checking that view_query is None to verify that it is a table. Row
         # level permissions cannot be applied to views.
         if table.view_query is not None:
-            logging.info(
-                "Will not apply row-level permissions to view [%s.%s] - returning.",
-                table.dataset_id,
-                table.table_id,
-            )
             return
 
         if not (
@@ -1213,11 +1208,6 @@ class BigQueryClientImpl(BigQueryClient):
                 table
             )
         ):
-            logging.info(
-                "No row-level permissions to apply to table [%s.%s] - returning.",
-                table.dataset_id,
-                table.table_id,
-            )
             return
 
         logging.info(
