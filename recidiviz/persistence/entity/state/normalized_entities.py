@@ -528,9 +528,6 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
                     # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2109-06-19.
                     StateCode.US_NE,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0016-02-07.
-                    StateCode.US_UT,
                 },
             ),
         ),
@@ -828,10 +825,6 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
                     # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 2428-05-03.
                     StateCode.US_ND,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0022-05-12.
-                    #  - Found dates as high as 9020-06-20.
-                    StateCode.US_UT,
                 },
             ),
         ),
@@ -863,8 +856,7 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
                     #  - Found dates as high as 2924-02-01.
                     StateCode.US_NE,
                     # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0022-05-12.
-                    #  - Found dates as high as 9999-01-01.
+                    #  - Found dates as high as 2498-04-26.
                     StateCode.US_UT,
                 },
             ),
@@ -1155,9 +1147,6 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
                     # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 0004-02-22.
                     StateCode.US_ND,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0016-05-04.
-                    StateCode.US_UT,
                 },
             ),
         ),
@@ -1286,9 +1275,6 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
                     # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 0004-02-22.
                     StateCode.US_ND,
-                    # TODO(#38806): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0016-05-04.
-                    StateCode.US_UT,
                 },
             ),
         ),

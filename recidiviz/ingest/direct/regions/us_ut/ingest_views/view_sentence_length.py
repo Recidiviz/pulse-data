@@ -32,6 +32,9 @@ from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -101,8 +104,10 @@ LEFT JOIN
 ON
   (sent.intr_case_num = rev.intr_case_num
     AND sent.sentence_type = 'PROBATION')
-)
-
+),
+-- Determine which dates should be associated with a given sentence based on the presence
+-- or absence of a probation revocation. Create initial result table.
+cases_with_prioritized_dates AS (
 SELECT DISTINCT
   ofndr_num,
   intr_case_num,
@@ -133,13 +138,17 @@ FROM (
     updt_dt
   FROM
     cases_with_dates
+  )
+)
+
+SELECT * FROM cases_with_prioritized_dates
   -- There are 5 rows with no hydrated date fields. 
   -- Since they provide us no information and are always followed by meaningful date 
   -- entries, we exclude them.
-  WHERE sched_expire_dt IS NOT NULL 
-  OR sched_trmn_dt IS NOT NULL 
-  OR early_trmn_dt IS NOT NULL
-)
+  WHERE
+    -- Filter to only include rows where
+    ((max_end_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '2500-01-01' OR max_end_dt IS NULL)
+    AND (early_trmn_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '2500-01-01' OR early_trmn_dt IS NULL))
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

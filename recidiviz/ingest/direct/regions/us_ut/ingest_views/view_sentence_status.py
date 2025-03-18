@@ -29,6 +29,9 @@ from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -101,7 +104,7 @@ AND
 -- more context from UT. TODO(#38008)
   (NOT (status = 'SERVING' AND prev_status = 'COMPLETE') OR prev_status IS NULL)
 AND 
-  updt_dt BETWEEN CAST('1900-01-02' AS DATETIME) AND @update_timestamp
+  updt_dt BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

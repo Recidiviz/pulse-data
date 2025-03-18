@@ -31,6 +31,10 @@ from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,7 +53,10 @@ SELECT DISTINCT
   oc.ofnse_desc AS charge_description,
   ofnse.ofnse_svrty_cd AS offense_severity_code,
   ofnse.atmpt_flg AS attempt_flag,
-  CAST(ofnse_dt AS DATETIME) AS offense_date,
+  -- Null out invalid offense dates
+  IF(CAST(ofnse_dt AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND}',
+    CAST(ofnse_dt AS DATETIME), 
+    CAST(NULL AS DATETIME)) AS offense_date,
   cd.crime_degree_desc AS charge_classification_type_raw_text,
   CAST(crt.sent_dt AS DATETIME) AS sent_dt,
   cl.crt_loc_desc AS sentencing_court,
