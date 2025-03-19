@@ -51,6 +51,7 @@ WITH modifiers AS (
       AND pei.state_code = 'US_IA'
       AND pei.id_type = 'US_IA_OFFENDERCD'
     WHERE DATE(SupervisionModifierStartDt) IS DISTINCT FROM DATE(SupervisionModifierEndDt) -- remove 0-day spans 
+      AND SupervisionModifier NOT IN ('Supervised in Other State', 'Paroled from Prison to another State') -- out of state cases should be eligible
 ), 
 /* sub-sessionize and aggregate for cases where a client has multiple open supervision modifiers at once */
 {create_sub_sessions_with_attributes('modifiers')}

@@ -17,7 +17,7 @@
 """Shows the spans of time during which someone in IA is eligible for early discharge from supervision."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_parole_dual_active_supervision_population,
+    active_supervision_and_supervision_out_of_state_population,
 )
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -44,9 +44,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IA,
     task_name="COMPLETE_EARLY_DISCHARGE_FORM",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_level_is_medium_or_lower.VIEW_BUILDER,
+        supervision_level_is_medium_or_lower.VIEW_BUILDER,  # TODO(#39493) Address IC-OUT cases with missing supervision levels
         no_pending_charges.VIEW_BUILDER,
         no_supervision_violation_within_6_months.VIEW_BUILDER,
         no_open_supervision_modifiers.VIEW_BUILDER,
