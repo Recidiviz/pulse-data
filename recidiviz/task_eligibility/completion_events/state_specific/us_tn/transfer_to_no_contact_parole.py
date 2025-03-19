@@ -41,6 +41,9 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#39828): Adjust logic in this completion event to mimic the latest logic in
+# `analyst_data.us_tn_supervision_level_raw_text_sessions_inferred` (or just use that
+# view as the basis for this completion event).
 _QUERY_TEMPLATE = """
     WITH transfers_to_no_contact_parole AS (
         SELECT

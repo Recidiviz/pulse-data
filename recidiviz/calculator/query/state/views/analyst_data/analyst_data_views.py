@@ -309,6 +309,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision_level_raw_text_sessions_inferred import (
+    US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
@@ -464,4 +467,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
     INSIGHTS_OFFICER_OUTLIER_USAGE_COHORT_VIEW_BUILDER,
     WORKFLOWS_USER_SNOOZE_STARTS_VIEW_BUILDER,
+    US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_BUILDER,
 ]

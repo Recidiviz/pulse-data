@@ -31,6 +31,13 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
 EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
 
+# These are the raw-text supervision levels that correspond with Suspension of Direct
+# Supervision (SDS) in TN.
+SDS_SUPERVISION_LEVELS_RAW_TEXT = [
+    "SDS",  # old code
+    "9SD",  # current code
+]
+
 FACE_TO_FACE_CONTACTS = ["FAC1", "FAC2", "FACA", "FACF", "FACI", "FACO"]
 
 # TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
