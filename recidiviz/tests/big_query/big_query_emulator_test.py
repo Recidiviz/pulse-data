@@ -738,3 +738,25 @@ FROM UNNEST([
         )
         example_view = client.create_table(_view_definition)
         client.delete_table(example_view)
+
+    # TODO(#39819) Update this test when the emulator quotes date values here
+    def test_json_string_column(self) -> None:
+        query = """
+            SELECT 
+                TO_JSON_STRING(
+                  ARRAY_AGG(
+                    STRUCT< str_col string, date_col date, int_col int64 >
+                    ('strings', date("2022-01-01"), 42) 
+                  )
+                )
+            FROM unnest([1])
+        """
+        self.run_query_test(
+            query,
+            # TODO(#39819) Use this value in the test
+            # Using BigQuery (not the emulator) date values are quoted like so
+            # "$col1":'[{"str_col":"strings","date_col":"2022-01-01","int_col":42}]'
+            expected_result=[
+                {"$col1": '[{"str_col":"strings","date_col":2022-01-01,"int_col":42}]'}
+            ],
+        )
