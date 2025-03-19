@@ -849,6 +849,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_me_ingest_view_results.supervision_sentences_v2",
     "us_me_ingest_view_results.supervision_staff",
     "us_me_ingest_view_results.supervision_staff_role_period",
+    "us_me_ingest_view_results.supervision_staff_supervisor_period",
     "us_me_ingest_view_results.supervision_task_deadline",
     "us_me_ingest_view_results.supervision_violations",
     "us_me_normalized_state.state_assessment",

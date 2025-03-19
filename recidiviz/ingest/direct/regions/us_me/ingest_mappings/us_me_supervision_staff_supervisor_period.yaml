@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  Employee_Id: STRING
+  Cis_900_Employee_Supervisor_Id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: Employee_Id
+          id_type: $literal("US_ME_EMPLOYEE")
+    supervisor_periods:
+      - StateStaffSupervisorPeriod:
+          external_id:
+            $concat:
+              $values:
+                - Employee_Id
+                - Cis_900_Employee_Supervisor_Id
+                - start_date
+          start_date: start_date
+          end_date: end_date
+          supervisor_staff_external_id: Cis_900_Employee_Supervisor_Id
+          supervisor_staff_external_id_type: $literal("US_ME_EMPLOYEE")

@@ -520,7 +520,7 @@ def cis_900_employee_to_supervisor_match() -> str:
     """
 
     return """    -- Mapping every staff with his/her supervisor
-    #TODO(#24426): use ingested entity data instead of CIS_900_EMPLOYEE_latest
+    #TODO(#39511): use ingested entity data instead of CIS_900_EMPLOYEE_latest
     SELECT DISTINCT
         cis900.Employee_Id AS officer_id,
         "US_ME" AS state_code,

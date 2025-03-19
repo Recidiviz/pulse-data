@@ -97,7 +97,7 @@ combined_early_discharges_agg_metrics AS (
 
 employee_to_supervisor_map AS (
     -- Maine
-    #TODO(#24426): use ingested entity data instead of CIS_900_EMPLOYEE_latest
+    #TODO(#39511): use ingested entity data instead of CIS_900_EMPLOYEE_latest
     {cis_900_employee_to_supervisor_match()}
 )
 
