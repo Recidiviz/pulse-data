@@ -19,6 +19,7 @@ from typing import Type
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_dashboard import LookMLDashboard
@@ -28,6 +29,7 @@ from recidiviz.looker.lookml_dashboard_builder import (
 )
 from recidiviz.looker.lookml_dashboard_element import dict_to_scoped_field_names
 from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.looker.lookml_view_source_table import SqlTableAddress
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -56,18 +58,19 @@ class EntityLookMLDashboardBuilder:
     module_context: EntitiesModuleContext
     root_entity_cls: Type[Entity]
     views: list[LookMLView]
+    dataset_id: str
 
     @property
-    def root_entity_table_id(self) -> str:
-        return self.root_entity_cls.get_table_id()
+    def root_entity_name(self) -> str:
+        return self.root_entity_cls.get_entity_name()
 
     @property
     def dashboard_title(self) -> str:
-        return snake_to_title(self.root_entity_table_id)
+        return snake_to_title(self.root_entity_name)
 
     @property
     def dashboard_name(self) -> str:
-        return f"{self.root_entity_table_id}_template"
+        return f"{self.root_entity_name}_template"
 
     def _get_filter_fields(self) -> list[str]:
         """Returns the filter fields for the dashboard consisting of the root entity's
@@ -80,7 +83,7 @@ class EntityLookMLDashboardBuilder:
                 f"Entity {self.root_entity_cls} is not a subclass of StateEntityMixin."
             )
 
-        filter_fields[self.root_entity_table_id] = [
+        filter_fields[self.root_entity_name] = [
             self.root_entity_cls.get_primary_key_column_name()
         ] + attribute_field_type_reference_for_class(StateEntityMixin).sorted_fields
 
@@ -98,7 +101,7 @@ class EntityLookMLDashboardBuilder:
             )
 
         filter_fields[
-            external_id_entity_cls.get_table_id()
+            external_id_entity_cls.get_entity_name()
         ] = attribute_field_type_reference_for_class(ExternalIdEntity).sorted_fields
 
         return dict_to_scoped_field_names(filter_fields)
@@ -108,18 +111,20 @@ class EntityLookMLDashboardBuilder:
         as its root entity and do not represent association tables or EnumEntities"""
         metadata: list[LookMLDashboardElementMetadata] = []
         for view in self.views:
-            if is_association_table(table_name=view.view_name):
+            table = view.table
+            if not isinstance(table, SqlTableAddress) or not isinstance(
+                table.address, BigQueryAddress
+            ):
+                # Skip views that are not based on BigQuery tables
                 continue
 
-            try:
-                entity_cls = get_entity_class_in_module_with_table_id(
-                    self.module_context.entities_module(), table_id=view.view_name
-                )
-            except LookupError:
-                # If the view does not correspond to an entity class, it is a custom view
-                # so skip it and it can be added to the dashboard as a custom element if need be
-                # TODO(#23292): check view is one of the known custom views
+            table_id = table.address.table_id
+            if is_association_table(table_name=table_id):
                 continue
+
+            entity_cls = get_entity_class_in_module_with_table_id(
+                self.module_context.entities_module(), table_id=table_id
+            )
 
             # TODO(#23292): aggregate EnumEntity type tables as lists on the parent entity
             if get_root_entity_class_for_entity(
@@ -138,10 +143,12 @@ class EntityLookMLDashboardBuilder:
         dashboard = SingleExploreLookMLDashboardBuilder(
             dashboard_name=self.dashboard_name,
             dashboard_title=self.dashboard_title,
-            explore_name=self.root_entity_table_id,
+            explore_name=self.root_entity_name,
             filter_fields=filter_fields,
             element_provider=get_elements_provider(
-                self.root_entity_cls, self._build_dashboard_element_metadata()
+                self.root_entity_cls,
+                self.dataset_id,
+                self._build_dashboard_element_metadata(),
             ),
         ).build()
 

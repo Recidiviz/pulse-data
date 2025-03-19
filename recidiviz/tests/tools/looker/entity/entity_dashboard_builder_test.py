@@ -22,6 +22,7 @@ from unittest.mock import patch
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.looker.lookml_dashboard_builder import (
     LookMLDashboardElementMetadata,
     LookMLDashboardElementsProvider,
@@ -54,11 +55,11 @@ from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,
 )
-from recidiviz.tests.tools.looker.state.state_dataset_view_generator_test import (
-    generate_state_views,
-)
 from recidiviz.tools.looker.entity.entity_dashboard_builder import (
     EntityLookMLDashboardBuilder,
+)
+from recidiviz.tools.looker.entity.entity_views_builder import (
+    generate_entity_lookml_views,
 )
 
 LOOKML_VIEWS = [
@@ -337,6 +338,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
 
         def _mock_get_elements_provider(
             _root_entity_cls: Any,
+            _dataset_id: str,
             table_element_metadata: list[LookMLDashboardElementMetadata],
         ) -> LookMLDashboardElementsProvider:
             return FakePersonDashboardElementsProvider(table_element_metadata)
@@ -484,6 +486,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
             module_context=FakeEntitiesModuleContext(),
             root_entity_cls=fake_entities.FakePerson,
             views=LOOKML_VIEWS,
+            dataset_id=STATE_BASE_DATASET,
         ).build_and_validate()
 
         self.assertEqual(dashboard.build(), expected_dashboard)
@@ -493,7 +496,9 @@ class TestStateDashboardBuilder(unittest.TestCase):
     """Tests for building state entity dashboards."""
 
     def test_generate_state_dashboards(self) -> None:
-        views = generate_state_views()
+        views = generate_entity_lookml_views(
+            dataset_id=STATE_BASE_DATASET, entities_module=state_entities
+        )
         module_context = entities_module_context_for_module(state_entities)
         root_entities = [state_entities.StatePerson, state_entities.StateStaff]
         for root_entity_cls in root_entities:
@@ -502,4 +507,5 @@ class TestStateDashboardBuilder(unittest.TestCase):
                 module_context=module_context,
                 root_entity_cls=root_entity_cls,
                 views=views,
+                dataset_id=STATE_BASE_DATASET,
             ).build_and_validate()

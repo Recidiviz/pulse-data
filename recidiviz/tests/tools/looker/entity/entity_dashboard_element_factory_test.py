@@ -60,7 +60,9 @@ class TestEntityDashboardElementFactory(unittest.TestCase):
     def test_person_periods_timeline_element(self) -> None:
         explore = "test_explore"
         element = EntityDashboardElementFactory.person_periods_timeline_element(
-            explore, listen=LookMLListen({})
+            explore=explore,
+            person_periods_view_name="person_periods",
+            listen=LookMLListen({}),
         )
         self.assertIsInstance(element, LookMLDashboardElement)
         self.assertEqual(element.title, "Periods Timeline")

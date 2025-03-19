@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.common import attr_validators
 from recidiviz.looker.lookml_bq_utils import lookml_view_field_for_schema_field
+from recidiviz.looker.lookml_field_registry import LookMLFieldRegistry
 from recidiviz.looker.lookml_view_field import (
     DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
@@ -33,9 +34,6 @@ from recidiviz.looker.lookml_view_field import (
 from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
-)
-from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
-    StateEntityLookMLCustomFieldProvider,
 )
 
 
@@ -68,9 +66,8 @@ class EntityLookMLFieldBuilder(LookMLFieldBuilder):
     metadata: EntityMetadataHelper = attr.ib(
         validator=attr.validators.instance_of(EntityMetadataHelper)
     )
-    # TODO(#23292): Allow support for different types of custom field providers (eg normalized state)
-    custom_field_provider: StateEntityLookMLCustomFieldProvider = attr.ib(
-        validator=attr.validators.instance_of(StateEntityLookMLCustomFieldProvider)
+    custom_field_registry: LookMLFieldRegistry = attr.ib(
+        validator=attr.validators.instance_of(LookMLFieldRegistry)
     )
     table_id: str = attr.ib(validator=attr_validators.is_str)
     schema_fields: List[bigquery.SchemaField] = attr.ib(
@@ -99,7 +96,7 @@ class EntityLookMLFieldBuilder(LookMLFieldBuilder):
         the custom field will take precedence.
         Returns a list of LookML view fields sorted alphabetically with dimensions first, then measures.
         """
-        custom_fields = self.custom_field_provider.get(self.table_id)
+        custom_fields = self.custom_field_registry.get(self.table_id)
         custom_field_names = {field.field_name for field in custom_fields}
 
         dimension_fields = [
@@ -123,9 +120,8 @@ class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
     metadata: AssociationTableMetadataHelper = attr.ib(
         validator=attr.validators.instance_of(AssociationTableMetadataHelper)
     )
-    # TODO(#23292): Allow support for different types of custom field providers (eg normalized state)
-    custom_field_provider: StateEntityLookMLCustomFieldProvider = attr.ib(
-        validator=attr.validators.instance_of(StateEntityLookMLCustomFieldProvider)
+    custom_field_registry: LookMLFieldRegistry = attr.ib(
+        validator=attr.validators.instance_of(LookMLFieldRegistry)
     )
     table_id: str = attr.ib(validator=attr_validators.is_str)
     schema_fields: List[bigquery.SchemaField] = attr.ib(
@@ -151,7 +147,7 @@ class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
         the custom field will take precedence.
         Returns a list of LookML view fields sorted alphabetically with dimensions first, then measures.
         """
-        custom_fields = self.custom_field_provider.get(self.table_id)
+        custom_fields = self.custom_field_registry.get(self.table_id)
         custom_field_names = {field.field_name for field in custom_fields}
 
         dimension_fields: List[LookMLViewField] = [

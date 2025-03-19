@@ -67,7 +67,7 @@ class EntityDashboardElementFactory:
 
     @staticmethod
     def person_periods_timeline_element(
-        explore: str, listen: LookMLListen
+        explore: str, person_periods_view_name: str, listen: LookMLListen
     ) -> LookMLDashboardElement:
         """Element to display the periods timeline for a person. Assumes that the explore has a person_id field."""
         return LookMLDashboardElement(
@@ -77,11 +77,11 @@ class EntityDashboardElementFactory:
             type=LookMLElementType.LOOKER_TIMELINE,
             fields=[
                 f"{explore}.person_id",
-                "person_periods.period_type",
-                "person_periods.start_date",
-                "person_periods.end_date",
+                f"{person_periods_view_name}.period_type",
+                f"{person_periods_view_name}.start_date",
+                f"{person_periods_view_name}.end_date",
             ],
-            sorts=[LookMLSort("person_periods.start_date", desc=True)],
+            sorts=[LookMLSort(f"{person_periods_view_name}.start_date", desc=True)],
             group_bars=False,
             show_legend=True,
             color_application=LookMLColorApplication(

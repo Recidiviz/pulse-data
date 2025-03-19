@@ -104,7 +104,6 @@ class LookMLFieldParameter:
     @abc.abstractmethod
     def referenced_table_fields(self) -> set[str] | None:
         """Returns a set of BQ table fields referenced by the parameter"""
-        return None
 
     @property
     @abc.abstractmethod

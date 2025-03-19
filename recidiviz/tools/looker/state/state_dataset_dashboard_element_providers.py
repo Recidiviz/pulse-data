@@ -29,6 +29,10 @@ from recidiviz.looker.lookml_dashboard_element import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.tools.looker.entity.custom_views.person_periods import (
+    person_periods_view_name_for_dataset,
+)
 from recidiviz.tools.looker.entity.entity_dashboard_element_factory import (
     EntityDashboardElementFactory,
 )
@@ -38,9 +42,10 @@ from recidiviz.tools.looker.entity.entity_dashboard_element_factory import (
 class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider):
     """Class to provide LookML dashboard elements for StatePerson entity."""
 
-    @staticmethod
+    dataset_id: str
+
     def _build_custom_elements(
-        explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen
     ) -> list[LookMLDashboardElement]:
         return [
             EntityDashboardElementFactory.info_element(),
@@ -49,8 +54,11 @@ class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider
                 all_filters_listen,
             ),
             EntityDashboardElementFactory.person_periods_timeline_element(
-                explore_name,
-                all_filters_listen,
+                explore=explore_name,
+                person_periods_view_name=person_periods_view_name_for_dataset(
+                    self.dataset_id
+                ),
+                listen=all_filters_listen,
             ),
         ]
 
@@ -92,12 +100,21 @@ class StateStaffLookMLDashboardElementsProvider(LookMLDashboardElementsProvider)
 
 def get_elements_provider(
     root_entity_cls: Type[Entity],
+    dataset_id: str,
     table_element_metadata: list[LookMLDashboardElementMetadata],
 ) -> LookMLDashboardElementsProvider:
     """Returns the provider for the dashboard elements based on the root entity."""
-    if root_entity_cls == state_entities.StateStaff:
+    if root_entity_cls in [
+        state_entities.StateStaff,
+        normalized_entities.NormalizedStateStaff,
+    ]:
         return StateStaffLookMLDashboardElementsProvider(table_element_metadata)
-    if root_entity_cls == state_entities.StatePerson:
-        return StatePersonLookMLDashboardElementsProvider(table_element_metadata)
+    if root_entity_cls in [
+        state_entities.StatePerson,
+        normalized_entities.NormalizedStatePerson,
+    ]:
+        return StatePersonLookMLDashboardElementsProvider(
+            dataset_id=dataset_id, table_element_metadata=table_element_metadata
+        )
 
     raise ValueError(f"Unsupported entity {root_entity_cls}.")

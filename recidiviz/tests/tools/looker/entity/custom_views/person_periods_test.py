@@ -19,7 +19,7 @@ import unittest
 
 from google.cloud import bigquery
 
-from recidiviz.tools.looker.state.custom_views.person_periods import (
+from recidiviz.tools.looker.entity.custom_views.person_periods import (
     PersonPeriodsLookMLViewBuilder,
 )
 
@@ -28,7 +28,7 @@ class TestPersonPeriodsLookMLView(unittest.TestCase):
     """Tests for the PersonPeriodsLookMLView class."""
 
     def test_build(self) -> None:
-        expected_view = """view: person_periods {
+        expected_view = """view: state_person_periods {
   derived_table: {
     sql: 
     SELECT
@@ -133,7 +133,9 @@ class TestPersonPeriodsLookMLView(unittest.TestCase):
             ],
         }
 
-        view = PersonPeriodsLookMLViewBuilder.from_schema(bq_schema).build()
+        view = PersonPeriodsLookMLViewBuilder.from_schema(
+            dataset_id="state", bq_schema=bq_schema
+        ).build()
 
         self.assertEqual(expected_view, view.build())
 
@@ -161,4 +163,6 @@ class TestPersonPeriodsLookMLView(unittest.TestCase):
             r"Referenced field \[release_reason\] not found in schema fields"
             r" \['external_id', 'person_id', 'admission_date', 'admission_reason', 'release_date'\]",
         ):
-            PersonPeriodsLookMLViewBuilder.from_schema(bq_schema).build()
+            PersonPeriodsLookMLViewBuilder.from_schema(
+                dataset_id="state", bq_schema=bq_schema
+            ).build()

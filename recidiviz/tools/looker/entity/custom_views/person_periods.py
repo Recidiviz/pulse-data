@@ -21,7 +21,6 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.common import attr_validators
-from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.looker.lookml_bq_utils import lookml_view_field_for_schema_field
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import DimensionLookMLViewField
@@ -108,6 +107,10 @@ class _DataColumnSelectClause(_ColumnSelectClause):
         return self.field
 
 
+def person_periods_view_name_for_dataset(dataset_id: str) -> str:
+    return f"{dataset_id}_person_periods"
+
+
 @attr.define
 class PersonPeriodsLookMLViewBuilder:
     """LookML view builder for person periods. person_periods is a derived table that combines
@@ -117,8 +120,8 @@ class PersonPeriodsLookMLViewBuilder:
     supervision_period_table: str
     incarceration_period_schema: list[bigquery.SchemaField]
     supervision_period_schema: list[bigquery.SchemaField]
+    dataset_id: str
 
-    view_name: str = "person_periods"
     primary_key_fields: tuple[str, str] = ("period_id", "period_type")
 
     incarceration_period_columns: list[_ColumnSelectClause] = [
@@ -154,7 +157,7 @@ class PersonPeriodsLookMLViewBuilder:
 
     @classmethod
     def from_schema(
-        cls, bq_schema: dict[str, list[bigquery.SchemaField]]
+        cls, dataset_id: str, bq_schema: dict[str, list[bigquery.SchemaField]]
     ) -> "PersonPeriodsLookMLViewBuilder":
         """Creates a PersonPeriodsLookMLView instance using a dictionary of BQ table name to schema fields."""
         incarceration_period_table = (
@@ -163,6 +166,7 @@ class PersonPeriodsLookMLViewBuilder:
         supervision_period_table = state_entities.StateSupervisionPeriod.get_table_id()
 
         return cls(
+            dataset_id=dataset_id,
             incarceration_period_table=incarceration_period_table,
             supervision_period_table=supervision_period_table,
             incarceration_period_schema=bq_schema[incarceration_period_table],
@@ -215,11 +219,11 @@ class PersonPeriodsLookMLViewBuilder:
         query_template = """
     SELECT
         {incarceration_period_columns}
-      FROM {state_dataset}.{incarceration_period_table}
+      FROM {dataset_id}.{incarceration_period_table}
       UNION ALL
       SELECT
         {supervision_period_columns}
-      FROM {state_dataset}.{supervision_period_table}
+      FROM {dataset_id}.{supervision_period_table}
 """
         return StrictStringFormatter().format(
             query_template,
@@ -231,7 +235,7 @@ class PersonPeriodsLookMLViewBuilder:
             ),
             incarceration_period_table=self.incarceration_period_table,
             supervision_period_table=self.supervision_period_table,
-            state_dataset=STATE_BASE_DATASET,
+            dataset_id=self.dataset_id,
         )
 
     def build(self) -> LookMLView:
@@ -243,7 +247,7 @@ class PersonPeriodsLookMLViewBuilder:
         ] + [lookml_view_field_for_schema_field(f) for f in schema_fields]
 
         return LookMLView.for_derived_table(
-            view_name=self.view_name,
+            view_name=person_periods_view_name_for_dataset(self.dataset_id),
             derived_table_query=self._build_query(),
             fields=sorted(dimension_fields, key=lambda f: f.field_name),
         )
