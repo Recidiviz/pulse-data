@@ -55,6 +55,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             housing_unit_type_raw_text,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
             CAST(NULL AS STRING) AS case_type,
+            CAST(NULL AS STRING) AS case_type_raw_text,
             prioritized_race_or_ethnicity,
             gender,
             custodial_authority,
@@ -84,6 +85,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.housing_unit_type_raw_text,
         pop.supervising_officer_external_id,
         pop.case_type,
+        pop.case_type_raw_text,
         pop.prioritized_race_or_ethnicity,
         pop.gender,
         pop.custodial_authority

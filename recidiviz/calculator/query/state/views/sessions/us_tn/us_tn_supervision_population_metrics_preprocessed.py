@@ -57,6 +57,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         staff.external_id AS supervising_officer_external_id,
         case_type,
+        case_type_raw_text,
         prioritized_race_or_ethnicity,
         gender,
         custodial_authority,

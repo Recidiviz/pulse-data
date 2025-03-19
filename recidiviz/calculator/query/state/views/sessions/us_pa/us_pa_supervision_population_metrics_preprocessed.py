@@ -61,6 +61,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         staff.external_id AS supervising_officer_external_id,
         case_type,
+        case_type_raw_text,
         prioritized_race_or_ethnicity,
         gender,
         custodial_authority,
@@ -93,6 +94,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS STRING) AS case_type_raw_text,
         CAST(NULL AS STRING) AS prioritized_race_or_ethnicity,
         CAST(NULL AS STRING) AS gender,
         custodial_authority,
@@ -145,6 +147,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         housing_unit_type_raw_text,
         supervising_officer_external_id,
         case_type,
+        case_type_raw_text,
         prioritized_race_or_ethnicity,
         gender,
         custodial_authority

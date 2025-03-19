@@ -64,6 +64,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         session_attributes.housing_unit_type AS housing_unit_type,
         session_attributes.housing_unit_type_raw_text AS housing_unit_type_raw_text,
         session_attributes.case_type,
+        session_attributes.case_type_raw_text,
         COALESCE(session_attributes.prioritized_race_or_ethnicity,'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
         session_attributes.gender,
         session_attributes.custodial_authority,
@@ -99,6 +100,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
+        case_type_raw_text,
         prioritized_race_or_ethnicity,
         gender,
         custodial_authority,
@@ -139,6 +141,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         cte.housing_unit_type,
         cte.housing_unit_type_raw_text,
         cte.case_type,
+        cte.case_type_raw_text,
         /*
         If there is an overlapping supervision period, hydrate this field with the prioritized supervision
         `compartment_level_2 value`
@@ -175,6 +178,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 NULLIF(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(compartment_location, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
+                NULLIF(case_type_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(correctional_level_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(housing_unit, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(housing_unit_category, 'EXTERNAL_UNKNOWN') NULLS LAST,
@@ -217,6 +221,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS STRING) AS case_type_raw_text,
         CAST(NULL AS STRING) AS open_supervision_cl1,
         CAST(NULL AS STRING) AS open_supervision_cl2,
         prioritized_race_or_ethnicity,
@@ -456,6 +461,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
+        case_type_raw_text,
         prioritized_race_or_ethnicity,
         gender,
         custodial_authority,
