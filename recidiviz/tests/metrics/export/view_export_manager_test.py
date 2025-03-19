@@ -659,6 +659,46 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             message=json.dumps({"state_code": "US_WW"}),
         )
 
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.pubsub_helper.publish_message_to_topic"
+    )
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export_publishes_message_with_override_state(
+        self, mock_export_view_data_to_cloud_storage: Mock, mock_publish_message: Mock
+    ) -> None:
+        """Tests that Pub/Sub is called when the export should publish a message"""
+        mock_export_view_data_to_cloud_storage.return_value = None
+
+        export_configs_to_publish = {
+            self.mock_export_name: ExportViewCollectionConfig(
+                view_builders_to_export=self.view_builders_for_dataset,
+                output_directory_uri_template="gs://{project_id}-bucket",
+                export_name=self.mock_export_name,
+                publish_success_pubsub_message=True,
+                output_project_by_data_project={
+                    self.mock_project_id: "recidiviz-frontend"
+                },
+                export_override_state_codes={
+                    StateCode.US_WW.value: StateCode.US_XX.value
+                },
+            ),
+        }
+
+        self.mock_export_config.VIEW_COLLECTION_EXPORT_INDEX = export_configs_to_publish
+        execute_metric_view_data_export(
+            export_job_name="MOCK_EXPORT_NAME",
+            state_code=StateCode.US_WW,
+            sandbox_prefix=None,
+        )
+
+        mock_publish_message.assert_called_once_with(
+            destination_project_id="recidiviz-frontend",
+            topic=f"{self.mock_export_name.lower()}_export_success",
+            message=json.dumps({"state_code": "US_XX"}),
+        )
+
 
 class TestMetricViewDataExportSuccessPersister(unittest.TestCase):
     def test_persist(self) -> None:

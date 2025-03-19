@@ -208,14 +208,22 @@ def execute_metric_view_data_export(
             else metadata.project_id()
         )
 
+        state_code_output: str | None = None
+
+        if (
+            state_code
+            and state_code.value in export_collection.export_override_state_codes
+        ):
+            state_code_output = export_collection.export_override_state_codes[
+                state_code.value
+            ]
+        else:
+            state_code_output = state_code.value if state_code else None
+
         pubsub_helper.publish_message_to_topic(
             destination_project_id=pubsub_project_id,
             topic=export_collection.pubsub_topic_name,
-            message=json.dumps(
-                {
-                    "state_code": state_code.value if state_code else None,
-                }
-            ),
+            message=json.dumps({"state_code": state_code_output}),
         )
 
 
