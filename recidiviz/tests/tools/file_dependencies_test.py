@@ -98,7 +98,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "recidiviz.common.attr_validators": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=29, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=40, col_offset=0)
                     ]
                 },
                 "recidiviz.common": {
@@ -198,7 +198,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "recidiviz.utils.types": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=30, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=41, col_offset=0)
                     ]
                 },
             },
@@ -210,7 +210,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "attr": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=25, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=36, col_offset=0)
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
@@ -312,7 +312,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "pandas": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=26, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=37, col_offset=0)
                     ]
                 },
                 "pathlib": {
@@ -399,7 +399,7 @@ class FileDependenciesTest(unittest.TestCase):
                         )
                     ],
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=27, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=38, col_offset=0)
                     ],
                 },
                 "itertools": {

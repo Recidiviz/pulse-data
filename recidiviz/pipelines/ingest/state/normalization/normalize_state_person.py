@@ -61,6 +61,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.super
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalize_person_staff_relationship_periods import (
+    get_normalized_person_staff_relationship_periods,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
 )
@@ -184,11 +187,13 @@ def build_normalized_state_person(
         ),
     ).get_normalized_assessments()
 
-    # TODO(#38347): Add StatePersonStaffRelationshipPeriod normalization, for now, just
-    #  drop all relationship periods.
     normalized_staff_relationship_periods: list[
         NormalizedStatePersonStaffRelationshipPeriod
-    ] = []
+    ] = get_normalized_person_staff_relationship_periods(
+        person_id=person_id,
+        person_staff_relationship_periods=person.staff_relationship_periods,
+        staff_external_id_to_staff_id=staff_external_id_to_staff_id,
+    )
 
     person_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "assessments": normalized_assessments,

@@ -20,7 +20,18 @@ import itertools
 import re
 from abc import ABCMeta, abstractmethod
 from calendar import isleap
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 import pandas as pd
@@ -571,7 +582,7 @@ class CriticalRangesBuilder:
     this class have O(M) runtime, where M is the number of returned objects.
     """
 
-    def __init__(self, duration_objects: List[DurationMixin]) -> None:
+    def __init__(self, duration_objects: Sequence[DurationMixin]) -> None:
         for o in duration_objects:
             if not o.start_date_inclusive:
                 raise ValueError(
