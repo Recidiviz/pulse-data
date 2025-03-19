@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for supervision tasks that are either overdue or upcoming within 30 days for Texas"""
-from typing import Dict
+from typing import List, NotRequired, TypedDict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -32,11 +32,21 @@ US_TX_SUPERVISION_TASKS_RECORD_DESCRIPTION = """
 """This defines the views that will be used to generate tasks in TX as well as any task-specific information
 for the query, such as the task type and where the due date is stored.
 """
-TASK_CONFIGS = [
+
+
+class TaskConfig(TypedDict):
+    type: str
+    table: str
+    due_date_field: str
+    can_be_overdue: NotRequired[bool]
+
+
+TASK_CONFIGS: List[TaskConfig] = [
     {
         "type": "usTxAssessment",
         "table": "meets_risk_assessment_standards_materialized",
         "due_date_field": "event_date",
+        "can_be_overdue": True,
     },
     {
         "type": "usTxFieldContactScheduled",
@@ -71,7 +81,22 @@ TASK_CONFIGS = [
 ]
 
 
-def generate_query_from_config(config: Dict[str, str]) -> str:
+def generate_query_from_config(config: TaskConfig) -> str:
+    if config.get("can_be_overdue", False):
+        due_task_clause = """
+            ((
+                COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
+                AND meets_criteria
+            ) OR
+                NOT meets_criteria
+            )
+        """
+    else:
+        due_task_clause = """
+            COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
+            AND NOT meets_criteria
+        """
+
     return f"""
         SELECT
             person_id,
@@ -84,9 +109,8 @@ def generate_query_from_config(config: Dict[str, str]) -> str:
             )) AS task,
         FROM `{{project_id}}.task_eligibility_criteria_us_tx.{config['table']}`
         WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND COALESCE(end_date, '9999-09-09')
-            AND COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
             AND state_code = "US_TX"
-            AND NOT meets_criteria
+            AND {due_task_clause}
     """
 
 
