@@ -60,7 +60,9 @@ from recidiviz.utils.metadata import local_project_id_override
 IMPACT_REPORTS_LOOKBACK_MONTHS = 2
 
 
-def _build_impact_reports_usage_aggregated_metrics_collection() -> AggregatedMetricsCollection:
+def _build_impact_reports_usage_aggregated_metrics_collection() -> (
+    AggregatedMetricsCollection
+):
     time_periods = [
         # Week-long period covering every week-long period in the last 3 months
         MetricTimePeriodConfig.week_periods_rolling_daily(
@@ -68,12 +70,8 @@ def _build_impact_reports_usage_aggregated_metrics_collection() -> AggregatedMet
             lookback_days=(IMPACT_REPORTS_LOOKBACK_MONTHS + 1)
             * 31
         ),
-        # Month-long period covering every month-long period in the last 3 months
-        MetricTimePeriodConfig.month_periods_rolling_daily(
-            # Make sure we cover the entirely of the previous 2 months
-            lookback_days=(IMPACT_REPORTS_LOOKBACK_MONTHS + 1)
-            * 31
-        ),
+        # Month-long period covering every month-long period in the last 18 months
+        MetricTimePeriodConfig.month_periods_rolling_daily(lookback_days=18 * 31),
         # Year-long periods ending (exclusive) on the first of the month for the last
         # lookback_months months.
         MetricTimePeriodConfig.year_periods_rolling_monthly(
@@ -109,7 +107,9 @@ def _build_impact_reports_usage_aggregated_metrics_collection() -> AggregatedMet
     )
 
 
-def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> AggregatedMetricsCollection:
+def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> (
+    AggregatedMetricsCollection
+):
     time_periods = [
         MetricTimePeriodConfig.day_periods(
             # Look back at LEAST 2 whole months to capture the last day of the last
