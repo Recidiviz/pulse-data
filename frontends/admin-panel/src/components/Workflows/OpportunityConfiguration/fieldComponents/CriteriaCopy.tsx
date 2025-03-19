@@ -36,6 +36,8 @@ const helperArities = {
   yearsMonthsUntil: 1,
   daysToYearsMonthsPast: 1,
   eq: 2,
+  and: 2,
+  or: 2,
   length: 1,
   monthsOrDaysRemainingFromToday: 1,
 
