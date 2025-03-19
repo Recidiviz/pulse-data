@@ -36,25 +36,32 @@ user has an upcoming block date"""
 
 PRODUCT_ROSTER_UPCOMING_BLOCKS_QUERY_TEMPLATE = """
   SELECT
-    state_code,
-    state_code AS region_code,
-    email_address,
-    blocked_on,
-    external_id,
-    district,
-    roles,
-    first_name,
-    last_name,
-    user_hash,
-    pseudonymized_id
+    user_override.state_code,
+    user_override.state_code AS region_code,
+    user_override.email_address,
+    user_override.blocked_on,
+    user_override.external_id,
+    user_override.district,
+    user_override.roles,
+    user_override.first_name,
+    user_override.last_name,
+    user_override.user_hash,
+    user_override.pseudonymized_id, 
+    product_roster_materialized.default_routes,
+    product_roster_materialized.override_routes,
+    product_roster_materialized.default_feature_variants,
+    product_roster_materialized.override_feature_variants
   FROM 
     `{project_id}.case_triage_federated.user_override` user_override
   LEFT JOIN
     `{project_id}.case_triage_federated.permissions_override` permissions_override
   USING(email_address)
+  LEFT JOIN
+    `{project_id}.reference_views.product_roster_materialized` product_roster_materialized
+  USING(email_address)
   WHERE 
     blocked_on > CURRENT_TIMESTAMP() AND
-    NOT (ARRAY_LENGTH(roles) = 1 AND "unknown" IN UNNEST(roles) AND
+    NOT (ARRAY_LENGTH(user_override.roles) = 1 AND "unknown" IN UNNEST(user_override.roles) AND
       permissions_override.email_address IS NULL)
 """
 
