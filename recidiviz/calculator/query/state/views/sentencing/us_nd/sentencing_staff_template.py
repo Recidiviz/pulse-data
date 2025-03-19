@@ -72,7 +72,8 @@ SELECT
   external_id,
   s.full_name,
   s.email,
-  CONCAT('[', case_ids,']') AS case_ids
+  CONCAT('[', case_ids,']') AS case_ids,
+  CAST(NULL AS STRING) AS supervisor_id,
 FROM
   psi
 LEFT JOIN
