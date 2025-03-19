@@ -272,6 +272,46 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(expected, json.loads(response.data))
 
+    def test_states_add_state_unknown_role_with_permissions(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.add_state_role("US_MO", "unknown"),
+                headers=self.headers,
+                json={
+                    "routes": {"route_A": True, "routeB": False},
+                    "featureVariants": {"A": True},
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_states_add_state_unknown_role_without_permissions(self) -> None:
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.add_state_role("US_MO", "Unknown"),
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertReasonLog(
+                log.output,
+                "adding permissions for state US_MO, role unknown with reason: test",
+            )
+            expected = [
+                {
+                    "role": "unknown",
+                    "stateCode": "US_MO",
+                    "routes": None,
+                    "featureVariants": None,
+                },
+            ]
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
     def test_add_state_existing(self) -> None:
         existing = generate_fake_default_permissions(
             state="US_MO",
@@ -419,6 +459,22 @@ class AuthEndpointTests(TestCase):
                 },
             )
             self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_states_update_unknown_role(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="unknown",
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            response = self.client.patch(
+                self.update_state_role("US_MO", "unknown"),
+                headers=self.headers,
+                json={
+                    "routes": {"C": True, "B": False},
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     def test_states_delete_role_no_entry(self) -> None:
         with self.app.test_request_context():

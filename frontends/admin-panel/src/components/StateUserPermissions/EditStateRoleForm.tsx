@@ -36,6 +36,9 @@ export const CreateEditStateRoleForm = ({
   selectedRows: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [form] = Form.useForm();
+  const hidePermissions = selectedRows.some(
+    (row) => row.role?.toLowerCase() === "unknown"
+  );
 
   const selectedRowNames = selectedRows.map(
     (value) => `${value.stateCode}: ${value.role}`
@@ -80,7 +83,12 @@ export const CreateEditStateRoleForm = ({
             Remove role
           </Button>
         </Popconfirm>,
-        <Button type="primary" onClick={handleEdit} key="edit">
+        <Button
+          type="primary"
+          onClick={handleEdit}
+          key="edit"
+          disabled={hidePermissions}
+        >
           Update
         </Button>,
       ]}
@@ -95,11 +103,14 @@ export const CreateEditStateRoleForm = ({
           {selectedRowNames.join(", ")}
         </span>
       </p>
+      {hidePermissions ? (
+        <p>The &quot;unknown&quot; role cannot be assigned permissions.</p>
+      ) : undefined}
       <p>If any value is unset, the entry will not be changed.</p>
       <Form form={form} layout="horizontal" labelCol={{ span: 6 }}>
         <ReasonInput label="Reason for modification" />
         <hr />
-        <CustomPermissionsPanel hidePermissions={false} form={form} />
+        <CustomPermissionsPanel hidePermissions={hidePermissions} form={form} />
       </Form>
     </DraggableModal>
   );

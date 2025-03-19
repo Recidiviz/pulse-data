@@ -260,6 +260,13 @@ def get_auth_endpoint_blueprint(
                     to_snake_case(k): v
                     for k, v in assert_type(request.json, dict).items()
                 }
+                if role.lower() == "unknown" and (
+                    request_dict.get("routes") or request_dict.get("feature_variants")
+                ):
+                    return (
+                        "The 'unknown' role cannot be assigned permissions.",
+                        HTTPStatus.BAD_REQUEST,
+                    )
                 request_dict["state_code"] = state_code.upper()
                 request_dict["role"] = role.lower()
                 if routes := request_dict.get("routes"):
@@ -312,6 +319,11 @@ def get_auth_endpoint_blueprint(
         if not StateCode.is_state_code(state_code.upper()):
             return (
                 f"Unknown state_code [{state_code}] received, must be a valid state code.",
+                HTTPStatus.BAD_REQUEST,
+            )
+        if role.lower() == "unknown":
+            return (
+                "The 'unknown' role cannot be assigned permissions.",
                 HTTPStatus.BAD_REQUEST,
             )
         database_key = SQLAlchemyDatabaseKey.for_schema(

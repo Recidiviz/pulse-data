@@ -31,6 +31,8 @@ export const CreateAddStateRoleForm = ({
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
+  const role = Form.useWatch("role", form);
+  const hidePermissions = role?.toLowerCase() === "unknown";
 
   return (
     <DraggableModal
@@ -64,7 +66,11 @@ export const CreateAddStateRoleForm = ({
         <Form.Item
           name="role"
           label="Role"
-          extra="Please try to use the same role names across states when possible"
+          extra={
+            hidePermissions
+              ? "The 'unknown' role can be added but cannot be assigned permissions."
+              : "Please try to use the same role names across states when possible."
+          }
           rules={[
             {
               required: true,
@@ -74,7 +80,7 @@ export const CreateAddStateRoleForm = ({
         >
           <Input />
         </Form.Item>
-        <CustomPermissionsPanel hidePermissions={false} form={form} />
+        <CustomPermissionsPanel hidePermissions={hidePermissions} form={form} />
       </Form>
     </DraggableModal>
   );
