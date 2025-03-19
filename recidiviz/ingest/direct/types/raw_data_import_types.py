@@ -306,6 +306,10 @@ class RawDataFilesSkippedError(BaseError):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
 
+    def __str__(self) -> str:
+        file_paths_str = "\n* ".join([path.abs_path() for path in self.file_paths])
+        return f"Skipping import for [{self.file_tag}] for [{file_paths_str}] w/ message: \n {self.skipped_message}]"
+
     @classmethod
     def from_gcs_files_and_message(
         cls,
