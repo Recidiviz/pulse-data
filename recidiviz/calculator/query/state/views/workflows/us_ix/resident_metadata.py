@@ -48,20 +48,47 @@ WITH xcrc_facility AS (
 /* identify residents eligible for xcrc so they appear sorted under their current facility */
     SELECT
         person_id,
-        ARRAY_AGG(
-              UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
-              ORDER BY 
-              UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
+        ARRAY_AGG(DISTINCT facility ORDER BY facility) AS crc_facilities
+    FROM (
+        -- TODO(#39562) Remove these facility names that are not prefixed with 'CRC ' once search is using the new ids
+        SELECT
+            person_id,
+            ARRAY_AGG(
+                UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
+                ORDER BY 
+                UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
             ) AS crc_facilities
-    FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_xcrc_request_materialized`xc, 
-    UNNEST(JSON_EXTRACT_ARRAY(reasons)) AS reason_struct
-    WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
-            start_date_column="start_date",
-            end_date_column="end_date"
-        )}
-        AND JSON_EXTRACT_SCALAR(reason_struct, '$.criteria_name') = 'US_IX_IN_CRC_FACILITY_OR_PWCC_UNIT_1'
-        AND (is_eligible OR is_almost_eligible)
-    GROUP BY 1
+        FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_xcrc_request_materialized`xc, 
+        UNNEST(JSON_EXTRACT_ARRAY(reasons)) AS reason_struct
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+                start_date_column="start_date",
+                end_date_column="end_date"
+            )}
+            AND JSON_EXTRACT_SCALAR(reason_struct, '$.criteria_name') = 'US_IX_IN_CRC_FACILITY_OR_PWCC_UNIT_1'
+            AND (is_eligible OR is_almost_eligible)
+        GROUP BY 1
+
+        UNION all
+
+        SELECT
+            person_id,
+            ARRAY_AGG(
+                'CRC ' || UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
+                ORDER BY 
+                'CRC ' || UPPER(JSON_EXTRACT_SCALAR(JSON_EXTRACT(reason_struct, '$.reason'), '$.facility_name'))
+            ) AS crc_facilities
+        FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_xcrc_request_materialized`xc, 
+        UNNEST(JSON_EXTRACT_ARRAY(reasons)) AS reason_struct
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+                start_date_column="start_date",
+                end_date_column="end_date"
+            )}
+            AND JSON_EXTRACT_SCALAR(reason_struct, '$.criteria_name') = 'US_IX_IN_CRC_FACILITY_OR_PWCC_UNIT_1'
+            AND (is_eligible OR is_almost_eligible)
+        GROUP BY 1
+    ), UNNEST(crc_facilities) AS facility
+    GROUP BY person_id
+
 ),
 case_notes_cte AS (
 {ix_general_case_notes(where_clause_addition="AND ContactModeDesc lIKE '%CRC Request%'", 
@@ -133,9 +160,21 @@ crc_facility AS (
         ARRAY_AGG(DISTINCT crc_facility ORDER BY crc_facility) AS crc_facilities
     FROM (
         -- join all facilities relevant per release district
+        -- TODO(#39562) Remove these facility names that are not prefixed with 'CRC ' once search is using the new ids
         SELECT 
             rd.person_id,
             r.CRC_FACILITY AS crc_facility
+        FROM release_district rd
+        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
+            ON rd.RELEASE_DISTRICT = r.RELEASE_DISTRICT
+            AND rd.gender = r.gender
+        WHERE r.CRC_FACILITY IS NOT NULL
+
+        UNION ALL
+                
+        SELECT 
+            rd.person_id,
+            'CRC ' || r.CRC_FACILITY AS crc_facility
         FROM release_district rd
         LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
             ON rd.RELEASE_DISTRICT = r.RELEASE_DISTRICT
@@ -145,9 +184,18 @@ crc_facility AS (
         UNION ALL
         
         -- for residents at PWCC, add PWCC as a potential CRC option since there is one crc unit at this facility
+        -- TODO(#39562) Remove these facility names that are not prefixed with 'CRC ' once search is using the new ids
         SELECT 
             rd.person_id,
             "POCATELLO WOMEN'S CORRECTIONAL CENTER" AS crc_facility
+        FROM release_district rd
+        WHERE rd.facility = "POCATELLO WOMEN'S CORRECTIONAL CENTER"
+
+        UNION ALL
+
+        SELECT 
+            rd.person_id,
+            "CRC POCATELLO WOMEN'S CORRECTIONAL CENTER" AS crc_facility
         FROM release_district rd
         WHERE rd.facility = "POCATELLO WOMEN'S CORRECTIONAL CENTER"
     ) combined
@@ -155,8 +203,8 @@ crc_facility AS (
     
     UNION ALL 
         
-        SELECT *
-        FROM xcrc_facility
+    SELECT *
+    FROM xcrc_facility
 )
 SELECT 
     c.person_id,
