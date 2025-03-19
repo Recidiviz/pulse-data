@@ -1341,6 +1341,8 @@ US_ND:
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       Parole Review Date notes were needed for the side panel.
   elite_offender_offences:
+    task_eligibility_criteria_us_nd.no_detainers_or_felony_warrants: |-
+      We don't have a place to ingest detainers or warrants.
     task_eligibility_criteria_us_nd.no_detainers_or_warrants: |-
       We don't have a place to ingest detainers or warrants.
   elite_offender_report_texts:

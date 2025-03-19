@@ -648,3 +648,83 @@ def get_infractions_criteria_builder(
             ),
         ],
     )
+
+
+def get_warrants_and_detainers_query(
+    order_types: list, criteria_name: str, description: str
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a SQL query that creates a warrants and detainers criteria.
+
+    Args:
+        order_types: A list of order types to include in the query.
+    """
+    query = f"""WITH warrants_and_detainers AS (
+    SELECT 
+        peid.state_code,
+        peid.person_id,
+        SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) AS start_date,
+        SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) AS start_date_warrant_or_detainer,
+        iss.end_date AS end_date,
+        FALSE AS meets_criteria,
+        e.ORDER_TYPE,
+        e.OFFENSE_STATUS,
+        e.OFFENSE_DESC,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_offences_latest` e
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON peid.external_id = {reformat_ids('e.OFFENDER_BOOK_ID')}
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    LEFT JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
+    ON peid.state_code = iss.state_code
+        AND peid.person_id = iss.person_id
+        AND SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
+    WHERE e.ORDER_TYPE IN {tuple(order_types)}
+        AND e.OFFENSE_STATUS != 'C'
+),
+{create_sub_sessions_with_attributes(table_name='warrants_and_detainers')}
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    TO_JSON(STRUCT(
+        STRING_AGG(DISTINCT OFFENSE_DESC, ', ' ORDER BY OFFENSE_DESC) AS offenses_descriptions,
+        STRING_AGG(DISTINCT ORDER_TYPE, ', ' ORDER BY ORDER_TYPE) AS order_types,
+        MAX(start_date_warrant_or_detainer) AS most_recent_warrant_or_detainer_date
+    )) AS reason,
+    STRING_AGG(DISTINCT OFFENSE_DESC, ', ' ORDER BY OFFENSE_DESC) AS offenses_descriptions,
+    STRING_AGG(DISTINCT ORDER_TYPE, ', ' ORDER BY ORDER_TYPE) AS order_types,
+    MAX(start_date_warrant_or_detainer) AS most_recent_warrant_or_detainer_date,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5
+"""
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        state_code=StateCode.US_ND,
+        criteria_spans_query_template=query,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="offenses_descriptions",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Descriptions of the offenses that led to the warrants or detainers.",
+            ),
+            ReasonsField(
+                name="order_types",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Types of the warrants or detainers.",
+            ),
+            ReasonsField(
+                name="most_recent_warrant_or_detainer_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the most recent warrant or detainer.",
+            ),
+        ],
+    )

@@ -16,7 +16,7 @@
 # =============================================================================
 
 """
-Shows the spans of time during which someone in ND has no detainers or warrants.
+Shows the spans of time during which someone in ND has no detainers or felony warrants.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,10 +28,9 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_NO_DETAINERS_OR_WARRANTS"
+_CRITERIA_NAME = "US_ND_NO_DETAINERS_OR_FELONY_WARRANTS"
 
 ORDER_TYPES = [
-    "WARM",  # Warrant - Misdemeanor
     "WARF",  # Warrant - Felony
     "DET",  # Detainer
 ]
