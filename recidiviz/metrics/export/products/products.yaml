@@ -101,6 +101,8 @@ products:
         environment: production
       - state_code: US_CA
         environment: production
+      - state_code: US_IA
+        environment: staging
       - state_code: US_IX
         environment: production
       - state_code: US_MI
