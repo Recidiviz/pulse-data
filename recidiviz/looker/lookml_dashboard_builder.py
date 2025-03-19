@@ -90,19 +90,20 @@ class LookMLDashboardElementsProvider:
 
     @abc.abstractmethod
     def build_dashboard_elements(
-        self, explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen, model: str
     ) -> list[LookMLDashboardElement]:
         """Builds the dashboard elements."""
 
 
 @attr.define
 class SingleExploreLookMLDashboardBuilder:
-    """Builder for a LookML dashboard that pulls all data from a single explore.
+    """Builder for a LookML dashboard that pulls all data from a single explore and a single model.
 
     Attributes:
         dashboard_name: The name of the dashboard.
         dashboard_title: The title of the dashboard.
         explore_name: The name of the explore used by the dashboard elements.
+        model_name: The name of the model used by the dashboard elements.
         filter_fields: List of fully-scoped field names in the format `view_name.field_name`.
         element_provider: provider used to build the dashboard elements.
     """
@@ -110,6 +111,7 @@ class SingleExploreLookMLDashboardBuilder:
     dashboard_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     dashboard_title: str = attr.ib(validator=attr_validators.is_non_empty_str)
     explore_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    model_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     filter_fields: list[str] = attr.ib(validator=attr_validators.is_list_of(str))
     element_provider: LookMLDashboardElementsProvider
 
@@ -135,6 +137,7 @@ class SingleExploreLookMLDashboardBuilder:
             allow_multiple_values=True,
             required=False,
             explore=self.explore_name,
+            model=self.model_name,
             ui_config=LookMLFilterUIConfig(
                 type=LookMLFilterUIType.ADVANCED, display=LookMLFilterUIDisplay.POPOVER
             ),
@@ -145,7 +148,7 @@ class SingleExploreLookMLDashboardBuilder:
         Builds the elements for the dashboard and arranges them in a grid layout.
         """
         elements = self.element_provider.build_dashboard_elements(
-            self.explore_name, self.lookml_listen
+            self.explore_name, self.lookml_listen, self.model_name
         )
         build_dashboard_grid(elements)
 
@@ -159,5 +162,4 @@ class SingleExploreLookMLDashboardBuilder:
             filters=[self._build_filter(field) for field in self.filter_fields],
             elements=self._build_elements(),
             load_configuration_wait=True,
-            extension_required=True,
         )

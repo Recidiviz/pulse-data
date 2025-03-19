@@ -56,6 +56,7 @@ class EntityLookMLDashboardBuilder:
     """Builder for an entity LookML dashboard."""
 
     module_context: EntitiesModuleContext
+    project_id: str
     root_entity_cls: Type[Entity]
     views: list[LookMLView]
     dataset_id: str
@@ -144,6 +145,7 @@ class EntityLookMLDashboardBuilder:
             dashboard_name=self.dashboard_name,
             dashboard_title=self.dashboard_title,
             explore_name=self.root_entity_name,
+            model_name=self.project_id,
             filter_fields=filter_fields,
             element_provider=get_elements_provider(
                 self.root_entity_cls,

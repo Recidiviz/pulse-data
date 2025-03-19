@@ -71,6 +71,7 @@ class TestLookMLDashboardBuilder(unittest.TestCase):
             dashboard_name="test_dashboard",
             dashboard_title="Test Dashboard",
             explore_name="test_explore",
+            model_name="recidiviz-testing",
             filter_fields=["test_view.field1"],
             element_provider=self.mock_provider,
         )

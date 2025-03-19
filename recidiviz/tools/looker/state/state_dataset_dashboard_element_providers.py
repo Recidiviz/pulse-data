@@ -45,13 +45,12 @@ class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider
     dataset_id: str
 
     def _build_custom_elements(
-        self, explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen, model: str
     ) -> list[LookMLDashboardElement]:
         return [
             EntityDashboardElementFactory.info_element(),
             EntityDashboardElementFactory.actions_element(
-                explore_name,
-                all_filters_listen,
+                explore_name, all_filters_listen, model
             ),
             EntityDashboardElementFactory.person_periods_timeline_element(
                 explore=explore_name,
@@ -59,17 +58,19 @@ class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider
                     self.dataset_id
                 ),
                 listen=all_filters_listen,
+                model=model,
             ),
         ]
 
     def build_dashboard_elements(
-        self, explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen, model: str
     ) -> list[LookMLDashboardElement]:
         """Builds LookML dashboard elements for StatePerson."""
-        return self._build_custom_elements(explore_name, all_filters_listen) + [
+        return self._build_custom_elements(explore_name, all_filters_listen, model) + [
             LookMLDashboardElement.for_table_chart(
                 name=table_metadata.name,
                 explore=explore_name,
+                model=model,
                 listen=all_filters_listen,
                 fields=table_metadata.fields,
                 sorts=table_metadata.sort_fields,
@@ -83,13 +84,14 @@ class StateStaffLookMLDashboardElementsProvider(LookMLDashboardElementsProvider)
     """Class to provide LookML dashboard elements for StateStaff entity."""
 
     def build_dashboard_elements(
-        self, explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen, model: str
     ) -> list[LookMLDashboardElement]:
         """Builds LookML dashboard elements for StateStaff."""
         return [
             LookMLDashboardElement.for_table_chart(
                 name=table_metadata.name,
                 explore=explore_name,
+                model=model,
                 listen=all_filters_listen,
                 fields=table_metadata.fields,
                 sorts=table_metadata.sort_fields,

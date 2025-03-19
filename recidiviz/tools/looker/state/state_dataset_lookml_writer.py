@@ -27,6 +27,7 @@ import argparse
 import os
 from types import ModuleType
 
+from recidiviz.airflow.dags.calculation_dag import GCP_PROJECT_STAGING
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
@@ -99,6 +100,9 @@ def write_lookml_files(
         dashboard = EntityLookMLDashboardBuilder(
             module_context=module_context,
             root_entity_cls=root_entity_cls,
+            # We only write dashboards for recidiviz-staging
+            # TODO(#36190) Automatically convert staging dashboards to prod for prod deploy
+            project_id=GCP_PROJECT_STAGING,
             dataset_id=dataset_id,
             views=state_views,
         ).build_and_validate()

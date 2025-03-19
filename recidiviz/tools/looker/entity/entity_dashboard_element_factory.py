@@ -51,13 +51,16 @@ class EntityDashboardElementFactory:
         )
 
     @staticmethod
-    def actions_element(explore: str, listen: LookMLListen) -> LookMLDashboardElement:
+    def actions_element(
+        explore: str, listen: LookMLListen, model: str
+    ) -> LookMLDashboardElement:
         """Element to display the 'actions' button to switch between different person dashboards.
         Assumes that the explore has an 'actions' field defining the button."""
         return LookMLDashboardElement(
             title="Actions",
             name="actions",
             explore=explore,
+            model=model,
             type=LookMLElementType.SINGLE_VALUE,
             fields=[f"{explore}.actions"],
             listen=listen,
@@ -67,13 +70,14 @@ class EntityDashboardElementFactory:
 
     @staticmethod
     def person_periods_timeline_element(
-        explore: str, person_periods_view_name: str, listen: LookMLListen
+        explore: str, person_periods_view_name: str, listen: LookMLListen, model: str
     ) -> LookMLDashboardElement:
         """Element to display the periods timeline for a person. Assumes that the explore has a person_id field."""
         return LookMLDashboardElement(
             title="Periods Timeline",
             name="periods_timeline",
             explore=explore,
+            model=model,
             type=LookMLElementType.LOOKER_TIMELINE,
             fields=[
                 f"{explore}.person_id",

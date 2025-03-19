@@ -46,7 +46,7 @@ class TestEntityDashboardElementFactory(unittest.TestCase):
     def test_actions_element(self) -> None:
         explore = "test_explore"
         element = EntityDashboardElementFactory.actions_element(
-            explore, listen=LookMLListen({})
+            explore, listen=LookMLListen({}), model="recidiviz-testing"
         )
         self.assertIsInstance(element, LookMLDashboardElement)
         self.assertEqual(element.title, "Actions")
@@ -63,6 +63,7 @@ class TestEntityDashboardElementFactory(unittest.TestCase):
             explore=explore,
             person_periods_view_name="person_periods",
             listen=LookMLListen({}),
+            model="recidiviz-testing",
         )
         self.assertIsInstance(element, LookMLDashboardElement)
         self.assertEqual(element.title, "Periods Timeline")

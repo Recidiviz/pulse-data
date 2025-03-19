@@ -306,7 +306,7 @@ LOOKML_VIEWS = [
 @attr.define
 class FakePersonDashboardElementsProvider(LookMLDashboardElementsProvider):
     def build_dashboard_elements(
-        self, explore_name: str, all_filters_listen: LookMLListen
+        self, explore_name: str, all_filters_listen: LookMLListen, model: str
     ) -> list[LookMLDashboardElement]:
         """Builds LookML dashboard elements for FakePerson."""
         return [
@@ -316,6 +316,7 @@ class FakePersonDashboardElementsProvider(LookMLDashboardElementsProvider):
                 listen=all_filters_listen,
                 fields=table_metadata.fields,
                 sorts=table_metadata.sort_fields,
+                model=model,
             )
             for table_metadata in self.table_element_metadata
         ]
@@ -357,7 +358,6 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   layout: newspaper
   title: Fake Person
   load_configuration: wait
-  extension: required
 
   filters:
   - name: Fake Person Id
@@ -368,6 +368,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
+    model: recidiviz-testing
     explore: fake_person
     field: fake_person.fake_person_id
 
@@ -379,6 +380,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
+    model: recidiviz-testing
     explore: fake_person
     field: fake_person.state_code
 
@@ -390,6 +392,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
+    model: recidiviz-testing
     explore: fake_person
     field: fake_person_external_id.external_id
 
@@ -401,6 +404,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
+    model: recidiviz-testing
     explore: fake_person
     field: fake_person_external_id.id_type
 
@@ -408,6 +412,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Another Entity
     title: Fake Another Entity
     explore: fake_person
+    model: recidiviz-testing
     type: looker_grid
     fields: [fake_another_entity.another_entity_id,
       fake_another_entity.another_name,
@@ -427,6 +432,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Entity
     title: Fake Entity
     explore: fake_person
+    model: recidiviz-testing
     type: looker_grid
     fields: [fake_entity.entity_id,
       fake_entity.fake_person_id,
@@ -446,6 +452,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Person
     title: Fake Person
     explore: fake_person
+    model: recidiviz-testing
     type: looker_grid
     fields: [fake_person.fake_person_id,
       fake_person.full_name,
@@ -464,6 +471,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Person External Id
     title: Fake Person External Id
     explore: fake_person
+    model: recidiviz-testing
     type: looker_grid
     fields: [fake_person_external_id.external_id,
       fake_person_external_id.fake_person_external_id_id,
@@ -487,6 +495,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
             root_entity_cls=fake_entities.FakePerson,
             views=LOOKML_VIEWS,
             dataset_id=STATE_BASE_DATASET,
+            project_id="recidiviz-testing",
         ).build_and_validate()
 
         self.assertEqual(dashboard.build(), expected_dashboard)
@@ -508,4 +517,5 @@ class TestStateDashboardBuilder(unittest.TestCase):
                 root_entity_cls=root_entity_cls,
                 views=views,
                 dataset_id=STATE_BASE_DATASET,
+                project_id="recidiviz-testing",
             ).build_and_validate()
