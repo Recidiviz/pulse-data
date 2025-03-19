@@ -50,6 +50,9 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.tests.common.constants.state.external_id_types_test import (
+    external_id_types_by_state_code,
+)
 from recidiviz.tests.ingest.direct.fixture_util import (
     INGEST_MAPPING_OUTPUT_SUBDIR,
     enum_parsing_fixture_path,
@@ -171,6 +174,21 @@ class StateIngestMappingTestCase(BaseStateIngestTestCase):
         manifest = self.ingest_view_manifest_compiler.compile_manifest(
             ingest_view_name=ingest_view_name
         )
+
+        # Check that our mapping has a defined RootEntity with
+        # defined external ID types.
+        if manifest.root_entity_cls not in {
+            state_entities.StatePerson,
+            state_entities.StateStaff,
+        }:
+            raise ValueError(f"Unexpected RootEntity type: {manifest.root_entity_cls}")
+        allowed_id_types = external_id_types_by_state_code()[self.state_code()]
+        found_id_types = manifest.root_entity_external_id_types
+        if unexpected_id_types := found_id_types - allowed_id_types:
+            raise ValueError(
+                f"Unexpected external ID types for {manifest.root_entity_cls}: {unexpected_id_types}"
+            )
+
         parsed_ingest_view_results = manifest.parse_contents(
             contents_iterator=ingest_view_results,
             context=IngestViewContentsContext.build_for_tests(),

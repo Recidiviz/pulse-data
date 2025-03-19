@@ -33,14 +33,17 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     BooleanLiteralManifest,
     EntityTreeManifest,
     EntityTreeManifestFactory,
+    ListRelationshipFieldManifest,
     ManifestNode,
+    StringLiteralFieldManifest,
     VariableManifestNode,
     build_manifest_from_raw_typed,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegate,
 )
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # This key tracks the version number for the actual mappings manifest structure,
@@ -62,6 +65,50 @@ class IngestViewManifest:
 
     # Dictionary containing column to type
     input_column_to_type: Dict[str, str]
+
+    @property
+    def root_entity_cls(self) -> Type[RootEntity]:
+        return self.output.entity_cls
+
+    @property
+    def root_entity_external_id_types(self) -> set[str]:
+        """
+        Returns the set of external ID types that are hydrated by this ingest view.
+
+        We expect all ingest view manifests to have output be an EntityTreeManifest,
+        where its entity class is a RootEntity. The RootEntity class should have a
+        defined external_ids, where the id_type for each is a string literal.
+        For example:
+
+        output:
+          StatePerson:
+            external_ids:
+              - StatePersonExternalId:
+                  external_id: COLUMN
+                  id_type: $literal("US_XX_ID")
+        """
+        root_fields = self.output.field_manifests
+        try:
+            external_ids_manifest: ListRelationshipFieldManifest = assert_type(
+                root_fields["external_ids"], ListRelationshipFieldManifest
+            )
+        except KeyError as key_error:
+            raise ValueError(
+                f"Mapping for [{self.ingest_view_name}] does not hydrate external IDs "
+                f"for [{self.root_entity_cls.__name__}]"
+            ) from key_error
+        external_id_types = set()
+
+        for id_manifest in external_ids_manifest.all_nodes_referenced_with_type(
+            EntityTreeManifest
+        ):
+            # We expect all entities defined in the external_ids field to have an
+            # id_type field.
+            value_node = assert_type(
+                id_manifest.field_manifests["id_type"], StringLiteralFieldManifest
+            )
+            external_id_types.add(assert_type(value_node.literal_value, str))
+        return external_id_types
 
     def __attrs_post_init__(self) -> None:
         """Validate BigQuery types in input_columns after initialization."""

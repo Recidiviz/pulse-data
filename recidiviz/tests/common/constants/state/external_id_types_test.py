@@ -18,9 +18,11 @@
 
 import re
 import unittest
+from collections import defaultdict
 from typing import List
 
 from recidiviz.common.constants.state import external_id_types
+from recidiviz.common.constants.states import StateCode
 
 
 def get_external_id_types() -> List[str]:
@@ -30,6 +32,18 @@ def get_external_id_types() -> List[str]:
         # Skip built-in variables
         if not var_name.startswith("__")
     ]
+
+
+def external_id_types_by_state_code() -> dict[StateCode, set[str]]:
+    result = defaultdict(set)
+    for external_id_name in get_external_id_types():
+        match = re.match(r"^US_[A-Z]{2}", external_id_name)
+        if not match:
+            raise ValueError(
+                f"Expected external id name to match regex: {external_id_name}"
+            )
+        result[StateCode[match.group(0)]].add(external_id_name)
+    return result
 
 
 class ExternalIdTypeTest(unittest.TestCase):

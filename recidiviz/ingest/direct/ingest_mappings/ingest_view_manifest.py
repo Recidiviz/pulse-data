@@ -66,11 +66,11 @@ from recidiviz.persistence.entity.entity_deserialize import (
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
-ManifestNodeT = TypeVar("ManifestNodeT")
+ManifestNodeResultT = TypeVar("ManifestNodeResultT")
 
 
 @attr.s(kw_only=True)
-class ManifestNode(Generic[ManifestNodeT]):
+class ManifestNode(Generic[ManifestNodeResultT]):
     """Abstract interface for all nodes in the manifest abstract syntax tree. Subclasses
     may be leaf nodes (e.g. represent flat fields) or subtree root nodes (e.g. represent
     entity relationships).
@@ -78,7 +78,7 @@ class ManifestNode(Generic[ManifestNodeT]):
 
     @property
     @abc.abstractmethod
-    def result_type(self) -> Type[ManifestNodeT]:
+    def result_type(self) -> Type[ManifestNodeResultT]:
         """Should be implemented by subclasses to return the type that this class
         returns from |build_from_row|.
         """
@@ -94,7 +94,7 @@ class ManifestNode(Generic[ManifestNodeT]):
     @abc.abstractmethod
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[ManifestNodeT]:
+    ) -> Optional[ManifestNodeResultT]:
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
         """
@@ -136,6 +136,13 @@ class ManifestNode(Generic[ManifestNodeT]):
             queue += current_manifest.child_manifest_nodes()
         return all_nodes
 
+    def all_nodes_referenced_with_type(
+        self, node_type: type["ManifestNodeT"]
+    ) -> list["ManifestNodeT"]:
+        return [
+            node for node in self.all_nodes_referenced() if isinstance(node, node_type)
+        ]
+
     def env_properties_referenced(self) -> Set[str]:
         """Returns a set of environment variables that this node references. Should not
         be overridden by subclasses other than the LiteralManifestNodes that represent
@@ -149,13 +156,16 @@ class ManifestNode(Generic[ManifestNodeT]):
         }
 
 
+ManifestNodeT = TypeVar("ManifestNodeT", bound=ManifestNode)
+
+
 @attr.s(kw_only=True)
-class VariableManifestNode(ManifestNode[ManifestNodeT]):
+class VariableManifestNode(ManifestNode[ManifestNodeResultT]):
     variable_name: str = attr.ib()
-    value_manifest: ManifestNode[ManifestNodeT] = attr.ib()
+    value_manifest: ManifestNode[ManifestNodeResultT] = attr.ib()
 
     @property
-    def result_type(self) -> Type[ManifestNodeT]:
+    def result_type(self) -> Type[ManifestNodeResultT]:
         return self.value_manifest.result_type
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
@@ -163,7 +173,7 @@ class VariableManifestNode(ManifestNode[ManifestNodeT]):
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[ManifestNodeT]:
+    ) -> Optional[ManifestNodeResultT]:
         return self.value_manifest.build_from_row(row, context)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
@@ -735,7 +745,7 @@ class BooleanLiteralFieldManifest(ManifestNode[bool]):
 
 
 @attr.s(kw_only=True)
-class EnvPropertyManifest(ManifestNode[ManifestNodeT]):
+class EnvPropertyManifest(ManifestNode[ManifestNodeResultT]):
     """Manifest describing a value that will be hydrated with the same value based on
     some static environment state such as the project or instance.
     """
@@ -743,10 +753,10 @@ class EnvPropertyManifest(ManifestNode[ManifestNodeT]):
     ENV_PROPERTY_KEY = "$env"
 
     env_property_name: str = attr.ib()
-    env_property_type: Type[ManifestNodeT] = attr.ib()
+    env_property_type: Type[ManifestNodeResultT] = attr.ib()
 
     @property
-    def result_type(self) -> Type[ManifestNodeT]:
+    def result_type(self) -> Type[ManifestNodeResultT]:
         return self.env_property_type
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
@@ -754,7 +764,7 @@ class EnvPropertyManifest(ManifestNode[ManifestNodeT]):
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> ManifestNodeT:
+    ) -> ManifestNodeResultT:
         return assert_type(
             context.get_env_property(self.env_property_name), self.env_property_type
         )
@@ -1060,7 +1070,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
 
 
 @attr.s(kw_only=True)
-class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
+class CustomFunctionManifest(ManifestNode[ManifestNodeResultT]):
     """Manifest describing a value that is derived from a custom python function, whose
     inputs are described in the raw manifest.
     """
@@ -1072,13 +1082,13 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
 
     # Note: We should be able to type this better with ParamSpec when we update to
     # Python 3.10.
-    function: Callable[..., Optional[ManifestNodeT]] = attr.ib()
+    function: Callable[..., Optional[ManifestNodeResultT]] = attr.ib()
     kwarg_manifests: Dict[str, ManifestNode[Any]] = attr.ib()
 
-    function_return_type: Type[ManifestNodeT] = attr.ib()
+    function_return_type: Type[ManifestNodeResultT] = attr.ib()
 
     @property
-    def result_type(self) -> Type[ManifestNodeT]:
+    def result_type(self) -> Type[ManifestNodeResultT]:
         return self.function_return_type
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
@@ -1086,7 +1096,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[ManifestNodeT]:
+    ) -> Optional[ManifestNodeResultT]:
         kwargs = {
             key: manifest.build_from_row(row, context)
             for key, manifest in self.kwarg_manifests.items()
@@ -1103,8 +1113,8 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
-        expected_return_type: Type[ManifestNodeT],
-    ) -> "CustomFunctionManifest[ManifestNodeT]":
+        expected_return_type: Type[ManifestNodeResultT],
+    ) -> "CustomFunctionManifest[ManifestNodeResultT]":
         """Builds a CustomParserManifest node from the provide raw manifest. Verifies
         that the function signature matches what is expected from the provided args.
         """
@@ -1856,7 +1866,7 @@ class BooleanLiteralManifest(ManifestNode[bool]):
 
 
 @attr.s(kw_only=True)
-class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
+class BooleanConditionManifest(ManifestNode[ManifestNodeResultT]):
     """Manifest node that evaluates one of two child manifest nodes based on the result
     of a boolean condition.
     """
@@ -1876,11 +1886,11 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
     ELSE_ARG_KEY = "$else"
 
     condition_manifest: ManifestNode[bool] = attr.ib()
-    then_manifest: ManifestNode[ManifestNodeT] = attr.ib()
-    else_manifest: Optional[ManifestNode[ManifestNodeT]] = attr.ib()
+    then_manifest: ManifestNode[ManifestNodeResultT] = attr.ib()
+    else_manifest: Optional[ManifestNode[ManifestNodeResultT]] = attr.ib()
 
     @property
-    def result_type(self) -> Type[ManifestNodeT]:
+    def result_type(self) -> Type[ManifestNodeResultT]:
         return self.then_manifest.result_type
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
@@ -1922,7 +1932,7 @@ class BooleanConditionManifest(ManifestNode[ManifestNodeT]):
 
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
-    ) -> Optional[ManifestNodeT]:
+    ) -> Optional[ManifestNodeResultT]:
         condition = self.condition_manifest.build_from_row(row, context)
         if condition is None:
             raise ValueError("Condition manifest should not return None.")
@@ -1952,8 +1962,8 @@ class BooleanConditionManifestFactory:
         raw_condition_manifests: List[YAMLDict],
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
-        expected_result_type: Type[ManifestNodeT],
-    ) -> "BooleanConditionManifest[ManifestNodeT]":
+        expected_result_type: Type[ManifestNodeResultT],
+    ) -> "BooleanConditionManifest[ManifestNodeResultT]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
 
         highest_level_boolean_manifest = None
@@ -2097,8 +2107,8 @@ def build_manifests_list_from_raw(
     list_field_name: str,
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
-    expected_result_type: Type[ManifestNodeT],
-) -> List[ManifestNode[ManifestNodeT]]:
+    expected_result_type: Type[ManifestNodeResultT],
+) -> List[ManifestNode[ManifestNodeResultT]]:
     manifests = []
     for list_item in parent_raw_manifest.pop(list_field_name, list):
         raw_manifest: Union[str, YAMLDict]
@@ -2125,8 +2135,8 @@ def build_manifest_from_raw_typed(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
-    expected_result_type: Type[ManifestNodeT],
-) -> ManifestNode[ManifestNodeT]:
+    expected_result_type: Type[ManifestNodeResultT],
+) -> ManifestNode[ManifestNodeResultT]:
     manifest = build_manifest_from_raw(
         raw_field_manifest=raw_field_manifest,
         delegate=delegate,
@@ -2150,7 +2160,7 @@ def build_manifest_from_raw(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
-    expected_result_type: Type[ManifestNodeT],
+    expected_result_type: Type[ManifestNodeResultT],
 ) -> ManifestNode:
     """Builds a ManifestNode from the provided raw manifest."""
     if isinstance(raw_field_manifest, str):

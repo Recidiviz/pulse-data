@@ -17,12 +17,9 @@
 """Tests that all states with defined state-specific delegates are supported in the
 state_calculation_config_manager functions."""
 import datetime
-import re
 import unittest
-from collections import defaultdict
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -53,24 +50,12 @@ from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_deleg
     StateSpecificMetricsProducerDelegate,
 )
 from recidiviz.tests.common.constants.state.external_id_types_test import (
-    get_external_id_types,
+    external_id_types_by_state_code,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     get_all_delegate_getter_fn_names,
 )
 from recidiviz.utils.range_querier import RangeQuerier
-
-
-def _external_id_types_by_state_code() -> dict[StateCode, list[str]]:
-    result = defaultdict(list)
-    for external_id_name in get_external_id_types():
-        match = re.match(r"^US_[A-Z]{2}", external_id_name)
-        if not match:
-            raise ValueError(
-                f"Expected external id name to match regex: {external_id_name}"
-            )
-        result[StateCode[match.group(0)]].append(external_id_name)
-    return result
 
 
 class TestStateCalculationConfigManager(unittest.TestCase):
@@ -90,7 +75,7 @@ class TestStateCalculationConfigManager(unittest.TestCase):
             )
 
     def test_get_required_state_specific_metrics_producer_delegates(self) -> None:
-        external_ids_by_state_code = _external_id_types_by_state_code()
+        external_ids_by_state_code = external_id_types_by_state_code()
         for state in get_existing_direct_ingest_states():
             for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
                 delegates_map = get_required_state_specific_metrics_producer_delegates(

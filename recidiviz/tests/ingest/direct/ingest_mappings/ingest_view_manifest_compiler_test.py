@@ -2521,6 +2521,14 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         self.assertEqual(
             {FakePerson, FakePersonExternalId}, manifest.hydrated_entity_classes()
         )
+        self.assertEqual(FakePerson, manifest.root_entity_cls)
+        self.assertEqual({"ID_TYPE"}, manifest.root_entity_external_id_types)
 
         manifest = self.compiler.compile_manifest(ingest_view_name="simple_variables")
         self.assertEqual({FakePerson}, manifest.hydrated_entity_classes())
+        self.assertEqual(FakePerson, manifest.root_entity_cls)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Mapping for \[simple_variables\] does not hydrate external IDs for \[FakePerson\]",
+        ):
+            _ = manifest.root_entity_external_id_types
