@@ -38,9 +38,6 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     get_static_attributes_query_for_unit_of_analysis,
 )
-from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
-    is_metric_class_supported_by_optimized_format,
-)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
@@ -138,7 +135,6 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
             dataset_id = (
                 dataset_id_override
                 if dataset_id_override
-                and is_metric_class_supported_by_optimized_format(metric_class)
                 else AGGREGATED_METRICS_DATASET_ID
             )
 

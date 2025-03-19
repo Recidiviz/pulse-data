@@ -47,7 +47,6 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
     AggregatedMetricClassType,
-    is_metric_class_supported_by_optimized_format,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -168,9 +167,6 @@ def collect_assignments_by_time_period_builders_for_collections(
                 MetricTimePeriodToAssignmentJoinType, set[MetricUnitOfObservationType]
             ] = defaultdict(set)
             for metric_class in METRIC_CLASSES:
-                if not is_metric_class_supported_by_optimized_format(metric_class):
-                    continue
-
                 join_type: MetricTimePeriodToAssignmentJoinType = (
                     metric_class.metric_time_period_to_assignment_join_type()
                 )
@@ -238,9 +234,6 @@ def collect_aggregated_metric_view_builders_for_collection(
     ] = ImmutableKeyDict()
 
     for metric_class in METRIC_CLASSES:
-        if not is_metric_class_supported_by_optimized_format(metric_class):
-            continue
-
         for (
             population_type,
             population_config,

@@ -130,9 +130,7 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
 
     if isinstance(metric, PeriodEventAggregatedMetric):
         return metric.generate_aggregation_query_fragment(
-            filter_observations_by_type=False,
-            read_observation_attributes_from_json=False,
-            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
+            observations_by_assignments_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
             event_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME}",
         )
 
@@ -147,9 +145,7 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
             {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}
         )"""
         return metric.generate_aggregation_query_fragment(
-            filter_observations_by_type=False,
-            read_observation_attributes_from_json=False,
-            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
+            observations_by_assignments_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
             period_start_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN,
             period_end_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
             original_span_start_date=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
@@ -157,13 +153,13 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
             span_end_date_col=span_end_date_col_clause,
         )
     if isinstance(metric, AssignmentEventAggregatedMetric):
-        return metric.generate_aggregation_query_fragment_v2(
-            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
+        return metric.generate_aggregation_query_fragment(
+            observations_by_assignments_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
             event_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME}",
             assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,
         )
     if isinstance(metric, AssignmentSpanAggregatedMetric):
-        return metric.generate_aggregation_query_fragment_v2(
+        return metric.generate_aggregation_query_fragment(
             span_start_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
             span_end_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}",
             assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,

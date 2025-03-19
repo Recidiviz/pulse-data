@@ -199,15 +199,7 @@ class PeriodSpanAggregatedMetric(AggregatedMetric[SpanType], SpanMetricCondition
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -246,28 +238,8 @@ class AssignmentSpanAggregatedMetric(
     def observation_selector(self) -> SpanSelector:
         return self.span_selector
 
-    # TODO(#35914): Delete this function and implementations in subclasses once we've
-    #  migrated all usages to generate_aggregation_query_fragment_v2().
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        span_start_date_col: str,
-        span_end_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        """Returns a query fragment that calculates an aggregation corresponding to the AssignmentSpan metric type."""
-
-    # TODO(#35914): Rename this function to drop the _v2 once the original
-    #  generate_aggregation_query_fragment() is no longer used.
-    @abc.abstractmethod
-    def generate_aggregation_query_fragment_v2(
         self,
         span_start_date_col: str,
         span_end_date_col: str,
@@ -308,15 +280,7 @@ class PeriodEventAggregatedMetric(
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the PeriodEvent metric type."""
@@ -354,32 +318,10 @@ class AssignmentEventAggregatedMetric(
     def observation_selector(self) -> EventSelector:
         return self.event_selector
 
-    # TODO(#35914): Delete this function and implementations in subclasses once we've
-    #  migrated all usages to generate_aggregation_query_fragment_v2().
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
         self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
-        event_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        """Returns a query fragment that calculates an aggregation corresponding to the AssignmentEvent metric type."""
-
-    # TODO(#35914): Rename this function to drop the _v2 once the original
-    #  generate_aggregation_query_fragment() is no longer used.
-    @abc.abstractmethod
-    def generate_aggregation_query_fragment_v2(
-        self,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -403,15 +345,7 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -419,8 +353,8 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
         original_span_start_date: Optional[str] = None,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         return f"""
             SUM(
@@ -459,15 +393,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -475,13 +401,13 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
         original_span_start_date: Optional[str] = None,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         span_value_numeric_clause = observation_attribute_value_clause(
             observation_type=self.observation_selector.observation_type,
             attribute=self.span_value_numeric,
-            read_attributes_from_json=read_observation_attributes_from_json,
+            read_attributes_from_json=False,
         )
         return f"""
             SAFE_DIVIDE(
@@ -529,15 +455,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -545,8 +463,8 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
         original_span_start_date: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         return f"""
             SAFE_DIVIDE(
@@ -609,15 +527,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -625,15 +535,15 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
         original_span_start_date: Optional[str] = None,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
 
         if self.weight_col:
             weight_col_clause = observation_attribute_value_clause(
                 observation_type=self.observation_selector.observation_type,
                 attribute=self.weight_col,
-                read_attributes_from_json=read_observation_attributes_from_json,
+                read_attributes_from_json=False,
             )
             weight_snippet = f"CAST({weight_col_clause} AS FLOAT64) * "
         else:
@@ -666,15 +576,7 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -682,13 +584,13 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
         original_span_start_date: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         return f"""
             COUNT(DISTINCT IF(
                 {observation_conditions},
-                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}),
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_by_assignments_cte_name)}),
                 NULL
             )) AS {self.name}
         """
@@ -707,42 +609,7 @@ class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     Example metric: Days incarcerated within 365 days of assignment.
     """
 
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        span_start_date_col: str,
-        span_end_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            SUM(
-                IF({observation_conditions}, DATE_DIFF(
-                    LEAST(
-                        DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                        {nonnull_current_date_exclusive_clause(span_end_date_col)}
-                    ),
-                    GREATEST(
-                        {assignment_date_col},
-                        IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
-                    ),
-                    DAY
-                ), 0)
-            ) AS {self.name}
-        """
-
-    def generate_aggregation_query_fragment_v2(
         self,
         span_start_date_col: str,
         span_end_date_col: str,
@@ -781,42 +648,6 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
 
     Example metric: Maximum days with consistent employer within 365 days of assignment.
     """
-
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
-    def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        span_start_date_col: str,
-        span_end_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            MAX(
-                IF(
-                    {observation_conditions}
-                    AND {span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    DATE_DIFF(
-                        LEAST(
-                            DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                            {nonnull_current_date_exclusive_clause(span_end_date_col)}
-                        ),
-                        GREATEST({assignment_date_col}, {span_start_date_col}),
-                        DAY
-                    ), 0
-                )
-            ) AS {self.name}
-        """
 
     def _days_span_overlaps_with_post_assignment_window_clause(
         self,
@@ -888,7 +719,7 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
             indent_level=0,
         )
 
-    def generate_aggregation_query_fragment_v2(
+    def generate_aggregation_query_fragment(
         self,
         span_start_date_col: str,
         span_end_date_col: str,
@@ -936,42 +767,7 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
     def referenced_observation_attributes(self) -> list[str]:
         return super().referenced_observation_attributes() + [self.span_value_numeric]
 
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        span_start_date_col: str,
-        span_end_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        span_value_numeric_clause = observation_attribute_value_clause(
-            observation_type=self.observation_selector.observation_type,
-            attribute=self.span_value_numeric,
-            read_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            AVG(
-                IF(
-                    {observation_conditions}
-                    AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)},
-                    CAST({span_value_numeric_clause} AS FLOAT64),
-                    NULL
-                )
-            ) AS {self.name}
-        """
-
-    def generate_aggregation_query_fragment_v2(
         self,
         span_start_date_col: str,
         span_end_date_col: str,
@@ -1009,24 +805,7 @@ class AssignmentCountMetric(AssignmentSpanAggregatedMetric):
     This is used only for the metric "Assignments".
     """
 
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        span_start_date_col: str,
-        span_end_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        return f"1 AS {self.name}"
-
-    def generate_aggregation_query_fragment_v2(
         self,
         span_start_date_col: str,
         span_end_date_col: str,
@@ -1061,15 +840,7 @@ class EventCountMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        # TODO(#35914): Remove this variable once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
     ) -> str:
 
@@ -1083,7 +854,7 @@ class EventCountMetric(PeriodEventAggregatedMetric):
             observation_attribute_value_clause(
                 observation_type=self.observation_selector.observation_type,
                 attribute=col,
-                read_attributes_from_json=read_observation_attributes_from_json,
+                read_attributes_from_json=False,
             )
             for col in event_segmentation_columns
         ]
@@ -1093,14 +864,14 @@ class EventCountMetric(PeriodEventAggregatedMetric):
             else ""
         )
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         return f"""
             COUNT(DISTINCT IF(
                 {observation_conditions},
                 CONCAT(
-                    {self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, 
+                    {self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_by_assignments_cte_name)}, 
                     {event_date_col}{event_segmentation_columns_str}
                 ), NULL
             )) AS {self.name}
@@ -1131,23 +902,17 @@ class EventValueMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         event_value_numeric_clause = observation_attribute_value_clause(
             observation_type=self.observation_selector.observation_type,
             attribute=self.event_value_numeric,
-            read_attributes_from_json=read_observation_attributes_from_json,
+            read_attributes_from_json=False,
         )
         return f"""
             AVG(IF(
@@ -1173,23 +938,17 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
         )
         return f"""
             COUNT(DISTINCT IF(
                 {observation_conditions},
-                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}),
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_by_assignments_cte_name)}),
                 NULL
             )) AS {self.name}
         """
@@ -1207,37 +966,6 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
 
     Example metric: Days to first absconsion within 365 days of assignment.
     """
-
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
-    def generate_aggregation_query_fragment(
-        self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        observations_cte_name: str,
-        event_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            MIN(DATE_DIFF(
-                IFNULL(
-                    IF(
-                        {observation_conditions},
-                        LEAST({event_date_col}, DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)),
-                        NULL
-                    ), DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)),
-                {assignment_date_col}, DAY
-            )) AS {self.name}
-        """
 
     @property
     def _event_seq_num_col_name(self) -> str:
@@ -1296,9 +1024,9 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
             indent_level=0,
         )
 
-    def generate_aggregation_query_fragment_v2(
+    def generate_aggregation_query_fragment(
         self,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -1309,14 +1037,14 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
         return f"""
         SUM(
             IF(
-                {observations_cte_name}.{self._num_matching_events_col_name} = 0 AND {observations_cte_name}.{self._event_seq_num_col_name} = 1,
+                {observations_by_assignments_cte_name}.{self._num_matching_events_col_name} = 0 AND {observations_by_assignments_cte_name}.{self._event_seq_num_col_name} = 1,
                 -- There were no events associated with this assignment - return full 
                 -- window length.
                 {self.window_length_days},
                 -- Otherwise, if this is a valid first event, get the time since 
                 -- assignment or window length, whichever is less
                 IF(
-                    {observations_cte_name}.{self._event_seq_num_col_name} = 1 AND {observation_conditions},
+                    {observations_by_assignments_cte_name}.{self._event_seq_num_col_name} = 1 AND {observation_conditions},
                     DATE_DIFF(
                         LEAST(
                             {event_date_col}, 
@@ -1345,38 +1073,9 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
     Example metric: Number of contacts within 30 days of assignment.
     """
 
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        observations_cte_name: str,
-        event_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            COUNT(
-                DISTINCT IF(
-                    {observation_conditions}
-                    AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, {event_date_col}),
-                    NULL
-                )
-            ) AS {self.name}"""
-
-    def generate_aggregation_query_fragment_v2(
-        self,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -1388,7 +1087,7 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
             COUNT(
                 IF(
                     {observation_conditions} AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, "#", {assignment_date_col}),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_by_assignments_cte_name)}, "#", {assignment_date_col}),
                     NULL
                 )
             ) AS {self.name}"""
@@ -1407,34 +1106,9 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
     Example metric: Any Incarceration Start Within 1 Year of Assignment
     """
 
-    # TODO(#35914): Delete this function once we've migrated all usages to
-    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
-        *,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        filter_observations_by_type: bool,
-        # TODO(#35914): Remove this flag once we've fully migrated to optimized
-        #  aggregated metrics queries.
-        read_observation_attributes_from_json: bool,
-        observations_cte_name: str,
-        event_date_col: str,
-        assignment_date_col: str,
-    ) -> str:
-        observation_conditions = self.get_observation_conditions_string(
-            filter_by_observation_type=filter_observations_by_type,
-            read_observation_attributes_from_json=read_observation_attributes_from_json,
-        )
-        return f"""
-            CAST(LOGICAL_OR(
-                {observation_conditions}
-                AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)
-            ) AS INT64) AS {self.name}"""
-
-    def generate_aggregation_query_fragment_v2(
-        self,
-        observations_cte_name: str,
+        observations_by_assignments_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -1446,7 +1120,7 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
             COUNT(
                 DISTINCT IF(
                     {observation_conditions} AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, "#", {assignment_date_col}),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_by_assignments_cte_name)}, "#", {assignment_date_col}),
                     NULL
                 )
             ) AS {self.name}"""
