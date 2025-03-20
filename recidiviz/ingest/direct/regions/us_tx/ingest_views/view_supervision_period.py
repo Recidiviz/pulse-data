@@ -95,6 +95,20 @@ periods AS (
         USING (Period_ID_Number)
     WHERE s.rnk = 1 AND t.rnk = 1
 ),
+-- Before we look at the supervision officer changes, select the latest change on a given date.
+-- This is to avoid zero day periods where multiple changes were done on a single day.
+-- Also removes records without an appropriate update date or filters to active records.
+ranked_case_type_changes AS 
+(
+    SELECT
+        SID_number,
+        Period_ID_number,
+        Case_Type,
+        DATE(CTH_Creation_DATE) as CTH_Creation_DATE,
+        RANK() OVER (PARTITION BY Period_ID_Number, DATE(CTH_Creation_DATE) ORDER BY CTH_Creation_DATE DESC) AS rnk
+    FROM `{{SupervisionPeriod@ALL}}`
+    WHERE CTH_Creation_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE"
+),
 -- Grabs all case type records and their update time, ignores changes that happened after
 -- Max termination end date
 case_type_cte AS (
@@ -104,11 +118,11 @@ case_type_cte AS (
     Case_Type,
     p.start_date,
     date(CTH_Creation_DATE) as CTH_Creation_DATE,
-    LAG(Case_type)OVER(PARTITION BY Period_ID_Number ORDER BY CTH_Creation_DATE asc) AS prev_Case_type
-  FROM `{{SupervisionPeriod@ALL}}` sp
+    LAG(Case_type)OVER(PARTITION BY Period_ID_Number ORDER BY CTH_Creation_DATE DESC) AS prev_Case_type
+  FROM ranked_case_type_changes sp
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE CTH_CREATION_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE" AND DATE(CTH_Creation_DATE) < DATE(p.Max_Termination_Date)
+  WHERE DATE(CTH_Creation_DATE) < DATE(p.Max_Termination_Date) AND rnk = 1
 ), 
 -- Selects only the records that have a different case_type than before
 case_type_changes_cte AS (
@@ -125,6 +139,20 @@ case_type_changes_cte AS (
     FROM case_type_cte
     WHERE prev_Case_type IS DISTINCT FROM Case_Type
 ),
+-- Before we look at the supervision officer changes, select the latest change on a given date.
+-- This is to avoid zero day periods where multiple changes were done on a single day.
+-- Also removes records without an appropriate update date or filters to active records.
+ranked_status_changes AS 
+(
+    SELECT
+        SID_number,
+        Period_ID_number,
+        Status,
+        DATE(OSTS_UPDATE_DATE) as OSTS_UPDATE_DATE,
+        RANK() OVER (PARTITION BY Period_ID_Number, DATE(OSTS_UPDATE_DATE) ORDER BY OSTS_UPDATE_DATE DESC) AS rnk
+    FROM `{{SupervisionPeriod@ALL}}`
+    WHERE OSTS_UPDATE_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE"
+),
 -- Grabs all status records and their update time, ignores changes that happened after
 -- Max termination end date
 status_cte AS (
@@ -135,10 +163,10 @@ status_cte AS (
     p.start_date,
     DATE(OSTS_UPDATE_DATE) as OSTS_UPDATE_DATE,
     LAG(Status)OVER(PARTITION BY Period_ID_Number ORDER BY OSTS_UPDATE_DATE asc) AS prev_Status
-  FROM `{{SupervisionPeriod@ALL}}` sp
+  FROM ranked_status_changes sp
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE OSTS_UPDATE_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE" AND DATE(OSTS_UPDATE_DATE) < DATE(p.Max_Termination_Date)
+  WHERE DATE(OSTS_UPDATE_DATE) < DATE(p.Max_Termination_Date) and rnk = 1
 ),
 -- Selects only the records that have a different status than before
 status_changes_cte AS (
@@ -155,6 +183,20 @@ status_changes_cte AS (
     FROM Status_cte
     WHERE prev_Status IS DISTINCT FROM Status
 ),
+-- Before we look at the supervision officer changes, select the latest change on a given date.
+-- This is to avoid zero day periods where multiple changes were done on a single day.
+-- Also removes records without an appropriate update date or filters to active records.
+ranked_supervision_officer_changes AS 
+(
+    SELECT
+        SID_number,
+        Period_ID_number,
+        Supervision_Officer,
+        DATE(WTSK_UPDATE_DATE) as WTSK_UPDATE_DATE,
+        RANK() OVER (PARTITION BY Period_ID_Number, DATE(WTSK_UPDATE_DATE) ORDER BY WTSK_UPDATE_DATE DESC) AS rnk
+    FROM `{{SupervisionPeriod@ALL}}`
+    WHERE WTSK_UPDATE_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE"
+),
 -- Grabs all supervision officer records and their update time, ignores changes that happened after
 -- Max termination end date
 supervision_officer_cte AS (
@@ -163,15 +205,15 @@ supervision_officer_cte AS (
     p.Period_ID_Number,
     Supervision_Officer,
     p.start_date,
-    DATE(WTSK_UPDATE_DATE) as WTSK_UPDATE_DATE,
+    WTSK_UPDATE_DATE,
     LAG(Supervision_Officer)OVER(PARTITION BY Period_ID_Number ORDER BY WTSK_UPDATE_DATE asc) AS prev_Supervision_Officer
-  FROM `{{SupervisionPeriod@ALL}}` sp
+  FROM ranked_supervision_officer_changes sp
   LEFT JOIN `{{Staff}}` s
     ON sp.Supervision_Officer = s.Staff_ID_Number
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE WTSK_UPDATE_DATE IS NOT NULL AND sp.Deleted_Flag = "ACTIVE" AND DATE(WTSK_UPDATE_DATE) < DATE(p.Max_Termination_Date)
-  AND (Staff_ID_Number IS NOT NULL or Supervision_Officer IS NULL)
+  WHERE DATE(WTSK_UPDATE_DATE) < DATE(p.Max_Termination_Date)
+  AND (Staff_ID_Number IS NOT NULL or Supervision_Officer IS NULL) AND rnk = 1
 ),
 -- Selects only the records that have a different supervision officer than before
 supervision_officer_changes_cte AS (
