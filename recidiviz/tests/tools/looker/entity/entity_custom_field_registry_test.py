@@ -21,7 +21,10 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_table_id,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.entity.entity_custom_field_registry import (
+    COMMON_CUSTOM_FIELDS,
+    NORMALIZED_STATE_CUSTOM_FIELDS,
     STATE_CUSTOM_FIELDS,
 )
 
@@ -29,10 +32,23 @@ from recidiviz.tools.looker.entity.entity_custom_field_registry import (
 class TestEntityCustomFieldRegistry(unittest.TestCase):
     """Tests for EntityCustomFieldRegistry."""
 
-    # TODO(#39355) Add tests for normalized entities
-
     def test_valid_state_tables(self) -> None:
         for table in STATE_CUSTOM_FIELDS:
             _ = get_entity_class_in_module_with_table_id(
                 entities_module=state_entities, table_id=table
+            )
+
+    def test_valid_normalized_tables(self) -> None:
+        for table in NORMALIZED_STATE_CUSTOM_FIELDS:
+            _ = get_entity_class_in_module_with_table_id(
+                entities_module=normalized_entities, table_id=table
+            )
+
+    def test_valid_common_tables(self) -> None:
+        for table in COMMON_CUSTOM_FIELDS:
+            _ = get_entity_class_in_module_with_table_id(
+                entities_module=state_entities, table_id=table
+            )
+            _ = get_entity_class_in_module_with_table_id(
+                entities_module=normalized_entities, table_id=table
             )

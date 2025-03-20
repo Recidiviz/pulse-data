@@ -354,7 +354,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
         self.patcher_get_elements_provider.stop()
 
     def test_build_dashboard(self) -> None:
-        expected_dashboard = """- dashboard: fake_person_template
+        expected_dashboard = """- dashboard: fake_person
   layout: newspaper
   title: Fake Person
   load_configuration: wait

@@ -16,6 +16,7 @@
 # =============================================================================
 """A script for generating one LookML view for each state schema table"""
 
+from collections import defaultdict
 from types import ModuleType
 
 from recidiviz.looker.lookml_field_registry import LookMLFieldRegistry
@@ -27,17 +28,7 @@ from recidiviz.tools.looker.entity.entity_lookml_field_factory import (
 )
 
 DEFAULT_FIELDS: list[LookMLViewField] = [EntityLookMLFieldFactory.count_measure()]
-STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
-    "state_incarceration_period": [
-        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
-            "state_incarceration_period", "release_date"
-        )
-    ],
-    "state_supervision_period": [
-        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
-            "state_supervision_period", "termination_date"
-        )
-    ],
+COMMON_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
     "state_supervision_sentence": [
         EntityLookMLFieldFactory.average_measure("max_length_days"),
         EntityLookMLFieldFactory.sum_measure("max_length_days"),
@@ -134,7 +125,6 @@ STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
     ],
     "state_person": [
         EntityLookMLFieldFactory.full_name_clean(),
-        EntityLookMLFieldFactory.actions(),
         EntityLookMLFieldFactory.count_measure(
             ["person_id", "state_code", "full_name"]
         ),
@@ -150,20 +140,81 @@ STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
         EntityLookMLFieldFactory.referrals_array(),
     ],
 }
+STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
+    "state_incarceration_period": [
+        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
+            view_name="state_incarceration_period",
+            period_end_date_field="release_date",
+        )
+    ],
+    "state_supervision_period": [
+        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
+            view_name="state_supervision_period",
+            period_end_date_field="termination_date",
+        )
+    ],
+    "state_person": [
+        EntityLookMLFieldFactory.actions(
+            root_entity_view_name="state_person",
+            external_id_entity_view_name="state_person_external_id",
+        )
+    ],
+}
+NORMALIZED_STATE_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
+    "state_charge": [
+        # Hide duplicated columns that are represented as *_external in normalized state_charge
+        EntityLookMLFieldFactory.hidden_dimension("is_drug"),
+        EntityLookMLFieldFactory.hidden_dimension("is_sex_offense"),
+        EntityLookMLFieldFactory.hidden_dimension("is_violent"),
+        EntityLookMLFieldFactory.hidden_dimension("ncic_code"),
+    ],
+    "state_incarceration_period": [
+        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
+            view_name="normalized_state_incarceration_period",
+            period_end_date_field="release_date",
+        )
+    ],
+    "state_supervision_period": [
+        EntityLookMLFieldFactory.person_id_with_open_period_indicator(
+            view_name="normalized_state_supervision_period",
+            period_end_date_field="termination_date",
+        )
+    ],
+    "state_person": [
+        EntityLookMLFieldFactory.actions(
+            root_entity_view_name="normalized_state_person",
+            external_id_entity_view_name="normalized_state_person_external_id",
+        )
+    ],
+}
 
 
 def get_custom_field_registry_for_entity_module(
     entities_module: ModuleType,
 ) -> LookMLFieldRegistry:
     """Returns the custom field registry for the given entity module."""
+
+    def merge_dicts(dict1: dict[str, list], dict2: dict[str, list]) -> dict[str, list]:
+        merged = defaultdict(list)
+
+        for key, value in dict1.items():
+            merged[key].extend(value)
+        for key, value in dict2.items():
+            merged[key].extend(value)
+
+        return dict(merged)
+
     if entities_module == state_entities:
         return LookMLFieldRegistry(
-            default_fields=DEFAULT_FIELDS, table_fields=STATE_CUSTOM_FIELDS
+            default_fields=DEFAULT_FIELDS,
+            table_fields=merge_dicts(COMMON_CUSTOM_FIELDS, STATE_CUSTOM_FIELDS),
         )
     if entities_module == normalized_entities:
-        # TODO(#39355) Add custom fields for normalized entities
         return LookMLFieldRegistry(
-            default_fields=DEFAULT_FIELDS, table_fields=STATE_CUSTOM_FIELDS
+            default_fields=DEFAULT_FIELDS,
+            table_fields=merge_dicts(
+                COMMON_CUSTOM_FIELDS, NORMALIZED_STATE_CUSTOM_FIELDS
+            ),
         )
 
     raise ValueError(f"Unsupported entities module: [{entities_module}]")

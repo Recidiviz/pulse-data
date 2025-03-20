@@ -92,7 +92,7 @@ def write_lookml_files(
                 module_context=module_context,
                 root_entity_cls=root_entity_cls,
             ).build(),
-            top_level_explore_name=root_entity_cls.get_table_id(),
+            top_level_explore_name=root_entity_cls.get_entity_name(),
             output_directory=os.path.join(looker_dir, EXPLORES_DIR, dataset_subdir),
             source_script_path=__file__,
         )

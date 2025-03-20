@@ -65,14 +65,6 @@ class EntityLookMLDashboardBuilder:
     def root_entity_name(self) -> str:
         return self.root_entity_cls.get_entity_name()
 
-    @property
-    def dashboard_title(self) -> str:
-        return snake_to_title(self.root_entity_name)
-
-    @property
-    def dashboard_name(self) -> str:
-        return f"{self.root_entity_name}_template"
-
     def _get_filter_fields(self) -> list[str]:
         """Returns the filter fields for the dashboard consisting of the root entity's
         primary key, state entity fields and the external id entity fields.
@@ -142,8 +134,8 @@ class EntityLookMLDashboardBuilder:
         by the dashboard exist in the corresponding views."""
         filter_fields = self._get_filter_fields()
         dashboard = SingleExploreLookMLDashboardBuilder(
-            dashboard_name=self.dashboard_name,
-            dashboard_title=self.dashboard_title,
+            dashboard_name=self.root_entity_name,
+            dashboard_title=snake_to_title(self.root_entity_name),
             explore_name=self.root_entity_name,
             model_name=self.project_id,
             filter_fields=filter_fields,

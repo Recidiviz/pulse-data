@@ -38,6 +38,9 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
+from recidiviz.tools.looker.entity.entity_views_builder import (
+    view_name_for_entity_table,
+)
 
 STATE_GROUP_LABEL = "State"
 
@@ -137,9 +140,12 @@ class EntityLookMLExploreBuilder:
             If the entities have a many-to-many relationship, we need to join through an association table.
             """
             if entity_relationship_cardinality == JoinCardinality.MANY_TO_MANY:
+                association_table_id = get_association_table_id(
+                    parent_cls, child_cls, self.module_context
+                )
                 return (
-                    get_association_table_id(
-                        parent_cls, child_cls, self.module_context
+                    view_name_for_entity_table(
+                        self.module_context.entities_module(), association_table_id
                     ),
                     JoinCardinality.ONE_TO_MANY,
                 )

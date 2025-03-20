@@ -17,7 +17,11 @@
 """Factory for creating reusable LookML fields."""
 from typing import List, Optional
 
-from recidiviz.looker.lookml_view_field import LookMLFieldType, MeasureLookMLViewField
+from recidiviz.looker.lookml_view_field import (
+    DimensionLookMLViewField,
+    LookMLFieldType,
+    MeasureLookMLViewField,
+)
 from recidiviz.looker.lookml_view_field_parameter import LookMLFieldParameter
 
 
@@ -113,5 +117,27 @@ class LookMLFieldFactory:
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.SUM),
                 LookMLFieldParameter.sql(f"${{{field}}}"),
+            ],
+        )
+
+    @staticmethod
+    def hidden_dimension(field: str) -> DimensionLookMLViewField:
+        """
+        Creates a hidden LookML dimension for a specific field.
+
+        This dimension is hidden from the user interface and can be used
+        for internal calculations or filtering.
+
+        Args:
+            field (str): The name of the field to create a hidden dimension for.
+
+        Returns:
+            DimensionLookMLViewField: A hidden LookML dimension field for the
+                specified field.
+        """
+        return DimensionLookMLViewField(
+            field_name=field,
+            parameters=[
+                LookMLFieldParameter.hidden(is_hidden=True),
             ],
         )

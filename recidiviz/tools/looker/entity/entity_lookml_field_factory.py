@@ -17,6 +17,7 @@
 """Factory for creating LookML fields for entities."""
 import attr
 
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_field_factory import LookMLFieldFactory
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
@@ -27,6 +28,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterHtml,
     LookMLFieldParameter,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 
 @attr.define
@@ -39,13 +41,13 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
 
     @staticmethod
     def person_id_with_open_period_indicator(
-        table_id: str, period_end_date_field: str
+        view_name: str, period_end_date_field: str
     ) -> DimensionLookMLViewField:
         """Adds a star to the person_id if the period_end_date_field is not null,
         indicating an open period."""
         html = FieldParameterHtml(
             f"""
-      {{% if {table_id}.{period_end_date_field}._value %}}
+      {{% if {view_name}.{period_end_date_field}._value %}}
         <font >{{{{ rendered_value }}}}</font>
       {{% else %}}
         <font >❇️ {{{{ rendered_value }}}}</font>
@@ -130,18 +132,24 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
         )
 
     @staticmethod
-    def actions() -> DimensionLookMLViewField:
+    def actions(
+        root_entity_view_name: str, external_id_entity_view_name: str
+    ) -> DimensionLookMLViewField:
         """Adds a button to switch between production and staging and the normalized and non-normalized state
         versions of the person details dashboard."""
-        html = """
-    <style>
-       {
+        if root_entity_view_name.startswith("normalized_"):
+            opposite_root_entity_name = root_entity_view_name.replace("normalized_", "")
+        else:
+            opposite_root_entity_name = f"normalized_{root_entity_view_name}"
 
-      }
+        html_template = """
+    <style>
+       {{
+
+      }}
     </style>
-    {% if _model._name == "recidiviz-staging"  %}
       <a
-        href="/dashboards/recidiviz-staging::normalized_person_details_staging?Person+ID={{ _filters['state_person.person_id'] }}&State+Code={{ _filters['state_person.state_code'] }}&External+ID={{ _filters['state_person_external_id.external_id'] }}&ID+Type={{ _filters['state_person_external_id.id_type'] }}"
+        href="/dashboards/recidiviz-staging::{opposite_root_entity_name}?Person+ID={{{{ _filters['{root_entity_name}.person_id'] }}}}&State+Code={{{{ _filters['{root_entity_name}.state_code'] }}}}&External+ID={{{{ _filters['{external_id_entity_name}.external_id'] }}}}&ID+Type={{{{ _filters['{external_id_entity_name}.id_type'] }}}}"
         style="
           position: relative;
           display: inline-block;
@@ -156,70 +164,24 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
           border-radius: 3px;
         "
       >
-        Switch to Normalized State Person Details
+        Switch to {opposite_root_entity_title}
       </a>
-      <a
-        href="/dashboards/recidiviz-123::person_details_prod?Person+ID={{ _filters['state_person.person_id'] }}&State+Code={{ _filters['state_person.state_code'] }}&External+ID={{ _filters['state_person_external_id.external_id'] }}&ID+Type={{ _filters['state_person_external_id.id_type'] }}"
-        style="
-          position: relative;
-          display: inline-block;
-          text-align: center;
-          border: 1px solid #1890ff;
-          text-decoration: none;
-          color: #fff;
-          background: #1890ff;
-          text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
-          box-shadow: 0 2px 0 rgb(0 0 0 / 5%);
-          padding: 0 7px;
-          border-radius: 3px;
-        "
-      >
-        Switch to Production
-      </a>
-    {% else %}
-      <a
-        href="/dashboards/recidiviz-123::normalized_person_details_prod?Person+ID={{ _filters['state_person.person_id'] }}&State+Code={{ _filters['state_person.state_code'] }}&External+ID={{ _filters['state_person_external_id.external_id'] }}&ID+Type={{ _filters['state_person_external_id.id_type'] }}"
-        style="
-          position: relative;
-          display: inline-block;
-          text-align: center;
-          border: 1px solid #1890ff;
-          text-decoration: none;
-          color: #fff;
-          background: #1890ff;
-          text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
-          box-shadow: 0 2px 0 rgb(0 0 0 / 5%);
-          padding: 0 7px;
-          border-radius: 3px;
-        "
-      >
-        Switch to Normalized State Person Details
-      </a>
-      <a
-        href="/dashboards/recidiviz-staging::person_details_staging?Person+ID={{ _filters['state_person.person_id'] }}&State+Code={{ _filters['state_person.state_code'] }}&External+ID={{ _filters['state_person_external_id.external_id'] }}&ID+Type={{ _filters['state_person_external_id.id_type'] }}"
-        style="
-          position: relative;
-          display: inline-block;
-          text-align: center;
-          border: 1px solid #1890ff;
-          text-decoration: none;
-          color: #fff;
-          background: #1890ff;
-          text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
-          box-shadow: 0 2px 0 rgb(0 0 0 / 5%);
-          padding: 0 7px;
-          border-radius: 3px;
-        "
-      >
-        Switch to Staging
-      </a>
-    {% endif %}
 """
         return DimensionLookMLViewField(
             field_name="actions",
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.STRING),
                 LookMLFieldParameter.sql("${TABLE}.person_id"),
-                LookMLFieldParameter.html(html),
+                LookMLFieldParameter.html(
+                    StrictStringFormatter().format(
+                        html_template,
+                        opposite_root_entity_name=opposite_root_entity_name,
+                        root_entity_name=root_entity_view_name,
+                        external_id_entity_name=external_id_entity_view_name,
+                        opposite_root_entity_title=snake_to_title(
+                            opposite_root_entity_name
+                        ),
+                    )
+                ),
             ],
         )
