@@ -1713,6 +1713,9 @@ US_TX:
     task_eligibility_criteria_us_tx.meets_edge_case_home_contact_standards: |-
       Used as a reference table to indicate when a client changes address. 3/17/2025.
   RECIDIVIZ_REFERENCE_ContactCadence:
+    task_eligibility_criteria_us_tx.meets_scheduled_collateral_contact_standards:
+      |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
     task_eligibility_criteria_us_tx.meets_scheduled_electronic_contact_standards:
       |-
       Used as a reference table to indicate contact cadences. 12/30/2024.

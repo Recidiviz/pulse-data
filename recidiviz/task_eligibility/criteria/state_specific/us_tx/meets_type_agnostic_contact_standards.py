@@ -117,7 +117,8 @@ contact_info AS (
             END 
         || contact_method_raw_text ) AS contact_type,
         external_id,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact`
+    WHERE status = "COMPLETED"
 ),
 -- Creates a record of what contact types can be accepted for a given supervision period
 -- and calculates how long the person has been in supervision, and thus how many contact
@@ -141,6 +142,16 @@ person_info_with_contact_types_accepted AS (
     -- Check to see if this supervision level and case type has any agnostic contacts
     WHERE cca.frequency_in_months IS NOT NULL
 ),
+-- There are times where a client has two supervision levels or case types within 
+-- a single month. In order to not have multiple contact cadences, we choose the contact
+-- cadence that is associated with the most recent supervision level / case type in a 
+-- month. 
+single_contacts_compliance AS (
+    SELECT
+        *
+    FROM person_info_with_contact_types_accepted
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, month_start, contact_types_accepted ORDER BY start_date DESC) = 1
+),
 -- Creates sets of empty periods that are the duration of the contact frequency
 empty_periods AS (
     Select 
@@ -148,13 +159,25 @@ empty_periods AS (
         contact_types_accepted,
         supervision_level,
         case_type,
+        start_date,
+        end_date,
         frequency_in_months,
         -- For each span, calculate the starting month and ending month
         month_start + INTERVAL period_index * frequency_in_months MONTH AS month_start,
         -- Calculate the end of the span (last day of the month)
         LAST_DAY(month_start + INTERVAL (period_index + 1) * frequency_in_months - 1 MONTH) AS month_end
-    from person_info_with_contact_types_accepted,
+    from single_contacts_compliance,
     UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS period_index
+),
+-- There are times where periods are created in advance for a former contact cadence
+-- we want to remove these periods so that only periods with the appropriate cadence
+-- are kept in a given time. 
+clean_empty_periods AS 
+(
+    SELECT
+        *
+    FROM empty_periods
+    WHERE end_date IS NULL OR month_end < end_date
 ),
 -- Looks back to connect contacts to a given contact period they were completed in
 lookback_cte AS
@@ -169,7 +192,7 @@ lookback_cte AS
         month_start,
         month_end,
         ci.contact_type,
-    FROM empty_periods p
+    FROM clean_empty_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
         AND p.contact_types_accepted LIKE CONCAT("%",ci.contact_type,"%") 

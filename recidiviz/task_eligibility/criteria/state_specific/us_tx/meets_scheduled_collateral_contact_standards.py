@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,39 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query that generates the state supervision contacts entity using the following tables: """
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewQueryBuilder,
+
+"""Defines a criteria view that shows spans of time for which supervision clients
+are compliant with scheduled collateral contacts
+"""
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
+    contact_compliance_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
-SELECT
-    SID_Number,
-    Contact_ID,
-    Contact_Date,
-    Verified_Employment,
-    Face_to_Face_Flag,
-    Unsuccessful_Contact_Flag,
-    Reason_Description,
-    Location_Description,
-    Type_Description,
-    COLLATERAL_CONTACT,
-FROM {SupervisionContact}
-LEFT JOIN {ContactTypeDescription}
-    USING(Contact_Type)
-LEFT JOIN {ContactReasonDescription}
-    USING(Contact_Reason)
-LEFT JOIN {ContactLocationDescription}
-    USING(Contact_Location)
-WHERE UPPER(Deleted_Flag) = "ACTIVE"
+_CRITERIA_NAME = "US_TX_MEETS_SCHEDULED_COLLATERAL_CONTACT_STANDARDS"
+
+_DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
+meet standards for scheduled collateral contacts based on their supervision level and case type.
 """
 
-VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_tx",
-    ingest_view_name="supervision_contacts",
-    view_query_template=VIEW_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = contact_compliance_builder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    contact_type="SCHEDULED COLLATERAL",
 )
 
 if __name__ == "__main__":

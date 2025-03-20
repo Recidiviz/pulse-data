@@ -74,16 +74,20 @@ contact_info AS (
     SELECT 
         person_id,
         contact_date,
-        CONCAT(
-            CASE 
-                WHEN contact_reason_raw_text = "REGULAR VISIT" 
-                    THEN "SCHEDULED " 
-                ELSE "UNSCHEDULED " 
-            END 
-        || contact_method_raw_text ) AS contact_type,
+        CASE
+            -- When we are looking at collateral contacts, look at contact type in 
+            -- state supervision contact as opposed to contact method
+            WHEN "{contact_type}" = "SCHEDULED COLLATERAL" 
+            AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
+                THEN "SCHEDULED COLLATERAL"
+            WHEN contact_reason_raw_text = "REGULAR VISIT" 
+                THEN CONCAT("SCHEDULED " || contact_method_raw_text)
+            ELSE
+                CONCAT("UNSCHEDULED " || contact_method_raw_text)
+        END AS contact_type,
         external_id,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
-    WHERE state_code = "US_TX"
+    WHERE state_code = "US_TX" AND status = "COMPLETED"
 ),
 -- Create a table where each contact is associated with the appropriate cadence and we 
 -- begin to count the months the client has been on supervision and the number of 
@@ -92,6 +96,7 @@ contacts_compliance AS (
         SELECT DISTINCT
         p.person_id,
         p.start_date,
+        p.end_date,
         ca.contact_type,
         p.supervision_level,
         DATE_TRUNC(start_date, MONTH) AS month_start,
@@ -108,21 +113,43 @@ contacts_compliance AS (
     -- Remove rows with no contact requirements
     WHERE ca.contact_type IS NOT NULL
 ),
+-- There are times where a client has two supervision levels or case types within 
+-- a single month. In order to not have multiple contact cadences, we choose the contact
+-- cadence that is associated with the most recent supervision level / case type in a 
+-- month. 
+single_contacts_compliance AS (
+    SELECT
+        *
+    FROM contacts_compliance
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, month_start ORDER BY start_date DESC) = 1
+),
 -- Creates sets of empty periods that are the duration of the contact frequency
-empty_periods as (
+empty_periods AS (
     SELECT 
         person_id,
         contact_type,
         supervision_level,
         case_type,
         quantity,
+        start_date,
+        end_date,
         frequency_in_months,
         -- For each span, calculate the starting month and ending month
         month_start + INTERVAL x * frequency_in_months MONTH AS month_start,
         -- Calculate the end of the span (last day of the month)
         LAST_DAY(month_start + INTERVAL (x + 1) * frequency_in_months - 1 MONTH) AS month_end
-    FROM contacts_compliance,
+    FROM single_contacts_compliance,
     UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS x
+),
+-- There are times where periods are created in advance for a former contact cadence
+-- we want to remove these periods so that only periods with the appropriate cadence
+-- are kept in a given time. 
+clean_empty_periods AS 
+(
+    SELECT
+        *
+    FROM empty_periods
+    WHERE end_date IS NULL OR month_end < end_date
 ),
 -- Looks back to connect contacts to a given contact period they were completed in
 lookback_cte AS
@@ -137,7 +164,7 @@ lookback_cte AS
         month_start,
         month_end,
         quantity,
-    FROM empty_periods p
+    FROM clean_empty_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
         AND ci.contact_type = p.contact_type

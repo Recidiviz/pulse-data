@@ -12,6 +12,7 @@ input_columns:
   Reason_Description: STRING
   Location_Description: STRING
   Type_Description: STRING
+  COLLATERAL_CONTACT: STRING
 unused_columns: [Face_to_Face_Flag]
 output:
   StatePerson:
@@ -80,28 +81,17 @@ output:
                   - "Other"
           contact_type:
             $enum_mapping:
-              $raw_text: Type_Description
+              $raw_text: COLLATERAL_CONTACT
               $mappings:
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
+                  - "Both Offender and Collateral"
                 StateSupervisionContactType.COLLATERAL:
-                  - "Collateral W/ Treatment Provider"
-                  - "Employer/Sponsor F2F"
+                  - "Collateral"
                 StateSupervisionContactType.DIRECT:
-                  - "Home"
-                  - "Residence Verification"
-                  - "Electronic"
-                  - "Telephonic"
-                  - "Virtual"
-                  - "Any Parolee F2F"
-                  - "Employment"
-                  - "Office"
-                  - "Office or Field"
-                  - "Written"
-                  - "Field"
+                  - "Offender"
                 StateSupervisionContactType.INTERNAL_UNKNOWN:
-                  - "Home Deferal"
-                  - "Any Contact Type"
-                  - "Surveillance"
-                  - "Unit"
+                  - "Case Staffing"
+                  - "Division Staff"
           contact_reason:
             $enum_mapping:
               $raw_text: Reason_Description

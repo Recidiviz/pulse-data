@@ -78,6 +78,11 @@ TASK_CONFIGS: List[TaskConfig] = [
         "table": "meets_edge_case_home_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
+    {
+        "type": "usTxCollateralContactScheduled",
+        "table": "meets_scheduled_collateral_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
 ]
 
 

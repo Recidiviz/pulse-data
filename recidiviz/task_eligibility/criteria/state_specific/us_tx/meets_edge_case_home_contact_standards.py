@@ -101,7 +101,7 @@ office_visit AS
         person_id,
         contact_date AS start_date,
         LAST_DAY(DATE_ADD(DATE(contact_date), INTERVAL 1 MONTH)) AS end_date,
-        "Initial home" as reason_for_contact,
+        "Initial Home Contact" as reason_for_contact,
     FROM contact_info
     WHERE Contact_reason = "INITIAL_CONTACT" AND contact_method_raw_text != "HOME"
 ),
@@ -121,7 +121,7 @@ address_change_periods AS (
         person_id,
         DATE(Creation_Date) as start_date,
         LAST_DAY(DATE_ADD(DATE(Creation_Date), INTERVAL 1 MONTH)) AS end_date,
-        "Address Change" AS reason_for_contact,
+        "Home Contact due to Address Change" AS reason_for_contact,
     FROM address_cte a
     LEFT JOIN  `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` e
         ON  a.SID_Number = e.external_id
@@ -152,7 +152,7 @@ status_change_periods AS (
         person_id,
         start_date,
         DATE_ADD(DATE(start_date), INTERVAL 5 DAY) AS end_date,
-        "Returned to supervision" AS reason_for_contact
+        "Home Contact due to Return to Supervision" AS reason_for_contact
     FROM status_change_cte 
     -- Filter to only status changes
     WHERE status IS DISTINCT FROM prev_status 
@@ -240,7 +240,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
                 description="Due date of the contact.",
             ),
             ReasonsField(
-                name="reason_for_contact ",
+                name="reason_for_contact",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="The type of period.",
             ),
