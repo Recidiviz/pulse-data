@@ -79,6 +79,44 @@ _QUERY_TEMPLATE = f"""
           AND CANCEL_DTM IS NULL
           AND pei.state_code = 'US_AZ'
           AND pei.id_type = 'US_AZ_ADC_NUMBER'
+
+          UNION ALL 
+
+          -- This checks case notes for mentions of warrants or detainers from other states.
+          -- Pitalls of this logic are that the text matching is brittle and imperfect;
+          --  there is also no way for us to know if these detainers or warrants have 
+          -- been cancelled, so they will remain active for the entirety of a person's 
+          -- incarceration. 
+          SELECT
+          pei.state_code,
+          pei.person_id,
+          CAST(SPLIT(CREATE_DTM, ' ')[OFFSET(0)] AS DATE) AS start_date,
+          CAST(NULL AS DATE) AS end_date,
+           CAST(SPLIT(CREATE_DTM, ' ')[OFFSET(0)] AS DATE) AS detainer_start_date,
+          FALSE AS meets_criteria
+          FROM 
+            `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CASE_NOTE_latest` cn
+          INNER JOIN
+            `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+          ON
+            (cn.PERSON_ID = pei.external_id AND pei.id_type = 'US_AZ_PERSON_ID')
+          WHERE (UPPER(xnote_text) LIKE "%NCIC%"  OR UPPER(xnote_text) LIKE "%ACIC%")
+          AND UPPER(xnote_text) not LIKE "%CLEARED%"
+          AND (
+              UPPER(xnote_text)  LIKE "%NOT CLEAR%" 
+              OR UPPER(xnote_text)  LIKE "%NOTCLEAR%" 
+              OR UPPER(xnote_text)  LIKE "%HIT%" 
+              OR UPPER(xnote_text)  LIKE "%VALID%" 
+              OR UPPER(xnote_text)  LIKE "%EXTRADITE%" 
+              OR UPPER(xnote_text)  LIKE "%EXTRADITION%"
+              OR UPPER(xnote_text)  LIKE "%(M)%"
+              OR UPPER(xnote_text)  LIKE "%(U)%" 
+              OR UPPER(xnote_text)  LIKE "%(F)%" 
+            )
+          and UPPER(xnote_text) NOT LIKE "%RAN CLEAR%" 
+          and UPPER(xnote_text) NOT LIKE "%CHECK CLEAR%" 
+          and upper(xnote_text) NOT LIKE "%NCIC CLEAR%"
+          and upper(xnote_text) NOT LIKE "%RAN"
     ),
     {create_sub_sessions_with_attributes('detainer_status')},
     dedup_cte AS (
