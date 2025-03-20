@@ -1772,6 +1772,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_pa_state.state_supervision_violation_response_decision_entry",
     "us_pa_state.state_supervision_violation_type_entry",
     "us_pa_state.state_task_deadline",
+    "us_tn_ingest_view_results.AssignedStaff",
     "us_tn_ingest_view_results.AssignedStaffSupervisionPeriod_v2",
     "us_tn_ingest_view_results.CAFScoreAssessment",
     "us_tn_ingest_view_results.DisciplinaryIncarcerationIncident",

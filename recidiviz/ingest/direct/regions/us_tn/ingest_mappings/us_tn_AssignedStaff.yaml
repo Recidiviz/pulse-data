@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  StartDate: DATE
+  EndDate: DATE
+  StaffID: STRING
+  AssignmentType: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: StartDate
+          relationship_end_date_exclusive: EndDate
+          associated_staff_external_id: StaffID
+          associated_staff_external_id_type: $literal("US_TN_STAFF_TOMIS")
+          system_type:
+            $enum_mapping:
+              $raw_text: AssignmentType
+              $mappings:
+                StateSystemType.INCARCERATION:
+                  - COU # COUNSELOR - INSTITUTION
+                StateSystemType.SUPERVISION:
+                  - PRO # PROBATION OFFICER
+                  - PAO # PAROLE OFFICER
+                  - CCC # COMMUNITY CORRECTION CASEWORK
+          relationship_type:
+            $enum_mapping:
+              $raw_text: AssignmentType
+              $mappings:
+                StatePersonStaffRelationshipType.CASE_MANAGER:
+                  - COU # COUNSELOR - INSTITUTION
+                StatePersonStaffRelationshipType.SUPERVISING_OFFICER:
+                  - PRO # PROBATION OFFICER
+                  - PAO # PAROLE OFFICER
+                  - CCC # COMMUNITY CORRECTION CASEWORK
