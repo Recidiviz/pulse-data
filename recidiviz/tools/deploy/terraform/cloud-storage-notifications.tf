@@ -94,6 +94,7 @@ EOT
 }
 
 module "handle_sentencing_etl" {
+  count  = local.is_production ? 1 : 0
   source = "./modules/cloud-storage-notification"
 
   bucket_name                = module.sentencing-etl-data.name
