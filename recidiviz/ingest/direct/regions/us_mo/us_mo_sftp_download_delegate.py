@@ -34,6 +34,8 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 class UsMoSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_MO SFTP downloads are handled."""
 
+    allow_empty_sftp_directory: bool = False
+
     CURRENT_ROOT = "/Distribution/doc/co.prod.recidiviz/process"
 
     def _matches(self, path: str) -> bool:

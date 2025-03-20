@@ -34,6 +34,7 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 class UsArSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_AR SFTP downloads are handled."""
 
+    allow_empty_sftp_directory: bool = False
     CURRENT_ROOT = "/recidiviz"
 
     def _matches(self, path: str) -> bool:

@@ -213,21 +213,6 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         ):
             _ = execute_task(dag, find_files_task)
 
-    def test_execute_with_no_files_exempt_michigan(
-        self, _mock_sftp_delegate: MagicMock
-    ) -> None:
-        self.mock_sftp_hook.list_directory.side_effect = [[]]
-        self.mock_sftp_connection.listdir_attr.side_effect = [[]]
-        dag = DAG(dag_id="test_dag", start_date=datetime.datetime.now())
-        find_files_task = FindSftpFilesOperator(
-            task_id="test_task",
-            state_code="US_MI",
-            dag=dag,
-            excluded_remote_files_config_path=self.fake_excluded_files_config_gcs_path,
-        )
-        result = execute_task(dag, find_files_task)
-        self.assertEqual(result, [])
-
     def create_sftp_attrs(self, mtime: int, filename: str, mode: int) -> SFTPAttributes:
         attr = SFTPAttributes()
         attr.st_mtime = mtime

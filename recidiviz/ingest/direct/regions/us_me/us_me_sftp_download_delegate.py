@@ -36,6 +36,8 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_ME SFTP downloads are handled."""
 
+    allow_empty_sftp_directory: bool = False
+
     CURRENT_ROOT = "/Users/recidiviz"
     DIR_PREFIX = "Recidiviz_"
     TIMESTAMP_FORMAT = "%Y-%m-%dT%H%M%S"

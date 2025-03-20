@@ -40,6 +40,11 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_MI SFTP downloads are handled."""
 
+    # Michigan moves files to a different place once a file has been downloaded prior,
+    # so it's very likely to have no files once a complete SFTP download process has run
+    # prior.
+    allow_empty_sftp_directory: bool = True
+
     CURRENT_ROOT = "/CORrecidiviz"
 
     def _matches(self, path: str) -> bool:

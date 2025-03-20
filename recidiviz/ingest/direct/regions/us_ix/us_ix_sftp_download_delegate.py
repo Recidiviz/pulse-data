@@ -35,6 +35,8 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 class UsIxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_IX SFTP downloads are handled."""
 
+    allow_empty_sftp_directory: bool = False
+
     CURRENT_ROOT = "/"
     FILE_PREFIX = "recidiviz-atlas-cmd-"
 

@@ -38,6 +38,10 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
     """Class containing logic for how US_TX SFTP downloads are handled."""
 
+    # Texas asks us to delete files once we've downloaded them, so it's very likely to
+    # have no files once a complete SFTP download process has run prior.
+    allow_empty_sftp_directory: bool = True
+
     CURRENT_ROOT = "/"
     # Define the constant prefix and suffix
     file_prefix: str = "Recidiviz_"

@@ -17,9 +17,6 @@
 """Unit tests for the SFTP download delegates."""
 
 import unittest
-from unittest.mock import create_autospec
-
-import paramiko
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.remote_file_cleanup_mixin import (
@@ -58,7 +55,19 @@ class SftpDownloadDelegateTest(unittest.TestCase):
             if not issubclass(delegate.__class__, RemoteFileCleanupMixin):
                 continue
 
-            mock_sftp_client = create_autospec(paramiko.SFTPClient)
-            delegate.post_download_actions(
-                sftp_client=mock_sftp_client, remote_path="123"
-            )
+            if len(delegate.supported_environments()) > 1:
+                raise ValueError(
+                    f"The RemoteFileCleanupMixin cannot be used for a region that runs in "
+                    f"more than one project, as it can cause race conditions for file reading. "
+                    f"Please configure [{state_code.value}] to only be supported in a single "
+                    f"environment"
+                )
+
+            if delegate.allow_empty_sftp_directory is not True:
+                raise ValueError(
+                    f"The RemoteFileCleanupMixin will delete all files after they are "
+                    f"downloaded; this will almost certainly mean that the SFTP directory "
+                    f"will be empty for [{state_code.value}]. Pleas set [allow_empty_sftp_directory] "
+                    f"to true on the delegate or create an exemption in this test if you "
+                    f"are very confident you should!"
+                )

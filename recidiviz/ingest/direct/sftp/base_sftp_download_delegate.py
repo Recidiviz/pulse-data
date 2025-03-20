@@ -68,3 +68,13 @@ class BaseSftpDownloadDelegate(abc.ABC):
         """Should be implemented to execute any actions needed after a remote file has
         been successfully downloaded to a GCS.
         """
+
+    @property
+    @abc.abstractmethod
+    def allow_empty_sftp_directory(self) -> bool:
+        """Whether or not we are concerned if we find an empty SFTP directory. In
+        states where files are moved or deleted after we download them, we would expect
+        to find an empty directory. However, in most states, an empty directory likely
+        indicates that no files have every been uploaded, we have a connection issue,
+        or we have the incorrect root directory.
+        """

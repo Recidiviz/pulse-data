@@ -38,6 +38,8 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_PA SFTP downloads are handled."""
 
+    allow_empty_sftp_directory: bool = False
+
     CURRENT_ROOT = "/DOC/PRS/Recidiviz"
     DELIMITER = "-"
     PREFIX = "Recidiviz"

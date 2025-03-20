@@ -131,10 +131,8 @@ class FindSftpFilesOperator(BaseOperator):
             # Ignore all files that are not in the exclude list.
             if file_info[REMOTE_FILE_PATH] not in excluded_remote_paths
         ]
-        # Michigan is currently the only state that moves files to a different place once
-        # a file has been downloaded prior, so it's very likely to have no files once a
-        # complete SFTP download process has run prior.
-        if self.state_code != "US_MI" and not results:
+
+        if not self.delegate.allow_empty_sftp_directory and not results:
             raise ValueError(
                 f"No files found to download for {self.state_code} state. This indicates"
                 " that the SFTP directory is empty. Please check to see if the state has"

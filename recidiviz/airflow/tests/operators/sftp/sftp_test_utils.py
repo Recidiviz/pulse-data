@@ -47,6 +47,9 @@ class FakeSftpDownloadDelegateFactory(SftpDownloadDelegateFactory):
 
 
 class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
+
+    allow_empty_sftp_directory: bool = False
+
     def root_directory(self, candidate_paths: List[str]) -> str:
         return "/"
 
@@ -76,6 +79,9 @@ class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
 
 class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
+
+    allow_empty_sftp_directory: bool = True
+
     def root_directory(self, candidate_paths: List[str]) -> str:
         return "/"
 
