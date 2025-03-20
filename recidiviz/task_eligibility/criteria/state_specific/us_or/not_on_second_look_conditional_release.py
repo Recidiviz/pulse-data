@@ -16,42 +16,20 @@
 # ============================================================================
 """Identifies individuals who are not on Second Look conditional release in OR."""
 
-from google.cloud import bigquery
-
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.task_eligibility.reasons_field import ReasonsField
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    supervision_type_raw_text_is_not,
+from recidiviz.task_eligibility.utils.state_specific_criteria_builders import (
+    state_specific_supervision_type_raw_text_is_not,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_OR_NOT_ON_SECOND_LOOK_CONDITIONAL_RELEASE"
 
-_QUERY_TEMPLATE = supervision_type_raw_text_is_not(
+VIEW_BUILDER = state_specific_supervision_type_raw_text_is_not(
     state_code=StateCode.US_OR,
-    ineligible_raw_text_supervision_types=["SL"],
-)
-
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
-        state_code=StateCode.US_OR,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="supervision_type_raw_text",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Raw-text supervision type(s)",
-            ),
-        ],
-    )
+    criteria_name=_CRITERIA_NAME,
+    criteria_description=__doc__,
+    ineligible_raw_text_supervision_type_condition="= 'SL'",
 )
 
 if __name__ == "__main__":

@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper SQL fragments that do standard queries against tables in the
-normalized_state dataset.
+`normalized_state` dataset.
 """
-from typing import List, Optional, Union
+
+from typing import List, Optional
 
 from recidiviz.calculator.query.bq_utils import (
     date_diff_in_full_months,
-    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
@@ -31,7 +31,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
@@ -674,60 +673,6 @@ GROUP BY 1,2,3,4
     """
 
     return query
-
-
-def supervision_type_raw_text_is_not(
-    *,
-    state_code: StateCode,
-    ineligible_raw_text_supervision_types: Union[str, List[str]],
-) -> str:
-    """
-    Create query (in the shape of a state-specific TES criterion query) to check that a
-    client's raw-text supervision type is not (one of) the specified type(s).
-
-    Args:
-        state_code (StateCode): Specifies the state for which data will be included in
-            this state-specific query.
-        ineligible_raw_text_supervision_types (str or List[str]): Specifies the raw-text
-            supervision types that are ineligible (i.e., won't meet the criterion).
-
-    Returns:
-        str: SQL query as a string.
-    """
-    if isinstance(ineligible_raw_text_supervision_types, str):
-        ineligible_raw_text_supervision_types = [ineligible_raw_text_supervision_types]
-
-    return f"""
-    WITH supervision_type_spans AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            termination_date AS end_date,
-            supervision_type_raw_text,
-            /* By using COALESCE below, we explicitly treat clients with null raw-text
-            supervision types as eligible. */
-            COALESCE(supervision_type_raw_text, '') NOT IN ({list_to_query_string(ineligible_raw_text_supervision_types, quoted=True)}) AS is_eligible
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
-        -- drop zero-day periods
-        WHERE start_date<{nonnull_end_date_clause('termination_date')}
-            AND state_code='{state_code.value}'
-    ),
-    -- sub-sessionize in case there are overlapping supervision periods
-    {create_sub_sessions_with_attributes("supervision_type_spans")}
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        LOGICAL_AND(is_eligible) AS meets_criteria,
-        TO_JSON(STRUCT(
-            ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type_raw_text
-        )) AS reason,
-        ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type_raw_text,
-    FROM sub_sessions_with_attributes
-    GROUP BY 1, 2, 3, 4
-    """
 
 
 def supervision_violations_cte(
