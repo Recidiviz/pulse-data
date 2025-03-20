@@ -102,8 +102,17 @@ class TestPredicates(unittest.TestCase):
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
-        self.assertFalse(should_trigger, messages)
-        self.assertIn("incident is not for the primary ingest instance", messages)
+        self.assertTrue(should_trigger, messages)
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_calculation_dag",
+            dag_run_config="",
+            job_id="update_managed_views_all.execute_entrypoint_operator",
+            failed_execution_dates=[datetime.now(tz=timezone.utc)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger, messages)
 
     def test_stale_incident(self) -> None:
         incident = AirflowAlertingIncident(

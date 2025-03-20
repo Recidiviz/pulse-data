@@ -24,7 +24,6 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import (
-    get_calculation_dag_id,
     get_raw_data_import_dag_id,
     get_sftp_dag_id,
 )
@@ -76,15 +75,6 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
             method=TriggerPredicateMethod.PRECONDITION,
             condition=_incident_has_been_updated_recently,
             failure_message="incident has not occurred recently",
-        ),
-        AlertingIncidentTriggerPredicate(
-            method=TriggerPredicateMethod.PRECONDITION,
-            dag_id=get_calculation_dag_id(project_id),
-            condition=lambda incident: (
-                "ingest_instance" in incident.dag_run_config_obj
-                and incident.dag_run_config_obj["ingest_instance"] == "PRIMARY"
-            ),
-            failure_message="incident is not for the primary ingest instance",
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
