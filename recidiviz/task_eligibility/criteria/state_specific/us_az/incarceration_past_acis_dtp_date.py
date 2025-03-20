@@ -19,6 +19,7 @@ their ACIS (Time Comp assigned) Drug Transition Program date.
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -43,6 +44,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_AZ,
         criteria_spans_query_template=incarceration_past_early_release_date("DTP"),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=False,
         reasons_fields=[
             ReasonsField(

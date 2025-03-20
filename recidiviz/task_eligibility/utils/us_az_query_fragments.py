@@ -27,7 +27,6 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -36,9 +35,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
     critical_date_spans_cte,
-)
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    task_deadline_critical_date_update_datetimes_cte,
 )
 
 
@@ -697,18 +693,37 @@ def incarceration_past_early_release_date(opp_name: str) -> str:
         task_subtype = "STANDARD TRANSITION RELEASE"
     else:
         task_subtype = "DRUG TRANSITION RELEASE"
-    _ADDITIONAL_WHERE_CLAUSE = f"""
-                AND task_subtype = "{task_subtype}"
-                AND state_code = 'US_AZ' 
-                AND eligible_date IS NOT NULL 
-                AND eligible_date > '1900-01-01'"""
     return f"""
-        WITH
-        {task_deadline_critical_date_update_datetimes_cte(
-        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION_MIN,
-        critical_date_column='eligible_date',
-        additional_where_clause=_ADDITIONAL_WHERE_CLAUSE)
-    },
+    WITH
+      most_recent_acis_date_status AS (
+            SELECT
+                std.state_code,
+                std.person_id,
+                std.eligible_date AS critical_date,
+                CAST(DATE_ADD(std.update_datetime, INTERVAL 1 DAY) AS DATE) AS update_datetime
+            FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline` std
+            INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+                ON iss.person_id = std.person_id
+                    AND iss.state_code = std.state_code
+                    AND std.update_datetime BETWEEN iss.start_date AND IFNULL(iss.end_date_exclusive, '9999-12-31')
+            WHERE task_type = 'DISCHARGE_FROM_INCARCERATION_MIN' 
+                    AND task_subtype = "{task_subtype}"
+                    AND std.state_code = 'US_AZ' 
+             -- Filters to grab the most recent ACIS date status for a given resident in a given incarceration stint
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY std.person_id, std.state_code, iss.incarceration_super_session_id 
+                                            ORDER BY std.update_datetime DESC ) = 1
+        ),
+        critical_date_update_datetimes AS (
+        SELECT
+            state_code,
+            person_id,
+            critical_date,
+            update_datetime
+        FROM most_recent_acis_date_status
+        -- After filtering to get the most recent ACIS status, we only want folks who currently have an active ACIS date
+        WHERE critical_date IS NOT NULL 
+                AND critical_date > '1900-01-01'
+        ),
         {critical_date_spans_cte()},
         critical_date_spans_within_100_days_of_date AS (
             SELECT 
