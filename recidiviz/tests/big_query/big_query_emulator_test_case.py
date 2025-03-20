@@ -68,8 +68,8 @@ def _fail_500(response: requests.Response) -> None:
     if original_error.response.status_code == 500:
         raise RuntimeError(
             "The BigQueryEmulator has failed with a 500 status code. "
-            "Check the emulator's container logs to investigate. "
-            "(The BigQueryEmulatorTestCase prints the logs when a test failed!)"
+            "To investigate: set the class attribute "
+            "show_emulator_logs_on_failure=True, re-run, and then check emulator's logs. "
             f"Original error message: {original_error.message}"
         )
     raise original_error
@@ -79,16 +79,6 @@ def _fail_500(response: requests.Response) -> None:
 class BigQueryEmulatorTestCase(unittest.TestCase):
     """An implementation of TestCase that can be used for tests that talk to the
     BigQuery emulator.
-
-    In order to run tests that extend this TestCase, you must first download the latest
-    version of the BQ emulator by running:
-
-    pipenv run pull-bq-emulator
-
-    Then, before running the tests, you must launch the BQ emulator in a separate
-    terminal:
-
-    $ pipenv run start-bq-emulator
 
     DISCLAIMER: The BQ emulator currently supports a large subset of BigQuery SQL
     features, but not all of them. If you are trying to use the emulator and running
@@ -106,6 +96,9 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
     # Subclasses can override this to keep the input file when debugging tests
     delete_json_input_schema_on_teardown = True
+
+    # If the test failed, output the emulator logs prior to exiting
+    show_emulator_logs_on_failure = False
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
@@ -154,8 +147,8 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        # If the test failed, output the emulator logs prior to exiting
-        print(cls.control.get_logs())
+        if cls.show_emulator_logs_on_failure:
+            print(cls.control.get_logs())
         cls.control.stop_emulator()
 
         if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
