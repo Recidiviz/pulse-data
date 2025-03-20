@@ -109,13 +109,18 @@ contact_info AS (
     SELECT 
         person_id,
         contact_date,
-        CONCAT(
-            CASE 
-                WHEN contact_reason_raw_text = "REGULAR VISIT" 
-                    THEN "SCHEDULED " 
-                ELSE "UNSCHEDULED " 
-            END 
-        || contact_method_raw_text ) AS contact_type,
+        CASE
+            -- Consider all contacts with contact_method "Telephone" and "Virtual" as
+            -- Electronic Contacts.
+            WHEN contact_method in ("TELEPHONE", "VIRTUAL")
+            AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
+                THEN ("SCHEDULED ELECTRONIC")
+            -- When the contact reason has unscheduled in raw text, label as unscheduled
+            WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
+                THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
+            ELSE
+                CONCAT("SCHEDULED " || contact_method_raw_text)
+        END AS contact_type,
         external_id,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact`
     WHERE status = "COMPLETED"

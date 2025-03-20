@@ -80,10 +80,16 @@ contact_info AS (
             WHEN "{contact_type}" = "SCHEDULED COLLATERAL" 
             AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
                 THEN "SCHEDULED COLLATERAL"
-            WHEN contact_reason_raw_text = "REGULAR VISIT" 
-                THEN CONCAT("SCHEDULED " || contact_method_raw_text)
+            -- Consider all contacts with contact_method "Telephone" and "Virtual" as
+            -- Electronic Contacts.
+            WHEN contact_method in ("TELEPHONE", "VIRTUAL")
+            AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
+                THEN ("SCHEDULED ELECTRONIC")
+            -- When the contact reason has unscheduled in raw text, label as unscheduled
+            WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
+                THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
             ELSE
-                CONCAT("UNSCHEDULED " || contact_method_raw_text)
+                CONCAT("SCHEDULED " || contact_method_raw_text)
         END AS contact_type,
         external_id,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
