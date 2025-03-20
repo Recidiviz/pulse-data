@@ -47,6 +47,17 @@ elite_ProgramServices_generated_view AS (
 recidiviz_elite_CourseActivities_generated_view AS (
     SELECT * FROM `{{project_id}}.{{usnd_raw_data_up_to_date_dataset}}.recidiviz_elite_CourseActivities_latest`
 ),
+facility_sessions AS (
+    SELECT 
+        state_code,
+        person_id,
+        facility,
+        MIN(start_date) AS start_date,
+        MAX(end_date_exclusive) AS end_date_exclusive,  
+    FROM `{{project_id}}.sessions.housing_unit_sessions_materialized`
+    WHERE state_code = 'US_ND'
+    GROUP BY 1,2,3
+),
 completed_sentences AS (
     SELECT
         SPLIT(s.external_id, '-')[OFFSET(0)] AS external_id,
@@ -73,6 +84,7 @@ officer_assignments AS (
         ) AS end_date,
         SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(2)] AS given_names,
         SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(1)] AS surname,
+        ca.AGY_LOC_ID AS facility,
     FROM
         elite_OffenderProgramProfiles_generated_view opp
     LEFT JOIN
@@ -114,6 +126,7 @@ officer_assignments_with_staff_and_person_ids AS (
         si.STATUS,
         sei.staff_id AS incarceration_staff_assignment_id,
         'OFFICER' AS row_type,
+        oa.facility,
     FROM officer_assignments oa
     LEFT JOIN staff_ids si
     # TODO(#31389) Find another way to join other than string matching, 
@@ -150,6 +163,7 @@ officer_assignments_with_staff_and_person_ids AS (
         'ACTIVE' AS STATUS,
         CAST(NULL AS INT64) AS incarceration_staff_assignment_id,
         'COUNTY_JAIL' AS row_type,
+        hu.facility,
     FROM `{{project_id}}.sessions.housing_unit_sessions_materialized` hu
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON hu.state_code = peid.state_code
@@ -163,32 +177,56 @@ officer_assignments_with_staff_and_person_ids AS (
     )
 
 ),
-{create_sub_sessions_with_attributes('officer_assignments_with_staff_and_person_ids')}
+
+officer_assignments_with_staff_and_person_ids_and_facility AS (
+    SELECT 
+        oaws.state_code,
+        oaws.person_id,
+        oaws.external_id,
+        oaws.start_date,
+        oaws.end_date,
+        oaws.original_start_date,
+        oaws.staff_id,
+        oaws.STATUS,
+        oaws.incarceration_staff_assignment_id,
+        oaws.row_type,
+        LOGICAL_OR(oaws.facility = fs.facility) AS jii_facility_matches_staff,
+    FROM officer_assignments_with_staff_and_person_ids oaws
+    LEFT JOIN facility_sessions fs
+    ON fs.person_id = oaws.person_id
+        AND fs.start_date < {nonnull_end_date_clause('oaws.end_date')}
+        AND {nonnull_end_date_clause('fs.end_date_exclusive')} > oaws.start_date
+    GROUP BY 1,2,3,4,5,6,7,8,9,10
+
+),
+{create_sub_sessions_with_attributes('officer_assignments_with_staff_and_person_ids_and_facility')}
 
 SELECT 
     "US_ND" AS state_code,
-    person_id,
-    external_id AS person_external_id,
-    start_date,
-    end_date AS end_date_exclusive,
-    incarceration_staff_assignment_id,
-    staff_id AS incarceration_staff_assignment_external_id,
+    ss.person_id,
+    ss.external_id AS person_external_id,
+    ss.start_date,
+    ss.end_date AS end_date_exclusive,
+    ss.incarceration_staff_assignment_id,
+    ss.staff_id AS incarceration_staff_assignment_external_id,
     "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
     -- We are only surfacing folks who have a person assigned, so we can assume they are counselors/CMs
     "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
-    ROW_NUMBER() OVER (PARTITION BY person_id, start_date, end_date
+    ROW_NUMBER() OVER (PARTITION BY ss.person_id, ss.start_date, ss.end_date, ss.external_id
                 /* Prioritize cases in the following order 
                         1) County Jail cases
                         2) Staff is active (as opposed to inactive)
                         3) NULL end_date 
-                        4) Later assignment dates */
+                        4) Staff is assigned to the same facility as the person
+                        5) Later assignment dates */
                         ORDER BY
-                                IF(row_type = 'COUNTY_JAIL', 0, 1),
-                                IF(STATUS ='ACTIVE', 0, 1),
-                                IF(end_date IS NULL, 0, 1),
-                                original_start_date DESC
-                        ) AS case_priority 
-FROM sub_sessions_with_attributes
+                                IF(ss.row_type = 'COUNTY_JAIL', 0, 1),
+                                IF(ss.STATUS ='ACTIVE', 0, 1),
+                                IF(ss.end_date IS NULL, 0, 1),
+                                ss.jii_facility_matches_staff DESC,
+                                ss.original_start_date DESC
+                        ) AS case_priority,
+FROM sub_sessions_with_attributes ss
 """
 
 US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
