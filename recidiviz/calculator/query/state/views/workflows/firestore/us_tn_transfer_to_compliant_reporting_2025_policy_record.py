@@ -63,6 +63,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
             tes.person_id,
             tes.state_code,
             tes.reasons,
+            tes.reasons_v2,
             tes.ineligible_criteria,
             tes.is_eligible,
             tes.is_almost_eligible,
@@ -73,6 +74,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
             tes_task_query_view = 'transfer_low_medium_group_to_compliant_reporting_2025_policy_materialized',
             id_type = "'US_TN_DOC'",
             eligible_and_almost_eligible_only=True,
+            additional_columns="reasons_v2"
         )}) tes
         INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS.to_str()}` tes_collapsed
             ON tes_collapsed.state_code = tes.state_code
@@ -111,7 +113,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
              */
             NULLIF(JSON_VALUE(JSON_EXTRACT(single_reason.reason,'$.assessment_metadata')[need]),'') AS need_level,       
         FROM base,
-        UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason,
+        UNNEST(JSON_QUERY_ARRAY(reasons_v2)) AS single_reason,
         UNNEST({STRONG_R_ASSESSMENT_METADATA_KEYS}) AS need    
         WHERE 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS' IN UNNEST(ineligible_criteria)
             AND STRING(single_reason.criteria_name) = 'US_TN_ASSESSED_NOT_HIGH_ON_STRONG_R_DOMAINS'
@@ -172,7 +174,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
         c.metadata_task_name,
         c.external_id,
         c.state_code,
-        reasons,
+        reasons_v2 AS reasons,
         ineligible_criteria,
         -- used to create almost eligible categories
         CONCAT('MISSING_', CAST(ARRAY_LENGTH(ineligible_criteria) AS STRING), '_CRITERIA') AS metadata_tab_name,

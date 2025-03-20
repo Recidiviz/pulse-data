@@ -49,6 +49,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
     tes_task_query_view='transfer_to_compliant_reporting_with_discretion_materialized',
     id_type="'US_TN_DOC'",
     eligible_and_almost_eligible_only=True,
+    additional_columns="reasons_v2"
 )}
     ),
     eligible_discretion_and_almost AS (
@@ -58,6 +59,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             person_id,
             state_code,
             reasons,
+            reasons_v2,
             ineligible_criteria,
             is_eligible,
             is_almost_eligible,
@@ -72,6 +74,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             person_id,
             state_code,
             reasons,
+            reasons_v2,
             ineligible_criteria,
             is_eligible,
             is_almost_eligible,
@@ -81,6 +84,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
     tes_task_query_view='transfer_to_compliant_reporting_no_discretion_materialized',
     id_type="'US_TN_DOC'",
     eligible_only=True,
+    additional_columns="reasons_v2"
 )})
     ),
     /*
@@ -106,6 +110,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             a.state_code,
             a.ineligible_criteria,
             b.reasons,
+            b.reasons_v2,
             a.is_eligible,
             a.is_almost_eligible,
             NULL AS metadata_eligible_date,
@@ -113,11 +118,12 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         LEFT JOIN ({join_current_task_eligibility_spans_with_external_id(
     state_code="'US_TN'",
     tes_task_query_view='transfer_to_compliant_reporting_no_discretion_materialized',
-    id_type="'US_TN_DOC'"
+    id_type="'US_TN_DOC'",
+    additional_columns="reasons_v2"
 )}) b
         USING(person_id)   
     )
-    SELECT *
+    SELECT * EXCEPT(reasons_v2)
     FROM (
         {us_tn_compliant_reporting_shared_opp_record_fragment()}
     )

@@ -747,6 +747,7 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
         base.external_id,
         base.state_code,
         base.reasons,
+        base.reasons_v2,
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
