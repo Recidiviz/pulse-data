@@ -1,0 +1,329 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  ViolationID: STRING
+  id: STRING
+  behavior: STRING
+  violationType: STRING
+  response_data: STRING
+  ViolationDt: DATE
+  VioSeverity: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - ViolationID
+                - id
+          violation_date: ViolationDt
+          violation_severity:
+            $enum_mapping:
+              $raw_text: VioSeverity
+              $mappings:
+                StateSupervisionViolationSeverity.HIGHEST:
+                  - "5"
+                StateSupervisionViolationSeverity.SECOND_HIGHEST:
+                  - "4"
+                StateSupervisionViolationSeverity.THIRD_HIGHEST:
+                  - "3"
+                StateSupervisionViolationSeverity.FOURTH_HIGHEST:
+                  - "2"
+                StateSupervisionViolationSeverity.FIFTH_HIGHEST:
+                  - "1"
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: violationType
+                    $mappings:
+                      StateSupervisionViolationType.FELONY:
+                        - felony
+                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        - unknown
+                      StateSupervisionViolationType.MISDEMEANOR:
+                        - misdemeanor
+                      StateSupervisionViolationType.TECHNICAL:
+                        - technical
+          supervision_violated_conditions:
+            - StateSupervisionViolatedConditionEntry:
+                condition:
+                  $enum_mapping:
+                    $raw_text: behavior
+                    $mappings:
+                      StateSupervisionViolatedConditionType.LAW:
+                        - "Laws: Infraction (Requires Board Approval)"
+                        - "New misdemeanor charge, property crime"
+                        - "New felony charge, property crime"
+                        - "New misdemeanor charge, non-violent crime against person"
+                        - "New misdemeanor conviction, violent crime against person"
+                        - "New misdemeanor conviction, sexual offense"
+                        - "New misdemeanor conviction, drug offense"
+                        - "New misdemeanor conviction, weapons offense"
+                        - "New misdemeanor conviction, other"
+                        - "New misdemeanor charge, violent crime against person"
+                        - "New misdemeanor charge, sexual offense"
+                        - "New misdemeanor charge, drug offense"
+                        - "New misdemeanor charge, weapons offense"
+                        - "New misdemeanor charge, other"
+                        - "New misdemeanor conviction, property crime"
+                        - "New misdemeanor conviction, non-violent crime against person"
+                        - "New felony charge, non-violent crime against person"
+                        - "New felony charge, violent crime against person"
+                        - "New felony charge, sexual offense"
+                        - "Laws: Felony (Must Receive Board Authorization)"
+                        - "New felony charge, weapons offense"
+                        - "New felony charge, other"
+                        - "New felony conviction, property crime"
+                        - "New felony conviction, non-violent crime against person"
+                        - "New felony conviction, violent crime against person"
+                        - "New felony conviction, sexual offense"
+                        - "New felony conviction, drug offense"
+                        - "New felony conviction, weapons offense"
+                        - "New felony conviction, other"
+                        - "Laws: Misdemeanor (Must receive Board Approval before Issuing)"
+                        - "Laws: Traffic Citation"
+                      StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                        - "Special Condition: GED"
+                        - "Special Condition: Follow rules of Facility"
+                        - "Special Condition: AA/NA; Obtain/Utilize Sponsor"
+                        - "Special Condition: Curfew"
+                        - "Special Condition: No Gang Association"
+                        - "Special Condition: Alcohol Monitoring"
+                        - "Special Condition: No Contact With"
+                        - "Special Condition: Take Medication as Prescribed"
+                        - "Special Condition: Other Special Conditions as Assigned"
+                        - "Special Condition: Electronic Monitoring"
+                        - "Special Condition: SAP"
+                        - "Special Condition: Sex Offender Special Condition 1"
+                        - "Special Condition: CAM"
+                        - "Special Condition: GPS"
+                        - "Special Condition: Sex Offender Registration (SO Condition 9)"
+                        - "Curfew: Curfew violation up to and including XX minutes"
+                        - "GPS: GPS schedule violation up to and including XX minutes"
+                        - "Special Condition: Sex Offender Special Condition 2"
+                        - "Special Condition: Sex Offender Special Condition 3"
+                        - "Special Condition: Sex Offender Special Condition 4"
+                        - "Special Condition: Sex Offender Special Condition 5"
+                        - "Special Condition: Sex Offender Special Condition 6"
+                        - "Special Condition: Sex Offender Special Condition 7"
+                        - "Special Condition: Sex Offender Special Condition 8"
+                        - Sex Offender Programming (SO Special condition 10)
+                        - "Special Condition: Sex Offender Special Condition 11"
+                        - "Special Condition: Sex Offender Special Condition 12"
+
+                      StateSupervisionViolatedConditionType.SUBSTANCE:
+                        - "Intoxicants"
+                        - "Intoxicants: Refusal to Test"
+                        - "Narcotics"
+                        - "Substances/testing: Failure to comply with drug testing requirement"
+                        - "Narcotics: Refusal to Test"
+
+                      StateSupervisionViolatedConditionType.FINANCIAL:
+                        - "Financial: Incuring Debt"
+                        - "Financial: Programming Fees"
+                        - "Financial: Failure to pay child support, restitution, or fines"
+
+                      StateSupervisionViolatedConditionType.EMPLOYMENT:
+                        - "Employment/Education: Change without permission"
+                        - "Employment/Education: Failure to secure employment within 30 days"
+                        - "Employment/Education: Failure to maintain"
+
+                      StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                        - "Travel: Out of state without permission (MUST RECEIVE BOARD APPROVAL BEFORE ISSUING)"
+                        - "Laws: Failure to Report"
+                        - "Travel: Leaving the state without a travel permit or violation of other travel restrictions"
+                        - "Travel: Out of county without permission"
+                        - "Police contact: Failure to notify staff/agency of police contact"
+                        - "Residence: Changing residence without prior notice/approval"
+                        - "Special conditions/court: Failure to comply with special conditions established by the court"
+                        - "Special conditions/parole: Failure to comply with special conditions established by the paroling authority"
+                        - "Reporting: Disobeying order to report (speed memo)"
+                        - "Release: Failure to report within 24 hours of release"
+                        - "Reporting: Missed Appointment without notification"
+
+                      StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE:
+                        - "Refusing treatment: Refusal to comply with treatment"
+                        - "Medication: Failure to take medications as prescribed (no nexus with instant offense, no psychotic disorder)"
+                        - "Medication: Failure to take medications as prescribed (nexus with instant offense, psychotic disorder)"
+                        - "Domestic Violence Programming: Failure to Complete"
+
+                      StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                        - "Appointments: Missed required programming or treatment appointment without prior approval"
+                        - "Community service: Failure to comply with community service requirements"
+                        - "Contraband: Possession of item not approved by officer/agent/agency (e.g., drug paraphernalia)"
+                        - "Honesty: Lying to staff"
+                        - "Honesty: Lying to other professional"
+                        - "EMP: EMP schedule violation over XX minutes"
+                        - "Equipment: Tampering with monitoring equipment"
+                        - "No contact/co-defendants: Violation of co-defendant no contact order"
+                        - "Termination: Termination from programming"
+                        - "UA: Tamper with or falsify urinalysis"
+                        - "Verbal threat: Engaging in verbally threatening behavior"
+                        - "Weapons/non-firearm: Possession of illegal or unauthorized weapon (excluding firearm)"
+                        - "No contact/victim: Violation of victim no contact order"
+                        - "Threatening behavior/harassment of another: Serious substantiated act of harassment"
+                        - "Threatening behavior/other: Serious threatening behavior other than stalking, violation of a restraining order, or harassment"
+                        - "Threatening behavior/stalking: Substantiated act of stalking"
+                        - "Threatening behavior/violation of restraining order: Any violation of a restraining order"
+                        - "Weapons: Firearm but no new laws violation"
+                        - Tampering or removal of electronic monitoring equipment or CAM
+                        - "Escape: Escape from jail, or failure to report to jail or other correctional facility as required"
+                        - Weapons
+                        - "Appointments: Late to appointment"
+                        - "Associates: With person convicted of a crime"
+                        - "Associates: While engaged in criminal behavior"
+                        - "Directives: Failure to obey directives"
+                        - Communication Devices
+                        - "Search & Seizure: Failure to Submit"
+                        - Failure to Conduct as a Good Citizen
+                        - Failure to comply with sanction
+                        - "Electronic Monitoring: Failure to Charge"
+                        - "Electronic Monitoring: Repeated Failures to Charge"
+                        - "PREP House: Sanitation"
+                        - "PREP House: Unauthorized Items"
+                        - zzPREP Using wrong door
+                        - zzPREP Visiting Issues
+                        - zzPREP Inappropriate interaction with Community/neighbors
+                        - zzPREP Horseplay
+                        - zzPREP Possession of Contraband
+                        - zzPREP Unauthorized Areas
+                        - zzPREP Tampering with Security Equipment
+                        - zzPREP Damage or Theft of House Property
+                        - zzPREP Smoking out of Designated Area - Inside
+                        - zzPREP Smoking out of Designated Area - Outside
+                        - zzPREP General Nuisance Behaviors
+                        - zzPREP Sanitation
+                        - zzPREP Failure to Complete House Chores
+                        - zzPREP Hygiene
+                        - zzPREP Dress Code
+                        - zzPREP Tampering with Windows
+                        - zzPREP Food Rule Violations
+                        - zzPREP Quiet Hours
+                        - zzPREP Curfew
+                        - zzPREP Moving Furniture
+                        - zzPREP Missing House Meetings
+                        - zzPREP Unauthorized Medication
+                        - zzPREP Unauthorized Transportation
+                        - zzPREP Provide False Information to Staff
+                        - zzPREP Out of Area - Community
+                        - zzPREP Failure to Comply with Case Plan
+                        - zzPREP Failure to follow programming rules
+                        - Loss/accidental damage of EM equipment
+                        - zzPREP Inappropriate Interaction with Staff
+
+          supervision_violation_responses:
+            - $foreach:
+                $iterable:
+                  $split_json: response_data
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - $json_extract:
+                              $key: inmateNumber
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: ViolationID
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: id
+                              $json: $iter_item
+                    response_date:
+                      $json_extract:
+                        $key: ResponseDt
+                        $json: $iter_item
+                    response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)
+                    # all violations for this view end in essentially a citation because they are considered less severe
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: response
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                  - Complete more than 10 hours of Community Service
+
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - "Electronic Monitoring: House Arrest"
+                                  - Alcohol Monitoring through PBT
+                                  - Curfew
+                                  - Restricted Schedule/Curfew
+                                  - Restrict Contact with Specific Individuals
+
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - Written Directive
+                                  - Verbal Warning/Reprimand (does not require sanctions agreement to be signed)
+                                  - Written Warning
+
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - Custodial Sanction up to 30 days
+                                  - Custodial Sanction (up to 30 days; Requires Board Approval) # not sure if fits here, not revocation but time in jail/prison
+                                  - Custodial Sanction (14 days or less; Requires Board Approval)
+
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - Conference with Supervisor
+                                  - "Worksheet Assignment (e.g., thinking report, Carey Guide Tool, BITS worksheet)"
+                                  - Travel Restriction up to 60 days
+                                  - Increased Reporting up to 30 days
+                                  - Change of Residence
+                                  - CAM Alcohol Monitoring 45 days (Requires Supervisor Approval)
+                                  - Increase Alcohol/Drug Monitoring
+                                  - Electronic Monitoring GPS less than 45 days (Requires Supervisor Approval)
+                                  - Travel Restriction up to 30 Days
+                                  - Electronic Monitoring GPS 45 days or more (Requires Supervisor Approval)
+                                  - Increase GPS Restrictions
+                                  - Travel Restriction up to 90 days
+                                  - Job Readiness Class
+
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                  - Cognitive Behavioral Program Referral
+                                  - Substance Abuse Evaluation -  Obtain and follow recommendations
+                                  - Substance Abuse Evaluation - Obtain and follow recommendations
+                                  - Mental Health Outpatient Counseling
+                                  - Substance Abuse Intensive Outpatient Programming
+                                  - Treatment Assessment
+                                  - Increased Level of Treatment Participation
+                                  - Substance Abuse Outpatient Programming
+                                  - Substance Abuse Short Term Residential
+                                  - PREP Referral
+                                  - Pre-Treatment
+                                  - Job Log Requirement
+                                  - "Cognitive Behavioral Program Referral: CBI4NE1"
+                                  - Sex Offender Specific Programming
+                                  - Dual Diagnosis Treatment
+                                  - Relapse Prevention
+                                  - Support Group or Self-help Program with Verification
+
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - zzPREP Loss of Pass
+                                  - zzPREP Extra Chores
+                                  - zzPREP Visit Restriction
+                                  - zzPREP Community Service
+                                  - zzPREP Living with Success
+                                  - zzPREP Phone Restriction
+
+                    violation_response_metadata:
+                      $normalized_values_json_dict:
+                        sanctionAcceptanceCode:
+                          $json_extract:
+                            $key: sanctionAcceptanceCode
+                            $json: $iter_item
+                        ResponseLevel:
+                          $json_extract:
+                            $key: ResponseLevel
+                            $json: $iter_item
