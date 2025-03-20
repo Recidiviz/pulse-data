@@ -19,12 +19,16 @@ import logging
 from concurrent import futures
 from itertools import groupby
 from typing import Sequence
+from unittest.mock import patch
 
 import pytest
-from google.api_core.exceptions import InternalServerError
+from google.api_core.exceptions import NotFound
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import (
@@ -50,7 +54,6 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
 )
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.types import assert_type
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
@@ -194,33 +197,43 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
         super().setUpClass()
 
+    def setUp(self) -> None:
+        super().setUp()
+        # Patch row level permissions to reduce the number of queries submitted to the emulator
+        patched_client = BigQueryClientImpl()
+
+        patch.object(
+            patched_client,
+            "drop_row_level_permissions",
+            new=lambda table: None,
+        ).start()
+        patch.object(
+            patched_client,
+            "apply_row_level_permissions",
+            new=lambda table: None,
+        ).start()
+
+        self.view_update_client_patcher = patch(
+            "recidiviz.big_query.view_update_manager.BigQueryClientImpl",
+            autospec=True,
+            return_value=patched_client,
+        )
+        self.view_update_client_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.view_update_client_patcher.stop()
+
     def _has_state_code_column(self, address: BigQueryAddress) -> bool | None:
-        if not self.bq_client.table_exists(address):
+        try:
+            schema = self.bq_client.get_table(address=address).schema
+            if not schema:
+                raise ValueError(f"Found empty schema for [{address.to_str()}]")
+            return any(f.name == "state_code" for f in schema)
+        except NotFound:
             # This view was skipped for optimization reasons, do not check for a
             # state_code column.
             return None
-
-        project_specific_address = address.to_project_specific_address(
-            assert_type(self.project_id, str)
-        )
-
-        # TODO(#33979): The emulator does not properly hydrate the the schema field
-        #  on tables so we test for the existence of a state_code column by trying
-        #  to query it. We can replace this with a call to
-        #  self.bq_client.get_table(address).schema when that issue is fixed.
-        try:
-            query = f"""
-                SELECT state_code 
-                FROM {project_specific_address.format_address_for_query()}
-                LIMIT 0
-            """
-            query_job = self.bq_client.run_query_async(
-                query_str=query, use_query_cache=False
-            )
-            query_job.result()
-            return True
-        except InternalServerError:
-            return False
 
     def _check_for_missing_state_code_column_views(self) -> None:
         """Raises an error if we find any views that do not have a state_code column

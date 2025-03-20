@@ -228,7 +228,7 @@ class LegacyIngestViewEmulatorQueryTestCase(
 
         query_job.result()
 
-        # TODO(#33979), TODO(#26259): Once the emulator properly returns the schemas
+        # TODO(#26259): Once the emulator properly returns the schemas
         #  for views and query results, verify that the query schema matches the schema
         #  defined in the manifest input_columns. Also enforce that ingest views do not
         #  produce REPEATED mode columns (i.e. array type columns) because we don't have
@@ -393,7 +393,7 @@ class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase)
             query_str=view_query, use_query_cache=False
         )
 
-        # TODO(#33979), TODO(#26259): Once the emulator properly returns the schemas
+        # TODO(#26259): Once the emulator properly returns the schemas
         #  for views and query results, verify that the query schema matches the schema
         #  defined in the manifest input_columns. Also enforce that ingest views do not
         #  produce REPEATED mode columns (i.e. array type columns) because we don't have

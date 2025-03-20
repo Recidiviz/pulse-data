@@ -20,6 +20,7 @@ from datetime import date
 
 from google.api_core.exceptions import InternalServerError
 from google.cloud import bigquery
+from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -759,4 +760,29 @@ FROM UNNEST([
             expected_result=[
                 {"$col1": '[{"str_col":"strings","date_col":2022-01-01,"int_col":42}]'}
             ],
+        )
+
+    def test_view_schema(self) -> None:
+        """Ensures views return their schema as part of the creation response."""
+        client = self.bq_client.client
+        # We need a created dataset and table before we define a view.
+        client.create_dataset("example_dataset")
+        client.create_table(
+            bigquery.Table(
+                f"{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_table",
+                [
+                    bigquery.SchemaField("string_field", "STRING"),
+                ],
+            )
+        )
+        _view_definition = bigquery.Table(
+            f"{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_view"
+        )
+        _view_definition.view_query = (
+            f"SELECT * FROM `{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_table`"
+        )
+        example_view = client.create_table(_view_definition)
+        self.assertEqual(
+            example_view.schema,
+            [SchemaField("string_field", "STRING", "NULLABLE")],
         )
