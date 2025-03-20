@@ -66,6 +66,9 @@ max_allowed_error_overrides:
       We now infer incarceration periods for periods during which folks are in federal or other state custody, which Idaho does not
       in their external validation data, which leads our incarceration population to be greater
       than their numbers.
+  - validation_name: open_sessions_without_active_sentences
+    hard_max_allowed_error_override: 0.03
+    override_reason: TODO(#39887) - investigate missing sentence serving periods for open probation sessions
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 2000

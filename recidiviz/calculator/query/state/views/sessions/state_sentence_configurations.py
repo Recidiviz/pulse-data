@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Configuration lists for state-specific logic within the sentence processing pipeline"""
-
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.constants.states import StateCode
 
 # States that do not infer a sentence completion date when a person transitions to liberty/death
@@ -60,4 +65,18 @@ STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA = [
     StateCode.US_OR.name,
     StateCode.US_PA.name,
     StateCode.US_TN.name,
+]
+
+# Designate the session compartment level 2 types that are not expected to have corresponding sentences
+# throughout the session
+COMPARTMENT_LEVEL_2_VALUES_WITHOUT_SENTENCES = [
+    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.name,
+    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.name,
+    StateSupervisionPeriodSupervisionType.WARRANT_STATUS.name,
+    StateSupervisionPeriodSupervisionType.BENCH_WARRANT.name,
+    StateSupervisionPeriodSupervisionType.DEPORTED.name,
+    StateSupervisionPeriodSupervisionType.ABSCONSION.name,
+    StateSupervisionPeriodSupervisionType.INVESTIGATION.name,
+    StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN.name,
+    StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN.name,
 ]

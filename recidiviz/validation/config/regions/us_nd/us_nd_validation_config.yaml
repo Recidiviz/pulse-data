@@ -44,6 +44,9 @@ max_allowed_error_overrides:
     override_reason:
       Given the very small size of the staff and population in ND, this
       is actually a very strict threshold.
+  - validation_name: open_sessions_without_active_sentences
+    hard_max_allowed_error_override: 0.7
+    override_reason: TODO(#38110) - update supervision sentence status snapshot ingest
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 120

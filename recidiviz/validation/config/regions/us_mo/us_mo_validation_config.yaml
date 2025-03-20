@@ -25,6 +25,9 @@ max_allowed_error_overrides:
       over the data in a week and then spike once it's all processed on Mondays. We expect most opportunities to fluctuate
       between 20-30% when new data comes in, so we bump this threshold to 40% in order to capture when the percent change
       is significantly larger than that which likely indicates something unusual is happening and should be investigated.
+  - validation_name: open_sessions_without_active_sentences
+    hard_max_allowed_error_override: 0.1
+    override_reason: TODO(#39581) - investigate missing sentence serving periods for open probation sessions
 num_allowed_rows_overrides:
   - validation_name: active_in_population_after_death_date
     hard_num_allowed_rows_override: 11
