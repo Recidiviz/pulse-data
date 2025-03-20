@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -31,6 +34,7 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
+    CriticalRangesBuilder,
     DurationMixin,
     PotentiallyOpenDateRange,
     date_ranges_overlap,
@@ -47,6 +51,7 @@ from recidiviz.persistence.entity.state.entity_field_validators import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     EntityBackedgeValidator,
+    NormalizedStatePersonStaffRelationshipPeriod,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
@@ -320,7 +325,7 @@ def _sentencing_entities_checks(
 
 
 def ledger_entity_checks(
-    root_entiy: RootEntityT | NormalizedRootEntityT,
+    root_entity: RootEntityT | NormalizedRootEntityT,
     entity_cls: Type[LedgerEntityMixin],
     ledger_objects: Sequence[LedgerEntityMixin],
 ) -> Optional[Error]:
@@ -331,7 +336,7 @@ def ledger_entity_checks(
     - sequence_num ledger datetime ordering must be consistent
     """
     preamble = (
-        f"Found {root_entiy.limited_pii_repr()} having {entity_cls.__name__} with "
+        f"Found {root_entity.limited_pii_repr()} having {entity_cls.__name__} with "
     )
     # If sequence_num are all None, ensure the partition key is unique.
     # Unique partition keys are usually from unique ledger datetimes.
@@ -408,6 +413,92 @@ def _person_address_period_checks(
                 f"Found {person.limited_pii_repr()} with address periods of type {period_type} that overlap.\n"
                 f"Date Ranges: {date_ranges} "
                 "If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            )
+
+
+def _normalized_person_staff_relationship_period_checks(
+    person: normalized_entities.NormalizedStatePerson,
+) -> Iterable[Error]:
+    """
+    This function checks that, for any range of time:
+      - There is not more than one overlapping
+        NormalizedStatePersonStaffRelationshipPeriod with the same relationship_type and
+        relationship_priority.
+      - There is not more than one overlapping
+        NormalizedStatePersonStaffRelationshipPeriod with the same relationship_type
+        and staff_id.
+
+    All relationship periods with relationship_type INTERNAL_UNKNOWN are excluded from
+    the above checks.
+
+    If these assumptions are too strict for your state, ping #platform-channel to
+    discuss!
+    """
+    critical_range_builder = CriticalRangesBuilder(person.staff_relationship_periods)
+
+    for critical_range in critical_range_builder.get_sorted_critical_ranges():
+        periods_overlapping_range = (
+            critical_range_builder.get_objects_overlapping_with_critical_range(
+                critical_range,
+                NormalizedStatePersonStaffRelationshipPeriod,
+            )
+        )
+
+        periods_by_relationship_type_and_priority: dict[
+            tuple[StatePersonStaffRelationshipType, int],
+            list[NormalizedStatePersonStaffRelationshipPeriod],
+        ] = defaultdict(list)
+        periods_by_staff_id_and_relationship_type: dict[
+            tuple[int, StatePersonStaffRelationshipType],
+            list[NormalizedStatePersonStaffRelationshipPeriod],
+        ] = defaultdict(list)
+        for period in periods_overlapping_range:
+            if (
+                period.relationship_type
+                == StatePersonStaffRelationshipType.INTERNAL_UNKNOWN
+            ):
+                continue
+            periods_by_relationship_type_and_priority[
+                (period.relationship_type, period.relationship_priority)
+            ].append(period)
+
+            periods_by_staff_id_and_relationship_type[
+                (period.associated_staff_id, period.relationship_type)
+            ].append(period)
+
+        for (
+            staff_id,
+            relationship_type,
+        ), period_list in periods_by_staff_id_and_relationship_type.items():
+            if len(period_list) <= 1:
+                continue
+
+            yield (
+                f"Found multiple ({len(period_list)}) "
+                f"NormalizedStatePersonStaffRelationshipPeriod with relationship_type "
+                f"[{relationship_type}] and staff_id [{staff_id}] on person "
+                f"[{person.limited_pii_repr()}] for date range [{critical_range}]. "
+                f"Overlapping periods for the same staff member and relationship type "
+                f"should be collapsed / deduplicated."
+            )
+
+        # TODO(#38347): Add exemption mechanism for states that allow multiple case
+        #  managers with no defined priority. Make the exemption role- and
+        #  state-specific.
+        for (
+            relationship_type,
+            priority,
+        ), period_list in periods_by_relationship_type_and_priority.items():
+            if len(period_list) <= 1:
+                continue
+
+            yield (
+                f"Found multiple ({len(period_list)}) "
+                f"NormalizedStatePersonStaffRelationshipPeriod with relationship_type "
+                f"[{relationship_type}] and priority [{priority}] on person "
+                f"[{person.limited_pii_repr()}] for date range [{critical_range}]. If "
+                f"two staff have the same type of relationship with a person during a "
+                f"period of time, we must be able to prioritize that relationship."
             )
 
 
@@ -529,6 +620,9 @@ def _get_normalized_state_person_specific_errors(
     assert_type(root_entity, normalized_entities.NormalizedStatePerson)
     error_messages: list[str] = []
     error_messages.extend(_legacy_sentencing_entities_checks(root_entity))
+    error_messages.extend(
+        _normalized_person_staff_relationship_period_checks(root_entity)
+    )
 
     # TODO(#26136): Add validation logic for normalized sentence entities here
     return error_messages

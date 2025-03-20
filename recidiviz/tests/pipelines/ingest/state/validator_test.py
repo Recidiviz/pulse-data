@@ -29,11 +29,15 @@ from recidiviz.common.constants.state.state_charge import (
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
+from recidiviz.common.constants.state.state_person_staff_relationship_period import (
+    StatePersonStaffRelationshipType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
+from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
@@ -48,6 +52,9 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
     StateTaskDeadline,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePersonStaffRelationshipPeriod,
 )
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
 from recidiviz.utils.types import assert_type
@@ -1541,3 +1548,218 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         mr_lion.address_periods = [residence, the_wilderness]
         errors = validate_root_entity(mr_lion)
         assert not any(errors)
+
+
+class TestNormalizedStatePersonStaffRelationshipPeriodChecks(unittest.TestCase):
+    """Tests for validating NormalizedStatePersonStaffRelationshipPeriod"""
+
+    STATE_CODE_VALUE = "US_XX"
+    STAFF_ID_1 = 1000
+    STAFF_ID_1_EXTERNAL_ID_A = "STAFF_EXTERNAL_ID_1A"
+    STAFF_ID_1_EXTERNAL_ID_B = "STAFF_EXTERNAL_ID_1B"
+    STAFF_ID_2 = 2000
+    STAFF_ID_2_EXTERNAL_ID = "STAFF_EXTERNAL_ID_2"
+
+    DATE_1 = date(2019, 1, 1)
+    DATE_2 = date(2020, 1, 1)
+    DATE_3 = date(2021, 1, 1)
+
+    def _person(self) -> normalized_entities.NormalizedStatePerson:
+        person = normalized_entities.NormalizedStatePerson(
+            state_code=self.STATE_CODE_VALUE,
+            person_id=1,
+            external_ids=[
+                normalized_entities.NormalizedStatePersonExternalId(
+                    person_external_id_id=1,
+                    external_id="EXTERNAL_ID_A",
+                    state_code=self.STATE_CODE_VALUE,
+                    id_type="US_XX_STAFF_ID",
+                ),
+            ],
+        )
+
+        person.external_ids[0].person = person
+        return person
+
+    def test_valid_normalized_periods(self) -> None:
+        person = self._person()
+
+        person.staff_relationship_periods = [
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_1,
+                relationship_end_date_exclusive=self.DATE_2,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_1_EXTERNAL_ID_A,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9046224349876569075,
+                person=person,
+                associated_staff_id=self.STAFF_ID_1,
+            ),
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_2_EXTERNAL_ID,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9059851427843950549,
+                person=person,
+                associated_staff_id=self.STAFF_ID_2,
+            ),
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                relationship_priority=2,
+                associated_staff_external_id=self.STAFF_ID_1_EXTERNAL_ID_A,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9001502564037020168,
+                person=person,
+                associated_staff_id=self.STAFF_ID_1,
+            ),
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_3,
+                relationship_end_date_exclusive=None,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_2_EXTERNAL_ID,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9049410191367390553,
+                person=person,
+                associated_staff_id=self.STAFF_ID_2,
+            ),
+        ]
+
+        errors = validate_root_entity(person)
+        self.assertEqual([], errors)
+
+    def test_overlapping_same_staff_id_same_relationship_type(self) -> None:
+        person = self._person()
+
+        person.staff_relationship_periods = [
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text="A",
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_1_EXTERNAL_ID_A,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9059851427843950549,
+                person=person,
+                associated_staff_id=self.STAFF_ID_1,
+            ),
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text="B",
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                # These periods are prioritized but we don't care because they still
+                # have redundant info.
+                relationship_priority=2,
+                associated_staff_external_id=self.STAFF_ID_1_EXTERNAL_ID_B,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9001502564037020168,
+                person=person,
+                associated_staff_id=self.STAFF_ID_1,
+            ),
+        ]
+
+        errors = validate_root_entity(person)
+        self.assertEqual(
+            [
+                "Found multiple (2) NormalizedStatePersonStaffRelationshipPeriod with "
+                "relationship_type [StatePersonStaffRelationshipType.SUPERVISING_OFFICER] and "
+                "staff_id [1000] on person [NormalizedStatePerson(person_id=1, "
+                "external_ids=[NormalizedStatePersonExternalId(external_id='EXTERNAL_ID_A', "
+                "id_type='US_XX_STAFF_ID', person_external_id_id=1)])] for date range "
+                "[DateRange(lower_bound_inclusive_date=datetime.date(2020, 1, 1), "
+                "upper_bound_exclusive_date=datetime.date(2021, 1, 1))]. Overlapping periods "
+                "for the same staff member and relationship type should be collapsed / "
+                "deduplicated."
+            ],
+            errors,
+        )
+
+    def test_overlapping_same_priority_same_relationship_type(self) -> None:
+        person = self._person()
+
+        person.staff_relationship_periods = [
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_2_EXTERNAL_ID,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9059851427843950549,
+                person=person,
+                associated_staff_id=self.STAFF_ID_2,
+            ),
+            NormalizedStatePersonStaffRelationshipPeriod(
+                state_code=self.STATE_CODE_VALUE,
+                system_type=StateSystemType.SUPERVISION,
+                system_type_raw_text=None,
+                relationship_type=StatePersonStaffRelationshipType.SUPERVISING_OFFICER,
+                relationship_type_raw_text=None,
+                relationship_start_date=self.DATE_2,
+                relationship_end_date_exclusive=self.DATE_3,
+                location_external_id=None,
+                relationship_priority=1,
+                associated_staff_external_id=self.STAFF_ID_1_EXTERNAL_ID_A,
+                associated_staff_external_id_type="US_XX_STAFF_ID",
+                person_staff_relationship_period_id=9001502564037020168,
+                person=person,
+                associated_staff_id=self.STAFF_ID_1,
+            ),
+        ]
+
+        errors = validate_root_entity(person)
+        self.assertEqual(
+            [
+                "Found multiple (2) NormalizedStatePersonStaffRelationshipPeriod with "
+                "relationship_type [StatePersonStaffRelationshipType.SUPERVISING_OFFICER] and "
+                "priority [1] on person [NormalizedStatePerson(person_id=1, "
+                "external_ids=[NormalizedStatePersonExternalId(external_id='EXTERNAL_ID_A', "
+                "id_type='US_XX_STAFF_ID', person_external_id_id=1)])] for date range "
+                "[DateRange(lower_bound_inclusive_date=datetime.date(2020, 1, 1), "
+                "upper_bound_exclusive_date=datetime.date(2021, 1, 1))]. If two staff have "
+                "the same type of relationship with a person during a period of time, we must "
+                "be able to prioritize that relationship."
+            ],
+            errors,
+        )
