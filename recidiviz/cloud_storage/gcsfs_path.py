@@ -240,14 +240,14 @@ class GcsfsFilePath(GcsfsPath):
 
         return GcsfsFilePath(bucket_name=unquote(split[0]), blob_name=unquote(split[1]))
 
-    def uri_sharded(self) -> str:
+    def sharded(self) -> "GcsfsFilePath":
         """Builds a Google Cloud Storage URI (e.g. the absolute path with 'gs://'
         prepended) to be used when exporting files larger than 1 GB.
 
         Example:
             p = GcsfsFilePath(bucket_name='my_bucket', blob_name='dir/subdir/my_file.csv')
-            p.uri_sharded() => 'gs://my_bucket/dir/subdir/my_file-*.csv'
+            p.uri_sharded().uri() => 'gs://my_bucket/dir/subdir/my_file-*.csv'
         """
         file_name_no_ext, ext = os.path.splitext(self.file_name)
         new_file_name = f"{file_name_no_ext}-*{ext}"
-        return self.with_new_file_name(self, new_file_name).uri()
+        return self.with_new_file_name(self, new_file_name)

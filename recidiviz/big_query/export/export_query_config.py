@@ -202,18 +202,15 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
 
         output_path = self.output_path(extension=extension)
 
-        output_uri = (
-            output_path.uri_sharded()
-            if self.include_wildcard_in_uri
-            else output_path.uri()
-        )
+        if self.include_wildcard_in_uri:
+            output_path = output_path.sharded()
 
         return ExportQueryConfig(
             query=self.query,
             query_parameters=[],
             intermediate_dataset_id=self.view.dataset_id,
             intermediate_table_name=self.intermediate_table_name,
-            output_uri=output_uri,
+            output_uri=output_path.uri(),
             output_format=output_format,
         )
 

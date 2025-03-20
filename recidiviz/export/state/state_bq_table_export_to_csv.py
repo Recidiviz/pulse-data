@@ -82,14 +82,13 @@ def run_export(
         )
         export_file_name = f"{table.table_id}_{today.isoformat()}_export.csv"
         file = GcsfsFilePath.from_directory_and_file_name(export_dir, export_file_name)
-        output_uri = file.uri_sharded()
 
         export_config = ExportQueryConfig(
             query=export_query,
             query_parameters=[],
             intermediate_dataset_id="export_temporary_tables",
             intermediate_table_name=f"{input_dataset}_{table.table_id}_{state_code.lower()}",
-            output_uri=output_uri,
+            output_uri=file.sharded().uri(),
             output_format=bigquery.DestinationFormat.CSV,
         )
         export_configs.append(export_config)

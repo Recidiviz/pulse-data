@@ -56,6 +56,10 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -69,14 +73,8 @@ LOGGING_WIDTH = 80
 FILL_CHAR = "#"
 
 
-# TODO(#37923) expand this functionality to write to a wild URI in a temp
-# directory and then compose files if a table is > 1 GB
-# TODO(#37923) expand this functionality to write a query that will, by
-# default, UNNEST records into flat fields.
-# TODO(#37923) verify that the BQ schemas have not changed such that we are going to
-# produce files with expected columns wrt the raw data configs.
 @attr.define(kw_only=True)
-class BigQueryTableToRawDataFileExportManager:
+class BigQueryTableToRawDataFileTagExportManager:
     """Class that manages the logic for exporting a single BigQuery Table to a single
     ingest-ready CSV file.
     """
@@ -119,15 +117,19 @@ class BigQueryTableToRawDataFileExportManager:
         big_query_address: BigQueryAddress,
         destination_directory: GcsfsDirectoryPath,
         update_datetime: datetime.datetime,
-    ) -> "BigQueryTableToRawDataFileExportManager":
+        is_sharded: bool,
+    ) -> "BigQueryTableToRawDataFileTagExportManager":
+        output_file_path = GcsfsFilePath.from_directory_and_file_name(
+            destination_directory,
+            to_normalized_unprocessed_raw_file_name(
+                big_query_address.table_id, dt=update_datetime
+            ),
+        )
 
         return cls(
             big_query_address=big_query_address,
-            destination_path=GcsfsFilePath.from_directory_and_file_name(
-                destination_directory,
-                to_normalized_unprocessed_raw_file_name(
-                    big_query_address.table_id, dt=update_datetime
-                ),
+            destination_path=(
+                output_file_path.sharded() if is_sharded else output_file_path
             ),
         )
 
@@ -139,14 +141,28 @@ class BigQueryToIngestBucketExportManager:
     """
 
     # info about how to access bq
-    source_project_id: str
-    source_big_query_addresses: list[BigQueryAddress]
+    address_to_update_datetime: dict[BigQueryAddress, datetime.datetime]
 
     # info about where to write the data to
-    destination_directory: GcsfsDirectoryPath
+    state_code: StateCode
+    raw_data_instance: DirectIngestInstance
 
-    # info about how to configure the files
-    update_datetime: datetime.datetime
+    @property
+    def region_config(self) -> DirectIngestRegionRawFileConfig:
+        return get_region_raw_file_config(self.state_code.value)
+
+    @property
+    def ingest_bucket(self) -> GcsfsDirectoryPath:
+        return gcsfs_direct_ingest_bucket_for_state(
+            region_code=self.state_code.value.lower(),
+            ingest_instance=self.raw_data_instance,
+        )
+
+    def should_table_be_sharded(self, file_tag: str) -> bool:
+        if file_tag not in self.region_config.raw_file_tags:
+            return False
+
+        return self.region_config.raw_file_configs[file_tag].is_chunked_file
 
     def run(self, *, bq_client: BigQueryClient, dry_run: bool) -> None:
         """Executes the export of |source_big_query_addresses| to |destination_directory|."""
@@ -157,18 +173,20 @@ class BigQueryToIngestBucketExportManager:
 
             futures_to_address = {
                 executor.submit(
-                    BigQueryTableToRawDataFileExportManager.from_address_dir_and_datetime(
+                    BigQueryTableToRawDataFileTagExportManager.from_address_dir_and_datetime(
                         big_query_address=address,
-                        destination_directory=self.destination_directory,
-                        update_datetime=self.update_datetime,
+                        destination_directory=self.ingest_bucket,
+                        update_datetime=update_datetime,
+                        is_sharded=self.should_table_be_sharded(address.table_id),
                     ).run,
                     bq_client=bq_client,
                     dry_run=dry_run,
                 ): address
-                for address in self.source_big_query_addresses
+                for address, update_datetime in self.address_to_update_datetime.items()
             }
 
-        successful_exports, failed_exports = [], []
+        successful_exports: list[BigQueryAddress] = []
+        failed_exports: list[Exception] = []
         for future in concurrent.futures.as_completed(futures_to_address):
             try:
                 future.result()
@@ -191,62 +209,61 @@ class BigQueryToIngestBucketExportManager:
                 "Exports failed with the following messages: ", failed_exports
             )
 
+    @classmethod
+    def from_table_ids(
+        cls,
+        *,
+        state_code: StateCode,
+        raw_data_instance: DirectIngestInstance,
+        source_dataset_id: str,
+        table_ids: list[str],
+        update_datetime: datetime.datetime,
+    ) -> "BigQueryToIngestBucketExportManager":
+        return BigQueryToIngestBucketExportManager(
+            address_to_update_datetime={
+                BigQueryAddress(
+                    dataset_id=source_dataset_id, table_id=table_id
+                ): update_datetime
+                for table_id in table_ids
+            },
+            state_code=state_code,
+            raw_data_instance=raw_data_instance,
+        )
+
 
 # TODO(#37923) schedule this export somewhere so it runs automatically
-def main(
+def export_bq_mirror_to_ingest_bucket(
     *,
     state_code: StateCode,
     source_project_id: str,
     source_dataset_id: str,
     source_table_ids: list[str] | None,
     destination_raw_data_instance: DirectIngestInstance,
-    update_datetime_str: str | None,
+    update_datetime: datetime.datetime,
     dry_run: bool,
 ) -> None:
     """Executes the export of bq tables to the ingest bucket for |state_code| and
     |destination_raw_data_instance|.
     """
 
-    update_datetime = (
-        datetime.datetime.now(tz=datetime.UTC)
-        if update_datetime_str is None
-        else datetime.datetime.fromisoformat(update_datetime_str)
-    )
-
-    destination_ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
-        region_code=state_code.value.lower(),
-        ingest_instance=destination_raw_data_instance,
-    )
-
-    temp_ingest_bucket = GcsfsDirectoryPath.from_dir_and_subdir(
-        destination_ingest_bucket, "export_testing"
-    )
-
     source_project_bq_client = BigQueryClientImpl(project_id=source_project_id)
-    source_big_query_addresses: list[BigQueryAddress] = []
     if not source_table_ids:
-        source_big_query_addresses = [
-            BigQueryAddress.from_table(table)
+        source_table_ids = [
+            table.table_id
             for table in source_project_bq_client.list_tables(source_dataset_id)
         ]
-    else:
-        source_big_query_addresses = [
-            BigQueryAddress(dataset_id=source_dataset_id, table_id=source_table_id)
-            for source_table_id in source_table_ids
-        ]
 
-    tables_to_export = "\n".join(
-        [f"\t - {address.to_str()}" for address in source_big_query_addresses]
-    )
+    tables_to_export = "\n".join([f"\t - {table}" for table in source_table_ids])
 
     prompt_for_confirmation(
-        f"Found [{len(source_big_query_addresses)}] tables to export ? \n {tables_to_export}. \n Proceed w/ dry_run: {dry_run}?"
+        f"Found [{len(source_table_ids)}] tables to export ? \n {tables_to_export}. \n Proceed w/ dry_run: {dry_run}?"
     )
 
-    export_manager = BigQueryToIngestBucketExportManager(
-        source_project_id=source_project_id,
-        source_big_query_addresses=source_big_query_addresses,
-        destination_directory=temp_ingest_bucket,
+    export_manager = BigQueryToIngestBucketExportManager.from_table_ids(
+        source_dataset_id=source_dataset_id,
+        table_ids=source_table_ids,
+        state_code=state_code,
+        raw_data_instance=destination_raw_data_instance,
         update_datetime=update_datetime,
     )
 
@@ -308,12 +325,16 @@ if __name__ == "__main__":
     args = _create_parser().parse_args()
 
     with local_project_id_override(args.destination_project_id):
-        main(
+        export_bq_mirror_to_ingest_bucket(
             state_code=StateCode.US_UT,
             source_project_id=US_UT_INGEST_PROJECT_ID,
             source_dataset_id=US_UT_INGEST_MIRROR_DATASET_ID,
             source_table_ids=args.source_table_ids,
             destination_raw_data_instance=args.destination_raw_data_instance,
-            update_datetime_str=args.update_datetime,
+            update_datetime=(
+                datetime.datetime.now(tz=datetime.UTC)
+                if args.update_datetime_str is None
+                else datetime.datetime.fromisoformat(args.update_datetime_str)
+            ),
             dry_run=args.dry_run,
         )
