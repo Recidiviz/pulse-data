@@ -17,16 +17,25 @@
 """Tests for entity_explore_builder.py."""
 import unittest
 
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,
 )
+from recidiviz.tools.looker.entity.entity_custom_view_manager import (
+    EntityCustomViewManager,
+)
 from recidiviz.tools.looker.entity.entity_explore_builder import (
     EntityLookMLExploreBuilder,
+    generate_entity_explores,
 )
 
 
@@ -88,6 +97,9 @@ explore: fake_person_external_id {
             module_context=FakeEntitiesModuleContext(),
             root_entity_cls=fake_entities.FakePerson,
             group_label="Fake",
+            custom_view_manager=EntityCustomViewManager(
+                dataset_id="fake_dataset", view_builders=[], join_providers=[]
+            ),
         ).build()
         explore_str = "\n".join([e.build() for e in explores])
 
@@ -102,7 +114,22 @@ class TestStateExploreBuilder(unittest.TestCase):
         root_entities = [state_entities.StatePerson, state_entities.StateStaff]
         for root_entity_cls in root_entities:
             # Assert doesn't crash
-            _ = EntityLookMLExploreBuilder(
+            _ = generate_entity_explores(
                 module_context=module_context,
                 root_entity_cls=root_entity_cls,
-            ).build()
+                dataset_id=STATE_BASE_DATASET,
+            )
+
+    def test_build_normalized_state_explores(self) -> None:
+        module_context = entities_module_context_for_module(normalized_entities)
+        root_entities = [
+            normalized_entities.NormalizedStatePerson,
+            normalized_entities.NormalizedStateStaff,
+        ]
+        for root_entity_cls in root_entities:
+            # Assert doesn't crash
+            _ = generate_entity_explores(
+                module_context=module_context,
+                root_entity_cls=root_entity_cls,
+                dataset_id=NORMALIZED_STATE_DATASET,
+            )

@@ -53,8 +53,6 @@ from recidiviz.tools.looker.entity.entity_views_builder import (
     generate_entity_lookml_views,
 )
 
-# TODO(#23292) Remove fixture files from old tests
-
 
 class StateViewGenerator(unittest.TestCase):
     """Tests LookML view generation functions for states"""
@@ -81,8 +79,8 @@ class StateViewGenerator(unittest.TestCase):
         return_value=(fake_entities.FakeAnotherEntity, fake_entities.FakeEntity),
     )
     @patch(
-        "recidiviz.tools.looker.entity.entity_views_builder._custom_views",
-        return_value=[],
+        "recidiviz.tools.looker.entity.entity_views_builder.get_entity_custom_view_manager",
+        return_value=MagicMock(),
     )
     @patch(
         "recidiviz.tools.looker.entity.entity_views_builder.get_custom_field_registry_for_entity_module",

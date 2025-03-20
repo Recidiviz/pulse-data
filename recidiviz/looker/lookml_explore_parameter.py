@@ -183,6 +183,24 @@ class ExploreParameterJoin(LookMLExploreParameter):
         params = "\n    ".join(param.build() for param in self.join_params)
         return f"{self.view_name} {{\n    {params}\n  }}\n"
 
+    @classmethod
+    def build_join_parameter(
+        cls,
+        parent_view: str,
+        child_view: str,
+        join_field: str,
+        join_cardinality: JoinCardinality,
+    ) -> "ExploreParameterJoin":
+        sql_on_text = (
+            f"${{{parent_view}.{join_field}}} = ${{{child_view}.{join_field}}}"
+        )
+        sql_on = LookMLJoinParameter.sql_on(sql_on_text)
+
+        return cls(
+            view_name=child_view,
+            join_params=[sql_on, LookMLJoinParameter.relationship(join_cardinality)],
+        )
+
 
 @attr.define
 class JoinParameterFrom(LookMLJoinParameter):

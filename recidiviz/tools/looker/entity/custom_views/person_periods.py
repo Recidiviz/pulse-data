@@ -16,15 +16,26 @@
 # =============================================================================
 """Class for creating a LookML view for person periods."""
 import abc
+from typing import Type
 
 import attr
 from google.cloud import bigquery
 
 from recidiviz.common import attr_validators
 from recidiviz.looker.lookml_bq_utils import lookml_view_field_for_schema_field
+from recidiviz.looker.lookml_explore_parameter import (
+    ExploreParameterJoin,
+    JoinCardinality,
+)
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import DimensionLookMLViewField
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.tools.looker.entity.custom_views.entity_custom_view import (
+    EntityCustomViewBuilder,
+    EntityCustomViewJoinProvider,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 
@@ -112,15 +123,40 @@ def person_periods_view_name_for_dataset(dataset_id: str) -> str:
 
 
 @attr.define
-class PersonPeriodsLookMLViewBuilder:
+class PersonPeriodsJoinProvider(EntityCustomViewJoinProvider):
+    """Provides the relationship to join the person periods view to state
+    and normalized state entity views."""
+
+    dataset_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    def get_join_relationship(
+        self, entity_cls: Type[Entity]
+    ) -> ExploreParameterJoin | None:
+        if entity_cls in [
+            state_entities.StatePerson,
+            normalized_entities.NormalizedStatePerson,
+        ]:
+            return ExploreParameterJoin.build_join_parameter(
+                parent_view=entity_cls.get_entity_name(),
+                child_view=person_periods_view_name_for_dataset(self.dataset_id),
+                join_cardinality=JoinCardinality.ONE_TO_MANY,
+                join_field=entity_cls.get_primary_key_column_name(),
+            )
+        return None
+
+
+@attr.define
+class PersonPeriodsLookMLViewBuilder(EntityCustomViewBuilder):
     """LookML view builder for person periods. person_periods is a derived table that combines
     data from incarceration and supervision periods into a single view."""
 
-    incarceration_period_table: str
-    supervision_period_table: str
+    incarceration_period_table: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+    supervision_period_table: str = attr.ib(validator=attr_validators.is_non_empty_str)
     incarceration_period_schema: list[bigquery.SchemaField]
     supervision_period_schema: list[bigquery.SchemaField]
-    dataset_id: str
+    dataset_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     primary_key_fields: tuple[str, str] = ("period_id", "period_type")
 

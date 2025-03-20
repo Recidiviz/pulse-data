@@ -19,9 +19,58 @@ import unittest
 
 from google.cloud import bigquery
 
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
+from recidiviz.persistence.entity.state import entities as state_entites
+from recidiviz.persistence.entity.state import normalized_entities as normalized_entites
 from recidiviz.tools.looker.entity.custom_views.person_periods import (
+    PersonPeriodsJoinProvider,
     PersonPeriodsLookMLViewBuilder,
 )
+
+
+class TestPersonPeriodsJoinProvider(unittest.TestCase):
+    """Tests for the PersonPeriodsJoinProvider class."""
+
+    def test_get_state_join_relationship(self) -> None:
+        expected_join = """state_person_periods {
+    sql_on: ${state_person.person_id} = ${state_person_periods.person_id};;
+    relationship: one_to_many
+  }
+"""
+        join_provider = PersonPeriodsJoinProvider(dataset_id=STATE_BASE_DATASET)
+        person_join = join_provider.get_join_relationship(
+            entity_cls=state_entites.StatePerson
+        )
+        staff_join = join_provider.get_join_relationship(
+            entity_cls=state_entites.StateStaff
+        )
+
+        # make mypy happy
+        assert person_join is not None
+        self.assertEqual(expected_join, person_join.value_text)
+        self.assertIsNone(staff_join)
+
+    def test_get_normalized_state_join_relationship(self) -> None:
+        expected_join = """normalized_state_person_periods {
+    sql_on: ${normalized_state_person.person_id} = ${normalized_state_person_periods.person_id};;
+    relationship: one_to_many
+  }
+"""
+        join_provider = PersonPeriodsJoinProvider(dataset_id=NORMALIZED_STATE_DATASET)
+        person_join = join_provider.get_join_relationship(
+            entity_cls=normalized_entites.NormalizedStatePerson
+        )
+        staff_join = join_provider.get_join_relationship(
+            entity_cls=normalized_entites.NormalizedStateStaff
+        )
+
+        # make mypy happy
+        assert person_join is not None
+        self.assertEqual(expected_join, person_join.value_text)
+        self.assertIsNone(staff_join)
 
 
 class TestPersonPeriodsLookMLView(unittest.TestCase):

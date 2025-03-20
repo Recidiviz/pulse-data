@@ -30,13 +30,12 @@ from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.tools.looker.entity.custom_views.person_periods import (
-    PersonPeriodsLookMLViewBuilder,
-)
 from recidiviz.tools.looker.entity.entity_custom_field_registry import (
     get_custom_field_registry_for_entity_module,
+)
+from recidiviz.tools.looker.entity.entity_custom_view_manager import (
+    get_entity_custom_view_manager,
 )
 from recidiviz.tools.looker.entity.entity_field_builders import (
     AssociationTableLookMLFieldBuilder,
@@ -110,20 +109,6 @@ class EntityLookMLViewsBuilder:
         return views_derived_from_schema
 
 
-def _custom_views(
-    dataset_id: str,
-    entities_module: ModuleType,
-    schema_map: dict[str, list[bigquery.SchemaField]],
-) -> list[LookMLView]:
-    if entities_module in [state_entities, normalized_entities]:
-        return [
-            PersonPeriodsLookMLViewBuilder.from_schema(
-                dataset_id=dataset_id, bq_schema=schema_map
-            ).build()
-        ]
-    raise ValueError(f"Unsupported entities module: [{entities_module}]")
-
-
 def generate_entity_lookml_views(
     dataset_id: str, entities_module: ModuleType
 ) -> list[LookMLView]:
@@ -139,6 +124,6 @@ def generate_entity_lookml_views(
         schema_map=schema_map,
     ).build_and_validate()
 
-    return views_derived_from_schema + _custom_views(
-        dataset_id=dataset_id, entities_module=entities_module, schema_map=schema_map
-    )
+    return views_derived_from_schema + get_entity_custom_view_manager(
+        dataset_id=dataset_id, entities_module=entities_module
+    ).build_custom_views(schema_map=schema_map)

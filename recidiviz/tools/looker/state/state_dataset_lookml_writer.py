@@ -52,7 +52,7 @@ from recidiviz.tools.looker.entity.entity_dashboard_builder import (
     EntityLookMLDashboardBuilder,
 )
 from recidiviz.tools.looker.entity.entity_explore_builder import (
-    EntityLookMLExploreBuilder,
+    generate_entity_explores,
 )
 from recidiviz.tools.looker.entity.entity_views_builder import (
     generate_entity_lookml_views,
@@ -88,10 +88,11 @@ def write_lookml_files(
                 f"Expected root entity class [{root_entity_cls}] to be a subclass of [{Entity}]"
             )
         write_explores_to_file(
-            explores=EntityLookMLExploreBuilder(
+            explores=generate_entity_explores(
+                dataset_id=dataset_id,
                 module_context=module_context,
                 root_entity_cls=root_entity_cls,
-            ).build(),
+            ),
             top_level_explore_name=root_entity_cls.get_entity_name(),
             output_directory=os.path.join(looker_dir, EXPLORES_DIR, dataset_subdir),
             source_script_path=__file__,

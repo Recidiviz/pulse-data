@@ -24,7 +24,6 @@ from recidiviz.looker.lookml_explore_parameter import (
     ExploreParameterJoin,
     JoinCardinality,
     LookMLExploreParameter,
-    LookMLJoinParameter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
@@ -37,6 +36,10 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
+)
+from recidiviz.tools.looker.entity.entity_custom_view_manager import (
+    EntityCustomViewManager,
+    get_entity_custom_view_manager,
 )
 from recidiviz.tools.looker.entity.entity_views_builder import (
     view_name_for_entity_table,
@@ -62,39 +65,26 @@ class EntityLookMLExploreBuilder:
     Attributes:
         module_context: The context for the entities module.
         root_entity_cls: The root entity class for which to build the LookML explore.
+        custom_view_manager: The custom view manager for the dataset, used to get custom view join relationships.
         group_label: The group label for the LookML explore used to group explores in the Looker UI.
-        _table_name_to_explore: A mapping from table name to LookML explore.
+        _view_name_to_explore: A mapping from view name to LookML explore.
     """
 
     module_context: EntitiesModuleContext = attr.ib()
     root_entity_cls: Type[Entity] = attr.ib(validator=attr.validators.instance_of(type))
+    custom_view_manager: EntityCustomViewManager = attr.ib(
+        validator=attr.validators.instance_of(EntityCustomViewManager)
+    )
     group_label: str = attr.ib(default=STATE_GROUP_LABEL)
-    _entity_name_to_explore: Dict[str, LookMLExplore] = attr.ib(factory=dict)
+    _view_name_to_explore: Dict[str, LookMLExplore] = attr.ib(factory=dict)
 
     @staticmethod
-    def _build_join_parameter(
-        parent_table: str,
-        child_table: str,
-        join_field: str,
-        join_cardinality: JoinCardinality,
-    ) -> ExploreParameterJoin:
-        sql_on_text = (
-            f"${{{parent_table}.{join_field}}} = ${{{child_table}.{join_field}}}"
-        )
-        sql_on = LookMLJoinParameter.sql_on(sql_on_text)
-
-        return ExploreParameterJoin(
-            view_name=child_table,
-            join_params=[sql_on, LookMLJoinParameter.relationship(join_cardinality)],
-        )
-
-    @classmethod
     def _build_association_table_explore(
-        cls, association_table_id: str, child_cls: Type[Entity]
+        association_table_id: str, child_cls: Type[Entity]
     ) -> LookMLExplore:
-        join_parameter = cls._build_join_parameter(
-            parent_table=association_table_id,
-            child_table=child_cls.get_entity_name(),
+        join_parameter = ExploreParameterJoin.build_join_parameter(
+            parent_view=association_table_id,
+            child_view=child_cls.get_entity_name(),
             join_field=child_cls.get_class_id_name(),
             join_cardinality=JoinCardinality.MANY_TO_ONE,
         )
@@ -122,22 +112,27 @@ class EntityLookMLExploreBuilder:
         entity_cls: Type[Entity],
     ) -> None:
         """Builds LookML explores for the given entity class and its related entities."""
-        table_name = entity_cls.get_entity_name()
-        if table_name in self._entity_name_to_explore:
+        view_name = entity_cls.get_entity_name()
+        if view_name in self._view_name_to_explore:
             return
 
         explore = LookMLExplore(
-            explore_name=table_name, parameters=[], extension_required=True
+            explore_name=view_name, parameters=[], extension_required=True
         )
-        self._entity_name_to_explore[table_name] = explore
+        self._view_name_to_explore[view_name] = explore
+
+        if relationships := self.custom_view_manager.get_custom_view_join_relationships(
+            entity_cls
+        ):
+            explore.parameters.extend(relationships)
 
         def _join_details(
             entity_relationship_cardinality: JoinCardinality,
             parent_cls: Type[Entity],
             child_cls: Type[Entity],
         ) -> Tuple[str, JoinCardinality]:
-            """Returns the join table name and cardinality for the relationship.
-            If the entities have a many-to-many relationship, we need to join through an association table.
+            """Returns the join table view name and cardinality for the relationship.
+            If the entities have a many-to-many relationship, we need to join through an association table view.
             """
             if entity_relationship_cardinality == JoinCardinality.MANY_TO_MANY:
                 association_table_id = get_association_table_id(
@@ -159,24 +154,26 @@ class EntityLookMLExploreBuilder:
             entity_relationship_cardinality = self._get_entity_relationship_cardinality(
                 entity_cls, child_entity_cls
             )
-            join_table, join_cardinality = _join_details(
+            join_table_view, join_cardinality = _join_details(
                 entity_relationship_cardinality, entity_cls, child_entity_cls
             )
 
             explore.parameters.append(
-                self._build_join_parameter(
-                    parent_table=table_name,
-                    child_table=join_table,
+                ExploreParameterJoin.build_join_parameter(
+                    parent_view=view_name,
+                    child_view=join_table_view,
                     join_field=entity_cls.get_class_id_name(),
                     join_cardinality=join_cardinality,
                 )
             )
-            explore.extended_explores.append(join_table)
+            explore.extended_explores.append(join_table_view)
 
             if entity_relationship_cardinality == JoinCardinality.MANY_TO_MANY:
-                self._entity_name_to_explore[
-                    join_table
-                ] = self._build_association_table_explore(join_table, child_entity_cls)
+                self._view_name_to_explore[
+                    join_table_view
+                ] = self._build_association_table_explore(
+                    join_table_view, child_entity_cls
+                )
             else:
                 self._build_explores(child_entity_cls)
 
@@ -185,7 +182,7 @@ class EntityLookMLExploreBuilder:
     ) -> None:
         """Fills in the details for the root explore."""
         entity_name = self.root_entity_cls.get_entity_name()
-        root_explore = self._entity_name_to_explore[entity_name]
+        root_explore = self._view_name_to_explore[entity_name]
 
         root_explore.explore_name = explore_name_for_root_entity(self.root_entity_cls)
         # View name needs to be specified since explore name is different
@@ -208,4 +205,19 @@ class EntityLookMLExploreBuilder:
         self._build_explores(self.root_entity_cls)
         self._fill_root_explore_details()
 
-        return list(self._entity_name_to_explore.values())
+        return list(self._view_name_to_explore.values())
+
+
+def generate_entity_explores(
+    module_context: EntitiesModuleContext,
+    root_entity_cls: Type[Entity],
+    dataset_id: str,
+) -> List[LookMLExplore]:
+    """Generates LookML explores for the given root entity class and it's child entities."""
+    return EntityLookMLExploreBuilder(
+        module_context=module_context,
+        root_entity_cls=root_entity_cls,
+        custom_view_manager=get_entity_custom_view_manager(
+            dataset_id, module_context.entities_module()
+        ),
+    ).build()
