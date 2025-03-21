@@ -76,7 +76,7 @@ SELECT
   CAST(NULL AS STRING) AS supervisor_id,
 FROM
   psi
-LEFT JOIN
+JOIN
   staff s
 ON
   ( psi.surname = s.surname
