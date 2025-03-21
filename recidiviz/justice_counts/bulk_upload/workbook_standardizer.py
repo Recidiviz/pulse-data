@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Functionality to standardize an Excel workbook so that it can be ingested via 
+Functionality to standardize an Excel workbook so that it can be ingested via
 Bulk Upload into the Justice Counts database.
 """
 
 import datetime
 from io import StringIO
-from typing import Any, Dict, Hashable, List, Optional, Set, Tuple
+from typing import Any, Dict, Hashable, Iterator, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -32,7 +32,6 @@ from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     FUZZY_MATCHING_SCORE_CUTOFF,
     MONTH_NAMES,
     NORMALIZERS,
-    separate_file_name_from_folder,
 )
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.exceptions import (
@@ -65,20 +64,115 @@ class WorkbookStandardizer:
         self.canonical_file_name_to_metric_key = {
             m.canonical_filename: m.definition.key for m in self.metadata.metric_files
         }
+        self.curr_expected_columns: List[str] = []
+        self.sheet_name_to_standardized_column_headers: Dict[
+            str, Optional[List[str]]
+        ] = {}
 
-    def get_new_file_name_and_sheet_name(self, file_name: str) -> Tuple[str, str]:
+    def _get_datapoint_chunks_for_excel_file(
+        self, file: Any
+    ) -> Iterator[Tuple[str, pd.DataFrame]]:
         """
-        Generates a new file name and corresponding sheet name for a converted Excel file.
+        Converts an excel file to an iterator that yields (sheet_name, dataframe) tuples.
 
         Args:
-            file_name (str): The original file name.
+            file (Any): The input Excel file.
 
-        Returns:
-            Tuple[str, str]: The new file name and the sheet name.
+        Yields:
+            Iterator[Tuple[str, pd.DataFrame]]: An iterator of (sheet_name, DataFrame dataframe).
         """
-        new_file_name = separate_file_name_from_folder(file_name=file_name).rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
-        sheet_name = new_file_name.rsplit(".", 1)[0].split("/")[-1]
-        return new_file_name, sheet_name
+        excel_file = pd.ExcelFile(file)
+
+        # Sort sheet names alphabetically to ensure consistent processing order
+        sorted_sheets = sorted(excel_file.sheet_names)
+
+        for sheet_name in sorted_sheets:
+            chunk_start = 0
+            column_headers = None  # Store column headers from the first chunk
+
+            while True:
+                chunk = pd.read_excel(
+                    file,
+                    sheet_name=sheet_name,
+                    skiprows=chunk_start,
+                    nrows=self.metadata.chunk_size,
+                    header=(
+                        0 if column_headers is None else None
+                    ),  # Read headers only once
+                )
+
+                if chunk.empty:
+                    break  # Stop processing when there is no more data
+
+                if column_headers is None:
+                    # Save the column headers from the first chunk
+                    column_headers = chunk.columns
+                else:
+                    # Ensure subsequent chunks align with the original column headers
+                    chunk.columns = column_headers
+
+                yield sheet_name, chunk
+
+                if chunk_start == 0:
+                    # Account for the header row when determining the next starting row
+                    chunk_start += 1
+
+                # Move to the next chunk
+                chunk_start += self.metadata.chunk_size
+
+    def _get_datapoint_chunks_for_csv_file(
+        self, file: Any, file_name: str
+    ) -> Iterator[Tuple[str, pd.DataFrame]]:
+        """
+        Converts a CSV file to an iterator that yields (sheet_name, dataframe) tuples.
+
+        Args:
+            file (Any): The input CSV file.
+            file_name (str): The name of the CSV file.
+
+        Yields:
+            Iterator[Tuple[str, pd.DataFrame]]: An iterator of (sheet_name, DataFrame dataframe).
+        """
+        # Extract a meaningful sheet name from the file name and ensure it’s within Excel's 31-char limit
+        sheet_name = file_name.rsplit(".", 1)[0][:MAXIMUM_CSV_FILE_NAME_LENGTH]
+
+        chunks = pd.read_csv(file, chunksize=self.metadata.chunk_size)
+        column_headers = None  # Store headers from the first chunk
+
+        for chunk in chunks:
+            if column_headers is None:
+                column_headers = chunk.columns  # Store headers from the first chunk
+            else:
+                chunk.columns = column_headers  # Ensure consistency across chunks
+
+            yield sheet_name, chunk
+
+    def get_dataframe_chunks(
+        self, file: Any, file_name: str
+    ) -> Iterator[Tuple[str, pd.DataFrame]]:
+        """
+        Converts a file to an iterator that yields (sheet_name, dataframe) tuples.
+
+        Args:
+            file (Any): The input file.
+            file_name (str): The name of the file.
+
+        Yields:
+            Iterator[Tuple[str, pd.DataFrame]]: An iterator of (sheet_name, DataFrame dataframe).
+        """
+        file_type = self.get_file_type_from_file_name(file_name=file_name)
+
+        if file_type != BulkUploadFileType.CSV:
+            return self._get_datapoint_chunks_for_excel_file(file=file)
+
+        self.is_csv_upload = True
+        if isinstance(file, bytes):
+            s = str(file, "utf-8")
+            file = StringIO(s)
+        else:
+            file.stream.seek(0)
+
+        return self._get_datapoint_chunks_for_csv_file(file=file, file_name=file_name)
 
     def get_file_type_from_file_name(self, file_name: str) -> BulkUploadFileType:
         """
@@ -114,97 +208,50 @@ class WorkbookStandardizer:
             value = value.replace(" ", "_")
         return value
 
-    def _convert_file_to_pandas_excel_file(
-        self, file: Any, file_name: str
-    ) -> pd.ExcelFile:
-        """
-        Converts a file to an Excel file if necessary, and validates the file name.
-
-        Args:
-            file (Any): The input file.
-            file name (str): The name of the file.
-
-        Returns:
-            Tuple[pd.ExcelFile, str]: A tuple containing the Excel file and
-            the new file name
-        """
-        # Determine the file type from the file name suffix
-        file_type = self.get_file_type_from_file_name(file_name=file_name)
-
-        if file_type != BulkUploadFileType.CSV:
-            # If file is already in Excel format, return it
-            return pd.ExcelFile(file)
-
-        # Create new file name for the converted Excel file
-        new_file_name, sheet_name = self.get_new_file_name_and_sheet_name(
-            file_name=file_name
-        )
-
-        # Convert bytes to string if necessary
-        self.is_csv_upload = True
-        if isinstance(file, bytes):
-            s = str(file, "utf-8")
-            file = StringIO(s)
-        else:
-            file.stream.seek(0)
-
-        # Read CSV file and convert it to Excel
-        csv_df = pd.read_csv(file)
-        if len(new_file_name) > MAXIMUM_CSV_FILE_NAME_LENGTH:
-            # csv_df.to_excel will throw an error if the file name is > 31 characters
-            new_file_name = (
-                new_file_name[0 : MAXIMUM_CSV_FILE_NAME_LENGTH - len(".xlsx")] + ".xlsx"
-            )
-            sheet_name = sheet_name[0:MAXIMUM_CSV_FILE_NAME_LENGTH]
-
-        csv_df.to_excel(new_file_name, sheet_name=sheet_name, index=False)
-        return pd.ExcelFile(new_file_name)
-
     def _add_unexpected_column_errors(
         self,
-        expected_columns: List[str],
-        sheet_df: pd.DataFrame,
+        df: pd.DataFrame,
         metric_key: Optional[str] = None,
         sheet_name: Optional[str] = None,
     ) -> Set[BulkUploadMessageType]:
         """
-        Identifies unexpected columns in a DataFrame and adds corresponding error or warning messages.
+        Detects unexpected columns in a DataFrame and logs corresponding errors or warnings.
 
-        This method checks each column in the provided `sheet_df` DataFrame to determine if it matches any of the
-        `expected_columns`. If a column is found that is not expected, an error message is created and added to
-        the `metric_key_to_errors` mapping in the metadata. If the column is a 'month' column and contains data,
-        a warning message is generated instead, indicating that the data will be recorded as having a monthly
-        reporting frequency.
+        This method verifies whether each column in the provided DataFrame is among the expected columns. If an
+        unexpected column is found, an error message is recorded. However, if the column is named 'month' and
+        contains data, a warning is issued instead, indicating that the data will be interpreted as having a
+        monthly reporting frequency.
+
+        Errors and warnings are added to the `metric_key_to_errors` mapping in the metadata,
+        associating them with the relevant `metric_key`.
 
         Args:
-            expected_columns : List[str]
-                A list of expected column names for the sheet.
-            sheet_df : pd.DataFrame
-                The DataFrame representing the sheet to be checked for unexpected columns.
-            metric_key : Optional[str], optional
-                The key corresponding to the metric being processed. This is used to categorize errors.
-            sheet_name : Optional[str], optional
-                The name of the sheet being processed. This is included in error messages for context.
+            df (pd.DataFrame):
+                The DataFrame to be checked for unexpected columns.
+            metric_key (Optional[str], optional):
+                The key identifying the metric being processed. Used for categorizing errors.
+            sheet_name (Optional[str], optional):
+                The name of the sheet being processed. Included in error messages for context.
 
         Returns:
-            Set[BulkUploadMessageType]
-                A set of message types (`ERROR` or `WARNING`) generated during the processing of unexpected columns.
+            Set[BulkUploadMessageType]:
+                A set of message types (`ERROR` or `WARNING`) generated during processing.
         """
 
         message_types = set()
 
-        for column in sheet_df.columns:
+        for column in df.columns:
             if column == "row_number":
                 continue
 
             message_type = BulkUploadMessageType.ERROR
-            description = f"A '{column}' column was found in your sheet. Only the following columns were expected in your sheet: {', '.join(expected_columns)}. "
+            description = f"A '{column}' column was found in your sheet. Only the following columns were expected in your sheet: {', '.join(self.curr_expected_columns)}. "
             standardized_column_header = self._standardize_string(
                 column, add_underscore=True
             )
-            if standardized_column_header not in expected_columns:
+            if standardized_column_header not in self.curr_expected_columns:
                 if standardized_column_header == "month":
-                    if bool(sheet_df[column].isna().all()) is False:
+                    if bool(df[column].isna().all()) is False:
                         # If there is a month column with data in it, update the description to say
                         # that the data will be recorded as monthly.
                         description += "Since you provided month data, your data will be saved for a monthly reporting frequency"
@@ -223,8 +270,7 @@ class WorkbookStandardizer:
 
     def _add_missing_column_errors(
         self,
-        expected_columns: List[str],
-        sheet_df: pd.DataFrame,
+        df: pd.DataFrame,
         metric_key: Optional[str] = None,
         sheet_name: Optional[str] = None,
     ) -> Set[BulkUploadMessageType]:
@@ -232,9 +278,7 @@ class WorkbookStandardizer:
         Checks for missing or empty expected columns in a DataFrame and adds corresponding error or warning messages.
 
         Args:
-            expected_columns : List[str]
-                A list of expected column names that should be present in the sheet.
-            sheet_df : pd.DataFrame
+            df : pd.DataFrame
                 The DataFrame representing the sheet to be checked for missing or empty columns.
             metric_key : Optional[str], optional
                 The key corresponding to the metric being processed. This is used to categorize errors.
@@ -248,10 +292,10 @@ class WorkbookStandardizer:
 
         message_types = set()
         standardized_column_actual_column = {
-            self._standardize_string(col): col for col in sheet_df.columns
+            self._standardize_string(col): col for col in df.columns
         }
 
-        for column in expected_columns:
+        for column in self.curr_expected_columns:
             message_type = BulkUploadMessageType.ERROR
             title = ""
             description = ""
@@ -261,11 +305,10 @@ class WorkbookStandardizer:
                 description = (
                     f"This sheet should contain a column named '{column}' populated with data. "
                     f"Only the following columns were found in the sheet: "
-                    f"{', '.join(sheet_df.columns)}. "
+                    f"{', '.join(df.columns)}. "
                 )
             elif (
-                bool(sheet_df[standardized_column_actual_column[column]].isna().all())
-                is True
+                bool(df[standardized_column_actual_column[column]].isna().all()) is True
             ):
                 title = f"Empty '{column}' Column"
                 description = (
@@ -316,7 +359,7 @@ class WorkbookStandardizer:
             ):
                 # There should be a month column if the agency is a super agency and either
                 # the super agency of the child agencies have the metric configured with a
-                # monthly reporting frequency
+                # monthly reporting
                 reporting_frequencies.update(
                     {
                         metric_key_to_metric_interface[
@@ -335,26 +378,28 @@ class WorkbookStandardizer:
                     ].get_reporting_frequency_to_use()[0]
                     == schema.ReportingFrequency.MONTHLY
                 )
-
         return schema.ReportingFrequency.MONTHLY in reporting_frequencies
 
     def get_expected_columns(
-        self,
-        sheet_df: pd.DataFrame,
-        metric_file: Optional[MetricFile] = None,
+        self, df: pd.DataFrame, metric_file: Optional[MetricFile]
     ) -> List[str]:
         """
-        Generates a list of expected column names for a given DataFrame sheet.
+        Determines the expected column names for a given DataFrame.
+
+        This method generates a list of expected column names based on the upload structure,
+        the upload type (single-page or multi-page), the metric file definition, and the agency's
+        reporting requirements.
 
         Args:
-            sheet_df : pd.DataFrame
-                The DataFrame representing the sheet to be checked.
-            metric_file : Optional[MetricFile], optional
-                An optional `MetricFile` object that contains the metric definition and disaggregation details.
+            df (pd.DataFrame):
+                The DataFrame representing the sheet to be processed.
+            metric_file (Optional[MetricFile]):
+                The metric file associated with the sheet. If provided, its definition helps
+                determine the expected columns.
 
         Returns:
-            List[str]
-                A list of expected column names for the sheet.
+            List[str]:
+                A list of expected column names for the given sheet.
         """
         if metric_file is not None:
             metric_keys = [metric_file.definition.key]
@@ -362,11 +407,11 @@ class WorkbookStandardizer:
             metric_keys = (
                 [
                     key
-                    for m in sheet_df["metric"].unique()
+                    for m in df["metric"].unique()
                     for key in [self.canonical_file_name_to_metric_key.get(m)]
                     if key is not None
                 ]
-                if "metric" in sheet_df.columns
+                if "metric" in df.columns
                 else []
             )
 
@@ -409,7 +454,7 @@ class WorkbookStandardizer:
 
         if self.metadata.is_single_page_upload is True:
             # If there is a 'breakdown column' we expect a 'breakdown_category' column (and vice versa).
-            if BREAKDOWN_CATEGORY in sheet_df.columns or BREAKDOWN in sheet_df.columns:
+            if BREAKDOWN_CATEGORY in df.columns or BREAKDOWN in df.columns:
                 expected_columns += [BREAKDOWN_CATEGORY, BREAKDOWN]
 
         expected_columns.append("value")
@@ -440,25 +485,37 @@ class WorkbookStandardizer:
             for metric_key in metric_keys
         }
 
-    def standardize_column_headers(
+    def _add_column_header_errors(
         self,
-        sheet_df: pd.DataFrame,
-        expected_columns: List[str],
+        df: pd.DataFrame,
         sheet_name: Optional[str] = None,
         metric_key: Optional[str] = None,
     ) -> bool:
+        """
+        Validates column headers in a DataFrame by identifying missing or unexpected columns.
+
+        Args:
+            df (pd.DataFrame):
+                The DataFrame to validate.
+            sheet_name (Optional[str], optional):
+                The name of the sheet being processed, used for error reporting.
+            metric_key (Optional[str], optional):
+                The key corresponding to the metric being processed, used to categorize errors.
+
+        Returns:
+            bool:
+                `True` if no errors were found, otherwise `False`.
+        """
 
         missing_column_error_messages = self._add_missing_column_errors(
-            expected_columns=expected_columns,
             metric_key=metric_key,
-            sheet_df=sheet_df,
+            df=df,
             sheet_name=sheet_name,
         )
 
         unexpected_column_error_messages = self._add_unexpected_column_errors(
-            expected_columns=expected_columns,
             metric_key=metric_key,
-            sheet_df=sheet_df,
+            df=df,
             sheet_name=sheet_name,
         )
 
@@ -543,38 +600,30 @@ class WorkbookStandardizer:
 
     def standardize_rows(
         self,
-        sheet_df: pd.DataFrame,
+        df: pd.DataFrame,
         metric_file: Optional[MetricFile],
         sheet_name: Optional[str],
-        expected_columns: List[str],
-    ) -> pd.DataFrame:
+    ) -> List[Dict[str, Any]]:
         """
-        Standardize and validate rows from an Excel sheet DataFrame.
+        Standardizes and validates rows from an Excel sheet DataFrame.
 
-        This method processes each row in the provided DataFrame, validates specific fields
-        ('year', 'month', 'system', 'agency', '<breakdown column name>' and 'value'), and corrects
-        or reports errors based on the Justice Counts technical specification. Rows with valid
-        data are returned, while rows containing invalid values are dropped and logged as
-        errors or warnings.
+        Rows that pass validation are returned as standardized dictionaries, while those with errors
+        are omitted and logged.
 
-        Parameters
-        ----------
-        sheet_df : pd.DataFrame
-            The DataFrame containing rows to be standardized.
-        sheet_name : Optional[str]
-            The name of the sheet being processed, used for error reporting.
-        expected_columns : List[str]
-            A list of expected column names in the DataFrame, including 'system' and 'agency' for validation.
-        metric_file : Optional[MetricFile], default None
-            The associated MetricFile object used for disaggregation and metric-specific validation.
+        Args:
+            df (pd.DataFrame):
+                The DataFrame containing the raw data to be standardized.
+            metric_file (Optional[MetricFile]):
+                The metric file associated with the sheet, used for determining expected fields.
+            sheet_name (Optional[str]):
+                The name of the sheet being processed, included in error messages for context.
 
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame containing rows that passed validation, with errors and warnings logged separately.
+        Returns:
+            List[Dict[str, Any]]:
+                A list of validated and standardized rows, formatted as dictionaries.
         """
         # Replace Nan with None
-        sheet_df = sheet_df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
+        sheet_df = df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
         rows = sheet_df.to_dict("records")
 
         valid_rows = []
@@ -696,7 +745,7 @@ class WorkbookStandardizer:
 
             # Check for invalid 'system' values
             if (
-                "system" in expected_columns
+                "system" in self.curr_expected_columns
                 and metric_key is not None
                 and self.metadata.metric_key_to_metric_interface[
                     metric_key
@@ -726,7 +775,7 @@ class WorkbookStandardizer:
                 )
 
             # Check for invalid 'agency' values
-            if "agency" in expected_columns:
+            if "agency" in self.curr_expected_columns:
                 original_agency_name = row["agency"]
                 row["agency"] = self._standardize_string(
                     original_agency_name, add_underscore=False
@@ -792,42 +841,36 @@ class WorkbookStandardizer:
             if num_errors_before == num_errors_after:
                 valid_rows.append(row)
 
-        return pd.DataFrame(valid_rows)
+        return valid_rows
 
-    def standardize_sheet(
-        self,
-        sheet_df: pd.DataFrame,
-        metric_file: Optional[MetricFile] = None,
-        sheet_name: Optional[str] = None,
-    ) -> Tuple[bool, pd.DataFrame]:
+    def standardize_dataframe(
+        self, df: pd.DataFrame, sheet_name: str, current_index: int
+    ) -> List[Dict[str, Any]]:
         """
-        Standardizes a DataFrame sheet by ensuring expected columns are present and
-        unexpected columns are flagged.
+            Standardizes a DataFrame by ensuring expected columns are present,
+            unexpected columns are flagged, and row numbers are correctly assigned.
 
-        This method removes unnamed columns, checks for missing and unexpected columns,
-        and standardizes the column headers. It generates error or warning messages if
-        any issues are found during the standardization process.
+            If the sheet contains errors that prevent ingestion, it will not be processed further.
+        Otherwise, the function returns the standardized rows.
 
         Args:
-            sheet_df : pd.DataFrame
-                The DataFrame representing the sheet to be standardized.
-            metric_file : Optional[MetricFile], optional
-                An optional `MetricFile` object that contains the metric definition.
-            sheet_name : Optional[str], optional
-                The name of the sheet being standardized. This is included in error messages for context.
+        df (pd.DataFrame):
+            The DataFrame representing the rows to be standardized.
+        sheet_name (str):
+            The name of the sheet being standardized, included in error messages for context.
+        current_index (int):
+            The starting index used to calculate row numbers for tracking.
 
         Returns:
-            Tuple[bool, pd.DataFrame]
-                A tuple where the first element is a boolean indicating whether any errors were found
-                (True if no errors, False otherwise), and the second element is the standardized DataFrame.
+        Tuple[bool, List[Dict[str, Any]]]:
+            A tuple where:
+            - The first element is a boolean indicating whether the sheet can be ingested (True if no errors, False otherwise).
+            - The second element is a list of standardized row dictionaries if ingestion is successful, otherwise an empty list.
         """
-        # Convert all column names to strings
-        sheet_df.columns = sheet_df.columns.astype(str)
 
-        # Remove unnamed columns
-        sheet_df = sheet_df.loc[:, ~sheet_df.columns.str.contains("^Unnamed")]
+        standardized_sheet_name = self._standardize_string(sheet_name)
 
-        if "row_number" not in sheet_df.columns:
+        if "row_number" not in df.columns:
             # Insert a 'row_number' column to capture the original row numbers from the sheet.
             # This is necessary because, for single-page uploads, the file will be reformatted into
             # the standard format, and row numbers will change during that process. In the standard
@@ -835,95 +878,63 @@ class WorkbookStandardizer:
             # We add 2 to the index because:
             # 1) Row numbering starts at 1 (not 0), and
             # 2) The first row in the DataFrame represents the column headers.
-            sheet_df.insert(0, "row_number", sheet_df.index + 2)
+            df.insert(0, "row_number", df.index + current_index + 2)
 
-        expected_columns = self.get_expected_columns(
-            sheet_df=sheet_df, metric_file=metric_file
+        # Convert all column names to strings
+        df.columns = df.columns.astype(str)
+        # Remove unnamed columns
+        df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+
+        metric_file = get_metricfile_by_sheet_name(
+            sheet_name=standardized_sheet_name, system=self.metadata.system
         )
 
-        can_rows_be_ingested = self.standardize_column_headers(
-            sheet_df=sheet_df,
-            expected_columns=expected_columns,
+        if metric_file is None and self.metadata.is_single_page_upload is False:
+            # 1) Don't write sheet with invalid sheet name to new excel object
+            # 2) Add sheet name to invalid sheet names
+            self.invalid_sheet_names.add(sheet_name)
+            return []
+
+        if (
+            sheet_name not in self.sheet_name_to_standardized_column_headers
+        ):  # Only perform this check once per sheet because we want to log errors once
+            # and avoid redundant computations.
+            self.curr_expected_columns = self.get_expected_columns(
+                df=df, metric_file=metric_file
+            )
+
+            can_ingest_sheet = self._add_column_header_errors(
+                df=df,
+                sheet_name=sheet_name,
+                metric_key=(
+                    metric_file.definition.key if metric_file is not None else None
+                ),
+            )
+
+            df.columns = df.columns.map(self._standardize_string)
+
+            self.sheet_name_to_standardized_column_headers[sheet_name] = (
+                df.columns if can_ingest_sheet is True else None
+            )
+        else:
+            can_ingest_sheet = (
+                self.sheet_name_to_standardized_column_headers[sheet_name] is not None
+            )
+
+        if can_ingest_sheet is False:
+            return []
+
+        df.columns = self.sheet_name_to_standardized_column_headers[sheet_name]
+
+        return self.standardize_rows(
+            df=df,
             sheet_name=sheet_name,
-            metric_key=metric_file.definition.key if metric_file is not None else None,
-        )
-
-        # Update DF with standardized all column headers
-        sheet_df.columns = sheet_df.columns.map(self._standardize_string)
-
-        if can_rows_be_ingested is False:
-            return can_rows_be_ingested, sheet_df
-
-        sheet_df = self.standardize_rows(
-            sheet_df=sheet_df,
-            sheet_name=sheet_name,
-            expected_columns=expected_columns,
             metric_file=metric_file,
         )
 
-        return True, sheet_df
-
-    def standardize_workbook(
-        self, file: Any, file_name: str
-    ) -> dict[str, pd.DataFrame]:
-        """
-        Standardizes the sheet names, column headers, and cell values in the given Excel workbook.
-
-        Parameters:
-        file (Any): The Excel or CSV file to be processed.
-        file_name (str): The name of the output Excel file.
-
-        Returns:
-        Tuple[pd.ExcelFile, str]: A tuple containing the Excel file and
-        the new file name
-        """
-
-        standardized_workbook_df: dict[str, pd.DataFrame] = {}
-        excel_file = self._convert_file_to_pandas_excel_file(
-            file=file, file_name=file_name
-        )
-
-        workbook_df = pd.read_excel(excel_file, sheet_name=None)
-        single_page_upload_columns = ["metric", "breakdown", "breakdown_category"]
-        self.metadata.is_single_page_upload = len(excel_file.sheet_names) == 1 and any(
-            col in workbook_df[excel_file.sheet_names[0]].columns
-            for col in single_page_upload_columns
-        )
-
-        for sheet_name in workbook_df:
-            sheet_df = workbook_df[sheet_name]
-            standardized_sheet_name = self._standardize_string(sheet_name)
-            metric_file = get_metricfile_by_sheet_name(
-                sheet_name=standardized_sheet_name, system=self.metadata.system
-            )
-            if metric_file is None and self.metadata.is_single_page_upload is False:
-                # 1) Don't write sheet with invalid sheet name to new excel object
-                # 2) Add sheet name to invalid sheet names
-                self.invalid_sheet_names.add(sheet_name)
-                continue
-
-            (can_sheet_be_ingested, standardized_sheet_df,) = self.standardize_sheet(
-                sheet_df=sheet_df,
-                metric_file=metric_file,
-                sheet_name=sheet_name,
-            )
-
-            if can_sheet_be_ingested is True:
-                standardized_workbook_df[sheet_name] = standardized_sheet_df
-
-        if len(self.invalid_sheet_names) > 0:
-            self._add_invalid_name_error()
-
-        return standardized_workbook_df
-
-    def _add_invalid_name_error(self) -> None:
+    def add_invalid_name_error(self) -> None:
         """
         Adds an error to the list of errors indicating that the provided CSV file or sheet name is invalid.
-
-        This method constructs a descriptive error message explaining that the provided `sheet_name`
-        does not correspond to any known metric for the agency. Depending on whether it's a CSV file
-        error or an invalid sheet name error, the appropriate message is created and includes the
-        expected file names. The error is then appended to the `metric_key_to_errors` attribute.
 
         Parameters:
         None
@@ -938,6 +949,9 @@ class WorkbookStandardizer:
         2. Invalid Sheet Name Error: Occurs when the provided `sheet_name` does not correspond to any
         known metric sheet names for an Excel Workbook upload.
         """
+
+        if len(self.invalid_sheet_names) == 0:
+            return
 
         valid_file_names = ", ".join(
             [

@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
-from recidiviz.justice_counts.datapoint import DatapointUniqueKey
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -59,12 +59,21 @@ class SpreadsheetUploader:
         self.metadata = metadata
         self.sheet_name = sheet_name
         self.existing_datapoints_dict = existing_datapoints_dict
+        self.agency_name_to_metric_key_canonical_file_name_to_timerange_to_inferred_value: Dict[
+            str,
+            Dict[
+                str,
+                Dict[
+                    str,
+                    Dict[Tuple[datetime.date, datetime.date], Any],
+                ],
+            ],
+        ] = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+        )
 
-    def upload_sheet(
+    def upload_dataframe_rows(
         self,
-        inserts: List[schema.Datapoint],
-        updates: List[schema.Datapoint],
-        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         uploaded_reports: Set[schema.Report],
     ) -> None:
@@ -90,9 +99,6 @@ class SpreadsheetUploader:
                 )
             }
             self._upload_super_agency_sheet(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
                 agency_name_to_rows=agency_name_to_rows,
                 uploaded_reports=uploaded_reports,
             )
@@ -101,27 +107,163 @@ class SpreadsheetUploader:
                 rows=rows,
             )
             self._upload_supervision_sheet(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
                 system_to_rows=system_to_rows,
                 uploaded_reports=uploaded_reports,
             )
         else:
             self._upload_rows(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
                 rows=rows,
                 system=self.metadata.system,
                 uploaded_reports=uploaded_reports,
             )
 
+    def compare_total_and_inferred_values(self) -> None:
+        """
+        Compares inferred values from the breakdown sheets with total values from the aggregate sheets.
+
+        This method iterates over agencies and their associated metrics to check whether the inferred
+        sum of values in the breakdown sheets matches the total value provided in the aggregate sheets.
+        If a mismatch greater than 1 (allowing for small floating-point differences) is detected, a
+        warning is raised.
+
+        If no total value is found in the aggregate sheet for a given metric, the inferred value is
+        added as a new data point.
+
+        Finally, all report datapoints are flushed to the database.
+        """
+
+        for (
+            agency_name,
+            metric_data,
+        ) in (
+            self.agency_name_to_metric_key_canonical_file_name_to_timerange_to_inferred_value.items()
+        ):
+            for metric_key, file_name_data in metric_data.items():
+                # Combine inferred values across multiple metric files for the same metric key
+                for timerange_to_inferred_value in file_name_data.values():
+                    for (
+                        time_range,
+                        inferred_value,
+                    ) in timerange_to_inferred_value.items():
+                        total_value = (
+                            self.metadata.agency_name_to_metric_key_to_timerange_to_total_value.get(
+                                agency_name, {}
+                            )
+                            .get(metric_key, {})
+                            .get(time_range)
+                        )
+
+                        agency = self.metadata.child_agency_name_to_agency.get(
+                            agency_name, self.metadata.agency
+                        )
+
+                        if (
+                            total_value is not None
+                            and abs(float(total_value) - float(inferred_value)) > 1
+                        ):
+                            self._handle_mismatch_warning(
+                                agency=agency,
+                                metric_key=metric_key,
+                                inferred_value=inferred_value,
+                                total_value=total_value,
+                                time_range=time_range,
+                            )
+                        elif total_value is None:
+                            self._handle_missing_total_value(
+                                agency=agency,
+                                metric_key=metric_key,
+                                time_range=time_range,
+                                inferred_value=inferred_value,
+                            )
+
+        # Commit all datapoints to the database
+        DatapointInterface.flush_report_datapoints(
+            session=self.metadata.session,
+            inserts=self.metadata.inserts,
+            updates=self.metadata.updates,
+            histories=self.metadata.histories,
+        )
+
+    def _handle_mismatch_warning(
+        self,
+        agency: schema.Agency,
+        metric_key: str,
+        inferred_value: float,
+        total_value: float,
+        time_range: Tuple[datetime.date, datetime.date],
+    ) -> None:
+        """Raises a warning when inferred and total values do not match.
+
+        - If multiple child agencies are present, the agency name is included in the warning description.
+        - For single-page uploads, references the metric key instead of the sheet name.
+        - Uses 'aggregate rows' instead of 'aggregate sheet'.
+        """
+
+        agency_info = (
+            f" for agency {agency.name}"
+            if len(self.metadata.child_agency_name_to_agency) > 1
+            else ""
+        )
+
+        reference = (
+            f"the '{metric_key.lower()}' metric"
+            if self.metadata.is_single_page_upload
+            else f"the {self.sheet_name} sheet"
+        )
+
+        total = (
+            f" row ({total_value})"
+            if self.metadata.is_single_page_upload
+            else f"sheet ({total_value})"
+        )
+
+        description = (
+            f"The sum of all values ({inferred_value}) in {reference}{agency_info} for "
+            f"{time_range[0].strftime('%m/%d/%Y')}-{time_range[1].strftime('%m/%d/%Y')} "
+            f"does not equal the total value provided in the aggregate {total}."
+        )
+
+        warning = JusticeCountsBulkUploadException(
+            title="Breakdown Total Warning",
+            message_type=BulkUploadMessageType.WARNING,
+            description=description,
+        )
+        self.metadata.metric_key_to_errors[metric_key].append(warning)
+
+    def _handle_missing_total_value(
+        self,
+        agency: schema.Agency,
+        metric_key: str,
+        inferred_value: float,
+        time_range: Tuple[datetime.date, datetime.date],
+    ) -> None:
+        """Handles cases where no total value exists by adding a new inferred value as a data point."""
+        existing_datapoints = self.metadata.metric_key_to_datapoint_jsons.get(
+            metric_key, []
+        )
+
+        new_datapoints = ReportInterface.add_or_update_metric(
+            session=self.metadata.session,
+            inserts=self.metadata.inserts,
+            updates=self.metadata.updates,
+            histories=self.metadata.histories,
+            report=self.metadata.agency_id_to_time_range_to_reports[agency.id][
+                time_range
+            ][0],
+            report_metric=MetricInterface(key=metric_key, value=inferred_value),
+            user_account=self.metadata.user_account,
+            uploaded_via_breakdown_sheet=True,
+            existing_datapoints_dict=self.existing_datapoints_dict,
+            agency=agency,
+            upload_method=self.metadata.upload_method,
+        )
+
+        self.metadata.metric_key_to_datapoint_jsons[metric_key] = (
+            existing_datapoints + new_datapoints
+        )
+
     def _upload_super_agency_sheet(
         self,
-        inserts: List[schema.Datapoint],
-        updates: List[schema.Datapoint],
-        histories: List[schema.DatapointHistory],
         agency_name_to_rows: Dict[str, List[Dict[str, Any]]],
         uploaded_reports: Set[schema.Report],
     ) -> None:
@@ -141,18 +283,12 @@ class SpreadsheetUploader:
                     rows=current_rows,
                 )
                 self._upload_supervision_sheet(
-                    inserts=inserts,
-                    updates=updates,
-                    histories=histories,
                     system_to_rows=system_to_rows,
                     child_agency_name=curr_agency_name,
                     uploaded_reports=uploaded_reports,
                 )
             else:
                 self._upload_rows(
-                    inserts=inserts,
-                    updates=updates,
-                    histories=histories,
                     rows=current_rows,
                     system=self.metadata.system,
                     child_agency_name=curr_agency_name,
@@ -161,9 +297,6 @@ class SpreadsheetUploader:
 
     def _upload_supervision_sheet(
         self,
-        inserts: List[schema.Datapoint],
-        updates: List[schema.Datapoint],
-        histories: List[schema.DatapointHistory],
         system_to_rows: Dict[schema.System, List[Dict[str, Any]]],
         uploaded_reports: Set[schema.Report],
         child_agency_name: Optional[str] = None,
@@ -171,9 +304,6 @@ class SpreadsheetUploader:
         """Uploads supervision rows one system at a time."""
         for current_system, current_rows in system_to_rows.items():
             self._upload_rows(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
                 rows=current_rows,
                 system=current_system,
                 uploaded_reports=uploaded_reports,
@@ -182,9 +312,6 @@ class SpreadsheetUploader:
 
     def _upload_rows(
         self,
-        inserts: List[schema.Datapoint],
-        updates: List[schema.Datapoint],
-        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         system: schema.System,
         uploaded_reports: Set[schema.Report],
@@ -200,9 +327,6 @@ class SpreadsheetUploader:
         mapped to the corresponding metric file.
 
         Parameters:
-        inserts (List[schema.Datapoint]): List of new datapoints to be inserted.
-        updates (List[schema.Datapoint]): List of datapoints to be updated.
-        histories (List[schema.DatapointHistory]): List of datapoint history
         records for tracking changes.
         rows (List[Dict[str, Any]]): List of rows containing metric data.
         system (schema.System): The system being processed (e.g., Parole,
@@ -253,9 +377,6 @@ class SpreadsheetUploader:
             )
             try:
                 new_datapoint_json_list = self._upload_rows_for_metricfile(
-                    inserts=inserts,
-                    updates=updates,
-                    histories=histories,
                     rows=grouped_rows,
                     metricfile=metricfile,
                     uploaded_reports=uploaded_reports,
@@ -274,9 +395,6 @@ class SpreadsheetUploader:
 
     def _upload_rows_for_metricfile(
         self,
-        inserts: List[schema.Datapoint],
-        updates: List[schema.Datapoint],
-        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         metricfile: MetricFile,
         uploaded_reports: Set[schema.Report],
@@ -351,27 +469,31 @@ class SpreadsheetUploader:
                     rows_for_this_time_range=rows_for_this_time_range,
                     existing_datapoints_dict=self.existing_datapoints_dict,
                     metricfile=metricfile,
+                    sheet_name=self.sheet_name,
                 )
-                existing_report = self.metadata.agency_id_to_time_range_to_reports.get(
-                    curr_agency.id, {}
-                ).get(time_range)
-                if existing_report is not None and existing_report[0].id is not None:
-                    uploaded_reports.add(existing_report[0])
+                existing_report_list = (
+                    self.metadata.agency_id_to_time_range_to_reports.get(
+                        curr_agency.id, {}
+                    ).get(time_range, [])
+                )
+                existing_report = (
+                    existing_report_list[0] if len(existing_report_list) > 0 else None
+                )
+                if existing_report is not None and existing_report.id is not None:
+                    uploaded_reports.add(existing_report)
                 (
                     report,
                     datapoint_json_list_for_time_range,
                 ) = time_range_uploader.upload_time_range(
-                    session=self.metadata.session,
-                    inserts=inserts,
-                    updates=updates,
-                    histories=histories,
                     time_range_to_year_month=time_range_to_year_month,
                     existing_report=existing_report,
-                    metric_key=metricfile.definition.key,
+                    agency_name_to_metric_key_canonical_file_name_to_timerange_to_inferred_value=self.agency_name_to_metric_key_canonical_file_name_to_timerange_to_inferred_value,
                 )
-                self.metadata.agency_id_to_time_range_to_reports[curr_agency.id][
-                    time_range
-                ] = [report]
+                if existing_report is None:
+                    self.metadata.agency_id_to_time_range_to_reports[curr_agency.id][
+                        time_range
+                    ] = [report]
+
                 datapoint_jsons_list += datapoint_json_list_for_time_range
             except Exception as e:
                 self.metadata.metric_key_to_errors[metricfile.definition.key].append(

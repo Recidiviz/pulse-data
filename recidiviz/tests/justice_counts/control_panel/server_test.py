@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest import mock
@@ -2107,7 +2106,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ]
             self.assertEqual(len(arrests_metric), 1)
             self.assertEqual(len(arrests_metric[0]["metric_errors"]), 0)
-            os.remove("arrests.xlsx")
 
     def test_upload_and_ingest_spreadsheet(self) -> None:
         self.session.add_all(

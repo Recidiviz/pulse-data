@@ -303,7 +303,7 @@ def create_excel_file(
             df = pd.DataFrame(dataframe_dict)
             df.to_excel(writer, sheet_name=filename)
         if add_invalid_sheet_name:
-            df = pd.DataFrame({})
+            df = pd.DataFrame({"foobar": [123]})
             df.to_excel(writer, sheet_name="gender")
 
         return (file_path, df)

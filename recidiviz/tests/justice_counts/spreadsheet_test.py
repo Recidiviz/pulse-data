@@ -180,12 +180,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 ),
             )
 
-            metric_key_to_metric_interface = (
-                MetricSettingInterface.get_metric_key_to_metric_interface(
-                    session=session, agency=agency
-                )
-            )
-
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(
                 system=schema.System.SUPERVISION,
                 user_id=user.auth0_user_id,
@@ -222,7 +216,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
 
             json = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_definitions=metric_definitions,
-                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 updated_report_jsons=[],
                 new_report_jsons=[],
                 unchanged_report_jsons=[],
@@ -401,7 +394,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             child_agency_datapoints = []
             for (
                 datapoint_json_list
-            ) in ingest_result.metric_key_to_datapoint_jsons.values():
+            ) in ingest_result.metadata.metric_key_to_datapoint_jsons.values():
                 child_agency_datapoints += [
                     datapoint_json
                     for datapoint_json in datapoint_json_list
@@ -412,7 +405,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 len(
                     list(
                         itertools.chain(
-                            *ingest_result.metric_key_to_datapoint_jsons.values()
+                            *ingest_result.metadata.metric_key_to_datapoint_jsons.values()
                         )
                     )
                 )

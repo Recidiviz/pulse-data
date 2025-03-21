@@ -221,6 +221,7 @@ class MetricSettingInterface:
         session: Session,
         agency: schema.Agency,
         agency_metric_settings: Optional[List[schema.MetricSetting]] = None,
+        expunge_metric_settings: Optional[bool] = True,
     ) -> List[MetricInterface]:
         """
         Gets an agency's metric interfaces from the MetricSetting table.
@@ -246,7 +247,7 @@ class MetricSettingInterface:
             )
 
         # Filter out metric settings for deprecated metrics
-        agency_metric_settings = [
+        filtered_agency_metric_settings = [
             metric_setting
             for metric_setting in agency_metric_settings
             if metric_setting.metric_definition_key in METRIC_KEY_TO_METRIC
@@ -256,7 +257,7 @@ class MetricSettingInterface:
             item.metric_definition_key: MetricInterface.from_storage_json(
                 item.metric_interface
             )
-            for item in agency_metric_settings
+            for item in filtered_agency_metric_settings
         }
         # Return a metric interface for every metric definition, even if no metric
         # setting exists in storage.
@@ -272,6 +273,10 @@ class MetricSettingInterface:
             # Ensure the metric interface obeys MetricInterface invariants.
             metric_interface.post_process_storage_json()
             result.append(metric_interface)
+
+        if expunge_metric_settings is True:
+            for metric_setting in agency_metric_settings or []:
+                session.expunge(metric_setting)
         return result
 
     @staticmethod
@@ -279,6 +284,7 @@ class MetricSettingInterface:
         session: Session,
         agency: schema.Agency,
         metric_interfaces: Optional[List[MetricInterface]] = None,
+        expunge_metric_settings: Optional[bool] = False,
     ) -> Dict[str, MetricInterface]:
         """Create a map of all metric keys to MetricInterfaces that
         belong to an agency.
@@ -295,6 +301,7 @@ class MetricSettingInterface:
             metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
                 session=session,
                 agency=agency,
+                expunge_metric_settings=expunge_metric_settings,
             )
         metric_key_to_metric_interface = {
             metric_interface.key: metric_interface
@@ -306,6 +313,7 @@ class MetricSettingInterface:
     def get_agency_id_to_metric_key_to_metric_interface(
         session: Session,
         agency_query: Query,
+        expunge_metric_settings: Optional[bool] = True,
     ) -> Dict[int, Dict[str, MetricInterface]]:
         agency_id_to_metric_key_to_metric_interface: Dict[
             int, Dict[str, MetricInterface]
@@ -314,7 +322,9 @@ class MetricSettingInterface:
             agency_id_to_metric_key_to_metric_interface[
                 agency.id
             ] = MetricSettingInterface.get_metric_key_to_metric_interface(
-                session=session, agency=agency
+                session=session,
+                agency=agency,
+                expunge_metric_settings=expunge_metric_settings,
             )
         return agency_id_to_metric_key_to_metric_interface
 

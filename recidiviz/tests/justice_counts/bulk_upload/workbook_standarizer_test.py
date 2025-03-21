@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for Justice Counts Control Panel WorkbookStandardizer functionality."""
-import os
-
 import pytest
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -93,7 +91,6 @@ class TestJusticeCountsWorkbookStandardizer(JusticeCountsDatabaseTestCase):
                 metadata.metric_key_to_errors[None][0].title,
                 "Invalid File Name for CSV",
             )
-            os.remove("test_prison_csv.xlsx")
 
     def test_invalid_sheet_names(self) -> None:
         """Bulk upload prison metrics into an empty database."""

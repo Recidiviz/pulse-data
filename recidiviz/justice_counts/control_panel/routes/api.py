@@ -1479,19 +1479,10 @@ def get_api_blueprint(
                 current_session.commit()
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-            metric_key_to_metric_interface = (
-                MetricSettingInterface.get_metric_key_to_metric_interface(
-                    session=current_session, agency=agency
-                )
-            )
-
             # Get and save ingested spreadsheet json to GCP bucket if not in test/ci
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
-                agency=agency,
                 ingest_result=ingest_result,
-                agency_id=agency.id,
                 metric_definitions=metric_definitions,
-                metric_key_to_metric_interface=metric_key_to_metric_interface,
             )
             SpreadsheetInterface.save_ingested_spreadsheet_json(
                 ingested_spreadsheet_json=ingested_spreadsheet_json,
@@ -1506,7 +1497,7 @@ def get_api_blueprint(
                 file_name=file_name,
                 agency_id=agency_id_str,
                 spreadsheet_id=ingest_result.spreadsheet.id,
-                metric_key_to_errors=ingest_result.metric_key_to_errors,
+                metric_key_to_errors=ingest_result.metadata.metric_key_to_errors,
             )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
@@ -1609,12 +1600,6 @@ def get_api_blueprint(
                 session=current_session, agency_id=agency_id
             )
 
-            metric_key_to_metric_interface = (
-                MetricSettingInterface.get_metric_key_to_metric_interface(
-                    session=current_session, agency=agency
-                )
-            )
-
             # get metric definitions for spreadsheet
             metric_definitions = (
                 SpreadsheetInterface.get_metric_definitions_for_workbook(
@@ -1631,11 +1616,8 @@ def get_api_blueprint(
             )
 
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
-                agency=agency,
-                agency_id=agency_id,
                 ingest_result=ingest_result,
                 metric_definitions=metric_definitions,
-                metric_key_to_metric_interface=metric_key_to_metric_interface,
             )
 
             if in_ci() or in_test():
@@ -1654,19 +1636,13 @@ def get_api_blueprint(
             raise _get_error(error=e) from e
 
     def _get_ingest_spreadsheet_json(
-        agency: schema.Agency,
-        agency_id: int,
         ingest_result: BulkUploadResult,
         metric_definitions: List[MetricDefinition],
-        metric_key_to_metric_interface: Dict[str, MetricInterface],
     ) -> Dict[str, Any]:
-        child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=current_session, agency=agency
-        )
-
         all_reports = ReportInterface.get_reports_by_agency_ids(
             session=current_session,
-            agency_ids=[a.id for a in child_agencies] + [agency_id],
+            agency_ids=[a.id for a in ingest_result.metadata.child_agencies]
+            + [ingest_result.metadata.agency.id],
             include_datapoints=False,
         )
 
@@ -1695,7 +1671,6 @@ def get_api_blueprint(
         ingested_spreadsheet_json = SpreadsheetInterface.get_ingest_spreadsheet_json(
             ingest_result=ingest_result,
             metric_definitions=metric_definitions,
-            metric_key_to_metric_interface=metric_key_to_metric_interface,
             updated_report_jsons=updated_report_jsons,
             new_report_jsons=new_report_jsons,
             unchanged_report_jsons=unchanged_report_jsons,

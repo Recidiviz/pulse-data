@@ -20,9 +20,9 @@ for BulkUpload.
 """
 import datetime
 from collections import defaultdict
-from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
@@ -51,6 +51,7 @@ class BulkUploadMetadata:
         agency: schema.Agency,
         session: Session,
         user_account: Optional[schema.UserAccount] = None,
+        chunk_size: int = 10000,
     ):
         self.system = system
         self.agency = agency
@@ -58,10 +59,15 @@ class BulkUploadMetadata:
         self.user_account = user_account
         self.upload_method = UploadMethod.BULK_UPLOAD
         self.is_single_page_upload = False
+        self.chunk_size = chunk_size
+        self.inserts: List[schema.Datapoint] = []
+        self.updates: List[schema.Datapoint] = []
+        self.histories: List[schema.DatapointHistory] = []
         self.metric_files = SYSTEM_TO_METRICFILES[system]
         self.agency_id_to_time_range_to_reports: Dict[
             int, Dict[Tuple[Any, Any], List[schema.Report]]
         ] = defaultdict(dict)
+        self.sheet_name_to_seen_rows: Dict[str, Set[Tuple[str, ...]]] = defaultdict(set)
         self.agency_name_to_metric_key_to_timerange_to_total_value: Dict[
             str,
             Dict[
@@ -84,7 +90,6 @@ class BulkUploadMetadata:
         self.metric_key_to_datapoint_jsons: Dict[
             str, List[DatapointJson]
         ] = defaultdict(list)
-
         self.text_analyzer = TextAnalyzer(
             configuration=TextMatchingConfiguration(
                 # We don't want to treat "other" as a stop word,
@@ -96,72 +101,58 @@ class BulkUploadMetadata:
             )
         )
 
-        self.child_agencies_query = AgencyInterface.get_child_agencies_for_agency_query(
+        # Fetch all child agencies before expunging them
+        self.child_agencies = AgencyInterface.get_child_agencies_for_agency(
             session=self.session, agency=self.agency
         )
 
-    @cached_property
-    def child_agency_name_to_agency(self) -> Dict[str, schema.Agency]:
-        """
-        Constructs a dictionary mapping normalized child agency names and
-        custom child agency names to their corresponding agency objects.
+        self.metric_key_to_metric_interface: Dict[
+            str, MetricInterface
+        ] = MetricSettingInterface.get_metric_key_to_metric_interface(
+            session=self.session, agency=self.agency, expunge_metric_settings=True
+        )
 
-        Returns:
-            A dictionary mapping normalized (lowercase, stripped) child agency names to
-            their corresponding `schema.Agency` objects.
-        """
-        child_agency_name_to_agency: Dict[str, schema.Agency] = {}
-        if self.child_agencies_query is None:
-            return child_agency_name_to_agency
+        self.child_agency_name_to_agency: Dict[str, schema.Agency] = {}
+        self.child_agency_id_to_metric_key_to_metric_interface: Dict[
+            int, Dict[str, MetricInterface]
+        ] = defaultdict(dict)
 
-        for child_agency in self.child_agencies_query:
-            child_agency_name_to_agency[
+        for child_agency in self.child_agencies:
+            self.child_agency_id_to_metric_key_to_metric_interface[
+                child_agency.id
+            ] = MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=session,
+                agency=child_agency,
+                expunge_metric_settings=True,
+            )
+            self.child_agency_name_to_agency[
                 child_agency.name.strip().lower()
             ] = child_agency
             if child_agency.custom_child_agency_name is not None:
-                # Add the custom_child_agency_name of the agency as a key in
-                # child_agency_name_to_agency. That way, Bulk Upload will
-                # be successful if the user uploads with EITHER the name
-                # or the original name of the agency
-                child_agency_name_to_agency[
+                self.child_agency_name_to_agency[
                     child_agency.custom_child_agency_name.strip().lower()
                 ] = child_agency
 
-        return child_agency_name_to_agency
+        # Expunge agencies after fetching
+        self.expunge_agencies()
 
-    @cached_property
-    def metric_key_to_metric_interface(self) -> Dict[str, MetricInterface]:
+    def expunge_agencies(self) -> None:
         """
-        Retrieves a mapping of metric keys to metric interfaces for the agency.
+        Expunges all agency objects after all required properties have been initialized.
 
-        The metric interfaces contain only the metric setting information (e.g.,
-        enabled/disabled status, custom reporting frequency) without the report data.
+        This ensures that:
+        - Agencies are **not tracked by SQLAlchemy**, preventing unnecessary memory usage.
+        - The session remains **clean** for further processing without unintended modifications.
+        - Agencies are available in `child_agency_name_to_agency` and `child_agency_id_to_metric_key_to_metric_interface` before expunging.
 
-        Returns:
-            Dict[str, MetricInterface]: A dictionary mapping metric keys to their corresponding
-            `MetricInterface` objects for the agency.
+        This should be called **after all agency-dependent properties have been accessed**.
         """
-        return MetricSettingInterface.get_metric_key_to_metric_interface(
-            session=self.session, agency=self.agency
-        )
 
-    @cached_property
-    def child_agency_id_to_metric_key_to_metric_interface(
-        self,
-    ) -> Dict[int, Dict[str, MetricInterface]]:
-        """
-        Retrieves a mapping of child agency IDs to their corresponding metric key
-        to metric interface mappings.
+        for child_agency in self.child_agencies:
+            self.session.expunge(child_agency)
 
-        Returns:
-            Dict[int, Dict[str, MetricInterface]]: A dictionary where the keys are
-            child agency IDs and the values are dictionaries mapping metric keys to
-            `MetricInterface` objects for those child agencies.
-        """
-        if self.child_agencies_query is None:
-            return {}
-
-        return MetricSettingInterface.get_agency_id_to_metric_key_to_metric_interface(
-            session=self.session,
-            agency_query=self.child_agencies_query,
-        )
+        try:
+            self.session.expunge(self.agency)  # Expunge the main agency
+        except InvalidRequestError:
+            # The main agency might not be in the session, safely ignore
+            pass

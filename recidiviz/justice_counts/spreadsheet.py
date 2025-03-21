@@ -278,8 +278,7 @@ class SpreadsheetInterface:
         ingest_result = BulkUploadResult(
             spreadsheet=spreadsheet,
             existing_report_ids=uploader.existing_report_ids,
-            metric_key_to_datapoint_jsons=bulk_upload_metadata.metric_key_to_datapoint_jsons,
-            metric_key_to_errors=bulk_upload_metadata.metric_key_to_errors,
+            metadata=bulk_upload_metadata,
             updated_reports=uploader.updated_reports,
         )
 
@@ -297,6 +296,7 @@ class SpreadsheetInterface:
             and report.id in uploader.existing_report_ids
         }
         ingest_result.unchanged_reports = unchanged_reports
+        ingest_result.metadata = bulk_upload_metadata
 
         return ingest_result
 
@@ -316,7 +316,6 @@ class SpreadsheetInterface:
     def get_ingest_spreadsheet_json(
         ingest_result: BulkUploadResult,
         metric_definitions: List[MetricDefinition],
-        metric_key_to_metric_interface: Dict[str, MetricInterface],
         updated_report_jsons: List[Dict[str, Any]],
         new_report_jsons: List[Dict[str, Any]],
         unchanged_report_jsons: List[Dict[str, Any]],
@@ -328,7 +327,7 @@ class SpreadsheetInterface:
         for (
             key,
             metric_interface,
-        ) in metric_key_to_metric_interface.items():
+        ) in ingest_result.metadata.metric_key_to_metric_interface.items():
             metric_key_to_enabled[key] = metric_interface.is_metric_enabled
 
             if metric_interface.disaggregated_by_supervision_subsystems is not None:
@@ -350,9 +349,10 @@ class SpreadsheetInterface:
                 # If the metric is a supervision subsystem, but the metric is reported as an aggregate,
                 # only display messages for that metric if data was explicitly reported.
                 if (
-                    metric_definition.key not in ingest_result.metric_key_to_errors
+                    metric_definition.key
+                    not in ingest_result.metadata.metric_key_to_errors
                     and metric_definition.key
-                    not in ingest_result.metric_key_to_datapoint_jsons
+                    not in ingest_result.metadata.metric_key_to_datapoint_jsons
                 ):
                     continue
 
@@ -360,7 +360,10 @@ class SpreadsheetInterface:
                 metric_definition.system == schema.System.SUPERVISION
                 and metric_key_to_disaggregation_status.get(metric_definition.key)
                 is True
-                and len(ingest_result.metric_key_to_errors[metric_definition.key]) == 0
+                and len(
+                    ingest_result.metadata.metric_key_to_errors[metric_definition.key]
+                )
+                == 0
             ):
                 # If the metric is part of the supervision system and there are no metric-wide errors,
                 # but the metric is disaggregated by supervision subsystem, don't display any messages for that metric.
@@ -375,7 +378,9 @@ class SpreadsheetInterface:
             metric_errors: List[Dict[str, Any]] = []
             for sheet_name, errors in itertools.groupby(
                 sorted(
-                    ingest_result.metric_key_to_errors.get(metric_definition.key, []),
+                    ingest_result.metadata.metric_key_to_errors.get(
+                        metric_definition.key, []
+                    ),
                     key=lambda e: e.sheet_name or "",
                 ),
                 key=lambda e: e.sheet_name or "",
@@ -397,7 +402,7 @@ class SpreadsheetInterface:
                     "key": metric_definition.key,
                     "display_name": metric_definition.display_name,
                     "metric_errors": metric_errors,
-                    "datapoints": ingest_result.metric_key_to_datapoint_jsons.get(
+                    "datapoints": ingest_result.metadata.metric_key_to_datapoint_jsons.get(
                         metric_definition.key, []
                     ),
                     "enabled": metric_key_to_enabled.get(metric_definition.key),
@@ -409,7 +414,8 @@ class SpreadsheetInterface:
         # This is an ingest-blocking error because in this scenario we are not able
         # to convert the rows into datapoints.
         non_metric_errors = [
-            e.to_json() for e in ingest_result.metric_key_to_errors.get(None, [])
+            e.to_json()
+            for e in ingest_result.metadata.metric_key_to_errors.get(None, [])
         ]
 
         return {

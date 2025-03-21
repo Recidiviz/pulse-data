@@ -92,7 +92,6 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     if in_gcp():
         structured_logging.setup()
-
         # pylint: disable=abstract-class-instantiated
         sentry_sdk.init(
             dsn=JUSTICE_COUNTS_SENTRY_DSN,
@@ -156,7 +155,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         # TODO(#13437) Add Redis storage backend for rate limiting
     )
 
-    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
+    app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024  # 2 GB max body size
 
     if not in_development():
         app.config["SESSION_COOKIE_HTTPONLY"] = True

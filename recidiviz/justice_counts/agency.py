@@ -334,22 +334,8 @@ class AgencyInterface:
     def get_child_agencies_for_agency(
         session: Session, agency: schema.Agency, with_users: bool = False
     ) -> List[schema.Agency]:
-
-        query = AgencyInterface.get_child_agencies_for_agency_query(
-            session=session, agency=agency, with_users=with_users
-        )
-
-        if query is None:
+        if agency.is_superagency is not True:
             return []
-
-        return query.all()
-
-    @staticmethod
-    def get_child_agencies_for_agency_query(
-        session: Session, agency: schema.Agency, with_users: bool = False
-    ) -> Optional[Query]:
-        if agency.is_superagency is False:
-            return None
 
         q = session.query(schema.Agency).filter(
             schema.Agency.super_agency_id == agency.id
@@ -362,7 +348,7 @@ class AgencyInterface:
                 )
             )
 
-        return q
+        return q.all()
 
     @staticmethod
     def get_child_agency_ids_for_agency(

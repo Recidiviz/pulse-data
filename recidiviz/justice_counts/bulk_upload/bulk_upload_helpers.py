@@ -17,7 +17,7 @@
 """Helpers for bulk upload functionality."""
 
 import calendar
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
 from recidiviz.common.text_analysis import (
     REMOVE_MULTIPLE_WHITESPACES,
@@ -25,8 +25,7 @@ from recidiviz.common.text_analysis import (
     REMOVE_WORDS_WITH_NON_CHARACTERS,
     Normalizer,
 )
-from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
-from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 MONTH_NAMES = list(calendar.month_name)
@@ -63,10 +62,7 @@ class BulkUploadResult:
     def __init__(
         self,
         spreadsheet: schema.Spreadsheet,
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
+        metadata: BulkUploadMetadata,
         existing_report_ids: Optional[List[int]] = None,
         updated_reports: Optional[Set[schema.Report]] = None,
         unchanged_reports: Optional[Set[schema.Report]] = None,
@@ -76,19 +72,17 @@ class BulkUploadResult:
 
         Args:
             spreadsheet (schema.Spreadsheet): The spreadsheet containing the data to be uploaded.
-            existing_report_ids (List[int]): A list of IDs of existing reports.
-            metric_key_to_datapoint_jsons (Dict[str, List[DatapointJson]]): A dictionary mapping metric keys to lists of datapoint JSON objects.
-                Defaults to an empty defaultdict of lists.
-            metric_key_to_errors (Dict[Optional[str], List[JusticeCountsBulkUploadException]]): A dictionary mapping metric keys to lists of errors encountered during the bulk upload process.
-                Defaults to an empty defaultdict of lists.
-            updated_reports (Optional[Set[schema.Report]]): A set of reports that have been updated.
-                Defaults to an empty set.
-            unchanged_reports (Optional[Set[schema.Report]]): A set of reports that remain unchanged.
-                Defaults to an empty set.
+            metadata (BulkUploadMetadata): Metadata related to the bulk upload process,
+                including details about the agency, user performing the upload,
+                errors encountered, chunk size, and other relevant context.
+            existing_report_ids (Optional[List[int]]): A list of IDs of existing reports that were considered
+                during the upload process. Defaults to an empty list.
+            updated_reports (Optional[Set[schema.Report]]): A set of reports that were modified as a result
+                of the upload. Defaults to an empty set.
+            unchanged_reports (Optional[Set[schema.Report]]): A set of reports that remained unchanged
+                during the upload process. Defaults to an empty set.
         """
-        self.metric_key_to_datapoint_jsons = metric_key_to_datapoint_jsons
-
-        self.metric_key_to_errors = metric_key_to_errors
+        self.metadata = metadata
 
         self.updated_reports: Set[schema.Report] = (
             updated_reports if updated_reports is not None else set()

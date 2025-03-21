@@ -21,9 +21,6 @@ import logging
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import numpy as np
-import pandas as pd
-
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
@@ -57,20 +54,16 @@ class WorkbookUploader:
 
     def upload_workbook(self, file: Any, file_name: str) -> None:
         """
-        Iterate through all tabs in an Excel spreadsheet and upload them
-        to the Justice Counts database.
-        upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
+        Uploads an Excel workbook to the Justice Counts database.
+
+        This method iterates through all sheets in the workbook, processes data, and updates
+        reports/datapoints accordingly.
         """
 
-        workbook_standardizer = WorkbookStandardizer(metadata=self.metadata)
-        sheet_name_to_sheet_df = workbook_standardizer.standardize_workbook(
-            file=file, file_name=file_name
-        )
-        # 1. Fetch existing reports and datapoints for this agency, so that
-        # we know what objects to update vs. what new objects to create.
-        agency_ids = [
-            a.id for a in self.metadata.child_agency_name_to_agency.values()
-        ] + [self.metadata.agency.id]
+        # Fetch existing reports and datapoints for the agency to determine updates vs. new records.
+        agency_ids = [agency.id for agency in self.metadata.child_agencies] + [
+            self.metadata.agency.id
+        ]
         reports = ReportInterface.get_reports_by_agency_ids(
             self.metadata.session, agency_ids=agency_ids, include_datapoints=True
         )
@@ -99,56 +92,75 @@ class WorkbookUploader:
                 agency_id
             ] = reports_by_time_range
 
-        existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
-            reports=reports
-        )
+        # Store existing datapoints for comparison
+        existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(reports)
         existing_datapoints_dict_unchanged = {
             unique_key: get_value(datapoint=datapoint)
             for unique_key, datapoint in existing_datapoints_dict.items()
         }
 
-        # 2. Sort sheet_names so that we process by aggregate sheets first
-        # e.g. caseloads before caseloads_by_gender. This ensures we don't
-        # infer an aggregate value when one is explicitly given.
-        # Note that the regular sorting will work for this case, since
-        # foobar will always come before foobar_by_xxx alphabetically.
-        sorted_sheet_names = sorted(sheet_name_to_sheet_df.keys())
-        # 3. Now run through all sheets and process each in turn.
-        inserts: List[schema.Datapoint] = []
-        updates: List[schema.Datapoint] = []
-        histories: List[schema.DatapointHistory] = []
-        for sheet_name in sorted_sheet_names:
-            logging.info("Uploading %s", sheet_name)
-            df = sheet_name_to_sheet_df[sheet_name]
-            # Replace Nan with None
-            df = df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
-            rows = df.to_dict("records")
-            if len(rows) == 0:
-                continue
-            spreadsheet_uploader = SpreadsheetUploader(
-                metadata=self.metadata,
-                sheet_name=sheet_name,
-                existing_datapoints_dict=existing_datapoints_dict,
-            )
-            spreadsheet_uploader.upload_sheet(
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-                rows=rows,
-                uploaded_reports=self.uploaded_reports,
+        # Initialize workbook processing
+        workbook_standardizer = WorkbookStandardizer(metadata=self.metadata)
+
+        # Prepare storage for database updates
+        current_sheet_name, current_index, spreadsheet_uploader = (
+            None,
+            0,
+            None,
+        )
+        for sheet_name, chunk in workbook_standardizer.get_dataframe_chunks(
+            file, file_name
+        ):
+            if sheet_name != current_sheet_name:
+                # If we're starting a new sheet, process the previous sheet.
+                if spreadsheet_uploader is not None:
+                    spreadsheet_uploader.compare_total_and_inferred_values()
+
+                logging.info("Uploading sheet: %s", sheet_name)
+                # Reset tracking variables for the new sheet
+                current_sheet_name = sheet_name
+                current_index = 0
+
+                self.metadata.is_single_page_upload = any(
+                    col in chunk.columns
+                    for col in ["metric", "breakdown", "breakdown_category"]
+                )
+
+                spreadsheet_uploader = SpreadsheetUploader(
+                    metadata=self.metadata,
+                    sheet_name=sheet_name,
+                    existing_datapoints_dict=existing_datapoints_dict,
+                )
+
+            rows = workbook_standardizer.standardize_dataframe(
+                df=chunk, sheet_name=sheet_name, current_index=current_index
             )
 
-        # 4. For any report that was updated, set its status to DRAFT
+            if len(rows) == 0:
+                continue
+
+            if spreadsheet_uploader is not None:
+                spreadsheet_uploader.upload_dataframe_rows(
+                    rows=rows,
+                    uploaded_reports=self.uploaded_reports,
+                )
+
+            current_index += self.metadata.chunk_size
+            DatapointInterface.flush_report_datapoints(
+                session=self.metadata.session,
+                inserts=self.metadata.inserts,
+                updates=self.metadata.updates,
+                histories=self.metadata.histories,
+            )
+
+        # Compare total and inferred values for the last file
+        if spreadsheet_uploader is not None:
+            spreadsheet_uploader.compare_total_and_inferred_values()
+        workbook_standardizer.add_invalid_name_error()
+        # Mark updated reports as DRAFT
         self._update_report_status(
             existing_datapoints_dict_changed=existing_datapoints_dict,
             existing_datapoints_dict_unchanged=existing_datapoints_dict_unchanged,
-        )
-
-        DatapointInterface.flush_report_datapoints(
-            session=self.metadata.session,
-            inserts=inserts,
-            updates=updates,
-            histories=histories,
         )
 
     def _update_report_status(

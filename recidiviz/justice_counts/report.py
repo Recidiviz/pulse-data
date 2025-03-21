@@ -553,9 +553,20 @@ class ReportInterface:
         all_dimensions_to_values: Dict[DimensionBase, Any] = {}
         for reported_aggregated_dimension in report_metric.aggregated_dimensions:
             if reported_aggregated_dimension.dimension_to_value:
-                all_dimensions_to_values.update(
-                    reported_aggregated_dimension.dimension_to_value
-                )
+                if upload_method == UploadMethod.BULK_UPLOAD:
+                    # For Bulk Uploads, existing or previously updated values should not be overwritten with None
+                    # if they are missing from the sheet. Instead, only non-null values are added.
+                    for (
+                        dimension,
+                        value,
+                    ) in reported_aggregated_dimension.dimension_to_value.items():
+                        if value is not None:
+                            all_dimensions_to_values[dimension] = value
+                else:
+                    # For manual upload, all provided dimension values are updated as they appear.
+                    all_dimensions_to_values.update(
+                        reported_aggregated_dimension.dimension_to_value
+                    )
 
         for aggregated_dimension in metric_definition.aggregated_dimensions or []:
             for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
