@@ -32,8 +32,8 @@ import {
   updateIsFlashingInProgress,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../constants";
-import { useNewFlashChecklistStore } from "./FlashChecklistStore";
-import NewStyledStepContent, {
+import { useFlashChecklistStore } from "./FlashChecklistContext";
+import StyledStepContent, {
   ChecklistSection,
   CodeBlock,
 } from "./FlashComponents";
@@ -42,7 +42,7 @@ import {
   flashSecondaryLockDescription,
 } from "./FlashUtils";
 
-export const NewFlashChecklistStepSection = {
+export const FlashChecklistStepSection = {
   /* Ordered list of sections in the flash checklist.
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
@@ -58,7 +58,7 @@ export const NewFlashChecklistStepSection = {
   DONE: 8,
 };
 
-const NewProceedWithFlashChecklist = (): JSX.Element => {
+const ProceedWithFlashChecklist = (): JSX.Element => {
   const {
     stateInfo,
     currentStep,
@@ -67,7 +67,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     isReadyToFlash,
     isFlashInProgress,
     currentLockStatus,
-  } = useNewFlashChecklistStore();
+  } = useFlashChecklistStore();
   if (!stateInfo) {
     return <Spin />;
   }
@@ -82,7 +82,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Acquire PRIMARY Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={<p>Acquire PRIMARY resource locks for {stateCode}.</p>}
           actionButtonTitle="Acquire PRIMARY Locks"
           actionButtonEnabled={
@@ -102,7 +102,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Acquire SECONDARY Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={<p>Acquire SECONDARY resource locks for {stateCode}.</p>}
           actionButtonTitle="Acquire SECONDARY Locks"
           actionButtonEnabled={
@@ -116,7 +116,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               flashingLockSecondsTtl
             )
           }
-          nextSection={NewFlashChecklistStepSection.START_FLASH}
+          nextSection={FlashChecklistStepSection.START_FLASH}
         />
       ),
     },
@@ -127,7 +127,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Set is flashing in progress to true",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>Set is flashing in progress to true in {stateCode}</p>
           }
@@ -138,9 +138,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
           onActionButtonClick={async () =>
             updateIsFlashingInProgress(stateCode, true)
           }
-          nextSection={
-            NewFlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
-          }
+          nextSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
         />
       ),
     },
@@ -150,7 +148,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Backup PRIMARY raw data",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>Move all primary instance raw data to a backup dataset in BQ.</p>
           }
@@ -165,7 +163,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Clean up PRUNING raw data tables in PRIMARY on BQ",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Delete any outstanding tables in{" "}
@@ -190,7 +188,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Deprecate ingest pipeline runs for PRIMARY",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Mark all <code>PRIMARY</code> ingest pipeline rows in the{" "}
@@ -212,7 +210,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Deprecate PRIMARY raw data rows in operations DB",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Mark all <code>PRIMARY</code> instance rows in
@@ -228,7 +226,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               DirectIngestInstance.PRIMARY
             )
           }
-          nextSection={NewFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+          nextSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
         />
       ),
     },
@@ -238,7 +236,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Move raw data metadata from SECONDARY instance to PRIMARY",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Update all rows in the following tables that had instance
@@ -275,7 +273,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Copy SECONDARY raw data to PRIMARY on BQ",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Copy all raw data from BQ dataset{" "}
@@ -298,7 +296,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Move SECONDARY storage raw files to deprecated",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Use the command below within the <code>pipenv shell</code> to move
@@ -306,7 +304,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               <CodeBlock
                 enabled={
                   currentStepSection ===
-                  NewFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+                  FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
                 }
               >
                 python -m recidiviz.tools.ingest.operations.deprecate_raw_data
@@ -315,7 +313,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               </CodeBlock>
             </p>
           }
-          nextSection={NewFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+          nextSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
         />
       ),
     },
@@ -325,7 +323,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Clean up SECONDARY raw data on BQ",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Delete the contents of the tables in{" "}
@@ -341,7 +339,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               DirectIngestInstance.SECONDARY
             )
           }
-          nextSection={NewFlashChecklistStepSection.END_FLASH}
+          nextSection={FlashChecklistStepSection.END_FLASH}
         />
       ),
     },
@@ -351,7 +349,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Set is flashing in progress false",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>Set is flashing in progress to false in {stateCode}</p>
           }
@@ -360,7 +358,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
           onActionButtonClick={async () =>
             updateIsFlashingInProgress(stateCode, false)
           }
-          nextSection={NewFlashChecklistStepSection.RELEASE_RESOURCE_LOCKS}
+          nextSection={FlashChecklistStepSection.RELEASE_RESOURCE_LOCKS}
         />
       ),
     },
@@ -370,7 +368,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Release SECONDARY Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Now that the database cleanup is complete, release SECONDARY
@@ -380,7 +378,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
           actionButtonTitle="Release SECONDARY Locks"
           actionButtonEnabled={
             currentStepSection ===
-            NewFlashChecklistStepSection.RELEASE_RESOURCE_LOCKS
+            FlashChecklistStepSection.RELEASE_RESOURCE_LOCKS
           }
           onActionButtonClick={async () =>
             releaseResourceLocksForStateById(
@@ -395,7 +393,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Release PRIMARY Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Now that the database cleanup is complete, release PRIMARY
@@ -405,7 +403,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
           actionButtonTitle="Release PRIMARY Locks"
           actionButtonEnabled={
             currentStepSection ===
-            NewFlashChecklistStepSection.RELEASE_RESOURCE_LOCKS
+            FlashChecklistStepSection.RELEASE_RESOURCE_LOCKS
           }
           onActionButtonClick={async () =>
             releaseResourceLocksForStateById(
@@ -414,7 +412,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
               currentLockStatus.primaryLocks.map((lock) => lock.lockId)
             )
           }
-          nextSection={NewFlashChecklistStepSection.TRIGGER_PIPELINES}
+          nextSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
         />
       ),
     },
@@ -424,7 +422,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Re-run Ingest & Calc in PRIMARY",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Now that we have new raw data in PRIMARY, we should make sure that
@@ -438,7 +436,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
           onActionButtonClick={async () =>
             triggerCalculationDAGForState(stateCode)
           }
-          nextSection={NewFlashChecklistStepSection.DONE}
+          nextSection={FlashChecklistStepSection.DONE}
         />
       ),
     },
@@ -449,7 +447,7 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
     {
       title: "Flash Complete",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={<p>Flashing Secondary to PRIMARY is complete!</p>}
           returnButton
         />
@@ -493,65 +491,63 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.ACQUIRE_RESOURCE_LOCKS}
+          stepSection={FlashChecklistStepSection.ACQUIRE_RESOURCE_LOCKS}
           headerContents="Pause Operations"
           items={acquireResourceLocksStep}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.START_FLASH}
+          stepSection={FlashChecklistStepSection.START_FLASH}
           headerContents="Start Flash"
           items={startFlashSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={
-            NewFlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
-          }
+          stepSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
           headerContents="Deprecate Raw Data and Associated Metadata"
           items={deprecateDataAndMetadataSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+          stepSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
           headerContents="Flash Raw Data to PRIMARY"
           items={executeFlashSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+          stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
           headerContents="Clean Up Raw Data in SECONDARY"
           items={cleanUpSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.END_FLASH}
+          stepSection={FlashChecklistStepSection.END_FLASH}
           headerContents="Finalize Flash"
           items={finalizeFlashSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.RELEASE_RESOURCE_LOCKS}
+          stepSection={FlashChecklistStepSection.RELEASE_RESOURCE_LOCKS}
           headerContents="Resume Operations"
           items={releaseResourceLocksSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.TRIGGER_PIPELINES}
+          stepSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
           headerContents="Trigger Pipelines"
           items={triggerPipelinesSteps}
         />
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={NewFlashChecklistStepSection.DONE}
+          stepSection={FlashChecklistStepSection.DONE}
           headerContents="Flash is complete"
           items={completeSteps}
         />
@@ -560,4 +556,4 @@ const NewProceedWithFlashChecklist = (): JSX.Element => {
   );
 };
 
-export default observer(NewProceedWithFlashChecklist);
+export default observer(ProceedWithFlashChecklist);

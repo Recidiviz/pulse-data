@@ -18,7 +18,7 @@
 import { IngestRawFileProcessingStatus } from "../constants";
 import { ConditionalColoredSquare } from "./FlashComponents";
 
-export class NewCurrentRawFileProcessingStatus {
+export class CurrentRawFileProcessingStatus {
   primary: IngestRawFileProcessingStatus[] | undefined;
 
   secondary: IngestRawFileProcessingStatus[] | undefined;

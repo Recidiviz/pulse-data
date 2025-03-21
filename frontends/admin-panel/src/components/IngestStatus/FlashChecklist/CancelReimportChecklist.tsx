@@ -26,8 +26,9 @@ import {
   releaseResourceLocksForStateById,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../constants";
-import { useNewFlashChecklistStore } from "./FlashChecklistStore";
-import NewStyledStepContent, {
+import { useFlashChecklistStore } from "./FlashChecklistContext";
+import { FlashingChecklistType } from "./FlashChecklistStore";
+import StyledStepContent, {
   ChecklistSection,
   CodeBlock,
 } from "./FlashComponents";
@@ -35,9 +36,8 @@ import {
   cancelReimportLockDescription,
   flashingLockSecondsTtl,
 } from "./FlashUtils";
-import { NewFlashingChecklistType } from "./NewFlashChecklistStore";
 
-export const NewCancelReimportChecklistStepSection = {
+export const CancelReimportChecklistStepSection = {
   /* Ordered list of sections in the rerun cancellation checklist.
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
@@ -48,7 +48,7 @@ export const NewCancelReimportChecklistStepSection = {
   DONE: 3,
 };
 
-const NewCancelReimportChecklist = (): JSX.Element => {
+const CancelReimportChecklist = (): JSX.Element => {
   const {
     isFlashInProgress,
     currentLockStatus,
@@ -57,7 +57,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     currentStep,
     currentStepSection,
     projectId,
-  } = useNewFlashChecklistStore();
+  } = useFlashChecklistStore();
 
   if (!stateInfo) {
     return <Spin />;
@@ -71,11 +71,11 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Acquire Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={<p>Acquire all resource locks for: {stateCode}.</p>}
           actionButtonTitle="Acquire Resource Locks"
           actionButtonEnabled={
-            activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT &&
+            activeChecklist === FlashingChecklistType.CANCEL_REIMPORT &&
             currentLockStatus.allSecondaryLocksFree()
           }
           onActionButtonClick={async () =>
@@ -87,7 +87,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
             )
           }
           nextSection={
-            NewCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+            CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
           }
         />
       ),
@@ -101,7 +101,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clean up SECONDARY raw data on BQ",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Delete the contents of the tables in{" "}
@@ -123,7 +123,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clean up PRUNING raw data tables in SECONDARY on BQ",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Delete any outstanding tables in{" "}
@@ -151,7 +151,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Clear Out SECONDARY Ingest GCS Bucket",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Move any remaining unprocessed raw files in{" "}
@@ -164,7 +164,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
                 // TODO(#17068): Update to python script, once it exists.
                 enabled={
                   currentStepSection ===
-                  NewCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                  CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
                 gsutil -m mv &#39;gs://{projectId}
@@ -184,7 +184,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Move SECONDARY storage raw files to deprecated",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Use the command below within the <code>pipenv shell</code> to move
@@ -192,7 +192,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
               <CodeBlock
                 enabled={
                   currentStepSection ===
-                  NewCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                  CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
                 python -m recidiviz.tools.ingest.operations.deprecate_raw_data
@@ -207,7 +207,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Deprecate SECONDARY raw data rows in operations DB",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Mark all <code>SECONDARY</code> instance rows in the following
@@ -237,7 +237,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
             )
           }
           nextSection={
-            NewCancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS
+            CancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS
           }
         />
       ),
@@ -250,7 +250,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Release Resource Locks",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={
             <p>
               Now that the database cleanup is complete, release all resource
@@ -260,7 +260,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
           actionButtonTitle="Release Resource Locks"
           actionButtonEnabled={
             currentStepSection ===
-            NewCancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS
+            CancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS
           }
           onActionButtonClick={async () =>
             releaseResourceLocksForStateById(
@@ -269,7 +269,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
               currentLockStatus.secondaryLocks.map((lock) => lock.lockId)
             )
           }
-          nextSection={NewCancelReimportChecklistStepSection.DONE}
+          nextSection={CancelReimportChecklistStepSection.DONE}
         />
       ),
     },
@@ -280,7 +280,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
     {
       title: "Cancel Reimport Complete",
       content: (
-        <NewStyledStepContent
+        <StyledStepContent
           description={<p>Reimport Cancelation is complete!</p>}
           returnButton
         />
@@ -303,9 +303,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={
-          NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
-        }
+        stepSection={CancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS}
         headerContents="Acquire Resource Locks"
         items={acquireResourceLocksSteps}
       />
@@ -313,7 +311,7 @@ const NewCancelReimportChecklist = (): JSX.Element => {
         currentStep={currentStep}
         currentStepSection={currentStepSection}
         stepSection={
-          NewCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+          CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
         }
         headerContents="Clean Up Raw Data and Associated Metadata in  SECONDARY"
         items={cleanUpMetadataSteps}
@@ -321,16 +319,14 @@ const NewCancelReimportChecklist = (): JSX.Element => {
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={
-          NewCancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS
-        }
+        stepSection={CancelReimportChecklistStepSection.RELEASE_RESOURCE_LOCKS}
         headerContents="Release Resource Locks"
         items={releaseResourceLocksSteps}
       />
       <ChecklistSection
         currentStep={currentStep}
         currentStepSection={currentStepSection}
-        stepSection={NewCancelReimportChecklistStepSection.DONE}
+        stepSection={CancelReimportChecklistStepSection.DONE}
         headerContents="Reimport cancellation is complete!"
         items={completeSteps}
       />
@@ -338,4 +334,4 @@ const NewCancelReimportChecklist = (): JSX.Element => {
   );
 };
 
-export default observer(NewCancelReimportChecklist);
+export default observer(CancelReimportChecklist);

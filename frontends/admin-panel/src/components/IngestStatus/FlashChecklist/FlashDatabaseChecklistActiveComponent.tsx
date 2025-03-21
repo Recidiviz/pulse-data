@@ -18,20 +18,20 @@ import { Alert, Button, Spin } from "antd";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 
-import { useNewFlashChecklistStore } from "./FlashChecklistStore";
+import CancelReimportChecklist, {
+  CancelReimportChecklistStepSection,
+} from "./CancelReimportChecklist";
+import { useFlashChecklistStore } from "./FlashChecklistContext";
+import { FlashingChecklistType } from "./FlashChecklistStore";
 import {
   CannotFlashDecisionComponent,
   FlashReadyDecisionComponent,
 } from "./FlashComponents";
-import NewStateCancelReimportChecklist, {
-  NewCancelReimportChecklistStepSection,
-} from "./NewCancelReimportChecklist";
-import { NewFlashingChecklistType } from "./NewFlashChecklistStore";
-import NewProceedWithFlashChecklist from "./NewProceedWithFlashChecklist";
+import ProceedWithFlashChecklist from "./ProceedWithFlashChecklist";
 
-const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
+const FlashDatabaseChecklistActiveComponent = (): JSX.Element => {
   // store for data that is used by child components
-  const flashStore = useNewFlashChecklistStore();
+  const flashStore = useFlashChecklistStore();
 
   const getData = React.useCallback(async () => {
     if (
@@ -69,10 +69,8 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     flashStore.rawDataImportDagEnabled.secondary
   ) {
     // the only real thing we can do if primary and secondary disagree is cancel reimport
-    if (
-      flashStore.activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT
-    ) {
-      return <NewStateCancelReimportChecklist />;
+    if (flashStore.activeChecklist === FlashingChecklistType.CANCEL_REIMPORT) {
+      return <CancelReimportChecklist />;
     }
 
     return (
@@ -103,10 +101,10 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
           type="primary"
           onClick={async () => {
             flashStore.setActiveChecklist(
-              NewFlashingChecklistType.CANCEL_REIMPORT
+              FlashingChecklistType.CANCEL_REIMPORT
             );
             await flashStore.moveToNextChecklistSection(
-              NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+              CancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
             );
           }}
         >
@@ -118,13 +116,13 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
 
   if (
     flashStore.activeChecklist ===
-    NewFlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
+    FlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
   ) {
-    return <NewProceedWithFlashChecklist />;
+    return <ProceedWithFlashChecklist />;
   }
 
-  if (flashStore.activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT) {
-    return <NewStateCancelReimportChecklist />;
+  if (flashStore.activeChecklist === FlashingChecklistType.CANCEL_REIMPORT) {
+    return <CancelReimportChecklist />;
   }
 
   if (
@@ -143,11 +141,9 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     return (
       <CannotFlashDecisionComponent
         onSelectProceed={async () => {
-          flashStore.setActiveChecklist(
-            NewFlashingChecklistType.CANCEL_REIMPORT
-          );
+          flashStore.setActiveChecklist(FlashingChecklistType.CANCEL_REIMPORT);
           await flashStore.moveToNextChecklistSection(
-            NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+            CancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
           );
         }}
       />
@@ -158,18 +154,18 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
     <FlashReadyDecisionComponent
       onSelectProceed={async () => {
         flashStore.setActiveChecklist(
-          NewFlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
+          FlashingChecklistType.FLASH_SECONDARY_TO_PRIMARY
         );
         await flashStore.moveToNextChecklistSection(0);
       }}
       onSelectCancel={async () => {
-        flashStore.setActiveChecklist(NewFlashingChecklistType.CANCEL_REIMPORT);
+        flashStore.setActiveChecklist(FlashingChecklistType.CANCEL_REIMPORT);
         await flashStore.moveToNextChecklistSection(
-          NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+          CancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
         );
       }}
     />
   );
 };
 
-export default observer(NewFlashDatabaseChecklistActiveComponent);
+export default observer(FlashDatabaseChecklistActiveComponent);

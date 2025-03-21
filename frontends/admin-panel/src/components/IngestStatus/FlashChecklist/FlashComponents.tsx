@@ -19,7 +19,7 @@ import { Alert, Button, Card, Divider, List, StepProps, Steps } from "antd";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 
-import { useNewFlashChecklistStore } from "./FlashChecklistStore";
+import { useFlashChecklistStore } from "./FlashChecklistContext";
 import { runAndCheckStatus } from "./FlashUtils";
 
 export interface ContentStepProps extends StepProps {
@@ -123,7 +123,7 @@ export const ChecklistSection = ({
 };
 
 export const FlashDecisionCriteria = (): JSX.Element => {
-  const flashStore = useNewFlashChecklistStore();
+  const flashStore = useFlashChecklistStore();
   if (!flashStore.stateInfo) throw new Error("Should have state code set");
   const formattedStateCode = flashStore.stateInfo.code
     .toLowerCase()
@@ -250,7 +250,7 @@ export const FlashReadyDecisionComponent = ({
   );
 };
 
-export interface NewStyledStepContentProps {
+export interface StyledStepContentProps {
   // Text to be displayed for this step
   description: JSX.Element;
 
@@ -272,14 +272,14 @@ export interface NewStyledStepContentProps {
   returnButton?: boolean;
 }
 
-const NewStyledStepContent = ({
+const StyledStepContent = ({
   actionButtonTitle,
   onActionButtonClick,
   nextSection,
   description,
   actionButtonEnabled,
   returnButton,
-}: NewStyledStepContentProps): JSX.Element => {
+}: StyledStepContentProps): JSX.Element => {
   const [actionLoading, setActionLoading] = React.useState(false);
   const [markDoneLoading, setMarkDoneLoading] = React.useState(false);
   const {
@@ -288,7 +288,7 @@ const NewStyledStepContent = ({
     incrementCurrentStep,
     moveToNextChecklistSection,
     resetChecklist,
-  } = useNewFlashChecklistStore();
+  } = useFlashChecklistStore();
 
   return (
     <>
@@ -349,4 +349,4 @@ const NewStyledStepContent = ({
   );
 };
 
-export default observer(NewStyledStepContent);
+export default observer(StyledStepContent);

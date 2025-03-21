@@ -21,9 +21,9 @@ import { useHistory } from "react-router-dom";
 import { fetchIngestStateCodes } from "../../../AdminPanelAPI";
 import { StateCodeInfo } from "../../general/constants";
 import StateSelector from "../../Utilities/StateSelector";
-import { FlashChecklistContext } from "./FlashChecklistStore";
-import { NewFlashChecklistStore } from "./NewFlashChecklistStore";
-import NewFlashDatabaseChecklistActiveComponent from "./NewFlashDatabaseChecklistActiveComponent";
+import { FlashChecklistContext } from "./FlashChecklistContext";
+import { FlashChecklistStore } from "./FlashChecklistStore";
+import FlashDatabaseChecklistActiveComponent from "./FlashDatabaseChecklistActiveComponent";
 
 const FlashDatabaseChecklist = (): JSX.Element => {
   const [stateInfo, setStateInfo] = React.useState<StateCodeInfo | undefined>(
@@ -35,9 +35,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
 
   // we only want to re-generate the FlashChecklistStore each time we re-select a state
   const flashProvider = React.useMemo(() => {
-    const newStore: NewFlashChecklistStore = new NewFlashChecklistStore(
-      stateInfo
-    );
+    const newStore: FlashChecklistStore = new FlashChecklistStore(stateInfo);
     return newStore;
   }, [stateInfo]);
 
@@ -54,7 +52,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   } else if (!flashProvider) {
     activeComponent = <Spin />;
   } else {
-    activeComponent = <NewFlashDatabaseChecklistActiveComponent />;
+    activeComponent = <FlashDatabaseChecklistActiveComponent />;
   }
 
   return (
