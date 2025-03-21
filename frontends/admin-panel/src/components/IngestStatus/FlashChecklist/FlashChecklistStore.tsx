@@ -17,31 +17,16 @@
 
 import { createContext, useContext } from "react";
 
-import { LegacyFlashChecklistStore } from "./LegacyFlashChecklistStore";
 import { NewFlashChecklistStore } from "./NewFlashChecklistStore";
 
-// TODO(#28239) remove once raw data DAG is enabled for all states
-export type FlashStore = {
-  legacyChecklistStore: LegacyFlashChecklistStore;
-  newChecklistStore: NewFlashChecklistStore;
-};
-
-export const FlashChecklistContext = createContext<FlashStore | undefined>(
-  undefined
-);
-
-export function useLegacyFlashChecklistStore(): LegacyFlashChecklistStore {
-  const context = useContext(FlashChecklistContext);
-  if (context === undefined) {
-    throw new Error("Must call FlashChecklistContext within a valid provider");
-  }
-  return context.legacyChecklistStore;
-}
+export const FlashChecklistContext = createContext<
+  NewFlashChecklistStore | undefined
+>(undefined);
 
 export function useNewFlashChecklistStore(): NewFlashChecklistStore {
   const context = useContext(FlashChecklistContext);
   if (context === undefined) {
     throw new Error("Must call FlashChecklistContext within a valid provider");
   }
-  return context.newChecklistStore;
+  return context;
 }

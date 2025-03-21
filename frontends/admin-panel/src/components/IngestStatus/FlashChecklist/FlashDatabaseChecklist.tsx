@@ -14,19 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, message, Modal, PageHeader, Spin } from "antd";
+import { Alert, Modal, PageHeader, Spin } from "antd";
 import * as React from "react";
 import { useHistory } from "react-router-dom";
 
 import { fetchIngestStateCodes } from "../../../AdminPanelAPI";
-import { isRawDataImportDagEnabled } from "../../../AdminPanelAPI/IngestOperations";
 import { StateCodeInfo } from "../../general/constants";
 import StateSelector from "../../Utilities/StateSelector";
-import { DirectIngestInstance, RawDataDagEnabled } from "../constants";
-import { FlashChecklistContext, FlashStore } from "./FlashChecklistStore";
-import { getValueIfResolved } from "./FlashUtils";
-import { LegacyFlashChecklistStore } from "./LegacyFlashChecklistStore";
-import LegacyFlashDatabaseChecklistActiveComponent from "./LegacyFlashDatabaseChecklistActiveComponent";
+import { FlashChecklistContext } from "./FlashChecklistStore";
 import { NewFlashChecklistStore } from "./NewFlashChecklistStore";
 import NewFlashDatabaseChecklistActiveComponent from "./NewFlashDatabaseChecklistActiveComponent";
 
@@ -36,48 +31,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   );
   const [modalOpen, setModalOpen] = React.useState(true);
 
-  // TODO(#28239) remove once raw data DAG is enabled for all states
-  const [rawDataImportDagEnabled, setRawDataImportDagEnabled] = React.useState<
-    RawDataDagEnabled | undefined
-  >(undefined);
-
   const history = useHistory();
 
   // we only want to re-generate the FlashChecklistStore each time we re-select a state
   const flashProvider = React.useMemo(() => {
-    const newStore: FlashStore = {
-      legacyChecklistStore: new LegacyFlashChecklistStore(stateInfo),
-      newChecklistStore: new NewFlashChecklistStore(stateInfo),
-    };
+    const newStore: NewFlashChecklistStore = new NewFlashChecklistStore(
+      stateInfo
+    );
     return newStore;
   }, [stateInfo]);
-
-  const getRawDataEnabled = React.useCallback(async () => {
-    if (stateInfo) {
-      try {
-        const enabledResults = await Promise.allSettled([
-          isRawDataImportDagEnabled(
-            stateInfo.code,
-            DirectIngestInstance.PRIMARY
-          ),
-          isRawDataImportDagEnabled(
-            stateInfo.code,
-            DirectIngestInstance.SECONDARY
-          ),
-        ]);
-        setRawDataImportDagEnabled({
-          primary: await getValueIfResolved(enabledResults[0])?.json(),
-          secondary: await getValueIfResolved(enabledResults[1])?.json(),
-        });
-      } catch (err) {
-        message.error(`An error occurred: ${err}`);
-      }
-    }
-  }, [stateInfo]);
-
-  React.useEffect(() => {
-    getRawDataEnabled();
-  }, [getRawDataEnabled]);
 
   let activeComponent;
   if (stateInfo === undefined) {
@@ -89,18 +51,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         showIcon
       />
     );
-  } else if (
-    !flashProvider ||
-    // there will be a moment after we have defined our state code (or are switching)
-    // but before rawDataImportDagEnabled is properly set that we want to spin instead
-    // of rendering the flashing checklist
-    rawDataImportDagEnabled === undefined
-  ) {
+  } else if (!flashProvider) {
     activeComponent = <Spin />;
-  } else if (rawDataImportDagEnabled.secondary) {
-    activeComponent = <NewFlashDatabaseChecklistActiveComponent />;
   } else {
-    activeComponent = <LegacyFlashDatabaseChecklistActiveComponent />;
+    activeComponent = <NewFlashDatabaseChecklistActiveComponent />;
   }
 
   return (
@@ -111,7 +65,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StateSelector
             fetchStateList={fetchIngestStateCodes}
             onChange={(state) => {
-              setRawDataImportDagEnabled(undefined);
               setStateInfo(state);
             }}
             initialValue={undefined}
