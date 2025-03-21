@@ -14,22 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Script for exporting data from our BQ mirror of Utah's BQ instance to our UT ingest
-bucket.
+"""Script for exporting data from a set of BQ tables to an UT's ingest bucket.
 
 
 Example usage:
 
 # to copy all files w/ today as the update_datetime
 
-python -m recidiviz.tools.ingest.regions.us_ut.export_bq_mirror_to_ingest_bucket \
-    --project-id recidiviz-staging \
+python -m recidiviz.tools.ingest.regions.us_ut.export_bq_to_ingest_bucket \
+    --destination-project-id recidiviz-staging \
     --dry-run True
 
 # to copy one file w/ a date
 
-python -m recidiviz.tools.ingest.regions.us_ut.export_bq_mirror_to_ingest_bucket \
-    --project-id recidiviz-staging \
+python -m recidiviz.tools.ingest.regions.us_ut.export_bq_to_ingest_bucket \
+    --destination-project-id recidiviz-staging \
     --update-date 2024-01-01 \
     --source-table-ids [table_1] \
     --dry-run True
@@ -82,7 +81,7 @@ class BigQueryTableToRawDataFileTagExportManager:
     big_query_address: BigQueryAddress
     destination_path: GcsfsFilePath
 
-    def run(self, *, bq_client: BigQueryClient, dry_run: bool) -> None:
+    def export(self, *, bq_client: BigQueryClient, dry_run: bool) -> None:
         """Executes the export of |big_query_address| to |destination_path|."""
 
         if dry_run:
@@ -164,7 +163,7 @@ class BigQueryToIngestBucketExportManager:
 
         return self.region_config.raw_file_configs[file_tag].is_chunked_file
 
-    def run(self, *, bq_client: BigQueryClient, dry_run: bool) -> None:
+    def export(self, *, bq_client: BigQueryClient, dry_run: bool) -> None:
         """Executes the export of |source_big_query_addresses| to |destination_directory|."""
 
         with concurrent.futures.ThreadPoolExecutor(
@@ -178,7 +177,7 @@ class BigQueryToIngestBucketExportManager:
                         destination_directory=self.ingest_bucket,
                         update_datetime=update_datetime,
                         is_sharded=self.should_table_be_sharded(address.table_id),
-                    ).run,
+                    ).export,
                     bq_client=bq_client,
                     dry_run=dry_run,
                 ): address
@@ -232,7 +231,7 @@ class BigQueryToIngestBucketExportManager:
 
 
 # TODO(#37923) schedule this export somewhere so it runs automatically
-def export_bq_mirror_to_ingest_bucket(
+def export_bq_to_ingest_bucket(
     *,
     state_code: StateCode,
     source_project_id: str,
@@ -267,7 +266,7 @@ def export_bq_mirror_to_ingest_bucket(
         update_datetime=update_datetime,
     )
 
-    export_manager.run(bq_client=source_project_bq_client, dry_run=dry_run)
+    export_manager.export(bq_client=source_project_bq_client, dry_run=dry_run)
 
 
 def _create_parser() -> argparse.ArgumentParser:
@@ -325,7 +324,7 @@ if __name__ == "__main__":
     args = _create_parser().parse_args()
 
     with local_project_id_override(args.destination_project_id):
-        export_bq_mirror_to_ingest_bucket(
+        export_bq_to_ingest_bucket(
             state_code=StateCode.US_UT,
             source_project_id=US_UT_INGEST_PROJECT_ID,
             source_dataset_id=US_UT_INGEST_MIRROR_DATASET_ID,
