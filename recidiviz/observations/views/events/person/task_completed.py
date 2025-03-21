@@ -33,6 +33,8 @@ SELECT
     e.completion_event_type AS task_type,
     t.is_eligible,
     IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL) AS days_eligible,
+    -- eligible_for_over_7_days is used to calculate metrics on task completions that happen after more than 7 days of eligibility
+    IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY) > 7, FALSE) as eligible_for_over_7_days,
     f.is_almost_eligible,
     CASE
     -- If no TES spans overlap with this completion event, the reason for ineligibility is that the person was not included in the candidate population
@@ -109,6 +111,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "is_after_full_state_launch",
         "is_eligible",
         "days_eligible",
+        "eligible_for_over_7_days",
         "is_almost_eligible",
         "after_tool_action",
         "ineligible_criteria",

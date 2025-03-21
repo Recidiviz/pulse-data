@@ -46,6 +46,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     DISTINCT_ACTIVE_USERS_SUPERVISION,
     DISTINCT_REGISTERED_USERS_INCARCERATION,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
+    TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_INCARCERATION,
+    TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_SUPERVISION,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -151,10 +153,44 @@ def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> (
     )
 
 
+def _build_impact_reports_report_metrics_aggregated_metrics_collection() -> (
+    AggregatedMetricsCollection
+):
+    time_periods = [
+        MetricTimePeriodConfig.month_periods(lookback_months=24),
+        MetricTimePeriodConfig.quarter_periods_rolling_monthly(lookback_months=24),
+    ]
+
+    return AggregatedMetricsCollection(
+        output_dataset_id=IMPACT_REPORTS_DATASET_ID,
+        collection_tag="report_metrics",
+        population_configs={
+            MetricPopulationType.JUSTICE_INVOLVED: AggregatedMetricsCollectionPopulationConfig(
+                output_dataset_id=IMPACT_REPORTS_DATASET_ID,
+                population_type=MetricPopulationType.JUSTICE_INVOLVED,
+                units_of_analysis={
+                    MetricUnitOfAnalysisType.STATE_CODE,
+                    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+                    MetricUnitOfAnalysisType.FACILITY,
+                },
+                metrics=[
+                    # We don't actually use this, but generate this metric to make sure
+                    # that one row is generated for every possible metric period.
+                    AVG_DAILY_POPULATION,
+                    *TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_INCARCERATION,
+                    *TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_SUPERVISION,
+                ],
+            ),
+        },
+        time_periods=time_periods,
+    )
+
+
 def get_aggregated_metrics_collections() -> list[AggregatedMetricsCollection]:
     return [
         _build_impact_reports_usage_aggregated_metrics_collection(),
         _build_impact_reports_impact_funnel_aggregated_metrics_collection(),
+        _build_impact_reports_report_metrics_aggregated_metrics_collection(),
     ]
 
 

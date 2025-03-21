@@ -2063,6 +2063,42 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
+TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_SUPERVISION = [
+    EventCountMetric(
+        name=f"task_completions_after_eligible_7_days_{b.task_type_name.lower()}",
+        display_name=f"Task Completions After Eligible 7 Days: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()}"
+        " occurring when the person has been eligible for >7 days",
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+                "eligible_for_over_7_days": ["true"],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_INCARCERATION = [
+    EventCountMetric(
+        name=f"task_completions_after_eligible_7_days_{b.task_type_name.lower()}",
+        display_name=f"Task Completions After Eligible 7 Days: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()}"
+        " occurring when the person has been eligible for >7 days",
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+                "eligible_for_over_7_days": ["true"],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
 TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
     EventCountMetric(
         name=f"task_completions_while_eligible_{b.task_type_name.lower()}",
