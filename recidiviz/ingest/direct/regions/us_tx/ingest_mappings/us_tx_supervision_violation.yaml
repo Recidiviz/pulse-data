@@ -54,8 +54,23 @@ output:
                                   - CONTINUE WARRANT IN EFFECT
                                 StateSupervisionViolationResponseDecision.DELAYED_ACTION:
                                   - AWAITING BPP VOTE
+                                  - NON REVOCATION ACTION - PENDING ADJUDICATION OF CHARGES
+                                  - PROCEED TO REVOCATION HEARING
+                                  - PROCEED TO PRELIMINARY HEARING
                                 StateSupervisionViolationResponseDecision.REVOCATION:
                                   - REVOKE
-                                  - RETURN FOR CORRECTIONS
                                 StateSupervisionViolationResponseDecision.CONTINUANCE:
                                   - NO VIOLATION RECOMENDATION OCCURRED
+                                  - NON REVOCATION ACTION - ALLOW TO DISCHARGE
+                                  - WITHDRAW ISF AND RETURN TO SUPERVISION STATUS
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - RETURN FOR CORRECTIONS #This is when a violation is returned to PO so they can fix something. Data entry issue.
+                                  - REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)
+                                  - DENY
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
+                                  - ISF #Intermediate Sanction Facility (ISF) facilities are short term detention facilities for parole or mandatory supervision offenders who have violated the terms of their release agreement.
+                                  - SAFPF #The Substance Abuse Felony Punishment Facility (SAFPF) provide services to qualified inmates identified as needing substance use treatment.
+                                  - CONTINUE ISF IN EFFECT
+                                  - CONTINUE SAFPF IN EFFECT
