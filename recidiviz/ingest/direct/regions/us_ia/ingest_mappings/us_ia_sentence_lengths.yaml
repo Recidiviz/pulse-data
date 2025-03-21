@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  PenaltyId: STRING
+  penalty_length_days: INTEGER
+  penalty_length_months: INTEGER
+  penalty_length_years: INTEGER
+  sequence_num: INTEGER
+  update_datetime: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    sentences:
+      - StateSentence:
+          external_id: PenaltyId
+          sentence_lengths:
+            - StateSentenceLength:
+                sequence_num: sequence_num
+                length_update_datetime: update_datetime
+                # TODO(#38402): confirm with IA that these are max lengths
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_ia_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: penalty_length_years
+                      months_str: penalty_length_months
+                      days_str: penalty_length_days

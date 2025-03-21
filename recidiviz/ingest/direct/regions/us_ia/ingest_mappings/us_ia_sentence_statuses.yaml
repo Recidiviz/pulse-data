@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  PenaltyId: STRING
+  update_datetime: DATE
+  SentencePenaltyModifier: STRING
+  SentenceEndDt: DATE
+  sequence_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    sentences:
+      - StateSentence:
+          external_id: PenaltyId
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: sequence_num
+                status_update_datetime: update_datetime
+                status:
+                  $conditional:
+                    - $if:
+                        $not_null: SentenceEndDt
+                      $then: $literal_enum(StateSentenceStatus.COMPLETED)
+                    - $else_if:
+                        $in:
+                          $value: SentencePenaltyModifier
+                          $options:
+                            - $literal("Deferred Judgment - Non DOC Probation")
+                            - $literal("Deferred Judgment-No Probation")
+                            - $literal("Deferred Sentence - Non DOC Probation")
+                            - $literal("Deferred Sentence-No Probation")
+                            - $literal("Partially Suspended-No Probation")
+                            - $literal("Partially suspended - Non DOC Probation")
+                            - $literal("Sentence Deferred-No Probation")
+                            - $literal("Suspended - Non DOC Probation")
+                            - $literal("Suspended-No Probation")
+                      $then:
+                        $enum_mapping:
+                          $raw_text: SentencePenaltyModifier
+                          $mappings:
+                            StateSentenceStatus.SUSPENDED:
+                              - Deferred Judgment - Non DOC Probation
+                              - Deferred Judgment-No Probation
+                              - Deferred Sentence - Non DOC Probation
+                              - Deferred Sentence-No Probation
+                              - Partially Suspended-No Probation
+                              - Partially suspended - Non DOC Probation
+                              - Sentence Deferred-No Probation
+                              - Suspended - Non DOC Probation
+                              - Suspended-No Probation
+                    - $else: $literal_enum(StateSentenceStatus.SERVING)

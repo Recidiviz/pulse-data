@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,22 +17,29 @@
 """Custom enum parsers functions for US_IA. Can be referenced in an ingest view manifest
 like this:
 
-my_enum_field:
-  $enum_mapping:
-    $raw_text: MY_CSV_COL
-    $custom_parser: us_ia_custom_enum_parsers.<function name>
+my_flat_field:
+    $custom:
+        $function: us_mi_custom_parsers.<function name>
+        $args:
+            arg_1: <expression>
+            arg_2: <expression>
 """
+from typing import Optional
 
-from recidiviz.common.constants.state.state_sentence import StateSentenceType
+from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
 
 
-def map_to_probation_but_retain_raw_text(
-    raw_text: str,
-) -> StateSentenceType:
-    """Maps sentence type to PROBATION for sentences we've already identified as being suspended with probation;
-    used instead of literal enum so that raw text of the county jail name can be preserved"""
-
-    if raw_text:
-        return StateSentenceType.PROBATION
-
-    raise ValueError("This parser should never be called on missing raw text.")
+def max_and_min_lengths_days(
+    years_str: str,
+    months_str: str,
+    days_str: str,
+) -> Optional[str]:
+    """Returns the duration in days from days, months, and years"""
+    result = safe_parse_days_from_duration_pieces(
+        years_str=years_str, months_str=months_str, days_str=days_str
+    )
+    if result:
+        if result == 0:
+            return None
+        return str(result)
+    return None

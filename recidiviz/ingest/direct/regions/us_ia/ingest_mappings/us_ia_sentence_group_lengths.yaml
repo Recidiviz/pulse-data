@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  ChargeId: STRING
+  max_date: DATE
+  sequence_num: INTEGER
+  update_datetime: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: ChargeId
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                group_update_datetime: update_datetime
+                sequence_num: sequence_num
+                projected_full_term_release_date_max_external: max_date
+                # TODO(#38402): Figure out what to do about MPD

@@ -1,0 +1,220 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  PenaltyId: STRING
+  SentenceId: STRING
+  SentenceDt: DATE
+  SentencePenaltyType: STRING
+  SentencePenaltyModifier: STRING
+  JurisdictionType: STRING
+  PenaltyLife: STRING
+  Jurisdiction: STRING
+  ChargeId: STRING
+  OffenseDt: DATE
+  CrimeCd: STRING
+  OffenseDesc: STRING
+  CrimeCdClass: STRING
+  CrimeCdOffenseType: STRING
+  CrimeCdOffenseSubType: STRING
+  ChargeCount: STRING
+  MostSeriousCharge: STRING
+  LeadCharge: STRING
+  JudgeFirstNm: STRING
+  JudgeLastNm: STRING
+  JudgeMiddleNm: STRING
+  JudgeLegalPeopleId: STRING
+  # TODO(#38402): figure out concurrent vs consecutive
+unused_columns:
+  # TODO(#38402): figure out controlling charge
+  - MostSeriousCharge
+  - LeadCharge
+  - SentenceId
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: ChargeId
+    sentences:
+      - StateSentence:
+          external_id: PenaltyId
+          sentence_group_external_id: ChargeId
+          imposed_date: SentenceDt
+          # TODO(#38402): figure out initial time
+          sentence_type:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: SentencePenaltyModifier
+                    $options:
+                      - $literal("Sentence Deferred-With Probation")
+                      - $literal("Deferred Sentence-With Probation")
+                      - $literal("Deferred Judgment-With Probation")
+                      - $literal("Suspended-With Probation")
+                      - $literal("Partially Suspended-With Probation")
+                      - $literal("Imposed-With Probation")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - SentencePenaltyType
+                          - SentencePenaltyModifier
+                    $custom_parser: us_ia_custom_enum_parsers.map_to_probation_but_retain_raw_text
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SentencePenaltyType
+                    $mappings:
+                      StateSentenceType.COMMUNITY_SERVICE:
+                        - Community Service
+                      StateSentenceType.INTERNAL_UNKNOWN:
+                        - Deferred Judgment
+                        - Deferred Sentence
+                        - Deferred
+                        - Sexual Predator - Enhancement 901A.2(7)
+                      StateSentenceType.STATE_PRISON:
+                        - Determinate Prison-902.3a
+                        - Prison
+                        - Prison - OWI Continuum
+                        - Prison-OWI
+                      StateSentenceType.FINES_RESTITUTION:
+                        - Fine
+                        - Civil Penalty
+                      StateSentenceType.COMMUNITY_CORRECTIONS:
+                        - Indeterminate (Community Supervision) 902.3a
+                      StateSentenceType.COUNTY_JAIL:
+                        - Jail
+                      StateSentenceType.TREATMENT:
+                        - Iowa Domestic Abuse Program
+                        - Residential Placement
+                      StateSentenceType.PROBATION:
+                        - Probation Only (Compact)
+                      StateSentenceType.PAROLE:
+                        - Special Sentence
+          sentencing_authority:
+            $conditional:
+              # There are ~ 900 sentences from pre 2003 (aka pre ICON) that are missing
+              # jurisdiction type.  In those cases, we'll just assume they were imposed by the county.
+              - $if:
+                  $is_null: JurisdictionType
+                $then: $literal_enum(StateSentencingAuthority.COUNTY)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: JurisdictionType
+                    $mappings:
+                      StateSentencingAuthority.COUNTY:
+                        - C
+                      StateSentencingAuthority.OTHER_STATE:
+                        - S
+                      StateSentencingAuthority.FEDERAL:
+                        - F
+          is_life:
+            $conditional:
+              - $if:
+                  $not_null: PenaltyLife
+                $then:
+                  $equal:
+                    - $literal("1")
+                    - PenaltyLife
+          is_capital_punishment: $literal_bool(False)
+          # TODO(#38402): figure out parole_possible
+          county_code:
+            # Only hydrate county code when Jurisdiction has type "County"
+            $conditional:
+              - $if:
+                  $equal:
+                    - $literal("C")
+                    - JurisdictionType
+                $then: Jurisdiction
+          charges:
+            - StateChargeV2:
+                external_id: ChargeId
+                offense_date: OffenseDt
+                county_code:
+                  # Only hydrate county code when Jurisdiction has type "County"
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - $literal("C")
+                          - JurisdictionType
+                      $then: Jurisdiction
+                statute: CrimeCd
+                description: OffenseDesc
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: CrimeCdClass
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - A Felony
+                        - Other Felony
+                        - D Felony
+                        - Felony - Mandatory Minimum
+                        - C Felony
+                        - Felony - Enhancement to Original Penalty
+                        - B Felony
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - Aggravated Misdemeanor
+                        - Other Misdemeanor
+                        - Serious Misdemeanor
+                        - Misdemeanor - Old Code Year Prior to 1978
+                        - Simple Misdemeanor
+                      StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
+                        - NCIC Virtual Code
+                        - Special Sentence 2005
+                      StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                        - No Crime Code Class
+                classification_subtype: CrimeCdClass
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: CrimeCdOffenseType
+                      $then:
+                        $equal:
+                          - CrimeCdOffenseType
+                          - $literal("Violent")
+                is_drug:
+                  $conditional:
+                    - $if:
+                        $not_null: CrimeCdOffenseType
+                      $then:
+                        $equal:
+                          - CrimeCdOffenseType
+                          - $literal("Drug")
+                offense_type:
+                  $concat:
+                    $values:
+                      - CrimeCdOffenseType
+                      - CrimeCdOffenseSubType
+                    $include_nulls: False
+                is_sex_offense:
+                  $conditional:
+                    - $if:
+                        $not_null: CrimeCdOffenseSubType
+                      $then:
+                        $equal:
+                          - CrimeCdOffenseSubType
+                          - $literal("Sex")
+                counts: ChargeCount
+                judge_external_id: JudgeLegalPeopleId
+                judge_full_name:
+                  $person_name:
+                    $given_names: JudgeFirstNm
+                    $middle_names: JudgeMiddleNm
+                    $surname: JudgeLastNm
+                judicial_district_code:
+                  # Only hydrate judicial district code when Jurisdiction has type "County"
+                  # TODO(#38402): ask Iowa if there's a crosswalk of county to district
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - $literal("C")
+                          - JurisdictionType
+                      $then: Jurisdiction
+                # We will only keep convicted charges in the view
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
