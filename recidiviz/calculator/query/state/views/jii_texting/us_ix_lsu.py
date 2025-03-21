@@ -108,6 +108,7 @@ WITH current_opportunity_eligibility AS (
     opp.external_id,
     opp.person_id,
     cr.person_name,
+    cr.pseudonymized_id,
     COALESCE(CAST(p.PhoneNumber AS INT64), cr.phone_number) AS phone_number,
     opp.is_eligible,
     opp.ineligible_criteria,
@@ -127,6 +128,8 @@ WITH current_opportunity_eligibility AS (
       AND rd.state_code = opp.state_code
   LEFT JOIN phone_numbers p 
     ON opp.external_id = p.OffenderId
+  WHERE ARRAY_LENGTH(SPLIT(TRIM(cr.district), " ")) = 2
+  AND SPLIT(TRIM(cr.district), " ")[OFFSET(1)] IN ('1', '2', '3', '4', '5', '6', '7')
 )
 SELECT
   * EXCEPT (is_eligible, ineligible_criteria, denied_for_fines_and_fees),
