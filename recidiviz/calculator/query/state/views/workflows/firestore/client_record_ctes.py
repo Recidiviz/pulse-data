@@ -177,7 +177,7 @@ _CLIENT_RECORD_SUPERVISION_LEVEL_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` sl
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized` dataflow
             ON dataflow.person_id = sl.person_id
-            AND dataflow.dataflow_session_id = sl.dataflow_session_id_start,
+            AND dataflow.dataflow_session_id = sl.dataflow_session_id_end,
             UNNEST(session_attributes) as session_attributes
         WHERE sl.state_code IN ({{workflows_supervision_states}})
         AND sl.end_date IS NULL
