@@ -144,38 +144,6 @@ export const getLegacyIngestStatusMessage = (
   return `${legacyIngestStatusFormattingInfo[status].message} (${timeAgo})`;
 };
 
-export const getLegacyIngestStatusSortedOrder = (): string[] => {
-  return Object.values(legacyIngestStatusFormattingInfo)
-    .sort((info) => info.sortRank)
-    .map((info) => info.status);
-};
-
-export const renderLegacyIngestStatusCell = (
-  status: string | undefined,
-  timestamp: string | undefined,
-  isDagEnabled: boolean | undefined
-): React.ReactElement => {
-  if (
-    status === undefined ||
-    timestamp === undefined ||
-    isDagEnabled === undefined
-  )
-    return <Spin />;
-
-  const statusColorClassName = isDagEnabled
-    ? "ingest-status-cell-gated"
-    : getLegacyIngestStatusBoxColor(status);
-  const statusMessage = isDagEnabled
-    ? "Legacy raw data infra has been disabled."
-    : getLegacyIngestStatusMessage(status, timestamp);
-
-  return (
-    <div className={classNames("ingest-status-cell", statusColorClassName)}>
-      {statusMessage}
-    </div>
-  );
-};
-
 // --- dataflow pipeline status utils --------------------------------------------------
 
 const jobStateColorDict: {
@@ -285,16 +253,6 @@ export const getQueueColor = (queueInfo: string): string => {
   return queueStatusColorDict[queueInfo].color;
 };
 
-export const getQueueStatusSortedOrder = (
-  queueInfo: string | undefined
-): number => {
-  if (!queueInfo) {
-    return 0;
-  }
-
-  return queueStatusColorDict[queueInfo].sortRank;
-};
-
 export function getIngestQueuesCumulativeState(
   queueInfos: QueueMetadata[]
 ): QueueState {
@@ -310,15 +268,6 @@ export function getIngestQueuesCumulativeState(
       return QueueState.MIXED_STATUS;
     }, QueueState.UNKNOWN);
 }
-
-export const renderIngestQueuesCell = (queueInfo: string | undefined) => {
-  if (queueInfo === undefined) {
-    return <Spin />;
-  }
-  const queueColor = getQueueColor(queueInfo);
-
-  return <div className={classNames(queueColor)}>{queueInfo}</div>;
-};
 
 // --- raw data import dag status utils ------------------------------------------------
 

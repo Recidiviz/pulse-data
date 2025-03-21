@@ -25,6 +25,7 @@ interface InstanceRawFileMetadataProps {
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
 }
 
+// TODO(#39896) fix tooltips!
 const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   stateCode,
   loading,
