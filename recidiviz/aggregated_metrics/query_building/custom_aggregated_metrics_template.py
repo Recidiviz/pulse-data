@@ -105,7 +105,7 @@ def get_custom_aggregated_metrics_query_template(
         )
         single_class_queries_by_class[metric_class] = query_template
 
-    all_metric_class_ctes_query_template = "\n".join(
+    all_metric_class_ctes_query_template = ",\n".join(
         [
             f"""{metric_class.metric_class_name_lower()}_metrics AS (
 {fix_indent(query_template, indent_level=4)}

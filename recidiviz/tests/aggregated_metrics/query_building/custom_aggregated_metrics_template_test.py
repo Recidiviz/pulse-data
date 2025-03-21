@@ -116,7 +116,7 @@ WITH period_event_metrics AS (
     ),
     indent_level=4
 )}
-)
+),
 assignment_span_metrics AS (
 {fix_indent(
     build_aggregated_metric_query_template(
