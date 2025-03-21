@@ -108,6 +108,7 @@ docker = "*"
 docker-stubs = "*"
 types-tabulate = "*"
 types-openpyxl = "*"
+ndjson = "*"
 
 [packages]
 annotated-types="*"
