@@ -25,8 +25,6 @@ import {
   DataflowIngestPipelineStatus,
   DataflowJobState,
   DataflowJobStatusMetadata,
-  QueueMetadata,
-  QueueState,
   RawDataImportRunState,
   RawDataImportRunStatus,
   RawDataImportRunStatusInfo,
@@ -52,97 +50,6 @@ export interface DirectIngestStatusFormattingInfo
   extends DirectIngestCellFormattingAndStatusInfo {
   message: string;
 }
-
-// TODO(#28239): remove once the raw data import dag is fully rolled out
-// --- legacy ingest instance status utils ---------------------------------------------
-
-const legacyIngestStatusFormattingInfo: {
-  [status: string]: DirectIngestStatusFormattingInfo;
-} = {
-  READY_TO_FLASH: {
-    status: "READY_TO_FLASH",
-    color: "ingest-status-cell-yellow",
-    sortRank: 0,
-    message:
-      "Scheduler in SECONDARY found no more work to do - flash to PRIMARY is ready to take place",
-  },
-  FLASH_IN_PROGRESS: {
-    status: "FLASH_IN_PROGRESS",
-    color: "ingest-status-cell-grey",
-    sortRank: 2,
-    message: "Flash of data from SECONDARY to PRIMARY is in progress",
-  },
-  RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS: {
-    status: "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS",
-    color: "ingest-status-cell-grey",
-    sortRank: 4,
-    message: "Cancellation of raw data reimport in SECONDARY is in progress",
-  },
-  RAW_DATA_IMPORT_IN_PROGRESS: {
-    status: "RAW_DATA_IMPORT_IN_PROGRESS",
-    color: "ingest-status-cell-grey",
-    sortRank: 6,
-    message: "Raw data import from GCS to BQ is in progress",
-  },
-  RAW_DATA_REIMPORT_STARTED: {
-    status: "RAW_DATA_REIMPORT_STARTED",
-    color: "ingest-status-cell-grey",
-    sortRank: 9,
-    message: "A reimport of raw data in SECONDARY has been kicked off",
-  },
-  STALE_RAW_DATA: {
-    status: "STALE_RAW_DATA",
-    color: "ingest-status-cell-grey",
-    sortRank: 10,
-    message:
-      "Raw data in PRIMARY is more up to date than raw data in SECONDARY",
-  },
-  INITIAL_STATE: {
-    status: "INITIAL_STATE",
-    color: "ingest-status-cell-grey",
-    sortRank: 12,
-    message:
-      "Raw data import has been enabled in PRIMARY but nothing has processed yet",
-  },
-  RAW_DATA_REIMPORT_CANCELED: {
-    status: "RAW_DATA_REIMPORT_CANCELED",
-    color: "ingest-status-cell-grey",
-    sortRank: 14,
-    message: "Raw data reimport in SECONDARY has been canceled",
-  },
-  FLASH_COMPLETED: {
-    status: "FLASH_COMPLETED",
-    color: "ingest-status-cell-green",
-    sortRank: 15,
-    message: "Flash of data from SECONDARY to PRIMARY is completed",
-  },
-  NO_RAW_DATA_REIMPORT_IN_PROGRESS: {
-    status: "NO_RAW_DATA_REIMPORT_IN_PROGRESS",
-    color: "ingest-status-cell-green",
-    sortRank: 17,
-    message: "No raw data reimport is currently in progress in SECONDARY",
-  },
-  RAW_DATA_UP_TO_DATE: {
-    status: "RAW_DATA_UP_TO_DATE",
-    color: "ingest-status-cell-green",
-    sortRank: 19,
-    message:
-      "Scheduler in PRIMARY found no more raw data import work to do and is up to date",
-  },
-};
-
-export const getLegacyIngestStatusBoxColor = (status: string): string => {
-  return legacyIngestStatusFormattingInfo[status].color;
-};
-
-export const getLegacyIngestStatusMessage = (
-  status: string,
-  timestamp: string
-): string => {
-  const dt = new Date(timestamp);
-  const timeAgo = moment(dt).fromNow();
-  return `${legacyIngestStatusFormattingInfo[status].message} (${timeAgo})`;
-};
 
 // --- dataflow pipeline status utils --------------------------------------------------
 
@@ -224,50 +131,6 @@ export const renderDataflowStatusCell = (
     </div>
   );
 };
-
-// TODO(#28239): remove once the raw data import dag is fully rolled out
-// --- ingest queue status utils -------------------------------------------------------
-
-const queueStatusColorDict: {
-  [color: string]: DirectIngestCellFormattingInfo;
-} = {
-  PAUSED: {
-    color: "queue-status-not-running",
-    sortRank: 1,
-  },
-  MIXED_STATUS: {
-    color: "queue-status-not-running",
-    sortRank: 2,
-  },
-  UNKNOWN: {
-    color: "queue-status-not-running",
-    sortRank: 3,
-  },
-  RUNNING: {
-    color: "queue-status-running",
-    sortRank: 4,
-  },
-};
-
-export const getQueueColor = (queueInfo: string): string => {
-  return queueStatusColorDict[queueInfo].color;
-};
-
-export function getIngestQueuesCumulativeState(
-  queueInfos: QueueMetadata[]
-): QueueState {
-  return queueInfos
-    .map((queueInfo) => queueInfo.state)
-    .reduce((acc: QueueState, state: QueueState) => {
-      if (acc === QueueState.UNKNOWN) {
-        return state;
-      }
-      if (acc === state) {
-        return acc;
-      }
-      return QueueState.MIXED_STATUS;
-    }, QueueState.UNKNOWN);
-}
 
 // --- raw data import dag status utils ------------------------------------------------
 

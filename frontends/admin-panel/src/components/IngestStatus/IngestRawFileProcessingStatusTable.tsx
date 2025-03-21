@@ -38,7 +38,6 @@ interface IngestRawFileProcessingStatusTableProps {
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
   stateCode: string;
   instance: string;
-  rawDataImportDagEnabled: boolean; // TODO(#28239) remove once raw data import dag is rolled out
 }
 
 const IngestRawFileProcessingStatusTable: React.FC<
@@ -49,7 +48,6 @@ const IngestRawFileProcessingStatusTable: React.FC<
   ingestRawFileProcessingStatus,
   stateCode,
   instance,
-  rawDataImportDagEnabled,
 }) => {
   const columns: ColumnsType<IngestRawFileProcessingStatus> = [
     {
@@ -61,7 +59,6 @@ const IngestRawFileProcessingStatusTable: React.FC<
           status={record}
           stateCode={stateCode}
           instance={instance}
-          rawDataImportDagEnabled={rawDataImportDagEnabled}
         />
       ),
       sorter: {

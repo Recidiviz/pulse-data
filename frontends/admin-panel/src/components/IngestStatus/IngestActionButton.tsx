@@ -14,23 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, message } from "antd";
+import { Button } from "antd";
 import { useState } from "react";
 
-import {
-  triggerTaskScheduler,
-  updateIngestQueuesState,
-} from "../../AdminPanelAPI";
-import {
-  startRawDataReimport,
-  triggerStateSpecificRawDataImportDAG,
-} from "../../AdminPanelAPI/IngestOperations";
+import { triggerStateSpecificRawDataImportDAG } from "../../AdminPanelAPI/IngestOperations";
 import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
   regionActionNames,
 } from "../Utilities/ActionRegionConfirmationForm";
-import { DirectIngestInstance, QueueState } from "./constants";
+import { DirectIngestInstance } from "./constants";
 
 interface IngestActionButtonProps {
   action: RegionAction;
@@ -76,41 +69,11 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
     setActionLoadingState(true);
     const unsupportedIngestAction = "Unsupported ingest action";
     switch (context.ingestAction) {
-      case RegionAction.TriggerTaskScheduler:
-        if (instance) {
-          await triggerTaskScheduler(stateCode, instance);
-          setActionConfirmed();
-        }
-        break;
       case RegionAction.TriggerStateSpecificRawDataDAG:
         if (instance) {
           await triggerStateSpecificRawDataImportDAG(stateCode, instance);
           setActionConfirmed();
         }
-        break;
-      case RegionAction.PauseIngestQueues:
-        await updateIngestQueuesState(stateCode, QueueState.PAUSED);
-        setActionConfirmed();
-        break;
-      case RegionAction.ResumeIngestQueues:
-        await updateIngestQueuesState(stateCode, QueueState.RUNNING);
-        setActionConfirmed();
-        break;
-      case RegionAction.StartRawDataReimport:
-        if (context.ingestAction !== RegionAction.StartRawDataReimport) {
-          throw new Error(
-            "Context for raw data reimport must be of type StartRawDataReimport."
-          );
-        } else {
-          const res = await startRawDataReimport(stateCode);
-          if (res.status === 200) {
-            message.success(`Start Raw Data Reimport Succeeded!`, 7);
-          } else {
-            const text = await res.text();
-            message.error(`Start Raw Data Reimport Failed: ${text}`, 7);
-          }
-        }
-        setActionConfirmed();
         break;
       default:
         throw unsupportedIngestAction;

@@ -76,7 +76,6 @@ interface IngestDataflowInstanceCardProps {
   instance: DirectIngestInstance;
   env: string;
   stateCode: string;
-  rawDataImportDagEnabled: boolean;
 }
 
 function displayJobState(status: string): DataflowJobState {
@@ -144,7 +143,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   instance,
   env,
   stateCode,
-  rawDataImportDagEnabled,
 }) => {
   // Enable scrolling to various sections based on the URL
   const { hash } = useLocation();
@@ -185,6 +183,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
       fetchDataflowPipelineAdditionalMetadataInstance
     );
 
+  // WATERMARKS LOADING
   const fetchRawDataWatermarks = useCallback(async () => {
     return getLatestDataflowRawDataWatermarks(stateCode, instance);
   }, [stateCode, instance]);
@@ -200,6 +199,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     fetchRawDataTagsNotMeetingWatermark
   );
 
+  // INGEST VIEW RESULTS LOADING
   const fetchIngestViewResults = useCallback(async () => {
     return getLatestRunIngestViewResults(stateCode, instance);
   }, [stateCode, instance]);
@@ -214,6 +214,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   const { loading: loadingStateDatasetCounts, data: latestStateDatasetCounts } =
     useFetchedDataJSON<StateDatasetRowCounts>(fetchStateDatasetRowCounts);
 
+  // WATERMARK DETAIL TABLE
   const fileTagColumns: ColumnsType<RawFileTagColumns> = [
     {
       title: "File Tag",
@@ -244,6 +245,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     },
   ];
 
+  // INGEST VIEW DETAIL TABLE
   const ingestViewColumns: ColumnsType<IngestViewResultsColumns> = [
     {
       title: "Ingest View Name",
@@ -607,7 +609,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
         stateCode={stateCode}
         instance={instance}
-        rawDataImportDagEnabled={rawDataImportDagEnabled}
       />
     </>
   );

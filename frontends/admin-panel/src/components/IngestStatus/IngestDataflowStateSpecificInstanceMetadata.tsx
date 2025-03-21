@@ -15,14 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, Spin } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { Alert } from "antd";
 import { useParams } from "react-router-dom";
 
-import { isRawDataImportDagEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "./constants";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
-import IngestInstanceActionsPageHeader from "./IngestInstanceActionsPageHeader";
 import RawDataActionsPageHeader from "./RawDataActionsPageHeader";
 
 const instances = [
@@ -37,52 +34,18 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
     instance: string;
   }>();
 
-  // TODO(#28239) remove once raw data import dag is rolled out
-  const [rawDataImportDagEnabled, setRawDataImportDagEnabled] =
-    useState<boolean>(false);
-  const [rawDataImportDagEnabledLoading, setRawDataImportDagEnabledLoading] =
-    useState<boolean>(false);
-
-  const getRawDataDagEnabled = useCallback(async () => {
-    if (!stateCode || !instance) {
-      return;
-    }
-    setRawDataImportDagEnabledLoading(true);
-    const isEnabledResponse = await isRawDataImportDagEnabled(
-      stateCode,
-      instance
-    );
-    const isEnabledResult = await isEnabledResponse.json();
-    setRawDataImportDagEnabled(isEnabledResult);
-    setRawDataImportDagEnabledLoading(false);
-  }, [stateCode, instance]);
-
-  useEffect(() => {
-    getRawDataDagEnabled();
-  }, [getRawDataDagEnabled, instance, stateCode]);
-
   const directInstance = getInstance(instance);
 
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
   }
 
-  if (rawDataImportDagEnabledLoading) {
-    return <Spin />;
-  }
-
-  const pageHeader = rawDataImportDagEnabled ? (
-    <RawDataActionsPageHeader instance={directInstance} stateCode={stateCode} />
-  ) : (
-    <IngestInstanceActionsPageHeader
-      instance={directInstance}
-      stateCode={stateCode}
-    />
-  );
-
   return (
     <>
-      {pageHeader}
+      <RawDataActionsPageHeader
+        instance={directInstance}
+        stateCode={stateCode}
+      />
       {env === "development" ? (
         <Alert
           style={{ margin: "6px 24px" }}
@@ -100,7 +63,6 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
           instance={directInstance}
           env={env}
           stateCode={stateCode}
-          rawDataImportDagEnabled={rawDataImportDagEnabled}
         />
       </div>
     </>
