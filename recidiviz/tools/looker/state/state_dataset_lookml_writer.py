@@ -27,7 +27,6 @@ import argparse
 import os
 from types import ModuleType
 
-from recidiviz.airflow.dags.calculation_dag import GCP_PROJECT_STAGING
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
@@ -59,6 +58,7 @@ from recidiviz.tools.looker.entity.entity_views_builder import (
 )
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 
 def write_lookml_files(

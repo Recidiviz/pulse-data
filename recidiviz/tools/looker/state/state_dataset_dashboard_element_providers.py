@@ -72,10 +72,12 @@ class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider
                 explore=explore_name,
                 model=model,
                 listen=all_filters_listen,
-                fields=table_metadata.fields,
+                fields=sorted(table_metadata.fields),
                 sorts=table_metadata.sort_fields,
             )
-            for table_metadata in self.table_element_metadata
+            for table_metadata in sorted(
+                self.table_element_metadata, key=lambda x: x.name
+            )
         ]
 
 
@@ -93,10 +95,12 @@ class StateStaffLookMLDashboardElementsProvider(LookMLDashboardElementsProvider)
                 explore=explore_name,
                 model=model,
                 listen=all_filters_listen,
-                fields=table_metadata.fields,
+                fields=sorted(table_metadata.fields),
                 sorts=table_metadata.sort_fields,
             )
-            for table_metadata in self.table_element_metadata
+            for table_metadata in sorted(
+                self.table_element_metadata, key=lambda x: x.name
+            )
         ]
 
 
