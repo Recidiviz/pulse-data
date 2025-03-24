@@ -22,7 +22,7 @@ import {
   acquireResourceLocksForStateAndInstance,
   deleteContentsOfRawDataTables,
   deleteTablesInPruningDatasets,
-  markInstanceRawDataV2Invalidated,
+  markInstanceRawDataInvalidated,
   releaseResourceLocksForStateById,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../constants";
@@ -231,7 +231,7 @@ const CancelReimportChecklist = (): JSX.Element => {
           actionButtonEnabled={currentLockStatus.allSecondaryLocksHeldByAdHoc()}
           actionButtonTitle="Invalidate secondary rows"
           onActionButtonClick={async () =>
-            markInstanceRawDataV2Invalidated(
+            markInstanceRawDataInvalidated(
               stateCode,
               DirectIngestInstance.SECONDARY
             )

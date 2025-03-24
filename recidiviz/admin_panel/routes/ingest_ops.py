@@ -755,10 +755,10 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route(
-        "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+        "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
         methods=["POST"],
     )
-    def _mark_instance_raw_data_v2_invalidated() -> Tuple[str, HTTPStatus]:
+    def _mark_instance_raw_data_invalidated() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])
@@ -785,10 +785,10 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     @bp.route(
-        "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+        "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
         methods=["POST"],
     )
-    def _transfer_raw_data_v2_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
+    def _transfer_raw_data_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])

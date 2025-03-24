@@ -567,12 +567,12 @@ class IngestOpsEndpointTests(TestCase):
     @patch(
         "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
     )
-    def test_mark_instance_raw_data_v2_invalidated(
+    def test_mark_instance_raw_data_invalidated(
         self, manager_mock: mock.MagicMock
     ) -> None:
         # Arrange
         response = self.client.post(
-            "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+            "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
             json={
                 "stateCode": "US_XX",
                 "rawDataInstance": "PRIMARY",
@@ -590,7 +590,7 @@ class IngestOpsEndpointTests(TestCase):
     @patch(
         "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
     )
-    def test_transfer_raw_data_v2_metadata_to_new_instance(
+    def test_transfer_raw_data_metadata_to_new_instance(
         self,
         file_manager_mock: mock.MagicMock,
         import_manager_mock: mock.MagicMock,
@@ -598,7 +598,7 @@ class IngestOpsEndpointTests(TestCase):
     ) -> None:
         # Arrange
         response = self.client.post(
-            "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+            "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
             json={
                 "stateCode": "US_XX",
                 "destIngestInstance": "SECONDARY",
@@ -642,7 +642,7 @@ class IngestOpsEndpointTests(TestCase):
 
         with self.assertRaisesRegex(KeyError, "'stateCode'"):
             self.client.post(
-                "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+                "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
                 json={
                     "rawDataInstance": "SECONDARY",
                 },

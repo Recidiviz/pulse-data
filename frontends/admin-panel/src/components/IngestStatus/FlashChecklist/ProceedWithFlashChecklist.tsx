@@ -25,9 +25,9 @@ import {
   deleteContentsOfRawDataTables,
   deleteTablesInPruningDatasets,
   invalidateIngestPipelineRuns,
-  markInstanceRawDataV2Invalidated,
+  markInstanceRawDataInvalidated,
   releaseResourceLocksForStateById,
-  transferRawDataV2MetadataToNewInstance,
+  transferRawDataMetadataToNewInstance,
   triggerCalculationDAGForState,
   updateIsFlashingInProgress,
 } from "../../../AdminPanelAPI/IngestOperations";
@@ -221,7 +221,7 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
           actionButtonEnabled={isFlashInProgress}
           actionButtonTitle="Deprecate primary rows"
           onActionButtonClick={async () =>
-            markInstanceRawDataV2Invalidated(
+            markInstanceRawDataInvalidated(
               stateCode,
               DirectIngestInstance.PRIMARY
             )
@@ -261,7 +261,7 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
           actionButtonEnabled={isFlashInProgress}
           actionButtonTitle="Move Secondary Raw Data Metadata"
           onActionButtonClick={async () =>
-            transferRawDataV2MetadataToNewInstance(
+            transferRawDataMetadataToNewInstance(
               stateCode,
               DirectIngestInstance.SECONDARY,
               DirectIngestInstance.PRIMARY

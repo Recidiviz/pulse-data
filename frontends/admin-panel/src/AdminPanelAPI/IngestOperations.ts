@@ -338,12 +338,12 @@ export const getRawDataResourceLockMetadata = async (): Promise<Response> => {
 };
 
 // Mark instance raw data as invalidated
-export const markInstanceRawDataV2Invalidated = async (
+export const markInstanceRawDataInvalidated = async (
   stateCode: string,
   rawDataInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_v2_invalidated",
+    "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
     {
       stateCode,
       rawDataInstance,
@@ -352,13 +352,13 @@ export const markInstanceRawDataV2Invalidated = async (
 };
 
 // Transfer raw data metadata to new instance
-export const transferRawDataV2MetadataToNewInstance = async (
+export const transferRawDataMetadataToNewInstance = async (
   stateCode: string,
   srcIngestInstance: DirectIngestInstance,
   destIngestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+    "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
     {
       stateCode,
       srcIngestInstance,
