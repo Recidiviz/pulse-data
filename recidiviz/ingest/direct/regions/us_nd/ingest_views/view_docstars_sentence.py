@@ -44,8 +44,8 @@ SELECT DISTINCT
   IF((ot.COUNTY IS NOT NULL AND CAST(ot.COUNTY AS INT64) > 100), NULL, ot.COURT_NUMBER) AS COURT_NUMBER,
   -- Tom told us to use the CST NCIC code if there is one, and otherwise to use the CODE value.
   -- Only one of these is ever hydrated.
-  COALESCE(ot.COMMON_STATUTE_NCIC_CODE,ot.CODE) AS OFFENSE_CODE,
-  XREF.DESCRIPTION AS CHARGE_DESCRIPTION,
+  COALESCE(ot.COMMON_STATUTE_NCIC_CODE, ot.CODE) AS OFFENSE_CODE,
+  COALESCE(cst.DROPDOWN_DESCRIPTION, XREF.DESCRIPTION) AS CHARGE_DESCRIPTION,
   ot.LEVEL,
   ot.COUNTY AS CHARGE_COUNTY,
   CASE 
@@ -75,6 +75,14 @@ LEFT JOIN
   {{recidiviz_docstars_cst_ncic_code}} xref
 ON
   (COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) = xref.CODE)  
+-- This table contains charge descriptions that users in ND expect to see in forms that 
+-- auto-fill from our products. These are the descriptions that appear in Docstars now,
+-- but they have not always been, which is why we backfill with NCIC descriptions; sometimes
+-- those are the only ones available. 
+LEFT JOIN 
+  {{RECIDIVIZ_REFERENCE_common_statute_table}} cst
+USING
+  (Common_Statute_Number)
   -- We do not have any charges ingested with a CONVICTED status for sentences that are 
   -- still Pre-Trial, so we do not want to include them here.
   -- For information about pre-trial cases, see the docstars_psi raw data table.

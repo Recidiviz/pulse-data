@@ -39,21 +39,18 @@ SELECT
   ot.COUNTS, 
   ot.OFFENSEDATE, 
   ot.COUNTY, 
-  ot.COUNT, 
-  ot.COURT_NUMBER, 
-  ot.INACTIVEDATE, 
-  ot.RecDate, 
-  ot.YEAR, 
-  ot.LAST_UPDATE, 
-  ot.CREATED_BY, 
-  ot.MASTER_OFFENSE_IND,
   ot.REQUIRES_REGISTRATION,
-  ot.Common_Statute_Number, 
-  COALESCE(CODE, Common_Statute_NCIC_Code) as ncic_code,
-  oc.JUDGE
+  -- Exactly one of these values is populated in each row. 
+  COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) as ncic_code,
+  oc.JUDGE,
+  COALESCE(cst.DROPDOWN_DESCRIPTION, xref.DESCRIPTION) AS charge_description
 FROM {docstars_offensestable} ot
 LEFT JOIN {docstars_offendercasestable} oc
 USING (CASE_NUMBER)
+LEFT JOIN {recidiviz_docstars_cst_ncic_code} xref
+ON (COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) = xref.CODE)  
+LEFT JOIN {RECIDIVIZ_REFERENCE_common_statute_table} cst
+USING (Common_Statute_Number)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
