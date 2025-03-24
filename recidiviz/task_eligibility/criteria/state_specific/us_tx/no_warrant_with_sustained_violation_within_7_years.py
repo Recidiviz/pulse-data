@@ -62,19 +62,25 @@ _QUERY_TEMPLATE = f"""
           AND sessions.person_id = pei.person_id
           AND sessions.start_date <= CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
           AND sessions.end_date > CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
-        WHERE (violation_result in ('CONTINUE WARRANT IN EFFECT', 'REVOKE')
-            OR violation_decision in (
-              'CONTINUE SUPERVISION',
-              'CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES',
-              'CONTINUE SUPERVISION PENDING DISPOSITON',
-              'CONTINUE SUPERVISION PENDING PROBATION',
-              'DPO VIOLATION RECOMMENDATION',
-              'IMPOSE LOCAL INTERVENTIONS',
-              'INTERVENTIONS',
-              'PROCEED TO REVOCATION HEARING',
-              'US VIOLATION RECOMMENDATION'
-    )
-  )
+        WHERE violation_result IN (
+            'REVOKE',
+            'ISF',
+            'NON REVOCATION ACTION - ALLOW TO DISCHARGE',
+            'NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS',
+            'SAFPF',
+            'INTERVENTIONS'
+          )
+          OR violation_decision IN (
+            'CONTINUE SUPERVISION',
+            'CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES',
+            'CONTINUE SUPERVISION PENDING DISPOSITON',
+            'CONTINUE SUPERVISION PENDING PROBATION',
+            'DPO VIOLATION RECOMMENDATION',
+            'IMPOSE LOCAL INTERVENTIONS',
+            'INTERVENTIONS',
+            'PROCEED TO REVOCATION HEARING',
+            'US VIOLATION RECOMMENDATION'
+          )
     ),
     /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
     still-relevant warrants at once). */
