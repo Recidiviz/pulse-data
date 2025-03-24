@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """View with task completion events for all Workflows opportunities"""
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -35,7 +36,7 @@ SELECT
     IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL) AS days_eligible,
     -- eligible_for_over_7_days is used to calculate metrics on task completions that happen after more than 7 days of eligibility
     IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY) > 7, FALSE) as eligible_for_over_7_days,
-    f.is_almost_eligible,
+    t.is_almost_eligible,
     CASE
     -- If no TES spans overlap with this completion event, the reason for ineligibility is that the person was not included in the candidate population
         WHEN (t.is_eligible = False OR t.is_eligible IS NULL) AND a_t.ineligible_criteria IS NULL THEN 'NOT_IN_CANDIDATE_POPULATION'
