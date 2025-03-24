@@ -153,19 +153,11 @@ const rawDataImportRunColorStatusDict: {
     color: "raw-data-import-no-runs",
     sortRank: 4,
   },
-  NOT_ENABLED: {
-    color: "raw-data-import-not-enabled",
-    sortRank: 5,
-  },
 };
 
 function getColorStatusForInfo(
   rawDataImportRunStatus: RawDataImportRunStatusInfo
 ): DirectIngestCellFormattingInfo {
-  if (!rawDataImportRunStatus.isEnabled) {
-    return rawDataImportRunColorStatusDict.NOT_ENABLED;
-  }
-
   if (!rawDataImportRunStatus.importRunStart) {
     return rawDataImportRunColorStatusDict.NO_JOB_RUNS;
   }
@@ -210,9 +202,7 @@ const getRawDataStatusMessage = (
   rawDataImportRunStatus: RawDataImportRunStatusInfo
 ): string => {
   let statusString = "";
-  if (!rawDataImportRunStatus.isEnabled) {
-    statusString = "Not Enabled";
-  } else if (!rawDataImportRunStatus.importRunStart) {
+  if (!rawDataImportRunStatus.importRunStart) {
     statusString = "No Runs Found";
   } else {
     const dt = new Date(rawDataImportRunStatus.importRunStart);

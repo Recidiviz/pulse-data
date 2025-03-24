@@ -211,6 +211,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   // Get the ingest status changes and group them by which refresh they were included in
   const [includeIngestEvents, setIncludeIngestEvents] = React.useState(true);
 
+  // TODO(#28239): remove this!
   const fetchIngestInstanceStatuses = React.useCallback(() => {
     return getRecentIngestInstanceStatusHistory(stateCode);
   }, [stateCode]);

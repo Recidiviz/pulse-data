@@ -99,16 +99,9 @@ export const fetchValidationErrorTable = async (
 };
 
 export {
-  changeIngestInstanceStatus,
   fetchIngestStateCodes,
-  getAllIngestInstanceStatuses,
-  getCurrentIngestInstanceStatus,
-  getCurrentIngestInstanceStatusInformation,
-  getIngestQueuesState,
   getIngestRawFileProcessingStatus,
   getLatestRawDataImportRunsForFileTag,
-  triggerTaskScheduler,
-  updateIngestQueuesState,
 } from "./IngestOperations";
 export {
   blockUser,

@@ -22,7 +22,6 @@ import {
   getIsFlashingInProgress,
   getRawDataInstanceLockStatuses,
   getStaleSecondaryRawData,
-  isRawDataImportDagEnabled,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { Hydratable, HydrationState } from "../../../InsightsStore/types";
 import { StateCodeInfo } from "../../general/constants";
@@ -30,7 +29,6 @@ import { gcpEnvironment } from "../../Utilities/EnvironmentUtilities";
 import {
   DirectIngestInstance,
   IngestRawFileProcessingStatus,
-  RawDataDagEnabled,
 } from "../constants";
 import { RegionResourceLockStatus } from "../RegionResourceLockStatus";
 import { CurrentRawFileProcessingStatus } from "./CurrentRawFileProcessingStatus";
@@ -75,9 +73,6 @@ export class FlashChecklistStore implements Hydratable {
   // metadata about raw data resource locks
   currentLockStatus: RegionResourceLockStatus;
 
-  // metadata about raw data import dag gating
-  rawDataImportDagEnabled: RawDataDagEnabled;
-
   // --- misc properties ---------------------------------------------------------------
 
   abortController?: AbortController;
@@ -93,8 +88,6 @@ export class FlashChecklistStore implements Hydratable {
       primary: undefined,
       secondary: undefined,
     });
-
-    this.rawDataImportDagEnabled = { primary: undefined, secondary: undefined };
 
     this.isFlashInProgress = false;
     this.currentStep = 0;
@@ -166,10 +159,6 @@ export class FlashChecklistStore implements Hydratable {
     });
   }
 
-  setRawDataImportDagEnabled(primary: boolean, secondary: boolean) {
-    this.rawDataImportDagEnabled = { primary, secondary };
-  }
-
   setIsFlashInProgress(isFlashInProgress: boolean) {
     this.isFlashInProgress = isFlashInProgress;
   }
@@ -209,25 +198,6 @@ export class FlashChecklistStore implements Hydratable {
       this.setRegionResourceLockStatus(
         await getValueIfResolved(statusResults[0])?.json(),
         await getValueIfResolved(statusResults[1])?.json()
-      );
-    }
-  }
-
-  async fetchRawDataImportDagEnabled() {
-    if (this.stateInfo) {
-      const enabledResults = await Promise.allSettled([
-        isRawDataImportDagEnabled(
-          this.stateInfo.code,
-          DirectIngestInstance.PRIMARY
-        ),
-        isRawDataImportDagEnabled(
-          this.stateInfo.code,
-          DirectIngestInstance.SECONDARY
-        ),
-      ]);
-      this.setRawDataImportDagEnabled(
-        await getValueIfResolved(enabledResults[0])?.json(),
-        await getValueIfResolved(enabledResults[1])?.json()
       );
     }
   }
@@ -292,7 +262,6 @@ export class FlashChecklistStore implements Hydratable {
       this.setHydrationState({ status: "loading" });
 
       // only fetched on initial hydration
-      await this.fetchRawDataImportDagEnabled();
       await this.fetchRawFileProcessingStatus();
       await this.fetchStaleSecondaryStatus();
 

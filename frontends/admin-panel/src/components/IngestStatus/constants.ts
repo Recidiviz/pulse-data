@@ -58,7 +58,6 @@ export interface DataflowIngestRawDataWatermarks {
   [fileName: string]: Date;
 }
 
-// TODO(#28239): remove once the raw data import dag is fully rolled out
 // --- ingest-related constants --------------------------------------------------------
 export interface IngestViewResultRowCounts {
   [ingestViewName: string]: number;
@@ -68,6 +67,7 @@ export interface StateDatasetRowCounts {
   [dataset: string]: number;
 }
 
+// TODO(#28239): remove once the raw data import dag is fully rolled out
 export enum IngestStatus {
   RAW_DATA_REIMPORT_STARTED = "RAW_DATA_REIMPORT_STARTED",
   INITIAL_STATE = "INITIAL_STATE",
@@ -94,25 +94,6 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
-// TODO(#28239): remove once the raw data import dag is fully rolled out
-// --- raw data import dag enabled constants -------------------------------------------
-
-export type RawDataDagEnabled = {
-  primary: boolean | undefined;
-  secondary: boolean | undefined;
-};
-
-// i KNOW this is gross to have, but the hydration paradigm is different between this
-// and the above so typing as just boolean was easier
-export type RawDataDagEnabledType = {
-  primary: boolean;
-  secondary: boolean;
-};
-
-export type RawDataDagEnabledAllResponse = {
-  [stateCode: string]: RawDataDagEnabledType;
-};
-
 // --- raw data import dag summary related constants -----------------------------------
 
 export enum RawDataImportRunState {
@@ -126,6 +107,7 @@ export type RawDataImportRunStatus = {
   fileCount: number;
 };
 
+// TODO(#28239): remove once we remove this value from the response payload
 export type RawDataImportRunStatusInfo = {
   isEnabled: boolean;
   importRunStart: string | undefined;

@@ -302,11 +302,6 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #389e0d;
 }
 
-.raw-data-import-not-enabled{
-  color: #ffffff;
-  background-color: #2e2e2e;
-}
-
 .resource-lock-cell {
   color: #ffffff;
   background-color: #DEF2C8;

@@ -14,60 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import {
-  DirectIngestInstance,
-  QueueState,
-} from "../components/IngestStatus/constants";
+import { DirectIngestInstance } from "../components/IngestStatus/constants";
 import { getResource, postWithURLAndBody } from "./utils";
 
 // Fetch states with ingest
 export const fetchIngestStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_operations/fetch_ingest_state_codes");
-};
-
-//  Trigger task scheduler
-export const triggerTaskScheduler = async (
-  regionCode: string,
-  instance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/${regionCode}/trigger_task_scheduler`,
-    { instance }
-  );
-};
-
-//  Start Raw Data Reimport
-export const startRawDataReimport = async (
-  regionCode: string
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/${regionCode}/start_raw_data_reimport`
-  );
-};
-
-// Update ingest queue states
-export const updateIngestQueuesState = async (
-  regionCode: string,
-  newQueueState: QueueState
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/${regionCode}/update_ingest_queues_state`,
-    { new_queue_state: newQueueState }
-  );
-};
-
-// Get ingest queue states
-export const getIngestQueuesState = async (
-  regionCode: string
-): Promise<Response> => {
-  return fetch(
-    `/admin/api/ingest_operations/${regionCode}/get_ingest_queue_states`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
 };
 
 // Get ingest instance resources
@@ -116,11 +68,6 @@ export const invalidateIngestPipelineRuns = async (
       ingestInstance,
     }
   );
-};
-
-// Get all ingest instance statuses
-export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
-  return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
 
 // Get all latest ingest dataflow pipeline statuses
@@ -197,50 +144,6 @@ export const getRecentIngestInstanceStatusHistory = async (
   );
 };
 
-// Get current ingest instance status
-export const getCurrentIngestInstanceStatus = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/get_current_ingest_instance_status",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Get current ingest instance status and associated information
-export const getCurrentIngestInstanceStatusInformation = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/get_current_ingest_instance_status_information",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Set the specified instance status
-export const changeIngestInstanceStatus = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance,
-  ingestInstanceStatus: string
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/change_ingest_instance_status",
-    {
-      stateCode,
-      ingestInstance,
-      ingestInstanceStatus,
-    }
-  );
-};
-
 // Copy raw data to backup dataset
 export const copyRawDataToBackup = async (
   stateCode: string,
@@ -285,45 +188,6 @@ export const deleteContentsOfRawDataTables = async (
   );
 };
 
-// Mark instance raw data as invalidated
-export const markInstanceRawDataInvalidated = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Transfer raw data metadata to new instance
-export const transferRawDataMetadataToNewInstance = async (
-  stateCode: string,
-  srcIngestInstance: DirectIngestInstance,
-  destIngestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
-    {
-      stateCode,
-      srcIngestInstance,
-      destIngestInstance,
-    }
-  );
-};
-
-// Purge the ingest queues for a given state
-export const purgeIngestQueues = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody("/api/ingest_operations/purge_ingest_queues", {
-    stateCode,
-  });
-};
-
 // Delete tables in the datasets related to raw data pruning
 export const deleteTablesInPruningDatasets = async (
   stateCode: string,
@@ -338,7 +202,7 @@ export const deleteTablesInPruningDatasets = async (
   );
 };
 
-// Run Ingest DAG For State
+// Run calc DAG For State
 export const triggerCalculationDAGForState = async (
   stateCode: string
 ): Promise<Response> => {
@@ -346,24 +210,6 @@ export const triggerCalculationDAGForState = async (
     stateCode,
   });
 };
-
-// TODO(#28239) remove call once raw data DAG is enabled for all states
-// Determine if raw data import DAG is enabled
-export const isRawDataImportDagEnabled = async (
-  stateCode: string,
-  rawDataInstance: string
-): Promise<Response> => {
-  return getResource(
-    `/api/ingest_operations/is_raw_data_import_dag_enabled/${stateCode}/${rawDataInstance}`
-  );
-};
-
-export const rawDataImportDagEnabledForAllStates =
-  async (): Promise<Response> => {
-    return getResource(
-      `/api/ingest_operations/is_raw_data_import_dag_enabled_all`
-    );
-  };
 
 // Trigger raw data import dag
 export const triggerStateSpecificRawDataImportDAG = async (
