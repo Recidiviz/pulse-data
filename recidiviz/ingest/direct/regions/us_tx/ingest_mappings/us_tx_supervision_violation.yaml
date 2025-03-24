@@ -32,6 +32,9 @@ output:
                       $concat:
                         $values:
                           - $json_extract:
+                              $key: VIOLATION_ID
+                              $json: $iter_item
+                          - $json_extract:
                               $key: HEARING_PERIOD_ID
                               $json: $iter_item
                           - $json_extract:
