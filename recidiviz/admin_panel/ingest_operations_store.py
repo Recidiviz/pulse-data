@@ -34,22 +34,16 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
-from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
-    get_direct_ingest_queues_for_state,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -286,102 +280,6 @@ class IngestOperationsStore(AdminPanelStore):
                 f"There are tables in {secondary_raw_data_dataset} that are not empty. Cannot proceed with "
                 f"ingest rerun."
             )
-
-    def trigger_task_scheduler(
-        self, state_code: StateCode, instance: DirectIngestInstance
-    ) -> None:
-        """This function creates a cloud task to schedule the next job for a given state code and instance.
-        Requires:
-        - state_code: (required) State code to start ingest for (i.e. "US_ID")
-        - instance: (required) Which instance to start ingest for (either PRIMARY or SECONDARY)
-        """
-        can_start_ingest = state_code in self.state_codes_launched_in_env
-
-        formatted_state_code = state_code.value.lower()
-        region = get_direct_ingest_region(formatted_state_code)
-
-        logging.info(
-            "Creating cloud task to schedule next job and kick ingest for %s instance in %s.",
-            instance,
-            formatted_state_code,
-        )
-        self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-            region=region,
-            ingest_instance=instance,
-            can_start_ingest=can_start_ingest,
-        )
-
-    def update_ingest_queues_state(
-        self, state_code: StateCode, new_queue_state: str
-    ) -> None:
-        """This function is called through the Ingest Operations UI in the admin panel.
-        It updates the state of the ingest-related queues by either pausing or resuming the
-        queues.
-
-        Requires:
-        - state_code: (required) State code to pause queues for
-        - new_queue_state: (required) The state to set the queues
-        """
-        self.cloud_task_manager.update_ingest_queue_states_str(
-            state_code=state_code, new_queue_state_str=new_queue_state
-        )
-
-    def purge_ingest_queues(
-        self,
-        state_code: StateCode,
-    ) -> None:
-        """This function is called through the flash checklist in the admin panel. It purges all tasks in the
-        ingest queues for the specified state."""
-        queues_to_purge = sorted(get_direct_ingest_queues_for_state(state_code))
-
-        for queue in queues_to_purge:
-            self.cloud_task_manager.purge_queue(queue_name=queue)
-
-    def get_ingest_queue_states(self, state_code: StateCode) -> List[Dict[str, str]]:
-        """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""
-        ingest_queue_states = self.cloud_task_manager.get_ingest_queue_states(
-            state_code
-        )
-
-        return [
-            {"name": queue_info["name"], "state": queue_info["state"].name}
-            for queue_info in ingest_queue_states
-        ]
-
-    def start_secondary_raw_data_reimport(self, state_code: StateCode) -> None:
-        """Enables the SECONDARY instance for |state_code| so that it can import
-        any raw files in the SECONDARY GCS ingest bucket to the us_xx_raw_data_secondary
-        dataset in BigQuery.
-        """
-        instance = DirectIngestInstance.SECONDARY
-
-        formatted_state_code = state_code.value.lower()
-
-        region = direct_ingest_regions.get_direct_ingest_region(
-            region_code=formatted_state_code
-        )
-        if not self.cloud_task_manager.all_ingest_instance_queues_are_empty(
-            region, instance
-        ):
-            raise DirectIngestInstanceError(
-                "Cannot kick off raw datat reimport because not all related Cloud Task "
-                "queues are empty. Please check queues on Ingest Operations Admin "
-                "Panel to see which have remaining tasks."
-            )
-
-        self._verify_clean_secondary_raw_data_state(state_code)
-
-        instance_status_manager = DirectIngestInstanceStatusManager(
-            region_code=formatted_state_code,
-            ingest_instance=instance,
-        )
-        # Validation that this is a valid status transition is handled within the
-        # instance manager.
-        instance_status_manager.change_status_to(
-            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED
-        )
-
-        self.trigger_task_scheduler(state_code, instance)
 
     def get_ingest_instance_resources(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance

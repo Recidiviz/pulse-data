@@ -23,16 +23,12 @@ from unittest.mock import call
 
 import pytz
 from flask import Blueprint, Flask
-from freezegun import freeze_time
 from mock import Mock, patch
 
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
 )
 from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
@@ -50,7 +46,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestInstanceStatus,
     DirectIngestRawDataResourceLock,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -84,100 +79,6 @@ class IngestOpsEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         self.get_admin_store_patcher.stop()
-
-    def test_succeeds(self) -> None:
-        # Arrange
-
-        self.mock_current_ingest_statuses.return_value = {}
-
-        # Act
-
-        response = self.client.get(
-            "/api/ingest_operations/all_ingest_instance_statuses",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertEqual(response.json, {})
-        self.assertEqual(200, response.status_code)
-
-    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
-    def test_all_different_statuses(self) -> None:
-        # Arrange
-        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
-
-        self.mock_current_ingest_statuses.return_value = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.READY_TO_FLASH,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.RAW_DATA_UP_TO_DATE,
-                    status_timestamp=timestamp,
-                ),
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.INITIAL_STATE,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
-                    status_timestamp=timestamp,
-                ),
-            },
-        }
-        # Act
-
-        response = self.client.get(
-            "/api/ingest_operations/all_ingest_instance_statuses",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertEqual(
-            response.json,
-            {
-                "US_XX": {
-                    "primary": {
-                        "instance": "PRIMARY",
-                        "regionCode": "US_XX",
-                        "status": "READY_TO_FLASH",
-                        "statusTimestamp": "2022-08-29T00:00:00+00:00",
-                    },
-                    "secondary": {
-                        "instance": "SECONDARY",
-                        "regionCode": "US_XX",
-                        "status": "RAW_DATA_UP_TO_DATE",
-                        "statusTimestamp": "2022-08-29T00:00:00+00:00",
-                    },
-                },
-                "US_YY": {
-                    "primary": {
-                        "instance": "PRIMARY",
-                        "regionCode": "US_YY",
-                        "status": "INITIAL_STATE",
-                        "statusTimestamp": "2022-08-29T00:00:00+00:00",
-                    },
-                    "secondary": {
-                        "instance": "SECONDARY",
-                        "regionCode": "US_YY",
-                        "status": "FLASH_IN_PROGRESS",
-                        "statusTimestamp": "2022-08-29T00:00:00+00:00",
-                    },
-                },
-            },
-        )
-        self.assertEqual(200, response.status_code)
 
     def test_all_dataflow_jobs(self) -> None:
         mock_response = {
@@ -329,36 +230,6 @@ class IngestOpsEndpointTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {"state_person": 2341234, "state_staff": 1923})
-
-    @patch(
-        "recidiviz.admin_panel.routes.ingest_ops.is_raw_data_import_dag_enabled",
-        Mock(return_value=True),
-    )
-    def test_raw_data_dag_enabled(self) -> None:
-        # Act
-        response = self.client.get(
-            "/api/ingest_operations/is_raw_data_import_dag_enabled/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, True)
-
-    @patch(
-        "recidiviz.admin_panel.routes.ingest_ops.is_raw_data_import_dag_enabled",
-        Mock(return_value=False),
-    )
-    def test_raw_data_dag_not_enabled(self) -> None:
-        # Act
-        response = self.client.get(
-            "/api/ingest_operations/is_raw_data_import_dag_enabled/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, False)
 
     def test_all_latest_raw_data_import_run_info(self) -> None:
         # Arrange
