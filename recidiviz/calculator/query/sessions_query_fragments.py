@@ -31,6 +31,7 @@ from recidiviz.calculator.query.bq_utils import (
 def create_sub_sessions_with_attributes(
     table_name: str,
     use_magic_date_end_dates: bool = False,
+    start_date_field_name: str = "start_date",
     end_date_field_name: str = "end_date",
     index_columns: Optional[List[str]] = None,
 ) -> str:
@@ -41,8 +42,10 @@ def create_sub_sessions_with_attributes(
      sub-session, including zero-day sessions, with all attribute values from that
      overlapping input session preserved.
 
-    The |table_name| must have the following columns: start_date, end_date, and all columns in `index_columns`
-    (default `person_id`, `state_code`)
+    The |table_name| must have the following columns:
+    * Column named in `start_date_field_name` (default: start_date)
+    * Column named in `end_date_field_name` (default: end_date)
+    * All columns in `index_columns` (default `person_id`, `state_code`)
 
     Sessions must be end-date exclusive such that the end date of one session is equal
     to the start date of the adjacent session.
@@ -70,7 +73,7 @@ period_boundary_dates AS (
         {index_col_str},
         boundary_date,
     FROM periods_cte,
-    UNNEST([start_date, {end_date_field_name}]) AS boundary_date
+    UNNEST([{start_date_field_name}, {end_date_field_name}]) AS boundary_date
 ),
 /*
 Generates sub-sessions based on each boundary date and its subsequent date. 
@@ -80,7 +83,7 @@ these sessions are added separately in a subsequent CTE.
 sub_sessions AS (
     SELECT
         {index_col_str},
-        boundary_date AS start_date,
+        boundary_date AS {start_date_field_name},
         LEAD(boundary_date) OVER (PARTITION BY {index_col_str} ORDER BY boundary_date) AS {end_date_field_name},
     FROM
         period_boundary_dates
@@ -92,9 +95,9 @@ in zero-day sessions (same-day start and end) directly from the original periods
 sub_sessions_with_attributes AS (
     SELECT
         {index_col_str},
-        se.start_date,
+        se.{start_date_field_name},
         {f'se.{end_date_field_name}' if use_magic_date_end_dates else revert_nonnull_end_date_clause(f'se.{end_date_field_name}')} AS {end_date_field_name},
-        c.* EXCEPT ({index_col_str}, start_date, {end_date_field_name}),
+        c.* EXCEPT ({index_col_str}, {start_date_field_name}, {end_date_field_name}),
     FROM
         sub_sessions se
     INNER JOIN
@@ -102,7 +105,7 @@ sub_sessions_with_attributes AS (
     USING
         ({index_col_str})
     WHERE
-        se.start_date BETWEEN c.start_date AND DATE_SUB(c.{end_date_field_name}, INTERVAL 1 DAY)
+        se.{start_date_field_name} BETWEEN c.{start_date_field_name} AND DATE_SUB(c.{end_date_field_name}, INTERVAL 1 DAY)
     
     UNION ALL
 
@@ -114,9 +117,9 @@ sub_sessions_with_attributes AS (
     */
     SELECT
         {index_col_str},
-        single_day.start_date,
+        single_day.{start_date_field_name},
         single_day.{end_date_field_name},
-        all_periods.* EXCEPT ({index_col_str}, start_date, {end_date_field_name}),
+        all_periods.* EXCEPT ({index_col_str}, {start_date_field_name}, {end_date_field_name}),
     FROM
         periods_cte single_day
     INNER JOIN
@@ -126,8 +129,8 @@ sub_sessions_with_attributes AS (
     -- Add the attributes of the zero-day period as well as any sessions that it
     -- falls within
     WHERE 
-        single_day.start_date BETWEEN all_periods.start_date AND all_periods.{end_date_field_name}
-        AND single_day.start_date = single_day.{end_date_field_name}
+        single_day.{start_date_field_name} BETWEEN all_periods.{start_date_field_name} AND all_periods.{end_date_field_name}
+        AND single_day.{start_date_field_name} = single_day.{end_date_field_name}
 )
 """
 
