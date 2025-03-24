@@ -69,6 +69,7 @@ from recidiviz.utils.environment import in_ci
 
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
+
 # TODO(#38322): Migrate all states and remove this class
 class LegacyIngestViewEmulatorQueryTestCase(
     BigQueryEmulatorTestCase, IngestRegionTestMixin

@@ -1368,6 +1368,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ne_ingest_view_results.non_hearing_supervision_violations_and_responses",
     "us_ne_ingest_view_results.parole_staff",
     "us_ne_ingest_view_results.person_external_ids",
+    "us_ne_ingest_view_results.program_assignment",
     "us_ne_ingest_view_results.sentence_group_length",
     "us_ne_ingest_view_results.sentence_length",
     "us_ne_ingest_view_results.sentence_status_snapshot",
