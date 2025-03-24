@@ -148,7 +148,7 @@ SELECT
 FROM
     assignment_span_metrics
 FULL OUTER JOIN
-    period_event_metrics_metrics
+    period_event_metrics
 USING
     (state_code, period, start_date, end_date)
 """

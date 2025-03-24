@@ -126,10 +126,10 @@ def get_custom_aggregated_metrics_query_template(
             [
                 f"""
 FULL OUTER JOIN
-    {cte}_metrics
+    {cte_name}
 USING
     ({MetricUnitOfAnalysis.for_type(unit_of_analysis_type).get_primary_key_columns_query_string()}, period, start_date, end_date)"""
-                for cte in metric_class_cte_names_sorted[1:]
+                for cte_name in metric_class_cte_names_sorted[1:]
             ]
         )
     )
