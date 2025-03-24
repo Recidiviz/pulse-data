@@ -27,7 +27,7 @@ SELECT
   t.ofndr_num,
   t.tst_id,
   CAST(LEFT(t.tst_dt, 10) AS DATE) AS tst_dt,
-  t.smpl_typ_cd,
+  st.smpl_typ_desc,
   s.sbstnc_sbstnc_desc,
   r.sbstnc_found_flg,
   r.admit_use_flg,
@@ -42,6 +42,10 @@ JOIN
   {sbstnc_sbstnc_cd} s
 ON
   (r.sbstnc_cd = s.sbstnc_sbstnc_cd)
+LEFT JOIN
+  {smpl_typ_cd} st
+USING
+  (smpl_typ_cd)
 WHERE 
   tst_dt IS NOT NULL
 """

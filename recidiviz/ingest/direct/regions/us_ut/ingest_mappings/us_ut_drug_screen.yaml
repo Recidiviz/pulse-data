@@ -6,7 +6,7 @@ input_columns:
   ofndr_num: STRING
   tst_id: STRING
   tst_dt: DATE
-  smpl_typ_cd: STRING
+  smpl_typ_desc: STRING
   sbstnc_sbstnc_desc: STRING
   sbstnc_found_flg: STRING
   admit_use_flg: STRING
@@ -42,23 +42,27 @@ output:
                       StateDrugScreenResult.POSITIVE: "Y"
           sample_type:
             $enum_mapping:
-              $raw_text: smpl_typ_cd
+              $raw_text: smpl_typ_desc
               $mappings:
-                # TODO(#37051): Get a code table for these values.
+                StateDrugScreenSampleType.URINE:
+                  - URINE
+                StateDrugScreenSampleType.SWEAT:
+                  - PERSPIRATION
+                StateDrugScreenSampleType.SALIVA:
+                  - SALIVA
+                StateDrugScreenSampleType.BLOOD:
+                  - BLOOD
+                StateDrugScreenSampleType.HAIR:
+                  - HAIR
+                StateDrugScreenSampleType.NO_SAMPLE:
+                  - NONE
+                  - FAILURE TO PRODUCE
+                  - ADMITTED
                 StateDrugScreenSampleType.INTERNAL_UNKNOWN:
-                  - U
-                  - S
-                  - B
-                  - A
-                  - D
-                  - N
-                  - T
-                  - F
-                  - E
-                  - H
-                  - L
-                  - P
-                  - M
+                  - DILUTED
+                  - MEDICAL FAILURE
+                  - SEMEN
+                  - TAMPERED
           drug_screen_metadata:
             $normalized_values_json_dict:
               medical_exemption: med_invalidate_flg
