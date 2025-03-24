@@ -927,7 +927,7 @@ class OutliersQuerier:
             return [
                 SupervisionOfficerEntity(
                     external_id=officer.external_id,
-                    full_name=officer.full_name,
+                    full_name=PersonName(**officer.full_name),
                     pseudonymized_id=officer.pseudonymized_id,
                     supervisor_external_id=officer.supervisor_external_id,
                     supervisor_external_ids=officer.supervisor_external_ids,
