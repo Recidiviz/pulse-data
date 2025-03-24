@@ -372,6 +372,7 @@ fix_end_date AS
                 end_date
         END AS end_date,
         status,
+        (UPPER(status) LIKE "%IN CUSTODY%") AS in_custody_flag,
         supervision_officer,
         case_type,
         assessment_level,
@@ -382,7 +383,7 @@ fix_end_date AS
 period_info_agg AS (
     {aggregate_adjacent_spans(
         table_name='fix_end_date',
-        attribute=['assessment_level','case_type','Supervision_Officer','status'],
+        attribute=['assessment_level','case_type','Supervision_Officer','status', 'in_custody_flag'],
         session_id_output_name='period_info_agg',
         end_date_field_name='end_date',
         index_columns=['Period_ID_Number','SID_Number']
@@ -398,6 +399,7 @@ period_info_agg AS (
         case_type,
         assessment_level,
         ROW_NUMBER()OVER(PARTITION BY Period_ID_Number ORDER BY start_date ASC) AS rn,
+        in_custody_flag,
     FROM period_info_agg
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

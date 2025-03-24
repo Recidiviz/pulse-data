@@ -12,6 +12,7 @@ input_columns:
   end_date: STRING
   assessment_level: STRING
   rn: STRING
+  in_custody_flag: BOOLEAN
 unused_columns: []
 output:
   StatePerson:
@@ -53,6 +54,25 @@ output:
                         - Annual
                       StateSupervisionLevel.UNSUPERVISED:
                         - Non-reporting
+              - $else_if:
+                  $and:
+                    - $not_in:
+                        $value: status
+                        $options:
+                          - $literal("Pre-Revocation - Not in Custody")
+                    - $equal:
+                        - in_custody_flag
+                        - $literal("True")
+                $then:
+                  $enum_mapping:
+                    $raw_text: status
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - In custody - state jail
+                        - In custody - county jail
+                        - In Custody OOS - No PRW
+                        - In Custody FCI - No PRW
+                        - Pre-Revocation - In Custody
               - $else:
                   $enum_mapping:
                     $raw_text: assessment_level
