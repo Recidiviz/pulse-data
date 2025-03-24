@@ -31,6 +31,10 @@ resource "google_pubsub_topic" "raw_data_storage_notification_topic" {
   name = "v1.ingest.raw_data_storage_notifications"
 }
 
+resource "google_pubsub_topic" "utah_data_transfer_sync_notifications" {
+  name = "v1.ingest.utah_data_transfer_sync_notifications"
+}
+
 data "google_storage_project_service_account" "gcs_account" {
 }
 

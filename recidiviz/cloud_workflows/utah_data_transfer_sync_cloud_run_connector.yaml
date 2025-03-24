@@ -1,0 +1,46 @@
+main:
+  params: [event]
+  steps:
+    # log the event itself so we can debug later if we need to
+    - log_event:
+        call: sys.log
+        args:
+          text: ${event}
+          severity: INFO
+    # parse env vars, constants
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - actual_event_type: ${event.data.message.attributes.eventType}
+          - expected_event_type: "TRANSFER_RUN_FINISHED"
+          - expected_transfer_state: "SUCCEEDED"
+          - job_location: "us-central1"
+          - job_name: ${sys.get_env("CLOUD_RUN_JOB_NAME")}
+    # confirm that the event is the completion of a bigquery transfer job finishing
+    - check_event_type:
+        switch:
+          - condition: ${actual_event_type == expected_event_type}
+            next: parse_transfer_event
+          - condition: ${actual_event_type != expected_event_type}
+            raise: '${"Unexpected event type [" + actual_event_type + "]. Expected [" + expected_event_type + "]"}'
+    # parse the message from base64-encoded json
+    - parse_transfer_event:
+        assign:
+          - transfer_data: ${json.decode(base64.decode(event.data.message.data))}
+          - actual_transfer_state: ${transfer_data.state}
+    # confirm that the transfer succeeded
+    - check_transfer_event:
+        switch:
+          - condition: ${actual_transfer_state == expected_transfer_state}
+            next: run_export
+          - condition: ${actual_transfer_state != expected_transfer_state}
+            raise: '${"Unexpected transfer terminal state [" + actual_transfer_state + "]. Expected [" + expected_transfer_state + "]"}'
+    # kick off the cloud run job that will actually export the data to our ingest bucket
+    - run_export:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + project_id + "/jobs/" + job_name}
+          location: ${job_location}
+        result: job_execution
+    - finish:
+        return: ${job_execution}

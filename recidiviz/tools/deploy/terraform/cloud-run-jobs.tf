@@ -63,6 +63,41 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
   }
 }
 
+
+
+resource "google_cloud_run_v2_job" "utah_data_transfer_sync" {
+  name     = "utah-data-transfer-sync"
+  location = var.region
+  provider = google-beta
+
+  template {
+    template {
+      containers {
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["pipenv"]
+        args    = ["run", "python", "-m", "recidiviz.tools.ingest.regions.us_ut.sync_bq_mirror_to_ingest_bucket", "--dry-run", "False"]
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+      }
+    }
+  }
+
+
+  lifecycle {
+    ignore_changes = [
+      launch_stage,
+    ]
+  }
+}
+
 locals {
   jii_jobs = {
     "id-lsu-jii-initial-texts" = {
