@@ -351,7 +351,7 @@ ON
         -- Incarceration locations joining on facility
         OR (
             system_type = "INCARCERATION" 
-            AND location_id = COALESCE(facility, facility_ingested, facility_inferred)
+            AND sessions.facility = COALESCE(location_id, facility_ingested, facility_inferred)
         )
     )
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
