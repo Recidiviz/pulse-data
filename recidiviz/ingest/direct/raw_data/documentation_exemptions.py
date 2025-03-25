@@ -176,6 +176,17 @@ COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS: dict[StateCode, dict[str, set[str]
 FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
     # TODO(#39242): Add file-level documentation for these files and remove this exemption for US_AZ
     StateCode.US_AZ: {
+        "AZ_AQ_CATEGORY",
+        "AZ_AQ_REASON",
+        "AZ_AQ_RECORD",
+        "AZ_AQ_TEMPLATE",
+        "AZ_AQ_TYPE",
+        "AZ_CM_AGENT",
+        "AZ_DOC_BED",
+        "AZ_DOC_DSC_PENALTY",
+        "AZ_DOC_DSC_SANCTION",
+        "AZ_DOC_DSC_SCHED_HRNG_HIST",
+        "AZ_DOC_DSC_STAFF_REVIEW",
         "AZ_DOC_HWD_WARRANT",
         "AZ_DOC_SC_COMMITMENT",
         "DOC_PRIORITY_REPORT",
