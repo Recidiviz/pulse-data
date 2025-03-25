@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_query_builder import (
     BigQueryQueryBuilder,
 )
 from recidiviz.big_query.big_query_utils import datetime_clause
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -60,7 +61,6 @@ class RawFileHistoricalRowsFilterType(Enum):
     LATEST = "LATEST"
 
 
-# TODO(#29997) Make is_code_file a top level property
 @attr.define(kw_only=True)
 class DirectIngestViewRawFileDependency:
     """
@@ -85,6 +85,10 @@ class DirectIngestViewRawFileDependency:
                 f"Cannot use undocumented raw file [{self.file_tag}] as a dependency "
                 f"in an ingest view."
             )
+
+    @property
+    def is_code_file(self) -> bool:
+        return self.raw_file_config.is_code_file
 
     @property
     def file_tag(self) -> str:
@@ -196,6 +200,16 @@ class DirectIngestViewQueryBuilder:
                 "Found CURRENT_DATE function in this query - ingest views cannot contain CURRENT_DATE functions. "
                 f"Consider using @{UPDATE_DATETIME_PARAM_NAME} instead."
             )
+
+    @property
+    def state_code(self) -> StateCode:
+        return StateCode(self._region_code)
+
+    @property
+    def raw_table_dependency_configs_by_file_tag(
+        self,
+    ) -> dict[str, DirectIngestViewRawFileDependency]:
+        return {config.file_tag: config for config in self.raw_table_dependency_configs}
 
     @property
     def raw_table_dependency_configs(self) -> List[DirectIngestViewRawFileDependency]:

@@ -50,6 +50,7 @@ from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.utils.string import StrictStringFormatter
 
 
+# TODO(#40036): Consider generalizing relationship traversal.
 def _get_parent_child_relationships(
     primary_person_table: DirectIngestRawFileConfig,
     all_tables: Dict[str, DirectIngestRawFileConfig],

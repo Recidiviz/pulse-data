@@ -703,6 +703,7 @@ class DirectIngestRawFileConfig:
     # If true, that means that there are no valid primary key columns for this table.
     no_valid_primary_keys: bool = attr.ib()
 
+    # TODO(#40036): Consider generalizing relationship traversal.
     table_relationships: List[RawTableRelationshipInfo] = attr.ib(
         validator=attr_validators.is_list
     )
@@ -814,6 +815,23 @@ class DirectIngestRawFileConfig:
             and column.field_type == RawTableColumnFieldType.PERSON_EXTERNAL_ID
             for column in self.current_columns
         )
+
+    def get_external_id_col_with_type(
+        self, external_id_type: str
+    ) -> RawTableColumnInfo | None:
+        cols = [
+            column
+            for column in self.current_columns
+            if column.external_id_type == external_id_type
+        ]
+        if not cols:
+            return None
+        if len(cols) > 1:
+            raise ValueError(
+                f"Multiple external ID columns found with type {external_id_type} in file {self.file_tag}"
+                + ",".join(col.name for col in cols)
+            )
+        return cols[0]
 
     def get_primary_external_id_cols(self) -> List[RawTableColumnInfo]:
         """Return a list of all the columns that are primary for some external id type"""
