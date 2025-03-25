@@ -67,9 +67,6 @@ from recidiviz.utils.metadata import local_project_id_override
 # and Low-Medium. Until the new StrongR 2.0 is launched, pilot districts (and therefore we) are applying criteria set B
 # to people who are on Minimum for 6+ months.
 
-# TODO(#39129): Confirm that Minimum or Low-Medium criteria works, i.e. the clock does not reset for folks moving from
-# minimum -> Low-Medium when new StrongR launches
-
 _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = OrTaskCriteriaGroup(
     criteria_name="US_TN_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION",
     sub_criteria_list=[
