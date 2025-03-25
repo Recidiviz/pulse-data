@@ -164,11 +164,18 @@ const getColumnSearchProps = (dataIndex: string) => ({
     record: StateUserOrRolePermissionsResponse
   ) => {
     const item = record[dataIndex as keyof StateUserOrRolePermissionsResponse];
-    return typeof item !== "object"
-      ? item.toString().toLowerCase().includes(value.toString().toLowerCase())
-      : JSON.stringify(item)
-          .toLowerCase()
-          .includes(value.toString().toLowerCase());
+    const valueAsStr = value.toString().toLowerCase();
+
+    if (!item) return false;
+
+    if (typeof item !== "object") {
+      return item.toString().toLowerCase().includes(valueAsStr);
+    }
+
+    return Object.entries(item).some(
+      ([itemKey, itemValue]) =>
+        itemKey.toLowerCase().includes(valueAsStr) && itemValue !== false
+    );
   },
 });
 
