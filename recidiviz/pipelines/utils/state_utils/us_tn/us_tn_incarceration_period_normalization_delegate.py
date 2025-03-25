@@ -88,13 +88,13 @@ class UsTnIncarcerationNormalizationDelegate(
         # Movement reasons that indicate technical revocation in TN use
         # MovementReason = VIOLT which is defined as VIOLATION WARRANT-TECHNICAL
 
-        if incarceration_period.admission_reason_raw_text.endswith("VIOLT"):
+        if "VIOLT" in incarceration_period.admission_reason_raw_text:
             return StateSupervisionViolationType.TECHNICAL
 
         # Movement reasons that indicate warrant issued  in TN use
         # MovementReason = VIOLW which is defined as Warrant violation (new charge)
 
-        if incarceration_period.admission_reason_raw_text.endswith("VIOLW"):
+        if "VIOLW" in incarceration_period.admission_reason_raw_text:
             return StateSupervisionViolationType.LAW
 
         return None

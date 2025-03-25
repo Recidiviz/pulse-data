@@ -335,29 +335,44 @@ cleaning_extra_movements AS (
         IF((StartMovementReason ='UNIT_MOVEMENT' OR StartMovementReason ='CUST_CHANGE')  AND EndDatetime IS NULL, 'yes', 'no') as open_with_unit_or_custody_change
     FROM hydrate_all_values
 )
-SELECT
-    OffenderID,
-    StartDateTime,
-    EndDateTime,
-    cleaning_extra_movements.Site,
-    SiteType,
-    StartMovementType,
-    StartMovementReason,
-    CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementType END AS EndMovementType,
-    CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementReason END AS EndMovementReason,
-    # When someone transfers from an incarceration facility to Jail or other SiteType, the CustodyLevel from their previous 
-    # assessment no longer applies so we do not want to carry over that CustodyLevel when it is no longer relevant. 
-    # Therefore, we apply logic here to only attach the CustodyLevel to periods when someone 
-    # is in an incarceration facility (SiteType = 'IN'). We may need to revisit this choice in the future if we decide to 
-    # include other SiteTypes that the CustodyLevel still applies to. 
-    CASE WHEN SiteType = 'IN' THEN CustodyLevel ELSE Null END AS CustodyLevel, 
-    CASE WHEN cleaning_extra_movements.HousingUnit = confirm_housing_unit_in_actual_facility.SiteUnit THEN HousingUnit ELSE NULL END AS HousingUnit,
-    ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
-FROM cleaning_extra_movements
--- We use this final join to null out any HousingUnit assignments that are not updated once someone is is a different facility in OffenderMovement
-LEFT JOIN confirm_housing_unit_in_actual_facility ON SiteUnit = HousingUnit AND confirm_housing_unit_in_actual_facility.Site = cleaning_extra_movements.Site
--- filtering out when last open period start movement is unit change after a period ending with discharge codes 
-WHERE last_movement != 'release' OR open_with_unit_or_custody_change != 'yes'
+SELECT 
+    final_periods.*,
+    -- Most MovementType/MovementReason combinations are classified as temporary (T) or
+    -- permanent (P). We make this distinction using RECIDIVIZ_REFERENCE_TEMP_PERM_MOVEMENTS,
+    -- and append the T or P flag to the admission/release reason raw text. Movement type/reason
+    -- combinations that lack a flag in the reference table will not have anything appended.
+    -- TODO(#39694): Add logic using these flags in IP normalization.
+    adm_temp_perm_flag.TorP AS AdmissionTempPermFlag,
+    rel_temp_perm_flag.TorP AS ReleaseTempPermFlag
+FROM (
+    SELECT
+        OffenderID,
+        StartDateTime,
+        EndDateTime,
+        cleaning_extra_movements.Site,
+        SiteType,
+        StartMovementType,
+        StartMovementReason,
+        CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementType END AS EndMovementType,
+        CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementReason END AS EndMovementReason,
+        # When someone transfers from an incarceration facility to Jail or other SiteType, the CustodyLevel from their previous 
+        # assessment no longer applies so we do not want to carry over that CustodyLevel when it is no longer relevant. 
+        # Therefore, we apply logic here to only attach the CustodyLevel to periods when someone 
+        # is in an incarceration facility (SiteType = 'IN'). We may need to revisit this choice in the future if we decide to 
+        # include other SiteTypes that the CustodyLevel still applies to. 
+        CASE WHEN SiteType = 'IN' THEN CustodyLevel ELSE Null END AS CustodyLevel, 
+        CASE WHEN cleaning_extra_movements.HousingUnit = confirm_housing_unit_in_actual_facility.SiteUnit THEN HousingUnit ELSE NULL END AS HousingUnit,
+        ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
+    FROM cleaning_extra_movements
+    -- We use this final join to null out any HousingUnit assignments that are not updated once someone is is a different facility in OffenderMovement
+    LEFT JOIN confirm_housing_unit_in_actual_facility ON SiteUnit = HousingUnit AND confirm_housing_unit_in_actual_facility.Site = cleaning_extra_movements.Site
+    -- filtering out when last open period start movement is unit change after a period ending with discharge codes 
+    WHERE last_movement != 'release' OR open_with_unit_or_custody_change != 'yes'
+) final_periods
+LEFT JOIN {RECIDIVIZ_REFERENCE_TEMP_PERM_MOVEMENTS} adm_temp_perm_flag
+ON CONCAT(StartMovementType,StartMovementReason) = adm_temp_perm_flag.MovementTypeMovementReason
+LEFT JOIN {RECIDIVIZ_REFERENCE_TEMP_PERM_MOVEMENTS} rel_temp_perm_flag
+ON CONCAT(EndMovementType,EndMovementReason) = rel_temp_perm_flag.MovementTypeMovementReason
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

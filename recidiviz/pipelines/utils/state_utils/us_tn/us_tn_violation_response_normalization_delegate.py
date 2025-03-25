@@ -109,7 +109,7 @@ class UsTnViolationResponseNormalizationDelegate(
                         break
 
                     # for IPs with VIOLT movement reasons that follow a violation, add violation type of TECHNICAL
-                    if incarceration_period.admission_reason_raw_text.endswith("VIOLT"):
+                    if "VIOLT" in incarceration_period.admission_reason_raw_text:
                         technical_entry = StateSupervisionViolationTypeEntry(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.TECHNICAL,
@@ -125,7 +125,7 @@ class UsTnViolationResponseNormalizationDelegate(
                         return [technical_entry]
 
                     # for IPs with VIOLW movement reasons that follow a violation, add violation type of LAW
-                    if incarceration_period.admission_reason_raw_text.endswith("VIOLW"):
+                    if "VIOLW" in incarceration_period.admission_reason_raw_text:
                         law_entry = StateSupervisionViolationTypeEntry(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.LAW,
