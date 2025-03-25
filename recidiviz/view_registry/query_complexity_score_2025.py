@@ -334,6 +334,7 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
             "JSON_VALUE",
             "JSON_VALUE_ARRAY",
             "JSON_EXTRACT_KEYS",
+            "PARSE_JSON",
         }
     ):
         return 10

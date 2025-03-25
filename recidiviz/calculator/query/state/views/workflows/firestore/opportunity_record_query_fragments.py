@@ -212,7 +212,7 @@ def current_snooze(
 
     return f"""    SELECT
                 person_id,
-                note AS metadata_denial,
+                SAFE.PARSE_JSON(note) AS metadata_denial,
                 person_external_id as external_id,
                 Note_Date as contact_date
             FROM `{{project_id}}.{{supplemental_dataset}}.us_me_snoozed_opportunities`
