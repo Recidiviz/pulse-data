@@ -26,6 +26,7 @@ from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
 from sqlalchemy import delete
 
+from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -62,6 +63,7 @@ from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
     INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
 )
+from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
@@ -82,6 +84,7 @@ from recidiviz.utils.pubsub_helper import (
     extract_pubsub_message_from_json,
 )
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 app = Flask(__name__)
 
@@ -98,6 +101,15 @@ else:
         url="http://localhost:5000",
         service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
     )
+
+APPLICATION_DATA_IMPORT_BLUEPRINTS = [
+    (backup_manager_blueprint, "/backup_manager"),
+    (get_workflows_etl_blueprint(), "/practices-etl"),
+    (get_outliers_utils_blueprint(), "/outliers-utils"),
+]
+
+for blueprint, url_prefix in APPLICATION_DATA_IMPORT_BLUEPRINTS:
+    app.register_blueprint(blueprint, url_prefix=url_prefix)
 
 PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import"
 OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import"

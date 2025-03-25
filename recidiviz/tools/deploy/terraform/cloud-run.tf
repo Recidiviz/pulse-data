@@ -67,7 +67,10 @@ locals {
   application_import_roles = concat(local.cloud_run_common_roles, [
     # Use role_id to get a value known at plan-time so Terraform can calculate the length of
     # toset(application_import_roles) before the custom role has been created.
-    "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}"
+    "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}",
+    # Firestore roles
+    "roles/datastore.user",
+    "roles/datastore.importExportAdmin",
   ])
 }
 

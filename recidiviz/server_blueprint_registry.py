@@ -22,15 +22,8 @@ from flask import Blueprint
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
-from recidiviz.backup.backup_manager import backup_manager_blueprint
-from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
-from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
-default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (backup_manager_blueprint, "/backup_manager"),
-    (get_workflows_etl_blueprint(), "/practices-etl"),
-    (get_outliers_utils_blueprint(), "/outliers-utils"),
-]
+default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = []
 
 
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:

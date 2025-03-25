@@ -36,8 +36,6 @@ from opentelemetry.trace import set_tracer_provider
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from werkzeug import Response
 
-from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
-from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
     create_monitoring_tracer_provider,
@@ -47,7 +45,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.server_blueprint_registry import default_blueprints_with_url_prefixes
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import get_admin_panel_base_url, in_gunicorn
 
 structured_logging.setup()
@@ -72,16 +69,6 @@ service_type = environment.get_service_type()
 if service_type is environment.ServiceType.DEFAULT:
     for blueprint, url_prefix in default_blueprints_with_url_prefixes:
         app.register_blueprint(blueprint, url_prefix=url_prefix)
-
-    app.register_blueprint(
-        get_auth_endpoint_blueprint(authentication_middleware=requires_gae_auth),
-        url_prefix="/auth",
-    )
-
-    app.register_blueprint(
-        get_users_blueprint(authentication_middleware=requires_gae_auth),
-        url_prefix="/auth/users",
-    )
 else:
     raise ValueError(f"Unsupported service type: {service_type}")
 

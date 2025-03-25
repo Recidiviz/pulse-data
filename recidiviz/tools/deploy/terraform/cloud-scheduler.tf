@@ -169,12 +169,11 @@ resource "google_cloud_scheduler_job" "update_long_term_backups" {
   }
 
   http_target {
-    uri         = "https://${var.project_id}.appspot.com/backup_manager/update_long_term_backups"
+    uri         = "${local.application_data_import_url}/backup_manager/update_long_term_backups"
     http_method = "GET"
 
     oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      audience              = local.app_engine_iap_client
+      service_account_email = google_service_account.application_data_import_cloud_run.email
     }
   }
 }
