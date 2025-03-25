@@ -39,9 +39,6 @@ from recidiviz.airflow.dags.calculation.ingest.get_watermark_sql_query_generator
 from recidiviz.airflow.dags.calculation.ingest.set_watermark_sql_query_generator import (
     SetWatermarkSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    INGEST_INSTANCE_JINJA_ARG,
-)
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
@@ -180,7 +177,6 @@ def _verify_raw_data_flashing_not_in_progress(
         arguments=[
             "--entrypoint=IngestCheckRawDataFlashingEntrypoint",
             f"--state_code={state_code.value}",
-            INGEST_INSTANCE_JINJA_ARG,
         ],
         cloud_sql_connections=[SchemaType.OPERATIONS],
     )

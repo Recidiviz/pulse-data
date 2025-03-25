@@ -29,22 +29,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.string import StrictStringFormatter
 
-LEGACY_METADATA_MAX_DATETIMES_QUERY = """
-SELECT {file_tag}, MAX(update_datetime) AS {max_update_datetime}
-FROM direct_ingest_raw_file_metadata
-WHERE raw_data_instance = '{raw_data_instance}' 
-AND is_invalidated = false 
-AND file_processed_time IS NOT NULL 
-AND region_code = '{region_code}'
-GROUP BY {file_tag};
-"""
-
-NEW_METADATA_MAX_DATETIMES_QUERY = """
+MAX_UPDATE_DATETIMES_QUERY = """
 SELECT {file_tag}, MAX(update_datetime) AS {max_update_datetime}
 FROM direct_ingest_raw_big_query_file_metadata
 WHERE raw_data_instance = '{raw_data_instance}' 
@@ -74,42 +61,22 @@ class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str
         if not ingest_instance:
             raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
-        sql_query = (
-            self.new_raw_data_sql_query(
-                region_code=self.region_code,
-                ingest_instance=ingest_instance,
-            )
-            if is_raw_data_import_dag_enabled(
-                state_code=StateCode(self.region_code.upper()),
-                raw_data_instance=DirectIngestInstance(ingest_instance.upper()),
-            )
-            else self.legacy_raw_data_sql_query(
-                region_code=self.region_code,
-                ingest_instance=ingest_instance,
-            )
-        )
-
         max_update_datetimes: Dict[str, str] = {
             row[FILE_TAG]: row[MAX_UPDATE_DATETIME].strftime("%Y-%m-%d %H:%M:%S.%f")
-            for _, row in postgres_hook.get_pandas_df(sql_query).iterrows()
+            for _, row in postgres_hook.get_pandas_df(
+                self.update_datetimes_sql_query(
+                    region_code=self.region_code,
+                    ingest_instance=ingest_instance,
+                )
+            ).iterrows()
         }
 
         return max_update_datetimes
 
     @staticmethod
-    def legacy_raw_data_sql_query(region_code: str, ingest_instance: str) -> str:
+    def update_datetimes_sql_query(region_code: str, ingest_instance: str) -> str:
         return StrictStringFormatter().format(
-            LEGACY_METADATA_MAX_DATETIMES_QUERY,
-            file_tag=FILE_TAG,
-            max_update_datetime=MAX_UPDATE_DATETIME,
-            raw_data_instance=ingest_instance.upper(),
-            region_code=region_code.upper(),
-        )
-
-    @staticmethod
-    def new_raw_data_sql_query(region_code: str, ingest_instance: str) -> str:
-        return StrictStringFormatter().format(
-            NEW_METADATA_MAX_DATETIMES_QUERY,
+            MAX_UPDATE_DATETIMES_QUERY,
             file_tag=FILE_TAG,
             max_update_datetime=MAX_UPDATE_DATETIME,
             raw_data_instance=ingest_instance.upper(),
