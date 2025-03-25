@@ -266,7 +266,13 @@ def _move_file(
         progress.next()
 
 
-def run(state_code: StateCode, *, file_tag_filters: list[str], dry_run: bool) -> None:
+def run(
+    state_code: StateCode,
+    *,
+    file_tag_filters: list[str],
+    dry_run: bool,
+    net_new_only: bool,
+) -> None:
     """Executes figuring out which files to move.... and then :drum-roll: moves them!"""
 
     _populate_gcs_cache(
@@ -282,7 +288,7 @@ def run(state_code: StateCode, *, file_tag_filters: list[str], dry_run: bool) ->
         file_tags_to_update_datetimes = {
             file_tag: datetimes
             for file_tag, datetimes in file_tags_to_update_datetimes.items()
-            if file_tag in file_tag_filters_set
+            if file_tag not in file_tag_filters_set
         }
 
     for k, v in file_tags_to_update_datetimes.items():
@@ -290,13 +296,13 @@ def run(state_code: StateCode, *, file_tag_filters: list[str], dry_run: bool) ->
 
     prompt_for_confirmation("Does this l00k right?")
 
-    files_to_copy = []
+    candidate_files: list[CopyableRawDataFile] = []
     # validate we can find all of the paths
     gaps = []
     for file_tag, update_datetimes in file_tags_to_update_datetimes.items():
         for update_datetime in update_datetimes:
             try:
-                files_to_copy.append(
+                candidate_files.append(
                     CopyableRawDataFile.build(
                         file_tag=file_tag,
                         update_datetime=update_datetime,
@@ -311,7 +317,34 @@ def run(state_code: StateCode, *, file_tag_filters: list[str], dry_run: bool) ->
     prompt_for_confirmation("C0nf1rm c0nfl1ct s3l3cti0n???")
 
     mutex = threading.Lock()
-    progress = Bar(message="Copying files to ingest bucket...", max=len(files_to_copy))
+    progress = Bar(
+        message="Copying files to ingest bucket...", max=len(candidate_files)
+    )
+
+    files_to_copy = candidate_files
+
+    if net_new_only:
+        current_files = {
+            GcsfsFilePath.from_absolute_path(path)
+            for path in gsutil_ls(
+                gcsfs_direct_ingest_bucket_for_state(
+                    region_code=state_code.value,
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                ).uri(),
+                files_only=True,
+            )
+        }
+
+        files_to_copy = [
+            file
+            for file in candidate_files
+            if file.ingest_bucket_path(state_code, DirectIngestInstance.SECONDARY)
+            not in current_files
+        ]
+
+        prompt_for_confirmation(
+            f"Will copy: [{len(files_to_copy)}] of [{len(candidate_files)}] as [{len(candidate_files) - len(files_to_copy)}] are already in the ingest bucket"
+        )
 
     progress.start()
     _move_func = partial(
@@ -366,6 +399,12 @@ def main() -> None:
         "If neither file-tag-filters or file-tag-regex is set, will move all files.",
     )
 
+    parser.add_argument(
+        "--net-new-only",
+        action="store_true",
+        help="Only copies files that don't already exist in the ingest bucket.",
+    )
+
     args = parser.parse_args()
 
     with local_project_id_override(args.project_id):
@@ -374,6 +413,7 @@ def main() -> None:
                 StateCode(args.region_code.upper()),
                 dry_run=args.dry_run,
                 file_tag_filters=args.file_tag_filters,
+                net_new_only=args.net_new_only,
             )
 
 
