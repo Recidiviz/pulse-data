@@ -47,22 +47,6 @@ variable "region_manifest" {
   })
 }
 
-# Service account email that the storage notification pubsub subscription should authenticate as.
-variable "storage_notification_service_account_email" {
-  type = string
-}
-
-# OIDC audience that the storage notification pubsub subscription should use for authentication.
-# https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
-variable "storage_notification_oidc_audience" {
-  type = string
-}
-
-# Base endpoint URL to call from the storage notification pubsub subscription.
-variable "storage_notification_endpoint_base_url" {
-  type = string
-}
-
 variable "raw_data_storage_notification_topic_id" {
   type = string
 }

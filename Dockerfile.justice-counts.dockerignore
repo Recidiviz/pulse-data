@@ -41,7 +41,6 @@ recidiviz/ingest/direct/regions/us_*/raw_data/migrations/**
 recidiviz/ingest/direct/regions/us_*/ingest_views/validation_notebooks/**
 recidiviz/tests/calculator/calculation_documentation_generator_test.py
 recidiviz/tests/ingest/direct/direct_ingest_fixtures/**
-recidiviz/tests/ingest/direct/controllers/base_direct_ingest_controller_test.py
 recidiviz/tests/ingest/direct/raw_data/direct_ingest_raw_file_import_manager_test.py
 recidiviz/tests/ingest/direct/regions/us_*/**
 recidiviz/tests/tools/docs/**

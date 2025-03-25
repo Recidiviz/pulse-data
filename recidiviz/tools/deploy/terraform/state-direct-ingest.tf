@@ -20,14 +20,11 @@ module "state_direct_ingest_buckets_and_accounts" {
   for_each = toset(keys(local.direct_ingest_region_manifests_to_deploy))
   source   = "./modules/state-direct-ingest-resources"
 
-  state_code                                 = each.key
-  region                                     = var.direct_ingest_region
-  is_production                              = local.is_production
-  project_id                                 = var.project_id
-  state_admin_role                           = google_project_iam_custom_role.state-admin-role.name
-  region_manifest                            = local.direct_ingest_region_manifests_to_deploy[each.key]
-  storage_notification_service_account_email = data.google_app_engine_default_service_account.default.email
-  storage_notification_oidc_audience         = local.app_engine_iap_client
-  storage_notification_endpoint_base_url     = local.app_engine_url
-  raw_data_storage_notification_topic_id     = google_pubsub_topic.raw_data_storage_notification_topic.id
+  state_code                             = each.key
+  region                                 = var.direct_ingest_region
+  is_production                          = local.is_production
+  project_id                             = var.project_id
+  state_admin_role                       = google_project_iam_custom_role.state-admin-role.name
+  region_manifest                        = local.direct_ingest_region_manifests_to_deploy[each.key]
+  raw_data_storage_notification_topic_id = google_pubsub_topic.raw_data_storage_notification_topic.id
 }

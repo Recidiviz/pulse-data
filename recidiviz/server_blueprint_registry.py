@@ -23,7 +23,6 @@ from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
-from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
 from recidiviz.pipelines.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
@@ -33,7 +32,6 @@ from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
-    (direct_ingest_control, "/direct"),
     (get_workflows_etl_blueprint(), "/practices-etl"),
     (get_outliers_utils_blueprint(), "/outliers-utils"),
 ]

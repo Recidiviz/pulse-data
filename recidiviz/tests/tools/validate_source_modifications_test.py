@@ -134,26 +134,6 @@ class CheckAssertionsTest(unittest.TestCase):
 
         self._run_test(modified_files, [], [INGEST_DOCS_KEY])
 
-    def test_endpoint_docs_happy(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/direct_ingest_control.py",
-            "docs/endpoints/direct/handle_new_files.md",
-        ]
-        self._run_test(modified_files, [], [])
-
-    def test_endpoint_docs_unhappy(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/direct_ingest_control.py",
-        ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
-            (
-                frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
-                frozenset(["docs/endpoints/direct"]),
-                "endpoints_docs",
-            ),
-        ]
-        self._run_test(modified_files, expected_failures, [])
-
     # TODO(#8217) excluding the admin panel from endpoint documentation,
     #  write new test to test the admin panel routes
 

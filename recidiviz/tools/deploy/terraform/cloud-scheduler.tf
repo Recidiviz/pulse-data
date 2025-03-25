@@ -179,52 +179,6 @@ resource "google_cloud_scheduler_job" "update_long_term_backups" {
   }
 }
 
-resource "google_cloud_scheduler_job" "ensure_all_raw_paths_normalized" {
-  name             = "ensure-all-raw-paths-normalized"
-  schedule         = "0 4 * * *" # Every day 4:00
-  description      = "[Direct ingest] Check for unnormalized files in all regions"
-  time_zone        = "America/Los_Angeles"
-  attempt_deadline = "600s" # 10 minutes
-
-  retry_config {
-    min_backoff_duration = "2.500s"
-    max_doublings        = 5
-  }
-
-  http_target {
-    uri         = "https://${var.project_id}.appspot.com/direct/ensure_all_raw_file_paths_normalized"
-    http_method = "POST"
-
-    oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      audience              = local.app_engine_iap_client
-    }
-  }
-}
-
-resource "google_cloud_scheduler_job" "check_region_outstanding_work" {
-  name             = "check-region-outstanding-work"
-  schedule         = "0 * * * *" # Every hour at minute 0
-  description      = "[Direct ingest] Check all regions for outstanding work"
-  time_zone        = "America/Los_Angeles"
-  attempt_deadline = "600s" # 10 minutes
-
-  retry_config {
-    min_backoff_duration = "30s"
-    max_doublings        = 5
-  }
-
-  http_target {
-    uri         = "https://${var.project_id}.appspot.com/direct/heartbeat"
-    http_method = "POST"
-
-    oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      audience              = local.app_engine_iap_client
-    }
-  }
-}
-
 
 resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
   name             = "hydrate-admin-panel-cache"

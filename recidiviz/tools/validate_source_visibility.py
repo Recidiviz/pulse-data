@@ -586,7 +586,6 @@ def main() -> int:
                 "recidiviz.case_triage",
                 "recidiviz.cloud_resources",
                 "recidiviz.cloud_storage",
-                "recidiviz.cloud_tasks",
                 "recidiviz.common",
                 "recidiviz.datasets.static_data",
                 "recidiviz.firestore",
