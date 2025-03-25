@@ -23,16 +23,7 @@ from airflow.decorators import dag, task
 from airflow.models import DagRun
 from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import (
-    BranchPythonOperator,
-    PythonOperator,
-    ShortCircuitOperator,
-)
-from airflow.providers.google.cloud.operators.tasks import (
-    CloudTasksQueueGetOperator,
-    CloudTasksQueuePauseOperator,
-    CloudTasksQueueResumeOperator,
-)
+from airflow.operators.python import BranchPythonOperator, ShortCircuitOperator
 from airflow.utils.session import create_session
 from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
@@ -95,20 +86,11 @@ from recidiviz.airflow.dags.sftp.metadata import (
     START_SFTP,
     TASK_RETRIES,
     get_configs_bucket,
-    scheduler_queues_to_pause,
 )
-from recidiviz.airflow.dags.utils.branch_by_bool import create_branch_by_bool
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    is_raw_data_dag_enabled_in_primary,
-)
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
-from recidiviz.airflow.dags.utils.task_queue_helpers import (
-    get_running_queue_instances,
-    queues_were_unpaused,
-)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
@@ -126,8 +108,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # pylint: disable=W0104 pointless-statement
 
 retry: Retry = Retry(predicate=lambda _: False)
-
-QUEUE_LOCATION = "us-east1"
 
 # This is the maximum number of tasks to run in parallel when they are dynamically
 # generated. This prevents the scheduler and all workers from being overloaded.
@@ -269,8 +249,6 @@ def sftp_dag() -> None:
             operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
                 SchemaType.OPERATIONS
             )
-            scheduler_queues = scheduler_queues_to_pause(state_code)
-
             # Remote File Discovery
             with TaskGroup("remote_file_discovery") as remote_file_discovery:
                 find_sftp_files_from_server = FindSftpFilesOperator(
@@ -433,46 +411,6 @@ def sftp_dag() -> None:
                 with TaskGroup(
                     "acquire_permission_for_ingest_file_upload"
                 ) as acquire_permission_for_ingest_file_upload:
-                    # TODO(#28239) remove pausing ingest queues
-                    with TaskGroup("pause_ingest_queues") as pause_ingest_queues:
-                        # --- pausing ingest queues ----------------------------------------
-                        prior_queue_statuses = [
-                            CloudTasksQueueGetOperator(
-                                task_id=f"get_scheduler_queue_{ingest_instance.value.lower()}_status",
-                                location=QUEUE_LOCATION,
-                                queue_name=queue_name,
-                                project_id=project_id,
-                                retry=retry,
-                            )
-                            for ingest_instance, queue_name in scheduler_queues.items()
-                        ]
-                        # Keep track of which queues are running at the beginning so we can
-                        # re-start them later.
-                        gather_previously_running_queue_instances = PythonOperator(
-                            task_id="gather_previously_running_queue_instances",
-                            python_callable=get_running_queue_instances,
-                            op_args=[
-                                XComArg(queue_status)
-                                for queue_status in prior_queue_statuses
-                            ],
-                        )
-                        pause_scheduler_queues = [
-                            CloudTasksQueuePauseOperator(
-                                task_id=f"pause_scheduler_queue_{ingest_instance.value.lower()}",
-                                location=QUEUE_LOCATION,
-                                queue_name=queue_name,
-                                project_id=project_id,
-                                retry=retry,
-                            )
-                            for ingest_instance, queue_name in scheduler_queues.items()
-                        ]
-
-                        (
-                            prior_queue_statuses
-                            >> gather_previously_running_queue_instances
-                            >> pause_scheduler_queues
-                        )
-
                     # --- raw data resource lock acquisition -------------------------------
                     acquire_locks = CloudSqlQueryOperator(
                         task_id="acquire_raw_data_resource_locks",
@@ -491,17 +429,6 @@ def sftp_dag() -> None:
                     )
 
                     acquire_locks >> ensure_acquired_locks
-
-                    # --- acquire permission w/ the correct infra --------------------------
-
-                    (
-                        acquire_permission_start,
-                        end_permission_start,
-                    ) = create_branch_by_bool(
-                        branch_if_true=[acquire_locks, ensure_acquired_locks],
-                        branch_if_false=pause_ingest_queues,
-                        bool_value=is_raw_data_dag_enabled_in_primary(state_code),
-                    )
 
                 upload_files_to_ingest_bucket = SFTPGcsToGcsOperator.partial(
                     task_id="upload_files_to_ingest_bucket",
@@ -538,52 +465,6 @@ def sftp_dag() -> None:
                 with TaskGroup(
                     "release_permission_for_ingest_file_upload"
                 ) as release_permission_for_ingest_file_upload:
-                    # TODO(#28239) remove resuming ingest queues
-                    # --- resume ingest queues ---------------------------------------------
-                    with TaskGroup("resume_ingest_queues") as resume_ingest_queues:
-                        resume_scheduler_queues = [
-                            CloudTasksQueueResumeOperator(
-                                task_id=f"resume_scheduler_queue_{ingest_instance.value.lower()}",
-                                location=QUEUE_LOCATION,
-                                queue_name=queue_name,
-                                project_id=project_id,
-                                retry=retry,
-                            )
-                            for ingest_instance, queue_name in scheduler_queues.items()
-                        ]
-
-                        do_not_resume_scheduler_queues = EmptyOperator(
-                            task_id="do_not_resume_scheduler_queues"
-                        )
-
-                        start_resume_queues_branch = BranchPythonOperator(
-                            task_id="start_resume_queues_branch",
-                            python_callable=queues_were_unpaused,
-                            op_kwargs={
-                                "queues_to_resume": XComArg(
-                                    gather_previously_running_queue_instances
-                                ),
-                                "task_ids_for_queues_to_resume": [
-                                    resume_scheduler_queue.task_id
-                                    for resume_scheduler_queue in resume_scheduler_queues
-                                ],
-                                "task_id_if_no_queues_to_resume": do_not_resume_scheduler_queues.task_id,
-                            },
-                        )
-
-                        end_resume_queues_branch = EmptyOperator(
-                            task_id="end_resume_queues_branch",
-                            trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-                        )
-
-                        (
-                            start_resume_queues_branch
-                            >> [
-                                *resume_scheduler_queues,
-                                do_not_resume_scheduler_queues,
-                            ]
-                            >> end_resume_queues_branch
-                        )
 
                     # --- release raw data resource locks ----------------------------------
 
@@ -598,22 +479,6 @@ def sftp_dag() -> None:
                     )
 
                     acquire_locks >> release_locks
-
-                    # --- release permission w/ the correct infra --------------------------
-
-                    (
-                        start_release_permission,
-                        end_release_permission,
-                    ) = create_branch_by_bool(
-                        branch_if_true=release_locks,
-                        branch_if_false=[
-                            resume_ingest_queues,
-                            end_resume_queues_branch,
-                        ],
-                        bool_value=is_raw_data_dag_enabled_in_primary(state_code),
-                        # this should run no matter what
-                        start_trigger_rule=TriggerRule.ALL_DONE,
-                    )
 
                 (
                     acquire_permission_for_ingest_file_upload
@@ -638,11 +503,9 @@ def sftp_dag() -> None:
                         gather_discovered_ingest_ready_files
                     ),
                     "task_ids_if_equal": [
-                        acquire_permission_start.operator.task_id,
-                        start_release_permission.operator.task_id,
+                        acquire_locks.task_id,
                         ensure_acquired_locks.operator.task_id,
-                        end_release_permission.operator.task_id,
-                        end_permission_start.operator.task_id,
+                        release_locks.task_id,
                     ],
                     "task_id_if_not_equal_or_empty": do_not_upload_ingest_ready_files.task_id,
                 },
@@ -660,10 +523,7 @@ def sftp_dag() -> None:
                 >> [
                     ingest_ready_file_upload,
                     do_not_upload_ingest_ready_files,
-                    start_release_permission,
                     ensure_acquired_locks,
-                    end_release_permission,
-                    end_permission_start,
                 ]
             )
 

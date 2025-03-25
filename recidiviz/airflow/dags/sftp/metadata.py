@@ -15,14 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants used to reference metadata fields in the SFTP DAG"""
-from typing import Dict
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 REMOTE_FILE_PATH = "remote_file_path"
 SFTP_TIMESTAMP = "sftp_timestamp"
@@ -40,19 +37,6 @@ END_SFTP = "end_sftp"
 # SFTP / SSH errors tend to be transient, so we sometimes need to retry tasks in order
 # to get them to succeed. this should ONLY be applied to fully idempotent tasks.
 TASK_RETRIES = 3
-
-
-# metadata for task queues
-def scheduler_queue_for_state_code(state_code: StateCode) -> str:
-    return f"direct-ingest-state-{state_code.value.lower().replace('_', '-')}-scheduler"
-
-
-def scheduler_queues_to_pause(state_code: StateCode) -> Dict[DirectIngestInstance, str]:
-    scheduler_queue_name = scheduler_queue_for_state_code(state_code)
-    return {
-        DirectIngestInstance.PRIMARY: scheduler_queue_name,
-        DirectIngestInstance.SECONDARY: f"{scheduler_queue_name}-secondary",
-    }
 
 
 # yaml config file names and location

@@ -522,8 +522,6 @@ def main() -> int:
             {
                 *valid_sftp_dag_prefixes,
                 "recidiviz.airflow.tests",
-                "recidiviz.entrypoints.entrypoint_interface",
-                "recidiviz.entrypoints.entrypoint_utils",
                 "recidiviz.fakes.fake_gcs_file_system",
                 "recidiviz.persistence.database.schema.operations.schema",
                 "recidiviz.persistence.database.database_entity",
@@ -531,7 +529,6 @@ def main() -> int:
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.tools.postgres.local_postgres_helpers",
                 "recidiviz.tests.test_setup_utils",
-                "recidiviz.utils.kubernetes_pod_operator_task_output_handler",
             }
         ),
     )
