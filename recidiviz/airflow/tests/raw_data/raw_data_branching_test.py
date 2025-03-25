@@ -32,15 +32,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 
 @patch(
-    "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
-    MagicMock(
-        return_value=[
-            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-        ]
-    ),
+    "recidiviz.airflow.dags.raw_data.raw_data_branching.get_direct_ingest_states_launched_in_env",
+    MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
 )
 def test_create_raw_data_branch_map() -> None:
     mock_pipeline_function: Callable[
@@ -72,21 +65,11 @@ class RawDataBranchFilterTest(unittest.TestCase):
     """Tests the for raw data branch filters."""
 
     def setUp(self) -> None:
-        self.get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_state_and_instance_pairs",
+        self.ingest_states_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_direct_ingest_states_launched_in_env",
+            MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
         )
-        self.get_all_enabled_state_and_instance_pairs_mock = (
-            self.get_all_enabled_state_and_instance_pairs_patcher.start()
-        )
-        self.get_all_enabled_state_and_instance_pairs_mock.return_value = [
-            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-        ]
-        self.raw_data_dag_enabled_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
-        )
-        self.raw_data_dag_enabled_mock = self.raw_data_dag_enabled_patcher.start()
+        self.ingest_states_patcher.start()
         self.get_ingest_instance = patch(
             "recidiviz.airflow.dags.raw_data.raw_data_branching.get_ingest_instance",
             return_value=None,
@@ -99,10 +82,9 @@ class RawDataBranchFilterTest(unittest.TestCase):
         self.get_state_code_filter_mock = self.get_state_code_filter.start()
 
     def tearDown(self) -> None:
-        self.get_all_enabled_state_and_instance_pairs_patcher.stop()
+        self.ingest_states_patcher.stop()
         self.get_state_code_filter.stop()
         self.get_ingest_instance.stop()
-        self.raw_data_dag_enabled_patcher.stop()
 
     def test_get_raw_data_branch_filter_no_params(self) -> None:
         result = get_raw_data_branch_filter(MagicMock())
@@ -112,31 +94,25 @@ class RawDataBranchFilterTest(unittest.TestCase):
         self.get_ingest_instance_mock.return_value = DirectIngestInstance.PRIMARY.value
         result = get_raw_data_branch_filter(MagicMock())
         assert result is not None
-        assert len(result) == 1
+        assert len(result) == 2
         assert (
             get_raw_data_import_branch_key(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY
             )
             in result
         )
-
-    def test_get_raw_data_branch_filter_ingest_instance_invalid(self) -> None:
-        self.get_all_enabled_state_and_instance_pairs_mock.return_value = [
-            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-        ]
-        self.get_ingest_instance_mock.return_value = DirectIngestInstance.PRIMARY.value
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Cannot run raw data import for PRIMARY as there are not states that have this instance enabled",
-        ):
-            get_raw_data_branch_filter(MagicMock())
+        assert (
+            get_raw_data_import_branch_key(
+                StateCode.US_YY, DirectIngestInstance.PRIMARY
+            )
+            in result
+        )
 
     def test_get_raw_data_branch_filter_ingest_instance_and_state_code(self) -> None:
         self.get_state_code_filter_mock.return_value = StateCode.US_XX.value
         self.get_ingest_instance_mock.return_value = (
             DirectIngestInstance.SECONDARY.value
         )
-        self.raw_data_dag_enabled_mock.return_value = True
         result = get_raw_data_branch_filter(MagicMock())
         assert result is not None
         assert len(result) == 1
@@ -146,18 +122,6 @@ class RawDataBranchFilterTest(unittest.TestCase):
             )
             in result
         )
-
-    def test_get_raw_data_branch_filter_ingest_instance_and_state_code_invalid(
-        self,
-    ) -> None:
-        self.get_state_code_filter_mock.return_value = StateCode.US_YY.value
-        self.get_ingest_instance_mock.return_value = DirectIngestInstance.PRIMARY.value
-        self.raw_data_dag_enabled_mock.return_value = False
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Cannot run raw data import for US_YY and PRIMARY as it is not enabled for the raw data import dag yet",
-        ):
-            get_raw_data_branch_filter(MagicMock())
 
     def test_get_raw_data_branch_filter_state_code(self) -> None:
         self.get_state_code_filter_mock.return_value = StateCode.US_XX.value

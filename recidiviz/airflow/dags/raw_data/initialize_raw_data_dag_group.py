@@ -32,9 +32,6 @@ from recidiviz.airflow.dags.utils.config_utils import (
     handle_params_check,
     handle_queueing_result,
 )
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    get_raw_data_dag_enabled_state_and_instance_pairs,
-)
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
     StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate,
@@ -75,20 +72,18 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     ingest_instance = get_ingest_instance(dag_run)
     state_code_filter = get_state_code_filter(dag_run)
 
+    # validate that parameters are valid enum members
+    if ingest_instance:
+        _ = DirectIngestInstance(ingest_instance)
+
+    if state_code_filter:
+        _ = StateCode(state_code_filter)
+
     if (
         ingest_instance == DirectIngestInstance.SECONDARY.value
         and not state_code_filter
     ):
         raise ValueError("Must supply [state_code_filter] with a SECONDARY run")
-
-    if (state_code_filter and ingest_instance) and (
-        StateCode(state_code_filter),
-        DirectIngestInstance(ingest_instance),
-    ) not in get_raw_data_dag_enabled_state_and_instance_pairs():
-        raise ValueError(
-            f"[{state_code_filter}] in [{ingest_instance}] must be enabled for the raw data import DAG. "
-            f"Valid pairs are: {[(s.value, i.value) for (s, i) in get_raw_data_dag_enabled_state_and_instance_pairs()]}"
-        )
 
     return True
 

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for initialize_raw_data_dag_group.py """
+"""Tests for initialize_raw_data_dag_group.py"""
 import unittest
 from datetime import datetime
 from unittest.mock import patch
@@ -29,8 +29,6 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -125,23 +123,6 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
     initialize_raw_data_dag_group.py
     """
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
-            return_value=[
-                (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-                (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-                (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-            ],
-        )
-        self.get_all_enabled_state_and_instance_pairs_patcher.start()
-
-    def tearDown(self) -> None:
-        self.get_all_enabled_state_and_instance_pairs_patcher.stop()
-        super().tearDown()
-
     def test_successfully_initializes_dag(self) -> None:
         test_dag = _create_test_initialize_raw_data_import_dag()
         with Session(bind=self.engine) as session:
@@ -203,30 +184,6 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
                 },
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-
-    def test_only_state_code_and_instance_filter_not_enabled(self) -> None:
-        test_dag = _create_test_initialize_raw_data_import_dag()
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                dag=test_dag,
-                session=session,
-                run_conf={
-                    "state_code_filter": "US_LL",
-                    "ingest_instance": "PRIMARY",
-                },
-                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_task_id_regexes=[
-                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
-                    _HANDLE_QUEUEING_RESULT_TASK_ID,
-                    _DOWNSTREAM_TASK_ID,
-                ],
-            )
-
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-            self.assertIn(
-                "[US_LL] in [PRIMARY] must be enabled for the raw data import DAG.",
-                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
-            )
 
     def test_invalid_ingest_instance_filter(self) -> None:
         test_dag = _create_test_initialize_raw_data_import_dag()

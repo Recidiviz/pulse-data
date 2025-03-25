@@ -529,7 +529,7 @@ def create_raw_data_import_dag() -> None:
     # outputs: selects pipeline branches for each selected (state_code, ingest_instance)
     # pair.
 
-    # branches are created for all enabled states for both primary and secondary.
+    # branches are created for all launched states for both primary and secondary.
     # by default, we run w/ only primary branches selected. when state code and ingest
     # instance filters are both applied, only the specified branch will be selected
 
