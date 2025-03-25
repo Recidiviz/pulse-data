@@ -38,9 +38,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
-    FakeDirectIngestRegionRawFileConfig,
-)
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -260,17 +257,23 @@ tagPrimaryKeyColsMissing file description
         self,
         mock_config_fn: MagicMock,
     ) -> None:
-        mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig("US_XX")
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code="US_XX",
+            region_module=fake_regions,
+        )
+        mock_config_fn.return_value = region_config
         documentation_generator = DirectIngestDocumentationGenerator()
-        tags = ["tagFullyEmptyFile", "tagHeadersNoContents", "tagBasicData"]
+        tags = ["file_tag_first", "file_tag_second", "singlePrimaryKey"]
         my_collector = FakeDirectIngestViewQueryBuilderCollector(
             region=fake_region(), expected_ingest_views=tags
         )
         expected_referencing_views = {
-            "tagFullyEmptyFile": ["tagFullyEmptyFile"],
-            "tagHeadersNoContents": ["tagHeadersNoContents"],
-            "tagBasicData": ["tagBasicData", "gatedTagNotInTagsList"],
+            "file_tag_first": ["file_tag_first"],
+            "file_tag_second": ["file_tag_second"],
+            "singlePrimaryKey": ["singlePrimaryKey"],
+            "tagBasicData": ["gatedTagNotInTagsList"],
         }
+
         self.assertEqual(
             documentation_generator.get_referencing_views(
                 my_collector

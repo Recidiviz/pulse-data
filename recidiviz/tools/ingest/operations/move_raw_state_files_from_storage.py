@@ -18,13 +18,12 @@
 Script for moving files from storage back into an ingest bucket to be re-ingested. Should be run in the pipenv shell.
 
 Steps:
-1. Pauses ingest queues so we don't ingest partially split files.
+1. Will acquire locks! # TODO(#28239)
 2. Finds all subfolders in storage for dates we want to re-ingest, based on start-date-bound, end-date-bound, and
     file-type-to-move.
 3. Finds all files in those subfolders.
 4. Moves all found files to the ingest bucket, updating the file type to destination-file-type.
 5. Writes moves to a logfile.
-6. Prints instructions for next steps, including how to unpause queues, if necessary.
 
 Example usage (run from `pipenv shell`):
 
@@ -35,11 +34,9 @@ python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
 """
 
 import argparse
-import json
 import logging
 import os
 import re
-import subprocess
 import threading
 from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
@@ -47,9 +44,6 @@ from typing import List, Optional, Tuple
 from progress.bar import Bar
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
-    get_direct_ingest_queues_for_state,
-)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
@@ -70,7 +64,6 @@ from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
-from recidiviz.utils.string import StrictStringFormatter
 
 # pylint: disable=not-callable
 
@@ -83,12 +76,6 @@ class MoveFilesFromStorageController:
     FILE_TO_MOVE_RE = re.compile(
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
-
-    PAUSE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{project_id}/locations/us-east1/queues/{queue_name}:pause"
-
-    PURGE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{project_id}/locations/us-east1/queues/{queue_name}:purge"
-
-    CURL_POST_REQUEST_TEMPLATE = 'curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" {url}'
 
     def __init__(
         self,
@@ -152,17 +139,10 @@ class MoveFilesFromStorageController:
             dry_run=self.dry_run,
         )
 
-        prompt_for_confirmation(
-            f"Pausing queues {self._queues_to_pause()} in destination project [{self.source_project_id}] "
-            f"- continue?",
-            dry_run=self.dry_run,
-        )
-
-        if not self.dry_run:
-            self.pause_and_purge_destination_queues()
-
         logging.info("Finding files to move...")
         date_subdir_paths = self.get_date_subdir_paths()
+
+        # TODO(#28239) acquire locks here
 
         prompt_for_confirmation(
             f"Found [{len(date_subdir_paths)}] dates to move - continue?",
@@ -187,16 +167,9 @@ class MoveFilesFromStorageController:
             )
         else:
             logging.info(
-                "Move complete! See results in [%s].\n"
-                "\nNext steps:"
-                "\n1. (If doing a full re-ingest) Drop Google Cloud database for [%s]"
-                "\n2. Resume destination queues here:",
+                "Move complete! See results in [%s].\n",
                 self.log_output_path,
-                self.destination_project_id,
             )
-
-            for queue_name in self._queues_to_pause():
-                logging.info("\t%s", self.queue_console_url(queue_name))
 
     def get_date_subdir_paths(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_raw_files(
@@ -248,58 +221,6 @@ class MoveFilesFromStorageController:
         if not self.move_progress:
             raise ValueError("Progress bar should not be None")
         self.move_progress.finish()
-
-    def queue_console_url(self, queue_name: str) -> str:
-        """Returns the url to the GCP console page for a queue with a given name."""
-        return f"https://console.cloud.google.com/cloudtasks/queue/us-east1/{queue_name}?project={self.destination_project_id}"
-
-    def do_post_request(self, url: str) -> None:
-        """Executes a googleapis.com curl POST request with the given url."""
-        res = subprocess.run(
-            StrictStringFormatter().format(self.CURL_POST_REQUEST_TEMPLATE, url=url),
-            shell=True,
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-        response = json.loads(res.stdout)
-        if "error" in response:
-            raise ValueError(response["error"])
-
-    def pause_destination_project_queue(self, queue_name: str) -> None:
-        """Posts a request to pause the queue with the given name."""
-        logging.info(
-            "Pausing [%s] in destination project [%s]",
-            queue_name,
-            self.destination_project_id,
-        )
-        self.do_post_request(
-            StrictStringFormatter().format(
-                self.PAUSE_QUEUE_URL,
-                project_id=self.destination_project_id,
-                queue_name=queue_name,
-            )
-        )
-
-    def purge_destination_queue(self, queue_name: str) -> None:
-        """Posts a request to purge the queue with the given name."""
-        logging.info(
-            "Purging [%s] in destination project [%s]",
-            queue_name,
-            self.destination_project_id,
-        )
-        self.do_post_request(
-            StrictStringFormatter().format(
-                self.PURGE_QUEUE_URL,
-                project_id=self.destination_project_id,
-                queue_name=queue_name,
-            )
-        )
-
-    def pause_and_purge_destination_queues(self) -> None:
-        """Pauses and purges Direct Ingest queues for the specified project."""
-        for queue_name in self._queues_to_pause():
-            self.pause_destination_project_queue(queue_name)
-            self.purge_destination_queue(queue_name)
 
     def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
         """Returns files directly in the given directory that should be moved back into the ingest directory."""
@@ -362,9 +283,6 @@ class MoveFilesFromStorageController:
                 f"{prefix} {original_path} -> {new_path}\n"
                 for original_path, new_path in self.moves_list
             )
-
-    def _queues_to_pause(self) -> List[str]:
-        return get_direct_ingest_queues_for_state(self.state_code)
 
 
 def main() -> None:

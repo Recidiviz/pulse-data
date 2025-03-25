@@ -34,22 +34,10 @@ from parameterized import parameterized
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
-from recidiviz.ingest.direct.controllers import (
-    legacy_ingest_raw_file_import_controller_factory,
-)
-from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller import (
-    LegacyIngestRawFileImportController,
-)
-from recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller_factory import (
-    LegacyIngestRawFileImportControllerFactory,
-)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
@@ -62,9 +50,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
-)
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
@@ -87,7 +72,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_paths,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
@@ -123,7 +107,6 @@ from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integr
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.types import assert_type
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
@@ -227,33 +210,6 @@ class DirectIngestRegionDirStructureBase:
     def test(self) -> unittest.TestCase:
         pass
 
-    def _build_controller(
-        self,
-        region_code: str,
-        ingest_instance: DirectIngestInstance,
-        allow_unlaunched: bool,
-        region_module_override: Optional[ModuleType],
-    ) -> LegacyIngestRawFileImportController:
-        """Builds a controller for the given region code and ingest instance."""
-        # Seed the DB with an initial status
-        DirectIngestInstanceStatusManager(
-            region_code=region_code,
-            ingest_instance=ingest_instance,
-        ).add_instance_status(DirectIngestStatus.INITIAL_STATE)
-
-        controller = LegacyIngestRawFileImportControllerFactory.build(
-            region_code=region_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            allow_unlaunched=allow_unlaunched,
-            region_module_override=region_module_override,
-        )
-        if not isinstance(controller, LegacyIngestRawFileImportController):
-            raise ValueError(
-                f"Expected type LegacyIngestRawFileImportController, found [{controller}] "
-                f"with type [{type(controller)}]."
-            )
-        return controller
-
     def test_region_dirname_matches_pattern(self) -> None:
         for d in self.region_dir_names:
             self.test.assertIsNotNone(
@@ -301,20 +257,6 @@ class DirectIngestRegionDirStructureBase:
         self.run_check_valid_yamls_exist_in_all_regions(
             lambda region_code: "manifest.yaml", validate_manifest_contents
         )
-
-    def test_region_controller_builds(
-        self,
-    ) -> None:
-        for region_code in self.region_dir_names:
-            with patch(
-                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
-            ):
-                self._build_controller(
-                    region_code=region_code,
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                    allow_unlaunched=True,
-                    region_module_override=self.region_module_override,
-                )
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
@@ -589,67 +531,11 @@ class DirectIngestRegionDirStructure(
             )
             self.assertTrue(region.playground)
 
-    @patch(
-        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller_factory.is_raw_data_import_dag_enabled",
-        return_value=False,
-    )
-    @patch(
-        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
-        return_value=False,
-    )
-    def test_playground_regions_do_not_run_in_production_for_legacy_raw_data_import(
-        self,
-        _raw_data_enabled_mock: unittest.mock.MagicMock,
-        _raw_data_enabled_mock2: unittest.mock.MagicMock,
-    ) -> None:
-        # The playground regions should be supported in staging
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=GCPEnvironment.STAGING.value,
-        ), patch(
-            "recidiviz.utils.metadata.project_id", return_value="recidiviz-staging"
-        ):
-            for region_code in PLAYGROUND_STATE_INFO:
-                self._build_controller(
-                    region_code=region_code.lower(),
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                    allow_unlaunched=False,
-                    region_module_override=None,
-                )
-
-        # But they should not be supported in production
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=GCPEnvironment.PRODUCTION.value,
-        ), patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-123"):
-            for region_code in PLAYGROUND_STATE_INFO:
-                with self.assertRaisesRegex(DirectIngestError, "Unsupported"):
-                    self._build_controller(
-                        region_code=region_code.lower(),
-                        ingest_instance=DirectIngestInstance.PRIMARY,
-                        allow_unlaunched=False,
-                        region_module_override=None,
-                    )
-
 
 class DirectIngestRegionTemplateDirStructure(
     DirectIngestRegionDirStructureBase, unittest.TestCase
 ):
     """Tests properties of recidiviz/ingest/direct/templates."""
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        # Ensures StateCode.US_XX is properly loaded
-        self.supported_regions_patcher = patch(
-            f"{legacy_ingest_raw_file_import_controller_factory.__name__}.get_direct_ingest_states_existing_in_env"
-        )
-        self.mock_supported_regions = self.supported_regions_patcher.start()
-        self.mock_supported_regions.return_value = self.state_codes
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        self.supported_regions_patcher.stop()
 
     @property
     def state_codes(self) -> List[StateCode]:

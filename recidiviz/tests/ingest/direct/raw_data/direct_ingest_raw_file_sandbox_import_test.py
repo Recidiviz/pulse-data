@@ -33,6 +33,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import impo
     _validate_checksums,
     legacy_import_raw_files_to_bq_sandbox,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendSummary,
@@ -47,9 +50,6 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
-    FakeDirectIngestRegionRawFileConfig,
-)
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -74,8 +74,9 @@ class LegacyImportRawFilesToBQSandboxTest(TestCase):
             "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.LegacyDirectIngestRawFileImportManager"
         )
         self.file_manager_mock = self.file_manager_patch.start().return_value
-        self.file_manager_mock.region_raw_file_config = (
-            FakeDirectIngestRegionRawFileConfig("US_XX")
+        self.file_manager_mock.region_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code="US_XX",
+            region_module=fake_regions,
         )
         self.mock_big_query_client = create_autospec(BigQueryClient)
         self.mock_gcsfs = create_autospec(GCSFileSystem)

@@ -28,7 +28,6 @@ import pytest
 import pytz
 from fakeredis import FakeRedis
 from freezegun import freeze_time
-from google.cloud import tasks_v2
 from mock import create_autospec
 
 from recidiviz.admin_panel.ingest_dataflow_operations import (
@@ -43,9 +42,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
-    DirectIngestCloudTaskQueueManagerImpl,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -95,18 +91,6 @@ class IngestOperationsStoreTestBase(TestCase):
         self.fs_patcher = mock.patch.object(GcsfsFactory, "build", return_value=self.fs)
         self.fs_patcher.start()
 
-        self.task_manager_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_operations_store.DirectIngestCloudTaskQueueManagerImpl",
-            return_value=create_autospec(DirectIngestCloudTaskQueueManagerImpl),
-        )
-        self.task_manager_patcher.start()
-
-        self.cloud_task_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_operations_store.tasks_v2.CloudTasksClient",
-            return_value=create_autospec(tasks_v2.CloudTasksClient),
-        )
-        self.cloud_task_patcher.start()
-
         self.bq_client_patcher = mock.patch(
             "recidiviz.admin_panel.ingest_operations_store.BigQueryClientImpl",
             return_value=create_autospec(BigQueryClientImpl),
@@ -132,8 +116,6 @@ class IngestOperationsStoreTestBase(TestCase):
         )
         self.state_code_list_patcher.stop()
         self.fs_patcher.stop()
-        self.task_manager_patcher.stop()
-        self.cloud_task_patcher.stop()
         self.bq_client_patcher.stop()
         self.mock_redis_patcher.stop()
         self.enabled_patcher.stop()

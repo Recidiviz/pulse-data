@@ -16,5 +16,6 @@
 # =============================================================================
 """Queue names for shared Google Cloud Task queues."""
 
+# TODO(#28239) remove, as no longer used
 CLOUD_SQL_TO_BQ_REFRESH_QUEUE = "cloud-sql-to-bq-refresh"
 CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE = "cloud-sql-to-bq-refresh-scheduler"

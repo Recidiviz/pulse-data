@@ -34,6 +34,7 @@ DEFAULT_SENSOR_TIMEOUT_SECONDS = 60 * 120
 RESULT_ROW_COUNT_COLUMN_NAME = "row_count"
 
 
+# TODO(#28239): remove as no longer used
 class BQResultSensorQueryGenerator:
     @abc.abstractmethod
     def get_query(self, operator: "BQResultSensor", context: Dict) -> str:

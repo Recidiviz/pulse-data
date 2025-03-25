@@ -23,7 +23,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import attr
 import pytz
-from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.ingest_dataflow_operations import (
@@ -41,9 +40,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
-    DirectIngestCloudTaskQueueManagerImpl,
-)
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -182,8 +178,6 @@ class IngestOperationsStore(AdminPanelStore):
 
     def __init__(self) -> None:
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
-        self.cloud_tasks_client = tasks_v2.CloudTasksClient()
         self.bq_client = BigQueryClientImpl()
         self.cache_key = f"{self.__class__}V2"
 

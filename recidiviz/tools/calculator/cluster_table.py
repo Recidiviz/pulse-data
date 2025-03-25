@@ -170,7 +170,7 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     prompt_for_confirmation(
         "Have you confirmed that all processes that might query this table are paused "
-        "(e.g. Cloud Task queues, Airflow DAG, Dataflow pipelines, etc)?"
+        "(e.g. Airflow DAG, Dataflow pipelines, etc)?"
     )
 
     with local_project_id_override(args.project_id):

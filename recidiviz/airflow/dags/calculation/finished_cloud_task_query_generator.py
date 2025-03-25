@@ -30,6 +30,7 @@ from recidiviz.airflow.dags.operators.bq_result_sensor import (
 )
 
 
+# TODO(##28239) remove as no longer used
 class FinishedCloudTaskQueryGenerator(BQResultSensorQueryGenerator, LoggingMixin):
     """Implementation of the BQResultSensorQueryGenerator that returns a query
     that produces a row when the most cloud task queued by a particular
