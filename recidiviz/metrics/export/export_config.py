@@ -399,19 +399,10 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         },
     ),
     # Sentencing views
-    # TODO(https://github.com/Recidiviz/recidiviz-dashboards/issues/7303): Remove this export once we have switched over to the new export infrastructure
     ExportViewCollectionConfig(
         view_builders_to_export=SENTENCING_VIEW_BUILDERS,
         output_directory_uri_template=SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="SENTENCING",
-        allow_empty=True,
-        export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
-    # Sentencing views (to be exported to dashboards project for v2 import)
-    ExportViewCollectionConfig(
-        view_builders_to_export=SENTENCING_VIEW_BUILDERS,
-        output_directory_uri_template=SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="SENTENCING_DASHBOARDS",
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
         output_project_by_data_project={
@@ -419,7 +410,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
         },
         publish_success_pubsub_message=True,
-        pubsub_topic_name_override="sentencing_export_success",
     ),
     # Case notes views
     ExportViewCollectionConfig(

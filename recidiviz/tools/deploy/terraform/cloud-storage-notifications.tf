@@ -70,35 +70,10 @@ module "archive_insights_file" {
   suffix = "archive-files"
 }
 
-resource "google_service_account" "sentencing_etl_cloud_storage_notification" {
-  account_id   = "sentencing-etl-csn"
-  display_name = "Sentencing ETL Cloud Storage Notification Service Account"
-  description  = <<EOT
-Service Account that acts as the identity for the Sentencing ETL CLoud Storage Notification Pub/Sub subscription.
-The account and its IAM policies are managed in Terraform (see #13024).
-EOT
-}
-
-module "handle_sentencing_etl" {
-  count  = local.is_production ? 1 : 0
-  source = "./modules/cloud-storage-notification"
-
-  bucket_name                = module.sentencing-etl-data.name
-  push_endpoint              = local.sentencing_cloud_run_endpoint
-  service_account_email      = google_service_account.sentencing_etl_cloud_storage_notification.email
-  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
-  minimum_backoff            = "180s"
-  maximum_backoff            = "600s"
-  message_retention_duration = "86400s"
-}
 
 locals {
   app_engine_url = "https://${var.project_id}.appspot.com"
   # These client IDs come from the app engine service we want to authenticate to, and can be found
   # at https://console.cloud.google.com/apis/credentials (IAP-App-Engine-app)
   app_engine_iap_client = local.is_production ? "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com" : "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.googleusercontent.com"
-
-  # These endpoints come from the cloud run services we want to trigger
-  # They can be found at https://console.cloud.google.com/run/detail/us-central1/sentencing-server/metrics?project=recidiviz-dashboard-production and https://console.cloud.google.com/run/detail/us-central1/sentencing-server/metrics?project=recidiviz-dashboard-staging for production and staging respectively
-  sentencing_cloud_run_endpoint = local.is_production ? "https://sentencing-server-6ydpcm4cka-uc.a.run.app/trigger_import" : "https://sentencing-server-rithdumbtq-uc.a.run.app/trigger_import"
 }
