@@ -59,6 +59,7 @@ from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
+from recidiviz.justice_counts.dimensions.jails import BehavioralHealthNeedType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
@@ -2203,6 +2204,10 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
                     (datapoint.metric_definition_key, assert_type(dimension_id, str))
                 )
             )
+
+            if dimension_id == BehavioralHealthNeedType.dimension_identifier():
+                # Filter Out Behavioral Health Breakdowns
+                continue
 
             if aggregated_dimension_setting is None:
                 continue

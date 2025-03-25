@@ -21,6 +21,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Type, Typ
 
 import attr
 
+from recidiviz.justice_counts.dimensions.jails import BehavioralHealthNeedType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
@@ -461,6 +462,11 @@ class MetricInterface:
                     is_v2=is_v2,
                 )
                 for d in self.aggregated_dimensions
+                if not (
+                    d.dimension_identifier()  # Filter Out Behavioral Health Breakdowns
+                    == BehavioralHealthNeedType.dimension_identifier()
+                    and is_v2 is True
+                )
             ],
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
             "is_includes_excludes_configured": ConfigurationStatus.to_json(
