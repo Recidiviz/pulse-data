@@ -15,36 +15,35 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A view which provides a person / day level comparison of annual sessions supervision population to dataflow"""
+"""A view which provides a person / day level comparison of annual sessions incarceration population to dataflow"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
+    SESSIONS_VALIDATION_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.views import dataset_config
 
-SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
-    "session_supervision_population_to_dataflow_disaggregated"
+SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
+    "session_incarceration_population_to_dataflow_disaggregated"
 )
 
-SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-A view which provides a person / day level comparison of supervision population on the first day of each year in 
-dataflow vs sessions. For each person / day there are a two binary variables that indicate whether that record meets
-a criteria. These are (1) in_dataflow (indicates a person / day in the population dataflow metric), 
-in_sessions (indicates a person / day in sessions, including inferred populations)
+SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
+A view which provides a person / day level comparison of incarceration population on the first day of each year
+in dataflow vs sessions.
 """
 
-SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
+SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     WITH population_dates AS
     (
     SELECT 
         *
     FROM
         UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 20 YEAR),
-            DATE_TRUNC(CURRENT_DATE, YEAR), INTERVAL 1 MONTH)) AS population_date)
+            DATE_TRUNC(CURRENT_DATE, YEAR), INTERVAL 1 MONTH)) AS population_date
+    )
     ,
     dataflow_population AS
     (
@@ -53,11 +52,11 @@ SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         population_date,
         person_id,
         1 AS in_dataflow
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` in_state
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized` metrics
     JOIN population_dates
-        ON population_dates.population_date BETWEEN in_state.start_date_inclusive 
-        AND COALESCE(DATE_SUB(in_state.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
-        AND in_state.included_in_state_population
+        ON population_dates.population_date BETWEEN metrics.start_date_inclusive 
+        AND COALESCE(DATE_SUB(metrics.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
+    WHERE metrics.included_in_state_population
     )
     ,
     sessions_population AS
@@ -70,24 +69,24 @@ SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
     JOIN population_dates 
         ON population_dates.population_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
-    WHERE sessions.compartment_level_1 = 'SUPERVISION'
+    WHERE sessions.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
     )
     SELECT 
         state_code,
         population_date,
         person_id,
         COALESCE(in_dataflow, 0) AS in_dataflow,
-        COALESCE(in_sessions, 0) AS in_sessions
+        COALESCE(in_sessions, 0) AS in_sessions,
     FROM dataflow_population
     FULL OUTER JOIN sessions_population
         USING(state_code, population_date, person_id)
     """
 
-SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
-    view_query_template=SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
-    description=SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
+SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=SESSIONS_VALIDATION_DATASET,
+    view_id=SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
+    view_query_template=SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
+    description=SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
@@ -95,4 +94,4 @@ SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBi
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()
+        SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.build_and_print()

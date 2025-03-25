@@ -136,6 +136,27 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions_validation.session_incarceration_admissions_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_incarceration_population_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_incarceration_releases_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_out_of_state_population_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_population_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_starts_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
 )
@@ -185,10 +206,8 @@ from recidiviz.task_eligibility.criteria.general.on_minimum_after_unassigned imp
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.validation.configured_validations import get_all_validations
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
-from recidiviz.validation.views.dataset_config import (
-    VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
-)
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
@@ -197,6 +216,14 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
+    # These views are referenced by a sessions validation dashboard in Looker
+    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
@@ -452,11 +479,18 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
     they aren't views that are important enough to keep that parent views should be
     marked as "used".
     """
-    if address.dataset_id in {
+
+    all_validations = get_all_validations()
+    views_with_configured_validations: Set[BigQueryAddress] = {
+        v.view_builder.address for v in all_validations
+    } | {v.error_view_builder.address for v in all_validations}
+    if address in views_with_configured_validations:
         # We don't mark these views as "used" because the existence of a validation does
         # not in itself mean we need to keep a parent view, but we generally don't
         # expect these views to be referenced by other views.
-        VALIDATION_VIEWS_DATASET,
+        return True
+
+    if address.dataset_id in {
         # We autogenerate these views out of convenience and don't expect all to be used
         *{
             raw_latest_views_dataset_for_region(state_code, instance)

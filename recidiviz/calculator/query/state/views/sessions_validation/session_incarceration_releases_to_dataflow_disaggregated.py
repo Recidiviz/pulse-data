@@ -18,10 +18,12 @@
 """A view which provides a person / day level comparison between incarceration session ends and dataflow releases"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
+    SESSIONS_VALIDATION_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.views import dataset_config
 
 SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
     "session_incarceration_releases_to_dataflow_disaggregated"
@@ -93,8 +95,8 @@ SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     WHERE EXTRACT(YEAR FROM date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR))
     """
 
-SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=SESSIONS_VALIDATION_DATASET,
     view_id=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
     view_query_template=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
     description=SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
@@ -104,4 +106,4 @@ SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBi
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()
+        SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.build_and_print()

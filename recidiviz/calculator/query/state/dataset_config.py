@@ -50,6 +50,9 @@ ANALYST_VIEWS_DATASET: str = "analyst_data"
 # Where sessions datasets live
 SESSIONS_DATASET: str = "sessions"
 
+# Where sessions datasets live
+SESSIONS_VALIDATION_DATASET: str = "sessions_validation"
+
 # Where sentence sessions data lives
 SENTENCE_SESSIONS_DATASET: str = "sentence_sessions"
 

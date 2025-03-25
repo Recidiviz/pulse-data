@@ -17,6 +17,7 @@
 
 """Contains configured data validations to perform."""
 import os
+from functools import cache
 from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
@@ -239,13 +240,13 @@ from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_s
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.person_caseload_location_sessions import (
+from recidiviz.validation.views.state.sessions.person_caseload_location_sessions import (
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.session_location_names_no_duplicates import (
+from recidiviz.validation.views.state.sessions.session_location_names_no_duplicates import (
     SESSION_LOCATION_NAMES_NO_DUPLICATES_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
+from recidiviz.validation.views.state.sessions.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.stable_counts.configured_validations import (
@@ -380,6 +381,7 @@ def get_validation_global_config() -> ValidationGlobalConfig:
     )
 
 
+@cache
 def get_all_validations() -> List[DataValidationCheck]:
     """Returns the full list of configured validations to perform. This is not built as a top-level variable because the
     views cannot be built locally being run inside of a local_project_id_override block.

@@ -15,23 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A view which provides a person / day level comparison between supervision session starts and dataflow supervision
-starts"""
+"""A view which provides a person / day level comparison between incarceration session starts and dataflow admissions"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
+    SESSIONS_VALIDATION_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.views import dataset_config
 
-SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
-    "session_supervision_starts_to_dataflow_disaggregated"
+SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
+    "session_incarceration_admissions_to_dataflow_disaggregated"
 )
 
-SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between supervision session starts and dataflow supervision
-    starts. For each person / day there are a set of binary variables that indicate whether that record meets a 
-    criteria. The key binary indicator columns are the following:
+SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
+    A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
+    For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The
+    key binary indicator columns are the following:
 
     - session_transition:   indicates a session compartment transition occurring for a given person on given day
     - dataflow_event:       indicates a valid dataflow event (defined in compartment_session_start_reasons or
@@ -44,14 +45,14 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
                             dataflow or from inference.
     """
 
-SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
+SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     WITH dataflow AS
     (
     SELECT 
         *,
         CAST(valid_dataflow_event AS INT64) AS dataflow_event,
     FROM `{project_id}.{sessions_dataset}.compartment_session_start_reasons_materialized` 
-    WHERE compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+    WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
     )
     ,
     sessions AS
@@ -59,7 +60,7 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     SELECT 
         *,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` 
-    WHERE compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+    WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
     )
     ,
     joined_cte AS
@@ -87,22 +88,22 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         USING(person_id, start_date, state_code)
     )
     SELECT 
-        'SUPERVISION_STARTS' AS metric,
+        'INCARCERATION_ADMISSIONS' AS metric,
         *,
         GREATEST(session_transition_inferred_reason, event_in_both) AS session_transition_hydrated
     FROM joined_cte
     WHERE EXTRACT(YEAR FROM date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR))
     """
 
-SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
-    view_query_template=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
-    description=SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
+SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=SESSIONS_VALIDATION_DATASET,
+    view_id=SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME,
+    view_query_template=SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE,
+    description=SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED.build_and_print()
+        SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.build_and_print()

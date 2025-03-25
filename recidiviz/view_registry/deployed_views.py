@@ -153,6 +153,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__insights_primary_user_span",
     "observations__insights_provisioned_user_span",
     "sessions",
+    "sessions_validation",
     "sentence_sessions",
     "sentence_sessions_v2_all",
     "sentencing_views",
