@@ -817,6 +817,37 @@ def reclassification_shared_logic(reclass_type: str) -> str:
     """
     reclass_type = re.sub(r"[^\w\s]", "", reclass_type).lower()
     return f"""
+    sentence_end AS (
+      -- This CTE grabs sentence end dates for all individuals where end date is not null
+        SELECT
+          person_id,
+          end_date AS sentence_end_date
+        FROM
+          `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized`
+        WHERE
+          end_date IS NOT NULL
+    ),
+    reclass_due_dates AS (
+      -- This CTE combines sentence_end and reclass_due_dates_calc to generate a list of annual dues dates for each 
+      -- individual during their incarceration stint, adjusted such that if the due date determined in 
+      -- reclass_due_dates_calc is within 30 days of sentence end date, reclass due date is adjusted to = sentence end
+      -- date
+          SELECT
+            rdd.state_code,
+            rdd.person_id,
+            rdd.incarceration_super_session_id,
+            CASE
+              WHEN rdd.reclass_is_due_date BETWEEN DATE_SUB(se.sentence_end_date, INTERVAL 30 DAY) AND se.sentence_end_date THEN se.sentence_end_date
+              ELSE rdd.reclass_is_due_date
+          END
+            AS reclass_is_due_date,
+          FROM
+            reclass_due_dates_calc AS rdd
+          LEFT JOIN
+            sentence_end AS se
+          ON
+            rdd.person_id = se.person_id
+      ),
       reclass_spans AS (
           SELECT
             * EXCEPT (reclass_is_due_date),
