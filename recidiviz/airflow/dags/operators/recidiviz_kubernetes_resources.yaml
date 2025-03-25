@@ -98,3 +98,15 @@ RawDataFileChunkingEntrypoint:
     limits:
       cpu: 1000m
       memory: 1Gi
+
+DatasetCleanupEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
+DataflowMetricPruningEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi

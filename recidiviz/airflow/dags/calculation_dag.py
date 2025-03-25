@@ -324,6 +324,14 @@ def create_calculation_dag() -> None:
             select_state_code_parameter_branch,
         )
 
+    dataflow_metric_pruning_task_id = "dataflow_metric_pruning"
+    dataflow_metric_pruning = build_kubernetes_pod_task(
+        task_id=dataflow_metric_pruning_task_id,
+        container_name=dataflow_metric_pruning_task_id,
+        arguments=["--entrypoint=DataflowMetricPruningEntrypoint"],
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
     dataflow_pipelines_completed = EmptyOperator(
         task_id="dataflow_pipelines_completed", trigger_rule=TriggerRule.ALL_DONE
     )
@@ -331,6 +339,7 @@ def create_calculation_dag() -> None:
     (
         update_big_query_table_schemata
         >> dataflow_pipelines_task_group
+        >> dataflow_metric_pruning
         >> dataflow_pipelines_completed
     )
 
@@ -387,7 +396,15 @@ def create_calculation_dag() -> None:
             ):
                 create_metric_view_data_export_nodes([export_config])
 
-    update_all_views >> [validations, metric_exports]
+    dataset_cleanup_task_id = "dataset_cleanup"
+    dataset_cleanup = build_kubernetes_pod_task(
+        task_id=dataset_cleanup_task_id,
+        container_name=dataset_cleanup_task_id,
+        arguments=["--entrypoint=DatasetCleanupEntrypoint"],
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    update_all_views >> [validations, metric_exports] >> dataset_cleanup
 
 
 calculation_dag = create_calculation_dag()

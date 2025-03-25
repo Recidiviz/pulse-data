@@ -685,6 +685,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_managed_views_all",
                     r"^validations.*",
                     r"^metric_exports.*",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
                 ],
             )
 
@@ -718,6 +720,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^update_managed_views",
                     r"^validations.*",
                     r"^metric_exports.*",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
                 ],
             )
             self.assertIn(
@@ -774,6 +778,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.MOCK_EXPORT_NAME_metric_exports.export_mock_export_name_metric_view_data",
                     # Metric exports for US_XX (no failures) should run
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
                 ],
             )
 
@@ -825,6 +831,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # Metric exports for US_YY (no failures) should run
                     r"^metric_exports\.state_specific_metric_exports\.US_YY_metric_exports\.",
                     r"^validations.*",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
                 ],
             )
 
@@ -874,6 +882,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_success_task_id_regexes=[
                     r"^bq_refresh.bq_refresh_completed",
                     r"^dataflow_pipelines_completed",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
                 ],
             )
 
@@ -912,6 +922,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"bq_refresh.bq_refresh_completed",
                     r"^dataflow_pipelines.*",
                     r"^update_managed_views_all",
+                    r"^dataflow_metric_pruning",
                 ],
             )
 

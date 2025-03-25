@@ -33,10 +33,7 @@ from typing import List, Tuple
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-from recidiviz.pipelines.dataflow_config import (
-    DATAFLOW_METRICS_COLD_STORAGE_DATASET,
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
@@ -44,12 +41,14 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
+_DATAFLOW_METRICS_COLD_STORAGE_DATASET = "dataflow_metrics_cold_storage"
+
 
 def main(dry_run: bool) -> None:
     """Moves all metrics with a PERSON methodology or a metric_period_months value greater than 1 to cold storage."""
     bq_client = BigQueryClientImpl()
     dataflow_metrics_dataset = DATAFLOW_METRICS_DATASET
-    cold_storage_dataset = DATAFLOW_METRICS_COLD_STORAGE_DATASET
+    cold_storage_dataset = _DATAFLOW_METRICS_COLD_STORAGE_DATASET
     dataflow_metrics_tables = bq_client.list_tables(dataflow_metrics_dataset)
 
     for table_ref in dataflow_metrics_tables:

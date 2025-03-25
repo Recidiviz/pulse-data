@@ -14,7 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains functions for executing entrypoints"""
+"""Contains functions for executing entrypoints
+
+Usage syntax:
+python -m recidiviz.entrypoints.entrypoint_executor \
+    --entrypoint [EntrypointClassName]\
+    [ENTRYPOINT ARGS]
+
+Example:
+python -m recidiviz.entrypoints.entrypoint_executor \
+    --entrypoint DatasetCleanupEntrypoint \
+    --dry-run
+
+Running locally, set the following environment variables:
+IS_DEV=true GOOGLE_CLOUD_PROJECT=[PROJECT] python \
+    -m recidiviz.entrypoints.entrypoint_executor \
+    --entrypoint DatasetCleanupEntrypoint \
+    --dry-run
+"""
 import argparse
 import atexit
 import logging
@@ -27,8 +44,14 @@ from opentelemetry import trace
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.trace import set_tracer_provider
 
-from recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh import (
+from recidiviz.entrypoints.bigquery.cloud_sql_to_bq_refresh import (
     BigQueryRefreshEntrypoint,
+)
+from recidiviz.entrypoints.bigquery.dataflow_metric_pruning_entrypoint import (
+    DataflowMetricPruningEntrypoint,
+)
+from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
+    DatasetCleanupEntrypoint,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
@@ -68,6 +91,8 @@ from recidiviz.utils.metadata import set_development_project_id_override
 
 ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
+    DataflowMetricPruningEntrypoint,
+    DatasetCleanupEntrypoint,
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,

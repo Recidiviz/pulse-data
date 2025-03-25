@@ -284,7 +284,13 @@ def get_source_table_datasets(
     """Returns the dataset ids of all the source tables deployed to the given
     project.
     """
-    return set(a.dataset_id for a in get_source_table_addresses(project_id))
+    source_table_repository = build_source_table_repository_for_collected_schemata(
+        project_id=project_id,
+    )
+    return {
+        source_table_collection.dataset_id
+        for source_table_collection in source_table_repository.source_table_collections
+    }
 
 
 @environment.local_only
@@ -293,7 +299,11 @@ def get_all_source_table_datasets() -> set[str]:
     """Returns the dataset ids of all the source tables deployed across any GCP
     project.
     """
-    return set(a.dataset_id for a in get_all_source_table_addresses())
+    all_datasets = set()
+    for project_id in DATA_PLATFORM_GCP_PROJECTS:
+        with local_project_id_override(project_id):
+            all_datasets |= get_source_table_datasets(project_id)
+    return all_datasets
 
 
 if __name__ == "__main__":
