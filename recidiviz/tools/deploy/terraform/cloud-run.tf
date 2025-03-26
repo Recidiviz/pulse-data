@@ -243,11 +243,13 @@ resource "google_cloud_run_service" "application-data-import" {
     spec {
       timeout_seconds = 600
 
+      container_concurrency = 2
+
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args = [
-          "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",
+          "run", "gunicorn", "-c", "gunicorn.conf.py", "--workers=2", "--log-file=-", "-b", ":$PORT",
           "recidiviz.application_data_import.server:app"
         ]
 

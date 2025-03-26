@@ -67,10 +67,11 @@ variable "max_case_triage_instances" {
 
 variable "max_application_import_instances" {
   type = number
-  # Start with 3 as the default to match our other services. The Cloud Run
-  # default is 100, and if we had a bug causing us to scale that high that
+  # The Cloud Run default is 100, and if we had a bug causing us to scale that high that
   # could be a costly error.
-  default = 3
+  # 5 instances at 2 concurrent requests per container means a maximum of 10 in-flight
+  # requests can be served at once
+  default = 5
 }
 
 variable "max_asset_generation_instances" {

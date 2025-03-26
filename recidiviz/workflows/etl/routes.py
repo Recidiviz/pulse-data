@@ -30,7 +30,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 )
 from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI
 from recidiviz.tools.archive import archive_etl_file
-from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
@@ -70,12 +70,11 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
     ]
 
 
-def get_workflows_etl_blueprint() -> Blueprint:
+def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Blueprint:
     """Creates a Flask Blueprint for Workflows ETL routes."""
     workflows_etl_blueprint = Blueprint("practices-etl", __name__)
 
     @workflows_etl_blueprint.route("/handle_workflows_firestore_etl", methods=["POST"])
-    @requires_gae_auth
     def _handle_workflows_firestore_etl() -> Tuple[str, HTTPStatus]:
         """Called from a Cloud Storage Notification when a new file is exported to the practices-etl-data bucket
         It enqueues a task to ETL the data into Firestore."""
@@ -106,8 +105,9 @@ def get_workflows_etl_blueprint() -> Blueprint:
             queue_info_cls=CloudTaskQueueInfo, queue_name=WORKFLOWS_ETL_OPERATIONS_QUEUE
         )
         cloud_task_manager.create_task(
-            relative_uri="/practices-etl/_run_firestore_etl",
+            absolute_uri=f"{cloud_run_metadata.url}/practices-etl/_run_firestore_etl",
             body={"filename": filename, "state_code": region_code},
+            service_account_email=cloud_run_metadata.service_account_email,
         )
         logging.info(
             "Enqueued _run_firestore_etl task to %s", WORKFLOWS_ETL_OPERATIONS_QUEUE
@@ -115,7 +115,6 @@ def get_workflows_etl_blueprint() -> Blueprint:
         return "", HTTPStatus.OK
 
     @workflows_etl_blueprint.route("/_run_firestore_etl", methods=["POST"])
-    @requires_gae_auth
     def _run_firestore_etl() -> Tuple[str, HTTPStatus]:
         """This endpoint is triggered by a CloudTask created by _handle_workflows_firestore_etl"""
         body = get_cloud_task_json_body()
@@ -147,7 +146,6 @@ def get_workflows_etl_blueprint() -> Blueprint:
     # To trigger it manually, run (substituting PROJECT_ID and FILENAME):
     # `gcloud pubsub topics publish storage-notification-$PROJECT_ID-practices-etl-data --attribute=objectId=$FILENAME`
     @workflows_etl_blueprint.route("/archive-file", methods=["POST"])
-    @requires_gae_auth
     def _archive_file() -> Tuple[str, HTTPStatus]:
         try:
             message = extract_pubsub_message_from_json(request.get_json())

@@ -38,11 +38,6 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-test"
 
-        self.requires_gae_auth_patcher = patch(
-            "recidiviz.outliers.utils.routes.requires_gae_auth",
-            side_effect=lambda route: route,
-        )
-        self.requires_gae_auth_patcher.start()
         self.headers: dict[str, Any] = {"x-goog-iap-jwt-assertion": {}}
 
         self.test_app = Flask(__name__)
@@ -53,7 +48,6 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
         self.project_id_patcher.stop()
-        self.requires_gae_auth_patcher.stop()
 
     @freeze_time("2023-12-04 12:04")
     def test_archive_file(self) -> None:

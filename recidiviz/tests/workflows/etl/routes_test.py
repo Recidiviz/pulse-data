@@ -18,7 +18,6 @@
 import base64
 import unittest
 from http import HTTPStatus
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 from flask import Flask
@@ -26,6 +25,7 @@ from freezegun import freeze_time
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 
@@ -39,22 +39,22 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-test"
 
-        self.requires_gae_auth_patcher = patch(
-            "recidiviz.workflows.etl.routes.requires_gae_auth",
-            side_effect=lambda route: route,
-        )
-        self.requires_gae_auth_patcher.start()
-        self.headers: dict[str, Any] = {"x-goog-iap-jwt-assertion": {}}
-
         self.test_app = Flask(__name__)
         self.test_app.register_blueprint(
-            get_workflows_etl_blueprint(), url_prefix="/practices-etl"
+            get_workflows_etl_blueprint(
+                cloud_run_metadata=CloudRunMetadata(
+                    project_id="recidiviz-test",
+                    region="us-central1",
+                    url="https://example.com",
+                    service_account_email="<EMAIL>",
+                ),
+            ),
+            url_prefix="/practices-etl",
         )
 
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
         self.project_id_patcher.stop()
-        self.requires_gae_auth_patcher.stop()
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     def test_handle_workflows_firestore_etl(self, mock_task_manager: MagicMock) -> None:
@@ -63,7 +63,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/handle_workflows_firestore_etl",
-                headers=self.headers,
                 json={
                     "message": {
                         "attributes": {
@@ -77,8 +76,9 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
             mock_task_manager.return_value.create_task.assert_called_with(
-                relative_uri="/practices-etl/_run_firestore_etl",
+                absolute_uri="https://example.com/practices-etl/_run_firestore_etl",
                 body={"filename": "test_file.json", "state_code": "US_XX"},
+                service_account_email="<EMAIL>",
             )
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
@@ -90,7 +90,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/handle_workflows_firestore_etl",
-                headers=self.headers,
                 json={
                     "message": {
                         "attributes": {
@@ -112,7 +111,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/handle_workflows_firestore_etl",
-                headers=self.headers,
                 json={
                     "message": {
                         "attributes": {
@@ -134,7 +132,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/handle_workflows_firestore_etl",
-                headers=self.headers,
                 json={
                     "message": {
                         "attributes": {
@@ -152,7 +149,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/handle_workflows_firestore_etl",
-                headers=self.headers,
                 json={
                     "message": {
                         "attributes": None,
@@ -171,7 +167,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/_run_firestore_etl",
-                headers=self.headers,
                 json={"state_code": state_code, "filename": filename},
             )
             mock_delegate.supports_file.assert_called_with(filename)
@@ -189,7 +184,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/_run_firestore_etl",
-                headers=self.headers,
                 json={"state_code": "US_XX", "filename": "test_file.json"},
             )
             mock_delegate.return_value.run_etl.assert_not_called()
@@ -203,7 +197,6 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/_run_firestore_etl",
-                headers=self.headers,
                 json={"state_code": None, "filename": "test_file.json"},
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)

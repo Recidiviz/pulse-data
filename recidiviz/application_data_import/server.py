@@ -26,6 +26,7 @@ from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
 from sqlalchemy import delete
 
+from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
@@ -92,7 +93,7 @@ app = Flask(__name__)
 if in_gcp():
     structured_logging.setup()
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
-        "application-data-import"
+        CloudRunMetadata.Service.APPLICATION_DATA_IMPORT
     )
 else:
     cloud_run_metadata = CloudRunMetadata(
@@ -104,8 +105,21 @@ else:
 
 APPLICATION_DATA_IMPORT_BLUEPRINTS = [
     (backup_manager_blueprint, "/backup_manager"),
-    (get_workflows_etl_blueprint(), "/practices-etl"),
-    (get_outliers_utils_blueprint(), "/outliers-utils"),
+    (
+        get_workflows_etl_blueprint(cloud_run_metadata=cloud_run_metadata),
+        "/practices-etl",
+    ),
+    (
+        get_outliers_utils_blueprint(),
+        "/outliers-utils",
+    ),
+    (
+        get_auth_endpoint_blueprint(
+            cloud_run_metadata=cloud_run_metadata,
+            authentication_middleware=None,
+        ),
+        "/auth",
+    ),
 ]
 
 for blueprint, url_prefix in APPLICATION_DATA_IMPORT_BLUEPRINTS:

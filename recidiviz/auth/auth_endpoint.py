@@ -73,6 +73,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
+from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -165,6 +166,7 @@ def _upsert_user_rows(
 
 
 def get_auth_endpoint_blueprint(
+    cloud_run_metadata: CloudRunMetadata,
     authentication_middleware: Callable | None,
 ) -> Blueprint:
     """Creates the auth Flask Blueprint"""
@@ -545,8 +547,9 @@ def get_auth_endpoint_blueprint(
             queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE,
         )
         cloud_task_manager.create_task(
-            relative_uri="/auth/import_ingested_users",
+            absolute_uri=f"{cloud_run_metadata.url}/auth/import_ingested_users",
             body={"state_code": state_code},
+            service_account_email=cloud_run_metadata.service_account_email,
         )
         logging.info(
             "Enqueued import_ingested_users task to %s",

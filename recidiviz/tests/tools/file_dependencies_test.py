@@ -167,10 +167,10 @@ class FileDependenciesTest(unittest.TestCase):
                 "recidiviz.utils.environment": {
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=27, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=28, col_offset=0
                         ),
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=28, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=29, col_offset=0
                         ),
                     ],
                     "recidiviz.utils.secrets": [
@@ -214,7 +214,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=24, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=25, col_offset=0
                         )
                     ],
                     "recidiviz.common.attr_validators": [
@@ -247,7 +247,12 @@ class FileDependenciesTest(unittest.TestCase):
                         Callsite(
                             filepath="r/utils/environment.py", lineno=28, col_offset=0
                         )
-                    ]
+                    ],
+                    "recidiviz.utils.metadata": [
+                        Callsite(
+                            filepath="r/utils/metadata.py", lineno=19, col_offset=0
+                        )
+                    ],
                 },
                 "functools": {
                     "recidiviz.utils.environment": [
@@ -276,7 +281,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "json": {
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=19, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=20, col_offset=0
                         )
                     ]
                 },
@@ -288,7 +293,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=20, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=21, col_offset=0
                         )
                     ],
                     "recidiviz.utils.secrets": [
@@ -303,7 +308,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=21, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=22, col_offset=0
                         )
                     ],
                     "recidiviz.utils.secrets": [
@@ -342,7 +347,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=25, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=26, col_offset=0
                         )
                     ],
                 },
@@ -380,7 +385,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
-                            filepath="r/utils/metadata.py", lineno=22, col_offset=0
+                            filepath="r/utils/metadata.py", lineno=23, col_offset=0
                         )
                     ],
                     "recidiviz.utils.secrets": [

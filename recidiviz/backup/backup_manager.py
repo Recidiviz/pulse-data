@@ -36,7 +36,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.utils import metadata
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -53,7 +52,6 @@ backup_manager_blueprint = flask.Blueprint("backup_manager", __name__)
 
 
 @backup_manager_blueprint.route("/update_long_term_backups")
-@requires_gae_auth
 def update_long_term_backups() -> Tuple[str, HTTPStatus]:
     """Creates manual backups for all cloudsql instances and deletes
     manual backups for each instance that are older than _MAX_BACKUP_AGE_DAYS.

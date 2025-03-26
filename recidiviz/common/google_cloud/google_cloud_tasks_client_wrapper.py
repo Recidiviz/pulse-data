@@ -119,7 +119,6 @@ class GoogleCloudTasksClientWrapper:
         self,
         *,
         queue_name: str,
-        relative_uri: Optional[str] = None,
         absolute_uri: Optional[str] = None,
         task_id: Optional[str] = None,
         body: Optional[Dict[str, Any]] = None,
@@ -139,20 +138,13 @@ class GoogleCloudTasksClientWrapper:
             queue_name: The queue on which to schedule the task
             schedule_delay_seconds: The number of seconds by which to delay the
                 scheduling of the given task.
-            relative_uri: The relative uri to hit. Exactly one of this and absolute_uri must be set.
-            absolute_uri: The absolute uri to hit. Exactly one of this and relative_uri must be set.
+            absolute_uri: The absolute uri to hit
             body: Dictionary of values that will be converted to JSON and
             included in the request.
             http_method: The method for this request (i.e. GET or POST)
             service_account_email: A service account email to be used to generate an OIDC token for the endpoint.
             headers: Dictionary representing HTTP request headers
         """
-
-        if (not absolute_uri and not relative_uri) or (absolute_uri and relative_uri):
-            raise ValueError(
-                "Must provide either an absolute URI or relative URI to the cloud task"
-            )
-
         if body is None:
             body = {}
 
@@ -192,20 +184,12 @@ class GoogleCloudTasksClientWrapper:
         if headers is not None:
             http_request["headers"] = headers
 
-        if relative_uri:
-            task_builder.update_args(
-                app_engine_http_request={
-                    **http_request,
-                    "relative_uri": relative_uri,
-                }
-            )
-        else:
-            task_builder.update_args(
-                http_request={
-                    **http_request,
-                    "url": absolute_uri,
-                }
-            )
+        task_builder.update_args(
+            http_request={
+                **http_request,
+                "url": absolute_uri,
+            }
+        )
 
         task = task_builder.build()
 

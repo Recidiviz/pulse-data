@@ -44,7 +44,8 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
-from recidiviz.utils.environment import in_gunicorn
+from recidiviz.utils.environment import in_gcp, in_gunicorn
+from recidiviz.utils.metadata import CloudRunMetadata
 
 structured_logging.setup()
 
@@ -57,6 +58,19 @@ _STATIC_FOLDER = os.path.abspath(
     )
 )
 
+
+if in_gcp():
+    structured_logging.setup()
+    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
+        CloudRunMetadata.Service.ADMIN_PANEL
+    )
+else:
+    cloud_run_metadata = CloudRunMetadata(
+        project_id="123",
+        region="us-central1",
+        url="http://localhost:5000",
+        service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
+    )
 
 app = Flask(__name__)
 
@@ -85,7 +99,10 @@ api = Api(
 
 app.register_blueprint(admin_panel_blueprint, url_prefix="/admin")
 app.register_blueprint(
-    get_auth_endpoint_blueprint(authentication_middleware=requires_authorization),
+    get_auth_endpoint_blueprint(
+        cloud_run_metadata=cloud_run_metadata,
+        authentication_middleware=requires_authorization,
+    ),
     url_prefix="/auth",
 )
 app.register_blueprint(

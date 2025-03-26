@@ -719,8 +719,10 @@ def main() -> int:
         "recidiviz.application_data_import.server",
         valid_module_prefixes=make_module_matcher(
             {
+                "recidiviz.admin_panel.constants",
                 "recidiviz.aggregated_metrics",
                 "recidiviz.application_data_import",
+                "recidiviz.auth",
                 "recidiviz.backup.backup_manager",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
@@ -738,6 +740,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
+                "recidiviz.reporting",
                 "recidiviz.task_eligibility",
                 "recidiviz.tools.archive",
                 "recidiviz.utils",

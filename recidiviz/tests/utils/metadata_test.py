@@ -102,7 +102,7 @@ class MetadataTest(unittest.TestCase):
 
         responses.add(
             responses.GET,
-            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/test-service",
+            "https://us-east1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/fake-project/services/admin-panel",
             json={
                 "status": {"url": "http://test-service.cloudrun"},
                 "spec": {
@@ -113,7 +113,9 @@ class MetadataTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            CloudRunMetadata.build_from_metadata_server("test-service"),
+            CloudRunMetadata.build_from_metadata_server(
+                CloudRunMetadata.Service.ADMIN_PANEL
+            ),
             CloudRunMetadata(
                 project_id="fake-project",
                 region="us-east1",

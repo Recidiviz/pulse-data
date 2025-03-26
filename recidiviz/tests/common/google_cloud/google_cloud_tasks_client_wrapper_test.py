@@ -191,16 +191,17 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
     def test_create_anonymous_task(self) -> None:
         self.client_wrapper.create_task(
-            queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
+            queue_name=self.QUEUE_NAME,
+            absolute_uri="https://example.com/my_endpoint?region=us_mo",
         )
 
         self.mock_client.create_task.assert_called_with(
             parent="projects/my-project-id/locations/us-east1/queues/queue-name",
             task=tasks_v2.Task(
                 mapping={
-                    "app_engine_http_request": {
+                    "http_request": {
                         "http_method": "POST",
-                        "relative_uri": "/my_endpoint?region=us_mo",
+                        "url": "https://example.com/my_endpoint?region=us_mo",
                         "body": b"{}",
                     },
                 }
@@ -211,7 +212,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",
             queue_name=self.QUEUE_NAME,
-            relative_uri="/my_endpoint?region=us_mo",
+            absolute_uri="https://example.com/my_endpoint?region=us_mo",
             body={"arg1": "arg1-val", "arg2": 123},
         )
 
@@ -221,9 +222,9 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 mapping={
                     "name": "projects/my-project-id/locations/us-east1/queues/"
                     "queue-name/tasks/us_mo-file_name_1-123456",
-                    "app_engine_http_request": {
+                    "http_request": {
                         "http_method": "POST",
-                        "relative_uri": "/my_endpoint?region=us_mo",
+                        "url": "https://example.com/my_endpoint?region=us_mo",
                         "body": b'{"arg1": "arg1-val", "arg2": 123}',
                     },
                 }
@@ -237,7 +238,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.create_task(
             task_id="us_mo-file_name_1-123456",
             queue_name=self.QUEUE_NAME,
-            relative_uri="/my_endpoint?region=us_mo",
+            absolute_uri="https://example.com/my_endpoint?region=us_mo",
             body={},
             schedule_delay_seconds=3,
         )
@@ -248,9 +249,9 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                 mapping={
                     "name": "projects/my-project-id/locations/us-east1/queues/"
                     "queue-name/tasks/us_mo-file_name_1-123456",
-                    "app_engine_http_request": {
+                    "http_request": {
                         "http_method": "POST",
-                        "relative_uri": "/my_endpoint?region=us_mo",
+                        "url": "https://example.com/my_endpoint?region=us_mo",
                         "body": b"{}",
                     },
                     "schedule_time": timestamp_pb2.Timestamp(
@@ -278,24 +279,6 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                     }
                 }
             ),
-        )
-
-    def test_absolute_relative_handling(self) -> None:
-        with self.assertRaises(ValueError) as em:
-            self.client_wrapper.create_task(
-                queue_name=self.QUEUE_NAME,
-                absolute_uri="https://uri",
-                relative_uri="/uri",
-            )
-        self.assertEqual(
-            em.exception.args[0],
-            "Must provide either an absolute URI or relative URI to the cloud task",
-        )
-        with self.assertRaises(ValueError) as em:
-            self.client_wrapper.create_task(queue_name=self.QUEUE_NAME)
-        self.assertEqual(
-            em.exception.args[0],
-            "Must provide either an absolute URI or relative URI to the cloud task",
         )
 
     def test_create_with_service_account(self) -> None:
@@ -345,7 +328,8 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         ]
 
         self.client_wrapper.create_task(
-            queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
+            queue_name=self.QUEUE_NAME,
+            absolute_uri="https://example.com/my_endpoint?region=us_mo",
         )
 
         self.assertEqual(len(self.mock_client.create_task.mock_calls), 2)
@@ -358,6 +342,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.client_wrapper.create_task(
-                queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
+                queue_name=self.QUEUE_NAME,
+                absolute_uri="https://example.com/my_endpoint?region=us_mo",
             )
         self.assertEqual(len(self.mock_client.create_task.mock_calls), 2)

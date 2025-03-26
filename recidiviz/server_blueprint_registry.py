@@ -22,16 +22,27 @@ from flask import Blueprint
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
+from recidiviz.utils.environment import local_only
+from recidiviz.utils.metadata import CloudRunMetadata
 
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = []
 
 
+@local_only
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
     # TODO(#24741): Add back admin panel / auth blueprints once removed from blueprint registry
     return default_blueprints_with_url_prefixes + [
         (admin_panel_blueprint, "/admin"),
         (
-            get_auth_endpoint_blueprint(authentication_middleware=None),
+            get_auth_endpoint_blueprint(
+                authentication_middleware=None,
+                cloud_run_metadata=CloudRunMetadata(
+                    project_id="documentation-generator",
+                    region="us-central1",
+                    url="https://example.com",
+                    service_account_email="<EMAIL>",
+                ),
+            ),
             "/auth",
         ),
         (

@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Utility methods for fetching app engine related metadata."""
+import enum
 import json
 import logging
 import os
@@ -184,14 +185,23 @@ class CloudRunMetadata:
     url: str
     service_account_email: str
 
+    class Service(enum.StrEnum):
+        ADMIN_PANEL = "admin-panel"
+        APPLICATION_DATA_IMPORT = "application-data-import"
+        CASE_TRIAGE = "case-triage-web"
+
     @classmethod
-    def build_from_metadata_server(cls, service_name: Optional[str] = None):
+    def build_from_metadata_server(cls, service_name: Service | None):
         """Builds the CloudRunMetadata from the googleapis
         https://cloud.google.com/run/docs/reference/rest/v1/namespaces.services/get
         """
         _project_id = project_id()
         _region = region()
-        service_name = service_name or CloudRunEnvironment.get_service_name()
+        service_name = (
+            service_name.value
+            if service_name is not None
+            else CloudRunEnvironment.get_service_name()
+        )
         service_metadata = requests.get(
             f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
             headers={"Authorization": f"Bearer {service_token()}"},

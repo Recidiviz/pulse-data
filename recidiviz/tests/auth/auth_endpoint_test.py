@@ -49,6 +49,7 @@ from recidiviz.tests.auth.helpers import (
     generate_fake_user_overrides,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.metadata import CloudRunMetadata
 
 _FIXTURE_PATH = os.path.abspath(
     os.path.join(
@@ -97,7 +98,15 @@ class AuthEndpointTests(TestCase):
     def setUp(self) -> None:
         self.app = Flask(__name__)
         self.app.register_blueprint(
-            get_auth_endpoint_blueprint(authentication_middleware=None)
+            get_auth_endpoint_blueprint(
+                authentication_middleware=None,
+                cloud_run_metadata=CloudRunMetadata(
+                    project_id="recidiviz-test",
+                    region="us-central1",
+                    url="https://example.com",
+                    service_account_email="<EMAIL>",
+                ),
+            )
         )
         self.app.config["TESTING"] = True
         api = Api(
@@ -647,8 +656,9 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
             mock_task_manager.return_value.create_task.assert_called_with(
-                relative_uri=f"/auth{self.import_ingested_users}",
+                absolute_uri=f"https://example.com/auth{self.import_ingested_users}",
                 body={"state_code": self.region_code},
+                service_account_email="<EMAIL>",
             )
 
     def test_import_ingested_users_async_invalid_pubsub(self) -> None:

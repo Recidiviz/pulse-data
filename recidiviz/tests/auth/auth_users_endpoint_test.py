@@ -52,6 +52,7 @@ from recidiviz.tests.auth.helpers import (
     generate_fake_user_overrides,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.metadata import CloudRunMetadata
 
 _PARAMETER_USER_HASH = "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU="
 _USER_HASH = "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk="
@@ -94,7 +95,15 @@ class AuthUsersEndpointTestCase(TestCase):
         self.maxDiff = None
         self.app = Flask(__name__)
         self.app.register_blueprint(
-            get_auth_endpoint_blueprint(authentication_middleware=None)
+            get_auth_endpoint_blueprint(
+                authentication_middleware=None,
+                cloud_run_metadata=CloudRunMetadata(
+                    project_id="recidiviz-test",
+                    region="us-central1",
+                    url="https://example.com",
+                    service_account_email="<EMAIL>",
+                ),
+            )
         )
         self.app.config["TESTING"] = True
         api = Api(

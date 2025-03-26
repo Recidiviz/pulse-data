@@ -83,7 +83,9 @@ from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import OpportunityConfigResponse, WorkflowsSystemType
 
 if in_gcp():
-    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
+    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
+        CloudRunMetadata.Service.CASE_TRIAGE
+    )
 else:
     cloud_run_metadata = CloudRunMetadata(
         project_id="123",

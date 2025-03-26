@@ -45,7 +45,9 @@ from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.params import get_bool_param_value, get_str_param_value
 
 if in_gcp():
-    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
+    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
+        CloudRunMetadata.Service.CASE_TRIAGE
+    )
 else:
     cloud_run_metadata = CloudRunMetadata(
         project_id="123",

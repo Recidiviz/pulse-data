@@ -22,7 +22,6 @@ from flask import Blueprint, request
 
 from recidiviz.metrics.export.export_config import INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI
 from recidiviz.tools.archive import archive_etl_file
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 
 
@@ -34,7 +33,6 @@ def get_outliers_utils_blueprint() -> Blueprint:
     # To trigger it manually, run (substituting PROJECT_ID and FILENAME):
     # `gcloud pubsub topics publish storage-notification-$PROJECT_ID-insights-etl-data --attribute=objectId=$FILENAME`
     @outliers_utils_blueprint.route("/archive-file", methods=["POST"])
-    @requires_gae_auth
     def _archive_file() -> Tuple[str, HTTPStatus]:
         try:
             message = extract_pubsub_message_from_json(request.get_json())
