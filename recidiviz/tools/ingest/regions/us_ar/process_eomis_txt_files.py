@@ -354,7 +354,6 @@ def _update_config_using_sheet(
         supplemental_order_by_clause=original_config.supplemental_order_by_clause,
         export_lookback_window=original_config.export_lookback_window,
         no_valid_primary_keys=original_config.no_valid_primary_keys,
-        import_chunk_size_rows=original_config.import_chunk_size_rows,
         infer_columns_from_config=original_config.infer_columns_from_config,
         table_relationships=original_config.table_relationships,
         update_cadence=original_config.update_cadence,

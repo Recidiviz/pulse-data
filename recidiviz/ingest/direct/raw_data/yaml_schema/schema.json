@@ -236,10 +236,6 @@
       "description": "If true, means that the primary keys for this raw data file are unstable over time",
       "type": "boolean"
     },
-    "import_chunk_size_rows": {
-      "description": "Defines the number of rows in each chunk we will read one at a time from the original raw data file and write back to GCS files before loading into BQ. Increasing this value may increase import speed, but should only be done carefully - if the table has too much data in a row, increasing the number of rows per chunk may push us over VM memory limits. Defaults to 250,000 rows per chunk.",
-      "type": "integer"
-    },
     "infer_columns_from_config": {
       "description": "If true, means that we likely will receive a CSV that does not have a header row and therefore, we will use the columns defined in the config, in the order they are defined in, as the column names. By default, False.",
       "type": "boolean"

@@ -23,13 +23,14 @@ import pandas as pd
 import pandas.errors
 
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
+    DEFAULT_GCSFS_FILE_READER_ENCODINGS_TO_TRY,
     GcsfsCsvReader,
     GcsfsCsvReaderDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
+from recidiviz.utils.encoding import to_python_standard
 
 
 class _TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
@@ -165,15 +166,18 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(gcs_path, delegate=delegate, chunk_size=1)
 
-        index = COMMON_RAW_FILE_ENCODINGS.index("ISO-8859-1")
+        index = DEFAULT_GCSFS_FILE_READER_ENCODINGS_TO_TRY.index(
+            to_python_standard("latin-1")
+        )
         self.assertEqual(index + 1, len(delegate.encodings_attempted))
         self.assertEqual(
-            COMMON_RAW_FILE_ENCODINGS[: (index + 1)], delegate.encodings_attempted
+            DEFAULT_GCSFS_FILE_READER_ENCODINGS_TO_TRY[: (index + 1)],
+            delegate.encodings_attempted,
         )
-        self.assertEqual("ISO-8859-1", delegate.successful_encoding)
+        self.assertEqual("iso8859-1", delegate.successful_encoding)
         self.assertEqual(4, len(delegate.dataframes))
         self.assertEqual(
-            {"ISO-8859-1"}, {encoding for encoding, df in delegate.dataframes}
+            {"iso8859-1"}, {encoding for encoding, df in delegate.dataframes}
         )
         self.assertEqual(1, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
@@ -216,10 +220,10 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.reader.streaming_read(gcs_path, delegate=delegate, chunk_size=1)
 
         self.assertEqual(1, len(delegate.encodings_attempted))
-        self.assertEqual("UTF-8", delegate.encodings_attempted[0])
-        self.assertEqual("UTF-8", delegate.successful_encoding)
+        self.assertEqual("utf-8", delegate.encodings_attempted[0])
+        self.assertEqual("utf-8", delegate.successful_encoding)
         self.assertEqual(4, len(delegate.dataframes))
-        self.assertEqual({"UTF-8"}, {encoding for encoding, df in delegate.dataframes})
+        self.assertEqual({"utf-8"}, {encoding for encoding, df in delegate.dataframes})
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
@@ -246,9 +250,9 @@ class GcsfsCsvReaderTest(unittest.TestCase):
             self.reader.streaming_read(gcs_path, delegate=delegate, chunk_size=1)
 
         self.assertEqual(1, len(delegate.encodings_attempted))
-        self.assertEqual("UTF-8", delegate.encodings_attempted[0])
+        self.assertEqual("utf-8", delegate.encodings_attempted[0])
         self.assertIsNone(delegate.successful_encoding)
         self.assertEqual(2, len(delegate.dataframes))
-        self.assertEqual({"UTF-8"}, {encoding for encoding, df in delegate.dataframes})
+        self.assertEqual({"utf-8"}, {encoding for encoding, df in delegate.dataframes})
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(1, delegate.exceptions)

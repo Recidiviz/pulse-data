@@ -662,7 +662,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             ignore_quotes=False,
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,
@@ -673,7 +672,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         config = self.sparse_config
 
         self.assertEqual("", config.primary_key_str)
-        self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
         self.assertEqual([], config.current_documented_columns)
         self.assertEqual([], config.current_datetime_cols)
         self.assertFalse(config.has_enums)
@@ -723,7 +721,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
 
         self.assertEqual("Col1", config.primary_key_str)
-        self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
         self.assertEqual(
             ["Col1", "Col3"], [c.name for c in config.current_documented_columns]
         )
@@ -765,16 +762,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             ["Col3", "Col4"], [name for name, _ in config.current_datetime_cols]
         )
         self.assertTrue(config.has_enums)
-
-    def test_encodings_to_try(self) -> None:
-        config = attr.evolve(self.sparse_config, encoding="UTF-8")
-        self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
-
-        config = attr.evolve(self.sparse_config, encoding="ISO-8859-1")
-        self.assertEqual(["ISO-8859-1", "UTF-8"], config.encodings_to_try())
-
-        config = attr.evolve(self.sparse_config, encoding="UTF-16")
-        self.assertEqual(["UTF-16", "UTF-8", "ISO-8859-1"], config.encodings_to_try())
 
     def test_no_valid_primary_keys(self) -> None:
         # Cannot set primary_key_cols when no_valid_primary_keys=True
@@ -1308,7 +1295,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             ignore_quotes=False,
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,

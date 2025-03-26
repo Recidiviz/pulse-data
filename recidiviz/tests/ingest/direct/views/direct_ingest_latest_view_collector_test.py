@@ -159,7 +159,6 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             ignore_quotes=False,
             export_lookback_window=RawDataExportLookbackWindow.ONE_WEEK_INCREMENTAL_LOOKBACK,
             no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,

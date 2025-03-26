@@ -157,7 +157,6 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
             ignore_quotes=True,
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
             no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,

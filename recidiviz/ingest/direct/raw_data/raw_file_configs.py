@@ -29,7 +29,6 @@ from more_itertools import one
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
-from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
@@ -46,7 +45,6 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type impo
     RawDataImportBlockingValidationType,
 )
 from recidiviz.utils import environment
-from recidiviz.utils.encoding import to_python_standard
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
@@ -687,14 +685,6 @@ class DirectIngestRawFileConfig:
         validator=attr.validators.in_(RawDataExportLookbackWindow)
     )
 
-    # TODO(#28239) remove this once raw data import dag is fully rolled out
-    # Defines the number of rows in each chunk we will read one at a time from the
-    # original raw data file and write back to GCS files before loading into BQ.
-    # Increasing this value may increase import speed, but should only be done carefully
-    # - if the table has too much data in a row, increasing the number of rows per chunk
-    # may push us over VM memory limits. Defaults to 250,000 rows per chunk.
-    import_chunk_size_rows: int = attr.ib()
-
     # If true, means that we likely will receive a CSV that does not have a header row
     # and therefore, we will use the columns defined in the config, in the order they
     # are defined in, as the column names. By default, False.
@@ -862,15 +852,6 @@ class DirectIngestRawFileConfig:
     @property
     def quoting_mode(self) -> int:
         return csv.QUOTE_NONE if self.ignore_quotes else csv.QUOTE_MINIMAL
-
-    # TODO(#28239) remove this once raw data import dag is fully rolled out
-    def encodings_to_try(self) -> List[str]:
-        """Returns an ordered list of encodings we should try for this file."""
-        return [self.encoding] + [
-            encoding.upper()
-            for encoding in COMMON_RAW_FILE_ENCODINGS
-            if to_python_standard(encoding) != to_python_standard(self.encoding)
-        ]
 
     def get_column_info(self, column_name: str) -> RawTableColumnInfo:
         """Returns information about the column with the provided |column_name|. Throws
@@ -1256,9 +1237,6 @@ class DirectIngestRawFileConfig:
         no_valid_primary_keys = file_config_dict.pop_optional(
             "no_valid_primary_keys", bool
         )
-        import_chunk_size_rows = file_config_dict.pop_optional(
-            "import_chunk_size_rows", int
-        )
         infer_columns_from_config = file_config_dict.pop_optional(
             "infer_columns_from_config", bool
         )
@@ -1319,11 +1297,6 @@ class DirectIngestRawFileConfig:
                 no_valid_primary_keys
                 if no_valid_primary_keys is not None
                 else default_no_valid_primary_keys
-            ),
-            import_chunk_size_rows=(
-                import_chunk_size_rows
-                if import_chunk_size_rows is not None
-                else _DEFAULT_BQ_UPLOAD_CHUNK_SIZE
             ),
             infer_columns_from_config=(
                 infer_columns_from_config

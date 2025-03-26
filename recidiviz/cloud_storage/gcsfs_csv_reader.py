@@ -27,10 +27,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
-from recidiviz.common.constants.encoding import (
-    COMMON_RAW_FILE_ENCODINGS,
-    UTF_8_ENCODING,
-)
+from recidiviz.common.constants.encoding import ISO85591_1, UTF_8
+
+DEFAULT_GCSFS_FILE_READER_ENCODINGS_TO_TRY = [UTF_8, ISO85591_1]
 
 
 class GcsfsCsvReaderDelegate:
@@ -115,7 +114,7 @@ class GcsfsCsvReader:
         line_terminator = kwargs.get(
             "lineterminator",
         )
-        if not line_terminator or len(line_terminator.encode(UTF_8_ENCODING)) == 1:
+        if not line_terminator or len(line_terminator.encode(UTF_8)) == 1:
             return fp, encoding, kwargs
 
         delimiter = kwargs.get("sep")
@@ -143,7 +142,7 @@ class GcsfsCsvReader:
         # We should now be able to use the faster "c" engine to parse
         # the normalized stream.
         result_kwargs["engine"] = "c"
-        encoding = UTF_8_ENCODING
+        encoding = UTF_8.upper()
 
         return preprocessed_fp, encoding, result_kwargs
 
@@ -172,7 +171,7 @@ class GcsfsCsvReader:
         """
 
         if not encodings_to_try:
-            encodings_to_try = COMMON_RAW_FILE_ENCODINGS
+            encodings_to_try = DEFAULT_GCSFS_FILE_READER_ENCODINGS_TO_TRY
 
         for encoding in encodings_to_try:
             delegate.on_start_read_with_encoding(encoding)
