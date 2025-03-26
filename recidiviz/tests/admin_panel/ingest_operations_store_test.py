@@ -39,8 +39,8 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
-    LegacyDirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -56,6 +56,7 @@ from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 
 @pytest.mark.uses_db
@@ -97,11 +98,6 @@ class IngestOperationsStoreTestBase(TestCase):
         )
         self.mock_redis_patcher = self.redis_patcher.start()
         self.mock_redis_patcher.return_value = FakeRedis()
-        self.enabled_patcher = patch(
-            "recidiviz.admin_panel.ingest_operations_store.is_raw_data_import_dag_enabled",
-        )
-        self.enabled_mock = self.enabled_patcher.start()
-        self.enabled_mock.return_value = False
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -111,7 +107,6 @@ class IngestOperationsStoreTestBase(TestCase):
         self.fs_patcher.stop()
         self.bq_client_patcher.stop()
         self.mock_redis_patcher.stop()
-        self.enabled_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -142,11 +137,11 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         super().tearDown()
 
     def test_get_ingest_file_processing_status_returns_expected_list(self) -> None:
-        manager = LegacyDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
-        manager.mark_raw_file_as_discovered(
+        manager.mark_raw_gcs_file_as_discovered(
             GcsfsFilePath.from_absolute_path(
                 "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2022-01-24T00:00:00:000000_raw_tagBasicData.csv"
             )
@@ -174,7 +169,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
-        manager = LegacyDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -184,9 +179,9 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         file_path2 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2022-02-24T00:00:00:000000_raw_tagBasicData.csv"
         )
-        manager.mark_raw_file_as_discovered(file_path)
-        manager.mark_raw_file_as_discovered(file_path2)
-        manager.mark_raw_file_as_processed(file_path)
+        metadata = manager.mark_raw_gcs_file_as_discovered(file_path)
+        manager.mark_raw_gcs_file_as_discovered(file_path2)
+        manager.mark_raw_big_query_file_as_processed(assert_type(metadata.file_id, int))
 
         with local_project_id_override(GCP_PROJECT_STAGING):
             result = self.operations_store.get_ingest_raw_file_processing_statuses(
@@ -212,7 +207,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
         self,
     ) -> None:
-        manager = LegacyDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -222,10 +217,11 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         file_path2 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2022-02-24T00:00:00:000000_raw_tagBasicData.csv"
         )
-        manager.mark_raw_file_as_discovered(file_path)
-        manager.mark_raw_file_as_processed(file_path)
+        metadata = manager.mark_raw_gcs_file_as_discovered(file_path)
+        manager.mark_raw_big_query_file_as_processed(assert_type(metadata.file_id, int))
 
-        manager.mark_raw_file_as_discovered(file_path2)
+        # this file in bucket
+        manager.mark_raw_gcs_file_as_discovered(file_path2)
         self.fs.test_add_path(path=file_path2, local_path=None)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
@@ -252,7 +248,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
         self,
     ) -> None:
-        manager = LegacyDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -262,8 +258,9 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         file_path2 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2022-02-24T00:00:00:000000_raw_tagMoreBasicData.csv"
         )
-        manager.mark_raw_file_as_discovered(file_path)
-        manager.mark_raw_file_as_discovered(file_path2)
+
+        manager.mark_raw_gcs_file_as_discovered(file_path)
+        manager.mark_raw_gcs_file_as_discovered(file_path2)
 
         with local_project_id_override(GCP_PROJECT_STAGING):
             result = self.operations_store.get_ingest_raw_file_processing_statuses(

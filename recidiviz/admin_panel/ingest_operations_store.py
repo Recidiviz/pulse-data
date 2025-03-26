@@ -40,7 +40,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -403,21 +402,9 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the raw file metadata summary for all file tags
         in a given state_code in the operations DB
         """
-        raw_file_metadata_manager: Union[
-            LegacyDirectIngestRawFileMetadataManager,
-            DirectIngestRawFileMetadataManagerV2,
-        ] = (
-            LegacyDirectIngestRawFileMetadataManager(
-                region_code=state_code.value,
-                raw_data_instance=ingest_instance,
-            )
-            if not is_raw_data_import_dag_enabled(
-                state_code, raw_data_instance=ingest_instance
-            )
-            else DirectIngestRawFileMetadataManagerV2(
-                region_code=state_code.value,
-                raw_data_instance=ingest_instance,
-            )
+        raw_file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+            region_code=state_code.value,
+            raw_data_instance=ingest_instance,
         )
         return {
             raw_file_metadata.file_tag: raw_file_metadata

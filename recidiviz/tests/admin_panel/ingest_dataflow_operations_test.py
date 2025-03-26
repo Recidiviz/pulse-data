@@ -38,8 +38,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
-    LegacyDirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_utils import (
@@ -47,6 +47,7 @@ from recidiviz.pipelines.ingest.pipeline_utils import (
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.types import assert_type
 
 PIPELINES_TESTS_WORKING_DIRECTORY = os.path.dirname(
     recidiviz_pipelines_tests_module.__file__
@@ -88,17 +89,12 @@ class IngestDataflowOperations(TestCase):
             ],
         )
         self.state_code_list_patcher.start()
-        self.dag_enabled_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.is_raw_data_import_dag_enabled",
-            return_value=False,
-        )
-        self.dag_enabled_mock = self.dag_enabled_patcher.start()
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
         self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )
-        self.raw_file_manager = LegacyDirectIngestRawFileMetadataManager(
+        self.raw_file_manager = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -106,7 +102,6 @@ class IngestDataflowOperations(TestCase):
     def tearDown(self) -> None:
         super().tearDown()
         self.state_code_list_patcher.stop()
-        self.dag_enabled_patcher.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )
@@ -293,14 +288,18 @@ class IngestDataflowOperations(TestCase):
         file_path = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-10-01T00:11:30:000000_raw_normal.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path)
+        metadata = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata.file_id, int)
+        )
 
         file_path1 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-07-01T00:12:45:000000_raw_normal2.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path1)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path1)
+        metadata1 = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path1)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata1.file_id, int)
+        )
 
         # Act
         actual = get_raw_data_tags_not_meeting_watermark(
@@ -339,15 +338,18 @@ class IngestDataflowOperations(TestCase):
         file_path = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-08-01T00:11:30:000000_raw_non_expired.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path)
+        metadata = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata.file_id, int)
+        )
 
         file_path1 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-07-01T00:08:00:000000_raw_expired.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path1)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path1)
-
+        metadata1 = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path1)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata1.file_id, int)
+        )
         # Act
         actual = get_raw_data_tags_not_meeting_watermark(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
@@ -389,20 +391,26 @@ class IngestDataflowOperations(TestCase):
         file_path = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-07-01T00:11:30:000000_raw_expired.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path)
+        metadata = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata.file_id, int)
+        )
 
         file_path1 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-07-01T00:08:00:000000_raw_expired2.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path1)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path1)
+        metadata1 = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path1)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata1.file_id, int)
+        )
 
         file_path2 = GcsfsFilePath.from_absolute_path(
             "recidiviz-staging-direct-ingest-state-us-xx/unprocessed_2020-05-30T00:08:00:000000_raw_expired3.csv"
         )
-        self.raw_file_manager.mark_raw_file_as_discovered(file_path2)
-        self.raw_file_manager.mark_raw_file_as_processed(file_path2)
+        metadata2 = self.raw_file_manager.mark_raw_gcs_file_as_discovered(file_path2)
+        self.raw_file_manager.mark_raw_big_query_file_as_processed(
+            assert_type(metadata2.file_id, int)
+        )
         # Act
         actual = get_raw_data_tags_not_meeting_watermark(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY

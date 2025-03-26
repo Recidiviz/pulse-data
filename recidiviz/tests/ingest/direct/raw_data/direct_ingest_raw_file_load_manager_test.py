@@ -71,7 +71,6 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             for path in [
                 "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.raw_data_pruning_enabled_in_state_and_instance",
                 "recidiviz.ingest.direct.views.raw_data_diff_query_builder.raw_data_pruning_enabled_in_state_and_instance",
-                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.is_raw_data_import_dag_enabled",
                 "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance",
             ]
         ]

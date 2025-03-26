@@ -25,7 +25,6 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.direct_ingest_regions import (
     raw_data_pruning_enabled_in_state_and_instance,
 )
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -136,12 +135,10 @@ class RawDataDiffQueryBuilder:
 
         self.new_raw_data_dataset = new_raw_data_dataset
         self._region_module = region_module
-        # TODO(#28239) remove once raw data import is rolled out
-        self._new_table_rows_select = (
-            f"* EXCEPT ({','.join(RawDataTableBigQuerySchemaBuilder.RECIDIVIZ_MANAGED_FIELDS)})"
-            if is_raw_data_import_dag_enabled(self.state_code, self.raw_data_instance)
-            else "*"
-        )
+
+    @staticmethod
+    def _get_new_table_select_clause() -> str:
+        return f"* EXCEPT ({','.join(RawDataTableBigQuerySchemaBuilder.RECIDIVIZ_MANAGED_FIELDS)})"
 
     def build_query(self) -> str:
         if not raw_data_pruning_enabled_in_state_and_instance(
@@ -155,7 +152,7 @@ class RawDataDiffQueryBuilder:
         query_kwargs = {
             "project_id": self.project_id,
             "file_id": str(self.file_id),
-            "new_table_rows_select": self._new_table_rows_select,
+            "new_table_rows_select": self._get_new_table_select_clause(),
             "update_datetime": self.update_datetime.strftime("%Y-%m-%dT%H:%M:%S.%f"),
             "latest_current_raw_data_query": self.latest_current_raw_data_query,
             "new_raw_data_table_id": self.new_raw_data_table_id,

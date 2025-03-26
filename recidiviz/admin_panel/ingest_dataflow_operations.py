@@ -26,7 +26,6 @@ from google.cloud import dataflow_v1beta3
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
@@ -35,9 +34,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager i
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
-)
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
-    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -179,15 +175,7 @@ def get_raw_data_tags_not_meeting_watermark(
         state_code, ingest_instance
     )
 
-    manager: (
-        LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2
-    ) = (
-        LegacyDirectIngestRawFileMetadataManager(state_code.value, ingest_instance)
-        if not is_raw_data_import_dag_enabled(
-            state_code=state_code, raw_data_instance=ingest_instance
-        )
-        else DirectIngestRawFileMetadataManagerV2(state_code.value, ingest_instance)
-    )
+    manager = DirectIngestRawFileMetadataManagerV2(state_code.value, ingest_instance)
 
     latest_upper_bound_by_file_tag: Dict[str, datetime.datetime] = {
         info.file_tag: info.latest_update_datetime

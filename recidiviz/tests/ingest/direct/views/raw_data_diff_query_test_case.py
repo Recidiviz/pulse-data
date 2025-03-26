@@ -92,7 +92,6 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         file_tag: str,
         fixture_type: RawDataDiffFixtureType,
         new_file_id: Optional[int] = None,
-        include_recidiviz_managed_fields: bool = True,
     ) -> None:
         """Create a mock raw data BigQuery table from a raw data fixture."""
         raw_data_df = self._get_raw_data_from_fixture(
@@ -103,7 +102,6 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             fixture_type,
             raw_data_df,
             new_file_id,
-            include_recidiviz_managed_fields=include_recidiviz_managed_fields,
         )
 
     def _get_raw_data_from_fixture(
@@ -115,7 +113,6 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         )
         fixture_columns = csv.get_csv_columns(raw_fixture_path)
         raw_data_df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
-
         return raw_data_df
 
     def _load_mock_raw_table_to_bq(
@@ -179,7 +176,6 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             file_tag,
             RawDataDiffFixtureType.NEW,
             new_file_id,
-            include_recidiviz_managed_fields=False,
         )
 
     def run_diff_query_and_validate_output(

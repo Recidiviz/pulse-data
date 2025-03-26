@@ -1,2 +1,2 @@
-primary_key,value
-id2,green
+primary_key,value,file_id,update_datetime,is_deleted
+id2,green,1,2023-01-02T00:00:00.000000,false
