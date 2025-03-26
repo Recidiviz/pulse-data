@@ -29,7 +29,7 @@ from opentelemetry.baggage import get_baggage
 
 from recidiviz.monitoring.context import get_current_trace_id
 from recidiviz.monitoring.keys import AttributeKey
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import environment
 
 
 def with_context(func: Callable) -> Callable:
@@ -112,29 +112,7 @@ def _labels_for_record(record: logging.LogRecord) -> Dict[str, str]:
     return {k: str(v) for k, v in labels.items()}
 
 
-_GAE_DOMAIN = "appengine.googleapis.com"
 _GCE_DOMAIN = "compute.googleapis.com"
-
-
-class AppEngineLabelsFilter(logging.Filter):
-    """Filter that augments each LogRecord with additional labels based on environment variables
-    Used in App Engine environment. Does not actually filter out any logs
-    """
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        labels = _labels_for_record(record)
-        instance_name = metadata.instance_name()
-        if instance_name:
-            labels.update({"/".join([_GAE_DOMAIN, "instance_name"]): instance_name})
-        instance_id = metadata.instance_id()
-        if instance_id:
-            labels.update({"/".join([_GCE_DOMAIN, "resource_id"]): instance_id})
-        zone = metadata.zone()
-        if zone:
-            labels.update({"/".join([_GCE_DOMAIN, "zone"]): zone})
-
-        record.labels = labels
-        return True
 
 
 def setup() -> None:
@@ -149,10 +127,7 @@ def setup() -> None:
         client = Client()
 
         label_filter: Optional[logging.Filter] = None
-        if environment.in_app_engine():
-            resource = detect_resource()
-            label_filter = AppEngineLabelsFilter()
-        elif environment.in_cloud_run():
+        if environment.in_cloud_run():
             resource = detect_resource()
         else:
             resource = Resource(type="global", labels={})

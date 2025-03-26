@@ -34,25 +34,6 @@ import requests
 _key_cache: Dict[str, Any] = {}
 
 
-def validate_iap_jwt_from_app_engine(
-    iap_jwt: str, cloud_project_number: Optional[str], cloud_project_id: str
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Validate a JWT passed to your App Engine app by Identity-Aware Proxy.
-
-    Args:
-      iap_jwt: The contents of the X-Goog-IAP-JWT-Assertion header.
-      cloud_project_number: The project *number* for your Google Cloud project.
-          This is returned by 'gcloud projects describe $PROJECT_ID', or
-          in the Project Info card in Cloud Console.
-      cloud_project_id: The project *ID* for your Google Cloud project.
-
-    Returns:
-      (user_id, user_email, error_str).
-    """
-    expected_audience = f"/projects/{cloud_project_number}/apps/{cloud_project_id}"
-    return _validate_iap_jwt(iap_jwt, expected_audience)
-
-
 def validate_iap_jwt_from_compute_engine(
     iap_jwt: str, cloud_project_number: str, backend_service_id: str
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:

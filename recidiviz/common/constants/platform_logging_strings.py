@@ -27,7 +27,6 @@ AIRFLOW: str = "airflow"
 DATAFLOW: str = "dataflow"
 KUBERNETES: str = "kubernetes"
 CLOUD_RUN: str = "cloud_run"
-APP_ENGINE: str = "app_engine"
 LOCAL_MACHINE: str = "local_machine"
 
 # -- PLATFORM ORCHESTRATION MECHANISM --

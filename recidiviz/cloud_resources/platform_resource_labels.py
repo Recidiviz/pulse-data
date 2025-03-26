@@ -46,10 +46,6 @@ class PlatformEnvironmentResourceLabel(Enum):
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.CLOUD_RUN,
     )
-    APP_ENGINE = ResourceLabel(
-        key=platform_logging_strings.PLATFORM_ENVIRONMENT,
-        value=platform_logging_strings.APP_ENGINE,
-    )
     LOCAL_MACHINE = ResourceLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.LOCAL_MACHINE,
@@ -71,9 +67,6 @@ class PlatformEnvironmentResourceLabel(Enum):
 
         if environment.in_airflow():
             return cls.AIRFLOW.value
-
-        if environment.in_app_engine():
-            return cls.APP_ENGINE.value
 
         if not environment.in_gcp():
             return cls.LOCAL_MACHINE.value

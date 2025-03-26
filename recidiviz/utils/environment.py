@@ -70,7 +70,6 @@ TASK_ID = "TASK_ID"
 MAP_INDEX = "MAP_INDEX"
 
 
-# TODO(#21450) Rename to in_app_engine_env
 def in_gcp() -> bool:
     """Check whether we're currently running on local dev machine or in prod
 
@@ -372,18 +371,6 @@ def in_gunicorn() -> bool:
 
 def get_data_platform_version() -> str:
     return os.getenv(DATA_PLATFORM_VERSION, "")
-
-
-class ServiceType(Enum):
-    DEFAULT = "default"
-
-
-def get_service_type() -> ServiceType:
-    return ServiceType(os.getenv("GAE_SERVICE", "default"))
-
-
-def in_app_engine() -> bool:
-    return bool(os.getenv("GAE_VERSION"))
 
 
 def get_admin_panel_base_url() -> Optional[str]:

@@ -74,7 +74,7 @@ def build_compute_engine_auth_decorator(
                 An error or redirect response, otherwise.
             """
             if in_development():
-                # Bypass GAE auth check in development.
+                # Bypass GCE auth check in development.
                 return None
 
             backend_service_id = get_secret(backend_service_id_secret_name)

@@ -107,7 +107,6 @@ class IngestOpsEndpointTests(TestCase):
         self.mock_current_jobs_statuses.return_value = mock_response
         response = self.client.get(
             "/api/ingest_operations/get_all_latest_ingest_dataflow_jobs",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         self.assertEqual(
@@ -156,7 +155,6 @@ class IngestOpsEndpointTests(TestCase):
 
         response = self.client.get(
             "/api/ingest_operations/get_latest_ingest_dataflow_job/US_XX",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         self.assertEqual(
@@ -187,7 +185,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -207,7 +204,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/get_latest_run_ingest_view_results/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -224,7 +220,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/get_latest_run_state_results/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -252,7 +247,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/all_latest_raw_data_import_run_info",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -294,7 +288,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/all_current_lock_summaries",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -348,7 +341,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/get_latest_raw_data_imports/US_XX/SECONDARY/fake_tag",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -394,7 +386,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/raw_file_config/US_XX/basic",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -425,7 +416,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.get(
             "/api/ingest_operations/is_flashing_in_progress/US_XX",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -439,7 +429,6 @@ class IngestOpsEndpointTests(TestCase):
         # Act
         response = self.client.post(
             "/api/ingest_operations/is_flashing_in_progress/update",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             json={
                 "stateCode": "US_XX",
                 "isFlashing": True,
@@ -454,7 +443,6 @@ class IngestOpsEndpointTests(TestCase):
 
         response = self.client.post(
             "/api/ingest_operations/is_flashing_in_progress/update",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             json={
                 "stateCode": "US_XX",
                 "isFlashing": False,
@@ -475,7 +463,6 @@ class IngestOpsEndpointTests(TestCase):
         manager_mock().stale_secondary_raw_data.return_value = ["path_a", "path_b"]
         response = self.client.get(
             "/api/ingest_operations/stale_secondary/US_XX",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -496,7 +483,6 @@ class IngestOpsEndpointTests(TestCase):
                 "description": "test",
                 "ttlSeconds": 123,
             },
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -515,7 +501,6 @@ class IngestOpsEndpointTests(TestCase):
                 "rawDataInstance": "PRIMARY",
                 "lockIds": [1, 2, 3],
             },
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -543,7 +528,6 @@ class IngestOpsEndpointTests(TestCase):
         ]
         response = self.client.get(
             "/api/ingest_operations/resource_locks/list_all/US_XX/PRIMARY",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -577,7 +561,6 @@ class IngestOpsEndpointTests(TestCase):
                 "stateCode": "US_XX",
                 "rawDataInstance": "PRIMARY",
             },
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -604,7 +587,6 @@ class IngestOpsEndpointTests(TestCase):
                 "destIngestInstance": "SECONDARY",
                 "srcIngestInstance": "PRIMARY",
             },
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -625,7 +607,6 @@ class IngestOpsEndpointTests(TestCase):
                 "stateCode": "US_XX",
                 "rawDataInstance": "SECONDARY",
             },
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 
         # Assert
@@ -646,5 +627,4 @@ class IngestOpsEndpointTests(TestCase):
                 json={
                     "rawDataInstance": "SECONDARY",
                 },
-                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             )

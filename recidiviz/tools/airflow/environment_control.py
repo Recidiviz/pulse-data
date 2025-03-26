@@ -26,7 +26,7 @@
     python -m recidiviz.tools.airflow.environment_control open
 
     # to copy source files over to your environment's storage bucket:
-    python -m recidiviz.tools.airflow.environment_control update_files [--files recidiviz/server.py ...]
+    python -m recidiviz.tools.airflow.environment_control update_files [--files recidiviz/airflow/dags/calculation_dag.py ...]
 
     # to update the version of the appengine image that KubernetesPodOperators run:
     python -m recidiviz.tools.airflow.environment_control update_image

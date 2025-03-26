@@ -58,10 +58,6 @@ from recidiviz.utils.metadata import local_project_id_override
     "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
 )
 @mock.patch(
-    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
-    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
-)
-@mock.patch(
     f"{view_export_manager.__name__}.PRODUCTS_CONFIG_PATH",
     fixtures.as_filepath("fixture_products.yaml"),
 )

@@ -570,44 +570,6 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz.server",
-        valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.admin_panel",
-                "recidiviz.aggregated_metrics",
-                "recidiviz.auth",
-                "recidiviz.big_query",
-                "recidiviz.calculator",
-                "recidiviz.case_triage",
-                "recidiviz.cloud_resources",
-                "recidiviz.cloud_storage",
-                "recidiviz.common",
-                "recidiviz.datasets.static_data",
-                "recidiviz.firestore",
-                "recidiviz.ingest",
-                "recidiviz.metrics",
-                "recidiviz.monitoring",
-                "recidiviz.observations",
-                "recidiviz.outliers",
-                "recidiviz.persistence",
-                "recidiviz.pipelines",
-                "recidiviz.reporting",
-                "recidiviz.server",
-                "recidiviz.server_blueprint_registry",
-                "recidiviz.server_config",
-                "recidiviz.source_tables",
-                "recidiviz.task_eligibility",
-                "recidiviz.utils",
-                "recidiviz.validation",
-                "recidiviz.workflows",
-            }
-        ),
-        # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
-        #  isolated the Dataflow pipeline code completely
-        explicitly_invalid_package_dependencies=["apache_beam"],
-    )
-
-    success &= check_dependencies_for_entrypoint(
         "recidiviz.case_triage.server",
         valid_module_prefixes=make_module_matcher(
             {

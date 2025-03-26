@@ -42,10 +42,6 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 @patch("recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789"))
-@patch(
-    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
-    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
-)
 @pytest.mark.uses_db
 class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
     """Integration tests of our flask endpoints"""
