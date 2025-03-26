@@ -67,33 +67,6 @@ export interface StateDatasetRowCounts {
   [dataset: string]: number;
 }
 
-// TODO(#28239): remove once the raw data import dag is fully rolled out
-export enum IngestStatus {
-  RAW_DATA_REIMPORT_STARTED = "RAW_DATA_REIMPORT_STARTED",
-  INITIAL_STATE = "INITIAL_STATE",
-  RAW_DATA_IMPORT_IN_PROGRESS = "RAW_DATA_IMPORT_IN_PROGRESS",
-  READY_TO_FLASH = "READY_TO_FLASH",
-  FLASH_IN_PROGRESS = "FLASH_IN_PROGRESS",
-  FLASH_COMPLETED = "FLASH_COMPLETED",
-  RAW_DATA_REIMPORT_CANCELED = "RAW_DATA_REIMPORT_CANCELED",
-  RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS = "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS",
-  RAW_DATA_UP_TO_DATE = "RAW_DATA_UP_TO_DATE",
-  STALE_RAW_DATA = "STALE_RAW_DATA",
-  NO_RAW_DATA_REIMPORT_IN_PROGRESS = "NO_RAW_DATA_REIMPORT_IN_PROGRESS",
-}
-
-export type IngestInstanceStatusInfo = {
-  status: IngestStatus;
-  statusTimestamp: string;
-};
-
-export type IngestInstanceStatusResponse = {
-  [stateCode: string]: {
-    primary: IngestInstanceStatusInfo;
-    secondary: IngestInstanceStatusInfo;
-  };
-};
-
 // --- raw data import dag summary related constants -----------------------------------
 
 export enum RawDataImportRunState {

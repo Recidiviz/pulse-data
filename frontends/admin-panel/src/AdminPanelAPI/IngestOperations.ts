@@ -136,14 +136,6 @@ export const getLatestRunStateDatasetRowCounts = async (
   );
 };
 
-export const getRecentIngestInstanceStatusHistory = async (
-  stateCode: string
-): Promise<Response> => {
-  return getResource(
-    `/api/ingest_operations/get_recent_ingest_instance_status_history/${stateCode}`
-  );
-};
-
 // Copy raw data to backup dataset
 export const copyRawDataToBackup = async (
   stateCode: string,

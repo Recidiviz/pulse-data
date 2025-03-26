@@ -21,74 +21,23 @@ import {
   Card,
   Descriptions,
   Divider,
-  Row,
   Space,
   Spin,
-  Timeline,
   Typography,
 } from "antd";
 import { scaleTime } from "d3-scale";
 import * as React from "react";
 import { XYFrame } from "semiotic";
 
-import {
-  IngestInstanceStatusInfo,
-  IngestStatus,
-} from "../IngestStatus/constants";
 import ColorLegend from "../Utilities/ColorLegend";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
-import {
-  IngestStatusRefreshInfo,
-  ValidationDetailsGraphProps,
-} from "./constants";
+import { ValidationDetailsGraphProps } from "./constants";
 import { formatDate, formatStatusAmount } from "./utils";
-
-const filterToRefreshesDuringWindow = (
-  startTime: Date | undefined,
-  endTime: Date,
-  ingestEvents: IngestStatusRefreshInfo[]
-): IngestStatusRefreshInfo[] => {
-  return ingestEvents.filter(({ refreshTimestamp }) => {
-    const refreshTime = new Date(refreshTimestamp);
-    return (
-      (startTime === undefined || startTime <= refreshTime) &&
-      refreshTime < endTime
-    );
-  });
-};
-
-const getLabelForStatus = (status: IngestStatus) => {
-  switch (status) {
-    case IngestStatus.FLASH_COMPLETED:
-      return "Raw Data Reimport Flashed";
-    case IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS:
-      return "Raw Data Import";
-    case IngestStatus.RAW_DATA_UP_TO_DATE:
-      return "Raw Data Import Up to Date";
-    default:
-      return "";
-  }
-};
-
-const getLabelForStatuses = (statuses: IngestInstanceStatusInfo[]): string => {
-  const statusNames = statuses.map((statusInfo) => statusInfo.status);
-  // If there was a flash, ignore other statuses.
-  if (statusNames.includes(IngestStatus.FLASH_COMPLETED)) {
-    return getLabelForStatus(IngestStatus.FLASH_COMPLETED);
-  }
-
-  const labels = [];
-  if (statusNames.includes(IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS)) {
-    labels.push(getLabelForStatus(IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS));
-  }
-  return labels.join(" & ");
-};
 
 const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
   records,
   isPercent,
   loading,
-  ingestEvents,
   versionChanges,
 }) => {
   const lines = [
@@ -156,12 +105,6 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
       flipLeft ? "-8px" : "8px"
     })`;
 
-    const relevantIngestEvents = filterToRefreshesDuringWindow(
-      pointIdx !== 0 ? lines[0].coordinates[pointIdx - 1].time : undefined,
-      lines[0].coordinates[pointIdx].time,
-      ingestEvents
-    );
-
     return (
       <Card className="tooltip-content" style={{ transform: transformStyle }}>
         <Descriptions title={formatDatetime(d.time)} column={1} bordered>
@@ -178,47 +121,6 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
           System Version: {records[pointIdx].getSystemVersion()}
         </Typography.Text>
         <Typography.Title level={5}>Ingest Events</Typography.Title>
-        {relevantIngestEvents.length > 0 ? (
-          <Timeline mode="left">
-            {relevantIngestEvents
-              .map(({ refreshTimestamp, ingestStatuses }, refreshIdx) => [
-                ...ingestStatuses
-                  .map((ingestStatus, statusIdx) => {
-                    const firstRefresh =
-                      refreshIdx === relevantIngestEvents.length - 1;
-                    const firstStatusForRefresh =
-                      statusIdx === ingestStatuses.length - 1;
-                    // If this is not the first refresh, skip the first status.
-                    return (!firstRefresh ||
-                      ingestStatus.status ===
-                        IngestStatus.RAW_DATA_UP_TO_DATE) &&
-                      firstStatusForRefresh ? undefined : (
-                      <Timeline.Item
-                        label={formatDatetime(
-                          new Date(ingestStatus.statusTimestamp)
-                        )}
-                      >
-                        {`${
-                          firstStatusForRefresh ? "Ongoing " : ""
-                        }${getLabelForStatus(ingestStatus.status)}`}
-                      </Timeline.Item>
-                    );
-                  })
-                  .reverse(),
-                <Timeline.Item
-                  label={formatDatetime(new Date(refreshTimestamp))}
-                >
-                  BigQuery Refresh
-                </Timeline.Item>,
-              ])
-              .reverse()
-              .flat()}
-          </Timeline>
-        ) : (
-          <Row justify="center">
-            <Typography.Text>No Refreshes</Typography.Text>
-          </Row>
-        )}
       </Card>
     );
   };
@@ -228,24 +130,6 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
 
   const [hoveredAnnotationIdx, setHoveredAnnotationIdx] =
     React.useState<number>(-1);
-
-  const ingestAnnotations = ingestEvents
-    .filter(
-      // TODO(#20103): If extract and merge is crashing this will still make a bunch of
-      // annotations.
-      ({ ingestStatuses }) => getLabelForStatuses(ingestStatuses).length > 0
-    )
-    .map(({ refreshTimestamp, ingestStatuses }) => ({
-      time: new Date(refreshTimestamp),
-      note: {
-        label: getLabelForStatuses(ingestStatuses),
-      },
-      color: ingestStatuses
-        .map((statusInfo) => statusInfo.status)
-        .includes(IngestStatus.FLASH_COMPLETED)
-        ? palette.data.salmon1
-        : palette.data.teal1,
-    }));
 
   const versionAnnotations = Object.entries(versionChanges).map(
     ([version, timestamp]) => ({
@@ -257,30 +141,29 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
     })
   );
 
-  const annotations = [...ingestAnnotations, ...versionAnnotations].map(
-    (annotation, idx) => ({
-      type: "x",
-      dy: -10,
-      dx: 0,
-      lineStyle: {
-        strokeWidth: 2,
-      },
-      connector: { type: "line", end: "dot", endScale: 2 },
-      events: {
-        onMouseOver: () => setHoveredAnnotationIdx(idx),
-        onMouseOut: () => setHoveredAnnotationIdx(-1),
-      },
-      ...annotation,
-      // Set the note separately, since we only want to include the label on hover.
-      note: {
-        align: "middle",
-        wrap: 10,
-        wrapSlitter: "\n",
-        ...annotation.note,
-        label: hoveredAnnotationIdx === idx ? annotation.note.label : undefined,
-      },
-    })
-  );
+  // TODO(#40102) add flashing events to the graph
+  const annotations = versionAnnotations.map((annotation, idx) => ({
+    type: "x",
+    dy: -10,
+    dx: 0,
+    lineStyle: {
+      strokeWidth: 2,
+    },
+    connector: { type: "line", end: "dot", endScale: 2 },
+    events: {
+      onMouseOver: () => setHoveredAnnotationIdx(idx),
+      onMouseOut: () => setHoveredAnnotationIdx(-1),
+    },
+    ...annotation,
+    // Set the note separately, since we only want to include the label on hover.
+    note: {
+      align: "middle",
+      wrap: 10,
+      wrapSlitter: "\n",
+      ...annotation.note,
+      label: hoveredAnnotationIdx === idx ? annotation.note.label : undefined,
+    },
+  }));
 
   return (
     <ChartWrapper className="validation-graph">
@@ -321,20 +204,6 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
       />
       <Space split={<Divider type="vertical" />}>
         <ColorLegend items={lines} />
-        {ingestAnnotations.length > 0 ? (
-          <ColorLegend
-            items={[
-              {
-                title: "Refresh with Flashed Data",
-                color: palette.data.salmon1,
-              },
-              {
-                title: "Refresh with Ingested Data",
-                color: palette.data.teal1,
-              },
-            ]}
-          />
-        ) : undefined}
         {versionAnnotations.length > 0 ? (
           <ColorLegend
             items={[

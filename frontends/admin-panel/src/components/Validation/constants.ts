@@ -20,7 +20,6 @@ import {
   SamenessPerViewValidationResultDetails,
   ValidationStatusRecord,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import { IngestInstanceStatusInfo } from "../IngestStatus/constants";
 
 export const ANCHOR_VALIDATION_FAILURE_SUMMARY = "failure-summary";
 export const ANCHOR_VALIDATION_HARD_FAILURES = "hard-failures";
@@ -47,10 +46,6 @@ export interface ValidationDetailsGraphProps {
   records: ValidationStatusRecord[];
   isPercent: boolean | undefined;
   loading: boolean;
-  ingestEvents: {
-    refreshTimestamp: string;
-    ingestStatuses: IngestInstanceStatusInfo[];
-  }[];
   versionChanges: { [systemVersion: string]: string };
 }
 
@@ -80,17 +75,3 @@ export interface ValidationErrorTableRows {
 export interface ValidationErrorTableProps {
   tableData: ValidationErrorTableData;
 }
-
-/** Information about a particular BigQuery refresh. */
-export type IngestStatusRefreshInfo = {
-  /** The timestamp that the BigQuery refresh occurred. */
-  refreshTimestamp: string;
-  /** All of the ingest statuses that were active during the time covered by this
-   * refresh (at any point between the prior refresh and this refresh).
-   *
-   * For instance, if ingest view materialization was ongoing during the prior refresh,
-   * and then extract and merge ran and completed and the ingest instance was up to date,
-   * and this BigQuery refresh took place while it was up to date, all three of those
-   * statuses will be present in this list. */
-  ingestStatuses: IngestInstanceStatusInfo[];
-};

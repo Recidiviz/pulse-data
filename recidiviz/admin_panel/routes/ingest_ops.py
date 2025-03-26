@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines admin panel routes for ingest operations."""
-import datetime
 import logging
 from http import HTTPStatus
 from typing import Tuple, Union
@@ -41,9 +40,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
-)
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_flash_status_manager import (
     DirectIngestRawDataFlashStatusManager,
@@ -213,29 +209,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                     "stateResultsDatasetName": state_results_dataset,
                 }
             ),
-            HTTPStatus.OK,
-        )
-
-    @bp.route(
-        "/api/ingest_operations/get_recent_ingest_instance_status_history/<state_code_str>"
-    )
-    def _get_recent_ingest_instance_status_history(
-        state_code_str: str,
-    ) -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            state_code = StateCode(state_code_str)
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        status_manager = DirectIngestInstanceStatusManager(
-            state_code.value,
-            DirectIngestInstance.PRIMARY,
-        )
-        statuses = status_manager.get_statuses_since(
-            datetime.datetime.now() - datetime.timedelta(days=180)
-        )
-        return (
-            jsonify([status.for_api() for status in statuses]),
             HTTPStatus.OK,
         )
 
