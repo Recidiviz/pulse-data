@@ -25,8 +25,6 @@ from recidiviz.common.constants.states import StateCode
 # TODO(#39269): Migrate all of these exemptions to file-level and then column-level
 #  exemptions.
 COLUMN_DOCUMENTATION_STATE_LEVEL_EXEMPTIONS: set[StateCode] = {
-    # TODO(#39255): Document columns used in US_UT and remove this exemption
-    StateCode.US_UT,
     # TODO(#39253): Document columns used in US_IX and remove this exemption. If we
     #  first migrate to file-level or column-level exemptions for US_IX, we will AT
     #  LEAST need to exempt these files (there are others that haven't been identified):
@@ -88,10 +86,6 @@ COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS: dict[StateCode, set[str]] = {
     # TODO(#39241): Document columns used in these files and remove this exemption for US_AR
     StateCode.US_AR: {
         "RELEASEDATECHANGE",
-    },
-    # TODO(#39242): Document columns used in these files and remove this exemption for US_AZ
-    StateCode.US_AZ: {
-        "MEA_PROFILES",
     },
     # TODO(#39243): Document columns used in these files and remove this exemption for US_CA
     StateCode.US_CA: {
@@ -174,23 +168,6 @@ COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS: dict[StateCode, dict[str, set[str]
 # downstream BQ views, even though the file_description is empty or insufficient (i.e.
 # docstring is just a TO-DO).
 FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
-    # TODO(#39242): Add file-level documentation for these files and remove this exemption for US_AZ
-    StateCode.US_AZ: {
-        "AZ_AQ_CATEGORY",
-        "AZ_AQ_REASON",
-        "AZ_AQ_RECORD",
-        "AZ_AQ_TEMPLATE",
-        "AZ_AQ_TYPE",
-        "AZ_CM_AGENT",
-        "AZ_DOC_BED",
-        "AZ_DOC_DSC_PENALTY",
-        "AZ_DOC_DSC_SANCTION",
-        "AZ_DOC_DSC_SCHED_HRNG_HIST",
-        "AZ_DOC_DSC_STAFF_REVIEW",
-        "AZ_DOC_HWD_WARRANT",
-        "AZ_DOC_SC_COMMITMENT",
-        "DOC_PRIORITY_REPORT",
-    },
     # TODO(#39244): Add file-level documentation for these files and remove this exemption for US_CO
     StateCode.US_CO: {
         "informix_displnry",
@@ -256,11 +233,6 @@ FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
         "PriorRecord",
         "Sanctions",
         "Violations",
-    },
-    # TODO(#39255): Add file-level documentation for these files and remove this exemption for US_UT
-    StateCode.US_UT: {
-        "rim_violation_cd",
-        "rim_status_cd",
     },
 }
 
@@ -369,10 +341,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
         },
     },
     StateCode.US_AZ: {
-        "DPP_EPISODE": {
-            "y/n string flag": ["ECC_ELIGIBILITY_STATUS", "ECC_ABATEMENT_DATE_DENIED"],
-            "FK Lookups": ["SUPERVISION_LEVEL_ID", "RELEASE_TYPE_ID"],
-        },
         "AZ_DOC_SC_OFFENSE": {
             "No description available in AZ data dictionary as of 10/31/23.": [
                 "NEW_CD_ERND_RLS_CRDT_TYPE_ID",
@@ -414,25 +382,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "NUMBER_ESCAPES",
             ]
         },
-        "AZ_DOC_TRANSITION_PRG_EVAL": {
-            "Eligible due to striked out ARS code": [
-                "CUR_CONV_HAS_REMOVED_ARS_CODE",
-                "PREV_CONV_HAS_REMOVED_ARS_CODE",
-            ]
-        },
-        "AZ_DOC_DRUG_TRANSITION_PRG_AGRMNT": {
-            "No description available in MiCase ERD as of 2024-05-30.": [
-                "AGRMNT_DOCUMENT_ID",
-                "DECLINED_REASONS",
-                "DECLINED_OTHER_COMMENT",
-            ],
-            "DEFAULT 'N'.  No description available in MiCase ERD as of 2024-05-30.": [
-                "WITNESSONE_SIG_NA",
-                "WITNESSTWO_SIG_NA",
-                "INMATE_SIG_NA",
-                "IS_REFUSE_TO_SIGN",
-            ],
-        },
         "DOC_EPISODE": {
             "No description available in AZ data dictionary as of 10/31/23.": [
                 "PREV_RESTRIC_STATUS_ID",
@@ -440,40 +389,13 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "PIA_STATE_ID",
                 "ICC_TO_ID",
                 "IS_NO_TIME_CREDIT_RECORD",
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
-            ]
-        },
-        "AZ_CS_OMS_RSK_ASS_DAT": {"FK to LOOKUPS": ["QUESTION_ID", "ANSWER_ID"]},
-        "AZ_DOC_DSC_STAFF_REVIEW": {
-            "from events module": ["EVENT_ID", "DOC_ID"],
-            "Y/N": ["REPORTING_PERSON_FLAG", "NOTIFIED_PERSON_FLAG"],
-            "fk to person": ["REPORTING_PERSON_ID", "NOTIFIED_PERSON_ID"],
-        },
-        "validation_incarceration_population_person_level": {
-            "Unknown. May be useful for validation once it is identified, so included here.": [
-                "ED",
-                "WB",
-                "WK",
-                "SA",
-                "SX",
-                "DU",
             ]
         },
         "DOC_ACI_ASSIGN": {
-            "Part of PK": ["ACI_ASSIGN_ID", "PR_ASSIGN_ID"],
             "FK to LOOKUPS": [
                 "ASSIGNED_PHASE_ID",
                 "ASSIGNED_SKILL_ID",
                 "ASSIGNED_PERIOD_ID",
-            ],
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
             ],
             "No description available in AZ data dictionary as of 1/27/25.": [
                 "ACI_JOB_ID",
@@ -487,20 +409,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "SCHEDULE_ID",
             ],
         },
-        "AZ_DOC_DRUG_TRANSITION_PRG_EVAL": {
-            "Eligible due to striked out ARS code": [
-                "CUR_CONV_HAS_REMOVED_ARS_CODE",
-                "PREV_CONV_HAS_REMOVED_ARS_CODE",
-            ]
-        },
-        "RELATIONSHIP": {
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
-            ]
-        },
         "LOOKUPS": {
             "No description available in AZ data dictionary as of 10/31/23.": [
                 "OTHER_3",
@@ -512,32 +420,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "LOCALE_NL",
                 "DESCRIPTION_NL",
             ],
-            "References MEA_USERS table": ["LOOK_CREATE_USERID", "LOOK_UPDT_USERID"],
-        },
-        "DEMOGRAPHICS": {
-            "foreign key to lookups": [
-                "PRIMARY_LANGUAGE",
-                "RELIGION",
-                "STATE_OF_BIRTH_ID",
-                "COUNTRY_OF_BIRTH_ID",
-                "PHYSICAL_BUILD_ID",
-            ]
-        },
-        "AZ_DOC_DRUG_TRAN_PRG_REVIEW": {
-            "Part of composite PK": ["DRUG_TRAN_PRG_ELIGIBILITY_ID", "CREATE_DTM"]
-        },
-        "AZ_CS_OMS_ACCAT": {
-            "Section score": [
-                "GENERAL_NEEDS",
-                "VOCATIONAL",
-                "RELATIONSHIPS",
-                "HEALTH",
-                "ATTITUDE",
-                "CRIMINAL_BEHAVIOR",
-            ]
-        },
-        "AZ_DOC_TRANSITION_PRG_REVIEW": {
-            "Part of composite PK": ["TRANSITION_PRG_ELIGIBILITY_ID", "CREATE_DTM"]
         },
         "AZ_DOC_HOME_PLAN_DETAIL": {
             "references table LOOKUPS": ["RELATION_SHIP_ID", "HOMELESS_REQUEST_ID"],
@@ -548,9 +430,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "SASEC_ADDRESS_ID",
                 "LOCATION_ID",
             ],
-        },
-        "AZ_DOC_HWD_DETAINER": {
-            "date record was created/updated": ["UPDT_DTM", "CREATE_DTM"]
         },
         "CASE_NOTE": {"Foreign key to LOOKUP": ["NOTE_TYPE_ID", "ALERT_TYPE_ID"]},
         "AZ_DOC_HWD_WARRANT": {
@@ -564,12 +443,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "HOLD_TYPE_ID",
                 "MAX_WORK_HOURS",
                 "CONTACT_CODES",
-            ]
-        },
-        "DOC_PROGRAM_DETAIL": {
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "ACTIVE",
-                "ACTIVE_FLAG",
             ]
         },
         "AZ_DOC_SC_EXCEPTION": {
@@ -603,14 +476,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "COUNT_CATEGORY_ID",
                 "BED_STATUS_ID",
                 "OUT_OF_SERVICE_REASON_ID",
-            ]
-        },
-        "AZ_DOC_TRANSITION_PRG_AGRMNT": {
-            "DEFAULT 'N'.  No description available in MiCase ERD as of 2024-05-30.": [
-                "WITNESSONE_SIG_NA",
-                "WITNESSTWO_SIG_NA",
-                "INMATE_SIG_NA",
-                "IS_REFUSE_TO_SIGN",
             ]
         },
         "DOC_PERSONAL_INFORMATION": {
@@ -647,11 +512,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
             "No description available in AZ data dictionary as of 10/31/23.": [
                 "AREA_ID",
                 "NS_COUNTY",
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
-                "IS_HOMELESS",
             ],
             "Block": ["RESIDENCE_BLOCK", "NS_BLOCK"],
             "Lookup category = COUNTY": [
@@ -682,32 +542,7 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "CONDITION_FORM_ID",
                 "INT_VIOLATION",
                 "REF_NUMBER",
-                "OTHER_SANCTION",
             ]
-        },
-        "OCCUPANCY": {
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
-            ]
-        },
-        "AZ_INT_MENTAL_HEALTH_ACTION": {
-            "User Id Who created the record references MEA_USERS Table": [
-                "CREATE_USERID",
-                "CREATED_BY_USER",
-            ],
-            "Date When Record Created": ["CREATE_DTM", "CREATED_BY_DATE"],
-        },
-        "DOC_PR_ASSIGNMENT": {
-            "FK to LOOKUPS": ["CHANGE_REASON_ID", "REQUEST_SOURCE_ID"],
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "CREATE_USERID",
-                "CREATE_DTM",
-                "UPDT_USERID",
-                "UPDT_DTM",
-            ],
         },
     },
     StateCode.US_CA: {
@@ -1709,18 +1544,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "SCHEDULED_ELECTRONIC_REQ",
                 "SCHEDULED_OFFICE_REQ",
                 "UNSCHEDULED_FIELD_REQ",
-            ]
-        },
-    },
-    StateCode.US_UT: {
-        "addr": {
-            "Latitudinal coordinates of address.": ["lat", "x_coord"],
-            "Longitudinal coordinates of address.": ["lng", "y_coord"],
-        },
-        "sprvsn_cntc": {
-            "Timestamp of when this record was most recently updated": [
-                "updt_dt",
-                "create_dt",
             ]
         },
     },

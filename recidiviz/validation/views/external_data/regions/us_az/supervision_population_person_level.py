@@ -42,8 +42,7 @@ SELECT
     ELSE SUPV_LEV
   END AS supervision_level,
   officer.is_active,
-  officer.IS_CC_USER,
-  AQ_SEARCH_CRITERIA
+  officer.IS_CC_USER
 FROM `{project_id}.{us_az_raw_data_up_to_date_dataset}.validation_supervision_population_person_level_latest` ext
 -- As of 2024-06-04, this leaves 6 people with blank PERSON_IDs who are actively on supervision,
 -- but do not appear with these ADC_NUMBER values in the PERSON table. See TODO(#30383).

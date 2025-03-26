@@ -52,10 +52,10 @@ WITH early_termination_reports AS (
       peid.state_code,
       peid.person_id,
       SAFE_CAST(LEFT(r.rpt_dt, 10) AS DATE) AS report_date,
-  FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.wf_rpt_latest` r
-  INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.wf_sbjct_cd_latest`
+  FROM `{{project_id}}.{{us_ut_raw_data_up_to_date_dataset}}.wf_rpt_latest` r
+  INNER JOIN `{{project_id}}.{{us_ut_raw_data_up_to_date_dataset}}.wf_sbjct_cd_latest`
     USING(rpt_sbjct_id)
-  INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.wf_typ_cd_latest`
+  INNER JOIN `{{project_id}}.{{us_ut_raw_data_up_to_date_dataset}}.wf_typ_cd_latest`
     USING(rpt_typ_id)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.external_id = r.ofndr_num
@@ -139,7 +139,7 @@ US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     view_id=US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_NAME,
     description=US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION,
     view_query_template=US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
-    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+    us_ut_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_UT, instance=DirectIngestInstance.PRIMARY
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
