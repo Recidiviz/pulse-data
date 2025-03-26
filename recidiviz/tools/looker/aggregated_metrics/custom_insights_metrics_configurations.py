@@ -50,6 +50,10 @@ INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
         MetricPopulationType.SUPERVISION,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ),
+    "SUPERVISION_OFFICER_OUTLIER_COHORT": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT,
+    ),
 }
 
 

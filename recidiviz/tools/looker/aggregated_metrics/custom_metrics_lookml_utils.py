@@ -390,6 +390,8 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
             [
                 f"NULL AS {col}"
                 if col == "person_id"
+                else f"CAST(NULL AS DATE) AS {col}"
+                if col == "cohort_month_end_date"
                 else f"CAST(NULL AS STRING) AS {col}"
                 for col in shared_columns
             ]
