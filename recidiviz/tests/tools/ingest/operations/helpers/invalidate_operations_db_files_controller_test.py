@@ -80,12 +80,6 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-testing"
         )
         self.project_id_patcher.start()
-        self.dag_enabled_patcher = patch(
-            "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.is_raw_data_import_dag_enabled",
-            return_value=True,
-        )
-        self.dag_enabled_patcher.start()
-
         self.controller = InvalidateOperationsDBFilesController.create_controller(
             project_id="test-project",
             state_code=StateCode.US_XX,
@@ -100,7 +94,6 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
-        self.dag_enabled_patcher.stop()
 
     @patch(
         "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"

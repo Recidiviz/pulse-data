@@ -25,7 +25,6 @@ from sqlalchemy import text
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -227,13 +226,6 @@ class InvalidateOperationsDBFilesController:
     skip_prompts: Optional[bool] = attr.ib(
         default=False, validator=attr_validators.is_bool
     )
-
-    def __attrs_post_init__(self) -> None:
-        if not is_raw_data_import_dag_enabled(self.state_code, self.ingest_instance):
-            raise ValueError(
-                "Invalidation operation only supports updating operations tables "
-                "for states/ingest_instances with the raw data import DAG enabled."
-            )
 
     @classmethod
     def create_controller(

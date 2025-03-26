@@ -51,15 +51,11 @@ from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestRawFileMetadata,
-)
 from recidiviz.tools.ingest.operations.helpers.delete_bq_raw_table_rows_controller import (
     DeleteBQRawTableRowsController,
 )
@@ -129,52 +125,26 @@ class MoveFilesToDeprecatedController:
                 dry_run=self.dry_run,
             )
 
-            # TODO(#28239): delete once raw data import DAG is live
-            # The invalidation logic only supports the new operations tables
-            if not is_raw_data_import_dag_enabled(
-                StateCode(self.region_code.upper()), self.ingest_instance
-            ):
-                operations_table = DirectIngestRawFileMetadata.__tablename__
+        invalidated_files = InvalidateOperationsDBFilesController.create_controller(
+            project_id=self.project_id,
+            state_code=StateCode(self.region_code.upper()),
+            ingest_instance=self.ingest_instance,
+            file_tag_filters=self.file_tag_filters,
+            file_tag_regex=self.file_tag_regex,
+            start_date_bound=self.start_date_bound,
+            end_date_bound=self.end_date_bound,
+            dry_run=self.dry_run,
+            skip_prompts=self.skip_prompts,
+        ).run()
 
-                prompt_for_confirmation(
-                    f"All associated rows from our postgres table `{operations_table}` "
-                    "must be deleted or marked as invalidated before moving these files to a deprecated "
-                    "location.\nHave you already done so?",
-                    dry_run=self.dry_run,
-                )
-
-                prompt_for_confirmation(
-                    f"All associated rows in the BigQuery dataset "
-                    f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
-                    f"these files to a deprecated location.\nHave you already done so?",
-                    dry_run=self.dry_run,
-                )
-
-        if is_raw_data_import_dag_enabled(
-            StateCode(self.region_code.upper()), self.ingest_instance
-        ):
-            invalidated_files = InvalidateOperationsDBFilesController.create_controller(
-                project_id=self.project_id,
+        if invalidated_files:
+            DeleteBQRawTableRowsController(
+                bq_client=BigQueryClientImpl(project_id=self.project_id),
                 state_code=StateCode(self.region_code.upper()),
                 ingest_instance=self.ingest_instance,
-                file_tag_filters=self.file_tag_filters,
-                file_tag_regex=self.file_tag_regex,
-                start_date_bound=self.start_date_bound,
-                end_date_bound=self.end_date_bound,
                 dry_run=self.dry_run,
                 skip_prompts=self.skip_prompts,
-            ).run()
-
-            if invalidated_files:
-                DeleteBQRawTableRowsController(
-                    bq_client=BigQueryClientImpl(project_id=self.project_id),
-                    state_code=StateCode(self.region_code.upper()),
-                    ingest_instance=self.ingest_instance,
-                    dry_run=self.dry_run,
-                    skip_prompts=self.skip_prompts,
-                ).run(
-                    file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids
-                )
+            ).run(file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids)
 
         OperateOnStorageRawFilesController.create_controller(
             region_code=self.region_code,

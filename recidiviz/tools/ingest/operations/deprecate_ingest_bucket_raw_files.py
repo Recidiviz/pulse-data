@@ -47,7 +47,6 @@ import logging
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import parse_opt_datetime_maybe_add_tz
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
@@ -55,7 +54,6 @@ from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_co
 from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller import (
     MoveIngestBucketRawFilesToDeprecatedController,
 )
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -155,11 +153,7 @@ def main(
         dry_run=dry_run,
     ).run()
 
-    # TODO(#28239): delete once raw data import DAG is live
-    # The invalidation logic only supports the new operations tables
-    if successful_gcsfs_file_paths and is_raw_data_import_dag_enabled(
-        state_code, ingest_instance
-    ):
+    if successful_gcsfs_file_paths:
         InvalidateOperationsDBFilesController.create_controller(
             project_id=project_id,
             state_code=state_code,
@@ -169,11 +163,6 @@ def main(
             ],
             dry_run=dry_run,
         ).run()
-    elif successful_gcsfs_file_paths:
-        prompt_for_confirmation(
-            "All associated rows in our operations db must be marked as invalidated.\nHave you already done so?",
-            dry_run=dry_run,
-        )
 
     if failed_gcsfs_file_paths:
         logging.error(

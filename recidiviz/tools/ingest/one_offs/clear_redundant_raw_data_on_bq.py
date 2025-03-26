@@ -38,22 +38,17 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
     DirectIngestRawDataLockActor,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
     DirectIngestRawDataResourceLockManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
 )
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
-    LegacyDirectIngestRawFileMetadataManager,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -95,7 +90,6 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
     *,
     session: Session,
     state_code: StateCode,
-    metadata_table: str,
 ) -> Dict[str, Tuple[str, str]]:
     """Returns a dictionary of file tags to their associated (non-invalidated) raw file min and max
     update_datetime.
@@ -103,7 +97,7 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
     command = (
         "SELECT file_tag, min(update_datetime) as min_datetimes_contained, "
         "max(update_datetime) as max_datetimes_contained "
-        f"FROM {metadata_table} "
+        f"FROM direct_ingest_raw_big_query_file_metadata"
         f"WHERE region_code = '{state_code.value}' "
         "AND is_invalidated is False "
         "AND raw_data_instance = 'PRIMARY'"
@@ -121,7 +115,6 @@ def get_min_and_max_file_ids_in_postgres(
     file_tag: str,
     min_datetimes_contained: str,
     max_datetimes_contained: str,
-    metadata_table: str,
 ) -> List[int]:
     """Returns file_ids from postgres whose update_datetimes match the provided
     |min_datetimes_contained| and |max_datetimes_contained|.
@@ -132,7 +125,7 @@ def get_min_and_max_file_ids_in_postgres(
     )
     command = (
         "SELECT DISTINCT file_id "
-        f"FROM {metadata_table} "
+        f"FROM direct_ingest_raw_big_query_file_metadata"
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime in ('{min_datetimes_contained}', "
@@ -197,13 +190,12 @@ def get_redundant_raw_file_ids(
     file_tag: str,
     min_datetimes_contained: str,
     max_datetimes_contained: str,
-    metadata_table: str,
 ) -> List[int]:
     """For a given file_tag, returns a list of file_ids whose `update_datetime` times are
     within the bounds the associated (non-invalidated) min and max update_datetime."""
     command = (
         "SELECT DISTINCT file_id "
-        f"FROM {metadata_table} "
+        f"FROM direct_ingest_raw_big_query_file_metadata"
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime > '{min_datetimes_contained}' "
@@ -239,34 +231,14 @@ def prune_raw_data_for_state_and_project(
     with these file ids on BQ as well as marks the associated metadata as invalidated
     in the operations db.
     """
-    new_raw_data_infra_active = is_raw_data_import_dag_enabled(
-        state_code=state_code,
-        raw_data_instance=DirectIngestInstance.PRIMARY,
-        project_id=project_id,
-    )
     raw_file_configs: Dict[
         str, DirectIngestRawFileConfig
     ] = get_raw_file_configs_for_state(state_code)
 
     bq_client: BigQueryClient = BigQueryClientImpl()
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-    # TODO(#28239): remove legacy manager / table when we roll out the raw data import dag
-    raw_data_metadata_manager: (
-        LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2
-    ) = (
-        LegacyDirectIngestRawFileMetadataManager(
-            state_code.value, DirectIngestInstance.PRIMARY
-        )
-        if not new_raw_data_infra_active
-        else DirectIngestRawFileMetadataManagerV2(
-            state_code.value, DirectIngestInstance.PRIMARY
-        )
-    )
-
-    metadata_table: str = (
-        schema.DirectIngestRawFileMetadata.__tablename__
-        if not new_raw_data_infra_active
-        else schema.DirectIngestRawBigQueryFileMetadata.__tablename__
+    raw_data_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+        state_code.value, DirectIngestInstance.PRIMARY
     )
 
     results: Dict[PruningStatus, List[str]] = defaultdict(list)
@@ -277,7 +249,6 @@ def prune_raw_data_for_state_and_project(
         ] = get_postgres_min_and_max_update_datetime_by_file_tag(
             session=session,
             state_code=state_code,
-            metadata_table=metadata_table,
         )
         for file_tag, (
             min_update_datetime,
@@ -310,7 +281,6 @@ def prune_raw_data_for_state_and_project(
                 file_tag=file_tag,
                 min_datetimes_contained=min_update_datetime,
                 max_datetimes_contained=max_update_datetime,
-                metadata_table=metadata_table,
             )
 
             table_bq_path = StrictStringFormatter().format(
@@ -326,7 +296,6 @@ def prune_raw_data_for_state_and_project(
                 file_tag=file_tag,
                 min_datetimes_contained=min_update_datetime,
                 max_datetimes_contained=max_update_datetime,
-                metadata_table=metadata_table,
             )
 
             if len(min_and_max_file_ids_in_pg) < 2:
@@ -427,60 +396,43 @@ def main(
     with these file ids on BQ as well as marks the associated metadata as invalidated
     in the operations db.
     """
-    new_raw_data_infra_active = is_raw_data_import_dag_enabled(
-        state_code=state_code,
-        raw_data_instance=DirectIngestInstance.PRIMARY,
-        project_id=project_id,
-    )
     acquired_locks: list[DirectIngestRawDataResourceLock]
     lock_manager: DirectIngestRawDataResourceLockManager
 
     if not dry_run:
-        if not new_raw_data_infra_active:
+        lock_manager = DirectIngestRawDataResourceLockManager(
+            region_code=state_code.value,
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            with_proxy=True,
+        )
 
-            prompt_for_confirmation(
-                f"Have you confirmed that there are NO tasks running for this state in {project_id}: "
-                f" https://console.cloud.google.com/cloudtasks?referrer=search&project={project_id}?"
-            )
-            prompt_for_confirmation(
-                "Pause queues: "
-                f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_queues?"
-            )
-        else:
+        most_recent_locks = lock_manager.get_most_recent_locks_for_all_resources()
+        locks_url = f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_resource_locks"
 
-            lock_manager = DirectIngestRawDataResourceLockManager(
-                region_code=state_code.value,
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                with_proxy=True,
-            )
-
-            most_recent_locks = lock_manager.get_most_recent_locks_for_all_resources()
-            locks_url = f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_resource_locks"
-
-            if any(not lock.released for lock in most_recent_locks):
-                if any(
-                    lock.lock_actor != DirectIngestRawDataLockActor.ADHOC
-                    for lock in most_recent_locks
-                ):
-                    # if any the locks are held by process, we have to wait
-                    prompt_for_confirmation(
-                        f"[!!!!!!!!!] ERROR: Cannot acquire locks for {state_code.value} in {project_id}!"
-                        f"\nPlease visit {locks_url} for more info."
-                        f"\n(Any key will skip to next state/project pair)",
-                    )
-                    sys.exit(0)
-                else:
-                    prompt_for_confirmation(
-                        f"[!!!!!!!!!] Locks are already manually held, see {locks_url} for more info. "
-                        "\nHave you confirmed with the person who manually acquired the locks that it is safe to prune?"
-                        "\n([n] will skip to next state/project pair)",
-                        exit_code=0,
-                    )
-            else:
-                acquired_locks = lock_manager.acquire_all_locks(
-                    actor=DirectIngestRawDataLockActor.ADHOC,
-                    description="Acquiring locks for manual raw data pruning",
+        if any(not lock.released for lock in most_recent_locks):
+            if any(
+                lock.lock_actor != DirectIngestRawDataLockActor.ADHOC
+                for lock in most_recent_locks
+            ):
+                # if any the locks are held by process, we have to wait
+                prompt_for_confirmation(
+                    f"[!!!!!!!!!] ERROR: Cannot acquire locks for {state_code.value} in {project_id}!"
+                    f"\nPlease visit {locks_url} for more info."
+                    f"\n(Any key will skip to next state/project pair)",
                 )
+                sys.exit(0)
+            else:
+                prompt_for_confirmation(
+                    f"[!!!!!!!!!] Locks are already manually held, see {locks_url} for more info. "
+                    "\nHave you confirmed with the person who manually acquired the locks that it is safe to prune?"
+                    "\n([n] will skip to next state/project pair)",
+                    exit_code=0,
+                )
+        else:
+            acquired_locks = lock_manager.acquire_all_locks(
+                actor=DirectIngestRawDataLockActor.ADHOC,
+                description="Acquiring locks for manual raw data pruning",
+            )
 
     try:
         results = prune_raw_data_for_state_and_project(
@@ -488,24 +440,17 @@ def main(
         )
     finally:
         if not dry_run:
-
-            if not new_raw_data_infra_active:
-                prompt_for_confirmation(
-                    f"Unpause queues: "
-                    f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_queues?"
+            if acquired_locks:
+                logging.info("Releasing raw data resource locks...")
+                lock_manager = DirectIngestRawDataResourceLockManager(
+                    region_code=state_code.value,
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                    with_proxy=True,
                 )
+                for lock in acquired_locks:
+                    lock_manager.release_lock_by_id(lock.lock_id)
             else:
-                if acquired_locks:
-                    logging.info("Releasing raw data resource locks...")
-                    lock_manager = DirectIngestRawDataResourceLockManager(
-                        region_code=state_code.value,
-                        raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                        with_proxy=True,
-                    )
-                    for lock in acquired_locks:
-                        lock_manager.release_lock_by_id(lock.lock_id)
-                else:
-                    logging.info("Skipping lock release as they were never acquired")
+                logging.info("Skipping lock release as they were never acquired")
 
     return results
 
