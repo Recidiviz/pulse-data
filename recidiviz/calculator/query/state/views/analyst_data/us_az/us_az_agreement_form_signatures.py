@@ -49,7 +49,7 @@ WITH tpr_base AS (
         WHEN agrmt.INMATE_SIGNATURE_ID IS NOT NULL AND agrmt.INMATE_SIG_NA != 'Y' THEN 'SIGNED'
         ELSE 'NOT SIGNED, NOT DECLINED'
     END AS SIG_STATUS,
-    COALESCE(PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p',agrmt.CREATE_DTM), CAST(elig.CREATE_DTM AS DATETIME)) AS status_dtm,
+    PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p',agrmt.CREATE_DTM) AS status_dtm,
     'TPR' AS program
   FROM
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` ep
