@@ -68,9 +68,5 @@ module "archive_insights_file" {
 
 
 locals {
-  app_engine_url = "https://${var.project_id}.appspot.com"
-  # These client IDs come from the app engine service we want to authenticate to, and can be found
-  # at https://console.cloud.google.com/apis/credentials (IAP-App-Engine-app)
-  app_engine_iap_client = local.is_production ? "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com" : "984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.googleusercontent.com"
   application_data_import_url = google_cloud_run_service.application-data-import.status.0.url
 }

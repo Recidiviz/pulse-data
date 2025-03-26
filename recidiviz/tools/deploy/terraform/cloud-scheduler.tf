@@ -107,53 +107,6 @@ resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_weekend_run_
   }
 }
 
-resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
-  name        = "prune-old-dataflow-data"
-  schedule    = "0 0 * * *" # Every day at 00:00
-  description = "Move old Dataflow metric output to cold storage"
-  time_zone   = "America/Los_Angeles"
-  # TODO(#27436) Speed up pruning and lower the attempt_deadline
-  attempt_deadline = "900s" # 15 minutes
-
-  retry_config {
-    min_backoff_duration = "2.500s"
-    max_doublings        = 5
-  }
-
-  http_target {
-    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/prune_old_dataflow_data"
-    http_method = "GET"
-
-    oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      audience              = local.app_engine_iap_client
-    }
-  }
-}
-
-resource "google_cloud_scheduler_job" "delete_empty_bq_datasets" {
-  name             = "delete-empty-bq-datasets"
-  schedule         = "0 0 * * *" # Every day at 00:00
-  description      = "Delete empty datasets in BigQuery"
-  time_zone        = "America/Los_Angeles"
-  attempt_deadline = "600s" # 10 minutes
-
-  retry_config {
-    min_backoff_duration = "2.500s"
-    max_doublings        = 5
-  }
-
-  http_target {
-    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/delete_empty_or_temp_datasets"
-    http_method = "GET"
-
-    oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      audience              = local.app_engine_iap_client
-    }
-  }
-}
-
 resource "google_cloud_scheduler_job" "update_long_term_backups" {
   name = "update-long-term-backups"
   # Runs at a time when it's unlikely someone will be running the flashing checklist, to avoid
