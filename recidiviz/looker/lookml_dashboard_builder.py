@@ -38,6 +38,7 @@ from recidiviz.looker.lookml_dashboard_parameter import (
     LookMLDashboardLayoutType,
     LookMLDashboardParameter,
 )
+from recidiviz.looker.lookml_field_factory import COUNT_FIELD
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import TimeDimensionGroupLookMLViewField
 
@@ -78,6 +79,11 @@ class LookMLDashboardElementMetadata:
                 LookMLSort(field_name, desc=True) for field_name in date_field_names
             ],
         )
+
+    def add_count_field(self, view_name: str) -> None:
+        """Adds the count measure field to the list of fields.
+        This is useful for counting the number of records in a child view."""
+        self.fields.append(f"{view_name}.{COUNT_FIELD}")
 
 
 @attr.define

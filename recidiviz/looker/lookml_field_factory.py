@@ -24,6 +24,8 @@ from recidiviz.looker.lookml_view_field import (
 )
 from recidiviz.looker.lookml_view_field_parameter import LookMLFieldParameter
 
+COUNT_FIELD = "count"
+
 
 class LookMLFieldFactory:
     """Factory for creating reusable LookML fields."""
@@ -47,7 +49,7 @@ class LookMLFieldFactory:
             MeasureLookMLViewField: A LookML measure field for counting rows.
         """
         return MeasureLookMLViewField(
-            field_name="count",
+            field_name=COUNT_FIELD,
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.COUNT),
                 LookMLFieldParameter.drill_fields(drill_fields or []),

@@ -39,6 +39,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import (
+    get_child_entity_classes,
     get_entity_class_in_module_with_table_id,
     get_external_id_entity_class,
 )
@@ -119,13 +120,21 @@ class EntityLookMLDashboardBuilder:
                 self.module_context.entities_module(), table_id=table_id
             )
 
-            # TODO(#23292): aggregate EnumEntity type tables as lists on the parent entity
             if get_root_entity_class_for_entity(
                 entity_cls
             ) != self.root_entity_cls or issubclass(entity_cls, EnumEntity):
                 continue
 
-            metadata.append(LookMLDashboardElementMetadata.from_view(view))
+            element_metadata = LookMLDashboardElementMetadata.from_view(view)
+            for child_cls in get_child_entity_classes(
+                entity_cls=entity_cls, entities_module_context=self.module_context
+            ):
+                if issubclass(child_cls, EnumEntity):
+                    element_metadata.add_count_field(
+                        view_name=child_cls.get_entity_name()
+                    )
+
+            metadata.append(element_metadata)
 
         return metadata
 
