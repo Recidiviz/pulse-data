@@ -14,13 +14,13 @@ snapshots = Snapshot()
 
 snapshots[
     "test_build_ticket_description[add_multiple_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be added to the caseload of SupervisionOfficerSupervisor(external_id='sup1', state_code=None):
-- John Officer, District A (supervised by Bob Supervisor, Alice Supervisor)
-- Jane Officer, District B (supervised by Alice Supervisor)
+] = """Requesting Person has requested that the following officer(s) be added to the caseload of Alice Supervisor:
+- Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
+- John Officer, District B (supervised by Bob Supervisor)
 
 Other staff affected by this change:
-- Bob Supervisor
 - Alice Supervisor
+- Bob Supervisor
 
 Note from user:
 Add these officers to the caseload.It's imperative that they're added.
@@ -28,37 +28,37 @@ Please speak with admin about this."""
 
 snapshots[
     "test_build_ticket_description[add_single_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be added to the caseload of SupervisionOfficerSupervisor(external_id='sup1', state_code=None):
-- John Officer, District A (supervised by Bob Supervisor, Alice Supervisor)
+] = """Requesting Person has requested that the following officer(s) be added to the caseload of Alice Supervisor:
+- Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 
 Other staff affected by this change:
-- Bob Supervisor
 - Alice Supervisor
+- Bob Supervisor
 
 Note from user:
 Add this officer, please."""
 
 snapshots[
     "test_build_ticket_description[remove_multiple_officers] 1"
-] = """Requesting Person has requested that the following officer(s) be removed from the caseload of SupervisionOfficerSupervisor(external_id='sup1', state_code=None):
-- John Officer, District A (supervised by Bob Supervisor, Alice Supervisor)
-- Jane Officer, District B (supervised by Alice Supervisor)
+] = """Requesting Person has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
+- Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
+- John Officer, District B (supervised by Bob Supervisor)
 
 Other staff affected by this change:
-- Bob Supervisor
 - Alice Supervisor
+- Bob Supervisor
 
 Note from user:
 Remove these officers from my caseloads."""
 
 snapshots[
     "test_build_ticket_description[remove_single_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be removed from the caseload of SupervisionOfficerSupervisor(external_id='sup1', state_code=None):
-- John Officer, District A (supervised by Bob Supervisor, Alice Supervisor)
+] = """Requesting Person has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
+- Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 
 Other staff affected by this change:
-- Bob Supervisor
 - Alice Supervisor
+- Bob Supervisor
 
 Note from user:
 Remove this officer from my caseload.

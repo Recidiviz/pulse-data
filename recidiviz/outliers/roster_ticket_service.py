@@ -29,6 +29,7 @@ from recidiviz.outliers.types import (
     IntercomTicket,
     IntercomTicketResponse,
     OutliersProductConfiguration,
+    PersonName,
     RosterChangeType,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
@@ -125,10 +126,10 @@ class RosterTicketService:
         }
 
         def format_officer_into_bullet_point(o: SupervisionOfficer) -> str:
-            return f"- {o.full_name}, {o.supervision_district} (supervised by {', '.join(s.full_name for s in officer_to_supervisors[o])})\n"
+            return f"- {PersonName(**o.full_name).formatted_first_last}, {o.supervision_district} (supervised by {', '.join(PersonName(**s.full_name).formatted_first_last for s in officer_to_supervisors[o])})\n"
 
         def format_supervisor_into_bullet_point(s: SupervisionOfficerSupervisor) -> str:
-            return f"- {s.full_name}\n"
+            return f"- {PersonName(**s.full_name).formatted_first_last}\n"
 
         product_config = self._get_querier_product_config
         action = "added to" if change_type == RosterChangeType.ADD else "removed from"
@@ -181,7 +182,7 @@ class RosterTicketService:
 
         description = self._build_ticket_description(
             requester,
-            target_supervisor.full_name,
+            PersonName(**target_supervisor.full_name).formatted_first_last,
             change_type,
             note,
             supervisors,

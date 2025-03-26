@@ -29,7 +29,7 @@ from recidiviz.outliers.roster_ticket_service import (
     RosterChangeType,
     RosterTicketService,
 )
-from recidiviz.outliers.types import IntercomTicketResponse
+from recidiviz.outliers.types import IntercomTicketResponse, PersonName
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerSupervisor,
@@ -55,13 +55,13 @@ def mock_entities_fixture() -> MockEntities:
     officers = [
         SupervisionOfficer(
             external_id="off1",
-            full_name="John Officer",
+            full_name={"given_names": "Jane", "surname": "Officer"},
             supervision_district="District A",
             supervisor_external_ids=["sup1", "sup2"],
         ),
         SupervisionOfficer(
             external_id="off2",
-            full_name="Jane Officer",
+            full_name={"given_names": "John", "surname": "Officer"},
             supervision_district="District B",
             supervisor_external_ids=["sup2"],
         ),
@@ -69,8 +69,14 @@ def mock_entities_fixture() -> MockEntities:
 
     # Load supervisors
     supervisors = [
-        SupervisionOfficerSupervisor(external_id="sup1", full_name="Bob Supervisor"),
-        SupervisionOfficerSupervisor(external_id="sup2", full_name="Alice Supervisor"),
+        SupervisionOfficerSupervisor(
+            external_id="sup1",
+            full_name={"given_names": "Alice", "surname": "Supervisor"},
+        ),
+        SupervisionOfficerSupervisor(
+            external_id="sup2",
+            full_name={"given_names": "Bob", "surname": "Supervisor"},
+        ),
     ]
     return {"officers": officers, "supervisors": supervisors}
 
@@ -254,7 +260,7 @@ def test_build_ticket_description(
 
     description = ticket_service._build_ticket_description(  # type: ignore # pylint: disable=protected-access
         requester_name="Requesting Person",
-        target_name=test_supervisors[0],
+        target_name=PersonName(**test_supervisors[0].full_name).formatted_first_last,
         change_type=change_type,
         note=note,
         supervisors=test_supervisors,
