@@ -22,7 +22,7 @@ from types import ModuleType
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.direct_ingest_regions import (
+from recidiviz.ingest.direct.gating import (
     raw_data_pruning_enabled_in_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (

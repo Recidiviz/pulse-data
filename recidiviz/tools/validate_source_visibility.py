@@ -362,6 +362,7 @@ def main() -> int:
         "recidiviz.ingest.direct.dataset_config",
         "recidiviz.ingest.direct.direct_ingest_bucket_name_utils",
         "recidiviz.ingest.direct.direct_ingest_regions",
+        "recidiviz.ingest.direct.gating",
         "recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system",
         "recidiviz.ingest.direct.gcs.directory_path_utils",
         "recidiviz.ingest.direct.gcs.filename_parts",

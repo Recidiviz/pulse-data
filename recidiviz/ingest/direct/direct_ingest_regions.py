@@ -29,9 +29,7 @@ import attr
 import yaml
 
 from recidiviz.common.attr_converters import str_to_lowercase_str
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
@@ -146,11 +144,3 @@ def get_direct_ingest_region_manifest(
         encoding="utf-8",
     ) as region_manifest:
         return yaml.full_load(region_manifest)
-
-
-# TODO(#12390): Delete once raw data pruning is live.
-def raw_data_pruning_enabled_in_state_and_instance(
-    state_code: StateCode,  # pylint: disable=unused-argument
-    instance: DirectIngestInstance,  # pylint: disable=unused-argument
-) -> bool:
-    return False

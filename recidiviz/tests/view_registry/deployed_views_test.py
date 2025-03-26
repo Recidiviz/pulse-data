@@ -49,7 +49,7 @@ from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_stat
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_regions import (
+from recidiviz.ingest.direct.gating import (
     raw_data_pruning_enabled_in_state_and_instance,
 )
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (

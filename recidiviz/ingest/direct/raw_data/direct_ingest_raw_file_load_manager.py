@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_data_temp_load_dataset,
     raw_tables_dataset_for_region,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import (
+from recidiviz.ingest.direct.gating import (
     raw_data_pruning_enabled_in_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (

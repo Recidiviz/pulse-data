@@ -54,7 +54,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
     DirectIngestRawFileImportStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_regions import (
+from recidiviz.ingest.direct.gating import (
     raw_data_pruning_enabled_in_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
