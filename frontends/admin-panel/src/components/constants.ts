@@ -26,6 +26,7 @@ export const formTailLayout = {
 export const WORKFLOWS_PERMISSIONS_LABELS = {
   workflowsSupervision: "Supervision Workflows",
   workflowsFacilities: "Facilities Workflows",
+  tasks: "Tasks",
 };
 
 export const VITALS_PERMISSIONS_LABELS = {
