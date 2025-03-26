@@ -167,7 +167,7 @@ class LegacyIngestViewEmulatorQueryTestCase(
             )
         self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
             [self.ingest_view()],
-            fixtures_files_name,
+            fixture_name,
             create_tables=False,
         )
 
@@ -356,7 +356,7 @@ class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase)
 
         self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
             [self.ingest_view_builder()],
-            f"{characteristic}.csv",
+            characteristic,
             create_tables=True,
         )
         results = self._run_ingest_view_query()

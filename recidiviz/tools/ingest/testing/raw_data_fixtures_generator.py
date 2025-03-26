@@ -52,8 +52,8 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
-from recidiviz.tests.ingest.direct.legacy_fixture_path import (
-    DirectIngestTestFixturePath,
+from recidiviz.tests.ingest.direct.fixture_util import (
+    fixture_path_for_raw_data_dependency,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
@@ -117,9 +117,10 @@ class RawDataFixturesGenerator:
         root_entity_external_id_column_regex: Optional[str] = None,
     ):
         self.project_id = project_id
-        self.region_code = region_code
+        self.state_code = StateCode(region_code.upper())
         self.ingest_view_tag = ingest_view_tag
-        self.output_filename = output_filename
+        # We don't pass the file extension to the fixture path functions
+        self.output_filename = output_filename.split(".")[0]
         self.root_entity_external_ids = root_entity_external_ids
         self.root_entity_external_id_columns = root_entity_external_id_columns
         self.root_entity_external_id_column_regex = root_entity_external_id_column_regex
@@ -159,19 +160,9 @@ class RawDataFixturesGenerator:
         self.raw_data_source_instance = DirectIngestInstance.PRIMARY
         self.query_builder = RawTableQueryBuilder(
             project_id=self.project_id,
-            region_code=self.region_code,
+            region_code=self.state_code.value,
             raw_data_source_instance=self.raw_data_source_instance,
         )
-
-    # TODO(#29997) Update the path for code files.
-    def get_output_fixture_path(
-        self, raw_file_dependency_config: DirectIngestViewRawFileDependency
-    ) -> str:
-        return DirectIngestTestFixturePath.for_raw_file_fixture(
-            region_code=self.region_code,
-            file_name=f"{self.output_filename}.csv",
-            raw_file_dependency_config=raw_file_dependency_config,
-        ).full_path()
 
     def write_results_to_csv(
         self, query_results: DataFrame, output_fixture_path: str
@@ -260,7 +251,7 @@ class RawDataFixturesGenerator:
         self, raw_file_config: DirectIngestRawFileConfig
     ) -> None:
         raw_table_dataset_id = raw_tables_dataset_for_region(
-            state_code=StateCode(self.region_code.upper()),
+            state_code=self.state_code,
             instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
@@ -359,7 +350,7 @@ class RawDataFixturesGenerator:
         """
 
         print("Preview Mode: Based on the following settings...")
-        print(f"Region code: {self.region_code}")
+        print(f"State code: {self.state_code}")
         print(
             f"Root entity external id columns: {self.root_entity_external_id_columns}"
         )
@@ -429,11 +420,21 @@ class RawDataFixturesGenerator:
         ) in self.ingest_view_raw_table_dependency_configs:
             self.validate_raw_table_exists(raw_table_dependency_config.raw_file_config)
 
-            # Write fixtures to this path
-            # TODO(#29997) Update the path for code files.
-            output_fixture_path = self.get_output_fixture_path(
-                raw_table_dependency_config
+            output_fixture_path = fixture_path_for_raw_data_dependency(
+                self.state_code,
+                raw_table_dependency_config,
+                self.output_filename,
             )
+            # Don't query code file if it already exists.
+            if (
+                raw_table_dependency_config.is_code_file
+                and os.path.exists(output_fixture_path)
+                and not self.overwrite
+            ):
+                print(
+                    f"Fixture already exists for {raw_table_dependency_config.file_tag}. Skipping..."
+                )
+                continue
 
             # Get all person external ID columns present in this raw table config
             root_entity_external_id_columns = [
@@ -459,7 +460,6 @@ class RawDataFixturesGenerator:
                 root_entity_external_id_columns=root_entity_external_id_columns,
             )
 
-            # TODO(#29997) Don't query code file if it already exists.
             query_job = self.bq_client.run_query_async(
                 query_str=query_str, use_query_cache=True
             )

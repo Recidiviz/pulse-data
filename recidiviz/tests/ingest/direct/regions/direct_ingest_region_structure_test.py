@@ -19,7 +19,7 @@ import abc
 import inspect
 import os
 import re
-import unittest.mock
+import unittest
 from collections import defaultdict
 from datetime import datetime
 from types import ModuleType
@@ -86,6 +86,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     INGEST_MAPPING_OUTPUT_SUBDIR,
     fixture_path_for_address,
+    fixture_path_for_raw_data_dependency,
     ingest_mapping_output_fixture_path,
 )
 from recidiviz.tests.ingest.direct.legacy_fixture_path import (
@@ -955,11 +956,11 @@ def get_fixtures_used_by_ingest_view_tests(
             used_ingest_view_result_fixture_paths.add(result_fixture_path)
             for raw_dep_config in view_builder.raw_table_dependency_configs:
                 used_raw_data_fixture_paths.add(
-                    DirectIngestTestFixturePath.for_raw_file_fixture(
-                        region_code=state_code.value.lower(),
-                        raw_file_dependency_config=raw_dep_config,
-                        file_name=characteristic + ".csv",
-                    ).full_path()
+                    fixture_path_for_raw_data_dependency(
+                        state_code,
+                        raw_dep_config,
+                        characteristic,
+                    )
                 )
     return used_raw_data_fixture_paths, used_ingest_view_result_fixture_paths
 

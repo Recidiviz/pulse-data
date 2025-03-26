@@ -179,7 +179,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
     def setup_region_raw_data_bq_tables(self, test_name: str) -> None:
         self.raw_fixture_loader.load_raw_fixtures_to_emulator(
             self.ingest_view_collector().get_query_builders(),
-            ingest_test_identifier=f"{test_name}.csv",
+            ingest_test_identifier=test_name,
             create_tables=False,
         )
 

@@ -55,9 +55,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
-from recidiviz.tests.ingest.direct.legacy_fixture_path import (
-    DirectIngestTestFixturePath,
+from recidiviz.tests.ingest.direct.fixture_util import (
+    fixture_path_for_raw_data_dependency,
+    load_dataframe_from_path,
 )
 from recidiviz.utils import csv
 
@@ -289,14 +289,12 @@ class DirectIngestRawDataFixtureLoader:
     def _read_raw_data_fixture(
         self,
         raw_file_dependency_config: DirectIngestViewRawFileDependency,
-        csv_fixture_file_name: str,
+        test_identifier: str,
     ) -> pd.DataFrame:
         """Reads the raw data fixture file for the provided dependency into a Dataframe."""
-        raw_fixture_path = DirectIngestTestFixturePath.for_raw_file_fixture(
-            region_code=self.state_code.value,
-            raw_file_dependency_config=raw_file_dependency_config,
-            file_name=csv_fixture_file_name,
-        ).full_path()
+        raw_fixture_path = fixture_path_for_raw_data_dependency(
+            self.state_code, raw_file_dependency_config, test_identifier
+        )
         print(
             f"Loading fixture data for raw file [{raw_file_dependency_config.file_tag}] "
             f"from file path [{raw_fixture_path}]."

@@ -27,6 +27,9 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewRawFileDependency,
+)
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     DEFAULT_UPDATE_DATETIME,
@@ -78,6 +81,31 @@ def fixture_path_for_address(
         state_code.value.lower(),
         address.dataset_id,
         address.table_id,
+        f"{file_name}.csv",
+    )
+
+
+def fixture_path_for_raw_data_dependency(
+    state_code: StateCode,
+    raw_data_dependency: DirectIngestViewRawFileDependency,
+    file_name: str,
+) -> str:
+    if raw_data_dependency.raw_file_config.is_code_file and state_code not in {
+        # TODO(#40112) Update code file fixtures and remove this exemption
+        StateCode.US_AZ,
+        # TODO(#40113) Update code file fixtures and remove this exemption
+        StateCode.US_IX,
+        # TODO(#40114) Update code file fixtures and remove this exemption
+        StateCode.US_PA,
+    }:
+        file_name = "__SHARED_CODE_FILE__"
+    return os.path.join(
+        DIRECT_INGEST_FIXTURES_ROOT,
+        state_code.value.lower(),
+        # TODO(#38355) Use us_xx_raw_data to mirror actual BQ Adress
+        "raw",
+        # TODO(#38355) Use the file tag when all fixtures are @ALL fixtures
+        raw_data_dependency.raw_table_dependency_arg_name,
         f"{file_name}.csv",
     )
 

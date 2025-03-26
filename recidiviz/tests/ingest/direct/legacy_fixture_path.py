@@ -33,9 +33,6 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewRawFileDependency,
-)
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.utils.types import assert_type
 
@@ -62,7 +59,7 @@ class DirectIngestFixtureDataFileType(Enum):
     NORMALIZED_STATE_DATA = "normalized_state"
 
 
-# TODO(#29997) Update to handle code files
+# TODO(#39686) Delete this class when all tests use updated fixture paths
 @attr.define
 class DirectIngestTestFixturePath:
     """Class storing information about an ingest test fixture file."""
@@ -122,21 +119,6 @@ class DirectIngestTestFixturePath:
             f"Unexpected fixture type [{self.fixture_file_type}]. Can only infer the "
             f"ingest view name from the path for INGEST_VIEW_RESULTS and "
             f"EXTRACT_AND_MERGE_INPUT fixtures."
-        )
-
-    @classmethod
-    def for_raw_file_fixture(
-        cls,
-        *,
-        region_code: str,
-        raw_file_dependency_config: DirectIngestViewRawFileDependency,
-        file_name: str,
-    ) -> "DirectIngestTestFixturePath":
-        return cls(
-            region_code=region_code,
-            fixture_file_type=DirectIngestFixtureDataFileType.RAW,
-            subdir_name=raw_file_dependency_config.raw_table_dependency_arg_name,
-            file_name=file_name,
         )
 
     @classmethod
