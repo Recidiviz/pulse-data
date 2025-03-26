@@ -52,6 +52,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             tes_task_query_view="suspension_of_direct_supervision_materialized",
             id_type="'US_TN_DOC'",
             eligible_and_almost_eligible_only=True,
+            additional_columns="tes.reasons_v2",
         )}
     ),
     current_sentences AS (
@@ -95,16 +96,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             keep_last=True,
         )}
     ),
-    contact_latest_ncic AS (
-        -- latest NCIC check
-        {keep_contact_codes(
-            codes_cte="relevant_codes",
-            comments_cte="comments_clean",
-            where_clause_codes_cte="WHERE contact_type IN ('BBNN', 'BBNP')",
-            output_name="latest_ncic",
-            keep_last=True,
-        )}
-    ),
     case_notes AS (
         -- get case notes by external ID
         SELECT
@@ -112,6 +103,22 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             case_notes_by_person_id.* EXCEPT (person_id),
         -- union all contact notes to be displayed in side panel
         FROM (
+            -- latest contact note related to NCIC check
+            SELECT
+                person_id,
+                contact_type AS note_title,
+                contact_date AS event_date,
+                contact_comment AS note_body,
+                "LATEST NCIC CHECK" AS criteria,
+            FROM (
+                {keep_contact_codes(
+                    codes_cte="relevant_codes",
+                    comments_cte="comments_clean",
+                    where_clause_codes_cte="WHERE contact_type IN ('BBNN', 'BBNP')",
+                    keep_last=True,
+                )}
+            )
+            UNION ALL
             -- contact notes related to arrests
             SELECT
                 person_id,
@@ -175,6 +182,22 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=True,
                 )}
             )
+            UNION ALL
+            -- latest contact note related to employment
+            SELECT
+                person_id,
+                contact_type AS note_title,
+                contact_date AS event_date,
+                contact_comment AS note_body,
+                "EMPLOYMENT" AS criteria,
+            FROM (
+                {keep_contact_codes(
+                    codes_cte="relevant_codes",
+                    comments_cte="comments_clean",
+                    where_clause_codes_cte="WHERE contact_type LIKE '%EMP%'",
+                    keep_last=True,
+                )}
+            )
         ) case_notes_by_person_id
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON case_notes_by_person_id.person_id=pei.person_id
@@ -190,7 +213,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
     SELECT
         base.state_code,
         base.external_id,
-        base.reasons,
+        base.reasons_v2 AS reasons,
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
@@ -216,7 +239,13 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             CAST(DATE_DIFF(current_sentences.sentence_end_date_latest, pss.start_date, YEAR) AS STRING)
         ) AS form_information_supervision_duration,
         site.AddressCity AS form_information_supervision_office_location,
-        contact_latest_ncic.latest_ncic AS form_information_latest_ncic,
+        /* TODO(#38270): Remove this form-information field once Polaris removes it on
+        the front end and no longer needs the stub here for the NCIC info. */
+        STRUCT(
+            CAST(NULL AS DATE) AS contact_date,
+            CAST(NULL AS STRING) AS contact_type,
+            CAST(NULL AS STRING) AS contact_comment
+        ) AS form_information_latest_ncic,
     FROM base
     LEFT JOIN contact_latest_negative_arrest_check
         ON base.person_id=contact_latest_negative_arrest_check.person_id
@@ -235,8 +264,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
         AND CURRENT_DATE('US/Eastern') BETWEEN css.start_date AND {nonnull_end_date_exclusive_clause('css.end_date_exclusive')}
     LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Site_latest` site
         ON css.supervision_office=site.SiteID
-    LEFT JOIN contact_latest_ncic
-        ON base.person_id=contact_latest_ncic.person_id
 """
 
 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

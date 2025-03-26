@@ -15,14 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criterion span view that shows spans of time during which someone's
-assessed risk level has continuously been 'LOW' for at least 2 years. This criterion
-considers all assessments in the 'RISK' class and is not specific to the type of
-assessment.
+assessed risk level while on supervision has continuously been 'LOW' for at least 2
+years. This criterion considers all assessments in the 'RISK' class and is not specific
+to the type of assessment.
+
+NB: this criterion considers risk assessments while on supervision and resets whenever
+a continuous period on supervision (according to `prioritized_supervision_sessions`)
+ends, such that assessments from a previous continuous supervision cycle don't count
+toward the criterion.
 """
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_intersection_spans,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -34,13 +42,39 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ASSESSED_RISK_LOW_AT_LEAST_2_YEARS"
+_CRITERIA_NAME = "ASSESSED_RISK_LOW_WHILE_ON_SUPERVISION_AT_LEAST_2_YEARS"
 
 # TODO(#34709): Move this criterion logic into a criterion builder in the
 # `general_criteria_builders.py` file, where it can be generalized/parameterized.
 # TODO(#34751): Decide how to handle assessments with null `assessment_level` values.
 _QUERY_TEMPLATE = f"""
-    WITH risk_assessments_prioritized AS (
+    WITH prioritized_supervision_sessions AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.{{sessions_dataset}}.prioritized_supervision_sessions_materialized`
+    ),
+    prioritized_supervision_sessions_aggregated AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS supervision_start_date,
+            start_date,
+            end_date_exclusive,
+        FROM (
+            /* The `prioritized_supervision_sessions` view is sessionized on
+            `compartment_level_1` and `compartment_level_2`. Here, we aggregate adjacent
+            spans regardless of those compartment values, such that we get a single span
+            for each continuous period on supervision. */
+            {aggregate_adjacent_spans(
+                "prioritized_supervision_sessions",
+                end_date_field_name="end_date_exclusive",
+            )}
+        )
+    ),
+    risk_assessments_prioritized AS (
         /* Though `assessment_score_sessions_materialized` is already sessionized, there
         can be overlapping sessions there if multiple assessment types have been used to
         assess risk in a state. To work around this, we'll take the assessment data from
@@ -77,19 +111,53 @@ _QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             assessment_level,
+            assessment_date,
             assessment_date AS start_date,
             LEAD(assessment_date) OVER (
                 PARTITION BY state_code, person_id
                 ORDER BY assessment_date
-            ) AS end_date,
+            ) AS end_date_exclusive,
         FROM risk_assessments_prioritized
+    ),
+    assessed_risk_levels_during_supervision AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+            /* If the assessment happened before the date on which the current
+            continuous period of supervision started, then we don't want that assessment
+            level to carry over, so we set the assessment level to NULL. */
+            IF(
+                assessment_date<supervision_start_date,
+                NULL,
+                assessment_level
+            ) AS assessment_level,
+        FROM (
+            /* We use `create_intersection_spans` with `use_left_join=True` here to get
+            a set of spans that cover all periods of time on supervision (from the
+            `prioritized_supervision_sessions_aggregated` CTE) and have risk-level info
+            (from `risk_level_spans`). Due to this logic, risk-level data from previous
+            supervision sessions can carry over into the next (since a risk-level span
+            only ends when a subsequent assessment is completed). We therefore will need
+            to null out risk-level info (which we do up above) when an assessment
+            precedes a supervision session. */
+            {create_intersection_spans(
+                table_1_name="prioritized_supervision_sessions_aggregated",
+                table_2_name="risk_level_spans",
+                index_columns=['state_code', 'person_id'],
+                use_left_join=True,
+                table_1_columns=['supervision_start_date'],
+                table_2_columns=['assessment_level', 'assessment_date'],
+            )}
+        )
     ),
     critical_date_spans AS (
         SELECT
             state_code,
             person_id,
             start_date AS start_datetime,
-            end_date AS end_datetime,
+            end_date_exclusive AS end_datetime,
             /* We'll set the critical date to be 2 years out from the date on which the
             risk level was initially determined, if and only if the assessed risk level
             is 'LOW'. */
@@ -103,8 +171,9 @@ _QUERY_TEMPLATE = f"""
             continuous period of time at a single risk level will show up as a single
             span. */
             {aggregate_adjacent_spans(
-                "risk_level_spans",
-                attribute=['assessment_level']
+                "assessed_risk_levels_during_supervision",
+                attribute=['assessment_level'],
+                end_date_field_name="end_date_exclusive",
             )}
         )
     ),

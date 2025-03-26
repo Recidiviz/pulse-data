@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_no_contact_parole,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    assessed_risk_low_at_least_2_years,
+    assessed_risk_low_while_on_supervision_at_least_2_years,
     at_least_12_months_since_most_recent_positive_drug_test,
     has_fines_fees_balance_of_0,
     has_permanent_fines_fees_exemption,
@@ -74,7 +74,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        assessed_risk_low_at_least_2_years.VIEW_BUILDER,
+        assessed_risk_low_while_on_supervision_at_least_2_years.VIEW_BUILDER,
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         latest_drug_test_is_negative.VIEW_BUILDER,
         no_supervision_violation_report_within_2_years.VIEW_BUILDER,
@@ -93,8 +93,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_on_suspension_of_direct_supervision.VIEW_BUILDER,
         FINES_FEES_CRITERIA_GROUP,
     ],
-    # TODO(#38270): Refine this almost-eligible condition, likely by setting an upper
-    # limit on the balance a client can have to be considered almost eligible.
+    # TODO(#38270): Refine and expand the logic for almost-eligibility (including
+    # surfacing people who will be eligible within the next 30 [or 60] days).
     almost_eligible_condition=NotEligibleCriteriaCondition(
         criteria=FINES_FEES_CRITERIA_GROUP,
         description="Has unpaid fines/fees without a permanent exemption",
