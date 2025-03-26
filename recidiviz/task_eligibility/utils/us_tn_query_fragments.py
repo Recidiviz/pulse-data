@@ -40,6 +40,29 @@ SDS_SUPERVISION_LEVELS_RAW_TEXT = [
 
 FACE_TO_FACE_CONTACTS = ["FAC1", "FAC2", "FACA", "FACF", "FACI", "FACO"]
 
+# The following list contains contact-note codes that indicate when a warrant has been
+# issued for a client in TN.
+# The 'PWAR' code is also relevant for warrants and is used for probation clients;
+# however, this code means that the violation has been submitted and is awaiting
+# judicial approval, not necessarily that a warrant has been issued. For this reason, we
+# do not include the 'PWAR' code in the following list.
+WARRANT_CONTACTS = [
+    # Absconder Warrant Issued [according to one of our TN TTs (as of 03/2025), this is
+    # an old code that doesn't get used any more]
+    "ABSW",
+    # CSL [Community Supervision for Life] Warrant Issued
+    "CSLW",
+    # Master Tamper Warrant Issued [related to GPS monitoring; note that code looks
+    # misspelled, but this is the code we see in the contact-notes data]
+    "GSPW",
+    # Sex Offender Registry: Warrant Issued
+    "SORW",
+    # Violation Warrant and Report Issued [indicates when a warrant has been issued;
+    # primarily used for parole clients and is inconsistently used for probation
+    # clients]
+    "VWAR",
+]
+
 # TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
 STRONG_R_ASSESSMENT_METADATA_KEYS = [
     "FRIENDS_NEED_LEVEL",

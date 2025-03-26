@@ -1525,7 +1525,7 @@ US_TN:
       Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_tn.no_warrant_within_2_years: |-
       Using raw data to identify warrants for now while we validate an approach using
-      ingested data. TODO(#33630): Switch this criterion over to ingested data.
+      ingested data. TODO(#40039): Switch this criterion over to ingested data.
     task_eligibility_criteria_us_tn.not_permanently_rejected_from_compliant_reporting:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -29,12 +30,13 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import WARRANT_CONTACTS
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NO_WARRANT_WITHIN_2_YEARS"
 
-# TODO(#33630): Refactor this query to use ingested data if/when possible.
+# TODO(#40039): Refactor this query to use ingested data if/when possible.
 _QUERY_TEMPLATE = f"""
     WITH ineligibility_spans AS (
         /* Identify warrants and the spans of ineligibility in which they result. */
@@ -50,9 +52,7 @@ _QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON contact.OffenderID=pei.external_id
             AND pei.id_type='US_TN_DOC'
-        /* Use contact notes with type 'VWAR' ('VIOLATION WARRANT AND REPORT ISSUED')
-        to identify the issuance of a warrant. */
-        WHERE contact.ContactNoteType='VWAR'
+        WHERE contact.ContactNoteType IN ({list_to_query_string(WARRANT_CONTACTS, quoted=True)})
     ),
     /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
     still-relevant warrants at once). */
