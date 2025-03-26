@@ -586,6 +586,9 @@ class WorkbookStandardizer:
             current year, or None if the year is invalid or cannot be parsed.
         """
 
+        if row.get("year") is None:
+            return None
+
         if "-" in str(row["year"]) and str(row["year"]).index("-") != 0:
             # Get Annual year from the Fiscal Year
             return int(row["year"][0 : str(row["year"]).index("-")])
@@ -649,6 +652,7 @@ class WorkbookStandardizer:
             )
 
             year = self._get_year_from_row(row=row, today=today)
+            row["year"] = year
             if year is None:
                 self._add_row_value_error(
                     column_name="year",
