@@ -85,34 +85,6 @@ class RawDataTableBigQuerySchemaBuilder:
 
         return {col: config_columns_to_descr.get(col, "") for col in columns}
 
-    # TODO(#28239) deprecate this approach in favor of build_schmea_for_big_query or
-    # build_schema_for_big_query_from_columns
-    @classmethod
-    def build_bq_schema_from_columns(
-        cls,
-        *,
-        raw_file_config: DirectIngestRawFileConfig,
-        columns: List[str],
-    ) -> List[bigquery.SchemaField]:
-        """Returns a list of BigQuery Schema fields based on the provided |columns|
-        for a raw data table.
-        """
-
-        schema_fields = []
-        cols_to_descriptions = cls._columns_to_descriptions_for_config(
-            raw_file_config, columns
-        )
-
-        for column, description in cols_to_descriptions.items():
-            if column in cls.RECIDIVIZ_MANAGED_FIELDS:
-                schema_fields.append(cls.RECIDIVIZ_MANAGED_FIELDS[column])
-            else:
-                schema_fields.append(
-                    cls.raw_file_column_as_bq_field(column, description)
-                )
-
-        return schema_fields
-
     @classmethod
     def _raw_file_columns_as_bq_fields(
         cls, raw_file_config: DirectIngestRawFileConfig, columns: List[str]
@@ -137,7 +109,7 @@ class RawDataTableBigQuerySchemaBuilder:
 
         This method is provided as a helper for cases where we are handling importing
         incomplete configs; if that is not your use case, consider using
-        build_schmea_for_big_query instead.
+        build_schema_for_big_query instead.
         """
         schema_columns = cls._raw_file_columns_as_bq_fields(raw_file_config, columns)
 

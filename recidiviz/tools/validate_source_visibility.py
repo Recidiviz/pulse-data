@@ -379,7 +379,7 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory",
         "recidiviz.ingest.direct.raw_data.raw_file_configs",
         "recidiviz.ingest.direct.raw_data.raw_table_relationship_info",
-        "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers",
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader",
         "recidiviz.ingest.direct.raw_data.validations",
         "recidiviz.ingest.direct.regions",  # there is a lot of code here, but is preferable to having to enumerate all region subidrs
         "recidiviz.ingest.direct.types.direct_ingest_constants",
@@ -421,7 +421,7 @@ def main() -> int:
                 "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks",
                 "recidiviz.entrypoints.entrypoint_utils",
                 "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer",
-                "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers",
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader",
                 "recidiviz.cloud_storage.bytes_chunk_reader",
                 "recidiviz.cloud_storage.read_only_csv_normalizing_stream",
                 "recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder",

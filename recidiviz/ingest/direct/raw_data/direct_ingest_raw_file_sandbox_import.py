@@ -40,6 +40,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader import (
+    DirectIngestRawFileHeaderReader,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
 )
@@ -52,9 +55,6 @@ from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
-    DirectIngestRawFileHeaderReader,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (

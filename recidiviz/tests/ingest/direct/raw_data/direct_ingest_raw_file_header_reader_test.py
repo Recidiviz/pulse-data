@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test for read_raw_file_column_headers.py"""
+"""Test for direct_ingest_raw_file_header_reader.py"""
 import os
 import unittest
 from datetime import datetime
@@ -25,13 +25,13 @@ import attr
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader import (
+    DirectIngestRawFileHeaderReader,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     RawTableColumnFieldType,
     RawTableColumnInfo,
-)
-from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
-    DirectIngestRawFileHeaderReader,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
@@ -56,7 +56,7 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         self.filename_parts = MagicMock()
         self.filename_parts.utc_upload_datetime = datetime.now()
         self.filename_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers.filename_parts_from_path",
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader.filename_parts_from_path",
             return_value=self.filename_parts,
         ).start()
         self.addCleanup(self.filename_patcher.stop)

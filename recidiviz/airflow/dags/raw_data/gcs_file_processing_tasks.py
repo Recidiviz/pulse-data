@@ -55,13 +55,13 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader import (
+    DirectIngestRawFileHeaderReader,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     get_region_raw_file_config,
-)
-from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
-    DirectIngestRawFileHeaderReader,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,

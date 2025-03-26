@@ -17,18 +17,13 @@
 """Tests for RawDataTableBigQuerySchemaBuilder"""
 from unittest import TestCase
 
-import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
-    RawTableColumnFieldType,
-    RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
@@ -46,7 +41,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
             region_code="us_xx", region_module=fake_regions_module
         )
 
-    def test_recidiviz_managed_fields_havnet_changed(self) -> None:
+    def test_recidiviz_managed_fields_have_not_changed(self) -> None:
         recidiviz_managed_fields = list(
             RawDataTableBigQuerySchemaBuilder.RECIDIVIZ_MANAGED_FIELDS
         )
@@ -97,7 +92,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
                 assert field.mode == "NULLABLE"
                 assert field.field_type == bigquery.enums.SqlTypeNames.STRING.value
 
-    def test_build_schmea_for_big_query_from_columns(self) -> None:
+    def test_build_schema_for_big_query_from_columns(self) -> None:
         config = self.region_raw_file_config.raw_file_configs["tagBasicData"]
         expected_raw_table_field_names = {
             col.name: col.description or "" for col in config.current_columns
@@ -141,35 +136,3 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
                 assert field.description == expected_raw_table_field_names[field.name]
                 assert field.mode == "NULLABLE"
                 assert field.field_type == bigquery.enums.SqlTypeNames.STRING.value
-
-    def test_build_schmea_for_big_query_from_columns_including_metadata_descriptions(
-        self,
-    ) -> None:
-        raw_file_config = self.region_raw_file_config.raw_file_configs["tagBasicData"]
-        for length in range(
-            BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
-            BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH + 2,
-        ):
-            raw_file_config = attr.evolve(
-                raw_file_config,
-                columns=[
-                    RawTableColumnInfo(
-                        name="COL1",
-                        state_code=StateCode.US_XX,
-                        file_tag=raw_file_config.file_tag,
-                        # Long description does not crash
-                        description=("a" * length),
-                        is_pii=False,
-                        field_type=RawTableColumnFieldType.STRING,
-                    )
-                ],
-            )
-            schema = RawDataTableBigQuerySchemaBuilder.build_bq_schema_from_columns(
-                raw_file_config=raw_file_config,
-                columns=["COL1"],
-            )
-            self.assertEqual(1, len(schema))
-            description = schema[0].description
-            self.assertEqual(BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH, len(description))
-            if length > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH:
-                self.assertTrue(description.endswith("(truncated)"))
