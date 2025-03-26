@@ -33,11 +33,9 @@ from flask import Request
 from recidiviz.cloud_functions.cloud_function_utils import cloud_functions_log
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
 )
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -117,21 +115,7 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
         cloud_functions_log(severity="ERROR", message=error_msg)
         return
 
-    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
-        GcsfsBucketPath(bucket)
-    )
-
     if not has_normalized_filename:
-        if not is_raw_data_import_dag_enabled(
-            StateCode(region_code.upper()),
-            ingest_instance,
-            project_id=os.environ["PROJECT_ID"],
-        ):
-            cloud_functions_log(
-                severity="INFO",
-                message=f"Raw data import dag disabled for [{region_code}] and instance [{ingest_instance.value}]. Normalization will occur via the /direct/handle_new_files endpoint.",
-            )
-            return
         try:
             new_path = fs.mv_raw_file_to_normalized_path(path)
             cloud_functions_log(
@@ -148,16 +132,6 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
         return
 
     if is_zipfile:
-        if not is_raw_data_import_dag_enabled(
-            StateCode(region_code.upper()),
-            ingest_instance,
-            project_id=os.environ["PROJECT_ID"],
-        ):
-            cloud_functions_log(
-                severity="INFO",
-                message=f"Raw data import dag disabled for [{region_code}] and instance [{ingest_instance.value}]. Unzipping will occur via the /direct/handle_new_files endpoint.",
-            )
-            return
         response = _invoke_zipfile_handler(bucket, relative_file_path)
         cloud_functions_log(
             severity="ERROR" if response.status_code != 200 else "INFO",

@@ -69,13 +69,8 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=False,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_successful_normalization(
         self,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
@@ -92,13 +87,8 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=False,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_raise_unexpected_error(
         self,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
@@ -115,13 +105,8 @@ class TestNormalizeFilename(TestCase):
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.cloud_functions_log"
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_swallow_nonretryable_error(
         self,
-        _mock_dag_disabled: MagicMock,
         mock_logging: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
@@ -131,25 +116,6 @@ class TestNormalizeFilename(TestCase):
         normalize_filename(self.event)
 
         mock_logging.assert_called_once()
-
-    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
-        return_value=False,
-    )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=False,
-    )
-    def test_successful_normalization_dag_disabled(
-        self,
-        _mock_dag_disabled: MagicMock,
-        _mock_is_normalized: MagicMock,
-        mock_fs: MagicMock,
-    ) -> None:
-        normalize_filename(self.event)
-
-        mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
 
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.cloud_functions_log"
@@ -167,13 +133,8 @@ class TestNormalizeFilename(TestCase):
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.cloud_functions_log"
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_incorrect_path_type(
         self,
-        _mock_dag_disabled: MagicMock,
         mock_logging: MagicMock,
         mock_path: MagicMock,
     ) -> None:
@@ -191,13 +152,8 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=False,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_unnormalized_zip_file_handling(
         self,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_invoke_zip_handler: MagicMock,
         mock_fs: MagicMock,
@@ -212,42 +168,14 @@ class TestNormalizeFilename(TestCase):
         mock_fs.mv_raw_file_to_normalized_path.assert_called_once()
 
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization._invoke_zipfile_handler"
-    )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=False,
-    )
-    def test_zip_file_handling_dag_disabled(
-        self,
-        _mock_dag_disabled: MagicMock,
-        mock_invoke_zip_handler: MagicMock,
-        mock_fs: MagicMock,
-    ) -> None:
-        zip_event = self._build_pubsub_cloudevent(
-            file_name=f"{self.relative_file_path}.zip"
-        )
-
-        normalize_filename(zip_event)
-
-        mock_invoke_zip_handler.assert_not_called()
-        mock_fs.mv_raw_file_to_normalized_path.assert_not_called()
-
-    @patch("recidiviz.cloud_functions.ingest_filename_normalization.fs")
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.requests")
     @patch("recidiviz.cloud_functions.ingest_filename_normalization._get_access_token")
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=True,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_normalized_zip_file_handling(
         self,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         _mock_get_token: MagicMock,
         mock_requests: MagicMock,
@@ -269,13 +197,8 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=True,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     def test_raises_zipfile_error(
         self,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         _mock_get_token: MagicMock,
         mock_requests: MagicMock,
@@ -296,10 +219,6 @@ class TestNormalizeFilename(TestCase):
         "recidiviz.cloud_functions.ingest_filename_normalization.DirectIngestGCSFileSystem.is_normalized_file_path",
         return_value=True,
     )
-    @patch(
-        "recidiviz.cloud_functions.ingest_filename_normalization.is_raw_data_import_dag_enabled",
-        return_value=True,
-    )
     @patch("recidiviz.cloud_functions.ingest_filename_normalization.requests.post")
     @patch(
         "recidiviz.cloud_functions.ingest_filename_normalization.google.oauth2.id_token.fetch_id_token"
@@ -308,7 +227,6 @@ class TestNormalizeFilename(TestCase):
         self,
         _mock_fetch_id_token: MagicMock,
         _mock_post: MagicMock,
-        _mock_dag_disabled: MagicMock,
         _mock_is_normalized: MagicMock,
         mock_fs: MagicMock,
     ) -> None:
