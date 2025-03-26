@@ -92,7 +92,7 @@ class BaseStateIngestTestCase(unittest.TestCase):
         if not (matches := cls.INGEST_TEST_NAME_REGEX.match(test_method_name)):
             raise ValueError(
                 f"Test method name did not match required format: {test_method_name}"
-                "Test names must be 'test_<ingest view name>_for_<thing you are testing>'"
+                "Test names must be 'test_<ingest view name>__for__<thing you are testing>'"
             )
         ingest_view_name, characteristic = matches.groups()
         return str(ingest_view_name), str(characteristic)

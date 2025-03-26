@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `case_manager_relationship_periods`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  INMATE_PERSON_ID: STRING
+  AGENT_PERSON_ID: STRING
+  DATE_ASSIGNED: DATE
+  DATE_DEASSIGNED_corrected: DATE
+  relationship_priority: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: INMATE_PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: DATE_ASSIGNED
+          relationship_end_date_exclusive: DATE_DEASSIGNED_corrected
+          associated_staff_external_id: AGENT_PERSON_ID
+          associated_staff_external_id_type: $literal("US_AZ_PERSON_ID")
+          system_type: $literal_enum(StateSystemType.INCARCERATION)
+          relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
+          relationship_priority: relationship_priority
