@@ -230,7 +230,6 @@ class IngestOpsEndpointTests(TestCase):
         # Arrange
         self.mock_store.get_all_latest_raw_data_import_run_info.return_value = {
             StateCode.US_XX: LatestDirectIngestRawFileImportRunSummary(
-                is_enabled=True,
                 import_run_start=datetime(2022, 8, 29, tzinfo=pytz.UTC),
                 count_by_status_bucket={
                     DirectIngestRawFileImportStatusBucket.SUCCEEDED: 10,
@@ -238,7 +237,6 @@ class IngestOpsEndpointTests(TestCase):
                 },
             ),
             StateCode.US_YY: LatestDirectIngestRawFileImportRunSummary(
-                is_enabled=False,
                 import_run_start=None,
                 count_by_status_bucket={},
             ),
@@ -255,7 +253,6 @@ class IngestOpsEndpointTests(TestCase):
             response.json,
             {
                 "US_XX": {
-                    "isEnabled": True,
                     "importRunStart": "2022-08-29T00:00:00+00:00",
                     "countByStatusBucket": [
                         {"importStatus": "SUCCEEDED", "fileCount": 10},
@@ -263,7 +260,6 @@ class IngestOpsEndpointTests(TestCase):
                     ],
                 },
                 "US_YY": {
-                    "isEnabled": False,
                     "importRunStart": None,
                     "countByStatusBucket": [],
                 },

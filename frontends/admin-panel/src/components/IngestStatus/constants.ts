@@ -80,9 +80,7 @@ export type RawDataImportRunStatus = {
   fileCount: number;
 };
 
-// TODO(#28239): remove once we remove this value from the response payload
 export type RawDataImportRunStatusInfo = {
-  isEnabled: boolean;
   importRunStart: string | undefined;
   countByStatusBucket: RawDataImportRunStatus[];
 };
@@ -185,25 +183,6 @@ export type RawDataResourceLockStatuses = {
 
 export type RawDataResourceLockStatusesResponse = {
   [stateCode: string]: RawDataResourceLockStatuses;
-};
-
-// TODO(#28239): remove once the raw data import dag is fully rolled out
-// --- queue-related constants ---------------------------------------------------------
-
-export enum QueueState {
-  PAUSED = "PAUSED",
-  RUNNING = "RUNNING",
-  MIXED_STATUS = "MIXED_STATUS",
-  UNKNOWN = "UNKNOWN",
-}
-
-export type QueueMetadata = {
-  name: string;
-  state: QueueState;
-};
-
-export type StateIngestQueuesStatuses = {
-  [stateCode: string]: QueueState;
 };
 
 // --- raw data related constants ------------------------------------------------------

@@ -938,7 +938,6 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
     def test_import_run_summary_empty(self) -> None:
         assert self.us_xx_manager.get_most_recent_import_run_summary().for_api() == {
-            "isEnabled": False,
             "importRunStart": None,
             "countByStatusBucket": [],
         }
@@ -1014,7 +1013,6 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             summary = self.us_xx_manager.get_most_recent_import_run_summary()
 
             assert summary is not None
-            assert summary.is_enabled is False
             assert summary.import_run_start == fixed_datetime + timedelta(hours=2)
             assert summary.count_by_status_bucket == {
                 DirectIngestRawFileImportStatusBucket.FAILED: 1,

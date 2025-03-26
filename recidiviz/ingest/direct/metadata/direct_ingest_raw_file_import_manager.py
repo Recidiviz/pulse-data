@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class for managing interaction with DirectIngestRawFileImport and 
+"""Class for managing interaction with DirectIngestRawFileImport and
 DirectIngestRawFileImportRun
 """
 import datetime
@@ -29,8 +29,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
     DirectIngestRawFileImportStatus,
     DirectIngestRawFileImportStatusBucket,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -100,14 +98,11 @@ class DirectIngestRawFileImportSummary:
         }
 
 
-# TODO(#28239): remove is_enabled once the raw data import dag is fully rolled out
 @attr.define
 class LatestDirectIngestRawFileImportRunSummary:
     """Summary for the most recent import run.
 
     Attributes:
-        is_enabled (bool): whether or not the raw data import dag is enabled for this
-            state pair
         import_run_start (datetime | None): the import_start time associated with the
             values in |count_by_status|.
         count_by_status_bucket (Dict[DirectIngestRawFileImportStatusBuckets, int]): the
@@ -115,7 +110,6 @@ class LatestDirectIngestRawFileImportRunSummary:
             import sessions table for |import_start|.
     """
 
-    is_enabled: bool = attr.ib(validator=attr_validators.is_bool)
     import_run_start: Optional[datetime.datetime] = attr.ib(
         validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
@@ -128,7 +122,6 @@ class LatestDirectIngestRawFileImportRunSummary:
         frontend.
         """
         return {
-            "isEnabled": self.is_enabled,
             "importRunStart": (
                 self.import_run_start.isoformat()
                 if self.import_run_start
@@ -493,9 +486,6 @@ class DirectIngestRawFileImportManager:
                 ] += result.num_file_imports
 
             return LatestDirectIngestRawFileImportRunSummary(
-                is_enabled=is_raw_data_import_dag_enabled(
-                    StateCode(self.region_code), self.raw_data_instance
-                ),
                 import_run_start=import_run_start,
                 count_by_status_bucket=count_by_status_bucket,
             )
