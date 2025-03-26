@@ -19,6 +19,7 @@ meet risk assessment standards
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -84,7 +85,7 @@ supervision_start_dates AS (
   -- Pull what the case type is at the start of the supervision period
   LEFT JOIN case_type_periods as case_types
     ON comp_sessions.start_date >= case_types.start_date
-      AND comp_sessions.start_date < case_types.end_date_exclusive
+      AND comp_sessions.start_date < {nonnull_end_date_clause('case_types.end_date_exclusive')}
       AND comp_sessions.person_id = case_types.person_id
   WHERE comp_sessions.state_code = 'US_TX'
     AND compartment_level_2 = 'PAROLE'
@@ -115,7 +116,7 @@ assessments_6_months_before_supervision AS (
   -- Pull what the case type is at the start of the supervision period
   LEFT JOIN case_type_periods as case_types
     ON comp_sessions.start_date >= case_types.start_date
-      AND comp_sessions.start_date < case_types.end_date_exclusive
+      AND comp_sessions.start_date < {nonnull_end_date_clause('case_types.end_date_exclusive')}
       AND comp_sessions.person_id = case_types.person_id
   -- Only include the most recent assessment prior to supervision start
   QUALIFY ROW_NUMBER() OVER (
@@ -138,10 +139,10 @@ assessments_in_supervision AS (
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` as sessions
     ON sessions.person_id = state_assessment.person_id
       AND state_assessment.assessment_date >= sessions.start_date
-      AND state_assessment.assessment_date < sessions.end_date
+      AND state_assessment.assessment_date < {nonnull_end_date_clause('sessions.end_date')}
   LEFT JOIN case_type_periods as case_types
     ON state_assessment.assessment_date >= case_types.start_date
-      AND state_assessment.assessment_date < case_types.end_date_exclusive
+      AND state_assessment.assessment_date < {nonnull_end_date_clause('case_types.end_date_exclusive')}
       AND state_assessment.person_id = case_types.person_id
 ),
 
@@ -226,7 +227,9 @@ events_with_reference_data AS (
     ON event_triggers.assessment_level = cadence_ref.last_assessment_level
       AND event_triggers.assessment_type = cadence_ref.last_assessment_type
       AND CAST(event_ref.use_whats_next_table AS BOOL) = TRUE
-    WHERE event_ref.use_whats_next_table is not null
+    -- We should always include assessments even if they are not accounted for in our logic yet, but we should only
+    -- include other ad-hoc events if they are actually relevant to the logic
+    WHERE (event_ref.use_whats_next_table is not null OR event_type = 'assessment_completed')
         AND event_date is not null
 ),
 
@@ -249,8 +252,6 @@ next_events AS (
     LEAD(this_assessment_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_assessment_type,
     frequency
 FROM events_with_reference_data
--- If we don't have matching due date logic, don't include in TES as there will be null start dates
-WHERE due_assessment_date is not null
 ),
 
 -- TES output:
@@ -290,6 +291,8 @@ meets_criteria_true_records AS (
           frequency
         )) AS reason
     FROM next_events
+    -- If we don't have matching due date logic, don't include in TES as there will be null start dates
+    WHERE due_assessment_date is not null
 ),
 meets_criteria_false_records AS (
     SELECT
@@ -325,7 +328,9 @@ meets_criteria_false_records AS (
           frequency
         )) AS reason
     FROM next_events
-    WHERE next_event_date IS NULL OR next_event_date > due_assessment_date
+    WHERE (next_event_date IS NULL OR next_event_date > due_assessment_date)
+        -- If we don't have matching due date logic, don't include in TES as there will be null start dates
+        AND due_assessment_date is not null
 )
 
 SELECT * FROM meets_criteria_true_records
