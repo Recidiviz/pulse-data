@@ -97,14 +97,6 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
-echo "Starting deploy of main app - default"
-run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-  --project-id "${PROJECT}" \
-  --version-tag "${GIT_VERSION_TAG}" \
-  --commit-ref "${COMMIT_HASH}" \
-  --stage "DeployAppEngine" \
-  --promote
-
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
 

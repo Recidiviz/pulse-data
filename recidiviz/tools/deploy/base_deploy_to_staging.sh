@@ -17,7 +17,6 @@ BRANCH_NAME=''
 DEBUG_BUILD_NAME=''
 PROMOTE=''
 NO_PROMOTE=''
-PROMOTE_FLAGS=''
 PROJECT_ID='recidiviz-staging'
 
 function print_usage {
@@ -37,8 +36,8 @@ while getopts "b:v:c:pnd:r:" flag; do
     v) VERSION_TAG="$OPTARG" ;;
     c) COMMIT_HASH="$OPTARG" ;;
     b) BRANCH_NAME="$OPTARG" ;;
-    p) PROMOTE_FLAGS='--promote' PROMOTE='true';;
-    n) PROMOTE_FLAGS='--no-promote' NO_PROMOTE='true';;
+    p) PROMOTE='true';;
+    n) NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
     r) PROJECT_ID="$OPTARG" ;;
     *) print_usage
@@ -217,27 +216,6 @@ if [[ -n ${PROMOTE} ]]; then
     pre_deploy_configure_infrastructure "$PROJECT_ID" "${DOCKER_IMAGE_TAG}" "$COMMIT_HASH"
 else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
-fi
-
-if [[ -n ${PROMOTE} ]]; then
-  echo "Deploying application - default"
-  run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-    --project-id "${PROJECT_ID}" \
-    --version-tag "${VERSION_TAG}" \
-    --commit-ref "${COMMIT_HASH}" \
-    --stage "DeployAppEngine" \
-    "${PROMOTE_FLAGS}"
-else
-  echo "Skipping deployment of App Engine for no promote build"
-  if [[ -n ${DEBUG_BUILD_NAME} ]]; then
-    echo "If you wish to test the debug version on App Engine, run the following:"
-    echo "pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \\"
-    echo "  --project-id ${PROJECT_ID} \\"
-    echo "  --version-tag ${VERSION_TAG} \\"
-    echo "  --commit-ref ${COMMIT_HASH} \\"
-    echo "  --stage DeployAppEngine \\"
-    echo "  --no-promote"
-  fi
 fi
 
 if [[ -n ${PROMOTE} ]]; then

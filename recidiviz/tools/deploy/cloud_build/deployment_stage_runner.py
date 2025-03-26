@@ -24,7 +24,7 @@ python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
     --project-id {recidiviz-staging|recidiviz-123} \
     --commit-ref {commit_ref_to_deploy} \
     --version-tag {version_tag} \
-    --stage {RunMigrations|TagImages|BuildImages|DeployAppEngine}
+    --stage {RunMigrations|TagImages|BuildImages}
 
 """
 import argparse
@@ -47,7 +47,6 @@ from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
 from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
     CreateTerraformPlan,
 )
-from recidiviz.tools.deploy.cloud_build.stages.deploy_app_engine import DeployAppEngine
 from recidiviz.tools.deploy.cloud_build.stages.run_migrations_from_cloud_build import (
     RunMigrations,
 )
@@ -60,7 +59,6 @@ AVAILABLE_DEPLOYMENT_STAGES: set[type[DeploymentStageInterface]] = {
     RunMigrations,
     TagImages,
     BuildImages,
-    DeployAppEngine,
     CreateTerraformPlan,
 }
 

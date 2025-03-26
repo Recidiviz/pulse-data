@@ -113,12 +113,10 @@ function last_version_tag_on_branch {
 # Returns the last deployed version tag in a given project
 function last_deployed_version_tag {
     PROJECT_ID=$1
-    # Get tag and strip surrounding quotes.
-    UNNORMALIZED_TAG=$(gcloud app versions list --project="$PROJECT_ID" --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \") || exit_on_fail
-    # Deployed version tags have all periods replaced with dashes, re-format to match git version tag format.
-    LAST_DEPLOYED_GIT_VERSION_TAG=$(echo "$UNNORMALIZED_TAG" | tr '-' '.' | sed 's/.alpha/-alpha/g') || exit_on_fail
+    reconfigure_terraform_backend "${PROJECT_ID}" "" > /dev/null
 
-    echo "${LAST_DEPLOYED_GIT_VERSION_TAG}"
+    DOCKER_IMAGE_TAG="$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw docker_image_tag)"
+    echo "${DOCKER_IMAGE_TAG}"
 }
 
 function next_alpha_version {
@@ -255,53 +253,6 @@ function check_jq_installed {
     fi
 }
 
-function check_for_too_many_serving_versions {
-    PROJECT_ID=$1
-
-    # Query for the serving versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    SERVING_VERSIONS=$(gcloud app versions list --project="${PROJECT_ID}" --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
-
-    # Note: if we adjust the number of serving versions upward, we may
-    # have to adjust the number of max connections in our postgres instances.
-    # See the discussion in #5497 for more context, and see the docs:
-    # https://cloud.google.com/sql/docs/quotas#postgresql for more.
-    # See discussion in #6698 for additional rationale for bumping from 4 -> 8.
-
-
-
-    # Each of the serving versions is 1 backend service. We also have a backend
-    # service (most likely the load balancer for Case Triage that was added in #8829)
-    # that is always always running, but isn't listed as one of the serving app
-    # versions. We have a backend services quota of 9, and we need to be at least 1
-    # under the quota in order to successfully complete a deploy of the default service.
-    # So, if there are 8 or more serving versions then we need to stop at least one to
-    # proceed.
-    MAX_ALLOWED_SERVING_VERSIONS=7
-    if [[ "$SERVING_VERSIONS" -gt "$MAX_ALLOWED_SERVING_VERSIONS" ]]; then
-        echo_error "Found [$SERVING_VERSIONS] already serving versions. You must stop at least one version to proceed"
-        echo_error "in order to avoid maxing out the number of allowed database connections."
-        echo_error "Stop versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
-        exit 1
-    fi
-    echo "Found [$SERVING_VERSIONS] already serving versions - proceeding"
-}
-
-function check_for_too_many_deployed_versions {
-    PROJECT_ID=$1
-
-    # Query for the deployed versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    DEPLOYED_VERSIONS=$(gcloud app versions list --project="${PROJECT_ID}" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
-    # Our actual limit is 210 versions, but we safeguard against other versions being deployed before this deploy succeeds
-    MAX_ALLOWED_DEPLOYED_VERSIONS=200
-    if [[ "$DEPLOYED_VERSIONS" -ge "$MAX_ALLOWED_DEPLOYED_VERSIONS" ]]; then
-        echo_error "Found [$DEPLOYED_VERSIONS] already deployed versions. You must delete at least one version to proceed"
-        echo_error "in order to avoid maxing out the number of allowed deployed versions."
-        echo_error "Delete versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
-        exit 1
-    fi
-    echo "Found [$DEPLOYED_VERSIONS] already deployed versions - proceeding"
-}
-
 function verify_can_deploy {
     local PROJECT_ID
     local COMMIT_HASH
@@ -325,12 +276,6 @@ function verify_can_deploy {
 
     echo "Checking terraform is installed"
     run_cmd check_terraform_installed
-
-    echo "Checking for too many deployed versions"
-    run_cmd check_for_too_many_deployed_versions "${PROJECT_ID}"
-
-    echo "Checking for too many currently serving versions"
-    run_cmd check_for_too_many_serving_versions "${PROJECT_ID}"
 
     echo "Checking pipenv is synced"
     "${BASH_SOURCE_DIR}"/../diff_pipenv.sh || exit_on_fail
@@ -418,7 +363,7 @@ function on_deploy_exited {
   local RELEASE_VERSION_TAG=$3
 
 
-  if [[ "${DEPLOYMENT_STATUS}" < "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
+  if [[ "${DEPLOYMENT_STATUS}" -lt "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
     local EMOJI=${DEPLOYMENT_FAILED_EMOJI[$RANDOM % ${#DEPLOYMENT_FAILED_EMOJI[@]}]}
     local DEPLOYMENT_ERROR_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` There was an error deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
     local ERROR_MESSAGE_TS

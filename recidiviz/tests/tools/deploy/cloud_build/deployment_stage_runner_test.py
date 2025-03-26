@@ -29,7 +29,6 @@ from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
 from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
     CreateTerraformPlan,
 )
-from recidiviz.tools.deploy.cloud_build.stages.deploy_app_engine import DeployAppEngine
 from recidiviz.tools.deploy.cloud_build.stages.run_migrations_from_cloud_build import (
     RunMigrations,
 )
@@ -51,7 +50,6 @@ class DeploymentStepRunnerTest(unittest.TestCase):
             BuildImages: argparse.Namespace(
                 images=[ImageKind.APP_ENGINE], promote=False
             ),
-            DeployAppEngine: argparse.Namespace(promote=False),
             TagImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
             RunMigrations: argparse.Namespace(schema_types=[SchemaType.OPERATIONS]),
         }

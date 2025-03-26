@@ -43,7 +43,6 @@ if [[ ! ${LAST_DEPLOYED_VERSION_TAG} == "${DOCKER_IMAGE_TAG}" ]]; then
 fi
 
 GIT_HASH=$(git rev-list -n 1 tags/"${DOCKER_IMAGE_TAG}") || exit_on_fail
-STATE_BUCKET="${PROJECT_ID}-tf-state"
 PAGERDUTY_TOKEN=$(get_secret "$PROJECT_ID" pagerduty_terraform_key) || exit_on_fail
 
 
@@ -56,10 +55,7 @@ function terraform_with_debug {
 }
 
 echo "##### Initializing Terraform ########"
-terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH init \
-  -backend-config "bucket=${STATE_BUCKET}" \
-  -backend-config "prefix=${TF_STATE_PREFIX}" \
-  -reconfigure || exit_on_fail
+reconfigure_terraform_backend "${PROJECT_ID}" "${TF_STATE_PREFIX}" || exit_on_fail
 
 echo "Creating Airflow source files manifest (necessary input for plan)..."
 AIRFLOW_SOURCE_FILES_JSON_PATH="./recidiviz/tools/deploy/terraform/airflow_source_files.json"
