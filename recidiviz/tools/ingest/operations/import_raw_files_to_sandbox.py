@@ -311,7 +311,6 @@ def parse_arguments() -> argparse.Namespace:
         "contain a match to this regex.",
     )
 
-    # TODO(#28239) clean up doc when raw data infra is rolled out
     parser.add_argument(
         "--infer-schema-from-csv",
         help=(

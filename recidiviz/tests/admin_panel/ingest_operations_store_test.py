@@ -37,14 +37,8 @@ from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
 )
@@ -58,7 +52,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -125,86 +118,6 @@ class IngestOperationsStoreTestBase(TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
-
-
-class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
-    IngestOperationsStoreTestBase
-):
-    """Implements tests for get_all_current_ingest_instance_statuses."""
-
-    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
-    def test_all_different_statuses(self) -> None:
-        """
-        Assert that the correct dictionary exists when all primary and secondary statuses
-        are different
-        """
-
-        us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_XX.value,
-            DirectIngestInstance.PRIMARY,
-        )
-
-        us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_XX.value,
-            DirectIngestInstance.SECONDARY,
-        )
-        us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_YY.value,
-            DirectIngestInstance.PRIMARY,
-        )
-
-        us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_YY.value,
-            DirectIngestInstance.SECONDARY,
-        )
-
-        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
-        us_xx_primary_status_manager.add_instance_status(
-            DirectIngestStatus.INITIAL_STATE
-        )
-        us_xx_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.READY_TO_FLASH
-        )
-        us_yy_primary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_IN_PROGRESS
-        )
-        us_yy_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_COMPLETED
-        )
-
-        dif_statuses = self.operations_store.get_all_current_ingest_instance_statuses()
-
-        expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.INITIAL_STATE,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.READY_TO_FLASH,
-                    status_timestamp=timestamp,
-                ),
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.FLASH_COMPLETED,
-                    status_timestamp=timestamp,
-                ),
-            },
-        }
-        self.assertEqual(expected, dif_statuses)
 
 
 class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTestBase):

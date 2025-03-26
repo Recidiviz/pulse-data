@@ -49,9 +49,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
     DirectIngestRawDataResourceLockManager,
 )
@@ -78,7 +75,6 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestInstanceError,
 )
-from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
@@ -427,29 +423,6 @@ class IngestOperationsStore(AdminPanelStore):
             raw_file_metadata.file_tag: raw_file_metadata
             for raw_file_metadata in raw_file_metadata_manager.get_metadata_for_all_raw_files_in_region()
         }
-
-    def get_all_current_ingest_instance_statuses(
-        self,
-    ) -> Dict[StateCode, Dict[DirectIngestInstance, DirectIngestInstanceStatus]]:
-        """Returns the current status of each ingest instance for states in the given project."""
-
-        ingest_statuses = {}
-        for state_code in get_direct_ingest_states_launched_in_env():
-            instance_to_status_dict: Dict[
-                DirectIngestInstance, DirectIngestInstanceStatus
-            ] = {}
-            for i_instance in DirectIngestInstance:  # new direct ingest instance
-                status_manager = DirectIngestInstanceStatusManager(
-                    region_code=state_code.value,
-                    ingest_instance=i_instance,
-                )
-
-                curr_status_info = status_manager.get_current_status_info()
-                instance_to_status_dict[i_instance] = curr_status_info
-
-            ingest_statuses[state_code] = instance_to_status_dict
-
-        return ingest_statuses
 
     def get_all_latest_raw_data_import_run_info(
         self,
