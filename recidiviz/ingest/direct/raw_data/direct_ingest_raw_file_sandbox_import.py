@@ -31,26 +31,20 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import (
     GcsfsCsvChunkBoundaryFinder,
 )
-from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
-)
-from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
-    LegacyDirectIngestRawFileImportManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
     RawDataImportDelegateFactory,
@@ -74,7 +68,6 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
-from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 
 DEFAULT_SANDBOX_CHUNK_SIZE = 10 * 1024 * 1024  # 10 mb
@@ -155,101 +148,6 @@ class SandboxImportRun:
     status_to_imports: Dict[
         SandboxImportStatus, List[SandboxConceptualFileImportResult]
     ] = attr.ib(validator=attr_validators.is_dict)
-
-
-# TODO(#28239) remove legacy code once raw data import dag is rolled out
-# ============================== legacy infra code =====================================
-
-
-def legacy_import_raw_files_to_bq_sandbox(
-    *,
-    state_code: StateCode,
-    sandbox_dataset_prefix: str,
-    files_to_import: List[GcsfsFilePath],
-    infer_schema_from_csv: bool,
-    big_query_client: BigQueryClient,
-    fs: DirectIngestGCSFileSystem,
-) -> SandboxImportRun:
-    """Imports a set of raw data files in the given source bucket into a sandbox
-    dataset. If |file_tag_filters| is set, then will only import files with that set
-    of tags.
-    """
-
-    csv_reader = GcsfsCsvReader(fs)
-
-    try:
-        region_code = state_code.value.lower()
-        region = get_direct_ingest_region(region_code)
-
-        import_manager = LegacyDirectIngestRawFileImportManager(
-            region=region,
-            fs=fs,
-            temp_output_directory_path=gcsfs_direct_ingest_temporary_output_directory_path(
-                subdir=sandbox_dataset_prefix
-            ),
-            csv_reader=csv_reader,
-            big_query_client=big_query_client,
-            sandbox_dataset_prefix=sandbox_dataset_prefix,
-            infer_schema_from_csv=infer_schema_from_csv,
-            # Sandbox instance can be primary
-            instance=DirectIngestInstance.PRIMARY,
-        )
-
-    except ValueError as error:
-        raise ValueError(
-            "Something went wrong trying to get unprocessed raw files to import"
-        ) from error
-
-    status_to_imports = defaultdict(list)
-
-    for file_path in files_to_import:
-        parts = filename_parts_from_path(file_path)
-
-        logging.info(
-            "Importing import for tag [%s] with update datetime [%s]",
-            parts.file_tag,
-            parts.utc_upload_datetime_str,
-        )
-
-        try:
-            import_manager.import_raw_file_to_big_query(
-                file_path,
-                DirectIngestRawFileMetadata(
-                    file_id=_id_for_file(state_code, file_path.file_name),
-                    region_code=state_code.value,
-                    file_tag=parts.file_tag,
-                    file_processed_time=None,
-                    file_discovery_time=datetime.datetime.now(),
-                    normalized_file_name=file_path.file_name,
-                    update_datetime=parts.utc_upload_datetime,
-                    # Sandbox instance can be primary
-                    raw_data_instance=DirectIngestInstance.PRIMARY,
-                    is_invalidated=False,
-                ),
-            )
-
-            status_to_imports[SandboxImportStatus.SUCCEEDED].append(
-                SandboxConceptualFileImportResult(
-                    paths=[file_path],
-                    status=SandboxImportStatus.SUCCEEDED,
-                    error_message=None,
-                )
-            )
-
-        except Exception as e:
-            logging.exception(e)
-            status_to_imports[SandboxImportStatus.FAILED].append(
-                SandboxConceptualFileImportResult(
-                    paths=[file_path],
-                    status=SandboxImportStatus.FAILED,
-                    error_message=str(e),
-                )
-            )
-
-    return SandboxImportRun(status_to_imports=status_to_imports)
-
-
-# ============================== new infra code ========================================
 
 
 def _validate_checksums(

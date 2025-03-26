@@ -38,7 +38,6 @@ import datetime
 import logging
 import os
 import re
-from enum import Enum
 from typing import List, Optional, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -47,17 +46,14 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import import (
     SandboxConceptualFileImportResult,
-    SandboxImportRun,
     SandboxImportStatus,
     import_raw_files_to_sandbox,
-    legacy_import_raw_files_to_bq_sandbox,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
@@ -82,12 +78,6 @@ from recidiviz.source_tables.source_table_update_manager import SourceTableUpdat
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-
-# TODO(#28239) remove enum once raw data import dag is rolled out
-class SandboxImportInfraType(Enum):
-    LEGACY = "legacy"
-    NEW = "new"
 
 
 def get_unprocessed_raw_files_in_bucket(
@@ -131,10 +121,8 @@ def source_table_collection_for_paths(
     *,
     state_code: StateCode,
     files_to_import: List[GcsfsFilePath],
-    create_tables_ahead_of_time: bool,
     sandbox_dataset_prefix: str,
     region_config: DirectIngestRegionRawFileConfig,
-    infra_type: SandboxImportInfraType,
 ) -> List[SourceTableCollection]:
     """Builds a SourceTableCollection object that contains sandbox raw data tables we
     can create ahead of time.
@@ -165,42 +153,34 @@ def source_table_collection_for_paths(
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
-    if create_tables_ahead_of_time:
-        file_tags = {
-            filename_parts_from_path(file).file_tag for file in files_to_import
-        }
+    file_tags = {filename_parts_from_path(file).file_tag for file in files_to_import}
 
-        for file_tag in file_tags:
-            sandbox_raw_data_collection.add_source_table(
-                file_tag,
-                description=f"Sandbox raw data file for {file_tag}",
-                schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
-                    raw_file_config=region_config.raw_file_configs[file_tag],
-                ),
-                clustering_fields=[FILE_ID_COL_NAME],
-            )
-
-    table_collections = [sandbox_raw_data_collection]
-
-    if infra_type == SandboxImportInfraType.NEW:
-        table_collections.append(
-            SourceTableCollection(
-                dataset_id=raw_data_temp_load_dataset(
-                    state_code,
-                    DirectIngestInstance.PRIMARY,
-                    sandbox_dataset_prefix=sandbox_dataset_prefix,
-                ),
-                labels=labels,
-                update_config=SourceTableCollectionUpdateConfig.protected(),
-                default_table_expiration_ms=ONE_DAY_MS,
-                description=(
-                    "Contains intermediate results of a sandbox raw data import process"
-                    "that will be queried during the sandbox import process."
-                ),
-            )
+    for file_tag in file_tags:
+        sandbox_raw_data_collection.add_source_table(
+            file_tag,
+            description=f"Sandbox raw data file for {file_tag}",
+            schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
+                raw_file_config=region_config.raw_file_configs[file_tag],
+            ),
+            clustering_fields=[FILE_ID_COL_NAME],
         )
 
-    return table_collections
+    sandbox_temp_load_collection = SourceTableCollection(
+        dataset_id=raw_data_temp_load_dataset(
+            state_code,
+            DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+        ),
+        labels=labels,
+        update_config=SourceTableCollectionUpdateConfig.protected(),
+        default_table_expiration_ms=ONE_DAY_MS,
+        description=(
+            "Contains intermediate results of a sandbox raw data import process"
+            "that will be queried during the sandbox import process."
+        ),
+    )
+
+    return [sandbox_raw_data_collection, sandbox_temp_load_collection]
 
 
 def do_sandbox_raw_file_import(
@@ -209,7 +189,6 @@ def do_sandbox_raw_file_import(
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
     file_tag_filter_regex: Optional[str],
-    infra_type: Optional[SandboxImportInfraType],
     infer_schema_from_csv: bool,
     skip_blocking_validations: bool,
     skip_raw_data_migrations: bool,
@@ -219,13 +198,6 @@ def do_sandbox_raw_file_import(
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
     """
-
-    if infra_type is None:
-        infra_type = (
-            SandboxImportInfraType.NEW
-            if is_raw_data_import_dag_enabled(state_code, DirectIngestInstance.PRIMARY)
-            else SandboxImportInfraType.LEGACY
-        )
 
     region_raw_file_config = DirectIngestRegionRawFileConfig(
         region_code=state_code.value.lower()
@@ -266,26 +238,11 @@ def do_sandbox_raw_file_import(
         f"Proceed with sandbox import of [{len(files_to_import)}] files?"
     )
 
-    # In the LEGACY infra, infer_schema_from_csv means we cannot build the raw data
-    # table ahead of time as we do not know before reading the actual file what the
-    # schema will be. If infer_schema_from_csv is True, BQ will create the table
-    # automatically during the load job using the provided schema.
-    #
-    # In the NEW infra, we always create a temporary table that matches the schema
-    # of the raw data file and then map that schema onto the current raw data schema,
-    # so you will be always be able to see both the table with the schema that matches
-    # the file exactly, as well as that schema mapped to the current raw config schema.
-    create_tables_ahead_of_time = (
-        infra_type == SandboxImportInfraType.NEW or not infer_schema_from_csv
-    )
-
     source_table_collections_for_sandbox = source_table_collection_for_paths(
         state_code=state_code,
         files_to_import=files_to_import,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        create_tables_ahead_of_time=create_tables_ahead_of_time,
         region_config=region_raw_file_config,
-        infra_type=infra_type,
     )
 
     update_manager = SourceTableUpdateManager()
@@ -298,31 +255,19 @@ def do_sandbox_raw_file_import(
         log_output=True,
     )
 
-    sandbox_import_result: SandboxImportRun
-    match infra_type:
-        case SandboxImportInfraType.LEGACY:
-            sandbox_import_result = legacy_import_raw_files_to_bq_sandbox(
-                state_code=state_code,
-                sandbox_dataset_prefix=sandbox_dataset_prefix,
-                files_to_import=files_to_import,
-                infer_schema_from_csv=infer_schema_from_csv,
-                big_query_client=BigQueryClientImpl(),
-                fs=fs,
-            )
-        case SandboxImportInfraType.NEW:
-            sandbox_import_result = import_raw_files_to_sandbox(
-                state_code=state_code,
-                sandbox_dataset_prefix=sandbox_dataset_prefix,
-                files_to_import=files_to_import,
-                big_query_client=bq_client,
-                fs=fs,
-                region_config=region_raw_file_config,
-                infer_schema_from_csv=infer_schema_from_csv,
-                skip_blocking_validations=skip_blocking_validations,
-                skip_raw_data_migrations=skip_raw_data_migrations,
-                persist_intermediary_tables=persist_intermediary_tables,
-                allow_incomplete_chunked_files=allow_incomplete_chunked_files,
-            )
+    sandbox_import_result = import_raw_files_to_sandbox(
+        state_code=state_code,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        files_to_import=files_to_import,
+        big_query_client=bq_client,
+        fs=fs,
+        region_config=region_raw_file_config,
+        infer_schema_from_csv=infer_schema_from_csv,
+        skip_blocking_validations=skip_blocking_validations,
+        skip_raw_data_migrations=skip_raw_data_migrations,
+        persist_intermediary_tables=persist_intermediary_tables,
+        allow_incomplete_chunked_files=allow_incomplete_chunked_files,
+    )
 
     logging.info("************************** RESULTS **************************")
     for status in list(SandboxImportStatus):
@@ -366,28 +311,14 @@ def parse_arguments() -> argparse.Namespace:
         "contain a match to this regex.",
     )
 
-    # TODO(#28239) remove flag once raw data import dag is rolled out
-    parser.add_argument(
-        "--infra-type",
-        help=(
-            "The infra that will be used to import the raw data files. If none is "
-            "specified, defaults to using whatever infra is enabled in PRIMARY for the "
-            "provided state_code."
-        ),
-        type=str,
-        choices=[type_.value for type_ in SandboxImportInfraType],
-        required=False,
-    )
-
     # TODO(#28239) clean up doc when raw data infra is rolled out
     parser.add_argument(
         "--infer-schema-from-csv",
         help=(
             "For files with a header row, will infers the raw file's schema from the "
             "header row of the csv instead of using the raw file config to determine the "
-            "schema. If running on the new infra, we will additionally persist the "
-            "__transformed table whose schema will match the raw data file and has a "
-            "default TTL of 1 day."
+            "schema. We will additionally persist the __transformed table whose schema "
+            "will match the raw data file and has a default TTL of 1 day."
         ),
         action="store_true",
     )
@@ -402,13 +333,9 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
     )
 
-    # TODO(#28239) clean up doc when raw data infra is rolled out
     parser.add_argument(
         "--skip-raw-data-migrations",
-        help=(
-            "Skips raw data migrations during the big query load step. Only applies to"
-            "the new raw data infra."
-        ),
+        help="Skips raw data migrations during the big query load step.",
         action="store_true",
     )
 
@@ -444,11 +371,6 @@ if __name__ == "__main__":
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
-            infra_type=(
-                SandboxImportInfraType(known_args.infra_type)
-                if known_args.infra_type
-                else None
-            ),
             infer_schema_from_csv=known_args.infer_schema_from_csv,
             skip_blocking_validations=known_args.skip_blocking_validations,
             skip_raw_data_migrations=known_args.skip_raw_data_migrations,

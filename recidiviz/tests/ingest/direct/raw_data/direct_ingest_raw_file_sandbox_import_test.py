@@ -25,16 +25,11 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import import (
     _do_pre_import_normalization,
     _import_bq_metadata_to_sandbox,
     _pre_import_norm_for_path,
     _validate_checksums,
-    legacy_import_raw_files_to_bq_sandbox,
-)
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -50,99 +45,6 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.utils.fake_region import fake_region
-
-
-class LegacyImportRawFilesToBQSandboxTest(TestCase):
-    """Test for legacy_import_raw_files_to_bq_sandbox"""
-
-    def setUp(self) -> None:
-        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
-        self.metadata_patcher.start().return_value = "test-project"
-        self.region_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.get_direct_ingest_region",
-            MagicMock(
-                return_value=fake_region(
-                    region_code=StateCode.US_XX.value.lower(),
-                    environment="staging",
-                    region_module=fake_regions,
-                )
-            ),
-        )
-        self.region_patcher.start()
-        self.file_manager_patch = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.LegacyDirectIngestRawFileImportManager"
-        )
-        self.file_manager_mock = self.file_manager_patch.start().return_value
-        self.file_manager_mock.region_raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code="US_XX",
-            region_module=fake_regions,
-        )
-        self.mock_big_query_client = create_autospec(BigQueryClient)
-        self.mock_gcsfs = create_autospec(GCSFileSystem)
-
-    def tearDown(self) -> None:
-        self.metadata_patcher.stop()
-        self.region_patcher.stop()
-        self.file_manager_patch.stop()
-
-    def test_import_raw_files_to_bq_sandbox_plain(
-        self,
-    ) -> None:
-        # Arrange
-        path1 = GcsfsFilePath(
-            "bar-bucket",
-            "unprocessed_2019-08-12T00:00:00:000000_raw_tagBasicData.csv",
-        )
-        path2 = GcsfsFilePath(
-            "bar-bucket",
-            "unprocessed_2019-08-12T00:00:00:000000_raw_tagMoreBasicData.csv",
-        )
-        files_to_import = [path1, path2]
-
-        # Act
-        legacy_import_raw_files_to_bq_sandbox(
-            state_code=StateCode.US_XX,
-            sandbox_dataset_prefix="foo",
-            infer_schema_from_csv=False,
-            files_to_import=files_to_import,
-            big_query_client=self.mock_big_query_client,
-            fs=self.mock_gcsfs,
-        )
-
-        # Assert
-        self.file_manager_mock.import_raw_file_to_big_query.assert_has_calls(
-            [call(path1, ANY), call(path2, ANY)]
-        )
-
-    def test_import_raw_files_to_bq_sandbox_filter(
-        self,
-    ) -> None:
-        # Arrange
-        path1 = GcsfsFilePath(
-            "bar-bucket",
-            "unprocessed_2019-08-12T00:00:00:000000_raw_tagBasicData.csv",
-        )
-        path2 = GcsfsFilePath(
-            "bar-bucket",
-            "unprocessed_2019-08-12T00:00:00:000000_raw_tagMoreBasicData.csv",
-        )
-        files_to_import = [path1, path2]
-
-        # Act
-        legacy_import_raw_files_to_bq_sandbox(
-            state_code=StateCode.US_XX,
-            sandbox_dataset_prefix="foo",
-            infer_schema_from_csv=False,
-            files_to_import=files_to_import,
-            big_query_client=self.mock_big_query_client,
-            fs=self.mock_gcsfs,
-        )
-
-        # Assert
-        self.file_manager_mock.import_raw_file_to_big_query.assert_has_calls(
-            [call(path2, ANY)]
-        )
 
 
 class ImportRawFilesToBQSandboxTest(TestCase):
