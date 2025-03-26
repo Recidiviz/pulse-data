@@ -37,10 +37,10 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
-from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
-    check_found_columns_are_subset_of_config,
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     IS_DELETED_COL_NAME,
@@ -60,6 +60,39 @@ from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
 )
 from recidiviz.utils import csv
+
+
+# TODO(#36159): enforce that ALL columns of a raw file config are in a fixture file, not
+# just a subset
+def check_found_columns_are_subset_of_config(
+    raw_file_config: DirectIngestRawFileConfig, found_columns: Iterable[str]
+) -> None:
+    """Check that all of the columns that are in the raw data config are also in
+    the columns found in the CSV. If there are columns that are not in the raw data
+    configuration but found in the CSV, then we throw an error to have both match
+    (unless we are in a state where we allow incomplete configurations, like
+    testing).
+    """
+
+    # BQ is case-agnostic when evaluating column names so we can be as well.
+    columns_from_file_config_lower = {
+        column.name.lower() for column in raw_file_config.current_columns
+    }
+    found_columns_lower = set(c.lower() for c in found_columns)
+
+    if len(found_columns_lower) != len(list(found_columns)):
+        raise ValueError(
+            f"Found duplicate columns in found_columns list: {list(found_columns)}"
+        )
+
+    if not found_columns_lower.issubset(columns_from_file_config_lower):
+        extra_columns = found_columns_lower.difference(columns_from_file_config_lower)
+        raise ValueError(
+            f"Found columns in raw file {sorted(extra_columns)} that are not "
+            f"defined or are marked as deleted in the raw data configuration for "
+            f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
+            f"are defined in the raw data configuration."
+        )
 
 
 @attr.define

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for classes in raw_file_configs.py."""
+import os
 import unittest
 from datetime import datetime, timezone
 from typing import Dict
@@ -23,6 +24,7 @@ import attr
 
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import raw_data
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     ColumnUpdateInfo,
@@ -43,10 +45,15 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawDataJoinCardinality,
     RawTableRelationshipInfo,
 )
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_region_codes,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.yaml_dict import YAMLDict
+from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
 
 class TestColumnChangeInfo(unittest.TestCase):
@@ -2292,3 +2299,49 @@ class TestIsMeaningfulDocstring(unittest.TestCase):
                 "This columns does X. TO" + "DO(#123): Ask clarifying question Y"
             )
         )
+
+
+def test_validate_all_raw_yaml_schemas() -> None:
+    """
+    Validates YAML raw configuration files against our JSON schema.
+    We want to do this validation so that we
+    don't forget to add JSON schema (and therefore
+    IDE) support for new features in the language.
+    """
+    json_schema_path = os.path.join(
+        os.path.dirname(raw_data.__file__), "yaml_schema", "schema.json"
+    )
+    for region_code in get_existing_region_codes():
+        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        for file_path in region_raw_file_config.get_raw_data_file_config_paths():
+            validate_yaml_matches_schema(
+                yaml_dict=YAMLDict.from_path(file_path),
+                json_schema_path=json_schema_path,
+            )
+
+    # Test the US_XX fake region to catch new additions that are only tested in US_XX
+    region_raw_file_config = DirectIngestRegionRawFileConfig(
+        region_code=StateCode.US_XX.value, region_module=fake_regions
+    )
+    for file_path in region_raw_file_config.get_raw_data_file_config_paths():
+        validate_yaml_matches_schema(
+            yaml_dict=YAMLDict.from_path(file_path),
+            json_schema_path=json_schema_path,
+        )
+
+
+# TODO(#20341): Remove this test once we can do raw data pruning on non-historical files
+def test_validate_all_raw_yaml_no_valid_primary_keys() -> None:
+    for region_code in get_existing_region_codes():
+        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        for file_tag in region_raw_file_config.raw_file_tags:
+            file_config = region_raw_file_config.raw_file_configs[file_tag]
+            if (
+                file_config.no_valid_primary_keys
+                and not file_config.always_historical_export
+            ):
+                raise ValueError(
+                    f"[state_code={region_code.upper()}][file_tag={file_tag}]: Cannot set "
+                    "`no_valid_primary_keys=True` if `always_historical_export=False`. If this file is "
+                    "always historical, set `always_historical_export=True`."
+                )
