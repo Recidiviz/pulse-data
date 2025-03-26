@@ -73,6 +73,9 @@ output:
                         - In Custody OOS - No PRW
                         - In Custody FCI - No PRW
                         - Pre-Revocation - In Custody
+                        - Pre-revocation - State Jail
+                        - Revoked
+                        - Revoked - OOS
               - $else:
                   $enum_mapping:
                     $raw_text: assessment_level

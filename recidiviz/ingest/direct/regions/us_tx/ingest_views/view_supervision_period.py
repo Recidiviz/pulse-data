@@ -372,7 +372,13 @@ fix_end_date AS
                 end_date
         END AS end_date,
         status,
-        (UPPER(status) LIKE "%IN CUSTODY%") AS in_custody_flag,
+        (
+            UPPER(status) LIKE "%IN CUSTODY%" 
+            OR UPPER(status) LIKE "%REVOKED%" 
+            OR UPPER(status) LIKE "%STATE JAIL%"
+            ) 
+            AND UPPER(status) NOT LIKE "%NOT REVOKED%"
+        AS in_custody_flag,
         supervision_officer,
         case_type,
         assessment_level,
