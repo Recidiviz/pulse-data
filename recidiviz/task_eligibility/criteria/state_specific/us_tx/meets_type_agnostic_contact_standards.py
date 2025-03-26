@@ -52,6 +52,7 @@ person_info AS (
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
       USING(supervision_period_id)
     WHERE sp.state_code = "US_TX"
+        AND supervision_level IS DISTINCT FROM 'IN_CUSTODY'
 ),
 -- Aggregate above periods by supervision_level and case_type
 person_info_agg AS (

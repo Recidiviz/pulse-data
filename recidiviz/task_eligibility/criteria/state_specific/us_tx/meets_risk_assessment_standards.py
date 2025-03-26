@@ -51,6 +51,7 @@ supervision_periods AS (
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` AS state_supervision_period
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry`
         USING (supervision_period_id)
+    WHERE supervision_level IS DISTINCT FROM 'IN_CUSTODY'
 ),
 -- Aggregate above periods by case_type
 case_type_periods AS (
