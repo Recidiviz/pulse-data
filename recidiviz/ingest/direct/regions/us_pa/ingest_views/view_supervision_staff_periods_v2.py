@@ -223,8 +223,8 @@ VIEW_QUERY_TEMPLATE = f"""
         FROM (
             SELECT 
                 * EXCEPT(end_date),
-                CASE WHEN last_appearance_date IS NOT NULL AND last_appearance_date < most_recent_roster_date 
-                        THEN COALESCE(end_date, first_roster_date_without)
+                CASE WHEN last_appearance_date IS NOT NULL AND last_appearance_date < most_recent_roster_date AND start_date < most_recent_roster_date
+                        THEN COALESCE(end_date, GREATEST(first_roster_date_without, start_date))
                     ELSE end_date
                     END AS end_date
             FROM (
