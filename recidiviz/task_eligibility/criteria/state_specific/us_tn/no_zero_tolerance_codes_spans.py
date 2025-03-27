@@ -68,9 +68,11 @@ _QUERY_TEMPLATE = f"""
             contact_date AS critical_date,
         FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` sentences,
         UNNEST(sentence_array)
+        JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sentences_charges
+            USING(state_code, person_id, sentence_id)
         LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_tn_zero_tolerance_codes_materialized` contact
           ON sentences.person_id = contact.person_id
-          AND contact_date > sentences.start_date
+          AND contact_date > sentences_charges.imposed_date
         WHERE sentences.state_code = 'US_TN'
           AND {nonnull_end_date_exclusive_clause('sentence_projected_full_term_release_date_max')} > start_date
     ),

@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the inferred_sentence_group_aggregated_sentence_projected_dates view in sentence_sessions."""
 from datetime import date, datetime, timedelta
+from typing import Dict, List
 
 from google.cloud import bigquery
 
@@ -24,6 +25,9 @@ from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates_v1_states import (
+    INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
@@ -56,6 +60,9 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     )
     state_sentence_address = queryable_address_for_normalized_entity(
         NormalizedStateSentence
+    )
+    v1_states_address = (
+        INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER.table_for_query
     )
 
     state_code = StateCode.US_XX
@@ -118,6 +125,39 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 normalized_state_module,
                 assert_subclass(NormalizedStateSentence, Entity).get_table_id(),
             ),
+            self.v1_states_address: [
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("sentence_inferred_group_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date_exclusive", date),
+                schema_field_for_type("parole_eligibility_date", date),
+                schema_field_for_type("projected_parole_release_date", date),
+                schema_field_for_type("projected_full_term_release_date_min", date),
+                schema_field_for_type("projected_full_term_release_date_max", date),
+                bigquery.SchemaField(
+                    "sentence_array",
+                    "RECORD",
+                    mode="REPEATED",
+                    fields=(
+                        schema_field_for_type("sentence_id", int),
+                        schema_field_for_type("sentence_parole_eligibility_date", date),
+                        schema_field_for_type(
+                            "sentence_projected_parole_release_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_min", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_max", date
+                        ),
+                        schema_field_for_type("sentence_length_days_min", int),
+                        schema_field_for_type("sentence_length_days_max", int),
+                        schema_field_for_type("sentence_good_time_days", int),
+                        schema_field_for_type("sentence_earned_time_days", int),
+                    ),
+                ),
+            ],
         }
 
     def test_offset_overlapping_sentences_agg(self) -> None:
@@ -161,6 +201,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_inferred_group_id": self.inferred_group_id,
             },
         ]
+
+        v1_states_data: List[Dict] = []
 
         expected_data = [
             # first session has only sentence 1 and the date associated with that sentence is the max of the group
@@ -255,6 +297,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.sentence_projected_dates_address: projected_dates_data,
                 self.state_sentence_address: state_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )
@@ -297,6 +340,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_inferred_group_id": self.inferred_group_id,
             },
         ]
+
+        v1_states_data: List[Dict] = []
 
         expected_data = [
             # first session has only sentence 1 and which has a null projected date
@@ -391,6 +436,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.sentence_projected_dates_address: projected_dates_data,
                 self.state_sentence_address: state_sentence_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )

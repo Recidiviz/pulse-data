@@ -15,42 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Creates a table where each row are the aggregated projected dates for all 
-individual sentences in an inferred sentence group. 
-
-Note that this is an aggregation of NormalizedStateSentenceLength values 
-and does not include any NormalizedStateSentenceGroupLength data.
-
-Output fields for this view are:
-
-    - sentence_inferred_group_id: 
-        The ID for the inferred sentence group. This can be used to link back to the
-        constituent sentences and state provided sentence groups.
-
-    - start_date:
-        This is the date where the values in this row begin to be valid.
-
-    - end_date_exclusive:
-        This is the date where the values in this row become no longer valid.
-
-    - parole_eligibility_date:
-        The maximum parole eligibility date across the NormalizedStateSentenceLength
-        entities affiliated with this inferred group.
-
-    - projected_parole_release_date:
-        The maximum projected parole release date across the NormalizedStateSentenceLength
-        entities affiliated with this inferred group. This is when we expect the affiliated 
-        person to be released from incarceration to parole.
-
-    - projected_full_term_release_date_min:
-        The minimum projected completion date (min) across the NormalizedStateSentenceLength
-        entities affiliated with this inferred group. This is earliest time we expect all sentences 
-        of the affiliated person to be completed and that person to be released to liberty.
-
-    - projected_full_term_release_date_max
-        The maximum projected completion date (max) across the NormalizedStateSentenceLength
-        entities affiliated with this inferred group. This is latest time we expect all sentences 
-        of the affiliated person to be completed and that person to be released to liberty.
+V1 state version of the view that aggregates sentences to sentence inferred groups. A V1-specific version is required in
+order to replicate logic where nulls are respected only for the projected completion date max field when the sentence
+is a life sentence.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -70,20 +37,22 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_ID = (
-    "inferred_sentence_group_aggregated_sentence_projected_dates"
+INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_ID = (
+    "inferred_sentence_group_aggregated_sentence_projected_dates_v1_states"
 )
 
 QUERY_TEMPLATE = f"""
+-- TODO(#33402): deprecate with `sentences_preprocessed`
 WITH sentence_projected_dates AS
 (
-SELECT
+SELECT DISTINCT
    p.*,
-   s.sentence_inferred_group_id,
+   p.person_id AS sentence_inferred_group_id,
+   c.is_life,
 FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_projected_date_sessions_materialized` p
-JOIN `{{project_id}}.normalized_state.state_sentence` s
+JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` c
     USING(state_code, person_id, sentence_id)
-WHERE state_code NOT IN ({{v2_non_migrated_states}})
+WHERE state_code IN ({{v2_non_migrated_states}})
 )
 ,
 {create_sub_sessions_with_attributes(
@@ -94,24 +63,16 @@ WHERE state_code NOT IN ({{v2_non_migrated_states}})
 ,
 aggregated_cte AS
 (
-/*
-For periods of time when more than one sentence within an inferred group is being served, we take the max projected date
-across sentences. However, if we have a situation where there are more than one sentence and one of those sentences has 
-a null projected date and the other has a non-null date, we still want to keep the null date, as we are considering 
-those to be intentional updates in normalized_state.state_sentence_group_length and 
-normalized_state.state_sentence_length. Therefore, nulls are converted to our MAGIC_END_DATE value before calling max, 
-and then reverted back to null afterward. If a state has no hydration of a column, we will also get a null value
-*/
 SELECT 
     state_code,
     person_id,
     sentence_inferred_group_id,
     start_date,
     end_date_exclusive,
-    MAX({nonnull_end_date_clause('parole_eligibility_date')}) AS parole_eligibility_date,
-    MAX({nonnull_end_date_clause('projected_parole_release_date')}) AS projected_parole_release_date,
-    MAX({nonnull_end_date_clause('projected_full_term_release_date_min')}) AS projected_full_term_release_date_min,
-    MAX({nonnull_end_date_clause('projected_full_term_release_date_max')}) AS projected_full_term_release_date_max,   
+    MAX(parole_eligibility_date) AS parole_eligibility_date,
+    MAX(projected_parole_release_date) AS projected_parole_release_date,
+    MAX(projected_full_term_release_date_min) AS projected_full_term_release_date_min,
+    MAX(IF(is_life, {nonnull_end_date_clause('projected_full_term_release_date_max')}, projected_full_term_release_date_max)) AS projected_full_term_release_date_max,   
     ARRAY_AGG(
         STRUCT(
             sentence_id,
@@ -136,9 +97,9 @@ SELECT
     sentence_inferred_group_id,
     start_date,
     end_date_exclusive,
-    {revert_nonnull_end_date_clause('parole_eligibility_date')} AS parole_eligibility_date,
-    {revert_nonnull_end_date_clause('projected_parole_release_date')} AS projected_parole_release_date,
-    {revert_nonnull_end_date_clause('projected_full_term_release_date_min')} AS projected_full_term_release_date_min, 
+    parole_eligibility_date,
+    projected_parole_release_date,
+    projected_full_term_release_date_min, 
     {revert_nonnull_end_date_clause('projected_full_term_release_date_max')} AS projected_full_term_release_date_max,
     sentence_array,
 FROM 
@@ -155,18 +116,13 @@ FROM
     end_date_field_name='end_date_exclusive')
 }
 )
-
-UNION ALL
-
-SELECT * FROM `{{project_id}}.{{sentence_sessions_dataset}}.inferred_sentence_group_aggregated_sentence_projected_dates_v1_states_materialized` p
-
 """
 
 
-INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER = (
+INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER = (
     SimpleBigQueryViewBuilder(
         dataset_id=SENTENCE_SESSIONS_DATASET,
-        view_id=INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_ID,
+        view_id=INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_ID,
         view_query_template=QUERY_TEMPLATE,
         sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         description=__doc__,
@@ -180,4 +136,4 @@ INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER = (
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.build_and_print()
+        INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER.build_and_print()

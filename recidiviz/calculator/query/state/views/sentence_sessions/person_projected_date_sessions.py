@@ -173,12 +173,6 @@ FROM (
         'sentence_array'],
     struct_attribute_subset='sentence_array',
     end_date_field_name='end_date_exclusive')})
-
-UNION ALL
-
-SELECT 
-    *
-FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_v1_states_materialized`
 """
 
 

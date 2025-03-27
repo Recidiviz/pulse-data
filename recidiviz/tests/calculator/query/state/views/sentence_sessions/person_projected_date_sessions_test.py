@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests the PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER."""
 from datetime import date, datetime, timedelta
-from typing import Dict, List
 
 from google.cloud import bigquery
 
@@ -32,9 +31,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_agg
 from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions import (
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions_v1_states import (
-    PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
@@ -49,11 +45,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     )
     aggregated_sentence_address = (
         INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query
-    )
-
-    # this is needed because V1 states get unioned in at the end
-    v1_states_address = (
-        PERSON_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER.table_for_query
     )
 
     state_code = StateCode.US_XX
@@ -163,43 +154,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                     ),
                 ),
             ],
-            self.v1_states_address: [
-                schema_field_for_type("state_code", str),
-                schema_field_for_type("person_id", int),
-                schema_field_for_type("sentence_inferred_group_id", int),
-                schema_field_for_type("start_date", date),
-                schema_field_for_type("end_date_exclusive", date),
-                schema_field_for_type("group_parole_eligibility_date", date),
-                schema_field_for_type("group_projected_parole_release_date", date),
-                schema_field_for_type(
-                    "group_projected_full_term_release_date_min", date
-                ),
-                schema_field_for_type(
-                    "group_projected_full_term_release_date_max", date
-                ),
-                bigquery.SchemaField(
-                    "sentence_array",
-                    "RECORD",
-                    mode="REPEATED",
-                    fields=(
-                        schema_field_for_type("sentence_id", int),
-                        schema_field_for_type("sentence_parole_eligibility_date", date),
-                        schema_field_for_type(
-                            "sentence_projected_parole_release_date", date
-                        ),
-                        schema_field_for_type(
-                            "sentence_projected_full_term_release_date_min", date
-                        ),
-                        schema_field_for_type(
-                            "sentence_projected_full_term_release_date_max", date
-                        ),
-                        schema_field_for_type("sentence_length_days_min", int),
-                        schema_field_for_type("sentence_length_days_max", int),
-                        schema_field_for_type("sentence_good_time_days", int),
-                        schema_field_for_type("sentence_earned_time_days", int),
-                    ),
-                ),
-            ],
         }
 
     def test_single_inferred_group_input_from_both_sources(self) -> None:
@@ -243,8 +197,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
-        v1_states_data: List[Dict] = []
-
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -276,7 +228,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
-                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
@@ -343,8 +294,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
-        v1_states_data: List[Dict] = []
-
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -400,7 +349,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
-                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
@@ -474,8 +422,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 ],
             },
         ]
-
-        v1_states_data: List[Dict] = []
 
         expected_output = [
             {
@@ -556,7 +502,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
-                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
@@ -602,8 +547,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
-        v1_states_data: List[Dict] = []
-
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -635,7 +578,6 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
-                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )

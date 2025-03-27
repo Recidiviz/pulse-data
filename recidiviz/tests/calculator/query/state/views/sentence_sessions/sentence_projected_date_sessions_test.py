@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the sentence_projected_date_sessions view in sentence_sessions."""
 from datetime import date, datetime, timedelta
+from typing import Dict, List
 
 from google.cloud import bigquery
 
@@ -24,6 +25,9 @@ from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions_v1_states import (
+    SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period import (
     SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
@@ -54,6 +58,9 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     serving_period_address = SENTENCE_SERVING_PERIOD_VIEW_BUILDER.table_for_query
     sentence_length_address = queryable_address_for_normalized_entity(
         NormalizedStateSentenceLength
+    )
+    v1_states_address = (
+        SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER.table_for_query
     )
 
     state_code = StateCode.US_XX
@@ -109,6 +116,21 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 normalized_state_module,
                 assert_subclass(NormalizedStateSentenceLength, Entity).get_table_id(),
             ),
+            self.v1_states_address: [
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("sentence_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date_exclusive", date),
+                schema_field_for_type("sentence_length_days_min", int),
+                schema_field_for_type("sentence_length_days_max", int),
+                schema_field_for_type("good_time_days", int),
+                schema_field_for_type("earned_time_days", int),
+                schema_field_for_type("parole_eligibility_date", date),
+                schema_field_for_type("projected_parole_release_date", date),
+                schema_field_for_type("projected_full_term_release_date_min", date),
+                schema_field_for_type("projected_full_term_release_date_max", date),
+            ],
         }
 
     def test_one_sentence_one_length(self) -> None:
@@ -138,6 +160,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        v1_states_data: List[Dict] = []
+
         expected_data = [
             {
                 "state_code": self.state_code.value,
@@ -159,6 +183,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )
@@ -197,6 +222,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        v1_states_data: List[Dict] = []
+
         expected_data = [
             {
                 "state_code": self.state_code.value,
@@ -233,6 +260,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )
@@ -288,6 +316,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        v1_states_data: List[Dict] = []
+
         expected_data = [
             {
                 "state_code": self.state_code.value,
@@ -341,6 +371,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )
@@ -384,6 +415,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        v1_states_data: List[Dict] = []
+
         expected_data = [
             {
                 "state_code": self.state_code.value,
@@ -421,6 +454,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_data,
         )
@@ -451,6 +485,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        v1_states_data: List[Dict] = []
+
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -473,6 +509,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
@@ -502,6 +539,9 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "end_date_exclusive": self.critical_date_2.date(),
             },
         ]
+
+        v1_states_data: List[Dict] = []
+
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -524,6 +564,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
@@ -560,6 +601,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "end_date_exclusive": None,
             },
         ]
+
+        v1_states_data: List[Dict] = []
 
         expected_output = [
             {
@@ -598,6 +641,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.serving_period_address: serving_periods_data,
                 self.sentence_length_address: sentence_length_data,
+                self.v1_states_address: v1_states_data,
             },
             expected_output,
         )
