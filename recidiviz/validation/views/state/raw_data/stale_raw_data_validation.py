@@ -41,7 +41,7 @@ _DESCRIPTION_TEMPLATE = (
     "Validation view that shows one row per stale raw data table in "
 )
 
-# TODO(#28239) replace this query (expensive, full db scan) with one that just looks
+# TODO(#35964) replace this query (expensive, full db scan) with one that just looks
 # at the file import table as we will be recording the number of rows imported there
 _SUB_QUERY_TEMPLATE = """
   SELECT file_tag, most_recent_rows_datetime, hours_stale FROM (

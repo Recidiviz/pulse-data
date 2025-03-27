@@ -120,6 +120,8 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             if path.blob_name not in already_seen_paths_in_bucket
         ]
 
+        # TODO(#40149) is there a scale where we would not want to insert them all at
+        # once and instead do batches?
         new_metadata_table_rows = (
             postgres_hook.get_records(
                 self._register_new_files_sql_query(new_paths_in_bucket)

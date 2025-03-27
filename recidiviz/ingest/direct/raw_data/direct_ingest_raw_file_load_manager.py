@@ -525,7 +525,7 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_data_diff_table_address,
             )
 
-        # TODO(#28694) add additional query to grab these stats
+        # TODO(#40153) add additional query to grab these stats
         return AppendSummary(
             file_id=file.file_id,
             net_new_or_updated_rows=None,

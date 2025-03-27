@@ -134,7 +134,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
             )
         ]
 
-        # TODO(#30169) add validation here that all statuses we are matching to file_imports
+        # TODO(#40150) add validation here that all statuses we are matching to file_imports
         # are STARTED? so as not to overwrite import statuses? what implications does this
         # have (if we do or do not do this) for if we retry/clear airflow tasks in the
         # raw data import DAG?
@@ -144,7 +144,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
             )
         )
 
-        # TODO(#30169) is there a scale where we would not want to insert them all at
+        # TODO(#40149) is there a scale where we would not want to insert them all at
         # once and instead do batches?
         updated_file_imports = [
             FileImport(*file_import)

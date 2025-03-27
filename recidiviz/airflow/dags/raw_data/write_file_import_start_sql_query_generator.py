@@ -129,7 +129,7 @@ class WriteImportStartCloudSqlGenerator(CloudSqlQueryGenerator[Dict[str, int]]):
         )
 
         if bq_file_metadata_to_import_in_future_runs:
-            # TODO(#30169) is there a scale where we would not want to insert them all at
+            # TODO(#40149) is there a scale where we would not want to insert them all at
             # once and instead do batches?
             postgres_hook.get_records(
                 self._create_file_import_sql_query(

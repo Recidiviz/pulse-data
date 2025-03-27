@@ -96,7 +96,7 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
             for col_name in raw_table_config.column_names_at_datetime(update_datetime)
         )
 
-        # TODO(#30325) we are only including microseconds if they are non-zero to match legacy ingest
+        # TODO(#40148) we are only including microseconds if they are non-zero to match legacy ingest
         # but we should migrate all existing update_datetime values the same format
         update_datetime_str = update_datetime.replace(tzinfo=None).isoformat(
             timespec="microseconds" if update_datetime.microsecond else "seconds"

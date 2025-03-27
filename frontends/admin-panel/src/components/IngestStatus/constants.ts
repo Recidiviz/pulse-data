@@ -113,7 +113,7 @@ export type RawDataFileTagImport = {
   historicalDiffsActive: boolean;
   rawRowCount: number;
   isInvalidated: boolean;
-  // TODO(#28694) add net new or deleted
+  // TODO(#40153) add net new or deleted
 };
 
 export type RawFileConfigSummary = {
