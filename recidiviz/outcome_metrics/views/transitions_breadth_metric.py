@@ -58,7 +58,8 @@ SELECT
     COUNT(DISTINCT CONCAT({list_to_query_string(DISTINCT_COUNT_COLUMNS)})) AS transitions,
     COUNT(DISTINCT 
         IF(
-            DATE_TRUNC(DATE(full_state_launch_date), MONTH) = DATE_TRUNC(event_date, MONTH),
+            -- Count distinct transitions occurring during the month of their launch, excluding supervisor homepage opportunities module launches
+            (DATE_TRUNC(DATE(full_state_launch_date), MONTH) = DATE_TRUNC(event_date, MONTH) AND product_transition_type NOT IN ("supervisor_opportunities_module_discretionary", "supervisor_opportunities_module_mandatory")),
             CONCAT({list_to_query_string(DISTINCT_COUNT_COLUMNS)}),
             NULL
         )

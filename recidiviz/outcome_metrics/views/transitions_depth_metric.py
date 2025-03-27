@@ -60,18 +60,47 @@ def get_transitions_baseline_metric_for_year(
         else ""
     )
 
+    partition_by_columns_query_fragment = "\n" + (
+        fix_indent(
+            ", ".join(
+                [
+                    column
+                    for column in attribute_cols_with_defaults
+                    if column not in DISTINCT_COUNT_COLUMNS
+                ]
+            ),
+            indent_level=8,
+        )
+        + ", "
+        if attribute_cols_with_defaults
+        else ""
+    )
+
     query_template = f"""
+WITH impact_transition_with_launch_order as (
+    SELECT
+      *,
+        -- Record whether this transition is the one associated with the earliest full state launch of that task type for the selected attributes. If there are two launches of the same task type on the same day, the workflows launch gets priority
+        DENSE_RANK() OVER(
+            PARTITION BY {partition_by_columns_query_fragment}{list_to_query_string(DISTINCT_COUNT_COLUMNS)}
+            ORDER BY DATE_TRUNC(DATE(full_state_launch_date), MONTH) ASC, (CASE WHEN product_transition_type IN ('workflows_discretionary','workflows_mandatory') THEN 1 ELSE 0 END) DESC
+        ) AS full_state_launch_order
+    FROM
+      `{{project_id}}.observations__person_event.impact_transition_materialized`
+)
+,
 -- Count monthly transitions, deduped by person, event, and decarceral impact type,
 -- for the metric year and the previous year.
-WITH transitions_by_month AS (
+transitions_by_month AS (
     SELECT
         DATE_TRUNC(event_date, MONTH) AS transition_month,
         DATE_TRUNC(DATE(full_state_launch_date), MONTH) AS full_state_launch_month,{group_by_columns_query_fragment}
         COUNT(DISTINCT CONCAT({list_to_query_string(DISTINCT_COUNT_COLUMNS)})) AS transitions
     FROM
-        `{{project_id}}.observations__person_event.impact_transition_materialized`
+        impact_transition_with_launch_order
     WHERE
         EXTRACT(YEAR FROM event_date) IN ({metric_year - 1}, {metric_year})
+        AND full_state_launch_order = 1
     GROUP BY {group_by_columns_query_fragment}transition_month, DATE_TRUNC(DATE(full_state_launch_date), MONTH)
 )
 ,

@@ -832,7 +832,7 @@ class TransitionsBaselineMetricForYearTest(SimpleBigQueryViewBuilderTestCase):
                 "decarceral_impact_type": "SECOND_IMPACT_TYPE",
                 "is_within_one_year_before_full_state_launch_month": "true",
                 "full_state_launch_date": "2020-04-26",
-                "product_transition_type": "insights",
+                "product_transition_type": "supervisor_opportunities_module_discretionary",
                 "has_mandatory_due_date": "true",
                 "is_jii_transition": "true",
                 "weight_factor": "0.9",

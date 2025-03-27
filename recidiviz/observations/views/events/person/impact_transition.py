@@ -37,6 +37,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     description=_VIEW_DESCRIPTION,
     sql_source=get_unioned_transitions_view_builder().table_for_query,
     attribute_cols=[
+        "experiment_id",
         "decarceral_impact_type",
         "system_type",
         "has_mandatory_due_date",

@@ -64,6 +64,7 @@ SELECT
     person_id,
     event_date,
     state_code,
+    experiment_id,
     decarceral_impact_type,
     system_type,
     CAST(has_mandatory_due_date AS BOOL) AS has_mandatory_due_date,
