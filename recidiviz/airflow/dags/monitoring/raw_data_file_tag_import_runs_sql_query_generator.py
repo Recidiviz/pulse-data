@@ -50,6 +50,7 @@ WITH imports_in_lookback as (
     FROM direct_ingest_raw_file_import_run
     WHERE 
         EXTRACT(epoch FROM '{current_datetime}'::timestamp with time zone - import_run_start) <= {lookback_in_seconds}
+        AND raw_data_instance = 'PRIMARY'
 ), recent_file_imports as (
     SELECT 
         ir.dag_run_id,
@@ -108,6 +109,7 @@ class RawDataFileTagImportRunSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]
         super().__init__()
         self._lookback = lookback
 
+    # TODO(#40117) use gcs-backed xcom here
     def execute_postgres_query(
         self,
         operator: CloudSqlQueryOperator,

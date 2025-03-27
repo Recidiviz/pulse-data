@@ -90,16 +90,6 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
             ),
             failure_message="must fail at least twice",
         ),
-        # TODO(#28239) remove once we actually want to route secondary failures to pager duty
-        AlertingIncidentTriggerPredicate(
-            method=TriggerPredicateMethod.SILENCE,
-            dag_id=get_raw_data_import_dag_id(project_id),
-            condition=lambda incident: (
-                "ingest_instance" in incident.dag_run_config_obj
-                and incident.dag_run_config_obj["ingest_instance"] == "SECONDARY"
-            ),
-            failure_message="raw data import DAG secondary is being used for testing",
-        ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
             dag_id=get_raw_data_import_dag_id(project_id),
