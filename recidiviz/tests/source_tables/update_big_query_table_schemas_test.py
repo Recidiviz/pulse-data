@@ -451,6 +451,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_co_state.state_supervision_violation_type_entry",
     "us_co_state.state_task_deadline",
     "us_ia_ingest_view_results.incarceration_periods",
+    "us_ia_ingest_view_results.program_assignment",
     "us_ia_ingest_view_results.sentence_group_lengths",
     "us_ia_ingest_view_results.sentence_lengths",
     "us_ia_ingest_view_results.sentence_statuses",

@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_program_assignment` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderInterventionProgramId: STRING
+  OffenderInterventionId: STRING
+  OffenderCd: STRING
+  InterventionLocationId: STRING
+  InterventionProgram: STRING
+  Intervention: STRING
+  InterventionRequired: STRING
+  InterventionProgramRequired: STRING
+  ReferringStaffId: STRING
+  InterventionStartDt: DATE
+  InterventionEndDt: DATE
+  InterventionClosureType: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    program_assignments:
+      - StateProgramAssignment:
+          # External id will concatenate two different IDs if the StateProgramAssignment
+          # represents a intervention that has an associated intervention program.
+          # Otherwise, external id will just use the ID of either the intervention or the
+          # intervention program if the StateProgramAssignment is a standalone intervention
+          # or intervention program
+          external_id:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: OffenderInterventionProgramId
+                    - $not_null: OffenderInterventionId
+                $then:
+                  $concat:
+                    $values:
+                      - $literal("PROGRAM")
+                      - OffenderInterventionProgramId
+                      - $literal("INTERVENTION")
+                      - OffenderInterventionId
+              - $else_if:
+                  $not_null: OffenderInterventionProgramId
+                $then:
+                  $concat:
+                    $values:
+                      - $literal("PROGRAM")
+                      - OffenderInterventionProgramId
+              - $else:
+                  $concat:
+                    $values:
+                      - $literal("INTERVENTION")
+                      - OffenderInterventionId
+          program_location_id: InterventionLocationId
+          # Program id will concatenate the intervention program and intervention if the StateProgramAssignment
+          # represents a intervention that has an associated intervention program.
+          # Otherwise, program id will just be the name of either the intervention or the
+          # intervention program if the StateProgramAssignment is a standalone intervention
+          # or intervention program
+          program_id:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: InterventionProgram
+                    - $not_null: Intervention
+                $then:
+                  $concat:
+                    $values:
+                      - InterventionProgram
+                      - Intervention
+                    $separator: "##"
+              - $else_if:
+                  $not_null: InterventionProgram
+                $then: InterventionProgram
+              - $else: Intervention
+          referring_staff_external_id: ReferringStaffId
+          referring_staff_external_id_type: $literal("US_IA_STAFFID")
+          start_date: InterventionStartDt
+          # InterventionEndDt is valued whenever an intervention record is "closed", even when
+          # the intervention was never started.  So some people will have a valued discharge date
+          # even when start date is NULL
+          discharge_date: InterventionEndDt
+          participation_status:
+            $conditional:
+              # If start date is null and end date is null, then let's assume the client
+              # is awaiting to start the program
+              - $if:
+                  $and:
+                    - $is_null: InterventionStartDt
+                    - $is_null: InterventionEndDt
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.PENDING)
+              # else if end date is null (but start date is not null), then let's assume
+              # the client is currently participating in the intervention program
+              - $else_if:
+                  $is_null: InterventionEndDt
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.IN_PROGRESS)
+              # If the intervention was closed out before it could be started, we'll map
+              # status based on the closure reason.  Because they never started the program,
+              # the status will never be DISCHARGED_SUCCESSFUL or DISCHARGED_UNSUCCESSFUL
+              # but it could be DISCHARGED_OTHER if there was another reason besides death, denial,
+              # or refusal that led to the intervention getting closed.
+              - $else_if:
+                  $and:
+                    - $is_null: InterventionStartDt
+                    - $not_null: InterventionClosureType
+                $then:
+                  $enum_mapping:
+                    $raw_text: InterventionClosureType
+                    $mappings:
+                      StateProgramAssignmentParticipationStatus.DECEASED:
+                        - Death
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                        - PREA Orientation Completed
+                        - Completed Requirements
+                        - Sentence Discharged/Terminated
+                        - Absconded/Escaped
+                        - Noncompliant/Behavioral Issues
+                        - Jail Placement
+                        - Revoked
+                        - Violator Program Placement
+                        - Residential Placement
+                        - Transferred to ACTV PILOT
+                        - Transferred to Different Location
+                        - Case Manager Discretion
+                        - Court Discretion
+                        - Released on Bond
+                        - Program No Longer Available
+                        - Referred to Alternative Interventions
+                        - Program Elimination
+                      StateProgramAssignmentParticipationStatus.DENIED:
+                        - Ineligible to Attend
+                        - Not Admitted
+                        - Inappropriate Referral
+                      StateProgramAssignmentParticipationStatus.REFUSED:
+                        - Refused Treatment
+              # otherwise, if the intervention was started and then ended, map status
+              # based on closure reason
+              - $else:
+                  $enum_mapping:
+                    $raw_text: InterventionClosureType
+                    $mappings:
+                      StateProgramAssignmentParticipationStatus.DECEASED:
+                        - Death
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                        - PREA Orientation Completed
+                        - Completed Requirements
+                        - Sentence Discharged/Terminated
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                        - Absconded/Escaped
+                        - Noncompliant/Behavioral Issues
+                        - Jail Placement
+                        - Revoked
+                        - Violator Program Placement
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                        - Residential Placement
+                        - Transferred to ACTV PILOT
+                        - Transferred to Different Location
+                        - Case Manager Discretion
+                        - Court Discretion
+                        - Released on Bond
+                        - Program No Longer Available
+                        - Referred to Alternative Interventions
+                        - Program Elimination
+                      StateProgramAssignmentParticipationStatus.DENIED:
+                        - Ineligible to Attend
+                        - Not Admitted
+                        - Inappropriate Referral
+                      StateProgramAssignmentParticipationStatus.REFUSED:
+                        - Refused Treatment
+          referral_metadata:
+            $normalized_values_json_dict:
+              InterventionRequired: InterventionRequired
+              InterventionProgramRequired: InterventionProgramRequired

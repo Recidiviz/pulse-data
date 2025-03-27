@@ -23,10 +23,41 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-  SELECT DISTINCT CaseManagerStaffId, CaseManagerFirstNm, CaseManagerLastNm
-  FROM {IA_DOC_CaseManagers}
-  -- in case there are mismatches in names, we take the most recently entered one.  To split ties further, sort by name
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY CaseManagerStaffId ORDER BY CAST(EnteredDt AS DATETIME) DESC, CaseManagerLastNm DESC NULLS LAST, CaseManagerFirstNm DESC NULLS LAST) = 1
+  WITH 
+    -- This CTE pulls all staff data from the case managers table
+    staff_from_case_managers_data AS (
+        SELECT DISTINCT CaseManagerStaffId, CaseManagerFirstNm, CaseManagerLastNm
+        FROM {IA_DOC_CaseManagers}
+        -- in case there are mismatches in names, we take the most recently entered one.  To split ties further, sort by name
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY CaseManagerStaffId ORDER BY CAST(EnteredDt AS DATETIME) DESC, CaseManagerLastNm DESC NULLS LAST, CaseManagerFirstNm DESC NULLS LAST) = 1
+    ),
+
+    -- This CTE pulls all staff data from the intervention tables
+    staff_from_interventions_data AS (
+        SELECT DISTINCT ReferringStaffId
+        FROM {IA_DOC_Interventions}
+
+        UNION DISTINCT
+
+        SELECT DISTINCT ReferringStaffId
+        FROM {IA_DOC_InterventionPrograms} 
+    )
+
+    SELECT *
+    FROM staff_from_case_managers_data
+
+    UNION ALL 
+
+    SELECT 
+        ReferringStaffId,
+        CAST(NULL AS STRING) AS CaseManagerFirstNm,
+        CAST(NULL AS STRING) AS CaseManagerLastNm
+    FROM staff_from_interventions_data
+    LEFT JOIN staff_from_case_managers_data
+        ON ReferringStaffId = CaseManagerStaffId
+    -- only include staff information from interventions data if it doesn't already exist in the case managers data
+    WHERE CaseManagerStaffId IS NULL
+
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
