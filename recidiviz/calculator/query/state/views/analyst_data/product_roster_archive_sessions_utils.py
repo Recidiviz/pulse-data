@@ -311,14 +311,14 @@ SELECT
     -- that use office as the location ID in the product roster
     ANY_VALUE(
         CASE system_type
-        WHEN "SUPERVISION" THEN COALESCE(supervision_district, location_id)
+        WHEN "SUPERVISION" THEN COALESCE(supervision_district, location_id, location_external_id)
         WHEN "INCARCERATION" THEN COALESCE(facility, facility_ingested, facility_inferred, location_id)
         ELSE location_id END
     ) AS location_id,
     ANY_VALUE(
         CASE system_type
-        WHEN "SUPERVISION" THEN supervision_district_name
-        WHEN "INCARCERATION" THEN facility_name END
+        WHEN "SUPERVISION" THEN COALESCE(supervision_district_name, location_metadata.location_name)
+        WHEN "INCARCERATION" THEN COALESCE(facility_name, location_metadata.location_name) END
     ) AS location_name,
 FROM
     aggregated_registration_sessions_with_inferred_location registration_sessions
@@ -331,6 +331,11 @@ LEFT JOIN
     `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff_external_id
 USING
     (staff_id)
+LEFT JOIN
+    `{{project_id}}.reference_views.location_metadata_materialized` location_metadata
+ON
+    location_metadata.state_code = registration_sessions.state_code
+    AND location_metadata.location_external_id = COALESCE(location_id, facility_ingested, facility_inferred)
 LEFT JOIN
     `{{project_id}}.sessions.session_location_names_materialized` AS sessions
 ON
@@ -351,7 +356,10 @@ ON
         -- Incarceration locations joining on facility
         OR (
             system_type = "INCARCERATION" 
-            AND sessions.facility = COALESCE(location_id, facility_ingested, facility_inferred)
+            AND (
+                sessions.facility = COALESCE(location_id, facility_ingested, facility_inferred)
+                OR sessions.facility_name = location_metadata.location_name
+            )
         )
     )
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
