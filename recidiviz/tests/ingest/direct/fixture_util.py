@@ -20,11 +20,15 @@ import os
 
 import numpy as np
 import pandas as pd
+import pytz
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -167,3 +171,46 @@ def load_dataframe_from_path(
     )
     df.replace([np.nan], [None], inplace=True)
     return df
+
+
+def write_raw_fixture_dataframe_to_path(
+    df: pd.DataFrame,
+    raw_fixture_path: str,
+) -> None:
+    """
+    Given a dataframe and a raw fixture path,
+    write the dataframe to a fixture file.
+
+    We expect the dataframe to contain all metadata columns
+    for raw data.
+    """
+    os.makedirs(os.path.dirname(raw_fixture_path), exist_ok=True)
+
+    # TODO(#38355) Uncomment this check when all fixtures are @ALL fixtures
+    # if not set(df.columns).issuperset(RAW_DATA_METADATA_COLUMNS):
+    #     raise ValueError(
+    #         f"Dataframe columns must contain all metadata columns: {RAW_DATA_METADATA_COLUMNS}"
+    #     )
+
+    if IS_DELETED_COL_NAME not in df.columns:
+        df[IS_DELETED_COL_NAME] = False
+
+    if UPDATE_DATETIME_COL_NAME not in df.columns:
+        # file_update_dt must have a pytz.UTC timezone
+        df[UPDATE_DATETIME_COL_NAME] = datetime.datetime.now(
+            tz=pytz.UTC
+        ) - datetime.timedelta(days=1)
+
+    if FILE_ID_COL_NAME not in df.columns:
+        # We derive a file_id from the update_datetime, assuming that all data with
+        # the same update_datetime came from the same file.
+        df[FILE_ID_COL_NAME] = (
+            df[UPDATE_DATETIME_COL_NAME]
+            .rank(
+                # The "dense" method assigns the same value where update_datetime
+                # values are the same.
+                method="dense"
+            )
+            .astype(int)
+        )
+    df.to_csv(raw_fixture_path, index=False)

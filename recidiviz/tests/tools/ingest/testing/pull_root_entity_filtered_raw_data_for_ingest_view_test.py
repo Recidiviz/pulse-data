@@ -21,7 +21,7 @@ from recidiviz.ingest.direct.regions.us_az.ingest_views.view_state_sentence impo
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.view_sentence import (
     VIEW_BUILDER as US_MO_SENTENCE_VIEW_BUILDER,
 )
-from recidiviz.tools.ingest.development.pull_root_entity_filtered_raw_data_for_ingest_view import (
+from recidiviz.tools.ingest.testing.ingest_fixture_creation.pull_root_entity_filtered_raw_data_for_ingest_view import (
     build_root_entity_filtered_raw_data_queries,
 )
 

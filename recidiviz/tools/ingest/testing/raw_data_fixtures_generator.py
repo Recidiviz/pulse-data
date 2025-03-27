@@ -17,15 +17,10 @@
 #
 
 """Class to generate or regenerate raw data fixtures for ingest view tests."""
-import datetime
 import os
-import string
 from functools import partial
 from typing import Dict, List, Optional
 
-import numpy
-import pytz
-from faker import Faker
 from more_itertools import first
 from pandas import DataFrame
 from tabulate import tabulate
@@ -39,11 +34,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewRawFileDependency,
@@ -54,45 +44,14 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_data_dependency,
+    write_raw_fixture_dataframe_to_path,
+)
+from recidiviz.tools.ingest.testing.ingest_fixture_creation.randomize_fixture_data import (
+    randomize_value,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
-Faker.seed(0)
-FAKE = Faker(locale=["en-US"])
-
-
-def randomize_value(
-    value: str, column_info: RawTableColumnInfo, datetime_format: str
-) -> str:
-    """For each character in a string, checks whether the character is a number or letter and replaces it with a random
-    matching type character."""
-    # TODO(#12179) Improve and unit test randomization options by specifying pii_type.
-    randomized_value = ""
-    if column_info.is_datetime:
-        randomized_value = FAKE.date(pattern=datetime_format)
-    elif "name" in column_info.name.lower():
-        first_middle_name_strs = {"first", "f", "middle", "m"}
-        if any(x in column_info.name for x in first_middle_name_strs):
-            randomized_value = FAKE.first_name_nonbinary() + str(FAKE.random_number(2))
-        surname_strs = {"surname", "last", "l", "sur"}
-        if any(x in column_info.name for x in surname_strs):
-            randomized_value = FAKE.last_name() + str(FAKE.random_number(2))
-    else:
-        randomized_value = ""
-        for character in value:
-            if character.isnumeric():
-                randomized_value += str(numpy.random.randint(1, 9, 1)[0])
-            if character.isalpha():
-                randomized_value += numpy.random.choice(
-                    list(string.ascii_uppercase), size=1
-                )[0]
-
-    print(
-        f"Randomizing value from column '{column_info.name}': {value} -> {randomized_value}"
-    )
-    return randomized_value
-
-
+# TODO(#40159) Delete this constant when randomization capabilities are updated
 RANDOMIZED_COLUMN_PREFIX = "recidiviz_randomized_"
 
 
@@ -140,6 +99,7 @@ class RawDataFixturesGenerator:
         )
 
         # TODO(#12178) Rely only on pii fields once all states have labeled PII fields.
+        # TODO(#40159) Update randomization capabilities
         self.columns_to_randomize = [
             column
             for raw_config in self.ingest_view_raw_table_dependency_configs
@@ -162,44 +122,6 @@ class RawDataFixturesGenerator:
             project_id=self.project_id,
             region_code=self.state_code.value,
             raw_data_source_instance=self.raw_data_source_instance,
-        )
-
-    def write_results_to_csv(
-        self, query_results: DataFrame, output_fixture_path: str
-    ) -> None:
-        """Writes the query results to the given fixture path. Adds metadata columns if needed."""
-        os.makedirs(os.path.dirname(output_fixture_path), exist_ok=True)
-        include_headers = self.overwrite or not os.path.exists(output_fixture_path)
-        write_disposition = "w" if self.overwrite else "a"
-
-        if IS_DELETED_COL_NAME not in query_results.columns:
-            query_results[IS_DELETED_COL_NAME] = False
-
-        if UPDATE_DATETIME_COL_NAME not in query_results.columns:
-            # file_update_dt must have a pytz.UTC timezone
-            query_results[UPDATE_DATETIME_COL_NAME] = datetime.datetime.now(
-                tz=pytz.UTC
-            ) - datetime.timedelta(days=1)
-
-        if FILE_ID_COL_NAME not in query_results.columns:
-            # We derive a file_id from the update_datetime, assuming that all data with
-            # the same update_datetime came from the same file.
-            query_results[FILE_ID_COL_NAME] = (
-                query_results[UPDATE_DATETIME_COL_NAME]
-                .rank(
-                    # The "dense" method assigns the same value where update_datetime
-                    # values are the same.
-                    method="dense"
-                )
-                .astype(int)
-            )
-
-        query_results.sort_values(by=list(query_results.columns))
-        query_results.to_csv(
-            output_fixture_path,
-            mode=write_disposition,
-            header=include_headers,
-            index=False,
         )
 
     def build_query_for_raw_table(
@@ -264,6 +186,7 @@ class RawDataFixturesGenerator:
                 f"Table [{raw_table_dataset_id}].[{raw_file_config.file_tag}] does not exist, exiting."
             )
 
+    # TODO(#40159) Update randomization capabilities
     def randomize_column_data(
         self,
         query_results: DataFrame,
@@ -465,4 +388,4 @@ class RawDataFixturesGenerator:
             )
             query_results = query_job.to_dataframe()
             query_results = self.randomize_column_data(query_results)
-            self.write_results_to_csv(query_results, output_fixture_path)
+            write_raw_fixture_dataframe_to_path(query_results, output_fixture_path)

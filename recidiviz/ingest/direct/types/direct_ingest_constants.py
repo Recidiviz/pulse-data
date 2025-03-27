@@ -30,6 +30,12 @@ UPDATE_DATETIME_COL_DESCRIPTION = (
     "The timestamp of the file this row was extracted from"
 )
 
+RAW_DATA_METADATA_COLUMNS = {
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
+}
+
 # Recidiviz-managed ingest view results columns
 UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
 MATERIALIZATION_TIME_COL_NAME = "__materialization_time"

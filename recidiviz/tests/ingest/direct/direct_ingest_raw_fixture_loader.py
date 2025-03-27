@@ -42,9 +42,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
+    RAW_DATA_METADATA_COLUMNS,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -266,18 +264,13 @@ class DirectIngestRawDataFixtureLoader:
     ) -> List[str]:
         """Checks that the raw data fixture columns are valid given it's config."""
         fixture_columns = csv.get_csv_columns(fixture_file)
-        metadata_columns = {
-            IS_DELETED_COL_NAME,
-            UPDATE_DATETIME_COL_NAME,
-            FILE_ID_COL_NAME,
-        }
-        found_metadata = set(fixture_columns).intersection(metadata_columns)
-        if missing_required := metadata_columns - found_metadata:
+        found_metadata = set(fixture_columns).intersection(RAW_DATA_METADATA_COLUMNS)
+        if missing_required := RAW_DATA_METADATA_COLUMNS - found_metadata:
             raise ValueError(
                 f"Did NOT find metadata columns [{missing_required}] for fixture {fixture_file}"
             )
         columns_to_check = [
-            col for col in fixture_columns if col not in metadata_columns
+            col for col in fixture_columns if col not in RAW_DATA_METADATA_COLUMNS
         ]
         check_found_columns_are_subset_of_config(
             raw_file_config=raw_file_dependency_config.raw_file_config,
