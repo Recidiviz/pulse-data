@@ -36,8 +36,9 @@ DEFAULT_DB_NAME = "postgres"
 
 @attr.s
 class SQLAlchemyPoolConfiguration:
-    """Contains the settings for a SQLAlchemy connection pool. These settings are for QueuePools, which are the
-    default connection pool types for a database."""
+    """Contains the settings for a SQLAlchemy connection pool; the defaults here match
+    the defaults in sqlalchemy.create_engine
+    """
 
     # The number of persistent connections to be kept in the pool.
     pool_size: int = attr.ib(default=5)
@@ -60,7 +61,7 @@ class SQLAlchemyDatabaseKey:
     the same schema.
     """
 
-    # Identifies which databse instance to connect to
+    # Identifies which database instance to connect to
     schema_type: SchemaType = attr.ib(validator=attr.validators.instance_of(SchemaType))
 
     # Identifies which individual database to connect to inside the instance
@@ -100,7 +101,7 @@ class SQLAlchemyDatabaseKey:
     @property
     def isolation_level(self) -> Optional[str]:
         # TODO(#3734): Consider using SERIALIZABLE for all databases. This isolation
-        # level guarentees that all reads done throughout a transaction are still
+        # level guarantees that all reads done throughout a transaction are still
         # valid when the transaction is committed. See
         # https://www.postgresql.org/docs/13/transaction-iso.html for more details.
         #
@@ -115,20 +116,21 @@ class SQLAlchemyDatabaseKey:
 
     @property
     def pool_configuration(self) -> Optional[SQLAlchemyPoolConfiguration]:
-        # TODO(#28239): Revisit whether this setting is necessary in a post-IID,
-        #  post-raw data import in Airflow world where the operations DB connection
-        #  patterns are much more consistent.
-        if self.schema_type is SchemaType.OPERATIONS:
-            # The operations database has many concurrent / distributed connections from various
-            # endpoints. In addition, for pre-ingest, (N~100) database operations are performed
-            # in serial in order to prevent unnecessary I/O. Given this read/write pattern, we
-            # will lower the pool size and max overflow to ensure that connections get properly
-            # closed / recycled. In addition, decreasing the timeout prevents long-held connections
-            # during these synchronous operations.
-            return SQLAlchemyPoolConfiguration(
-                pool_size=4, max_overflow=10, pool_timeout=15
-            )
+        """Optional pool configuration values."""
         return None
+
+    @property
+    def pool_recycle(self) -> int:
+        """The number of seconds to re-use pool connections before they are discarded
+        and re-created. A value -1 means no timeout.
+        """
+        if self.schema_type == SchemaType.JUSTICE_COUNTS:
+            # Only reuse connections for up to 10 minutes to avoid failures due
+            # to stale connections. Cloud SQL will close connections that have
+            # been stale for 10 minutes.
+            # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
+            return 3600
+        return 600
 
     @classmethod
     @environment.local_only

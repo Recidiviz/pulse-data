@@ -24,7 +24,6 @@ from sqlalchemy.engine import URL, Engine, create_engine
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.persistence.database.base_engine_manager import BaseEngineManager
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, secrets
 
@@ -59,13 +58,7 @@ class SQLAlchemyEngineManager(BaseEngineManager):
             db_url=db_url,
             # Log information about how connections are being reused.
             echo_pool=True,
-            # Only reuse connections for up to 10 minutes to avoid failures due
-            # to stale connections. Cloud SQL will close connections that have
-            # been stale for 10 minutes.
-            # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
-            pool_recycle=3600
-            if database_key.schema_type == SchemaType.JUSTICE_COUNTS
-            else 600,
+            pool_recycle=database_key.pool_recycle,
             **additional_kwargs,
         )
 

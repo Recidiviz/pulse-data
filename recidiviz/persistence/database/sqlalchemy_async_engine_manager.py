@@ -22,7 +22,6 @@ from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from recidiviz.persistence.database.base_engine_manager import BaseEngineManager
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, secrets
 
@@ -56,9 +55,7 @@ class SQLAlchemyAsyncEngineManager(BaseEngineManager):
             database_key=database_key,
             db_url=db_url,
             echo_pool=True,
-            pool_recycle=3600
-            if database_key.schema_type == SchemaType.JUSTICE_COUNTS
-            else 600,
+            pool_recycle=database_key.pool_recycle,
             **additional_kwargs,
         )
 
@@ -195,9 +192,11 @@ class SQLAlchemyAsyncEngineManager(BaseEngineManager):
             database=db_name,
             host=db_host if not using_unix_sockets else None,
             port=db_port,
-            query={"host": f"/cloudsql/{cloudsql_instance_id}"}
-            if using_unix_sockets
-            else {},
+            query=(
+                {"host": f"/cloudsql/{cloudsql_instance_id}"}
+                if using_unix_sockets
+                else {}
+            ),
         )
 
         return url
