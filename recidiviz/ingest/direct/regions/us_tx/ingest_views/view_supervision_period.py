@@ -58,7 +58,7 @@ rank_start_date_cte AS (
         SID_Number,
         Period_ID_Number,
         start_date,
-        rank()OVER(PARTITION BY Period_ID_Number ORDER BY update_date DESC) AS rnk
+        rank() OVER(PARTITION BY Period_ID_Number ORDER BY update_date DESC) AS rnk
     FROM start_date_cte
     WHERE prev_start_date IS DISTINCT FROM start_date
 ),
@@ -67,9 +67,9 @@ Max_Termination_Date_cte AS (
   SELECT 
     SID_Number,
     Period_ID_Number,
-    Max_Termination_Date,
+    COALESCE(DATE(Max_termination_Date), DATE(9999,9,9)) AS Max_termination_Date,
     DATE(RMF_TIMESTAMP) as update_date,
-    LAG(Max_Termination_Date)OVER(PARTITION BY Period_ID_Number ORDER BY RMF_TIMESTAMP asc) AS prev_Max_Termination_Date
+    LAG(COALESCE(DATE(Max_termination_Date), DATE(9999,9,9))) OVER(PARTITION BY Period_ID_Number ORDER BY RMF_TIMESTAMP asc) AS prev_Max_Termination_Date
   FROM `{{SupervisionPeriod@ALL}}`
   WHERE RMF_TIMESTAMP IS NOT NULL AND Deleted_Flag = "ACTIVE"
 ),
@@ -122,7 +122,7 @@ case_type_cte AS (
   FROM ranked_case_type_changes sp
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE DATE(CTH_Creation_DATE) < DATE(p.Max_Termination_Date) AND rnk = 1
+  WHERE DATE(CTH_Creation_DATE) < p.Max_Termination_Date AND rnk = 1
 ), 
 -- Selects only the records that have a different case_type than before
 case_type_changes_cte AS (
@@ -166,7 +166,7 @@ status_cte AS (
   FROM ranked_status_changes sp
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE DATE(OSTS_UPDATE_DATE) < DATE(p.Max_Termination_Date) and rnk = 1
+  WHERE DATE(OSTS_UPDATE_DATE) < p.Max_Termination_Date and rnk = 1
 ),
 -- Selects only the records that have a different status than before
 status_changes_cte AS (
@@ -212,7 +212,7 @@ supervision_officer_cte AS (
     ON sp.Supervision_Officer = s.Staff_ID_Number
   LEFT JOIN periods p 
     USING (Period_ID_Number)
-  WHERE DATE(WTSK_UPDATE_DATE) < DATE(p.Max_Termination_Date)
+  WHERE DATE(WTSK_UPDATE_DATE) < p.Max_Termination_Date
   AND (Staff_ID_Number IS NOT NULL or Supervision_Officer IS NULL) AND rnk = 1
 ),
 -- Selects only the records that have a different supervision officer than before
@@ -240,7 +240,7 @@ assessment_cte AS (
     FROM periods p
     LEFT JOIN `{{Assessment}}` a
         ON p.SID_Number = a.SID_Number
-        AND DATE(ASSESSMENT_DATE) BETWEEN DATE(p.start_date) and DATE(p.Max_termination_Date)
+        AND DATE(ASSESSMENT_DATE) BETWEEN DATE(p.start_date) and p.Max_termination_Date
     UNION ALL
 
     -- Grab latest assessment before the current SP start
@@ -294,7 +294,7 @@ union_all_critical_dates AS
     SELECT
         SID_Number,
         Period_ID_Number,
-        DATE(Max_termination_Date) as critical_date,
+        Max_termination_Date as critical_date,
     FROM Periods
 
     UNION DISTINCT
