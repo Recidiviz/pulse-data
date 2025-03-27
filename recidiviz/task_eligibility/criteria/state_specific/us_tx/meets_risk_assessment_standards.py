@@ -332,11 +332,65 @@ meets_criteria_false_records AS (
     WHERE (next_event_date IS NULL OR next_event_date > due_assessment_date)
         -- If we don't have matching due date logic, don't include in TES as there will be null start dates
         AND due_assessment_date is not null
+),
+all_criteria_records AS (
+    SELECT * FROM meets_criteria_true_records
+    UNION ALL
+    SELECT * FROM meets_criteria_false_records
+),
+parole_active_population AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        compartment_level_1
+    FROM
+        `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    WHERE
+        compartment_level_1 IN ('SUPERVISION')
+        AND metric_source != "INFERRED"
+        AND compartment_level_2 IN ('PAROLE')
+	AND compartment_level_2 NOT IN ('INTERNAL_UNKNOWN', 'ABSCONSION', 'BENCH_WARRANT')
+	AND correctional_level NOT IN ('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')
+	AND start_date >= '1900-01-01'
+),
+aggregated_active_persons AS (
+    {aggregate_adjacent_spans(
+        table_name='parole_active_population',
+        attribute=['compartment_level_1'],
+        session_id_output_name='aggregated_active_persons',
+        end_date_field_name='end_date_exclusive'
+    )}
 )
-
-SELECT * FROM meets_criteria_true_records
-UNION ALL
-SELECT * FROM meets_criteria_false_records
+SELECT
+    all_criteria_records.person_id,
+    all_criteria_records.state_code,
+    all_criteria_records.start_date,
+    CASE
+        WHEN all_criteria_records.end_date IS NULL AND aggregated_active_persons.end_date_exclusive IS NULL THEN NULL
+        WHEN all_criteria_records.end_date IS NULL THEN aggregated_active_persons.end_date_exclusive
+        WHEN aggregated_active_persons.end_date_exclusive IS NULL THEN all_criteria_records.end_date
+        ELSE LEAST(all_criteria_records.end_date, aggregated_active_persons.end_date_exclusive)
+    END AS end_date,
+    meets_criteria,
+    event_date,
+    event_type,
+    all_criteria_records.case_type,
+    last_assessment_type,
+    last_assessment_level,
+    due_assessment_months,
+    due_assessment_date,
+    due_assessment_type,
+    next_event_date,
+    next_event_type,
+    next_assessment_type,
+    frequency,
+    reason
+FROM all_criteria_records
+INNER JOIN aggregated_active_persons
+    ON all_criteria_records.person_id = aggregated_active_persons.person_id
+    AND all_criteria_records.start_date >= DATE_SUB(aggregated_active_persons.start_date, INTERVAL 6 MONTH)
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
