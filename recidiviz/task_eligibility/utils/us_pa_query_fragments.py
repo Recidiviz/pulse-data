@@ -319,9 +319,27 @@ these offenses. */
     """
 
 
+def sentences_and_charges_cte() -> str:
+    # combine sentences preprocessed (to get correct date info) and state charge (to get status of individual charges)
+    return """SELECT
+            sen.state_code,
+            sen.person_id,
+            sen.date_imposed,
+            sen.projected_completion_date_max,
+            sen.statute,
+            sen.description,
+            sen.offense_type,
+            sc.status,
+        FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc
+            USING(person_id, charge_id)
+        WHERE sen.state_code = 'US_PA'"""
+
+
 def adm_form_information_helper() -> str:
     # this pulls information used to complete form 402a, the drug addendum for admin supervision
-    return """
+    return f"""
+        WITH sentences_and_charges AS ({sentences_and_charges_cte()})
         SELECT person_id,
         (offense_type = 'DRUGS' 
             OR(offense_type IS NULL
@@ -375,8 +393,9 @@ def adm_form_information_helper() -> str:
             OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
             -- steroids is misspelled in the data,
         date_imposed,
-    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized`
+    FROM sentences_and_charges
     WHERE state_code = 'US_PA'
+        AND status <> 'ADJUDICATED'
     """
 
 
@@ -555,18 +574,20 @@ def adm_case_notes_helper() -> str:
     
     UNION ALL 
     
+    (WITH sentences_and_charges AS ({sentences_and_charges_cte()})
     SELECT DISTINCT pei.external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'OBSCENE MATERIALS' AS note_title,
       'This reentrant has 18 C.S. 5903(3)(4)(5) relating to obscene materials on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.' AS note_body,
       sc.date_imposed AS event_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
+    FROM sentences_and_charges sc
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON sc.person_id = pei.person_id
       AND sc.state_code = pei.state_code
       AND id_type = 'US_PA_PBPP'
     WHERE sc.state_code = 'US_PA' 
       AND {obsc_materials_indicator()}
+      AND status <> 'ADJUDICATED')
       
     UNION ALL 
 
