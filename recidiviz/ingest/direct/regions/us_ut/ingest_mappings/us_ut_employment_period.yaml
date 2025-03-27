@@ -34,6 +34,7 @@ output:
                     - hours_per_week
                     - job_title
                     - comment
+                    - employer_name
                   $separator: "@@"
               $custom_parser: us_ut_custom_enum_parsers.parse_employment_status
           end_reason:

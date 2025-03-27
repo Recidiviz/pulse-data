@@ -45,9 +45,23 @@ def parse_employment_status(
     """Determines the status of an employment period. If a person's job title does not
     signify that they are unemployed, we assume their appearance in the emplymt raw data
     table means they are employed in some capacity."""
-    hours_per_week, job_title, comment = raw_text.split("@@")
-    if "STUDENT" in job_title.upper() or "STUDENT" in comment.upper():
+    hours_per_week, job_title, comment, employer_name = raw_text.split("@@")
+    if (
+        "STUDENT" in job_title.upper()
+        or "STUDENT" in comment.upper()
+        or "STUDENT" in employer_name.upper()
+    ):
         return StateEmploymentPeriodEmploymentStatus.STUDENT
+    if (
+        "SOCIAL SECURITY" in employer_name.upper()
+        or "PENSION" in employer_name.upper()
+        or "WORKERS' COMPENSATION" in employer_name.upper()
+        or "VETERANS' ADMIN BENEFITS" in employer_name.upper()
+        or "PRIMARY CARE GIVER/HOMEMAKER" in employer_name.upper()
+    ):
+        return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
+    if "UNABLE TO WORK" in employer_name.upper():
+        return StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK
     if (
         "UNEMPL" in job_title.upper()
         or job_title.upper() == "NONE"

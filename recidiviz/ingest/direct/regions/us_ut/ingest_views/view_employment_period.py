@@ -28,16 +28,12 @@ VIEW_QUERY_TEMPLATE = """
 SELECT
     DISTINCT ofndr_num,
     emplymt_id,
-    /* emplyr_id is a code field. We likely want to use it for employer information, 
-    but we do not currently have the reference table to decode it. 
-    TODO(#36824): Find out if we can use this to find more information about employers.*/ 
-    -- emplyr_id, 
     DATE(emplymt_strt_dt) AS start_date,
     DATE(end_dt) AS end_date,
     job_title AS job_title,
     rsn_left_cd AS end_reason_raw_text,
     cmt AS comment,
-    supr_full_name AS employer_name,
+    emplyr_name AS employer_name,
     /* Only store dates that employment was positively verified. Our "last verified date" 
     is not designed to store failed attempts to verify employment, only successful ones. */
     CASE WHEN 
@@ -47,6 +43,10 @@ SELECT
     CAST(hrs_work_wk AS INT64) AS hours_per_week,
 FROM
     {emplymt}
+LEFT JOIN
+    {emplyr}
+USING
+    (emplyr_id)
 /* < 0.1% of rows do not have a start date. We exclude them here because they cannot 
 provide an accurate or complete picture of employment periods. */
 WHERE 
