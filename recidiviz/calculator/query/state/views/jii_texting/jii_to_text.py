@@ -33,6 +33,7 @@ SELECT
     *,
     'US_ID_LSU' AS topic,
 FROM `{project_id}.{jii_texting_views_dataset}.us_ix_lsu_materialized`
+WHERE phone_number IS NOT NULL
 """
 
 JII_TO_TEXT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
