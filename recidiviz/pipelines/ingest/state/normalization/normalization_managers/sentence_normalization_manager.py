@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from more_itertools import first
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -54,28 +55,97 @@ from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
 from recidiviz.utils.types import assert_type
 
 
-def _sort_sentences_by_initial_sentence_length_desc(
+def _sort_sentences_by_severity(
     sentences: list[NormalizedStateSentence],
 ) -> list[NormalizedStateSentence]:
     """
-    Sorts the list of sentences by their initial length (at imposition), with the longest sentences first.
-    Sentences with no NormalizedStateSentenceLength defined will be sorted amongst themselves by sentence_id.
+    Sorts the list of sentences by their severity (in priority order):
+        - A state prison sentence is more severe than other types
+        - A life sentence is more severe than non-life sentences
+        - A sentence with the most controlling charges (when hydrated) is more severe than other sentences
+        - The sentence with the longest initial sentence length (at imposition) is more severe than other sentences,
+          with sentence length determined by the first non-null date field in this order:
+              - sentence length days max
+              - sentence length days min
+              - projected completion date max external (calculated from sentence serving start date)
+              - projected completion date min external (calculated from sentence serving start date)
+        - A sentence linked to at least 1 charge classified as a violent offense OR a sex offense is more severe
+        - If all prior attributes are equal (or null) than the sentence with the highest sentence_id is the most severe
     """
 
-    def _sort_key(sentence: NormalizedStateSentence) -> tuple[int, int]:
+    def _sort_key(
+        sentence: NormalizedStateSentence,
+    ) -> tuple[int, int, int, int, int, int]:
+        # TODO(#39589): add more granular priority levels here to cover more sentence types
+        sentence_type_priority = (
+            0 if sentence.sentence_type == StateSentenceType.STATE_PRISON else -1
+        )
+        life_sentence_priority = 0 if sentence.is_life else -1
+        controlling_charges_count = sum(
+            (charge.is_controlling or False) for charge in sentence.charges
+        )
+        violent_or_sex_offense_charges = [
+            charge
+            for charge in sentence.charges
+            if charge.is_violent or charge.is_sex_offense
+        ]
+        violent_or_sex_offense_priority = (
+            0 if len(violent_or_sex_offense_charges) > 0 else -1
+        )
         first_sentence_length = first(
             sorted(sentence.sentence_lengths, key=lambda l: l.length_update_datetime),
             default=None,
         )
+        # Return -1 for the length priority value if there is no sentence length data for this sentence
         if not first_sentence_length:
-            return -1, sentence.sentence_id
-        _, length_days = get_min_max_fields(
+            return (
+                sentence_type_priority,
+                life_sentence_priority,
+                controlling_charges_count,
+                -1,
+                violent_or_sex_offense_priority,
+                sentence.sentence_id,
+            )
+        min_length_days, max_length_days = get_min_max_fields(
             first_sentence_length.sentence_length_days_min,
             first_sentence_length.sentence_length_days_max,
         )
-        return (assert_type(length_days or -1, int), sentence.sentence_id)
+        # Try to compute a sentence length days value from the projected completion dates
+        # and sentence serving start date if there is no min/max sentence length days data
+        if (min_length_days is None) & (max_length_days is None):
+            # Get the sentence start date from the first SERVING status
+            sentence_serving_start_date = first(
+                sorted(
+                    [
+                        sentence_status
+                        for sentence_status in sentence.sentence_status_snapshots
+                        if sentence_status.status.is_considered_serving_status
+                    ],
+                    key=lambda s: s.status_update_datetime,
+                ),
+                default=None,
+            )
+            projected_completion_date = (
+                first_sentence_length.projected_completion_date_max_external
+                or first_sentence_length.projected_completion_date_min_external
+            )
+            if (sentence_serving_start_date is not None) and (
+                projected_completion_date is not None
+            ):
+                max_length_days = (
+                    projected_completion_date
+                    - sentence_serving_start_date.status_update_datetime.date()
+                ).days
+        return (
+            sentence_type_priority,
+            life_sentence_priority,
+            controlling_charges_count,
+            assert_type(max_length_days or min_length_days or -1, int),
+            violent_or_sex_offense_priority,
+            sentence.sentence_id,
+        )
 
-    return list(sorted(sentences, key=_sort_key))
+    return list(sorted(sentences, key=_sort_key, reverse=True))
 
 
 def sentences_overlap_serving(
@@ -150,14 +220,22 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
     ) -> NormalizedStateChargeV2:
         """
         Returns the most severe charge for this group of sentences.
-        By default, this will return the first charge (by charge_id) on the sentence with the
-        longest length at imposition time.
+        By default, this will return the controlling charge on the most severe sentence.
         """
-        longest_sentence = first(
-            _sort_sentences_by_initial_sentence_length_desc(sentences)
+        most_severe_sentence = first(_sort_sentences_by_severity(sentences))
+        # Pick a controlling charge first, then a violent or sex offense charge,
+        # and then if all else is the same arbitrarily pick the highest charge ID
+        charges = list(
+            sorted(
+                most_severe_sentence.charges,
+                key=lambda c: (
+                    c.is_controlling or False,
+                    c.is_violent or c.is_sex_offense or False,
+                    c.charge_v2_id,
+                ),
+                reverse=True,
+            )
         )
-        # By default we arbitrarily pick the first charge by ID
-        charges = list(sorted(longest_sentence.charges, key=lambda s: s.charge_v2_id))
         return charges[0]
 
     @staticmethod

@@ -418,6 +418,16 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     projected_completion_date_max_external=None,
                 )
             ],
+            statuses=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.state_code.value,
+                    sentence_status_snapshot_id=114,
+                    status_update_datetime=self.critical_date_1,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.SERVING,
+                    sequence_num=1,
+                ),
+            ],
         )
         sentence_2 = self._make_sentence(
             2,
@@ -449,6 +459,16 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     projected_completion_date_max_external=None,
                 ),
             ],
+            statuses=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.state_code.value,
+                    sentence_status_snapshot_id=214,
+                    status_update_datetime=self.critical_date_1,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.SERVING,
+                    sequence_num=1,
+                ),
+            ],
         )
         person = self.build_person_with_sentences([sentence_1, sentence_2])
         imposed_group = person.sentence_imposed_groups[0]
@@ -467,7 +487,11 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": False,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": None,
+                # The view should hydrate `sentence_length_days_min` using the
+                # projected completion date min & serving start date
+                "sentence_length_days_min": (
+                    self.big_projected_date_min - self.critical_date_1.date()
+                ).days,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
@@ -573,7 +597,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
                 "most_severe_charge_description": "DESCRIPTION",
-                "most_severe_charge_external_id": "CHARGE",
+                "most_severe_charge_external_id": "CHARGE-2",
                 "most_severe_charge_is_drug": None,
                 "most_severe_charge_is_drug_uniform": None,
                 "most_severe_charge_is_sex_offense": None,
@@ -608,6 +632,9 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     length_update_datetime=self.critical_date_1,
                     projected_completion_date_min_external=self.big_projected_date_min,
                     projected_completion_date_max_external=None,
+                    sentence_length_days_min=(
+                        self.big_projected_date_min - self.critical_date_1.date()
+                    ).days,
                 )
             ],
         )
@@ -630,6 +657,9 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     length_update_datetime=self.critical_date_1,
                     projected_completion_date_min_external=self.small_projected_date_min,
                     projected_completion_date_max_external=None,
+                    sentence_length_days_min=(
+                        self.small_projected_date_min - self.critical_date_1.date()
+                    ).days,
                 ),
                 # This length won't be considered
                 NormalizedStateSentenceLength(
@@ -639,6 +669,9 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     length_update_datetime=self.critical_date_2,
                     projected_completion_date_min_external=self.small_projected_date_min,
                     projected_completion_date_max_external=None,
+                    sentence_length_days_min=(
+                        self.small_projected_date_min - self.critical_date_1.date()
+                    ).days,
                 ),
             ],
         )
@@ -678,7 +711,8 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         self.run_test([person], expected_data)
 
     def test_all_any_is_xxx_fields(self) -> None:
-        """Tests that all fields named "any_is_xxx" aggregate correctly"""
+        """Tests that all fields named "any_is_xxx" aggregate correctly and charges for violent
+        offenses are prioritized as most severe even when both sentences have the same length."""
         sentence_1 = self._make_sentence(
             1,
             charges=[
@@ -688,6 +722,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     charge_v2_id=hash("CHARGE"),
                     status=StateChargeV2Status.CONVICTED,
                     description="IS VIOLENT DRUG DESCRIPTION",
+                    is_violent=True,
                 ),
             ],
             lengths=[
@@ -699,6 +734,9 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     length_update_datetime=self.critical_date_1,
                     projected_completion_date_min_external=self.big_projected_date_min,
                     projected_completion_date_max_external=None,
+                    sentence_length_days_min=(
+                        self.big_projected_date_min - self.critical_date_1.date()
+                    ).days,
                 )
             ],
         )
@@ -712,7 +750,6 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     charge_v2_id=hash("CHARGE-2"),
                     status=StateChargeV2Status.CONVICTED,
                     description="DESCRIPTION",
-                    is_sex_offense=True,
                 ),
             ],
             lengths=[
@@ -721,10 +758,13 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     state_code=self.state_code.value,
                     sentence_length_id=211,
                     length_update_datetime=self.critical_date_1,
-                    projected_completion_date_min_external=self.small_projected_date_min,
+                    projected_completion_date_min_external=self.big_projected_date_min,
                     projected_completion_date_max_external=None,
+                    sentence_length_days_min=(
+                        self.big_projected_date_min - self.critical_date_1.date()
+                    ).days,
                 ),
-                # This length won't be considered
+                # This length won't be considered since it was updated second
                 NormalizedStateSentenceLength(
                     sequence_num=2,
                     state_code=self.state_code.value,
@@ -746,7 +786,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "state_code": "US_XX",
                 "imposed_date": imposed_group.imposed_date,
                 "serving_start_date": imposed_group.serving_start_date,
-                "any_is_sex_offense": True,
+                "any_is_sex_offense": False,
                 "any_is_violent": True,
                 "any_is_drug": True,
                 "any_is_life": True,
@@ -761,7 +801,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "most_severe_charge_is_drug": None,
                 "most_severe_charge_is_drug_uniform": True,
                 "most_severe_charge_is_sex_offense": None,
-                "most_severe_charge_is_violent": None,
+                "most_severe_charge_is_violent": True,
                 "most_severe_charge_is_violent_uniform": True,
                 "most_severe_charge_ncic_category_external": None,
                 "most_severe_charge_ncic_category_uniform": None,

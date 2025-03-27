@@ -935,7 +935,228 @@ class TestImposedSentenceGroups(unittest.TestCase):
             self.STATE_CODE, self.DELEGATE, [sentence_1, sentence_2, sentence_3]
         )
         assert actual_imposed_groups == [imposed_group]
-        imposed_group.most_severe_charge_v2_id = self.CHARGE_2.charge_v2_id
+        assert imposed_group.most_severe_charge_v2_id == self.CHARGE_2.charge_v2_id
+
+    def test_most_severe_charge_by_sentence_length_prioritizes_state_prison(
+        self,
+    ) -> None:
+        """
+        Test that an imposed group uses the state prison sentence over the
+        longest probation sentence to find the most severe charge.
+        """
+        sentence_1 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_1_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.STATE_PRISON,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                sentence_lengths=[
+                    NormalizedStateSentenceLength(
+                        state_code=self.STATE_CODE_VALUE,
+                        sentence_length_id=1,
+                        length_update_datetime=as_datetime(self.JAN_01),
+                        sentence_length_days_min=100,
+                    )
+                ],
+                charges=[self.CHARGE_1],
+            )
+        )
+        sentence_2 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_2_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.PROBATION,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                charges=[self.CHARGE_1],
+                sentence_lengths=[
+                    NormalizedStateSentenceLength(
+                        state_code=self.STATE_CODE_VALUE,
+                        sentence_length_id=2,
+                        length_update_datetime=as_datetime(self.JAN_01),
+                        sentence_length_days_min=100,
+                    )
+                ],
+            )
+        )
+        sentence_3 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_3_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.PROBATION,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                sentence_lengths=[
+                    NormalizedStateSentenceLength(
+                        state_code=self.STATE_CODE_VALUE,
+                        sentence_length_id=3,
+                        length_update_datetime=as_datetime(self.JAN_01),
+                        sentence_length_days_max=200,
+                    )
+                ],
+                charges=[self.CHARGE_2],
+            )
+        )
+        actual_imposed_groups = get_normalized_imposed_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
+            normalized_sentences=[sentence_1, sentence_2, sentence_3],
+        )
+        imposed_group = build_imposed_group_from_sentences(
+            self.STATE_CODE, self.DELEGATE, [sentence_1, sentence_2, sentence_3]
+        )
+        assert actual_imposed_groups == [imposed_group]
+        assert imposed_group.most_severe_charge_v2_id == self.CHARGE_1.charge_v2_id
+
+    def test_most_severe_charge_by_sentence_length_prioritizes_life_sentences(
+        self,
+    ) -> None:
+        """
+        Test that an imposed group uses the sentence with is_life over the
+        other sentences to find the most severe charge.
+        """
+        sentence_1 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_1_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.STATE_PRISON,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                sentence_lengths=[
+                    NormalizedStateSentenceLength(
+                        state_code=self.STATE_CODE_VALUE,
+                        sentence_length_id=1,
+                        length_update_datetime=as_datetime(self.JAN_01),
+                        sentence_length_days_min=100,
+                    )
+                ],
+                charges=[self.CHARGE_1],
+            )
+        )
+        sentence_2 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_2_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.PROBATION,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                charges=[self.CHARGE_1],
+                sentence_lengths=[
+                    NormalizedStateSentenceLength(
+                        state_code=self.STATE_CODE_VALUE,
+                        sentence_length_id=2,
+                        length_update_datetime=as_datetime(self.JAN_01),
+                        sentence_length_days_min=100,
+                    )
+                ],
+            )
+        )
+        sentence_3 = _set_backedges(
+            NormalizedStateSentence(
+                state_code=self.STATE_CODE_VALUE,
+                external_id=self.SENTENCE_3_EXTERNAL_ID,
+                sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
+                sentence_group_external_id=None,
+                sentence_inferred_group_id=None,
+                sentence_imposed_group_id=None,
+                imposed_date=self.JAN_01,
+                sentencing_authority=StateSentencingAuthority.STATE,
+                sentence_type=StateSentenceType.STATE_PRISON,
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
+                is_life=True,
+                charges=[self.CHARGE_2],
+            )
+        )
+        actual_imposed_groups = get_normalized_imposed_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
+            normalized_sentences=[sentence_1, sentence_2, sentence_3],
+        )
+        imposed_group = build_imposed_group_from_sentences(
+            self.STATE_CODE, self.DELEGATE, [sentence_1, sentence_2, sentence_3]
+        )
+        assert actual_imposed_groups == [imposed_group]
+        assert imposed_group.most_severe_charge_v2_id == self.CHARGE_2.charge_v2_id
 
     def test_sentencing_authorities_group_separately(self) -> None:
         """Ensures we do not include out of state sentences with in state sentences."""
