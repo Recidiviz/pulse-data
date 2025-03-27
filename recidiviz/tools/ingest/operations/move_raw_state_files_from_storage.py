@@ -18,19 +18,20 @@
 Script for moving files from storage back into an ingest bucket to be re-ingested. Should be run in the pipenv shell.
 
 Steps:
-1. Will acquire locks! # TODO(#28239)
-2. Finds all subfolders in storage for dates we want to re-ingest, based on start-date-bound, end-date-bound, and
+1. Finds all sub-folders in storage for dates we want to re-ingest, based on start-date-bound, end-date-bound, and
     file-type-to-move.
-3. Finds all files in those subfolders.
+2. Finds all files in those sub-folders.
+3. Acquires raw data resource lock for the ingest bucket
 4. Moves all found files to the ingest bucket, updating the file type to destination-file-type.
 5. Writes moves to a logfile.
+6. release raw data resource lock for the ingest bucket
 
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
-    --source-project-id recidiviz-staging --source-raw-data-instance SECONDARY \
+    --source-project-id recidiviz-staging --source-raw-data-instance PRIMARY \
     --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
-    --region us_tn --start-date-bound 2022-03-24 --dry-run True
+    --region us_tn --start-date-bound 2025-03-10 --dry-run True
 """
 
 import argparse
@@ -43,6 +44,9 @@ from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
@@ -51,8 +55,15 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestRawDataResourceLock,
+)
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
@@ -76,6 +87,7 @@ class MoveFilesFromStorageController:
     FILE_TO_MOVE_RE = re.compile(
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
+    RESOURCE_LOCKS_REQUIRED = (DirectIngestRawDataResourceLockResource.BUCKET,)
 
     def __init__(
         self,
@@ -120,6 +132,12 @@ class MoveFilesFromStorageController:
         self.move_progress: Optional[Bar] = None
         self.moves_list: List[Tuple[str, str]] = []
 
+        self.lock_manager = DirectIngestRawDataResourceLockManager(
+            region_code=self.region,
+            raw_data_source_instance=self.destination_raw_data_instance,
+            with_proxy=True,
+        )
+
         self.log_output_path = make_log_output_path(
             operation_name="move",
             region_code=region,
@@ -142,34 +160,53 @@ class MoveFilesFromStorageController:
         logging.info("Finding files to move...")
         date_subdir_paths = self.get_date_subdir_paths()
 
-        # TODO(#28239) acquire locks here
-
         prompt_for_confirmation(
             f"Found [{len(date_subdir_paths)}] dates to move - continue?",
             dry_run=self.dry_run,
         )
 
-        thread_pool = ThreadPool(processes=12)
-        files_to_move = self.collect_files_to_move(date_subdir_paths, thread_pool)
-
-        self.move_files(files_to_move, thread_pool)
-
-        thread_pool.close()
-        thread_pool.join()
-
-        self.write_moves_to_log_file()
+        resource_locks: list[DirectIngestRawDataResourceLock]
 
         if self.dry_run:
-            logging.info(
-                "[DRY RUN] See results in [%s].\n"
-                "Rerun with [--dry-run False] to execute move.",
-                self.log_output_path,
-            )
+            logging.info("DRY RUN: would acquire locks...")
         else:
-            logging.info(
-                "Move complete! See results in [%s].\n",
-                self.log_output_path,
+            logging.info("Acquiring locks...")
+            resource_locks = self.lock_manager.acquire_lock_for_resources(
+                resources=list(self.RESOURCE_LOCKS_REQUIRED),
+                actor=DirectIngestRawDataLockActor.ADHOC,
+                description="Holding locks during the ingest file upload step of the move_raw_state_files_from_storage script",
+                ttl_seconds=3 * 60 * 60,  # 3 hours
             )
+
+        try:
+            thread_pool = ThreadPool(processes=12)
+            files_to_move = self.collect_files_to_move(date_subdir_paths, thread_pool)
+
+            self.move_files(files_to_move, thread_pool)
+
+            thread_pool.close()
+            thread_pool.join()
+
+            self.write_moves_to_log_file()
+
+            if self.dry_run:
+                logging.info(
+                    "[DRY RUN] See results in [%s].\n"
+                    "Rerun with [--dry-run False] to execute move.",
+                    self.log_output_path,
+                )
+            else:
+                logging.info(
+                    "Move complete! See results in [%s].\n",
+                    self.log_output_path,
+                )
+        finally:
+            if self.dry_run:
+                logging.info("DRY RUN: would release locks...")
+            else:
+                logging.info("Releasing locks...")
+                for lock in resource_locks:
+                    self.lock_manager.release_lock_by_id(lock.lock_id)
 
     def get_date_subdir_paths(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_raw_files(
