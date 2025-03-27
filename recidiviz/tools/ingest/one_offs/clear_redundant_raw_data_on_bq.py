@@ -41,8 +41,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
     DirectIngestRawDataResourceLockManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -237,7 +237,7 @@ def prune_raw_data_for_state_and_project(
 
     bq_client: BigQueryClient = BigQueryClientImpl()
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-    raw_data_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+    raw_data_metadata_manager = DirectIngestRawFileMetadataManager(
         state_code.value, DirectIngestInstance.PRIMARY
     )
 

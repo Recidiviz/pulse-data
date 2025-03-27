@@ -32,8 +32,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import 
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -175,7 +175,7 @@ def get_raw_data_tags_not_meeting_watermark(
         state_code, ingest_instance
     )
 
-    manager = DirectIngestRawFileMetadataManagerV2(state_code.value, ingest_instance)
+    manager = DirectIngestRawFileMetadataManager(state_code.value, ingest_instance)
 
     latest_upper_bound_by_file_tag: Dict[str, datetime.datetime] = {
         info.file_tag: info.latest_update_datetime

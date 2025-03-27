@@ -451,9 +451,7 @@ class IngestOpsEndpointTests(TestCase):
         manager_mock().set_flashing_started.assert_called_once()
         manager_mock().set_flashing_finished.assert_called_once()
 
-    @patch(
-        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
-    )
+    @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManager")
     def test_get_stale_secondary(self, manager_mock: mock.MagicMock) -> None:
         # Arrange
         manager_mock().stale_secondary_raw_data.return_value = ["path_a", "path_b"]
@@ -544,9 +542,7 @@ class IngestOpsEndpointTests(TestCase):
             ],
         )
 
-    @patch(
-        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
-    )
+    @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManager")
     def test_mark_instance_raw_data_invalidated(
         self, manager_mock: mock.MagicMock
     ) -> None:
@@ -566,9 +562,7 @@ class IngestOpsEndpointTests(TestCase):
 
     @patch("recidiviz.admin_panel.routes.ingest_ops.SessionFactory")
     @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileImportManager")
-    @patch(
-        "recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManagerV2"
-    )
+    @patch("recidiviz.admin_panel.routes.ingest_ops.DirectIngestRawFileMetadataManager")
     def test_transfer_raw_data_metadata_to_new_instance(
         self,
         file_manager_mock: mock.MagicMock,

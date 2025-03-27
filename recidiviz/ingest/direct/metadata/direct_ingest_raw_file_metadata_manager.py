@@ -19,14 +19,13 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
+import attr
 from more_itertools import one
 from sqlalchemy import and_, asc, case, func, select, text
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
-    DirectIngestRawFileMetadataSummary,
-)
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
@@ -43,8 +42,42 @@ from recidiviz.persistence.entity.operations import entities
 from recidiviz.utils.types import assert_type
 
 
-# TODO(#28239) migrate this manager back to DirectIngestRawFileMetadataManager
-class DirectIngestRawFileMetadataManagerV2:
+@attr.define
+class DirectIngestRawFileMetadataSummary:
+    """Summary object for each file tag in the operations database.
+
+    Attributes:
+        file_tag (str): the file tag associated with the raw files
+        num_processed_files (int): the number of files that have been successfully
+            imported into BigQuery
+        num_unprocessed_files (int): the number of valid files that have been discovered
+            but not yet imported
+        num_ungrouped_files (int): the number of chunked, raw GCS files that have been
+            discovered but not yet grouped into conceptual files
+        latest_discovery_time (datetime.datetime | None): the most recent datetime that
+            a GCS file has been discovered for this file tag
+        latest_processed_time (datetime.datetime): the most recent successful import time
+            for a this file tag
+        latest_update_datetime (datetime.datetime): the greatest update_datetime associated
+            with a file that has been successfully imported for this file tag
+    """
+
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    num_processed_files: int = attr.ib(validator=attr_validators.is_int)
+    num_unprocessed_files: int = attr.ib(validator=attr_validators.is_int)
+    num_ungrouped_files: int = attr.ib(validator=attr_validators.is_int)
+    latest_discovery_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    latest_processed_time: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+    latest_update_datetime: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_opt_utc_timezone_aware_datetime
+    )
+
+
+class DirectIngestRawFileMetadataManager:
     """Handles writing to and from our file metadata tables.
 
 
@@ -612,7 +645,7 @@ class DirectIngestRawFileMetadataManagerV2:
 
     def transfer_metadata_to_new_instance(
         self,
-        new_instance_manager: "DirectIngestRawFileMetadataManagerV2",
+        new_instance_manager: "DirectIngestRawFileMetadataManager",
         session: Session,
     ) -> None:
         """Take all rows where `is_invalidated=False` and transfer to the instance

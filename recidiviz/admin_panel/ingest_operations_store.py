@@ -39,7 +39,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -55,12 +54,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     LatestDirectIngestRawFileImportRunSummary,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
-)
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
-    LegacyDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -70,10 +66,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import (
-    DirectIngestError,
-    DirectIngestInstanceError,
-)
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
@@ -237,39 +230,6 @@ class IngestOperationsStore(AdminPanelStore):
     def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
 
-    def _verify_clean_secondary_raw_data_state(self, state_code: StateCode) -> None:
-        """Confirm that all raw file metadata / data has been invalidated and the BQ raw data dataset is clean in
-        SECONDARY."""
-        raw_data_manager = LegacyDirectIngestRawFileMetadataManager(
-            region_code=state_code.value,
-            raw_data_instance=DirectIngestInstance.SECONDARY,
-        )
-
-        # Confirm there aren't non-invalidated raw files for the instance. The metadata state should be completely
-        # clean before kicking off a rerun.
-        if len(raw_data_manager.get_non_invalidated_files()) != 0:
-            raise DirectIngestInstanceError(
-                "Cannot kick off ingest rerun, as there are still unprocessed raw files on Postgres."
-            )
-
-        # Confirm that all the tables in the `us_xx_raw_data_secondary` on BQ are empty
-        secondary_raw_data_dataset = raw_tables_dataset_for_region(
-            state_code=state_code, instance=DirectIngestInstance.SECONDARY
-        )
-        query = (
-            "SELECT SUM(size_bytes) as total_bytes FROM "
-            f"{metadata.project_id()}.{secondary_raw_data_dataset}.__TABLES__"
-        )
-        query_job = self.bq_client.run_query_async(
-            query_str=query, use_query_cache=False
-        )
-        results = list(query_job)
-        if int(results[0]["total_bytes"]) > 0:
-            raise DirectIngestInstanceError(
-                f"There are tables in {secondary_raw_data_dataset} that are not empty. Cannot proceed with "
-                f"ingest rerun."
-            )
-
     def get_ingest_instance_resources(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Dict[str, Any]:
@@ -402,7 +362,7 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the raw file metadata summary for all file tags
         in a given state_code in the operations DB
         """
-        raw_file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+        raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code=state_code.value,
             raw_data_instance=ingest_instance,
         )

@@ -39,8 +39,8 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -137,7 +137,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         super().tearDown()
 
     def test_get_ingest_file_processing_status_returns_expected_list(self) -> None:
-        manager = DirectIngestRawFileMetadataManagerV2(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -169,7 +169,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
-        manager = DirectIngestRawFileMetadataManagerV2(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -207,7 +207,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
         self,
     ) -> None:
-        manager = DirectIngestRawFileMetadataManagerV2(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -248,7 +248,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
         self,
     ) -> None:
-        manager = DirectIngestRawFileMetadataManagerV2(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for classes in direct_ingest_raw_file_metadata_manager_v2.py"""
+"""Tests for classes in direct_ingest_raw_file_metadata_manager"""
 import datetime
 import unittest
 from datetime import timedelta
@@ -30,10 +30,8 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
-)
-from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -77,10 +75,8 @@ def _make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
 
 
 @pytest.mark.uses_db
-class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
-    """Tests for DirectIngestRawFileMetadataV2Manager."""
-
-    maxDiff = None
+class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
+    """Tests for DirectIngestRawFileMetadataManager."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -93,16 +89,16 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.raw_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+        self.raw_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
-        self.raw_metadata_manager_secondary = DirectIngestRawFileMetadataManagerV2(
+        self.raw_metadata_manager_secondary = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
-        self.raw_metadata_manager_other_region = DirectIngestRawFileMetadataManagerV2(
+        self.raw_metadata_manager_other_region = DirectIngestRawFileMetadataManager(
             region_code="us_yy",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
@@ -877,7 +873,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             raw_unprocessed_path_1
         )
 
-        self.raw_metadata_manager_dif_state = DirectIngestRawFileMetadataManagerV2(
+        self.raw_metadata_manager_dif_state = DirectIngestRawFileMetadataManager(
             region_code="us_yy",
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
@@ -972,7 +968,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
     def test_get_unprocessed_raw_files_eligible_for_import_when_secondary_db(
         self,
     ) -> None:
-        enabled_secondary_import_manager = DirectIngestRawFileMetadataManagerV2(
+        enabled_secondary_import_manager = DirectIngestRawFileMetadataManager(
             region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
         )
         # Arrange

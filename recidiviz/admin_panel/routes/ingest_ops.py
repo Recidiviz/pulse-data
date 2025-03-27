@@ -50,8 +50,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manag
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
@@ -601,7 +601,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     ) -> Tuple[Response, HTTPStatus]:
         state_code = StateCode(state_code_str)
 
-        stale_secondary = DirectIngestRawFileMetadataManagerV2(
+        stale_secondary = DirectIngestRawFileMetadataManager(
             state_code.value, DirectIngestInstance.SECONDARY
         ).stale_secondary_raw_data()
 
@@ -742,7 +742,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            raw_file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+            raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=raw_data_instance,
             )
@@ -785,12 +785,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 raw_data_instance=dest_ingest_instance,
             )
 
-            raw_data_manager = DirectIngestRawFileMetadataManagerV2(
+            raw_data_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=src_ingest_instance,
             )
 
-            new_instance_manager = DirectIngestRawFileMetadataManagerV2(
+            new_instance_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=dest_ingest_instance,
             )

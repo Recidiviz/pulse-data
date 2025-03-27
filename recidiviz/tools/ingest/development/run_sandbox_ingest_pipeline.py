@@ -61,8 +61,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -169,7 +169,7 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
         ).raw_table_dependency_configs
     }
 
-    raw_file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+    raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
         state_code.value, raw_data_source_instance
     )
 

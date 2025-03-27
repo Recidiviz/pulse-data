@@ -38,8 +38,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     DirectIngestRawFileImportSummary,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
-    DirectIngestRawFileMetadataManagerV2,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -90,7 +90,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
-        self.us_raw_file_xx_manager = DirectIngestRawFileMetadataManagerV2(
+        self.us_raw_file_xx_manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -801,7 +801,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             self.us_xx_manager.region_code, DirectIngestInstance.SECONDARY
         )
 
-        file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+        file_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
@@ -840,11 +840,11 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             self.us_xx_manager.region_code, DirectIngestInstance.SECONDARY
         )
 
-        file_metadata_manager = DirectIngestRawFileMetadataManagerV2(
+        file_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
-        file_metadata_manager_secondary = DirectIngestRawFileMetadataManagerV2(
+        file_metadata_manager_secondary = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
