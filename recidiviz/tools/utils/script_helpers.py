@@ -77,6 +77,27 @@ def prompt_for_step(step_description: str) -> bool:
         print(f"Invalid choice [{check}]")
 
 
+def prompt_for_step_or_skip(step_description: str) -> bool:
+    """Helper that prompts the user to ask whether they want to retry the previous step,
+    proceed, or exit the script entirely.
+
+    If the user chooses exit, we exit with exit code 1. Otherwise, returns True if we
+    should proceed with the step, False if we should retry.
+    """
+    print(step_description)
+    while True:
+        check = input("Continue? [(P)roceed, (R)etry, or (E)xit] ").strip()
+        if check.upper() == "E":
+            logging.warning("\nResponded with [%s]. Exiting.", check)
+            sys.exit(1)
+
+        if check.upper() == "P":
+            return True
+        if check.upper() == "R":
+            return False
+        print(f"Invalid choice [{check}]")
+
+
 def interactive_prompt_retry_on_exception(
     fn: Callable,
     input_text: str,

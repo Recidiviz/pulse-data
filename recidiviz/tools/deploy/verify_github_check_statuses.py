@@ -20,7 +20,14 @@ user confirms that it's ok to proceed.
 
 Usage:
 python -m recidiviz.tools.deploy.verify_github_check_statuses \
+  --projectid [project-id] \
   --commit_ref COMMIT_REF \
+  --prompt
+
+  
+python -m recidiviz.tools.deploy.verify_github_check_statuses \
+  --project-id recidiviz-staging\
+  --commit_ref 455d3130d2f9627786bfdc64ee0273d5b2c11518 \
   --prompt
 
 """
@@ -36,7 +43,7 @@ from github.CheckRun import CheckRun
 from recidiviz.tools.utils.script_helpers import (
     ANSI,
     color_text,
-    prompt_for_confirmation,
+    prompt_for_step_or_skip,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
@@ -127,9 +134,11 @@ def verify_github_check_statuses(
         # Pick the most recent run
         sorted(
             check_runs,
-            key=lambda c: c.started_at
-            if c.started_at
-            else datetime.datetime(year=datetime.MINYEAR, month=1, day=1),
+            key=lambda c: (
+                c.started_at
+                if c.started_at
+                else datetime.datetime(year=datetime.MINYEAR, month=1, day=1)
+            ),
         )[-1]
         for check_runs in check_runs_by_name.values()
     ]
@@ -178,23 +187,23 @@ def verify_github_check_statuses(
 
 def main(args: argparse.Namespace) -> None:
     with local_project_id_override(args.project_id):
-        required_checks_passed, all_checks_passed = verify_github_check_statuses(
-            project_id=args.project_id,
-            commit_ref=args.commit_ref,
-            success_states={"success", "skipped"},
-        )
-        if all_checks_passed:
-            return
+        while True:
+            required_checks_passed, all_checks_passed = verify_github_check_statuses(
+                project_id=args.project_id,
+                commit_ref=args.commit_ref,
+                success_states={"success", "skipped"},
+            )
+            if all_checks_passed:
+                return
 
-        if not required_checks_passed or not args.prompt:
-            sys.exit(1)
+            if not required_checks_passed or not args.prompt:
+                sys.exit(1)
 
-        # Required checks have passed, but not ALL checks have passed
-        prompt_for_confirmation(
-            input_text="Found checks that were not in success or skipped status. "
-            "Are you sure you want to proceed with the deploy?",
-            exit_on_cancel=True,
-        )
+            if prompt_for_step_or_skip(
+                "Found checks that were not in success or skipped status"
+                "Are you sure you want to proceed with the deploy?"
+            ):
+                break
 
 
 if __name__ == "__main__":
