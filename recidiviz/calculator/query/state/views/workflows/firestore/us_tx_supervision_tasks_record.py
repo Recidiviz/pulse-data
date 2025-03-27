@@ -38,6 +38,7 @@ class TaskConfig(TypedDict):
     type: str
     table: str
     due_date_field: str
+    end_of_span_date_field: NotRequired[str]
     can_be_overdue: NotRequired[bool]
 
 
@@ -45,7 +46,8 @@ TASK_CONFIGS: List[TaskConfig] = [
     {
         "type": "usTxAssessment",
         "table": "meets_risk_assessment_standards_materialized",
-        "due_date_field": "event_date",
+        "due_date_field": "due_assessment_date",
+        "end_of_span_date_field": "DATE(JSON_EXTRACT_SCALAR(reason_v2, '$.due_assessment_date'))",
         "can_be_overdue": True,
     },
     {
@@ -87,18 +89,12 @@ TASK_CONFIGS: List[TaskConfig] = [
 
 
 def generate_query_from_config(config: TaskConfig) -> str:
-    if config.get("can_be_overdue", False):
-        due_task_clause = """
-            ((
-                COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
-                AND meets_criteria
-            ) OR
-                NOT meets_criteria
-            )
-        """
-    else:
-        due_task_clause = """
-            COALESCE(end_date, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
+    due_task_clause = f"""
+        COALESCE({config.get("end_of_span_date_field", "end_date")}, '9999-09-09') <= LAST_DAY(DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH))
+    """
+
+    if not config.get("can_be_overdue", False):
+        due_task_clause += """
             AND NOT meets_criteria
         """
 
