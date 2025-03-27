@@ -64,7 +64,9 @@ SELECT
     denial_reasons_str AS denial_reasons_str
   )) AS reason,
   denial_reasons_str,
-FROM denial_reasons_spans"""
+FROM denial_reasons_spans
+WHERE start_date != end_date
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
