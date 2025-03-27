@@ -546,13 +546,21 @@ USING
                 LookMLFieldParameter.label("New Transitions Added Via Launch"),
                 LookMLFieldParameter.type(LookMLFieldType.SUM_DISTINCT),
                 LookMLFieldParameter.description(
-                    "Counts transitions associated with a launch in the same month, applying weight factors"
+                    "Counts transitions associated with a launch in the same month, applying weight factors. Excludes supervisor homepage opportunities module launches."
                 ),
                 LookMLFieldParameter.view_label("Metrics"),
                 LookMLFieldParameter.sql_distinct_key("${TABLE}.distinct_key"),
                 # This will throw an error if there is ever more than one weight_factor for multiple transitions with the same person_id, event_date, decarceral_impact_type, is_jii_transition, and has_mandatory_due_date
                 LookMLFieldParameter.sql(
                     "${TABLE}.weight_factor_for_transition_added_via_launch"
+                ),
+                LookMLFieldParameter.filters(
+                    [
+                        (
+                            "product_transition_type",
+                            "-supervisor_opportunities_module_discretionary AND -supervisor_opportunities_module_mandatory",
+                        )
+                    ]
                 ),
             ],
         ),
