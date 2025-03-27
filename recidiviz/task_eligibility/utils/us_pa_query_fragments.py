@@ -127,7 +127,6 @@ def description_refers_to_assault() -> str:
                 OR description LIKE '%ASSAU%'
                 OR description LIKE '%ASSLT%'
                 OR description LIKE '%ASS\\'LT%'
-                OR description LIKE 'ASS%'
                 OR description LIKE '%A&B%' -- assault and battery 
                 OR description LIKE '%ASSL%'
                 )"""
@@ -178,7 +177,7 @@ these offenses. */
     ({statute_code_is_like('18', '2502')}
       OR {statute_code_is_like('18', '2501')}
       OR description LIKE '%MUR%'
-      OR (((description LIKE '%CR%' AND description LIKE '%HOM%') OR description LIKE '%HOMI%')
+      OR ((description LIKE '%HOM%' AND description NOT LIKE '%HOME%' AND description NOT LIKE '%WHOM%')
         AND NOT ({dui_indicator()} OR description LIKE '%VEH%' OR description LIKE '%WATER%')))
 
 --18 Pa.C.S. § 2503 Voluntary Manslaughter
@@ -621,9 +620,10 @@ def spc_case_notes_helper() -> str:
 
 def statute_code_is_like(title: str, statute_code: str) -> str:
     return f"""
-    (statute LIKE '%{title}.{statute_code}%'
-    OR statute LIKE '%{title}{statute_code}%'
+    (statute LIKE '{title}.{statute_code}%'
+    OR statute LIKE '{title}{statute_code}%'
     OR ({title} = 18 AND (statute LIKE '%CC{statute_code}%' OR statute LIKE '%CS{statute_code}%')) -- different prefixes are used for offense codes depending on the title. title 18 = criminal offenses = CC or CS 
     OR ({title} = 75 AND statute LIKE '%VC{statute_code}%') -- vehicle
-    OR ({title} = 30 AND statute LIKE '%FB{statute_code}%')) -- fishing & boating
+    OR ({title} = 30 AND statute LIKE '%FB{statute_code}%') -- fishing & boating
+    OR ({title} = 42 AND statute LIKE '%JC{statute_code}%')) -- judicial code
     """

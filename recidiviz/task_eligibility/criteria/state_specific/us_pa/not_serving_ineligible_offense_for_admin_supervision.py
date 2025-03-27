@@ -71,21 +71,24 @@ _REASON_QUERY = f"""
                 OR {statute_code_is_like('18', '2505.A')}
                 OR {statute_code_is_like('18', '2506')} -- drug delivery resulting in death
                 OR {statute_code_is_like('18', '2507')} --criminal homicide of law enforcement officer
-            OR (((description LIKE '%CR%' AND description LIKE '%HOM%')
-                OR (description LIKE '%HOM%' AND description NOT LIKE '%HOME%' AND description NOT LIKE '%WHOM%')
+            OR (((description LIKE '%HOM%' AND description NOT LIKE '%HOME%' AND description NOT LIKE '%WHOM%')
                 OR description LIKE '%MUR%'
                 OR (description LIKE '%MANS%' AND NOT REGEXP_CONTAINS(description, '[A-Z]MANS')) -- exclude things like firemans, workmans
                 OR description LIKE '%MNSL%'
                 OR (description LIKE '%SUICIDE%' AND description LIKE '%CAUS%')
                 OR description LIKE '%DEATH%' 
-                OR description LIKE '%DTH%')
-                AND description NOT LIKE '%ANIMAL%' AND description NOT LIKE '%CONCEAL%')) -- does not include agg cruelty to animals resulting in death or concealment of death 
+                OR (description LIKE '%DTH%' AND description NOT LIKE '%WIDTH%')
+                OR description LIKE '%KILL%')
+                AND description NOT LIKE '%ANIMAL%' AND description NOT LIKE '%DOG%' AND description NOT LIKE '%GAME%' AND description NOT LIKE '%BIRD%' -- does not include killing animals/big game
+                AND description NOT LIKE '%CONCEAL%' AND description NOT LIKE '%CONCL%' -- does not include concealment of death 
+                AND description NOT LIKE '%FAIL%')) -- does not include failure to register vehicle following death of owner or failure to report death
                 
             -- 18 Pa. C.S. Ch. 27 rel. to Assault
             OR ((({statute_code_is_like('18','2701')} --simple assault
                 OR {statute_code_is_like('18','2702')} --aggravated assault
                 OR {statute_code_is_like('18','2703')} --assault by prisoner
                 OR {statute_code_is_like('18','2704')} --assault by life prisoner
+                OR {statute_code_is_like('18','2711')} --domestic violence 
                 OR {statute_code_is_like('18','2712')} --assault on a sports official 
                 OR {statute_code_is_like('18','2718')}) --strangulation
                 AND (statute NOT LIKE '%27031%' AND statute NOT LIKE '%2703.1%')) -- 2703.1 refers to harassment not assault
@@ -93,12 +96,15 @@ _REASON_QUERY = f"""
                 OR description LIKE 'AA%' -- agg assault
                 OR description LIKE '%AGG AS%'
                 OR description LIKE '%AGG. AS%'
-                OR (description LIKE '%AGG%' AND (description LIKE '%BOD%' OR description LIKE '%OFF%')) --agg assault w serious bodily injury to an officer
+                OR (description LIKE '%AGG%' AND (description LIKE '%BOD%' OR description LIKE '%OFFICER%' OR description LIKE '%BI%') AND description NOT LIKE '%ANIMAL%') --agg assault w serious bodily injury to an officer
                 OR (description LIKE '%AGG%' AND description LIKE '%WEA%') --agg assault w a deadly weapon
                 OR description LIKE '%AGGRAVATED TO TEACHER%' -- agg assault to teacher
                 OR description LIKE '%SIMP AS%' --simple assault
                 OR description LIKE '%SIMPLE AS%'
-                OR description LIKE '%STRANG%')
+                OR (description LIKE '%PRISONER%' AND description LIKE '%ASST%') -- assault by prisoner
+                OR description LIKE '%STRANG%'
+                OR ((description LIKE '%VIOL%' OR description LIKE '%ABUSE%') AND (description LIKE '%DOMESTIC%' OR description LIKE '%DOMSTC%'))
+                OR description LIKE '%BATTERY%')
                 AND (description NOT LIKE '%UNB%' AND description NOT LIKE '%VEH%'))) --does not include assault on unborn child (this is specified in a different chapter) or assault by motor vehicle
               
             -- 18 Pa. C.S. Ch. 29 rel. to Kidnapping
@@ -110,8 +116,10 @@ _REASON_QUERY = f"""
               OR {statute_code_is_like('18','2909')} --concealment of whereabouts of a child 
               OR {statute_code_is_like('18','2910')} --luring a child into a motor vehicle or structure 
               OR description LIKE '%KID%'
-              OR description LIKE '%RESTRAIN%'
-              OR (description LIKE '%UNL%' AND (description LIKE '%REST%' OR description LIKE '%RST%'))
+              OR description = 'CRIMINAL RESTRAINT' -- NJ code for unlawful restraint
+              OR ((description LIKE '%UNL%' OR description LIKE '%U/L%' OR description LIKE '%UN/%' OR description LIKE '%FEL%')
+                AND (description LIKE '%REST%' OR description LIKE '%RST%') 
+                AND description NOT LIKE '%RESIST%' AND description NOT LIKE '%RESTITUTION%') -- unlawful restraint, excluding unlawfully resisting arrest charge
               OR description LIKE '%IMPRIS%'
               OR (description LIKE '%INTER%' AND description LIKE '%CUS%' AND (description LIKE '%CHIL%' OR description LIKE '%CHL%'))
               OR description LIKE '%RANSOM%'
@@ -126,7 +134,7 @@ _REASON_QUERY = f"""
               OR {statute_code_is_like('18','3015')} -- Nonpayment of wages
               OR {statute_code_is_like('18','3016')} -- Obstruction of justice
               OR {statute_code_is_like('18','3017')} -- Violation by business entities
-              OR description LIKE '%TRAFFICK%'
+              OR (description LIKE '%TRAFFICK%' AND description NOT LIKE '%DRUG%')
               OR description LIKE '%SERVITUDE%')
      
             -- 18 Pa. C.S. Ch. 31 rel. to Sexual Offenses
@@ -145,24 +153,29 @@ _REASON_QUERY = f"""
                 OR {statute_code_is_like('18','3133')} -- sexual extortion
               OR ( -- note - all descriptions relating to assault are already covered above 
                 (description LIKE '%RAPE%' AND description NOT LIKE '%PARAPERNALIA%')
-                OR (description LIKE '%SEX%' AND description NOT LIKE '%MAT%') -- sex offenses related to obscene materials are dealt with later 
+                OR (description LIKE '%SEX%'
+                    AND description NOT LIKE '%MAT%' -- sex offenses related to obscene materials are dealt with later 
+                    AND description NOT LIKE '%TRANSMISSION%' -- transmission of sexually explicit images by minor is not included 
+                    AND description NOT LIKE '%COMMERCIAL%') -- commercial sex not included
                 OR description LIKE '%IDSI%' -- involuntary deviate sexual intercourse
                 OR (description LIKE '%AGG%' AND description LIKE '%IND%') -- agg indecent assault
                 OR (description LIKE '%EXP%' AND description LIKE '%IND%' AND description NOT LIKE '%HINDER%') -- indecent exposure
-                OR ((description LIKE '%IMG%' OR description LIKE '%IMAGE%') AND description LIKE '%INT%'))) -- unlawful dissemination of intimate image
+                OR description LIKE '%INDECENT%'
+                OR ((description LIKE '%IMG%' OR description LIKE '%IMAGE%') AND description LIKE '%INT%')) -- unlawful dissemination of intimate image
+                OR description LIKE '%MOLEST%' -- molestation (used by other states)
+                OR description LIKE '%TOUCHING%') -- forcible touching (used by other states)
 
             -- 18 Pa. C.S. Ch. 33 rel. to Arson
             OR({statute_code_is_like('18','3301')} --arson
               OR description LIKE '%ARSON%'
               OR description LIKE '%ARSN%'
               OR description LIKE '%BURN%'
-              OR (description LIKE '%CONTROL%' AND description LIKE '%FAIL%')) -- failure to control or report dangerous fires
+              OR (description LIKE '%CONTROL%' AND description LIKE '%FAIL%' AND description LIKE '%FIRE%')) -- failure to control or report dangerous fires
                     
             -- 18 Pa. C.S. Ch. 37 rel. to Robbery
             OR({statute_code_is_like('18','3701')} --robbery
               OR {statute_code_is_like('18','3702')} --robbery of motor vehicle
               OR (description LIKE '%ROB%' AND description NOT LIKE '%PROB%')
-              OR description LIKE '%BURGLARY-MOTOR VEHICLE%' --sometimes incorrectly described as burglary instead of robbery
               OR (description LIKE '%CAR%' AND description LIKE '%JACK%'))
               
             -- 18 Pa. C.S. Ch. 49 rel. to Victim/Witness Intimidation
@@ -217,7 +230,8 @@ _REASON_QUERY = f"""
             -- 18 Pa. C.S. 5902(b) Prostitution
             OR({statute_code_is_like('18','5902B')} 
                 OR {statute_code_is_like('18','5902.B')}
-              OR (description LIKE '%PROM%' AND description LIKE '%PROST%'))
+              OR (description LIKE '%PROM%' AND description LIKE '%PROST%' AND (statute IS NULL OR NOT {statute_code_is_like('18','5902.A')})))
+              -- for some reason there are records where the statute is 5902.A (engaging in prostitution) but the description is promoting prostitution (which should be 5902.B)
 
             -- 18 Pa. C.S. 5903(4)(5)(6) obscene/sexual material/performance where the victim is minor
             -- 5903A4 & 5903A5 can be perpetrated against a non-minor (i) or a minor (ii), 5903A6 always relates to minors
@@ -258,7 +272,7 @@ _REASON_QUERY = f"""
                 OR {statute_code_is_like('18','75071')}
                 OR (description LIKE '%INVASION%' AND description LIKE '%PRIVACY%')
                 OR description LIKE '%MEGAN%'
-                OR {statute_code_is_like('18','4915')})-- not listed specifically but relates to failing to register as a sex offender
+                OR {statute_code_is_like('18','4915')} OR {statute_code_is_like('42','979')})  -- not listed specifically but relates to sex offender registration requirements
               
             -- 18 Pa. C.S. 6312 Sexual Abuse of Children
             OR ({statute_code_is_like('18','6312')}
@@ -268,7 +282,7 @@ _REASON_QUERY = f"""
               
             -- 18 Pa. C.S. 6318 Unlawful Contact with Minor
             OR({statute_code_is_like('18','6318')}
-              OR (description LIKE '%CONT%' AND description LIKE '%MINOR%'))
+              OR (description LIKE '%CONT%' AND description NOT LIKE '%CONTR%' AND description LIKE '%MINOR%'))
 
             -- 18 Pa. C.S. 6320 Sexual Exploitation of Children
             OR({statute_code_is_like('18','6320')}
@@ -284,17 +298,21 @@ _REASON_QUERY = f"""
             -- 18 Pa. C.S. Firearms or Dangerous Articles
             OR (({statute_code_is_like('18','61')})
               OR (description LIKE '%FIREARM%'
+                OR (description LIKE '%GUN%' AND description NOT LIKE '%PAINT%')
                 OR description LIKE '%F/A%'
+                OR description LIKE '%FRARM%'
+                OR description LIKE '%FARM%'
+                OR REGEXP_CONTAINS(description, '([^A-Z]FA[^A-Z])|(^FA[^A-Z])|([^A-Z]FA$)') -- contains FA (firearm) with no following/preceding letters. for example, we want to include "carrying FA w/o license", but not "welFAre" or "FAcility" 
+                OR REGEXP_CONTAINS(description, '([^A-Z]UFA[^A-Z])|(^UFA[^A-Z])|([^A-Z]UFA$)') -- same logic as above for UFA (uniform firearm act)
                 OR description LIKE '%VUFA%' --violation of uniform firearms act
                 OR description LIKE '%VOFA%'
-                OR (description LIKE '%FA%' and description like '%CAR%') --carrying firearm
                 OR description LIKE '%CFA%' --carrying firearm
                 OR description LIKE '%NTP%' -- 6105 not to possess firearms
                 OR (description LIKE '%EMERGENCY%' AND description LIKE '%WEAPON%') -- 6107 prohibited conduct during emergency related to weapon
                 OR (description LIKE '%DELIV%' AND description LIKE '%WEAPON%') -- 6110 persons to whom delivery of weapon shall not be made
                 OR (description LIKE '%DEAL%' AND description LIKE '%WEAPON%') -- 6112 retail dealer required to be licensed
                 OR (description LIKE '%FALSE EVIDENCE OF IDENTITY%') -- 6116 false evidence of identity
-                OR (description LIKE '%ALTER%' AND (description LIKE '%WEAPON%' OR description LIKE '%MARK%')) -- 6117 altering id weapon
+                OR (description LIKE '%ALTER%' AND (description LIKE '%WEAPON%' OR description LIKE '%MARK%') AND description NOT LIKE '%RETAIL%') -- 6117 altering id weapon (don't include retail theft charge about altering labels)
                 OR (description LIKE '%CONVEY%' AND description LIKE '%EXPL%') -- 6161 carrying explosives on conveyances
                 OR (description LIKE '%SHIP%' AND description LIKE '%EXPL%')) -- 6162 shipping explosives
               AND description NOT LIKE '%FAILURE TO REPORT INJUR%') -- failure to report injury by firearm isn't really a firearm-related offense
