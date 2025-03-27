@@ -127,8 +127,8 @@ def _supervision_vitals_metric_query_template() -> str:
                 metric_id,
                 period,
                 CASE 
-                    WHEN metric_id = 'timely_contact' THEN ROUND((1 - SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required)) * 100, 0)
-                    WHEN metric_id = 'timely_risk_assessment' THEN ROUND((1 - SAFE_DIVIDE(avg_population_assessment_overdue, avg_population_assessment_required)) * 100, 0)
+                    WHEN metric_id = 'timely_contact' THEN ROUND((1 - IFNULL(SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required), 0)) * 100, 0)
+                    WHEN metric_id = 'timely_risk_assessment' THEN ROUND((1 - IFNULL(SAFE_DIVIDE(avg_population_assessment_overdue, avg_population_assessment_required), 0)) * 100, 0)
                     ELSE NULL
                 END AS metric_value,
                 "RATE" AS value_type,
