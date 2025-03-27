@@ -47,7 +47,7 @@ officer_assignments AS (
             DATE(CAST(DATE_ASSIGNED AS DATETIME))
         ) OVER (
             PARTITION BY INMATE_ASSIGNMENT_ID, INMATE_PERSON_ID 
-            ORDER BY DATE(CAST(DATE_ASSIGNED AS DATETIME))
+            ORDER BY CAST(DATE_ASSIGNED AS DATETIME), CAST(UPDT_DTM AS DATETIME)
         ) AS next_DATE_ASSIGNED
     FROM `{project_id}.{us_az_raw_data_up_to_date_dataset}.AZ_CM_INMATE_ASSIGNMENT_latest`
 ),
