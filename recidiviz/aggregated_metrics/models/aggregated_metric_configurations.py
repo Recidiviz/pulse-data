@@ -2988,6 +2988,47 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_unviewed_30_days_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Unviewed >30 Days, {b.task_title}",
+        description=f"Average daily count of clients eligible and unviewed for >30 days for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible_past_30_days": ["true"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_unviewed_30_days_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Unviewed >30 Days, {b.task_title}",
+        description=f"Average daily count of clients eligible and unviewed for >30 days for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible_past_30_days": ["true"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
 
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(

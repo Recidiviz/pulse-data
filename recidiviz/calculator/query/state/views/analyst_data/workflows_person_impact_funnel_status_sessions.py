@@ -128,6 +128,35 @@ WHERE start_date <= CURRENT_DATE("US/Eastern")""",
             ],
             truncate_spans_at_reset_dates=False,
         ),
+        # Eligible >30 days
+        FunnelStatusSpanQueryBuilder(
+            sql_source="""SELECT
+    state_code,
+    person_id,
+    task_type,
+    -- This span starts 30 days after the source eligibility span begins
+    DATE_ADD(start_date, INTERVAL 30 DAY) as start_date,
+    CASE WHEN end_date > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date END AS end_date,
+    TRUE as is_eligible_past_30_days,
+FROM
+    `{project_id}.analyst_data.all_task_type_eligibility_spans_materialized`
+WHERE start_date <= CURRENT_DATE("US/Eastern") AND is_eligible AND (
+    -- Eligibility span has ended
+    (end_date <= CURRENT_DATE("US/Eastern") AND DATE_DIFF(end_date, start_date, DAY) > 30) OR
+    -- Span is open
+    (end_date is NULL AND DATE_DIFF(CURRENT_DATE("US/Eastern"), start_date, DAY) > 30) OR
+    -- Span ends in future
+    (end_date > CURRENT_DATE("US/Eastern") AND DATE_DIFF(CURRENT_DATE("US/Eastern"), start_date, DAY) > 30)
+)
+""",
+            start_date_col="start_date",
+            end_date_exclusive_col="end_date",
+            index_cols=["state_code", "person_id", "task_type"],
+            status_cols_by_type=[
+                ("is_eligible_past_30_days", bigquery.enums.StandardSqlTypeNames.BOOL)
+            ],
+            truncate_spans_at_reset_dates=False,
+        ),
         # Surfaceability
         FunnelStatusSpanQueryBuilder(
             sql_source="""
