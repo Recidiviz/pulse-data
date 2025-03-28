@@ -200,7 +200,7 @@ def main(args: argparse.Namespace) -> None:
                 sys.exit(1)
 
             if prompt_for_step_or_skip(
-                "Found checks that were not in success or skipped status"
+                "Found checks that were not in success or skipped status. "
                 "Are you sure you want to proceed with the deploy?"
             ):
                 break

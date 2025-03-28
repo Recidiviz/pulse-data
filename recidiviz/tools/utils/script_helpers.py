@@ -86,7 +86,7 @@ def prompt_for_step_or_skip(step_description: str) -> bool:
     """
     print(step_description)
     while True:
-        check = input("Continue? [(P)roceed, (R)etry, or (E)xit] ").strip()
+        check = input("Continue? [(P)roceed, (R)etry, or (E)xit] \n").strip()
         if check.upper() == "E":
             logging.warning("\nResponded with [%s]. Exiting.", check)
             sys.exit(1)
