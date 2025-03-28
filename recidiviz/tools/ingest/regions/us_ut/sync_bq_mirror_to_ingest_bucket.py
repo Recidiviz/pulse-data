@@ -351,7 +351,7 @@ if __name__ == "__main__":
 
     if in_gcp():
 
-        if args.destination_project:
+        if args.destination_project_id:
             raise ValueError(
                 "Please do not set a destination_project when running in GCP; we will use the execution env to determine the project to use."
             )
