@@ -44,6 +44,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NOT_ON_SUSPENSION_OF_DIRECT_SUPERVISION"
 
+# TODO(#40144): If we decide to undo the backdating workarounds for TN, we'll need to
+# revise this criterion.
 _QUERY_TEMPLATE = f"""
     SELECT
         state_code,

@@ -72,11 +72,12 @@ end date doesn't get adjusted.
     V           1/5         2/1     1/15            1/5                 2/10
     W           2/1         3/1     2/10            2/10                3/1
     X           3/1         3/15    3/20            3/1                 3/15
-    Y           3/15        4/1     N/A             3/15                4/15
+    Y           3/15        4/1     null            3/15                4/15
     Z           4/1         4/25    4/15            4/15                4/25
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
@@ -95,6 +96,8 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_NAME = (
 
 # TODO(#39827): Consider moving this logic upstream at some point (if we think it would
 # be correct/beneficial/possible to do so).
+# TODO(#40144): If we decide to undo the backdating workarounds for TN, we may want to
+# delete this view.
 US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
     WITH supervision_level_raw_text_sessions AS (
         SELECT
@@ -107,12 +110,12 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
             case_type,
             /* The following field helps us check if the session in question is the
             first in a continuous supervision session defined by `date_gap_id`). */
-            (ROW_NUMBER() OVER (continuous_session_window))=1 AS first_in_continuous_session,
+            (ROW_NUMBER() OVER continuous_session_window)=1 AS first_in_continuous_session,
             /* The following fields will be null if there is no subsequent session
             (i.e., if the session in question is a currently active one or is the last
             session in a continuous supervision session). */
-            LEAD(supervision_level_raw_text) OVER (continuous_session_window) AS next_supervision_level_raw_text_within_continuous_session,
-            LEAD(end_date_exclusive) OVER (continuous_session_window) AS next_end_date_exclusive_within_continuous_session,
+            LEAD(supervision_level_raw_text) OVER continuous_session_window AS next_supervision_level_raw_text_within_continuous_session,
+            LEAD(end_date_exclusive) OVER continuous_session_window AS next_end_date_exclusive_within_continuous_session,
         FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized`
         WHERE state_code='US_TN'
         WINDOW continuous_session_window AS (
@@ -165,8 +168,10 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
                     think these situations are ones where `PostedDate` reflects some
                     post hoc data entry/clean-up, since the date comes after a session
                     has already ended, rather than evidence of `start_date` being
-                    backdated, so we don't adjust `start_date` in such cases. */
-                    AND (current_plan.PostedDate<COALESCE(slrts.end_date_exclusive, '9999-12-31'))
+                    backdated, so we don't adjust `start_date` in such cases.
+                    We use the `nonnull_end_date_clause` here because we don't want to
+                    subtract a day from the exclusive end date when we do this logic. */
+                    AND (current_plan.PostedDate<{nonnull_end_date_clause('slrts.end_date_exclusive')})
                 ),
                 current_plan.PostedDate,
                 slrts.start_date
@@ -195,8 +200,10 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
                     /* As above, we restrict inference to cases where the `PostedDate`
                     of the next plan comes before the end of the next supervision-level
                     session to try to adjust for backdating but not post hoc data
-                    entry/clean-up. */
-                    AND (next_plan.PostedDate<COALESCE(slrts.next_end_date_exclusive_within_continuous_session, '9999-12-31'))
+                    entry/clean-up.
+                    We use the `nonnull_end_date_clause` here because we don't want to
+                    subtract a day from the exclusive end date when we do this logic. */
+                    AND (next_plan.PostedDate<{nonnull_end_date_clause('slrts.next_end_date_exclusive_within_continuous_session')})
                 ),
                 next_plan.PostedDate,
                 slrts.end_date_exclusive
