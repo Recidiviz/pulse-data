@@ -24,10 +24,6 @@ from recidiviz.utils import environment
 _MAX_SINGLE_VIEW_MATERIALIZATION_TIME_SECONDS = 60 * 6  # 6 min
 
 # Add overrides here for graph nodes that are known to be more expensive to process.
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# IF YOU MUST MODIFY THIS MAP, PLEASE ADD Recidiviz/infra-review AS A REVIEWER TO YOUR
-# PULL REQUEST.
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     # This is a foundational view that is known to be expensive - we're ok with this
     # taking a bit longer to materialize.
@@ -39,6 +35,11 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="population_projection_data",
         table_id="supervision_remaining_sentences",
+    ): (60 * 10),
+    # TODO(#40213) Improve performance of supervision_officer_eligibility_sessions
+    BigQueryAddress(
+        dataset_id="observations__officer_span",
+        table_id="supervision_officer_eligibility_sessions",
     ): (60 * 10),
 }
 
