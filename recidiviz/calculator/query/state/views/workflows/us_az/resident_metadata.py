@@ -35,27 +35,6 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
         WHERE state_code = 'US_AZ'
         AND compartment_level_1 = 'INCARCERATION'
         AND end_date_exclusive IS NULL
-    ),
-    all_sed_dates AS (
-        SELECT
-            person_id,
-            state_code,
-            group_projected_full_term_release_date_max as sed_date,
-        FROM all_residents
-        LEFT JOIN `{{project_id}}.{{us_az_normalized_state_dataset}}.state_sentence_group`
-        USING (state_code, person_id)
-        LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
-        USING (state_code, person_id, sentence_inferred_group_id)
-        QUALIFY ROW_NUMBER()
-            OVER (PARTITION BY person_id, state_code, sentence_inferred_group_id ORDER BY start_date DESC) = 1
-    ), sed_dates AS (
-        SELECT
-            state_code,
-            person_id,
-            -- TODO(#34661): Correctly select active sentence
-            MAX(sed_date) AS sed_date,
-        FROM all_sed_dates
-        GROUP BY 1, 2
     ), projected_tpr_visible_in_tool AS (
         SELECT
             state_code,
@@ -98,14 +77,19 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
             NULL
         ) AS projected_dtp_date,
         csed_date,
-    FROM sed_dates
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_az_projected_dates_materialized`
+    FROM all_residents
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_az_projected_dates_materialized` projected_dates
     USING (state_code, person_id)
     LEFT JOIN projected_tpr_visible_in_tool
     USING (state_code, person_id)
     LEFT JOIN projected_dtp_visible_in_tool
     USING (state_code, person_id)
-    WHERE end_date IS NULL
+    -- Use the sentence dates from the latest projected date span to include residents
+    -- who are incarcerated but do not have an active sentence
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY state_code, person_id
+        ORDER BY projected_dates.start_date DESC, projected_dates.end_date DESC
+    ) = 1
     """
 
 US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -114,9 +98,7 @@ US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_AZ_RESIDENT_METADATA_VIEW_DESCRIPTION,
     analyst_data_dataset="analyst_data",
-    us_az_normalized_state_dataset="us_az_normalized_state",
     sessions_dataset="sessions",
-    sentence_sessions_dataset="sentence_sessions",
     should_materialize=True,
 )
 
