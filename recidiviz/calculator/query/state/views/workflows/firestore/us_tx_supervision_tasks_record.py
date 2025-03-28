@@ -85,6 +85,11 @@ TASK_CONFIGS: List[TaskConfig] = [
         "table": "meets_scheduled_collateral_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
+    {
+        "type": "usTxTypeAgnosticContact",
+        "table": "meets_type_agnostic_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
 ]
 
 

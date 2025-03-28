@@ -410,12 +410,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
     ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_tx",
-        table_id="meets_type_agnostic_contact_standards",
-    ): (
-        "This criteria view will eventually be referenced by Texas tasks (Santy 12/30/2024)"
-    ),
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address: (
         "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
         "details (see looker#616) (Jenna Bellassai 11/18/2024)"
