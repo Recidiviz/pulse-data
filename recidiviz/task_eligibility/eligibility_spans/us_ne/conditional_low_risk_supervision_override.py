@@ -1,0 +1,64 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2025 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Shows the spans of time during which someone in NE is eligible
+for an override to Conditional Low Risk supervision.
+"""
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.candidate_populations.general import (
+    parole_active_supervision_population,
+)
+from recidiviz.task_eligibility.completion_events.general import (
+    transfer_to_limited_supervision,
+)
+from recidiviz.task_eligibility.criteria.general import (
+    no_supervision_violation_within_6_months,
+    on_parole_at_least_one_year,
+    supervision_level_is_minimum,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
+    compliant_with_special_conditions,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
+    state_code=StateCode.US_NE,
+    task_name="CONDITIONAL_LOW_RISK_SUPERVISION_OVERRIDE",
+    description=__doc__,
+    candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
+    criteria_spans_view_builders=[
+        # TODO(#40003): Implement special conditions criterion
+        compliant_with_special_conditions.VIEW_BUILDER,
+        # TODO(#40171): Refine this criterion once we have more information on which
+        # violations to include/exclude.
+        no_supervision_violation_within_6_months.VIEW_BUILDER,
+        on_parole_at_least_one_year.VIEW_BUILDER,
+        # In NE, this includes 'LOW', 'DV: LOW', and 'SO: LOW'
+        # TODO(#40214): Clarify whether this should use raw ORAS score instead of
+        # ingested supervision level.
+        supervision_level_is_minimum.VIEW_BUILDER,
+    ],
+    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

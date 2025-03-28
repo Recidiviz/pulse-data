@@ -109,6 +109,10 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 table_id="all_state_specific_criteria",
             ),
             BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ne",
+                table_id="all_state_specific_criteria",
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_completion_events_us_ar",
                 table_id="all_state_specific_completion_events",
             ),
@@ -251,6 +255,13 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
             ),
             BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_tx",
+                table_id="all_tasks__collapsed",
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_spans_us_ne", table_id="all_tasks"
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_spans_us_ne",
                 table_id="all_tasks__collapsed",
             ),
             # ... add addresses here as tasks for new states are added ...
