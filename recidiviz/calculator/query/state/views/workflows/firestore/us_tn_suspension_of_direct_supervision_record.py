@@ -173,7 +173,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "SPECIAL CONDITIONS" AS criteria,
+                "LATEST SPECIAL CONDITIONS" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -189,7 +189,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "EMPLOYMENT" AS criteria,
+                "LATEST EMPLOYMENT" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
