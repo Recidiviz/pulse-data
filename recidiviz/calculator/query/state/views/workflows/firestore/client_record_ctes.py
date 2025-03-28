@@ -206,6 +206,7 @@ _CLIENT_RECORD_CASE_TYPE_CTE = """
             state_code,
             person_id,
             case_type,
+            case_type_raw_text,
         FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
         WHERE state_code IN ({workflows_supervision_states})
             AND CURRENT_DATE('US/Eastern') >= start_date
@@ -880,6 +881,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sc.officer_id,
           sc.district,
           ct.case_type,
+          ct.case_type_raw_text,
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
@@ -930,6 +932,7 @@ _CLIENTS_CTE = """
             person_name,
             officer_id,
             case_type,
+            case_type_raw_text,
             supervision_type,
             supervision_level,
             supervision_level_start,
