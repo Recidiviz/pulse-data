@@ -91,7 +91,6 @@ class EntityDashboardElementFactory:
             color_application=LookMLColorApplication(
                 collection_id="recidiviz-color-collection",
                 palette_id="recidiviz-color-collection-categorical-0",
-                options={"steps": "5"},
             ),
             listen=listen,
             width=FULL_SCREEN_WIDTH,

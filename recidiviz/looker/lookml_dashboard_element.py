@@ -148,10 +148,6 @@ class LookMLColorApplication:
 
     collection_id: str = attr.field(validator=attr_validators.is_non_empty_str)
     palette_id: str = attr.field(validator=attr_validators.is_non_empty_str)
-    # TODO(#23292) i was unable to find documentation on the options field and what are valid values
-    options: Optional[Dict[str, str]] = attr.field(
-        validator=attr_validators.is_opt_dict, default=None
-    )
 
     def build(self) -> str:
         """Return a formatted string representing this color application parameter"""
