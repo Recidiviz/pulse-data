@@ -25,4 +25,11 @@ max_allowed_error_overrides:
   - validation_name: outliers_staff_count_percent_change_intermonth
     hard_max_allowed_error_override: .05
     override_reason: This is likely expected variation.
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: product_roster_upcoming_blocks
+    hard_num_allowed_rows_override: 15
+    override_reason: >-
+      We block PA I's who no longer appear in state_staff, no longer have a caseload, or
+      have a name change (in which case a new staff member with the new email is
+      introduced). There seem to be about 10 typically on any given week. Filtering out
+      weeks with lower than 15 blocks to reduce noise.
