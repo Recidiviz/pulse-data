@@ -407,6 +407,17 @@ period_info_agg AS (
         ROW_NUMBER()OVER(PARTITION BY Period_ID_Number ORDER BY start_date ASC) AS rn,
         in_custody_flag,
     FROM period_info_agg
+    WHERE 
+        status IS NULL
+        OR status NOT IN(
+            "Death reported",
+            "Deported OOC",
+            "Death",
+            "Discharge",
+            "Erroneous Release Returned to ID",
+            "Full pardon",
+            "Sentence Reversed"
+        )
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tx",
