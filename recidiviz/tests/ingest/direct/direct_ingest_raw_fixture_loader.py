@@ -24,26 +24,12 @@ from concurrent import futures
 from types import ModuleType
 from typing import Dict, Iterable, List
 
-import attr
-import pandas as pd
 import pytz
-from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
-    RawDataTableBigQuerySchemaBuilder,
-)
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRawFileConfig,
-    get_region_raw_file_config,
-)
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    RAW_DATA_METADATA_COLUMNS,
-)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -53,64 +39,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    fixture_path_for_raw_data_dependency,
-    load_dataframe_from_path,
-)
-from recidiviz.utils import csv
-
-
-# TODO(#36159): enforce that ALL columns of a raw file config are in a fixture file, not
-# just a subset
-def check_found_columns_are_subset_of_config(
-    raw_file_config: DirectIngestRawFileConfig, found_columns: Iterable[str]
-) -> None:
-    """Check that all of the columns that are in the raw data config are also in
-    the columns found in the CSV. If there are columns that are not in the raw data
-    configuration but found in the CSV, then we throw an error to have both match
-    (unless we are in a state where we allow incomplete configurations, like
-    testing).
-    """
-
-    # BQ is case-agnostic when evaluating column names so we can be as well.
-    columns_from_file_config_lower = {
-        column.name.lower() for column in raw_file_config.current_columns
-    }
-    found_columns_lower = set(c.lower() for c in found_columns)
-
-    if len(found_columns_lower) != len(list(found_columns)):
-        raise ValueError(
-            f"Found duplicate columns in found_columns list: {list(found_columns)}"
-        )
-
-    if not found_columns_lower.issubset(columns_from_file_config_lower):
-        extra_columns = found_columns_lower.difference(columns_from_file_config_lower)
-        raise ValueError(
-            f"Found columns in raw file {sorted(extra_columns)} that are not "
-            f"defined or are marked as deleted in the raw data configuration for "
-            f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
-            f"are defined in the raw data configuration."
-        )
-
-
-@attr.define
-class RawDataFixture:
-    config: DirectIngestViewRawFileDependency
-    fixture_data_df: pd.DataFrame
-    bq_dataset_id: str
-
-    @property
-    def address(self) -> BigQueryAddress:
-        return BigQueryAddress(
-            dataset_id=self.bq_dataset_id,
-            table_id=self.config.file_tag,
-        )
-
-    @property
-    def schema(self) -> List[SchemaField]:
-        return RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
-            raw_file_config=self.config.raw_file_config
-        )
+from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 
 
 class DirectIngestRawDataFixtureLoader:
@@ -157,63 +86,45 @@ class DirectIngestRawDataFixtureLoader:
         self.bq_client.create_dataset_if_necessary(
             dataset_id=self.raw_tables_dataset_id
         )
-        with futures.ThreadPoolExecutor(
-            # Conservatively allow only half as many workers as allowed connections.
-            # Lower this number if we see "urllib3.connectionpool:Connection pool is
-            # full, discarding connection" errors.
-            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
-        ) as executor:
+        with futures.ThreadPoolExecutor() as executor:
             create_table_futures = [
                 executor.submit(
-                    self._load_fixture_to_emulator,
-                    fixture=fixture,
+                    self._load_dependency_to_emulator,
+                    dependency=dependency,
+                    ingest_test_identifier=ingest_test_identifier,
                     create_tables=create_tables,
                 )
-                for fixture in self._generate_raw_data_fixtures(
-                    ingest_views, ingest_test_identifier
-                )
+                for dependency in self._raw_dependencies_for_ingest_views(ingest_views)
             ]
         for future in futures.as_completed(create_table_futures):
             future.result()
 
-    def _load_fixture_to_emulator(
-        self, fixture: RawDataFixture, create_tables: bool
+    def _load_dependency_to_emulator(
+        self,
+        dependency: DirectIngestViewRawFileDependency,
+        ingest_test_identifier: str,
+        create_tables: bool,
     ) -> None:
+        """Reads the given dependency into the emulator."""
+        fixture = RawDataFixture(dependency)
+        fixture_df = fixture.read_fixture_file_into_dataframe(ingest_test_identifier)
+
         if create_tables:
             self.emulator_test.create_mock_table(fixture.address, fixture.schema)
-        self.bq_client.stream_into_table(
-            fixture.address,
-            rows=fixture.fixture_data_df.to_dict("records"),
-        )
-
-    def _generate_raw_data_fixtures(
-        self,
-        ingest_views: List[DirectIngestViewQueryBuilder],
-        ingest_test_identifier: str,
-    ) -> Iterable[RawDataFixture]:
-        """
-        Generates the unique set of RawDataFixture objects for the given
-        ingest views, assumed file update datetime, and raw fixture filename.
-        All raw fixture files must have names matching the ingest_test_identifier.
-        """
-        for config in self._raw_dependencies_for_ingest_views(ingest_views):
-            try:
-                fixture_df = self._read_raw_data_fixture(
-                    config,
-                    ingest_test_identifier,
-                )
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to load fixture for "
-                    f"{config.raw_table_dependency_arg_name} for test "
-                    f"{ingest_test_identifier}"
-                ) from e
-            yield RawDataFixture(
-                config=config,
-                bq_dataset_id=self.raw_tables_dataset_id,
-                fixture_data_df=fixture_df,
+        try:
+            self.bq_client.stream_into_table(
+                fixture.address,
+                rows=fixture_df.to_dict("records"),
             )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to load DataFrame records into BigQueryEmulator"
+                f" for {dependency.raw_table_dependency_arg_name} for test "
+                f"{ingest_test_identifier}"
+            ) from e
 
+    # TODO(#38355) This will just be the set of file tags
+    # when all fixtures are @ALL fixtures
     def _raw_dependencies_for_ingest_views(
         self,
         ingest_views: List[DirectIngestViewQueryBuilder],
@@ -256,51 +167,3 @@ class DirectIngestRawDataFixtureLoader:
                 raw_table_dependency_arg_name=raw_table_dependency_arg_name,
                 region_raw_table_config=self.raw_file_config,
             )
-
-    def _check_valid_fixture_columns(
-        self,
-        raw_file_dependency_config: DirectIngestViewRawFileDependency,
-        fixture_file: str,
-    ) -> List[str]:
-        """Checks that the raw data fixture columns are valid given it's config."""
-        fixture_columns = csv.get_csv_columns(fixture_file)
-        found_metadata = set(fixture_columns).intersection(RAW_DATA_METADATA_COLUMNS)
-        if missing_required := RAW_DATA_METADATA_COLUMNS - found_metadata:
-            raise ValueError(
-                f"Did NOT find metadata columns [{missing_required}] for fixture {fixture_file}"
-            )
-        columns_to_check = [
-            col for col in fixture_columns if col not in RAW_DATA_METADATA_COLUMNS
-        ]
-        check_found_columns_are_subset_of_config(
-            raw_file_config=raw_file_dependency_config.raw_file_config,
-            found_columns=columns_to_check,
-        )
-        return fixture_columns
-
-    # TODO(#38355) Read all raw data fixtures from "raw data" version, not "latest".
-    def _read_raw_data_fixture(
-        self,
-        raw_file_dependency_config: DirectIngestViewRawFileDependency,
-        test_identifier: str,
-    ) -> pd.DataFrame:
-        """Reads the raw data fixture file for the provided dependency into a Dataframe."""
-        raw_fixture_path = fixture_path_for_raw_data_dependency(
-            self.state_code, raw_file_dependency_config, test_identifier
-        )
-        print(
-            f"Loading fixture data for raw file [{raw_file_dependency_config.file_tag}] "
-            f"from file path [{raw_fixture_path}]."
-        )
-        fixture_columns = self._check_valid_fixture_columns(
-            raw_file_dependency_config, raw_fixture_path
-        )
-        df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
-        file_ids_per_update_dt = set(
-            df.groupby("update_datetime").file_id.nunique().values
-        )
-        if file_ids_per_update_dt and file_ids_per_update_dt != {1}:
-            raise ValueError(
-                f"{raw_fixture_path} has multiple file_id values per update_datetime"
-            )
-        return df

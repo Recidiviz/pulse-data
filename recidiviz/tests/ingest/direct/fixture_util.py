@@ -173,6 +173,8 @@ def load_dataframe_from_path(
     return df
 
 
+# TODO(#38355) Use the method on RawDataFixture instead
+# when all fixtures are @All fixtures
 def write_raw_fixture_dataframe_to_path(
     df: pd.DataFrame,
     raw_fixture_path: str,
@@ -185,12 +187,6 @@ def write_raw_fixture_dataframe_to_path(
     for raw data.
     """
     os.makedirs(os.path.dirname(raw_fixture_path), exist_ok=True)
-
-    # TODO(#38355) Uncomment this check when all fixtures are @ALL fixtures
-    # if not set(df.columns).issuperset(RAW_DATA_METADATA_COLUMNS):
-    #     raise ValueError(
-    #         f"Dataframe columns must contain all metadata columns: {RAW_DATA_METADATA_COLUMNS}"
-    #     )
 
     if IS_DELETED_COL_NAME not in df.columns:
         df[IS_DELETED_COL_NAME] = False
