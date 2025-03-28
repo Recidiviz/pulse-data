@@ -1742,6 +1742,10 @@ US_TX:
   RECIDIVIZ_REFERENCE_RiskAssessmentEvents:
     task_eligibility_criteria_us_tx.meets_risk_assessment_standards: |-
       Used as a reference table to determine the next due assessment based event type and case type. 02/13/2025.
+  SupervisionPeriod:
+    workflows_views.client_record: |-
+      Used to pull in expiration dates into the client record since we have it on the supervision period level and not the
+      sentence level so we can't ingest it at the moment. 03/28/2025
   ViolationResponses:
     task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
       |-

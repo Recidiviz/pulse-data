@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
     us_tn_fines_fees_info,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tx.shared_ctes import (
+    US_TX_MAX_TERMINATION_DATES,
+)
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
@@ -84,6 +87,10 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         GROUP BY 1, 2, 3, 4
     ),
 
+    us_tx_max_termination_dates AS (
+        {US_TX_MAX_TERMINATION_DATES}
+    ),
+
     supervision_cases AS (
         SELECT
           sessions.person_id,
@@ -107,7 +114,8 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
                 projected_end_ut.projected_completion_date_max,
                 LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
                 ca_pp.EarnedDischargeDate,
-                ca_pp.ControllingDischargeDate
+                ca_pp.ControllingDischargeDate,
+                us_tx_max_termination_dates.tx_max_termination_Date
             )
           ) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
@@ -146,6 +154,9 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         LEFT JOIN us_or_caseloads
             ON sessions.state_code = "US_OR"
             AND sessions.person_id = us_or_caseloads.person_id
+        LEFT JOIN us_tx_max_termination_dates
+            ON LTRIM(pei.person_external_id, "0") = LTRIM(SID_Number, "0")
+            AND sessions.state_code = "US_TX"
         LEFT JOIN (
             {workflows_state_specific_supervision_type()}
         ) state_specific_supervision_type

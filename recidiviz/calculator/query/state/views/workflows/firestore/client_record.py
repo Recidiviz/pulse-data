@@ -176,6 +176,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_pa_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
+    us_tx_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=True,
     workflows_supervision_states=list_to_query_string(
         WORKFLOWS_SUPERVISION_STATES, quoted=True
