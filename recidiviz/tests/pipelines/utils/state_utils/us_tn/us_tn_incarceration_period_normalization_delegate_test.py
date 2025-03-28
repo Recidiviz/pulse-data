@@ -76,7 +76,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
             release_date=date(2022, 7, 1),
-            admission_reason_raw_text="PAFA-VIOLT",
+            admission_reason_raw_text="PAFA-VIOLT-T",
             external_id="ip-1",
         )
 
@@ -91,7 +91,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
             release_date=date(2022, 7, 1),
-            admission_reason_raw_text="PRFA-VIOLW",
+            admission_reason_raw_text="PRFA-VIOLW-T",
             external_id="ip-2",
         )
 
@@ -106,7 +106,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
             release_date=date(2022, 7, 1),
-            admission_reason_raw_text="PRFA-NEWCH",
+            admission_reason_raw_text="PRFA-NEWCH-T",
             external_id="ip-2",
         )
 
@@ -292,7 +292,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2018, 5, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -305,7 +305,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 5, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
@@ -421,7 +421,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2018, 9, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -486,7 +486,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2018, 9, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -551,7 +551,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2018, 9, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -700,7 +700,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 9, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text="PAFA-PAVOK",
+            release_reason_raw_text="PAFA-PAVOK-P",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(

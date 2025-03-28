@@ -126,14 +126,14 @@ class UsTnIncarcerationNormalizationDelegate(
 
 RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES: List[str] = [
     # Revocations are logged after temporary custody due to a violation.
-    "PAFA-PAVOK",  # Parole Revoked
+    "PAFA-PAVOK-P",  # Parole Revoked
     "PAFA-REVOK",  # Revocation
-    "PRFA-PRVOK",  # Probation revoked
-    "PRFA-PTVOK",  # Partial revocation
-    "CCFA-REVOK",  # Revocation
-    "CCFA-PTVOK",  # Partial revocation
-    "PAFA-RECIS",  # Rescission
-    "DVCT-PRVOK",  # Revocation
+    "PRFA-PRVOK-P",  # Probation revoked
+    "PRFA-PTVOK-P",  # Partial revocation
+    "CCFA-REVOK-P",  # Revocation
+    "CCFA-PTVOK-P",  # Partial revocation
+    "PAFA-RECIS-P",  # Rescission
+    "DVCT-PRVOK-P",  # Revocation
 ]
 
 
