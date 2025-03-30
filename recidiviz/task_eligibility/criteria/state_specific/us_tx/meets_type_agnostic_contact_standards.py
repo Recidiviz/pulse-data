@@ -68,42 +68,18 @@ person_info_agg AS (
 -- required at the start of each contact period.
 contact_required AS (
   SELECT
-        supervision_level,
-        case_type,
-        CONCAT(
-            CASE 
-                WHEN CAST(SCHEDULED_HOME_REQ AS INT64) != 0 
-                    THEN CONCAT("SCHEDULED HOME: ", SCHEDULED_HOME_REQ, " ")
-                ELSE ""
-            END,
-            CASE
-                WHEN CAST(SCHEDULED_FIELD_REQ AS INT64) != 0 
-                    THEN CONCAT("SCHEDULED FIELD: ", SCHEDULED_FIELD_REQ, " ")
-                ELSE ""
-            END,
-            CASE
-                WHEN CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0 
-                    THEN CONCAT("UNSCHEDULED FIELD: ", UNSCHEDULED_FIELD_REQ, " ")
-                ELSE ""
-            END,
-            CASE
-                WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0 
-                    THEN CONCAT("UNSCHEDULED HOME: ", UNSCHEDULED_HOME_REQ, " ")
-                ELSE ""
-            END,
-            CASE
-                WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 
-                    THEN CONCAT("SCHEDULED ELECTRONIC: ", SCHEDULED_ELECTRONIC_REQ, " ")
-                ELSE ""
-            END,
-            CASE
-                WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0 
-                    THEN CONCAT("SCHEDULED OFFICE: ", SCHEDULED_OFFICE_REQ, " ")
-                ELSE ""
-            END
-        ) AS types_and_amounts_due,
-        frequency_in_months,
+        *,
+        TO_JSON(STRUCT(
+          IF(CAST(SCHEDULED_HOME_REQ AS INT64) != 0, SCHEDULED_HOME_REQ, NULL) AS scheduled_home_due,
+          IF(CAST(SCHEDULED_FIELD_REQ AS INT64) != 0, SCHEDULED_FIELD_REQ, NULL) AS scheduled_field_due,
+          IF(CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0, UNSCHEDULED_FIELD_REQ, NULL) AS unscheduled_field_due,
+          IF(CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0, UNSCHEDULED_HOME_REQ, NULL) AS unscheduled_home_due,
+          IF(CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0, SCHEDULED_ELECTRONIC_REQ, NULL) AS scheduled_electronic_due,
+          IF(CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0, SCHEDULED_OFFICE_REQ, NULL) AS scheduled_office_due
+        )) AS types_and_amounts_due
     FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest`
+    -- TODO(#40238): Figure out how to handle multiple type agnostic requirements for MAXIMUM GENERAL 
+    WHERE NOT (contact_types_accepted = 'UNSCHEDULED FIELD,UNSCHEDULED HOME,' AND frequency_in_months = '3')
 ),
 -- Creates table of all contacts and adds scheduled/unscheculed prefix
 contact_info AS (
@@ -134,7 +110,7 @@ person_info_with_contact_types_accepted AS (
         pia.supervision_level,
         pia.case_type,
         pia.person_id,
-        contact_types_accepted,
+        cca.contact_types_accepted,
         pia.start_date,
         pia.end_date,
         DATE_TRUNC(start_date, MONTH) AS month_start,
@@ -142,7 +118,7 @@ person_info_with_contact_types_accepted AS (
         DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
         FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(cca.frequency_in_months AS INT64)) as num_periods 
     FROM person_info_agg pia
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` cca
+    LEFT JOIN contact_required cca
         ON cca.supervision_level = pia.supervision_level 
         AND  cca.case_type = pia.case_type
     -- Check to see if this supervision level and case type has any agnostic contacts
@@ -201,7 +177,7 @@ lookback_cte AS
     FROM clean_empty_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
-        AND p.contact_types_accepted LIKE CONCAT("%",ci.contact_type,"%") 
+        AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
         AND ci.contact_date BETWEEN p.month_start and p.month_end 
 ),
 -- Union all critical dates (start date, end date, contact dates)
@@ -255,7 +231,7 @@ divided_periods AS (
         contact_type,
         contact_types_accepted,
         critical_date as period_start,
-        LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
+        LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date) AS period_end,
         case_type,
         frequency_in_months,
         supervision_level,
@@ -280,7 +256,7 @@ divided_periods_with_contacts as (
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
         AND ci.contact_date BETWEEN p.month_start and p.period_end 
-        AND p.contact_types_accepted LIKE CONCAT("%",ci.contact_type,"%") 
+        AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
     WHERE period_end IS NOT NULL
 ),
 -- CTE that counts the contacts by type up to a certain date
@@ -304,6 +280,8 @@ compliance_check AS (
         period_end as end_date,
         month_start,
         month_end as contact_due_date,
+        supervision_level,
+        case_type,
         CASE
             WHEN CAST(SCHEDULED_HOME_REQ AS INT64) <= scheduled_home_count AND CAST(SCHEDULED_HOME_REQ AS INT64) != 0
                 THEN TRUE
@@ -320,14 +298,15 @@ compliance_check AS (
             ELSE FALSE
         END AS meets_criteria,
         TO_JSON(STRUCT(
-            CONCAT("SCHEDULED HOME: ", scheduled_home_count, " ") AS scheduled_home_done,
-            CONCAT("SCHEDULED FIELD: ", scheduled_field_count, " ") AS scheduled_field_done,
-            CONCAT("UNSCHEDULED FIELD: ", unscheduled_field_count, " ") AS unscheduled_field_done,
-            CONCAT("UNSCHEDULED HOME: ", unscheduled_home_count, " ") AS unscheduled_home_done,
-            CONCAT("SCHEDULED ELECTRONIC: ", scheduled_electronic_count, " ") AS scheduled_electronic_done,
-            CONCAT("SCHEDULED OFFICE: ", scheduled_office_count, " ") AS scheduled_office_done
+            scheduled_home_count AS scheduled_home_done,
+            scheduled_field_count AS scheduled_field_done,
+            unscheduled_field_count AS unscheduled_field_done,
+            unscheduled_home_count AS unscheduled_home_done,
+            scheduled_electronic_count AS scheduled_electronic_done,
+            scheduled_office_count AS scheduled_office_done
         )) AS types_and_amounts_done,
         types_and_amounts_due,
+        contact_required.contact_types_accepted,
         period_type,
         CASE 
             WHEN cc.frequency_in_months = 1 
@@ -338,8 +317,7 @@ compliance_check AS (
     FROM contact_count cc
     LEFT JOIN contact_required
         USING (supervision_level, case_type)
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` caa
-         USING(supervision_level, case_type)
+    
 ),
 -- Finalize periods
 finalized_periods AS (
@@ -353,18 +331,21 @@ finalized_periods AS (
         contact_due_date,
         types_and_amounts_done,
         types_and_amounts_due,
+        RTRIM(contact_types_accepted,",") as contact_types_accepted,
         period_type,
-        MAX(contact_date) OVER (PARTITION BY cc.person_id,types_and_amounts_due) as last_contact_date,
+        MAX(contact_date) OVER (PARTITION BY cc.person_id, contact_types_accepted) as last_contact_date,
         CASE WHEN
             meets_criteria IS FALSE AND CURRENT_DATE > end_date
             THEN TRUE
             ELSE FALSE
         END AS overdue_flag,
         frequency,
+        supervision_level,
+        case_type
     FROM compliance_check cc
     LEFT JOIN contact_info ci
       ON cc.person_id = ci.person_id
-        AND cc.types_and_amounts_due LIKE CONCAT("%",ci.contact_type,"%") 
+        AND ci.contact_type IN UNNEST(SPLIT(contact_types_accepted, ','))
         AND ci.contact_date < end_date
 )
 SELECT 
@@ -372,54 +353,67 @@ SELECT
 FROM finalized_periods
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        state_code=StateCode.US_TX,
-        normalized_state_dataset="us_tx_normalized_state",
-        raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_TX,
+    normalized_state_dataset="us_tx_normalized_state",
+    raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
+    ),
+    reasons_fields=[
+        ReasonsField(
+            name="last_contact_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date of the last contact.",
         ),
-        reasons_fields=[
-            ReasonsField(
-                name="last_contact_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of the last contact.",
-            ),
-            ReasonsField(
-                name="contact_due_date",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Due date of the contact.",
-            ),
-            ReasonsField(
-                name="types_and_amounts_due",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="The type and amount due.",
-            ),
-            ReasonsField(
-                name="types_and_amounts_done",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="The type and amount due.",
-            ),
-            ReasonsField(
-                name="period_type",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="The type of period.",
-            ),
-            ReasonsField(
-                name="overdue_flag",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Flag that indicates whether contact was missed.",
-            ),
-            ReasonsField(
-                name="frequency",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Contact cadence.",
-            ),
-        ],
-    )
+        ReasonsField(
+            name="contact_due_date",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Due date of the contact.",
+        ),
+        ReasonsField(
+            name="types_and_amounts_due",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The type and amount due.",
+        ),
+        ReasonsField(
+            name="types_and_amounts_done",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The type and amount due.",
+        ),
+        ReasonsField(
+            name="period_type",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The type of period.",
+        ),
+        ReasonsField(
+            name="overdue_flag",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Flag that indicates whether contact was missed.",
+        ),
+        ReasonsField(
+            name="frequency",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Contact cadence.",
+        ),
+        ReasonsField(
+            name="contact_types_accepted",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Types of contacts that satisfy this criteria",
+        ),
+        ReasonsField(
+            name="supervision_level",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The supervision level that determines these contact standards",
+        ),
+        ReasonsField(
+            name="case_type",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The case type that determines these contact standards",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
