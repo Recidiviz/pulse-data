@@ -257,15 +257,17 @@ class DirectIngestViewQueryBuilder:
         raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
     ) -> None:
         """For local testing, prints out either the date-bounded or the latest version of the view's query."""
-        self.build_query(
-            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_data_source_instance=raw_data_source_instance,
-                # TZ information was causing this to not work on BigQuery when printed here.
-                # However, having no TZ information defaults to UTC.
-                # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
-                raw_data_datetime_upper_bound=datetime.datetime.now(
-                    tz=pytz.UTC
-                ).replace(tzinfo=None),
+        print(
+            self.build_query(
+                query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    raw_data_source_instance=raw_data_source_instance,
+                    # TZ information was causing this to not work on BigQuery when printed here.
+                    # However, having no TZ information defaults to UTC.
+                    # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
+                    raw_data_datetime_upper_bound=datetime.datetime.now(
+                        tz=pytz.UTC
+                    ).replace(tzinfo=None),
+                )
             )
         )
 
