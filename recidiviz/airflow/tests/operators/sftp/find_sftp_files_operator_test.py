@@ -17,7 +17,6 @@
 """Tests for FindSftpFilesOperator"""
 import datetime
 import stat
-import unittest
 from typing import List
 from unittest.mock import MagicMock, create_autospec, patch
 
@@ -31,7 +30,7 @@ from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
     FakeUsXxSftpDownloadDelegate,
 )
-from recidiviz.airflow.tests.test_utils import execute_task
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest, execute_task
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
@@ -57,7 +56,7 @@ class FakeFindSftpDownloadDelegate(FakeUsXxSftpDownloadDelegate):
 @patch.object(
     SftpDownloadDelegateFactory, "build", return_value=FakeFindSftpDownloadDelegate()
 )
-class TestFindSftpFilesOperator(unittest.TestCase):
+class TestFindSftpFilesOperator(AirflowIntegrationTest):
     """Tests for FindSftpFilesOperator"""
 
     def setUp(self) -> None:

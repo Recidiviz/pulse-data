@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for RecidivizGcsFileTransformOperator"""
 import datetime
-import unittest
 from unittest.mock import MagicMock, create_autospec, patch
 
 from airflow import DAG
@@ -27,7 +26,7 @@ from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
     FakeUsXxSftpDownloadDelegate,
 )
-from recidiviz.airflow.tests.test_utils import execute_task
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest, execute_task
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -39,7 +38,7 @@ TEST_PROJECT_ID = "recidiviz-testing"
 @patch.object(
     SftpDownloadDelegateFactory, "build", return_value=FakeUsXxSftpDownloadDelegate()
 )
-class TestRecidivizGcsFileTransformOperator(unittest.TestCase):
+class TestRecidivizGcsFileTransformOperator(AirflowIntegrationTest):
     """Tests for RecidivizGcsFileTransformOperator"""
 
     def setUp(self) -> None:
