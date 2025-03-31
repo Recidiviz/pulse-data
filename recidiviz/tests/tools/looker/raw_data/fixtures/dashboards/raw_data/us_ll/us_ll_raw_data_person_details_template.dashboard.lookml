@@ -85,7 +85,7 @@
       us_ll_datetimeNoParsers.COL2__raw,
       us_ll_datetimeNoParsers.file_id,
       us_ll_datetimeNoParsers.is_deleted]
-    sorts: [us_ll_datetimeNoParsers.COL1]
+    sorts: [us_ll_datetimeNoParsers.COL2__raw]
     note_display: hover
     note_text: "Testing datetime field with no datetime sql parsers defined"
     listen: 
@@ -126,7 +126,7 @@
       us_ll_customDatetimeSql.COL2__raw,
       us_ll_customDatetimeSql.file_id,
       us_ll_customDatetimeSql.is_deleted]
-    sorts: [us_ll_customDatetimeSql.COL1]
+    sorts: [us_ll_customDatetimeSql.COL2__raw]
     note_display: hover
     note_text: "Testing custom datetime sql parsing associated with the datetime field"
     listen: 

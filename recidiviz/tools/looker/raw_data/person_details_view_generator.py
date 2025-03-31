@@ -211,7 +211,7 @@ def _get_dimensions_for_raw_file_view(
             dimensions.append(_get_datetime_dimension_group(column))
 
         col_params = [
-            LookMLFieldParameter.label(_label_name_for_column(column)),
+            LookMLFieldParameter.label(raw_field_name_for_column(column)),
             LookMLFieldParameter.type(LookMLFieldType.STRING),
         ]
 
@@ -253,7 +253,7 @@ def _get_dimensions_for_raw_file_view(
 
         dimensions.append(
             DimensionLookMLViewField(
-                field_name=_label_name_for_column(column),
+                field_name=raw_field_name_for_column(column),
                 parameters=col_params,
             )
         )
@@ -261,9 +261,11 @@ def _get_dimensions_for_raw_file_view(
     return dimensions
 
 
-def _label_name_for_column(column: RawTableColumnInfo) -> str:
+def raw_field_name_for_column(column: RawTableColumnInfo) -> str:
     """
-    Return the label to use for this column
+    Return the raw (unparsed) field name to use for this column
+    For datetime columns, the datetimes might be in a format that Looker can't parse,
+    so we need to create a separate field for the raw string value
     """
     return column.name if not column.is_datetime else f"{column.name}__raw"
 
@@ -290,7 +292,7 @@ def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
         field_name=col.name,
         parameters=[
             LookMLFieldParameter.description(
-                f"[DATE PARSED FROM {_label_name_for_column(col)}]{col.description or ''}"
+                f"[DATE PARSED FROM {raw_field_name_for_column(col)}]{col.description or ''}"
             ),
             LookMLFieldParameter.type(LookMLFieldType.TIME),
             LookMLFieldParameter.timeframes(
@@ -350,13 +352,15 @@ def _generate_raw_file_view(
     # or all the columns if there aren't any primary key columns
     if config.primary_key_cols:
         cols_to_concat = [
-            _label_name_for_column(col)
+            raw_field_name_for_column(col)
             for col in config.current_columns
             if col.name in config.primary_key_cols
         ]
         drill_fields_cols = cols_to_concat
     else:
-        cols_to_concat = [_label_name_for_column(col) for col in config.current_columns]
+        cols_to_concat = [
+            raw_field_name_for_column(col) for col in config.current_columns
+        ]
         drill_fields_cols = []
     all_primary_keys = [FILE_ID_COL_NAME] + cols_to_concat
     primary_key_string = ", ".join(

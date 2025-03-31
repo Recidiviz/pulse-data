@@ -54,6 +54,7 @@ from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     RAW_DATA_UP_TO_DATE_VIEWS_OPTION,
     VIEW_TYPE_PARAM_NAME,
     _generate_shared_fields_view,
+    raw_field_name_for_column,
 )
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
@@ -215,23 +216,26 @@ def _generate_filters_for_state(
 
 
 def _get_sort_cols(file_config: DirectIngestRawFileConfig) -> List[str]:
-    """first_datetime_col: List[str] = []
+    first_datetime_col: List[str] = []
     # Get the first datetime column with valid parsers
     for col in file_config.current_columns:
         if col.is_datetime and col.datetime_sql_parsers:
-            return [col.name]
+            # For datetime columns, there is no existing lookml field
+            # with the same name as the column, so we need to use the raw
+            # field name that we created in the view generator
+            return [raw_field_name_for_column(col)]
         if not first_datetime_col and col.is_datetime:
-            first_datetime_col = [col.name]
+            first_datetime_col = [raw_field_name_for_column(col)]
 
     # Otherwise, the first datetime column
     if first_datetime_col:
         return first_datetime_col
 
-    # Otherwise the primary keys"""
-
-    # TODO(#23292) we don't actually include the datetime sort columns in the dashboard
-    # so just return the primary key columns for now
-    return file_config.primary_key_cols
+    # Otherwise the primary keys
+    return [
+        raw_field_name_for_column(file_config.get_column_info(c))
+        for c in file_config.primary_key_cols
+    ]
 
 
 def _generate_elements_for_state(
