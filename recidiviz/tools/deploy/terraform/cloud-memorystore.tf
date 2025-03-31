@@ -17,7 +17,7 @@
 
 resource "google_redis_instance" "case_triage_rate_limiter_cache" {
   name           = "rate-limit-cache"
-  region         = var.app_engine_region
+  region         = var.us_east_region
   memory_size_gb = 1
   tier           = "BASIC"
   redis_version  = "REDIS_5_0"
@@ -25,7 +25,7 @@ resource "google_redis_instance" "case_triage_rate_limiter_cache" {
 
 resource "google_redis_instance" "case_triage_sessions_cache" {
   name           = "case-triage-sessions-cache"
-  region         = var.app_engine_region
+  region         = var.us_east_region
   memory_size_gb = 1
   tier           = "BASIC"
   redis_version  = "REDIS_5_0"
@@ -33,7 +33,7 @@ resource "google_redis_instance" "case_triage_sessions_cache" {
 
 resource "google_redis_instance" "pathways_metric_cache" {
   name           = "pathways-metric-cache"
-  region         = var.app_engine_region
+  region         = var.us_east_region
   memory_size_gb = 1
   tier           = "BASIC"
   redis_version  = "REDIS_5_0"
@@ -41,7 +41,7 @@ resource "google_redis_instance" "pathways_metric_cache" {
 
 resource "google_redis_instance" "admin_panel_cache" {
   name           = "admin-panel-cache"
-  region         = var.region
+  region         = var.us_central_region
   memory_size_gb = 1
   tier           = "BASIC"
   redis_version  = "REDIS_5_0"

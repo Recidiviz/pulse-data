@@ -147,7 +147,7 @@ resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
   # when this cron job runs, create and run a Batch job
   http_target {
     http_method = "POST"
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.admin_panel_hydrate_cache.name}:run"
+    uri         = "https://${var.us_central_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.admin_panel_hydrate_cache.name}:run"
 
     headers = {
       "Content-Type" = "application/json"

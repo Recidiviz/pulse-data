@@ -73,7 +73,7 @@ data "google_compute_default_service_account" "default" {
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
   name     = "orchestration-v2"
-  region   = var.region
+  region   = var.us_central_region
 
   config {
 

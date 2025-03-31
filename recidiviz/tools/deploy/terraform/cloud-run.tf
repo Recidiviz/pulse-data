@@ -152,7 +152,7 @@ data "google_secret_manager_secret_version" "segment_write_key" { secret = "case
 # Initializes Case Triage Cloud Run service
 resource "google_cloud_run_service" "case-triage" {
   name     = "case-triage-web"
-  location = var.region
+  location = var.us_central_region
 
   template {
     spec {
@@ -237,7 +237,7 @@ resource "google_cloud_run_service" "case-triage" {
 # Initializes Application Data Import Cloud Run service
 resource "google_cloud_run_service" "application-data-import" {
   name     = "application-data-import"
-  location = var.region
+  location = var.us_central_region
 
   template {
     spec {
@@ -298,7 +298,7 @@ resource "google_cloud_run_service" "application-data-import" {
 # Initializes Asset Generation Cloud Run service
 resource "google_cloud_run_service" "asset-generation" {
   name     = "asset-generation"
-  location = var.region
+  location = var.us_central_region
 
   template {
     spec {
@@ -383,7 +383,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   provider              = google-beta
   name                  = "unified-product-neg"
   network_endpoint_type = "SERVERLESS"
-  region                = var.region
+  region                = var.us_central_region
   cloud_run {
     service = google_cloud_run_service.case-triage.name
   }

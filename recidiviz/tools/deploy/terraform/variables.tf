@@ -25,13 +25,12 @@ variable "registry_project_id" {
   description = "Project ID to source container images from. Defaults to recidiviz-staging."
 }
 
-variable "region" {
+variable "us_central_region" {
   type    = string
   default = "us-central1"
 }
 
-# The region our app engine app resides
-variable "app_engine_region" {
+variable "us_east_region" {
   type    = string
   default = "us-east1"
 }

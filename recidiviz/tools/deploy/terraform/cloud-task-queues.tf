@@ -19,7 +19,7 @@
 # schedule the tasks when appropriate.
 resource "google_cloud_tasks_queue" "cloud-sql-to-bq-refresh-scheduler-queue" {
   name     = "cloud-sql-to-bq-refresh-scheduler"
-  location = var.app_engine_region
+  location = var.us_east_region
 
   rate_limits {
     max_dispatches_per_second = 25
@@ -42,7 +42,7 @@ module "cloud-sql-to-bq-refresh-queue" {
   source = "./modules/base-task-queue"
 
   queue_name         = "cloud-sql-to-bq-refresh"
-  region             = var.app_engine_region
+  region             = var.us_east_region
   max_retry_attempts = 1
 }
 
@@ -51,7 +51,7 @@ module "bq-view-update-queue" {
   source = "./modules/base-task-queue"
 
   queue_name         = "bq-view-update"
-  region             = var.app_engine_region
+  region             = var.us_east_region
   max_retry_attempts = 1
 }
 
@@ -60,7 +60,7 @@ module "metric-view-export-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "metric-view-export"
-  region                    = var.app_engine_region
+  region                    = var.us_east_region
   max_retry_attempts        = 1
   max_concurrent_dispatches = 50
 }
@@ -69,7 +69,7 @@ module "case-triage-db-operations-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "case-triage-db-operations-queue"
-  region                    = var.app_engine_region
+  region                    = var.us_east_region
   max_dispatches_per_second = 100
 }
 
@@ -78,7 +78,7 @@ module "validations-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "validations"
-  region                    = var.app_engine_region
+  region                    = var.us_east_region
   max_retry_attempts        = 1
   max_concurrent_dispatches = 50
 }
@@ -88,7 +88,7 @@ module "pathways-db-import-queue" {
   source = "./modules/base-task-queue"
 
   queue_name = "pathways-db-import"
-  region     = var.app_engine_region
+  region     = var.us_east_region
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.
 }
@@ -98,7 +98,7 @@ module "workflows-etl-operations-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "workflows-etl-operations-queue"
-  region                    = var.app_engine_region
+  region                    = var.us_east_region
   max_dispatches_per_second = 100
 }
 
@@ -107,7 +107,7 @@ module "workflows-external-system-requests-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "workflows-external-system-requests-queue"
-  region                    = var.app_engine_region
+  region                    = var.us_east_region
   max_dispatches_per_second = 100
   max_retry_attempts        = 1
 }
@@ -117,7 +117,7 @@ module "outliers-db-import-queue" {
   source = "./modules/base-task-queue"
 
   queue_name = "outliers-db-import"
-  region     = var.app_engine_region
+  region     = var.us_east_region
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.
 }

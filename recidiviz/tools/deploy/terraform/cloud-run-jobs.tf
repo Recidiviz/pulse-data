@@ -16,7 +16,7 @@
 # =============================================================================
 resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
   name     = "admin-panel-hydrate-cache"
-  location = var.region
+  location = var.us_central_region
   provider = google-beta
 
   template {
@@ -67,7 +67,7 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
 
 resource "google_cloud_run_v2_job" "utah_data_transfer_sync" {
   name     = "utah-data-transfer-sync"
-  location = var.region
+  location = var.us_central_region
   provider = google-beta
 
   template {
@@ -128,7 +128,7 @@ import {
 resource "google_cloud_run_v2_job" "jii_jobs" {
   for_each = local.jii_jobs
   name     = each.key
-  location = var.region
+  location = var.us_central_region
   provider = google-beta
 
   template {

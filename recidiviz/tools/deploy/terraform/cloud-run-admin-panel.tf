@@ -40,7 +40,7 @@ data "google_secret_manager_secret_version" "iap_client_secret" {
 
 resource "google_cloud_run_service" "admin_panel" {
   name     = "admin-panel"
-  location = var.region
+  location = var.us_central_region
   project  = var.project_id
 
   metadata {
@@ -97,7 +97,7 @@ resource "google_compute_region_network_endpoint_group" "admin_panel_serverless_
   provider              = google-beta
   name                  = "admin-panel-neg"
   network_endpoint_type = "SERVERLESS"
-  region                = var.region
+  region                = var.us_central_region
   cloud_run {
     service = google_cloud_run_service.admin_panel.name
   }

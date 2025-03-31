@@ -34,7 +34,7 @@ terraform {
 
 provider "google" {
   project = var.project_id
-  region  = var.region
+  region  = var.us_central_region
   default_labels = {
     terraform_managed = "true"
   }
@@ -42,7 +42,7 @@ provider "google" {
 
 provider "google-beta" {
   project = var.project_id
-  region  = var.region
+  region  = var.us_central_region
   default_labels = {
     terraform_managed = "true"
   }

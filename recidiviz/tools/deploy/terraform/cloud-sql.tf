@@ -21,7 +21,7 @@ module "case_triage_database" {
   project_id        = var.project_id
   instance_key      = "case_triage"
   base_secret_name  = "case_triage"
-  region            = var.region
+  region            = var.us_central_region
   zone              = var.zone
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = true
@@ -70,7 +70,7 @@ module "pathways_database" {
   project_id        = var.project_id
   instance_key      = "pathways"
   base_secret_name  = "pathways"
-  region            = var.region
+  region            = var.us_central_region
   zone              = var.zone
   secondary_zone    = "us-central1-b"
   tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
@@ -94,7 +94,7 @@ module "insights_database" {
   project_id       = var.project_id
   instance_key     = "insights"
   base_secret_name = "insights"
-  region           = var.region
+  region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
   tier = coalesce(
@@ -121,7 +121,7 @@ module "workflows_database" {
   project_id       = var.project_id
   instance_key     = "workflows"
   base_secret_name = "workflows"
-  region           = var.region
+  region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
   tier = coalesce(

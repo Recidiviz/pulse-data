@@ -46,12 +46,12 @@ resource "google_project_iam_member" "cloud_workflows_iam" {
 resource "google_workflows_workflow" "utah_data_transfer_sync_cloud_run_connector" {
   name            = "utah-data-transfer-sync-cloud-run-connector"
   description     = "Workflow that parses the BigQuery transfer completion event of the `ut-udc-dw-dev-to-recidiviz-ingest-us-ut-daily-sync` big query transfer running in `recidiviz-ingest-us-ut` and triggers a cloud run job that will export all tables that have a file tag managed in code to Utah's ingest bucket."
-  region          = var.region
+  region          = var.us_central_region
   service_account = google_service_account.cloud_workflows.id
   call_log_level  = "LOG_ALL_CALLS"
   user_env_vars = {
     CLOUD_RUN_JOB_NAME     = google_cloud_run_v2_job.utah_data_transfer_sync.name
-    CLOUD_RUN_JOB_LOCATION = var.region
+    CLOUD_RUN_JOB_LOCATION = var.us_central_region
 
   }
   source_contents = file("${local.cloud_workflows_repo_path}/utah_data_transfer_sync_cloud_run_connector.yaml")
@@ -60,7 +60,7 @@ resource "google_workflows_workflow" "utah_data_transfer_sync_cloud_run_connecto
 
 resource "google_eventarc_trigger" "utah_data_transfer_sync_cloud_run_connector_trigger" {
   name            = "utah-data-transfer-sync-cloud-run-connector-trigger"
-  location        = var.region
+  location        = var.us_central_region
   service_account = google_service_account.cloud_workflows.id
 
   matching_criteria {

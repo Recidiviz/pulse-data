@@ -40,7 +40,7 @@ resource "google_compute_project_default_network_tier" "project-tier" {
 # (such as Redis)
 resource "google_vpc_access_connector" "redis_vpc_connector" {
   name           = "redis-vpc-connector"
-  region         = var.app_engine_region
+  region         = var.us_east_region
   ip_cidr_range  = data.google_secret_manager_secret_version.vpc_access_connector_us_east_cidr.secret_data
   network        = "default"
   max_throughput = 1000
@@ -50,7 +50,7 @@ resource "google_vpc_access_connector" "redis_vpc_connector" {
 # (such as Redis and Cloud NAT)
 resource "google_vpc_access_connector" "us_central_redis_vpc_connector" {
   name           = "us-central-redis-vpc-ac" # Name has a 23 character limit
-  region         = var.region
+  region         = var.us_central_region
   ip_cidr_range  = data.google_secret_manager_secret_version.vpc_access_connector_us_central_cidr.secret_data
   network        = "default"
   max_throughput = 1000
@@ -76,7 +76,7 @@ resource "google_compute_address" "external_system_outbound_requests" {
   name         = "external-system-outbound-requests"
   address_type = "EXTERNAL"
   description  = "Static IP for making requests directly to external (state-owned) infrastructure."
-  region       = var.region
+  region       = var.us_central_region
 }
 
 # TODO(#37766) rollback once we confirm w/ texas this was an ip-based issue
@@ -84,7 +84,7 @@ resource "google_compute_address" "us_tx_sftp_outbound_requests" {
   name         = "us-tx-sftp-temp-outbound-requests"
   address_type = "EXTERNAL"
   description  = "Static IP for making requests directly to Texas. *Should* hopefully a temporary address, see #37766"
-  region       = var.region
+  region       = var.us_central_region
 }
 
 # The names of the following NATs and Routers all say "dataflow", but they're actually for all

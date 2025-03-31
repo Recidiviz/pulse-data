@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-data "google_app_engine_default_service_account" "default" {}
 module "sftp-storage-bucket" {
   source = "../cloud-storage-bucket"
 
