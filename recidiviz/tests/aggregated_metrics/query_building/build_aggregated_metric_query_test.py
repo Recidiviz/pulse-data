@@ -69,7 +69,7 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_intersection_extended__last_12_months_materialized`
+    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_intersection_event_attribution__last_12_months_materialized`
 ),
 output_row_keys AS (
     SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -97,8 +97,9 @@ drug_screen_metrics AS (
             person_assignments_by_time_period.period,
             person_assignments_by_time_period.assignment_start_date,
             person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-            person_assignments_by_time_period.intersection_start_date,
-            person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_event_attribution_start_date,
+            person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.assignment_is_first_day_in_population,
             observations.event_date
         FROM 
             person_assignments_by_time_period
@@ -110,8 +111,8 @@ drug_screen_metrics AS (
             -- Include events occurring on the last date of an end-date exclusive span,
             -- but exclude events occurring on the last date of an end-date exclusive 
             -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+            AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
     )
     SELECT
         state_code,
@@ -152,8 +153,9 @@ supervision_contact_metrics AS (
             person_assignments_by_time_period.period,
             person_assignments_by_time_period.assignment_start_date,
             person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-            person_assignments_by_time_period.intersection_start_date,
-            person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_event_attribution_start_date,
+            person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.assignment_is_first_day_in_population,
             observations.event_date,
             observations.status
         FROM 
@@ -166,8 +168,8 @@ supervision_contact_metrics AS (
             -- Include events occurring on the last date of an end-date exclusive span,
             -- but exclude events occurring on the last date of an end-date exclusive 
             -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+            AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
     )
     SELECT
         state_code,
@@ -221,7 +223,7 @@ WITH
 all_metrics__person_unit_of_observation AS (
     WITH 
     person_assignments_by_time_period AS (
-        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_intersection_extended__last_12_months_materialized`
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_intersection_event_attribution__last_12_months_materialized`
     ),
     output_row_keys AS (
         SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -249,8 +251,9 @@ all_metrics__person_unit_of_observation AS (
                 person_assignments_by_time_period.period,
                 person_assignments_by_time_period.assignment_start_date,
                 person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-                person_assignments_by_time_period.intersection_start_date,
-                person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.intersection_event_attribution_start_date,
+                person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.assignment_is_first_day_in_population,
                 observations.event_date
             FROM 
                 person_assignments_by_time_period
@@ -262,8 +265,8 @@ all_metrics__person_unit_of_observation AS (
                 -- Include events occurring on the last date of an end-date exclusive span,
                 -- but exclude events occurring on the last date of an end-date exclusive 
                 -- analysis period.
-                AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-                AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+                AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+                AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
         )
         SELECT
             state_code,
@@ -304,8 +307,9 @@ all_metrics__person_unit_of_observation AS (
                 person_assignments_by_time_period.period,
                 person_assignments_by_time_period.assignment_start_date,
                 person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-                person_assignments_by_time_period.intersection_start_date,
-                person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.intersection_event_attribution_start_date,
+                person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.assignment_is_first_day_in_population,
                 observations.event_date,
                 observations.status
             FROM 
@@ -318,8 +322,8 @@ all_metrics__person_unit_of_observation AS (
                 -- Include events occurring on the last date of an end-date exclusive span,
                 -- but exclude events occurring on the last date of an end-date exclusive 
                 -- analysis period.
-                AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-                AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+                AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+                AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
         )
         SELECT
             state_code,
@@ -356,7 +360,7 @@ all_metrics__person_unit_of_observation AS (
 all_metrics__workflows_primary_user_unit_of_observation AS (
     WITH 
     workflows_primary_user_assignments_by_time_period AS (
-        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_intersection_extended__last_12_months_materialized`
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_intersection_event_attribution__last_12_months_materialized`
     ),
     output_row_keys AS (
         SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -384,8 +388,9 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
                 workflows_primary_user_assignments_by_time_period.period,
                 workflows_primary_user_assignments_by_time_period.assignment_start_date,
                 workflows_primary_user_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-                workflows_primary_user_assignments_by_time_period.intersection_start_date,
-                workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                workflows_primary_user_assignments_by_time_period.intersection_event_attribution_start_date,
+                workflows_primary_user_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+                workflows_primary_user_assignments_by_time_period.assignment_is_first_day_in_population,
                 observations.event_date
             FROM 
                 workflows_primary_user_assignments_by_time_period
@@ -397,8 +402,8 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
                 -- Include events occurring on the last date of an end-date exclusive span,
                 -- but exclude events occurring on the last date of an end-date exclusive 
                 -- analysis period.
-                AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_start_date
-                AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+                AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_event_attribution_start_date
+                AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
         )
         SELECT
             state_code,

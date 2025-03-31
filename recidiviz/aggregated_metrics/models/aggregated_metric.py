@@ -270,7 +270,7 @@ class PeriodEventAggregatedMetric(
     def metric_time_period_to_assignment_join_type(
         cls,
     ) -> MetricTimePeriodToAssignmentJoinType:
-        return MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+        return MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION
 
     @property
     def observation_selector(self) -> EventSelector:

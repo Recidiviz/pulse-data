@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import (
+    MAGIC_START_DATE,
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
@@ -769,13 +770,34 @@ sample AS (
     )
     GROUP BY {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()}, session_id
 )
+,
+-- Identify dates that the unit of observation entered the population.
+-- We will add a flag for assignment start dates that fall on this date.
+population_start_dates AS (
+    SELECT
+        {list_to_query_string(unit_of_observation.primary_key_columns_ordered)},
+        start_date AS assignment_date,
+    FROM
+        sample
+    QUALIFY
+        IFNULL(
+            LAG(end_date_exclusive) OVER (PARTITION BY {list_to_query_string(unit_of_observation.primary_key_columns_ordered)} ORDER BY start_date),
+            DATE("{MAGIC_START_DATE}")
+        ) != start_date
+)
 SELECT 
     * EXCEPT(session_id, assignment_date, end_date_exclusive),
     -- Cast any DATETIME values to DATE
     DATE(assignment_date) AS assignment_date,
     DATE({revert_nonnull_end_date_clause("end_date_exclusive")}) AS end_date,
     DATE({revert_nonnull_end_date_clause("end_date_exclusive")}) AS end_date_exclusive,
+    population_start_dates.assignment_date IS NOT NULL AS assignment_is_first_day_in_population,
 FROM {unit_of_analysis_name}_assignments
+LEFT JOIN
+    population_start_dates
+USING
+    (assignment_date, {list_to_query_string(unit_of_observation.primary_key_columns_ordered)})
+
 """
     return SimpleBigQueryViewBuilder(
         dataset_id=view_address.dataset_id,

@@ -67,7 +67,7 @@ class MetricTimePeriodToAssignmentJoinType(Enum):
     # the assignment with the metric period. Additionally, if the metric period overlaps
     # with the day *after* the assignments ends, we associate the assignment with the
     # metric period.
-    INTERSECTION_EXTENDED = "INTERSECTION_EXTENDED"
+    INTERSECTION_EVENT_ATTRIBUTION = "INTERSECTION_EVENT_ATTRIBUTION"
 
     # If the ASSIGNMENT START DATE of assignment overlaps at all with the metric period,
     # we associate the assignment with the metric period.
@@ -89,8 +89,14 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
         "intersection_end_date_exclusive_nonnull"
     )
-    INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
-        "intersection_extended_end_date_exclusive_nonnull"
+    INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME = (
+        "intersection_event_attribution_start_date"
+    )
+    INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
+        "intersection_event_attribution_end_date_exclusive_nonnull"
+    )
+    ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME = (
+        "assignment_is_first_day_in_population"
     )
 
     @classmethod
@@ -125,9 +131,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             cls.INTERSECTION_START_DATE_COLUMN_NAME: (
                 "This column is pre-computed for use later in aggregated metrics "
                 "queries. This is the start date (inclusive) of the period of time "
-                "where the assignment and metric periods overlap. This is first date "
-                "(inclusive) when an event observation would count towards this metric "
-                "period when calculating a PeriodEventAggregatedMetric. This is the "
+                "where the assignment and metric periods overlap. This is the "
                 "start date (inclusive) that should be used to determine if a span "
                 "observation overlaps and should be counted when calculating a "
                 "PeriodSpanAggregatedMetric."
@@ -140,7 +144,16 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 "overlaps and should be counted when calculating a "
                 "PeriodSpanAggregatedMetric. This field is always non-null."
             ),
-            cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
+            cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME: (
+                "This column is pre-computed for use later in aggregated metrics "
+                "queries. This is the start date (inclusive) of the period of time "
+                "where the assignment and metric periods overlap, with one day added "
+                "past the assignment start if the assignment start date does not fall "
+                "on the unit of observation's first day in the population. This is first date "
+                "(inclusive) when an event observation would count towards this metric "
+                "period when calculating a PeriodEventAggregatedMetric."
+            ),
+            cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
                 "This column is pre-computed for use later in aggregated metrics "
                 "queries. This is the end date (exclusive) of the period of time where "
                 "the assignment and metric periods overlap, with one day added past "
@@ -148,6 +161,12 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 "period). This is the day after the last date when an event "
                 "observation would count towards this metric period when calculating a "
                 "PeriodEventAggregatedMetric. This field is always non-null."
+            ),
+            cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME: (
+                f"A boolean column indicating whether `{cls.ASSIGNMENT_START_DATE_COLUMN_NAME}` is the "
+                "first day in the unit of observation's population. This is used to "
+                "determine whether the assignment should be counted on the start date "
+                "or the day after the start date when calculating aggregated metrics."
             ),
         }
 
@@ -275,11 +294,13 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
         if (
             self.metric_time_period_to_assignment_join_type
-            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION
         ):
             join_description = (
                 "where there is some overlap with an assignment span (treating the end "
-                "date of the assignment span as *inclusive*, not *exclusive*)"
+                "date of the assignment span as *inclusive*, not *exclusive*, and "
+                "treating the start date as *exclusive* in cases where the unit of "
+                "observation was not newly entering the population)"
             )
         elif (
             self.metric_time_period_to_assignment_join_type
@@ -338,11 +359,12 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         """
         if (
             metric_time_period_to_assignment_join_type
-            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION
         ):
             return [
-                cls.INTERSECTION_START_DATE_COLUMN_NAME,
-                cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+                cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME,
+                cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+                cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME,
             ]
 
         if (
@@ -398,6 +420,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
     @classmethod
     def get_date_output_column_clauses(cls, output_columns: list[str]) -> list[str]:
+        """Returns all date output column clauses for the assignments by time period query."""
         output_column_clauses = []
         for output_column in output_columns:
             if output_column == cls.INTERSECTION_START_DATE_COLUMN_NAME:
@@ -414,11 +437,25 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 continue
             if (
                 output_column
-                == cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
+                == cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME
             ):
                 output_column_clauses.append(
-                    f"{cls._intersection_extended_end_date_exclusive_nonnull_clause()} AS "
-                    f"{cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
+                    f"{cls._intersection_event_attribution_start_date_clause()} AS "
+                    f"{cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME}"
+                )
+                continue
+            if (
+                output_column
+                == cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
+            ):
+                output_column_clauses.append(
+                    f"{cls._intersection_event_attribution_end_date_exclusive_nonnull_clause()} AS "
+                    f"{cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
+                )
+                continue
+            if output_column == cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME:
+                output_column_clauses.append(
+                    f"{cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME}"
                 )
                 continue
             output_column_clauses.append(output_column)
@@ -456,9 +493,31 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _intersection_extended_end_date_exclusive_nonnull_clause(cls) -> str:
+    def _intersection_event_attribution_start_date_clause(cls) -> str:
         """Returns a SQL logic that gives us the value of the
-        intersection_extended_end_date_exclusive_nonnull column.
+        intersection_event_attribution_start_date column.
+        """
+        return fix_indent(
+            f"""
+                GREATEST(
+                    IF(
+                        {cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME},
+                        {cls.ASSIGNMENT_START_DATE_COLUMN_NAME},
+                        DATE_ADD(
+                            {cls.ASSIGNMENT_START_DATE_COLUMN_NAME},
+                            INTERVAL 1 DAY
+                        )
+                    ),
+                    {MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN}
+                )
+                """,
+            indent_level=0,
+        )
+
+    @classmethod
+    def _intersection_event_attribution_end_date_exclusive_nonnull_clause(cls) -> str:
+        """Returns a SQL logic that gives us the value of the
+        intersection_event_attribution_end_date_exclusive_nonnull column.
         """
         return fix_indent(
             f"""
@@ -503,9 +562,9 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     ) -> str:
         if (
             metric_time_period_to_assignment_join_type
-            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION
         ):
-            return f"{cls._intersection_start_date_clause()} < {cls._intersection_extended_end_date_exclusive_nonnull_clause()}"
+            return f"{cls._intersection_event_attribution_start_date_clause()} < {cls._intersection_event_attribution_end_date_exclusive_nonnull_clause()}"
 
         if (
             metric_time_period_to_assignment_join_type

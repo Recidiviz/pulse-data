@@ -82,8 +82,9 @@ observations_by_assignments AS (
         person_assignments_by_time_period.period,
         person_assignments_by_time_period.assignment_start_date,
         person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-        person_assignments_by_time_period.intersection_start_date,
-        person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+        person_assignments_by_time_period.intersection_event_attribution_start_date,
+        person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+        person_assignments_by_time_period.assignment_is_first_day_in_population,
         observations.event_date
     FROM 
         person_assignments_by_time_period
@@ -95,8 +96,8 @@ observations_by_assignments AS (
         -- Include events occurring on the last date of an end-date exclusive span,
         -- but exclude events occurring on the last date of an end-date exclusive 
         -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+        AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+        AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
 )
 SELECT
     state_code,
@@ -153,8 +154,9 @@ observations_by_assignments AS (
         person_assignments_by_time_period.period,
         person_assignments_by_time_period.assignment_start_date,
         person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
-        person_assignments_by_time_period.intersection_start_date,
-        person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+        person_assignments_by_time_period.intersection_event_attribution_start_date,
+        person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+        person_assignments_by_time_period.assignment_is_first_day_in_population,
         observations.event_date,
         observations.status
     FROM 
@@ -167,8 +169,8 @@ observations_by_assignments AS (
         -- Include events occurring on the last date of an end-date exclusive span,
         -- but exclude events occurring on the last date of an end-date exclusive 
         -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+        AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+        AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
 )
 SELECT
     state_code,

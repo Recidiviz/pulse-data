@@ -196,12 +196,12 @@ def _get_supervision_officer_population_selector(
             return None
         case MetricPopulationType.SUPERVISION:
             return SpanSelector(
-                span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
+                span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
                 span_conditions_dict={},
             )
         case MetricPopulationType.JUSTICE_INVOLVED:
             return SpanSelector(
-                span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
+                span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
                 span_conditions_dict={},
             )
 
