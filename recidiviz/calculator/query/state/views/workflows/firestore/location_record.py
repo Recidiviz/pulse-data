@@ -66,6 +66,8 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
             state_code,
             system,
             "crcFacilityId" AS id_type,
+            -- Prefixing facility ids with CRC to distinguish between CRC Facility search records (id_type = 'crcFacilityId')
+            -- and regular facility records (id_type = 'facilityId')
             'CRC ' || id AS id,
             name,
         FROM facilities
