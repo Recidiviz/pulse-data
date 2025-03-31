@@ -98,7 +98,7 @@ class LookMLFieldParameter:
     def build(self) -> str:
         return f"{self.key}: {self.value_text}"
 
-    # TODO(#23292) Add property to return referenced fields that belong to another view
+    # TODO(#40271) Add property to return referenced fields that belong to another view
 
     @property
     @abc.abstractmethod

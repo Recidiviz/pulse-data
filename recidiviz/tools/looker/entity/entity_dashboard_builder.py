@@ -129,6 +129,7 @@ class EntityLookMLDashboardBuilder:
             for child_cls in get_child_entity_classes(
                 entity_cls=entity_cls, entities_module_context=self.module_context
             ):
+                # TODO(#40272) Aggregate enum values as list of strings
                 if issubclass(child_cls, EnumEntity):
                     element_metadata.add_count_field(
                         view_name=child_cls.get_entity_name()
