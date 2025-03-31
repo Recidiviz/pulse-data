@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     completed_mandated_programs,
     no_open_supervision_modifiers,
     no_pending_charges,
+    no_sex_offender_specialty,
     not_serving_ineligible_offense_for_early_discharge,
     supervision_fees_paid,
 )
@@ -50,6 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_pending_charges.VIEW_BUILDER,
         no_supervision_violation_within_6_months.VIEW_BUILDER,
         no_open_supervision_modifiers.VIEW_BUILDER,
+        no_sex_offender_specialty.VIEW_BUILDER,
         supervision_fees_paid.VIEW_BUILDER,
         completed_mandated_programs.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
