@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_query_builder import (
     BigQueryQueryBuilder,
 )
 from recidiviz.big_query.big_query_utils import datetime_clause
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -39,9 +40,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
-    DirectIngestRawDataTableLatestViewBuilder,
-)
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.utils import metadata
 
@@ -152,11 +150,15 @@ class DirectIngestViewQueryBuilder:
     class QueryStructureConfig:
         """Configuration for how to structure the expanded view query with hydrated raw table views."""
 
-        # If set, the raw data queries will only return rows received on or before this datetime.
-        raw_data_datetime_upper_bound: Optional[datetime.datetime] = attr.ib()
+        # Queries against raw data will only return rows received on or before this datetime.
+        raw_data_datetime_upper_bound: datetime.datetime = attr.ib(
+            validator=attr_validators.is_not_future_datetime
+        )
 
         # The source of the raw data for the query
-        raw_data_source_instance: DirectIngestInstance = attr.ib()
+        raw_data_source_instance: DirectIngestInstance = attr.ib(
+            validator=attr.validators.instance_of(DirectIngestInstance)
+        )
 
     WITH_PREFIX = "WITH"
     SUBQUERY_INDENT = "    "
@@ -253,38 +255,19 @@ class DirectIngestViewQueryBuilder:
     def build_and_print(
         self,
         raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
-        date_bounded: bool = False,
     ) -> None:
         """For local testing, prints out either the date-bounded or the latest version of the view's query."""
-        if date_bounded:
-            print(
-                "/****************************** DATE BOUNDED ******************************/"
+        self.build_query(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=raw_data_source_instance,
+                # TZ information was causing this to not work on BigQuery when printed here.
+                # However, having no TZ information defaults to UTC.
+                # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
+                raw_data_datetime_upper_bound=datetime.datetime.now(
+                    tz=pytz.UTC
+                ).replace(tzinfo=None),
             )
-            print(
-                self.build_query(
-                    query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                        raw_data_source_instance=raw_data_source_instance,
-                        # TZ information was causing this to not work on BigQuery when printed here.
-                        # However, having no TZ information defaults to UTC.
-                        # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
-                        raw_data_datetime_upper_bound=datetime.datetime.now(
-                            tz=pytz.UTC
-                        ).replace(tzinfo=None),
-                    )
-                )
-            )
-        else:
-            print(
-                "/********************************* LATEST *********************************/"
-            )
-            print(
-                self.build_query(
-                    query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                        raw_data_source_instance=raw_data_source_instance,
-                        raw_data_datetime_upper_bound=None,
-                    )
-                )
-            )
+        )
 
     def _table_subbquery_name_and_description(
         self,
@@ -377,9 +360,18 @@ class DirectIngestViewQueryBuilder:
         raw_table_dependency_config: DirectIngestViewRawFileDependency,
     ) -> str:
         """Returns an expanded subquery on this raw table in the form 'subquery_name AS (...)'."""
-        date_bounded_query = self._date_bounded_query_for_raw_table(
-            config=query_structure_config,
-            raw_table_dependency_config=raw_table_dependency_config,
+        date_bounded_query = RawTableQueryBuilder(
+            project_id=metadata.project_id(),
+            region_code=self._region_code,
+            raw_data_source_instance=query_structure_config.raw_data_source_instance,
+        ).build_query(
+            raw_file_config=raw_table_dependency_config.raw_file_config,
+            parent_address_overrides=None,
+            parent_address_formatter_provider=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=query_structure_config.raw_data_datetime_upper_bound,
+            filter_to_latest=raw_table_dependency_config.filter_to_latest,
+            filter_to_only_documented_columns=True,
         )
         date_bounded_query = date_bounded_query.strip("\n")
         indented_date_bounded_query = self.SUBQUERY_INDENT + date_bounded_query.replace(
@@ -393,42 +385,3 @@ class DirectIngestViewQueryBuilder:
             raw_table_dependency_config, query_structure_config
         )
         return f"{description}\n{table_subquery_name} AS (\n{indented_date_bounded_query}\n)"
-
-    def _date_bounded_query_for_raw_table(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        raw_table_dependency_config: DirectIngestViewRawFileDependency,
-    ) -> str:
-        project_id = metadata.project_id()
-
-        if (
-            not config.raw_data_datetime_upper_bound
-            and raw_table_dependency_config.filter_to_latest
-        ):
-            # If there is no bound and we are filtering to the latest version of each
-            # row, we can query directly from the `latest` view for convenience.
-            return (
-                DirectIngestRawDataTableLatestViewBuilder(
-                    region_code=self._region_code,
-                    raw_data_source_instance=config.raw_data_source_instance,
-                    raw_file_config=raw_table_dependency_config.raw_file_config,
-                    regions_module=self._region_module,
-                    filter_to_only_documented_columns=True,
-                )
-                .table_for_query.to_project_specific_address(project_id)
-                .select_query()
-            )
-
-        return RawTableQueryBuilder(
-            project_id=project_id,
-            region_code=self._region_code,
-            raw_data_source_instance=config.raw_data_source_instance,
-        ).build_query(
-            raw_file_config=raw_table_dependency_config.raw_file_config,
-            parent_address_overrides=None,
-            parent_address_formatter_provider=None,
-            normalized_column_values=True,
-            raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
-            filter_to_latest=raw_table_dependency_config.filter_to_latest,
-            filter_to_only_documented_columns=True,
-        )

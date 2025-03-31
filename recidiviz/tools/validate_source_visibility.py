@@ -270,9 +270,6 @@ def main() -> int:
                 {
                     "recidiviz.big_query.big_query_address_formatter",
                     "recidiviz.big_query.big_query_query_builder",
-                    "recidiviz.big_query.big_query_view",
-                    "recidiviz.big_query.big_query_view_collector",
-                    "recidiviz.big_query.big_query_view_sandbox_context",
                     "recidiviz.ingest",
                     "recidiviz.persistence",
                 }
