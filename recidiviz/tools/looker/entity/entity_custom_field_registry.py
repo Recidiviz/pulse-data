@@ -130,8 +130,8 @@ COMMON_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
         ),
     ],
     "state_person_external_id": [
-        EntityLookMLFieldFactory.id_array(),
         EntityLookMLFieldFactory.external_id_with_type(),
+        EntityLookMLFieldFactory.list_field_measure("external_id_with_type"),
         EntityLookMLFieldFactory.count_measure(
             drill_fields=["state_code", "external_id", "id_type"]
         ),

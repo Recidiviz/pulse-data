@@ -143,3 +143,25 @@ class LookMLFieldFactory:
                 LookMLFieldParameter.hidden(is_hidden=True),
             ],
         )
+
+    @staticmethod
+    def list_field_measure(field: str) -> MeasureLookMLViewField:
+        """
+        Creates a LookML list measure for a specific field.
+
+        This is useful for aggregating a list of values for the specified field.
+
+        Args:
+            field (str): The name of the field to create a list for.
+
+        Returns:
+            MeasureLookMLViewField: A LookML measure field for creating a list
+                of values for the specified field.
+        """
+        return MeasureLookMLViewField(
+            field_name=f"list_{field}",
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.LIST),
+                LookMLFieldParameter.list_field(field),
+            ],
+        )

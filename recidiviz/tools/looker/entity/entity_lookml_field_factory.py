@@ -33,11 +33,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 @attr.define
 class EntityLookMLFieldFactory(LookMLFieldFactory):
-    """Factory for creating LookML fields for entities.
-    TODO(#23292) Make these fields more reusable across different entities
-    and make it easier to validate the schema fields being used in the custom fields
-    and add docstrings to the methods.
-    """
+    """Factory for creating LookML fields for entities."""
 
     @staticmethod
     def person_id_with_open_period_indicator(
@@ -72,21 +68,14 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
         )
 
     @staticmethod
-    def id_array() -> MeasureLookMLViewField:
-        return MeasureLookMLViewField(
-            field_name="id_array",
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.LIST),
-                LookMLFieldParameter.list_field("external_id_with_type"),
-            ],
-        )
-
-    @staticmethod
     def count_task_deadline_no_date() -> MeasureLookMLViewField:
         return MeasureLookMLViewField(
             field_name="count_no_date",
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.SUM),
+                LookMLFieldParameter.description(
+                    "Number of task deadlines with no due date or eligible date"
+                ),
                 LookMLFieldParameter.sql(
                     "CAST(COALESCE(${due_date}, ${eligible_date}) IS NULL AS INT64)"
                 ),
@@ -100,6 +89,9 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.STRING),
                 LookMLFieldParameter.label("Client Name"),
+                LookMLFieldParameter.description(
+                    "Client's capitalized given names and surname"
+                ),
                 LookMLFieldParameter.sql(
                     """CONCAT(
     INITCAP(JSON_EXTRACT_SCALAR(${full_name}, "$.given_names")),
