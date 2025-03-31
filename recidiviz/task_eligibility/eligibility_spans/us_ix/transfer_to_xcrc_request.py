@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_6_months_of_parole_eligibility_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
+    projected_parole_release_date_within_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
@@ -39,7 +40,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_class_a_or_b_dor_for_6_months,
     no_sex_offender_alert,
     not_detainers_for_xcrc_and_crc,
-    tentative_parole_date_within_6_months,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -69,7 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             sub_criteria_list=[
                 incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
                 incarceration_within_6_months_of_parole_eligibility_date.VIEW_BUILDER,
-                tentative_parole_date_within_6_months.VIEW_BUILDER,
+                projected_parole_release_date_within_6_months.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),

@@ -49,7 +49,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
     ],
     allowed_duplicate_reasons_keys=[
         "full_term_completion_date",
-        "tentative_parole_date",
+        "group_projected_parole_release_date",
         "eligible_offenses",
         "next_parole_hearing_date",
     ],

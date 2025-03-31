@@ -247,10 +247,18 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     **{
         VIEW_BUILDER.address: (
-            "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based on migration status. They will be used for validation and development work but"
-            "are not yet referenced by any downstream views (Andrew Gaidus, 2024-11-19)"
+            "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
+            "on migration status. They are used primarily for validation and development work but some are referenced in"
+            "TES critiera. The list below encompasses those not yet referenced downstream (Andrew Gaidus, 2025-03-18)"
         )
         for VIEW_BUILDER in SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS
+        if VIEW_BUILDER.address.table_id
+        in [
+            "overlapping_sentence_serving_periods",
+            "sentence_id_to_consecutive_sentence_id",
+            "sentence_imposed_group_summary",
+            "sentence_serving_start_date",
+        ]
     },
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
         "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "

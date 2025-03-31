@@ -16,12 +16,12 @@
 # ============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 3 years of their full term completion date
-or tentative parole date and is not serving a life sentence.
+someone is incarcerated within 3 years of their full term completion date (FTRD)
+or projected parole release date (TPD) and is not serving a life sentence.
 """
-from recidiviz.task_eligibility.criteria.general import not_serving_a_life_sentence
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_ftcd_or_tpd,
+    not_serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
@@ -31,12 +31,12 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 3 years of their full term completion date 
-or tentative parole date and is not serving a life sentence.
+someone is incarcerated within 3 years of their full term completion date (FTRD)
+or projected parole release date (TPD) and is not serving a life sentence.
 """
 
 VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="US_IX_INCARCERATION_WITHIN_3_YEARS_OF_FTCD_OR_TPD_AND_NOT_SERVING_LIFE_SENTENCE",
+    criteria_name="INCARCERATION_WITHIN_3_YEARS_OF_FTCD_OR_TPD_AND_NOT_SERVING_LIFE_SENTENCE",
     sub_criteria_list=[
         incarceration_within_3_years_of_ftcd_or_tpd.VIEW_BUILDER,
         not_serving_a_life_sentence.VIEW_BUILDER,

@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     incarceration_not_within_6_months_of_full_term_completion_date,
     not_in_treatment_in_prison,
+    not_projected_parole_release_date_within_6_months,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
@@ -38,7 +39,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_sex_offender_alert,
     not_detainers_for_xcrc_and_crc,
     not_serving_a_rider_sentence,
-    tentative_parole_date_not_within_6_months,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_resident_worker_request import (
@@ -72,7 +72,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_sex_offender_alert.VIEW_BUILDER,
         not_serving_for_violent_offense.VIEW_BUILDER,
         incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
-        tentative_parole_date_not_within_6_months.VIEW_BUILDER,
+        not_projected_parole_release_date_within_6_months.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,

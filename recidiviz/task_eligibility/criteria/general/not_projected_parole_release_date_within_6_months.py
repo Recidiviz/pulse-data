@@ -13,45 +13,31 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
+# =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone does not have a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+someone is NOT within 6 months of their tentative parole date.
 """
-
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_3_years_of_tpd_and_not_life_sentence,
-    not_incarceration_within_20_years_of_full_term_completion_date,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    detainers_for_reclassification,
-    parole_hearing_date_greater_than_5_years_away,
+    projected_parole_release_date_within_6_months,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_CRITERIA_NAME = "NOT_PROJECTED_PAROLE_RELEASE_DATE_WITHIN_6_MONTHS"
+
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone has a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+someone is NOT within 6 months of their tentative parole date.
 """
 
-
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
-    sub_criteria_list=[
-        incarceration_within_3_years_of_tpd_and_not_life_sentence.VIEW_BUILDER,
-        parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
-        not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
-        detainers_for_reclassification.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
-    reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=projected_parole_release_date_within_6_months.VIEW_BUILDER,
 ).as_criteria_view_builder
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

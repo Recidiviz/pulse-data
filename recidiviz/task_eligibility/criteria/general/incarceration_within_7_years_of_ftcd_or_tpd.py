@@ -15,31 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence
-and their tentative parole date is within 3 years.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 7 years of their full term completion date
+or tentative parole date.
 """
 
-from recidiviz.task_eligibility.criteria.general import serving_a_life_sentence
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    tentative_parole_date_within_3_years,
+from recidiviz.task_eligibility.criteria.general import (
+    incarceration_within_7_years_of_full_term_completion_date,
+    projected_parole_release_date_within_7_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
-and their tentative parole date is within 3 years.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 7 years of their full term completion date 
+or tentative parole date.
 """
 
-
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="US_IX_SERVING_A_LIFE_SENTENCE_AND_TPD_WITHIN_3_YEARS",
+VIEW_BUILDER = OrTaskCriteriaGroup(
+    criteria_name="INCARCERATION_WITHIN_7_YEARS_OF_FTCD_OR_TPD",
     sub_criteria_list=[
-        serving_a_life_sentence.VIEW_BUILDER,
-        tentative_parole_date_within_3_years.VIEW_BUILDER,
+        incarceration_within_7_years_of_full_term_completion_date.VIEW_BUILDER,
+        projected_parole_release_date_within_7_years.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder

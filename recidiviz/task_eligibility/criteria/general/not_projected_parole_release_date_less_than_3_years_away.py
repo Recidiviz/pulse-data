@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,36 +13,31 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
+# =============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence
-and their tentative parole date is not within 3 years.
+Defines a criteria span view that shows spans of time during which
+someone is within 3 years of their tentative parole date.
 """
-
-from recidiviz.task_eligibility.criteria.general import serving_a_life_sentence
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    not_tentative_parole_date_within_3_years,
+from recidiviz.task_eligibility.criteria.general import (
+    projected_parole_release_date_less_than_3_years_away,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_CRITERIA_NAME = "NOT_PROJECTED_PAROLE_RELEASE_DATE_LESS_THAN_3_YEARS_AWAY"
+
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
-and their tentative parole date is not within 3 years.
+Defines a criteria span view that shows spans of time during which
+someone is NOT within 3 years of their tentative parole date.
 """
 
-
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="US_IX_SERVING_A_LIFE_SENTENCE_AND_NOT_TPD_WITHIN_3_YEARS",
-    sub_criteria_list=[
-        serving_a_life_sentence.VIEW_BUILDER,
-        not_tentative_parole_date_within_3_years.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=projected_parole_release_date_less_than_3_years_away.VIEW_BUILDER,
 ).as_criteria_view_builder
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

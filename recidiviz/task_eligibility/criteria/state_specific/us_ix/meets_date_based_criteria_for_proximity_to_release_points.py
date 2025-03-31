@@ -18,10 +18,12 @@
 Defines a criteria span view that shows spans of time during which
 someone meets the date based criteria for proximity to release points.
 """
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_ftcd_or_tpd_and_not_serving_life_sentence,
+    incarceration_within_3_years_of_tpd_and_life_sentence,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_5_years_of_ftcd_and_3_years_of_phd_and_not_serving_life_sentence,
-    serving_a_life_sentence_and_tpd_within_3_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     OrTaskCriteriaGroup,
@@ -43,11 +45,11 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
     sub_criteria_list=[
         incarceration_within_3_years_of_ftcd_or_tpd_and_not_serving_life_sentence.VIEW_BUILDER,
         incarceration_within_5_years_of_ftcd_and_3_years_of_phd_and_not_serving_life_sentence.VIEW_BUILDER,
-        serving_a_life_sentence_and_tpd_within_3_years.VIEW_BUILDER,
+        incarceration_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[
         "full_term_completion_date",
-        "tentative_parole_date",
+        "group_projected_parole_release_date",
         "ineligible_offenses",
     ],
     reasons_aggregate_function_override={"ineligible_offenses": "ARRAY_CONCAT_AGG"},
