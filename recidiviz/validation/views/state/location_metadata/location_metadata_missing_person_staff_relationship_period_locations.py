@@ -47,7 +47,9 @@ FROM
 LEFT JOIN
   `{project_id}.{reference_views_dataset}.location_metadata_materialized` m
 USING (state_code, location_external_id)
-WHERE m.location_external_id IS NULL
+WHERE
+    p.location_external_id IS NOT NULL
+    AND m.location_external_id IS NULL
 GROUP BY 1, 2, 3
 """
 
