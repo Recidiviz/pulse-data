@@ -19,10 +19,7 @@ someone is past their annual reclassification date"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     completion_event_state_specific_dataset,
@@ -60,8 +57,8 @@ _QUERY_TEMPLATE = f"""
        -- This CTE grabs all past reclassification meeting dates for all individuals 
           {meetings_cte()}
       ), 
-      reclass_due_dates_calc AS (
-      -- This CTE generates a list of annual due dates for each individual during their incarceration stint
+      reclass_due_dates AS (
+      -- This CTE generates a list of due dates for each individual during their incarceration stint
       -- We use a 120 year generation period in order to ensure we capture all possible future spans 
           SELECT
             state_code,
@@ -85,7 +82,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     state_code=StateCode.US_ME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
     meets_criteria_default=False,
     completion_event_us_me_dataset=completion_event_state_specific_dataset(
         StateCode.US_ME
