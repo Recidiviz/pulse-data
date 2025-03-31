@@ -861,6 +861,7 @@ def workflows_state_specific_supervision_level() -> str:
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
+            WHEN sl.state_code = 'US_TX' THEN supervision_level
             ELSE most_recent_active_supervision_level
         END
     """
