@@ -66,10 +66,6 @@ class IngestOpsEndpointTests(TestCase):
             "recidiviz.admin_panel.routes.ingest_ops.get_ingest_operations_store"
         )
         self.mock_store = self.get_admin_store_patcher.start().return_value
-        self.mock_current_ingest_statuses = mock.Mock()
-        self.mock_store.get_all_current_ingest_instance_statuses = (
-            self.mock_current_ingest_statuses
-        )
         self.mock_current_jobs_statuses = mock.Mock()
         self.mock_store.get_most_recent_dataflow_job_statuses = (
             self.mock_current_jobs_statuses

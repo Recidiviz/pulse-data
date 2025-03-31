@@ -676,7 +676,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual([], config.current_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
-        self.assertEqual(None, config.caps_normalized_col("some_random_column_name"))
         self.assertFalse(config.is_exempt_from_raw_data_pruning())
 
     def test_column_types(self) -> None:
@@ -729,8 +728,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
-        self.assertEqual("Col1", config.caps_normalized_col("col1"))
-        self.assertEqual("Col1", config.caps_normalized_col("Col1"))
         self.assertFalse(config.is_exempt_from_raw_data_pruning())
 
         # Now add an enum column and verify that column-related properties change

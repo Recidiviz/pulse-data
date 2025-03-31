@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Contains all classes related to raw file configs."""
+"""Contains classes related to raw file configs."""
 import csv
 import os
 import re
@@ -46,8 +46,6 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type impo
 )
 from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
-
-_DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
 
@@ -129,8 +127,8 @@ class RawDataFileUpdateCadence(Enum):
 class RawDataExportLookbackWindow(Enum):
     """Defines the lookback window for each raw data file, or how much historical data we
     expect to be in a typical raw data file a state sends to us. Generally, we prefer
-    states to send us full historicals. If a raw file tag is an incremental file, that
-    likely means that either the file or underlying data table itself has an audit
+    states to send us full historical files. If a raw file tag is an incremental file,
+    that likely means that either the file or underlying data table itself has an audit
     column that reliably allows the states to generate date-bounded diffs.
     """
 
@@ -210,8 +208,7 @@ class ColumnUpdateOperation(Enum):
 
 @attr.define
 class ColumnUpdateInfo:
-    """
-    Stores information about an update made to a column
+    """Stores information about an update made to a column
 
     Attributes:
         update_type: The type of update made to the column
@@ -416,12 +413,15 @@ class RawTableColumnInfo:
         self._validate_update_history()
 
     def _validate_update_history(self) -> None:
-        """Raises a ValueError if update_history is not sorted by update_datetime or if update_history contains invalid transitions
+        """Raises a ValueError if update_history is not sorted by update_datetime or if
+        update_history contains invalid transitions --
+
         Invalid transitions:
         - DELETION -> RENAME|DELETION
         - ADDITION|RENAME -> ADDITION
         - RENAME -> RENAME with the same previous_value
         - Any two updates with the same update_datetime
+
         Valid transitions:
         - ADDITION|RENAME -> RENAME|DELETION
         - DELETION -> ADDITION
@@ -868,13 +868,15 @@ class DirectIngestRawFileConfig:
     @property
     def all_columns(self) -> List[RawTableColumnInfo]:
         """Returns all columns in the raw file config, including those that have been
-        marked as deleted."""
+        marked as deleted.
+        """
         return self._columns
 
     @property
     def current_columns(self) -> List[RawTableColumnInfo]:
         """Returns the columns that currently exist in the raw file config. This is
-        necessary because a column in self.columns may have been marked as deleted."""
+        necessary because a column in self.columns may have been marked as deleted.
+        """
         now = datetime.now(timezone.utc)
         return [column for column in self._columns if column.exists_at_datetime(now)]
 
@@ -893,8 +895,10 @@ class DirectIngestRawFileConfig:
 
     @property
     def has_enums(self) -> bool:
-        """If true, columns with enum values exist within this raw file, and this config is eligible to be refreshed
-        with the for the fetch_column_values_for_state script."""
+        """If true, columns with enum values exist within this raw file, and this config
+        is eligible to be refreshed with the for the fetch_column_values_for_state
+        script.
+        """
         return bool([column.name for column in self.current_columns if column.is_enum])
 
     @property
@@ -934,16 +938,6 @@ class DirectIngestRawFileConfig:
             self.export_lookback_window
             == RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK
         )
-
-    def caps_normalized_col(self, col_name: str) -> Optional[str]:
-        """If the provided column name has a case-insensitive match in the columns list,
-        returns the proper capitalization of the column, as listed in the configuration
-        file.
-        """
-        for registered_col in self._columns:
-            if registered_col.name.lower() == col_name.lower():
-                return registered_col.name
-        return None
 
     def is_exempt_from_raw_data_pruning(self) -> bool:
         """Map tracking file tags to the reasons they are exempt from raw data pruning."""
@@ -1052,8 +1046,8 @@ class DirectIngestRawFileConfig:
         }
 
     def column_names_at_datetime(self, dt: datetime) -> List[str]:
-        """
-        Returns a list of column names as they appeared in the config at the given datetime.
+        """Returns a list of column names as they appeared in the config at the given
+        datetime.
         """
         return [
             col_name
@@ -1062,9 +1056,7 @@ class DirectIngestRawFileConfig:
         ]
 
     def columns_at_datetime(self, dt: datetime) -> List[RawTableColumnInfo]:
-        """
-        Returns a list of column info objects that existed at the given datetime.
-        """
+        """Returns a list of column info objects that existed at the given datetime."""
         return [
             column
             for column in self._columns
@@ -1072,10 +1064,9 @@ class DirectIngestRawFileConfig:
         ]
 
     def column_mapping_from_datetime_to_current(self, dt: datetime) -> Dict[str, str]:
-        """
-        Returns a dictionary mapping with the key being the column name at the given datetime
-        and the value being the column name now. Ignores columns that have been added or deleted
-        between the provided datetime and now.
+        """Returns a dictionary mapping with the key being the column name at the given
+        datetime and the value being the column name now. Ignores columns that have been
+        added or deleted between the provided datetime and now.
         """
         now = datetime.now(tz=timezone.utc)
         return {
@@ -1442,8 +1433,8 @@ class DirectIngestRegionRawFileConfig:
         )
 
     def get_datetime_parsers(self) -> Set[str]:
-        """
-        Return a set of every datetime parser that exists in the given raw file config
+        """Returns the set of every datetime parser that exists for this raw file config
+        config.
         """
         all_parsers = set()
         for config in self.raw_file_configs.values():

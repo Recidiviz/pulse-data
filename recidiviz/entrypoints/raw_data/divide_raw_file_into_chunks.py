@@ -47,7 +47,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 from recidiviz.utils.types import assert_type
 
-MAX_THREADS = 8  # TODO(#29946) determine reasonable default
+MAX_THREADS = 8
 FILE_LIST_DELIMITER = "^"
 
 
