@@ -272,3 +272,4 @@ output:
                           judge_full_name:
                             $person_name:
                               $full_name: judge
+                          status: $literal_enum(StateChargeStatus.CONVICTED)

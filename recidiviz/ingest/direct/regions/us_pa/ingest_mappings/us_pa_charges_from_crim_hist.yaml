@@ -9,8 +9,7 @@ input_columns:
   Disposition: STRING
   Disposition_Date: DATE
   seq_no: INTEGER
-unused_columns:
-  - Disposition
+unused_columns: []
 variables:
   - charge_external_id:
       $conditional:
@@ -26,8 +25,26 @@ variables:
               - $literal("CHARGE")
               - $variable(charge_external_id)
               - seq_no
-        # The view filters down to only convicted charges
-        status: $literal_enum(StateChargeStatus.CONVICTED)
+        # The view filters out unconvicted charges
+        status:
+          $conditional:
+            - $if:
+                $in:
+                  $value: Disposition
+                  $options:
+                    - $literal("ADJUDICATED DELINQUENT")
+                    - $literal("TERM CT SUP - ADJUDICATED DELINQUENT")
+                    - $literal("ADJUDICATED DEPENDENT")
+                    - $literal("JUVENILE ADJUDICATION")
+              $then: $literal_enum(StateChargeStatus.ADJUDICATED)
+            - $else_if:
+                $in:
+                  $value: Disposition
+                  $options:
+                    - $literal("DISPOSITION UNREPORTED-NO FURTHER ACTION")
+                    - $literal("NO DISPOSITION REPORTED")
+              $then: $literal_enum(StateChargeStatus.EXTERNAL_UNKNOWN)
+            - $else: $literal_enum(StateChargeStatus.CONVICTED)
         statute: Code
         description: Description
         classification_type:
@@ -81,7 +98,21 @@ output:
                       - $literal("CHARGE")
                       - Inmate_No
                       - seq_no
-                status: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+                status:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - Disposition
+                          - $literal("ACTIVE CASE")
+                      $then: $literal_enum(StateSentenceStatus.SERVING)
+                    - $else_if:
+                        $in:
+                          $value: Disposition
+                          $options:
+                            - $literal("DISPOSITION UNREPORTED-NO FURTHER ACTION")
+                            - $literal("NO DISPOSITION REPORTED")
+                      $then: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+                    - $else: $literal_enum(StateSentenceStatus.COMPLETED)
                 date_imposed: Disposition_Date
                 incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
                 charges:
@@ -98,7 +129,21 @@ output:
                       - $literal("CHARGE")
                       - Parole_No
                       - seq_no
-                status: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+                status:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - Disposition
+                          - $literal("ACTIVE CASE")
+                      $then: $literal_enum(StateSentenceStatus.SERVING)
+                    - $else_if:
+                        $in:
+                          $value: Disposition
+                          $options:
+                            - $literal("DISPOSITION UNREPORTED-NO FURTHER ACTION")
+                            - $literal("NO DISPOSITION REPORTED")
+                      $then: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+                    - $else: $literal_enum(StateSentenceStatus.COMPLETED)
                 date_imposed: Disposition_Date
                 supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PAROLE)
                 charges:
