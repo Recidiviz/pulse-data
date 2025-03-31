@@ -21,15 +21,12 @@ objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
 import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
@@ -72,60 +69,6 @@ class DirectIngestSftpIngestReadyFileMetadata(Entity, BuildableAttr, Defaultable
     file_discovery_time: datetime.datetime = attr.ib()
     # Time when the file is finished fully uploaded to the ingest bucket
     file_upload_time: Optional[datetime.datetime] = attr.ib()
-
-
-@attr.s(eq=False)
-class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
-    """Metadata about a raw file imported directly from a particular region."""
-
-    file_id: int = attr.ib()
-    region_code: str = attr.ib()
-
-    # The instance that this raw data was imported to.
-    raw_data_instance: DirectIngestInstance = attr.ib()
-    # Shortened name for the raw file that corresponds to its YAML schema definition
-    file_tag: str = attr.ib()
-    # Unprocessed normalized file name for this file, set at time of file discovery.
-    normalized_file_name: str = attr.ib()
-    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
-    file_discovery_time: datetime.datetime = attr.ib()
-    # Time when we have finished fully processing this file by uploading to BQ.
-    file_processed_time: Optional[datetime.datetime] = attr.ib(
-        validator=attr_validators.is_opt_utc_timezone_aware_datetime
-    )
-    is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
-
-    update_datetime: datetime.datetime = attr.ib(
-        validator=attr_validators.is_utc_timezone_aware_datetime
-    )
-
-
-@attr.s(eq=False)
-class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
-    """Status of a direct instance ingest process."""
-
-    # The region code of a particular instance doing ingest.
-    region_code: str = attr.ib()
-
-    # The timestamp of when the status of a particular instance changes.
-    status_timestamp: datetime.datetime = attr.ib()
-
-    # The particular instance doing ingest.
-    instance: DirectIngestInstance = attr.ib()
-
-    # The status of a particular instance doing ingest.
-    status: DirectIngestStatus = attr.ib()
-
-    def for_api(self) -> Dict[str, str]:
-        """Serializes the instance status as a dictionary that can be passed to the
-        frontend.
-        """
-        return {
-            "regionCode": self.region_code,
-            "instance": self.instance.value,
-            "status": self.status.value,
-            "statusTimestamp": self.status_timestamp.isoformat(),
-        }
 
 
 @attr.s(eq=False)

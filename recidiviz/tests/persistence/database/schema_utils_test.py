@@ -98,10 +98,8 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSentenceGroupLength",
         ]
         operations_database_entity_names = [
-            "DirectIngestRawFileMetadata",
             "DirectIngestSftpRemoteFileMetadata",
             "DirectIngestSftpIngestReadyFileMetadata",
-            "DirectIngestInstanceStatus",
             "DirectIngestDataflowJob",
             "DirectIngestDataflowRawTableUpperBounds",
             "DirectIngestRawDataResourceLock",
@@ -214,8 +212,6 @@ class TestSchemaUtils(unittest.TestCase):
         operations_table_names = [
             "direct_ingest_sftp_remote_file_metadata",
             "direct_ingest_sftp_ingest_ready_file_metadata",
-            "direct_ingest_raw_file_metadata",
-            "direct_ingest_instance_status",
             "direct_ingest_dataflow_job",
             "direct_ingest_dataflow_raw_table_upper_bounds",
             "direct_ingest_raw_data_resource_lock",

@@ -20,23 +20,6 @@
 direct_ingest_instance_primary = "PRIMARY"
 direct_ingest_instance_secondary = "SECONDARY"
 
-# DirectIngestStatus
-direct_ingest_status_raw_data_reimport_started = "RAW_DATA_REIMPORT_STARTED"
-direct_ingest_status_initial_state = "INITIAL_STATE"
-direct_ingest_status_raw_data_import_in_progress = "RAW_DATA_IMPORT_IN_PROGRESS"
-direct_ingest_status_ready_to_flash = "READY_TO_FLASH"
-direct_ingest_status_flash_in_progress = "FLASH_IN_PROGRESS"
-direct_ingest_status_flash_completed = "FLASH_COMPLETED"
-direct_ingest_status_raw_data_reimport_canceled = "RAW_DATA_REIMPORT_CANCELED"
-direct_ingest_status_raw_data_reimport_cancellation_in_progress = (
-    "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
-)
-direct_ingest_status_raw_data_up_to_date = "RAW_DATA_UP_TO_DATE"
-direct_ingest_status_stale_raw_data = "STALE_RAW_DATA"
-direct_ingest_status_no_raw_data_reimport_in_progress = (
-    "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
-)
-
 # DirectIngestLockActor
 direct_ingest_lock_actor_process = "PROCESS"
 direct_ingest_lock_actor_adhoc = "ADHOC"

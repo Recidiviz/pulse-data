@@ -45,21 +45,6 @@ direct_ingest_instance = Enum(
     name="direct_ingest_instance",
 )
 
-direct_ingest_status = Enum(
-    enum_canonical_strings.direct_ingest_status_raw_data_reimport_started,
-    enum_canonical_strings.direct_ingest_status_initial_state,
-    enum_canonical_strings.direct_ingest_status_raw_data_import_in_progress,
-    enum_canonical_strings.direct_ingest_status_ready_to_flash,
-    enum_canonical_strings.direct_ingest_status_stale_raw_data,
-    enum_canonical_strings.direct_ingest_status_raw_data_up_to_date,
-    enum_canonical_strings.direct_ingest_status_flash_in_progress,
-    enum_canonical_strings.direct_ingest_status_flash_completed,
-    enum_canonical_strings.direct_ingest_status_no_raw_data_reimport_in_progress,
-    enum_canonical_strings.direct_ingest_status_raw_data_reimport_canceled,
-    enum_canonical_strings.direct_ingest_status_raw_data_reimport_cancellation_in_progress,
-    name="direct_ingest_status",
-)
-
 direct_ingest_lock_actor = Enum(
     enum_canonical_strings.direct_ingest_lock_actor_adhoc,
     enum_canonical_strings.direct_ingest_lock_actor_process,
@@ -90,30 +75,6 @@ direct_ingest_file_import_status = Enum(
 OperationsBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OperationsBase"
 )
-
-
-# TODO(#28239) remove this table once raw data import dag is fully rolled out, not used
-class DirectIngestInstanceStatus(OperationsBase):
-    """Represents the status and various metadata about an ingest instance over time. Allows us to track the duration
-    of reruns and the time spent on each part of ingest."""
-
-    __tablename__ = "direct_ingest_instance_status"
-
-    # The region code of a particular instance doing ingest.
-    region_code = Column(String(255), nullable=False, index=True)
-
-    # The timestamp of when the status of a particular instance changes.
-    status_timestamp = Column(DateTime(timezone=True), nullable=False)
-
-    # The particular instance doing ingest.
-    instance = Column(direct_ingest_instance, nullable=False, index=True)
-
-    # The status of a particular instance doing ingest.
-    status = Column(direct_ingest_status, nullable=False)
-
-    __table_args__ = tuple(
-        PrimaryKeyConstraint(region_code, status_timestamp, instance)
-    )
 
 
 class DirectIngestSftpRemoteFileMetadata(OperationsBase):
@@ -195,57 +156,6 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
 
     # Time when the file is finished fully uploaded to the ingest bucket
     file_upload_time = Column(DateTime(timezone=True))
-
-
-# TODO(#28239) remove this table once raw data import dag is fully rolled out
-class DirectIngestRawFileMetadata(OperationsBase):
-    """Represents the metadata known about a raw data file that we processed through direct ingest."""
-
-    __tablename__ = "direct_ingest_raw_file_metadata"
-
-    file_id = Column(Integer, primary_key=True)
-
-    region_code = Column(String(255), nullable=False, index=True)
-
-    # Shortened name for the raw file that corresponds to its YAML schema definition
-    file_tag = Column(String(255), nullable=False, index=True)
-
-    # Unprocessed normalized file name for this file, set at time of file discovery.
-    normalized_file_name = Column(String(255), index=True)
-
-    # Time when the file is actually discovered by our controller's handle_new_files endpoint.
-    file_discovery_time = Column(DateTime(timezone=True))
-
-    # Time when we have finished fully processing this file by uploading to BQ.
-    file_processed_time = Column(DateTime(timezone=True))
-
-    # The date we received the raw data. This is the field you should use when looking
-    # for data current through date X. This is the date in the normalized file name
-    # for this raw data file.
-    update_datetime = Column(DateTime(timezone=True), nullable=False)
-
-    # The instance that this raw data was imported to.
-    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
-
-    # Whether or not this row is still valid.
-    is_invalidated = Column(Boolean, nullable=False)
-
-    __table_args__ = (
-        Index(
-            "one_non_invalidated_normalized_name_per_region_and_instance",
-            "region_code",
-            "raw_data_instance",
-            "normalized_file_name",
-            unique=True,
-            postgresql_where=(~is_invalidated),
-        ),
-        CheckConstraint(
-            "file_discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
-        ),
-        CheckConstraint(
-            "normalized_file_name IS NOT NULL", name="nonnull_raw_normalized_file_name"
-        ),
-    )
 
 
 class DirectIngestDataflowJob(OperationsBase):

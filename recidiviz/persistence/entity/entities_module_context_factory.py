@@ -223,8 +223,6 @@ class _OperationsEntitiesModuleContext(EntitiesModuleContext):
             operations_entities.DirectIngestDataflowJob.__name__,
             operations_entities.DirectIngestDataflowRawTableUpperBounds.__name__,
             # Classes w/o Relationships here to satifsy includes all classes
-            operations_entities.DirectIngestRawFileMetadata.__name__,
-            operations_entities.DirectIngestInstanceStatus.__name__,
             operations_entities.DirectIngestRawDataResourceLock.__name__,
             operations_entities.DirectIngestSftpIngestReadyFileMetadata.__name__,
             operations_entities.DirectIngestSftpRemoteFileMetadata.__name__,

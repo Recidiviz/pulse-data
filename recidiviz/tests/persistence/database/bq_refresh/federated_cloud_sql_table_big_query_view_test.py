@@ -46,19 +46,19 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
         table = one(
             t
             for t in OperationsBase.metadata.sorted_tables
-            if t.name == "direct_ingest_instance_status"
+            if t.name == "direct_ingest_dataflow_job"
         )
         view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
             connection_region="us-east2",
             table=table,
             view_id=table.name,
-            cloud_sql_query="SELECT * FROM direct_ingest_instance_status;",
+            cloud_sql_query="SELECT * FROM direct_ingest_dataflow_job;",
             database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS),
             materialized_address_override=BigQueryAddress(
                 dataset_id="materialized_dataset", table_id="materialized_table"
             ),
         )
-        expected_description = """View providing a connection to the [direct_ingest_instance_status]
+        expected_description = """View providing a connection to the [direct_ingest_dataflow_job]
 table in the [postgres] database in the [OPERATIONS] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
 schema-specific datasets (`state`, `justice_counts`, etc)."""
@@ -68,7 +68,7 @@ SELECT
     *
 FROM EXTERNAL_QUERY(
     "test-project.us-east2.operations_v2_cloudsql",
-    "SELECT * FROM direct_ingest_instance_status;"
+    "SELECT * FROM direct_ingest_dataflow_job;"
 )"""
 
         # Build without dataset overrides
@@ -81,7 +81,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(
             BigQueryAddress(
                 dataset_id="operations_v2_cloudsql_connection",
-                table_id="direct_ingest_instance_status",
+                table_id="direct_ingest_dataflow_job",
             ),
             view.address,
         )

@@ -30,7 +30,6 @@ from sqlalchemy import create_engine
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -395,64 +394,6 @@ class TestOperationsMigrations(MigrationsTestBase):
     @classmethod
     def schema_type(cls) -> SchemaType:
         return SchemaType.OPERATIONS
-
-    # TODO(#28239) remove once direct_ingest_instance_status is dropped
-    def test_direct_ingest_instance_status_contains_data_for_all_states(
-        self,
-    ) -> None:
-        '''Enforces that after all migrations the set of direct ingest instance statuses
-        matches the list of known states.
-
-        If this test fails, you will likely have to add a new migration because a new state
-        was recently created. To do so, first run:
-        ```
-        python -m recidiviz.tools.migrations.autogenerate_migration \
-            --database OPERATIONS \
-            --message add_us_xx_initial_ingest_statuses
-        ```
-
-        This will generate a blank migration. You should then modify the migration, changing
-        the `upgrade` method to look like:
-        ```
-        def upgrade() -> None:
-            op.execute("""
-                INSERT INTO direct_ingest_instance_status (region_code, instance, status, status_timestamp) VALUES
-                ('US_XX', 'PRIMARY', 'INITIAL_STATE', '20XX-YY-ZZT00:00:00.000000'),
-                ('US_XX', 'SECONDARY', 'NO_RAW_DATA_REIMPORT_IN_PROGRESS', '20XX-YY-YYT00:00:00.000000');
-            """)
-
-        def downgrade() -> None:
-            op.execute(
-                f"""
-                   DELETE FROM direct_ingest_instance_status
-                   WHERE region_code = 'US_XX';
-               """
-            )
-        ```
-
-        Afterwards, this test should ideally pass.
-        '''
-
-        with runner(self.default_config(), self.engine) as r:
-            r.migrate_up_to("head")
-
-            engine = create_engine(
-                local_persistence_helpers.postgres_db_url_from_env_vars()
-            )
-
-            conn = engine.connect()
-            rows = conn.execute(
-                "SELECT region_code, instance FROM direct_ingest_instance_status;"
-            )
-
-            instance_to_state_codes = defaultdict(set)
-            for row in rows:
-                instance_to_state_codes[DirectIngestInstance(row[1])].add(row[0])
-
-            required_states = {name.upper() for name in get_existing_region_codes()}
-
-            for instance in DirectIngestInstance:
-                self.assertEqual(required_states, instance_to_state_codes[instance])
 
     def test_direct_ingest_raw_data_flash_status_contains_data_for_all_states(
         self,
