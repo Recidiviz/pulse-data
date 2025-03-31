@@ -63,7 +63,7 @@ class LookMLDashboardElementMetadata:
     def from_view(cls, view: LookMLView) -> "LookMLDashboardElementMetadata":
         """
         Builds a dashboard element metadata from a LookML view.
-        Includes dimensions and the date dimension created by time-based dimension groups as fields.
+        Includes non-hidden dimensions and the date dimension created by time-based dimension groups as fields.
         Includes the date dimension created by time-based dimension groups in the sort fields,
         sorting each field in descending order.
         """
@@ -71,10 +71,16 @@ class LookMLDashboardElementMetadata:
             view.qualified_name_for_field(dimension_group.date_dimension_name)
             for dimension_group in view.dimension_group_fields
             if isinstance(dimension_group, TimeDimensionGroupLookMLViewField)
+            and not dimension_group.is_hidden
+        ]
+        dimension_field_names = [
+            view.qualified_name_for_field(dimension_field.field_name)
+            for dimension_field in view.dimension_fields
+            if not dimension_field.is_hidden
         ]
         return cls(
             name=snake_to_title(view.view_name),
-            fields=view.qualified_dimension_names() + date_field_names,
+            fields=dimension_field_names + date_field_names,
             sort_fields=[
                 LookMLSort(field_name, desc=True) for field_name in date_field_names
             ],

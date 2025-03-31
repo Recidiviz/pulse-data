@@ -26,7 +26,7 @@ from recidiviz.looker.lookml_dashboard_element import (
     LookMLSort,
 )
 
-INFO_ELEMENT_HEIGHT = 1
+INFO_ELEMENT_HEIGHT = 2
 ACTIONS_ELEMENT_HEIGHT = 2
 
 

@@ -24,6 +24,7 @@ from more_itertools import one
 from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterAllowedValue,
     FieldParameterDatatype,
+    FieldParameterHidden,
     FieldParameterTimeframes,
     FieldParameterType,
     FieldParameterViewLabel,
@@ -141,6 +142,12 @@ class LookMLViewField:
             if p.referenced_view_fields is not None
             for field in p.referenced_view_fields
         }
+
+    @property
+    def is_hidden(self) -> bool:
+        return any(
+            isinstance(p, FieldParameterHidden) and p.is_hidden for p in self.parameters
+        )
 
 
 @attr.define

@@ -172,6 +172,7 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
             parameters=[
                 LookMLFieldParameter.type(LookMLFieldType.STRING),
                 LookMLFieldParameter.sql("${TABLE}.person_id"),
+                LookMLFieldParameter.hidden(is_hidden=True),
                 LookMLFieldParameter.html(
                     StrictStringFormatter().format(
                         html_template,

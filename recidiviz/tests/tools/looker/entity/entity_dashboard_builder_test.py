@@ -416,7 +416,6 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     type: looker_grid
     fields: [fake_another_entity.another_entity_id,
       fake_another_entity.another_name,
-      fake_another_entity.fake_person_id,
       fake_another_entity.state_code]
     sorts: []
     listen: 
@@ -435,7 +434,6 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     model: recidiviz-testing
     type: looker_grid
     fields: [fake_entity.entity_id,
-      fake_entity.fake_person_id,
       fake_entity.name,
       fake_entity.state_code]
     sorts: []
@@ -475,7 +473,6 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     type: looker_grid
     fields: [fake_person_external_id.external_id,
       fake_person_external_id.fake_person_external_id_id,
-      fake_person_external_id.fake_person_id,
       fake_person_external_id.id_type,
       fake_person_external_id.state_code]
     sorts: []

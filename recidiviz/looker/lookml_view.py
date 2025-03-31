@@ -133,6 +133,15 @@ class LookMLView:
             if isinstance(field, DimensionGroupLookMLViewField)
         ]
 
+    @property
+    def dimension_fields(self) -> List[DimensionLookMLViewField]:
+        """Return a list of dimension fields in this view"""
+        return [
+            field
+            for field in self.fields
+            if isinstance(field, DimensionLookMLViewField)
+        ]
+
     def validate_referenced_fields_exist_in_schema(
         self, schema_fields: List[SchemaField]
     ) -> None:
@@ -168,11 +177,7 @@ class LookMLView:
         -- not including dimension groups"""
         return [
             self.qualified_name_for_field(field.field_name)
-            for field in self.fields
-            if isinstance(
-                field,
-                DimensionLookMLViewField,
-            )
+            for field in self.dimension_fields
         ]
 
     def build(self) -> str:
