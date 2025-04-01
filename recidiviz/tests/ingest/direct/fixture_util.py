@@ -93,7 +93,6 @@ STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES = {
     StateCode.US_OR,
     StateCode.US_PA,
     StateCode.US_TN,
-    StateCode.US_TX,
 }
 
 
