@@ -34,9 +34,14 @@ class UsUtRawDataImportDelegate(BaseRawDataImportDelegate, SequentialChunkedFile
     def coalesce_chunked_files(
         self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-        """sprvsn_cntc is the only chunked file in Utah."""
+        """Logic for handling chunked files in Utah."""
 
         if file_tag == "sprvsn_cntc":
+            return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
+                file_tag=file_tag, gcs_files=gcs_files
+            )
+
+        if file_tag == "tst_qstn_rspns":
             return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
                 file_tag=file_tag, gcs_files=gcs_files
             )

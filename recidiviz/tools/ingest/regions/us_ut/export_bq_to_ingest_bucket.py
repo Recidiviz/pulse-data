@@ -230,7 +230,6 @@ class BigQueryToIngestBucketExportManager:
         )
 
 
-# TODO(#37923) schedule this export somewhere so it runs automatically
 def export_bq_to_ingest_bucket(
     *,
     state_code: StateCode,

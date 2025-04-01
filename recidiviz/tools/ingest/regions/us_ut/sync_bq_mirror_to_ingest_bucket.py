@@ -64,7 +64,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.tools.ingest.regions.us_ut.export_bq_to_ingest_bucket import (
     BigQueryToIngestBucketExportManager,
 )
-from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
@@ -256,7 +255,7 @@ class SyncBigQueryMirrorManager:
 
         return file_tag_candidates
 
-    def sync(self, *, destination_project_id: str, dry_run: bool) -> None:
+    def sync(self, *, dry_run: bool) -> None:
         candidates_to_sync = self._get_candidates_from_latest_sync()
 
         # we might not receive all file tags each time -- if we don't, stale raw data
@@ -270,7 +269,7 @@ class SyncBigQueryMirrorManager:
                 "\n".join(f"\t-{table}" for table in missing_tables),
             )
 
-        dest_bq_client = BigQueryClientImpl(project_id=destination_project_id)
+        source_bq_client = BigQueryClientImpl(project_id=self.source_project_id)
         export_manager = BigQueryToIngestBucketExportManager(
             state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
@@ -279,12 +278,11 @@ class SyncBigQueryMirrorManager:
             },
         )
 
-        export_manager.export(bq_client=dest_bq_client, dry_run=dry_run)
+        export_manager.export(bq_client=source_bq_client, dry_run=dry_run)
 
 
 def sync_bq_mirror_to_ingest_bucket(
     *,
-    destination_project_id: str,
     destination_raw_data_instance: DirectIngestInstance,
     table_ids: set[str],
     dry_run: bool,
@@ -302,7 +300,7 @@ def sync_bq_mirror_to_ingest_bucket(
         raw_data_instance=destination_raw_data_instance,
         table_ids=table_ids_set,
     )
-    sync_manager.sync(destination_project_id=destination_project_id, dry_run=dry_run)
+    sync_manager.sync(dry_run=dry_run)
 
 
 def _create_parser() -> argparse.ArgumentParser:
@@ -357,7 +355,6 @@ if __name__ == "__main__":
             )
 
         sync_bq_mirror_to_ingest_bucket(
-            destination_project_id=metadata.project_id(),
             destination_raw_data_instance=args.destination_raw_data_instance,
             table_ids=args.table_ids,
             dry_run=args.dry_run,
@@ -368,7 +365,6 @@ if __name__ == "__main__":
 
         with local_project_id_override(args.destination_project_id):
             sync_bq_mirror_to_ingest_bucket(
-                destination_project_id=args.destination_project_id,
                 destination_raw_data_instance=args.destination_raw_data_instance,
                 table_ids=args.table_ids,
                 dry_run=args.dry_run,

@@ -87,6 +87,7 @@ resource "google_cloud_run_v2_job" "utah_data_transfer_sync" {
           }
         }
       }
+      max_retries = 0
     }
   }
 
