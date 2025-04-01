@@ -227,20 +227,6 @@ metric_pipelines:
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west1
 
-  # Full US_OR calculations with no time limit
-  - pipeline: population_span_metrics
-    state_code: US_OR
-    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-east4
-  - pipeline: incarceration_metrics
-    state_code: US_OR
-    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-east4
-  - pipeline: supervision_metrics
-    state_code: US_OR
-    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-east4
-
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_OZ
