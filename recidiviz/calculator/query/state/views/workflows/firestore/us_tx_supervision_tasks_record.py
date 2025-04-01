@@ -86,6 +86,11 @@ TASK_CONFIGS: List[TaskConfig] = [
         "due_date_field": "contact_due_date",
     },
     {
+        "type": "usTxOfficeContactScheduled",
+        "table": "meets_scheduled_office_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
+    {
         "type": "usTxTypeAgnosticContact",
         "table": "meets_type_agnostic_contact_standards_materialized",
         "due_date_field": "contact_due_date",
