@@ -101,11 +101,6 @@ output:
                 status:
                   $conditional:
                     - $if:
-                        $equal:
-                          - Disposition
-                          - $literal("ACTIVE CASE")
-                      $then: $literal_enum(StateSentenceStatus.SERVING)
-                    - $else_if:
                         $in:
                           $value: Disposition
                           $options:
@@ -132,11 +127,6 @@ output:
                 status:
                   $conditional:
                     - $if:
-                        $equal:
-                          - Disposition
-                          - $literal("ACTIVE CASE")
-                      $then: $literal_enum(StateSentenceStatus.SERVING)
-                    - $else_if:
                         $in:
                           $value: Disposition
                           $options:

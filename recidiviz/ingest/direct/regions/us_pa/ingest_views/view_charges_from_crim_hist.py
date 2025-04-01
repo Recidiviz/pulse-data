@@ -37,7 +37,7 @@ VIEW_QUERY_TEMPLATE = """
         FROM {Criminal_History} history
         WHERE 
             (UPPER(Disposition) LIKE 'GUILTY%' AND UPPER(Disposition) NOT LIKE '%WITHDRAWN%')
-            OR UPPER(Disposition) in ('CONVICTED', 'NOLO CONTENDERE', 'FOUND GUILTY', 'PLEAD GUILTY', 'ACTIVE CASE', 
+            OR UPPER(Disposition) in ('CONVICTED', 'NOLO CONTENDERE', 'FOUND GUILTY', 'PLEAD GUILTY',
                                       'ADJUDICATED DELINQUENT', 'TERM CT SUP - ADJUDICATED DELINQUENT', 'ADJUDICATED DEPENDENT', 'JUVENILE ADJUDICATION',
                                       'NO DISPOSITION REPORTED', 'DISPOSITION UNREPORTED-NO FURTHER ACTION')
     )
