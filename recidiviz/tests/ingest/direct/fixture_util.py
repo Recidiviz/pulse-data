@@ -90,7 +90,6 @@ STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES = {
     StateCode.US_DD,
     StateCode.US_IX,
     StateCode.US_ME,
-    StateCode.US_ND,
     StateCode.US_OR,
     StateCode.US_PA,
     StateCode.US_TN,
