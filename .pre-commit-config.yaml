@@ -16,6 +16,7 @@ repos:
       # This runs on py, pyi, and ipynb files.
       - id: black-jupyter
         language_version: python3
+        exclude: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.5.1
     hooks:
@@ -37,6 +38,27 @@ repos:
         args: [-x]
   - repo: local
     hooks:
+      - id: clear_notebook_files
+        name: Clear Output of Jupyter Notebook
+        description: Clears output of Jupyter Notebooks
+        files: \.ipynb$
+        stages: [pre-commit]
+        language: system
+        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+      - id: ensure_jupyter_notebook_is_exported
+        name: ensure_jupyter_notebook_is_exported
+        entry: pipenv run python -m
+          recidiviz.research.export_notebooks_pre_commit
+        language: system
+        files: ^recidiviz/research/.*notebooks/.*\.ipynb$
+        require_serial: true
+      - id: validate_scripts_and_notebooks_are_changed_together
+        name: validate_scripts_and_notebooks_are_changed_together
+        entry: pipenv run python -m
+          recidiviz.research.validate_script_changes_pre_commit
+        language: system
+        files: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
+        require_serial: true
       - id: generate_docs_for_region
         name: generate_docs_for_region
         entry: pipenv run python -m

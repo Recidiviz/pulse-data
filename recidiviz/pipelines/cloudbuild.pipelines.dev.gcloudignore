@@ -7,6 +7,9 @@
 recidiviz/airflow/tests/
 recidiviz/tests/
 
+# Ignore all research code (never used by pipelines)
+recidiviz/research/
+
 # Ignore all frontend code
 frontends/
 

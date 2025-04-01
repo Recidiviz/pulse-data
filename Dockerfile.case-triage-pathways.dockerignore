@@ -51,6 +51,8 @@ recidiviz/tools/scraper_template/**
 bandit/**
 # docs that are private-ish for now
 docs/**
+# Exclude research directory (which has analytical and ad hoc work)
+recidiviz/research/**
 # old paths
 recidiviz/ingest/scrape/{regions,vendors}/**
 recidiviz/tests/ingest/scrape/{regions,vendors}/**

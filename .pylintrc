@@ -22,6 +22,13 @@ ignore=CVS,lib
 # regex matches against base names, not paths.
 ignore-patterns=.*node_modules.*,.*pb2.*
 
+# Ignore anything in the recidiviz/research/migrated_notebooks directory, which contains
+# migrated files from a previous repo that may not pass Pylint checks until modified.
+# Pylint will also complain about Python scripts that are auto-exported from Jupyter
+# notebooks, so we have Pylint ignore everything in any nbautoexport-scripts
+# subdirectory within the notebook directories in recidiviz/research.
+ignore-paths=^recidiviz/research/migrated_notebooks/.*|^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*
+
 # Pickle collected data for later comparisons.
 persistent=yes
 

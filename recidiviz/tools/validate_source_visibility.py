@@ -145,15 +145,32 @@ def get_invalid_dependencies_for_entrypoint(
     )
 
 
+# Define a constant list of disallowed module prefixes
+DISALLOWED_MODULE_PREFIXES = [
+    "recidiviz.research",  # Add other disallowed prefixes here if needed
+]
+
+
 def check_dependencies_for_entrypoint(
     entrypoint_module: str,
     valid_module_prefixes: pygtrie.PrefixSet,
     explicitly_invalid_package_dependencies: Optional[List[str]] = None,
 ) -> bool:
-    """Analyzes dependencies for a given entrypoint prints information about failures.
+    """Analyzes dependencies for a given entrypoint and prints information about failures.
 
     Returns True for success and False for failure.
     """
+    # Check if any of the valid_module_prefixes match disallowed modules
+    for disallowed_prefix in DISALLOWED_MODULE_PREFIXES:
+        if any(
+            str(prefix).startswith(disallowed_prefix)
+            for prefix in valid_module_prefixes
+        ):
+            raise ValueError(
+                f"Invalid configuration: {disallowed_prefix} is a disallowed module "
+                f"and cannot be included in valid_module_prefixes for {entrypoint_module}."
+            )
+
     dependency_result = get_invalid_dependencies_for_entrypoint(
         entrypoint_module,
         valid_module_prefixes=valid_module_prefixes,

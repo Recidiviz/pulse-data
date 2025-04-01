@@ -45,15 +45,13 @@ def check_notebook_outputs(notebook_stream: TextIOWrapper, notebook_path: str) -
             if cell.outputs:
                 has_output = True
                 print(
-                    f"Notebook '{notebook_path}' has outputs that need to be cleared."
+                    f"Notebook '{notebook_path}' has outputs that need to be cleared. Run "
+                    f"`jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {notebook_path}`"
                 )
                 break
 
     if has_output:
-        print(
-            f"Notebook '{notebook_path}' has outputs that need to be cleared. Run "
-            f"`jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {notebook_path}`"
-        )
+        raise RuntimeError("Uncleared notebooks detected. Please clear all notebooks")
 
 
 if __name__ == "__main__":

@@ -83,6 +83,20 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
             )
         )
 
+    def test_disallowed_module_prefixes(self) -> None:
+        """Test that disallowed module prefixes raise a ValueError."""
+        with self.assertRaises(ValueError) as context:
+            check_dependencies_for_entrypoint(
+                "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
+                valid_module_prefixes=make_module_matcher(
+                    {"recidiviz.common", "recidiviz.research"}
+                ),
+            )
+        self.assertIn(
+            "recidiviz.research is a disallowed module",
+            str(context.exception),
+        )
+
     # is_valid_module_dependency helper tests
     def test_is_valid_module_dependency_valid(self) -> None:
         prefixes = make_module_matcher(["recidiviz.report"])
@@ -101,4 +115,15 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
         self.assertFalse(is_valid_module_dependency("recidiviz.reporting", prefixes))
         self.assertFalse(
             is_valid_module_dependency("recidiviz.reporting.foo", prefixes)
+        )
+
+    def test_is_valid_module_dependency_research(self) -> None:
+        prefixes = make_module_matcher(["recidiviz.report"])
+        self.assertFalse(is_valid_module_dependency("recidiviz.research", prefixes))
+        self.assertFalse(is_valid_module_dependency("recidiviz.research.foo", prefixes))
+        self.assertFalse(
+            is_valid_module_dependency("recidiviz.research.notebooks", prefixes)
+        )
+        self.assertFalse(
+            is_valid_module_dependency("recidiviz.research.notebooks.foo", prefixes)
         )
