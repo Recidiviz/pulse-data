@@ -1,4 +1,4 @@
-# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-nc project
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-ar project
 
 # Import billing_account and organization_id
 import:
@@ -6,13 +6,12 @@ import:
 
 settings:
   context:
-    project_id: recidiviz-ingest-us-nc
-    state_code: US_NC
+    project_id: recidiviz-ingest-us-ar
+    state_code: US_AR
 
 # The variables set here are automatically provided to any components used in this stack.
 vars:
   project_id: "{{ .settings.context.project_id }}"
-  state_code: "{{ .settings.context.state_code }}"
 
 terraform:
   # Describes where the Terraform state file for these centrally-managed components is stored
@@ -30,44 +29,35 @@ terraform:
 
 components:
   terraform:
-    # Provisions the recidiviz-ingest-uc-nc project
+    # Provisions the recidiviz-ingest-us-ar project
     vendor/core-project-factory:
       vars:
         name: "{{ .settings.context.project_id }}"
         org_id: "{{ .settings.context.organization_id }}"
         folder_id: "{{ .settings.context.hipaa_folder_id }}"
         billing_account: "{{ .settings.context.billing_account }}"
+        default_service_account: deprivilege
+        deletion_policy: PREVENT
+        domain: "{{ .settings.context.organization_domain }}"
         # Grant the owner security group owner access (can be gained with go/jit)
         group_name: "s-{{ .settings.context.project_id }}-owner"
         group_role: roles/owner
-        default_service_account: deprivilege
-        deletion_policy: PREVENT
         activate_apis:
-          - compute.googleapis.com # GCE
-          - container.googleapis.com # GKE
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
 
+    # AR pushes data to this bucket daily, then the replication rules defined for this bucket cause the data to be
+    # pushed to the recidiviz-staging-direct-ingest-state-us-ar and recidiviz-123-direct-ingest-state-us-ar buckets in
+    # the recidiviz-staging and recidiviz-123 projects, respectively.
     isolated-direct-ingest-bucket-with-replication:
       vars:
         project_id: "{{ .settings.context.project_id }}"
         region: us-central1
         state_code: "{{ .settings.context.state_code }}"
 
-    # Provision the cluster and resources separately so that the cluster can be recreated
-    # without the dependent helm resources preventing it if necessary
-    sftpgo-kubernetes-cluster:
+    # This is the service account with permissions
+    direct-ingest-gcs-service-account:
       vars:
         project_id: "{{ .settings.context.project_id }}"
-        region: us-central1
-        zones:
-          - us-central1-b
-
-    sftpgo-kubernetes-resources:
-      vars:
-        project_id: "{{ .settings.context.project_id }}"
-        region: !terraform.output sftpgo-kubernetes-cluster {{.stack}} region
         state_code: "{{ .settings.context.state_code }}"
-        sftp_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
-        kubernetes_endpoint: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
-        kubernetes_ca_certificate: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate
+        ingest_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication recidiviz-ingest-us-ar bucket_name

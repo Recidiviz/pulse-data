@@ -18,6 +18,16 @@ The main benefit of Atmos for us would be in its organizational guidance. It bre
 Running the `atmos` command will bring up a friendly interface which can be used to deploy components.
 <img src="./docs/img/atmos-tui.png"/>
 
+If this is your first time doing `atmos` development, first run:
+```bash
+brew install atmos
+```
+
+When running all `atmos` commands, you must first navigate to the root atmos directory:
+```bash
+cd recidiviz/tools/deploy/atmos
+```
+
 The `atmos` CLI supports all `terraform` commands by prefixing them with `atmos`. A component and stage must be specified for all commands.
 For example:
 ```bash
@@ -40,5 +50,3 @@ atmos terraform import \
 	recidiviz-dashboard-production-tf-state
 
 ```
-
-## [Using our `atmos-runner` image](./runner/README.md)
