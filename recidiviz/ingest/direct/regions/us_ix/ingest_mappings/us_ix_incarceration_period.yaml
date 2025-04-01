@@ -204,6 +204,7 @@ output:
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - Discharged from DOC
                   - Parole Term Expired
+                  - Probation Term Expired
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - Assigned To Work Release
                   - Death Row
