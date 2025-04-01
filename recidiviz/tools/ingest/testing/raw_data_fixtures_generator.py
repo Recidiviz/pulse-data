@@ -44,8 +44,8 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_data_dependency,
-    write_raw_fixture_dataframe_to_path,
 )
+from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.randomize_fixture_data import (
     randomize_value,
 )
@@ -388,4 +388,6 @@ class RawDataFixturesGenerator:
             )
             query_results = query_job.to_dataframe()
             query_results = self.randomize_column_data(query_results)
-            write_raw_fixture_dataframe_to_path(query_results, output_fixture_path)
+            RawDataFixture(
+                raw_table_dependency_config
+            ).write_dataframe_into_fixture_file(query_results, self.output_filename)

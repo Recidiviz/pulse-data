@@ -20,15 +20,11 @@ import os
 
 import numpy as np
 import pandas as pd
-import pytz
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -89,6 +85,31 @@ def fixture_path_for_address(
     )
 
 
+STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES = {
+    StateCode.US_AR,
+    StateCode.US_AZ,
+    StateCode.US_CA,
+    StateCode.US_CO,
+    StateCode.US_IA,
+    StateCode.US_ID,
+    StateCode.US_IX,
+    StateCode.US_MA,
+    StateCode.US_ME,
+    StateCode.US_MI,
+    StateCode.US_MO,
+    StateCode.US_NC,
+    StateCode.US_ND,
+    StateCode.US_NE,
+    StateCode.US_OR,
+    StateCode.US_OZ,
+    StateCode.US_PA,
+    StateCode.US_TN,
+    StateCode.US_TX,
+    StateCode.US_UT,
+    StateCode.US_DD,
+}
+
+
 def fixture_path_for_raw_data_dependency(
     state_code: StateCode,
     raw_data_dependency: DirectIngestViewRawFileDependency,
@@ -103,13 +124,20 @@ def fixture_path_for_raw_data_dependency(
         StateCode.US_PA,
     }:
         file_name = "__SHARED_CODE_FILE__"
+    # TODO(#38355) Migrate all states to @ALL fixtures
+    if state_code in STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES:
+        return os.path.join(
+            DIRECT_INGEST_FIXTURES_ROOT,
+            state_code.value.lower(),
+            "raw",
+            raw_data_dependency.raw_table_dependency_arg_name,
+            f"{file_name}.csv",
+        )
     return os.path.join(
         DIRECT_INGEST_FIXTURES_ROOT,
         state_code.value.lower(),
-        # TODO(#38355) Use us_xx_raw_data to mirror actual BQ Adress
-        "raw",
-        # TODO(#38355) Use the file tag when all fixtures are @ALL fixtures
-        raw_data_dependency.raw_table_dependency_arg_name,
+        f"{state_code.value.lower()}_raw_data",
+        raw_data_dependency.file_tag,
         f"{file_name}.csv",
     )
 
@@ -171,42 +199,3 @@ def load_dataframe_from_path(
     )
     df.replace([np.nan], [None], inplace=True)
     return df
-
-
-# TODO(#38355) Use the method on RawDataFixture instead
-# when all fixtures are @All fixtures
-def write_raw_fixture_dataframe_to_path(
-    df: pd.DataFrame,
-    raw_fixture_path: str,
-) -> None:
-    """
-    Given a dataframe and a raw fixture path,
-    write the dataframe to a fixture file.
-
-    We expect the dataframe to contain all metadata columns
-    for raw data.
-    """
-    os.makedirs(os.path.dirname(raw_fixture_path), exist_ok=True)
-
-    if IS_DELETED_COL_NAME not in df.columns:
-        df[IS_DELETED_COL_NAME] = False
-
-    if UPDATE_DATETIME_COL_NAME not in df.columns:
-        # file_update_dt must have a pytz.UTC timezone
-        df[UPDATE_DATETIME_COL_NAME] = datetime.datetime.now(
-            tz=pytz.UTC
-        ) - datetime.timedelta(days=1)
-
-    if FILE_ID_COL_NAME not in df.columns:
-        # We derive a file_id from the update_datetime, assuming that all data with
-        # the same update_datetime came from the same file.
-        df[FILE_ID_COL_NAME] = (
-            df[UPDATE_DATETIME_COL_NAME]
-            .rank(
-                # The "dense" method assigns the same value where update_datetime
-                # values are the same.
-                method="dense"
-            )
-            .astype(int)
-        )
-    df.to_csv(raw_fixture_path, index=False)
