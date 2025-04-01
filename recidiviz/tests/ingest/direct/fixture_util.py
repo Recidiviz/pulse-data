@@ -86,7 +86,6 @@ def fixture_path_for_address(
 
 
 STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES = {
-    StateCode.US_AR,
     StateCode.US_AZ,
     StateCode.US_CA,
     StateCode.US_DD,
