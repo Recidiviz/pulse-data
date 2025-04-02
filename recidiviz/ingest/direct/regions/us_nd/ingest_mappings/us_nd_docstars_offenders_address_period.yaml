@@ -9,8 +9,8 @@ input_columns:
   ZIP: STRING
   start_date: DATETIME
   end_date: DATETIME
-  session_id: STRING
-  date_gap_id: STRING
+  session_id: INTEGER
+  date_gap_id: INTEGER
 unused_columns: [date_gap_id, session_id]
 output:
   StatePerson:

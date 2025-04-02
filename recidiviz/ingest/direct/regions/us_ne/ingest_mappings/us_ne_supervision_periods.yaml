@@ -3,18 +3,18 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  inmateNumber: INTEGER
+  inmateNumber: STRING
   periodId: INTEGER
   supervisedLevel: STRING
-  paroleOfficerID: INTEGER
+  paroleOfficerID: STRING
   countyParoledTo: STRING
   inOutStateIndicator1Code: STRING
   inOutStateIndicator2Code: STRING
   inOutStateIndicator3Code: STRING
   startReason: STRING
   endReason: STRING
-  startDate: DATETIME
-  endDate: DATETIME
+  startDate: STRING
+  endDate: STRING
 unused_columns: []
 output:
   StatePerson:

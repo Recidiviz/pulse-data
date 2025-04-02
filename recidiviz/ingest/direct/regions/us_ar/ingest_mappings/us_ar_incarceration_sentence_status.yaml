@@ -6,7 +6,7 @@ input_columns:
   OFFENDERID: STRING
   COMMITMENTPREFIX: STRING
   SENTENCECOUNT: STRING
-  rd_update_datetime: DATETIME
+  rd_update_datetime: STRING
   SENTENCESTATUSFLAG: STRING
   seq_num: INTEGER
 unused_columns: []

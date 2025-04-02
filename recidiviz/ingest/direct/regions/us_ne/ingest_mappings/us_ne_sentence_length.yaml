@@ -6,17 +6,17 @@ input_columns:
   inmateNumber: STRING
   sentenceId: STRING
   sequenceNum: INTEGER
-  minimumYear: INTEGER
-  minimumMonth: INTEGER
-  minimumDay: INTEGER
-  maximumYear: INTEGER
-  maximumMonth: INTEGER
-  maximumDay: INTEGER
+  minimumYear: STRING
+  minimumMonth: STRING
+  minimumDay: STRING
+  maximumYear: STRING
+  maximumMonth: STRING
+  maximumDay: STRING
   paroleEligibilityDate: DATE
   tentativeReleaseDate: DATE
   paroleEarnedDischargeDate: DATE
   beginDate: DATE
-  modifiedDate: DATETIME
+  modifiedDate: STRING
 unused_columns: []
 output:
   StatePerson:

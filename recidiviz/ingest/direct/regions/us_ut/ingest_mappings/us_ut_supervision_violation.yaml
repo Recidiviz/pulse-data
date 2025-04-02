@@ -4,12 +4,12 @@
 manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
-  violation_dt: DATETIME
+  violation_dt: STRING
   violation_desc: STRING
   sanction_desc: STRING
-  sanction_history_create_date: DATETIME
-  rim_level_id: INTEGER
-  sanction_level: INTEGER
+  sanction_history_create_date: STRING
+  rim_level_id: STRING
+  sanction_level: STRING
   rim_status_desc: STRING
   rim_ofndr_violation_event_id: STRING
   rim_violation_rove_id: STRING

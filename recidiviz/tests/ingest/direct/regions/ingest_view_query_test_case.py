@@ -32,6 +32,13 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_sqlglot_helpers import get_undocumented_ctes
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    StateSchemaIngestViewManifestCompilerDelegate,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -71,9 +78,105 @@ from recidiviz.utils.environment import in_ci
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
 
+# TODO(#38322): Move this logic back into
+#  StateIngestViewTestCase::test_validate_view_output_schema once
+#  LegacyIngestViewEmulatorQueryTestCase is deleted.
+def _test_validate_view_output_schema(
+    *,
+    test_case: BigQueryEmulatorTestCase,
+    state_code: StateCode,
+    ingest_view_builder: DirectIngestViewQueryBuilder,
+    query_run_dt: datetime.datetime,
+    manifest_compiler: IngestViewManifestCompiler,
+    create_tables: bool,
+) -> None:
+    """This test runs for all subclasses of StateIngestViewTestCase and enforces:
+    * The view compiles and runs against empty raw data tables
+    * The output schema of the view query matches the column names / types defined
+      in the `input_columns` dictionary in this view's ingest mappings YAML file.
+    * The output schema of this view query does not have any REPEATED fields (not
+      supported by ingest mappings).
+    """
+    ingest_view_name = ingest_view_builder.ingest_view_name
+    raw_table_dataset = raw_tables_dataset_for_region(
+        state_code=state_code,
+        instance=DirectIngestInstance.PRIMARY,
+    )
+    if create_tables:
+        test_case.bq_client.create_dataset_if_necessary(dataset_id=raw_table_dataset)
+
+        raw_table_file_tags_to_load = {
+            d.file_tag: d.raw_file_config
+            for d in ingest_view_builder.raw_table_dependency_configs
+        }
+
+        for file_tag, raw_config in raw_table_file_tags_to_load.items():
+            schema = RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
+                raw_file_config=raw_config
+            )
+            address = BigQueryAddress(dataset_id=raw_table_dataset, table_id=file_tag)
+
+            test_case.create_mock_table(address, schema)
+
+    view_query = ingest_view_builder.build_query(
+        query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_data_datetime_upper_bound=query_run_dt,
+        )
+    )
+    query_job = test_case.bq_client.run_query_async(
+        query_str=view_query, use_query_cache=True
+    )
+    view_output_schema = query_job.result().schema
+
+    for field in view_output_schema:
+        if field.mode == "REPEATED":
+            raise ValueError(
+                f"Found field {field.name} in view {ingest_view_name} with "
+                f"REPEATED mode. REPEATED mode fields not supported in ingest "
+                f"views. If you need to map a list of items, serialize to a "
+                f"comma-separated string and use $iterable to iterate over the "
+                f"items. OR you can serialize to JSON and use "
+                f"$split_json/$iterable to iterate over the items."
+            )
+
+    expected_mappings_input_column_to_type = {
+        field.name: field.field_type for field in view_output_schema
+    }
+    manifest = manifest_compiler.compile_manifest(ingest_view_name=ingest_view_name)
+    actual_mappings_input_column_to_type = manifest.input_column_to_type
+
+    test_case.assertEqual(
+        expected_mappings_input_column_to_type,
+        actual_mappings_input_column_to_type,
+        f"The input_columns configuration in the mappings YAML for view "
+        f"{ingest_view_name} does not match the actual output of the view query.",
+    )
+
+
+class StateIngestViewTestCaseMeta(abc.ABCMeta):
+    def __new__(
+        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
+    ) -> Any:
+        # Don't enforce the rule on the StateIngestViewTestCase itself
+        if cls_name not in (
+            "StateIngestViewTestCase",
+            # TODO(#38322): Delete this line when LegacyIngestViewEmulatorQueryTestCase
+            #  is deleted
+            "LegacyIngestViewEmulatorQueryTestCase",
+        ):
+            if attributes.get("__test__", False) is not True:
+                raise TypeError(
+                    f"Class {cls_name} must explicitly set `__test__ = True`."
+                )
+        return super().__new__(mcs, cls_name, bases, attributes)
+
+
 # TODO(#38322): Migrate all states and remove this class
 class LegacyIngestViewEmulatorQueryTestCase(
-    BigQueryEmulatorTestCase, IngestRegionTestMixin
+    BigQueryEmulatorTestCase,
+    IngestRegionTestMixin,
+    metaclass=StateIngestViewTestCaseMeta,
 ):
     """An extension of BigQueryEmulatorTestCase with functionality specific to testing
     ingest view queries.
@@ -84,6 +187,11 @@ class LegacyIngestViewEmulatorQueryTestCase(
     """
 
     wipe_emulator_data_on_teardown = False
+
+    # Prevent test discovery so we only run
+    # test_validate_view_output_schema for subclasses. All subclasses
+    # are required to set __test__ = True
+    __test__ = False
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
@@ -145,9 +253,27 @@ class LegacyIngestViewEmulatorQueryTestCase(
         self._clear_emulator_table_data()
         super().tearDown()
 
-    # TODO(#26259): Add a test analogous to
-    #  StateIngestViewTestCase::test_validate_view_output_schema here as well so we
-    #  enforce input_columns types are correct for all views.
+    def test_validate_view_output_schema(self) -> None:
+        """This test runs for all subclasses of LegacyIngestViewEmulatorQueryTestCase
+          and enforces:
+        * The view compiles and runs against empty raw data tables
+        * The output schema of the view query matches the column names / types defined
+          in the `input_columns` dictionary in this view's ingest mappings YAML file.
+        * The output schema of this view query does not have any REPEATED fields (not
+          supported by ingest mappings).
+        """
+        _test_validate_view_output_schema(
+            test_case=self,
+            state_code=self.state_code(),
+            ingest_view_builder=self.ingest_view(),
+            query_run_dt=self.query_run_dt,
+            manifest_compiler=IngestViewManifestCompiler(
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(
+                    region=get_direct_ingest_region(self.state_code().value)
+                )
+            ),
+            create_tables=False,
+        )
 
     def run_ingest_view_test(
         self, fixtures_files_name: str, create_expected: bool = False
@@ -301,19 +427,6 @@ def check_ingest_view_ctes_are_documented(
             )
 
 
-class StateIngestViewTestCaseMeta(type):
-    def __new__(
-        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
-    ) -> Any:
-        # Don't enforce the rule on the StateIngestViewTestCase itself
-        if cls_name != "StateIngestViewTestCase":
-            if attributes.get("__test__", False) is not True:
-                raise TypeError(
-                    f"Class {cls_name} must explicitly set `__test__ = True`."
-                )
-        return super().__new__(mcs, cls_name, bases, attributes)
-
-
 class StateIngestViewTestCase(
     BigQueryEmulatorTestCase,
     BaseStateIngestTestCase,
@@ -357,61 +470,13 @@ class StateIngestViewTestCase(
         * The output schema of this view query does not have any REPEATED fields (not
           supported by ingest mappings).
         """
-        ingest_view_name = self.ingest_view_builder().ingest_view_name
-        raw_table_dataset = raw_tables_dataset_for_region(
+        _test_validate_view_output_schema(
+            test_case=self,
             state_code=self.state_code(),
-            instance=DirectIngestInstance.PRIMARY,
-        )
-        self.bq_client.create_dataset_if_necessary(dataset_id=raw_table_dataset)
-
-        raw_table_file_tags_to_load = {
-            d.file_tag: d.raw_file_config
-            for d in self.ingest_view_builder().raw_table_dependency_configs
-        }
-
-        for file_tag, raw_config in raw_table_file_tags_to_load.items():
-            schema = RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
-                raw_file_config=raw_config
-            )
-            address = BigQueryAddress(dataset_id=raw_table_dataset, table_id=file_tag)
-
-            self.create_mock_table(address, schema)
-
-        view_query = self.ingest_view_builder().build_query(
-            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=self.query_run_dt,
-            )
-        )
-        query_job = self.bq_client.run_query_async(
-            query_str=view_query, use_query_cache=True
-        )
-        view_output_schema = query_job.result().schema
-
-        for field in view_output_schema:
-            if field.mode == "REPEATED":
-                raise ValueError(
-                    f"Found field {field.name} in view {ingest_view_name} with "
-                    f"REPEATED mode. REPEATED mode fields not supported in ingest "
-                    f"views. If you need to map a list of items, serialize to a "
-                    f"comma-separated string and use $iterable to iterate over the "
-                    f"items. OR you can serialize to JSON and use "
-                    f"$split_json/$iterable to iterate over the items."
-                )
-
-        expected_mappings_input_column_to_type = {
-            field.name: field.field_type for field in view_output_schema
-        }
-        manifest = self.build_ingest_view_manifest_compiler().compile_manifest(
-            ingest_view_name=ingest_view_name
-        )
-        actual_mappings_input_column_to_type = manifest.input_column_to_type
-
-        self.assertEqual(
-            expected_mappings_input_column_to_type,
-            actual_mappings_input_column_to_type,
-            f"The input_columns configuration in the mappings YAML for view "
-            f"{ingest_view_name} does not match the actual output of the view query.",
+            ingest_view_builder=self.ingest_view_builder(),
+            query_run_dt=self.query_run_dt,
+            manifest_compiler=self.build_ingest_view_manifest_compiler(),
+            create_tables=True,
         )
 
     def run_ingest_view_test(

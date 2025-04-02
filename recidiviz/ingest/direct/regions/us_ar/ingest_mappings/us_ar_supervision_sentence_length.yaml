@@ -6,12 +6,12 @@ input_columns:
   OFFENDERID: STRING
   COMMITMENTPREFIX: STRING
   SENTENCECOMPONENT: STRING
-  SUPVPERIODBEGINDATE: DATETIME
-  SUPVSTARTDATE: DATETIME
+  SUPVPERIODBEGINDATE: STRING
+  SUPVSTARTDATE: STRING
   sentence_type: STRING
-  sentence_length: STRING
-  max_end_date: DATETIME
-  min_end_date: DATETIME
+  sentence_length: INTEGER
+  max_end_date: STRING
+  min_end_date: STRING
   seq_num: INTEGER
 unused_columns: []
 variables:

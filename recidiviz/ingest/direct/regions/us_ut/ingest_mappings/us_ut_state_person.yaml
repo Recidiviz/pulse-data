@@ -5,7 +5,7 @@ input_columns:
   race_cd: STRING
   ethnic_cd_ncic: STRING
   sex: STRING
-  dob: STRING
+  dob: DATE
   email_addr: STRING
   fname: STRING
   mname: STRING
