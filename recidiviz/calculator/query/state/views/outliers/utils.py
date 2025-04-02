@@ -37,6 +37,16 @@ from recidiviz.outliers.types import MetricOutcome, OutliersMetricConfig
 from recidiviz.utils.types import assert_type
 
 
+def most_recent_staff_attrs_cte() -> str:
+    return f"""
+    -- Use the most recent session to get the staff's attributes from the most recent session
+    SELECT *
+    FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` 
+    WHERE state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, officer_id ORDER BY COALESCE(end_date_exclusive, "9999-01-01") DESC) = 1
+"""
+
+
 def officer_aggregated_metrics_plus_inclusion(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
 ) -> str:

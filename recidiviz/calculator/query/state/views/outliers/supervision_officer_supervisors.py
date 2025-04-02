@@ -20,12 +20,11 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 )
 from recidiviz.calculator.query.bq_utils import (
     get_pseudonymized_id_query_str,
-    list_to_query_string,
     today_between_start_date_and_nullable_end_date_clause,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
-    get_outliers_enabled_states_for_bigquery,
+from recidiviz.calculator.query.state.views.outliers.utils import (
+    most_recent_staff_attrs_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -37,11 +36,7 @@ SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION = """A parole and/or probation offic
 
 SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE = f"""
 WITH attrs AS (
-    -- Use the most recent session to get the staff's attributes from the most recent session
-    SELECT *
-    FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` 
-    WHERE state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, officer_id ORDER BY COALESCE(end_date_exclusive, "9999-01-01") DESC) = 1
+    {most_recent_staff_attrs_cte()}    
 )
 , supervision_officer_supervisors AS (
     SELECT
