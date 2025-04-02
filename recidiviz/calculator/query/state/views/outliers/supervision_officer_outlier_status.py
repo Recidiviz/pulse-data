@@ -53,7 +53,6 @@ officer_metrics_with_caseload_type AS (
   FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m 
   WHERE
     m.value_type = 'RATE'
-    AND include_in_outcomes
 )
 , outlier_status_statewide AS (
   SELECT
