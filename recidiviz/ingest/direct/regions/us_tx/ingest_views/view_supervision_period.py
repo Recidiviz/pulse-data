@@ -375,9 +375,11 @@ fix_end_date AS
         (
             UPPER(status) LIKE "%IN CUSTODY%" 
             OR UPPER(status) LIKE "%REVOKED%" 
-            OR UPPER(status) LIKE "%STATE JAIL%"
+            OR UPPER(status) LIKE "%PRE-REVOCATION%"
+            OR UPPER(status) LIKE "%PENDING WARRANT CLOSURE%"
             ) 
             AND UPPER(status) NOT LIKE "%NOT REVOKED%"
+            AND UPPER(status) NOT LIKE "%NOT IN CUSTODY%"
         AS in_custody_flag,
         supervision_officer,
         case_type,

@@ -68,11 +68,16 @@ output:
                     $raw_text: status
                     $mappings:
                       StateSupervisionLevel.IN_CUSTODY:
-                        - In custody - state jail
-                        - In custody - county jail
-                        - In Custody OOS - No PRW
                         - In Custody FCI - No PRW
+                        - In Custody OOS - No PRW
+                        - In custody - county jail
+                        - In custody - state jail
+                        - Pending warrant closure
+                        - Pre-Revocation - FCI
+                        - Pre-Revocation - ISF
                         - Pre-Revocation - In Custody
+                        - Pre-Revocation - OOS
+                        - Pre-revocation - SAFPF
                         - Pre-revocation - State Jail
                         - Revoked
                         - Revoked - OOS
