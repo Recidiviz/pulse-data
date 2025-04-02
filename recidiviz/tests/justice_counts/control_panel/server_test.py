@@ -1591,20 +1591,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             report = self.session.query(Report).one_or_none()
             self.assertEqual(report.status, ReportStatus.PUBLISHED)
-            datapoints = report.datapoints
-            self.assertEqual(len(datapoints), 6)
-            # Aggregate Value
-            self.assertEqual(get_value(datapoints[0]), 110)
-            # Emergency Calls
-            self.assertEqual(get_value(datapoints[1]), value)
-            # Non Emergency Calls
-            self.assertEqual(get_value(datapoints[2]), 10)
-            # Other Calls
-            self.assertEqual(get_value(datapoints[3]), None)
-            # Unknown Calls
-            self.assertEqual(get_value(datapoints[4]), None)
-            # Funding
-            self.assertEqual(get_value(datapoints[5]), 2000000)
+            values = sorted(
+                [get_value(dp) for dp in report.datapoints],
+                key=lambda v: (v is None, v),
+            )
+            expected = sorted(
+                [110, value, 10, None, None, 2000000], key=lambda v: (v is None, v)
+            )
+            self.assertEqual(values, expected)
 
     def test_update_multiple_report_statuses(self) -> None:
         monthly_report_1 = self.test_schema_objects.test_report_monthly

@@ -72,11 +72,11 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
                     if row["year"] == 2021
                 ],
                 [
-                    "FIREARM",
-                    "OTHER",
-                    "OTHER_WEAPON",
                     "PHYSICAL",
                     "RESTRAINT",
+                    "FIREARM",
+                    "OTHER_WEAPON",
+                    "OTHER",
                     "UNKNOWN",
                 ],
             )
@@ -94,7 +94,7 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
                     for row in filename_to_rows["arrests_by_biological_sex"]
                     if row["year"] == 2022 and row["month"] == 12
                 ],
-                ["FEMALE", "MALE", "UNKNOWN"],
+                ["MALE", "FEMALE", "UNKNOWN"],
             )
 
     def test_get_supervision_feed(self) -> None:

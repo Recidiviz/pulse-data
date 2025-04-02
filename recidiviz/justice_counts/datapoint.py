@@ -17,7 +17,7 @@
 """Interface for working with the Datapoint model."""
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import case
@@ -244,8 +244,18 @@ class DatapointInterface:
 
         return metric_key_to_metric_interface
 
-    ### Save Path: Report Datapoints ###
+    @staticmethod
+    def normalize_dimension(dim: Optional[Union[str, dict]]) -> str:
+        if dim is None:
+            return ""
+        if isinstance(dim, str):
+            try:
+                dim = json.loads(dim)
+            except Exception:
+                return dim  # type: ignore[return-value]
+        return json.dumps(dim)
 
+    ### Save Path: Report Datapoints ###
     @staticmethod
     def add_report_datapoint(
         *,
@@ -314,8 +324,8 @@ class DatapointInterface:
             report.source_id,
             metric_definition_key,
             context_key.value if context_key else None,
-            (
-                json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
+            DatapointInterface.normalize_dimension(
+                {dimension.dimension_identifier(): dimension.dimension_name}
                 if dimension
                 else None
             ),

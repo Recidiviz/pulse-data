@@ -835,17 +835,8 @@ class Datapoint(JusticeCountsBase):
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
-            UniqueConstraint(
-                report_id,
-                start_date,
-                end_date,
-                dimension_identifier_to_member,
-                context_key,
-                includes_excludes_key,
-                metric_definition_key,
-                source_id,
-                name="unique_datapoint",
-            ),
+            # NOTE: The unique_report_datapoint_normalized index is applied via migration only
+            # and is not represented here because it uses a COALESCE expression not supported in SQLAlchemy
             ForeignKeyConstraint([report_id], [Report.id], ondelete="CASCADE"),
             ForeignKeyConstraint(
                 [source_id], [Source.id], name="source_foreign_key_constraint"

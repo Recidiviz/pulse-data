@@ -16,7 +16,6 @@
 # =============================================================================
 """Interface for working with the Reports model."""
 import datetime
-import json
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -611,19 +610,14 @@ class ReportInterface:
                 report.date_range_start,
                 report.date_range_end,
                 report.source_id,
-                datapoint.metric_definition_key,
-                datapoint.context_key,
-                (
-                    datapoint.dimension_identifier_to_member
-                    if (
-                        isinstance(datapoint.dimension_identifier_to_member, str)
-                        or datapoint.dimension_identifier_to_member is None
-                    )
-                    else json.dumps(datapoint.dimension_identifier_to_member)
+                dp.metric_definition_key,
+                dp.context_key,
+                DatapointInterface.normalize_dimension(
+                    dp.dimension_identifier_to_member
                 ),
-            ): datapoint
+            ): dp
             for report in reports
-            for datapoint in report.datapoints
+            for dp in report.datapoints
         }
 
     @staticmethod

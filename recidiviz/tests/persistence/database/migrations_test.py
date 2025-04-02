@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Basic tests that migrations are working properly."""
-
+import warnings
 from collections import defaultdict
 from typing import Any, Dict, Set
 from unittest.case import TestCase
@@ -26,6 +26,7 @@ from alembic.autogenerate import render_python_code
 from pytest_alembic import runner
 from pytest_alembic.config import Config
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SAWarning
 
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
@@ -230,7 +231,11 @@ class MigrationsTestBase(TestCase):
         schema_indices = self.fetch_all_indices()
 
         # Assert that they all match
-        indices_not_in_schema = set(migration_indices) - set(schema_indices)
+        indices_not_in_schema = (
+            set(migration_indices)
+            - set(schema_indices)
+            - self.expected_missing_indices()
+        )
         if indices_not_in_schema:
             raise ValueError(
                 f"Found indices defined in migrations but not in schema.py: {indices_not_in_schema}."
@@ -363,11 +368,21 @@ class MigrationsTestBase(TestCase):
 
         with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to("head")
-            r.generate_revision(
-                message="test_rev",
-                autogenerate=True,
-                process_revision_directives=verify_is_empty,
-            )
+
+            with warnings.catch_warnings():
+                # This warning is safe to ignore because SQLAlchemy can't reflect expression-based indexes.
+                # The index is defined manually in a migration and does not impact autogeneration logic.
+                warnings.filterwarnings(
+                    "ignore",
+                    category=SAWarning,
+                    message=".*expression-based index.*",
+                )
+
+                r.generate_revision(
+                    message="test_rev",
+                    autogenerate=True,
+                    process_revision_directives=verify_is_empty,
+                )
 
 
 class TestCaseTriageMigrations(MigrationsTestBase):
@@ -384,6 +399,13 @@ class TestJusticeCountsMigrations(MigrationsTestBase):
     @classmethod
     def schema_type(cls) -> SchemaType:
         return SchemaType.JUSTICE_COUNTS
+
+    # This index uses a COALESCE expression and is defined via raw SQL in the migration,
+    # so it cannot be reflected by SQLAlchemy and is not represented in schema.py
+    def expected_missing_indices(self) -> Set[str]:
+        return {
+            "unique_report_datapoint_normalized",
+        }
 
 
 class TestOperationsMigrations(MigrationsTestBase):
