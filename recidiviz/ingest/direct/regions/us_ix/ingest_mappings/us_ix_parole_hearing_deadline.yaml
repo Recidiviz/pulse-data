@@ -3,10 +3,10 @@ manifest_language: 1.0.0
 input_columns:
   OffenderId: STRING
   TermId: STRING
-  hearing_date: STRING
+  hearing_date: DATETIME
   UpdateDate: DATETIME
   type: STRING
-  rownum: STRING
+  rownum: INTEGER
 unused_columns: []
 output:
   StatePerson:

@@ -826,7 +826,10 @@ def get_all_ingest_tests_for_state(
                     t for t in dir(v2_mapping_test_class) if t.startswith("test_")
                 }
                 v2_view_tests = {t for t in dir(v2_test_class) if t.startswith("test_")}
-                if unmatched_tests := v2_view_tests.symmetric_difference(
+                v2_view_tests_to_match = v2_view_tests - {
+                    "test_validate_view_output_schema"
+                }
+                if unmatched_tests := v2_view_tests_to_match.symmetric_difference(
                     v2_mapping_tests
                 ):
                     raise ValueError(
@@ -920,6 +923,10 @@ def get_fixtures_used_by_ingest_view_tests(
         for method in dir(ingest_view_test):
             if not method.startswith("test_"):
                 continue
+
+            if method == "test_validate_view_output_schema":
+                continue
+
             ### TODO(#38322) Drop v1 entirely
             if issubclass(ingest_view_test, LegacyIngestViewEmulatorQueryTestCase):
                 characteristic = method.removeprefix("test_")

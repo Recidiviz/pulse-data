@@ -24,7 +24,7 @@ input_columns:
   SEX_OFFENSE_FLAG: STRING
   TPR_ELIGIBILITY_NOTE: STRING
   is_controlling: BOOLEAN
-  flat_sentence_flag: STRING
+  flat_sentence_flag: BOOLEAN
   TPR_ineligible: BOOLEAN
   DTP_ineligible: BOOLEAN
 unused_columns:

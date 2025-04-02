@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
-  period_id: STRING
+  period_id: INTEGER
   start_date: DATETIME
   end_date: DATETIME
   start_reason: STRING

@@ -23,7 +23,7 @@ import logging
 import os.path
 from functools import cache
 from types import ModuleType
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 from more_itertools import one
@@ -32,6 +32,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_sqlglot_helpers import get_undocumented_ctes
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -142,6 +145,10 @@ class LegacyIngestViewEmulatorQueryTestCase(
         self._clear_emulator_table_data()
         super().tearDown()
 
+    # TODO(#26259): Add a test analogous to
+    #  StateIngestViewTestCase::test_validate_view_output_schema here as well so we
+    #  enforce input_columns types are correct for all views.
+
     def run_ingest_view_test(
         self, fixtures_files_name: str, create_expected: bool = False
     ) -> None:
@@ -227,12 +234,6 @@ class LegacyIngestViewEmulatorQueryTestCase(
 
         query_job.result()
 
-        # TODO(#26259): Once the emulator properly returns the schemas
-        #  for views and query results, verify that the query schema matches the schema
-        #  defined in the manifest input_columns. Also enforce that ingest views do not
-        #  produce REPEATED mode columns (i.e. array type columns) because we don't have
-        #  a way to represent that in YAMLs.
-
         results = query_job.to_dataframe()
         # Log results to debug log level, to see them pass --log-level DEBUG to pytest
         logging.debug(
@@ -300,11 +301,35 @@ def check_ingest_view_ctes_are_documented(
             )
 
 
-class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase):
+class StateIngestViewTestCaseMeta(type):
+    def __new__(
+        mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
+    ) -> Any:
+        # Don't enforce the rule on the StateIngestViewTestCase itself
+        if cls_name != "StateIngestViewTestCase":
+            if attributes.get("__test__", False) is not True:
+                raise TypeError(
+                    f"Class {cls_name} must explicitly set `__test__ = True`."
+                )
+        return super().__new__(mcs, cls_name, bases, attributes)
+
+
+class StateIngestViewTestCase(
+    BigQueryEmulatorTestCase,
+    BaseStateIngestTestCase,
+    # Enforce at class collection time that all subclasses of StateIngestViewTestCase
+    # set __test__ back to True.
+    metaclass=StateIngestViewTestCaseMeta,
+):
     """
     Base class for ingest view tests, where we test a query of
     raw data against expected results.
     """
+
+    # Prevent test discovery so we only run
+    # test_validate_view_output_schema for subclasses. All subclasses
+    # are required to set __test__ = True
+    __test__ = False
 
     @classmethod
     def state_code(cls) -> StateCode:
@@ -322,6 +347,71 @@ class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase)
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
             self.state_code(), emulator_test=self
+        )
+
+    def test_validate_view_output_schema(self) -> None:
+        """This test runs for all subclasses of StateIngestViewTestCase and enforces:
+        * The view compiles and runs against empty raw data tables
+        * The output schema of the view query matches the column names / types defined
+          in the `input_columns` dictionary in this view's ingest mappings YAML file.
+        * The output schema of this view query does not have any REPEATED fields (not
+          supported by ingest mappings).
+        """
+        ingest_view_name = self.ingest_view_builder().ingest_view_name
+        raw_table_dataset = raw_tables_dataset_for_region(
+            state_code=self.state_code(),
+            instance=DirectIngestInstance.PRIMARY,
+        )
+        self.bq_client.create_dataset_if_necessary(dataset_id=raw_table_dataset)
+
+        raw_table_file_tags_to_load = {
+            d.file_tag: d.raw_file_config
+            for d in self.ingest_view_builder().raw_table_dependency_configs
+        }
+
+        for file_tag, raw_config in raw_table_file_tags_to_load.items():
+            schema = RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
+                raw_file_config=raw_config
+            )
+            address = BigQueryAddress(dataset_id=raw_table_dataset, table_id=file_tag)
+
+            self.create_mock_table(address, schema)
+
+        view_query = self.ingest_view_builder().build_query(
+            query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_datetime_upper_bound=self.query_run_dt,
+            )
+        )
+        query_job = self.bq_client.run_query_async(
+            query_str=view_query, use_query_cache=True
+        )
+        view_output_schema = query_job.result().schema
+
+        for field in view_output_schema:
+            if field.mode == "REPEATED":
+                raise ValueError(
+                    f"Found field {field.name} in view {ingest_view_name} with "
+                    f"REPEATED mode. REPEATED mode fields not supported in ingest "
+                    f"views. If you need to map a list of items, serialize to a "
+                    f"comma-separated string and use $iterable to iterate over the "
+                    f"items. OR you can serialize to JSON and use "
+                    f"$split_json/$iterable to iterate over the items."
+                )
+
+        expected_mappings_input_column_to_type = {
+            field.name: field.field_type for field in view_output_schema
+        }
+        manifest = self.build_ingest_view_manifest_compiler().compile_manifest(
+            ingest_view_name=ingest_view_name
+        )
+        actual_mappings_input_column_to_type = manifest.input_column_to_type
+
+        self.assertEqual(
+            expected_mappings_input_column_to_type,
+            actual_mappings_input_column_to_type,
+            f"The input_columns configuration in the mappings YAML for view "
+            f"{ingest_view_name} does not match the actual output of the view query.",
         )
 
     def run_ingest_view_test(
@@ -392,11 +482,6 @@ class StateIngestViewTestCase(BigQueryEmulatorTestCase, BaseStateIngestTestCase)
             query_str=view_query, use_query_cache=False
         )
 
-        # TODO(#26259): Once the emulator properly returns the schemas
-        #  for views and query results, verify that the query schema matches the schema
-        #  defined in the manifest input_columns. Also enforce that ingest views do not
-        #  produce REPEATED mode columns (i.e. array type columns) because we don't have
-        #  a way to represent that in YAMLs.
         results = query_job.result().to_dataframe()
 
         # Log results to debug log level, to see them pass --log-level DEBUG to pytest

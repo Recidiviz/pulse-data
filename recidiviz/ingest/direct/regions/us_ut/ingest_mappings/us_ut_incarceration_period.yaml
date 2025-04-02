@@ -10,7 +10,7 @@ input_columns:
   end_reason: STRING
   lgl_stat_desc: STRING
   body_loc_desc: STRING
-  period_id: STRING
+  period_id: INTEGER
 unused_columns: []
 output:
   StatePerson:

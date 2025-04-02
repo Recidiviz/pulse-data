@@ -6,7 +6,7 @@ input_columns:
   PERSON_ID: STRING
   CMNT_GNRL_RSK_LVL: STRING
   CMNT_VLNC_RSK_LVE: STRING
-  DATE_CREATED: DATETIME
+  DATE_CREATED: STRING
 unused_columns: []
 output:
   StatePerson:

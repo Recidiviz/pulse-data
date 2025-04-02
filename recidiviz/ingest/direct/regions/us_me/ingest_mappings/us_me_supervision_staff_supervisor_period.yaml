@@ -3,8 +3,8 @@ manifest_language: 1.0.0
 input_columns:
   Employee_Id: STRING
   Cis_900_Employee_Supervisor_Id: STRING
-  start_date: DATETIME
-  end_date: DATETIME
+  start_date: DATE
+  end_date: DATE
 unused_columns: []
 output:
   StateStaff:

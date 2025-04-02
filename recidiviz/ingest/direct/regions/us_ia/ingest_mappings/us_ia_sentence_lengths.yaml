@@ -5,9 +5,9 @@ manifest_language: 1.0.0
 input_columns:
   OffenderCd: STRING
   PenaltyId: STRING
-  penalty_length_days: INTEGER
-  penalty_length_months: INTEGER
-  penalty_length_years: INTEGER
+  penalty_length_days: STRING
+  penalty_length_months: STRING
+  penalty_length_years: STRING
   sequence_num: INTEGER
   update_datetime: DATE
 unused_columns: []

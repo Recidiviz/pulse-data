@@ -6,10 +6,10 @@ input_columns:
   inmateNumber: STRING
   pkAggregateSentenceId: STRING
   pkOffenseId: STRING
-  LOCT_RELEASE_DT: DATETIME
+  LOCT_RELEASE_DT: STRING
   INST_RLSE_TYPE_DSC: STRING
-  sequenceNum: STRING
-  LAST_ACTIVITY_TS: DATETIME
+  sequenceNum: INTEGER
+  LAST_ACTIVITY_TS: STRING
 unused_columns: []
 output:
   StatePerson:

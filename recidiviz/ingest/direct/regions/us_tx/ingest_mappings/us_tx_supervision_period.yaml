@@ -8,10 +8,10 @@ input_columns:
   supervision_officer: STRING
   status: STRING
   case_type: STRING
-  start_date: DATETIME
-  end_date: STRING
+  start_date: DATE
+  end_date: DATE
   assessment_level: STRING
-  rn: STRING
+  rn: INTEGER
   in_custody_flag: BOOLEAN
 unused_columns: []
 output:
