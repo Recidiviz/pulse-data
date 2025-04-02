@@ -191,3 +191,106 @@ class TestSequentialChunkedFileMixin(TestCase):
             file_tag="tag_c",
             update_datetime=datetime.datetime(2024, 1, 2, 0, 0, 2, tzinfo=datetime.UTC),
         )
+
+    def test_sequential_zero_index(self) -> None:
+        (
+            bq_files,
+            skipped_errors,
+        ) = SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=1,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_c-0000.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=2,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:01:000000_raw_tag_c-0001.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=3,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:02:000000_raw_tag_c-0002.csv"
+                    ),
+                ),
+            ],
+            file_tag="tag_c",
+            zero_indexed=False,
+        )
+
+        assert len(bq_files) == 0
+        assert len(skipped_errors) == 1
+
+        assert (
+            skipped_errors[0].skipped_message
+            == "Skipping grouping for [tag_c]; missing expected sequential suffixes [{3}] and/or found extra suffixes [{0}]"
+        )
+
+        (
+            bq_files,
+            skipped_errors,
+        ) = SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=1,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_c-0000.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=2,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:01:000000_raw_tag_c-0001.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=3,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:02:000000_raw_tag_c-0002.csv"
+                    ),
+                ),
+            ],
+            file_tag="tag_c",
+            zero_indexed=True,
+        )
+
+        assert len(bq_files) == 1
+        assert len(skipped_errors) == 0
+
+        assert bq_files[0] == RawBigQueryFileMetadata(
+            file_id=None,
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=1,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_c-0000.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=2,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:01:000000_raw_tag_c-0001.csv"
+                    ),
+                ),
+                RawGCSFileMetadata(
+                    gcs_file_id=3,
+                    file_id=None,
+                    path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2024-01-02T00:00:02:000000_raw_tag_c-0002.csv"
+                    ),
+                ),
+            ],
+            file_tag="tag_c",
+            update_datetime=datetime.datetime(2024, 1, 2, 0, 0, 2, tzinfo=datetime.UTC),
+        )

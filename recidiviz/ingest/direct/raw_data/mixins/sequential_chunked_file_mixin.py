@@ -35,9 +35,12 @@ class SequentialChunkedFileMixin:
         *,
         gcs_files: list[RawGCSFileMetadata],
         file_tag: str,
+        zero_indexed: bool = False,
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-        """Validates that |gcs_files| have numerically ascending file suffixes from 1
-        to n.
+        """Validates that |gcs_files| have numerically ascending file suffixes. If
+        |zero_indexed| is True, the numerical suffixes should ascent from 0 -> n-1;
+        otherwise, they should ascend from 1 -> n, where n is equal to the length of
+        |gcs_files|.
         """
         if len(gcs_files) == 0:
             raise ValueError("Must provide at least one file to group; found none.")
@@ -60,7 +63,10 @@ class SequentialChunkedFileMixin:
                     )
                 ]
 
-        expected_suffixes = set(range(1, len(gcs_files) + 1))
+        starting_suffix = 0 if zero_indexed else 1
+        expected_suffixes = set(
+            range(starting_suffix, len(gcs_files) + starting_suffix)
+        )
         if actual_suffixes != expected_suffixes:
             extra_suffixes = actual_suffixes - expected_suffixes
             missing_suffixes = expected_suffixes - actual_suffixes
@@ -90,9 +96,11 @@ class SequentialChunkedFileMixin:
         n: int,
         gcs_files: list[RawGCSFileMetadata],
         file_tag: str,
+        zero_indexed: bool = False,
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
         """Validates that |gcs_files| contains exactly |n| files that have numerically
-        ascending file suffixes from 1 to n.
+        ascending file suffixes. If |zero_indexed| is True, the suffixes should ascend
+        from 0 -> n-1, otherwise 1 -> n, where n is equal to the length of |gcs_files|.
         """
 
         if n <= 0:
@@ -117,5 +125,5 @@ class SequentialChunkedFileMixin:
             gcs_files[0].parts.utc_upload_datetime.date(),
         )
         return cls.group_files_with_sequential_suffixes(
-            gcs_files=gcs_files, file_tag=file_tag
+            gcs_files=gcs_files, file_tag=file_tag, zero_indexed=zero_indexed
         )

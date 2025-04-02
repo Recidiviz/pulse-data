@@ -38,12 +38,12 @@ class UsUtRawDataImportDelegate(BaseRawDataImportDelegate, SequentialChunkedFile
 
         if file_tag == "sprvsn_cntc":
             return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
-                file_tag=file_tag, gcs_files=gcs_files
+                file_tag=file_tag, gcs_files=gcs_files, zero_indexed=True
             )
 
         if file_tag == "tst_qstn_rspns":
             return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
-                file_tag=file_tag, gcs_files=gcs_files
+                file_tag=file_tag, gcs_files=gcs_files, zero_indexed=True
             )
 
         return skipped_error_for_unrecognized_file_tag_for_chunked_files(
