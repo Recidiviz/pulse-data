@@ -82,6 +82,9 @@ LEFT JOIN
   {{crt_loc}} cl
 USING
   (crt_loc_cd, crt_typ_cd)
+-- This ensures that sentencing authority is hydrated on all sentence entities, as is required 
+-- This condition filters exactly one row out of the results as of 4/2/2025.
+WHERE cl.crt_loc_desc IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
