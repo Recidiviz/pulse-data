@@ -67,3 +67,73 @@ custom:
               add a data-bounded exclusion from the first case of a file being
               received --> today, which will exclude those dates from validation & from
               being used to calculate the median historical row count"
+  US_UT:
+    file_tags:
+      wf_actn_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_goal_typ_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      p_p_agrmnt_supl_dw:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      sprvsn_tsk_freq:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_level_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_agcy:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      wf_app_stat_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_routing_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_agrmnt_selection_reqd_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      prsn_sent_len_typ_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      assess_rsn:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      grvnc_rtrn_rsn_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      wf_response_typ_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      p_p_supl_dw:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      wf_stat_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      wf_app_grp_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      rim_approval_routing:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
