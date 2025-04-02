@@ -614,6 +614,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_TN,
+        opportunity_type="usTnInitialClassification",
+        experiment_id="US_TN_CLASSIFICATION_WORKFLOWS",
+        opportunity_record_view_name="us_tn_initial_classification_review_record_materialized",
+        task_completion_event=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+        source_filename="us_tn_initial_classification_review_record.json",
+        export_collection_name="US_TN-initialClassificationReferrals",
+        opportunity_type_path_str="initialClassification",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_TX,
         opportunity_type="usTxAnnualReportingStatus",
         experiment_id="US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_WORKFLOWS",

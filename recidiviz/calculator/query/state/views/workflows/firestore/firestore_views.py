@@ -174,6 +174,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_custody_le
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
     US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_initial_classification_review_record import (
+    US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervision_level_downgrade_record import (
     US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
@@ -256,4 +259,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
     US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER,
     US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
+    US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
 ]

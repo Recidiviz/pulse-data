@@ -30,11 +30,22 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.eligibility_spans.us_tn.custody_level_downgrade import (
+    VIEW_BUILDER as US_TN_CUSTODY_LEVEL_DOWNGRADE_TES_VIEW_BUILDER,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    US_TN_CUSTODY_LEVEL_DOWNGRADE_TES_VIEW_BUILDER
+)
+
 
 US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_NAME = "us_tn_custody_level_downgrade_record"
 
@@ -46,10 +57,10 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     SELECT *
     FROM ({us_tn_classification_forms(tes_view="custody_level_downgrade",
                                       where_clause="WHERE "
-                                                    "tes.state_code = 'US_TN' "
-                                                    "AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date "
+                                                    "CURRENT_DATE('US/Eastern') BETWEEN tes.start_date "
                                                     f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} "
-                                                    "AND tes.is_eligible"
+                                                    "AND tes.is_eligible",
+                                        collapsed_tes_spans_address=_COLLAPSED_TES_SPANS_ADDRESS,
                                       )
         })
 """

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for relevant metadata needed to support annual reclassification opportunity in Tennessee
+"""Query for relevant metadata needed to support initial classification opportunity in Tennessee
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
@@ -36,45 +36,43 @@ from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.eligibility_spans.us_tn.annual_reclassification_review import (
-    VIEW_BUILDER as US_TN_ANNUAL_RECLASSIFICATION_REVIEW_TES_VIEW_BUILDER,
+from recidiviz.task_eligibility.eligibility_spans.us_tn.initial_classification_review import (
+    VIEW_BUILDER as US_TN_INITIAL_CLASSIFICATION_REVIEW_TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
-    US_TN_ANNUAL_RECLASSIFICATION_REVIEW_TES_VIEW_BUILDER
+    US_TN_INITIAL_CLASSIFICATION_REVIEW_TES_VIEW_BUILDER
 )
 
 
-US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_NAME = (
-    "us_tn_annual_reclassification_review_record"
+US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_NAME = (
+    "us_tn_initial_classification_review_record"
 )
 
-US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_DESCRIPTION = """
-    Query for relevant metadata needed to support annual reclassification opportunity in Tennessee
+US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_DESCRIPTION = """
+    Query for relevant metadata needed to support initial classification opportunity in Tennessee
     """
 
-US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
+US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
     SELECT *
-    FROM ({us_tn_classification_forms(tes_view="annual_reclassification_review",
+    FROM ({us_tn_classification_forms(tes_view="initial_classification_review",
                                       where_clause="WHERE "
                                                     "CURRENT_DATE('US/Eastern') BETWEEN tes.start_date "
                                                     f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} "
-                                                    "AND (tes.is_eligible OR tes.is_almost_eligible)",
+                                                    "AND tes.is_eligible",
                                       collapsed_tes_spans_address=_COLLAPSED_TES_SPANS_ADDRESS,
-                                      is_eligible_clause = "tes.is_eligible OR tes.is_almost_eligible",
-                                      is_almost_eligible_clause = "FALSE",
                                       )
         })
     
 """
 
-US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_NAME,
-    view_query_template=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE,
-    description=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_DESCRIPTION,
+    view_id=US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_NAME,
+    view_query_template=US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE,
+    description=US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
@@ -89,4 +87,4 @@ US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER = SimpleBigQueryViewBui
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.build_and_print()
+        US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.build_and_print()

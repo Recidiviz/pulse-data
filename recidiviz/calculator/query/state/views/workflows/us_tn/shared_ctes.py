@@ -16,6 +16,7 @@
 #  =============================================================================
 """Shared CTE logic for Tennessee for forms, client profiles, etc. in Workflows."""
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
     client_specific_fines_fees_balance,
@@ -31,6 +32,7 @@ DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 def us_tn_classification_forms(
     tes_view: str,
     where_clause: str,
+    collapsed_tes_spans_address: BigQueryAddress,
     disciplinary_history_month_lookback: str = DISCIPLINARY_HISTORY_MONTH_LOOKBACK,
     is_eligible_clause: str = "tes.is_eligible",
     is_almost_eligible_clause: str = "tes.is_almost_eligible",
@@ -184,7 +186,7 @@ def us_tn_classification_forms(
           FROM
             `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
           WHERE
-            CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+            CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
             AND state_code = 'US_TN'
       )
     ),
@@ -342,7 +344,7 @@ def us_tn_classification_forms(
                 facility AS facility_id,
             FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
             WHERE
-                CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+                CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
         ) cs
             USING(person_id, state_code)
         LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` lm
@@ -376,7 +378,7 @@ def us_tn_classification_forms(
                 facility AS facility_id,
             FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
             WHERE
-                CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+                CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
         ) cs
             USING(person_id, state_code)
         LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` lm
@@ -410,6 +412,7 @@ def us_tn_classification_forms(
            tes.reasons,
            {is_eligible_clause} AS is_eligible,
            {is_almost_eligible_clause} AS is_almost_eligible,
+           tes_collapsed.start_date AS metadata_eligible_date,
            pei.external_id,
            level_care.form_information_level_of_care,
            latest_classification.form_information_latest_classification_date,
@@ -474,6 +477,13 @@ def us_tn_classification_forms(
     LEFT JOIN
         level_care
     USING(person_id)
+    # TODO(#39428): Move collapsed logic inner join to generalized function
+    INNER JOIN 
+        `{{project_id}}.{collapsed_tes_spans_address.to_str()}` tes_collapsed
+        ON tes_collapsed.state_code = tes.state_code
+        AND tes_collapsed.person_id = tes.person_id 
+        AND CURRENT_DATE('US/Eastern') BETWEEN tes_collapsed.start_date 
+            AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}
     LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg
         ON pei.external_id = stg.OffenderID
     LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.OffenderSentenceSummary_latest` sent
@@ -509,6 +519,7 @@ def us_tn_classification_forms(
     LEFT JOIN prea
         ON pei.external_id = prea.OffenderID
     {where_clause}
+    AND tes.state_code = 'US_TN'
     """
 
 
@@ -723,7 +734,7 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
             permanent_exemption_reasons
         FROM `{{project_id}}.{{analyst_dataset}}.permanent_exemptions_preprocessed_materialized`
         WHERE state_code = 'US_TN'
-            AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+            AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
     ),
     all_exemptions AS (
         SELECT
@@ -738,7 +749,7 @@ def us_tn_compliant_reporting_shared_opp_record_fragment() -> str:
             )) AS current_exemptions,
         FROM `{{project_id}}.{{analyst_dataset}}.us_tn_exemptions_preprocessed`
         WHERE state_code = 'US_TN'
-            AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
+            AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
         GROUP BY 1
     )
     SELECT
