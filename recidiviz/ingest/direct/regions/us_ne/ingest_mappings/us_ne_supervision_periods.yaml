@@ -102,7 +102,7 @@ output:
                   - "SO: High Initial 6 Months" # Sex Offense: high initial 6 months
                   - "SO: High" # Sex Offense: High
                   - Very High
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                StateSupervisionLevel.LIMITED:
                   - "Conditional"
           custodial_authority:
             $enum_mapping:
