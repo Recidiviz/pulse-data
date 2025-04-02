@@ -30,10 +30,13 @@ WITH
 -- Get all IDs associated with a staff member with a particular full name.
 staff_ids_by_name AS (
 SELECT DISTINCT 
-    PERSON_ID,
-    NULLIF(UPPER(FIRST_NAME), 'NULL') AS FIRST_NAME,
-    NULLIF(UPPER(SURNAME), 'NULL') AS SURNAME,
-FROM {PERSON}
+    p.PERSON_ID,
+    UPPER(p.FIRST_NAME) AS FIRST_NAME,
+    UPPER(p.SURNAME)  AS SURNAME,
+    mea.email
+FROM {PERSON} p
+JOIN {MEA_PROFILES} mea
+ON(PERSON_ID = USERID)
 WHERE PERSON_TYPE_ID = '8473' -- DOC Staff
 ),
 -- Pull in a manual reference sheet with overrides that separate IDs for people with
@@ -47,11 +50,11 @@ manual_id_overrides AS (
     FROM {RECIDIVIZ_REFERENCE_staff_id_override}
 )
 
-SELECT FIRST_NAME, SURNAME, STRING_AGG(PERSON_ID, ',') AS PERSON_IDS
+SELECT FIRST_NAME, SURNAME, STRING_AGG(PERSON_ID, ',') AS PERSON_IDS, email
 FROM staff_ids_by_name
 LEFT JOIN manual_id_overrides
 USING(FIRST_NAME, SURNAME, PERSON_ID)
-GROUP BY FIRST_NAME, SURNAME, OVERRIDE_ID
+GROUP BY FIRST_NAME, SURNAME, email, OVERRIDE_ID
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

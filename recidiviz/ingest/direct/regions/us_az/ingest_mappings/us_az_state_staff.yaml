@@ -6,6 +6,7 @@ input_columns:
   FIRST_NAME: STRING
   SURNAME: STRING
   PERSON_IDS: STRING
+  email: STRING
 unused_columns: []
 output:
   StateStaff:
@@ -24,3 +25,4 @@ output:
       $person_name:
         $given_names: FIRST_NAME
         $surname: SURNAME
+    email: email
