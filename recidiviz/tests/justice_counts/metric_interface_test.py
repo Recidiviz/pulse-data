@@ -701,6 +701,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         "dimension_to_contexts": {},
                         "is_breakdown_configured": None,
                         "dimension_to_includes_excludes_configured_status": {},
+                        "dimension_to_other_sub_dimensions": {},
                     }
                 },
                 "disaggregated_by_supervision_subsystems": None,
@@ -766,6 +767,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         "dimension_to_contexts": {},
                         "is_breakdown_configured": None,
                         "dimension_to_includes_excludes_configured_status": {},
+                        "dimension_to_other_sub_dimensions": {},
                     }
                 },
                 "disaggregated_by_supervision_subsystems": None,

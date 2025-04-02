@@ -29,10 +29,15 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.dimensions.common import ExpenseType
+from recidiviz.justice_counts.dimensions.law_enforcement import ForceType, FundingType
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
+)
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -1361,3 +1366,179 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertIsNone(metric_interface.reporting_agency_id)
         self.assertIsNone(metric_interface.is_self_reported)
+
+    def test_update_other_sub_dimensions(self) -> None:
+        """Test updating other sub-dimensions for metric settings."""
+        self.load_users_and_agencies()
+        agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        self.session.refresh(agency)
+        self.session.refresh(user)
+
+        agency_id = agency.id
+        user_auth0_id = user.auth0_user_id
+
+        # Prepopulate metric settings
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=law_enforcement.funding.key,
+                is_metric_enabled=True,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={FundingType.OTHER: True},
+                        dimension_to_other_sub_dimensions={},
+                    )
+                ],
+            ),
+        )
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=law_enforcement.use_of_force_incidents.key,
+                is_metric_enabled=True,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={
+                            ForceType.OTHER: True,
+                            ForceType.OTHER_WEAPON: True,
+                        },
+                        dimension_to_other_sub_dimensions={
+                            ForceType.OTHER: ["foo, bar"],
+                            ForceType.OTHER_WEAPON: ["bar"],
+                        },
+                    )
+                ],
+            ),
+        )
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=law_enforcement.expenses.key,
+                is_metric_enabled=True,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={ExpenseType.OTHER: True},
+                        dimension_to_other_sub_dimensions={
+                            ExpenseType.OTHER: ["One Dimension", "Two Dimension"]
+                        },
+                    )
+                ],
+            ),
+        )
+
+        self.session.commit()
+
+        updates_payload = {
+            "auth0_user_id": user_auth0_id,
+            "updates": [
+                {
+                    "metric_key": law_enforcement.funding.key,
+                    "breakdowns": [
+                        {
+                            "dimension_id": FundingType.dimension_identifier(),
+                            "sub_dimensions": [
+                                {
+                                    "dimension_key": "OTHER",
+                                    "other_options": ["Another Option"],
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "metric_key": law_enforcement.use_of_force_incidents.key,
+                    "breakdowns": [
+                        {
+                            "dimension_id": ForceType.dimension_identifier(),
+                            "sub_dimensions": [
+                                {
+                                    "dimension_key": "OTHER",
+                                    "other_options": [],
+                                },
+                                {
+                                    "dimension_key": "OTHER_WEAPON",
+                                    "other_options": [
+                                        "beep",
+                                        "boop",
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "metric_key": law_enforcement.expenses.key,
+                    "breakdowns": [
+                        {
+                            "dimension_id": ExpenseType.dimension_identifier(),
+                            "sub_dimensions": [
+                                {
+                                    "dimension_key": "OTHER",
+                                    "other_options": [
+                                        "One Dimension",
+                                        "Three Dimension",
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+        }
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.put(
+                f"/admin/agency/{agency_id}/metric-setting",
+                json=updates_payload,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["status"], "ok")
+        agency = AgencyInterface.get_agency_by_id(
+            session=self.session, agency_id=agency_id
+        )
+        # Validate that the updates were persisted
+        updated_settings = MetricSettingInterface.get_metric_key_to_metric_interface(
+            session=self.session, agency=agency
+        )
+
+        funding_dim = updated_settings[
+            law_enforcement.funding.key
+        ].aggregated_dimensions[0]
+        self.assertEqual(
+            funding_dim.dimension_to_other_sub_dimensions[FundingType.OTHER],
+            ["Another Option"],  # added a new sub-dimension
+        )
+
+        expenses_dim = updated_settings[
+            law_enforcement.expenses.key
+        ].aggregated_dimensions[0]
+        self.assertEqual(
+            expenses_dim.dimension_to_other_sub_dimensions[ExpenseType.OTHER],
+            ["One Dimension", "Three Dimension"],  # replaced one dimension
+        )
+
+        use_of_forces_discharges = updated_settings[
+            law_enforcement.use_of_force_incidents.key
+        ].aggregated_dimensions[0]
+        self.assertEqual(
+            use_of_forces_discharges.dimension_to_other_sub_dimensions[ForceType.OTHER],
+            [],  # deletes all sub-dimensions
+        )
+        self.assertEqual(
+            use_of_forces_discharges.dimension_to_other_sub_dimensions[
+                ForceType.OTHER_WEAPON
+            ],
+            [
+                "beep",
+                "boop",
+            ],  # replaces all subdimensions
+        )

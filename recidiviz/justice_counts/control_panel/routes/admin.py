@@ -31,6 +31,9 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.control_panel.utils import get_auth0_user_id
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
@@ -845,5 +848,93 @@ def get_admin_blueprint(
         current_session.commit()
 
         return jsonify({"status": "ok"}), HTTPStatus.OK
+
+    @admin_blueprint.route("/agency/<agency_id>/metric-setting", methods=["PUT"])
+    @auth_decorator
+    def update_other_sub_dimensions(agency_id: int) -> Response:
+        """Update 'other sub-dimensions' for metric dimensions in an agency's metric settings.
+
+        Accepts partial updates (deltas) to the 'other_options' values for specific
+        sub-dimensions within metric dimensions.
+
+        Request format:
+        "updates": [
+            {
+                "metric_key": "<metric_key>",
+                "breakdowns": [
+                    {
+                        "dimension_id": "<dimension_id>",
+                        "sub_dimensions": [
+                            {
+                                "dimension_key": "<enum key>",
+                                "other_options": ["<value>", ...]
+                            }
+                        ]
+                    }
+                ]
+            },
+            ...
+        ]
+
+        Returns:
+        200 OK with {"status": "ok"} on success.
+        """
+
+        request_json = assert_type(request.json, dict)
+        user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=current_session,
+            auth0_user_id=get_auth0_user_id(request_dict=request_json),
+        )
+
+        update_jsons = assert_type(request_json.get("updates"), list)
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+
+        metric_key_to_metric_interface = (
+            MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=current_session, agency=agency
+            )
+        )
+
+        for update_json in update_jsons:
+            metric_interface = metric_key_to_metric_interface[update_json["metric_key"]]
+            for breakdown in update_json.get("breakdowns", []):
+                dimension_id_to_dimension_metric_interface = {
+                    a.dimension_identifier(): a
+                    for a in metric_interface.aggregated_dimensions
+                }
+                dimension_metric_interface = (
+                    dimension_id_to_dimension_metric_interface.get(
+                        breakdown["dimension_id"]
+                    )
+                )
+                dimension_to_other_sub_dimensions = (
+                    dimension_metric_interface.dimension_to_other_sub_dimensions
+                    if dimension_metric_interface is not None
+                    else {}
+                )
+
+                dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[breakdown["dimension_id"]]
+                for sub_dimension in breakdown.get("sub_dimensions", []):
+                    dimension_to_other_sub_dimensions[
+                        dimension[sub_dimension["dimension_key"]]
+                    ] = sub_dimension["other_options"]
+
+                if dimension_metric_interface is not None:
+                    dimension_metric_interface.dimension_to_other_sub_dimensions = (
+                        dimension_to_other_sub_dimensions
+                    )
+
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=current_session,
+                agency=agency,
+                agency_metric_updates=metric_interface,
+                user_account=user,
+            )
+
+        current_session.commit()
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     return admin_blueprint
