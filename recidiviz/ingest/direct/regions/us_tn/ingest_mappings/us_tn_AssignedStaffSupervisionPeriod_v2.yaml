@@ -150,6 +150,9 @@ output:
 
                       StateSupervisionLevel.LIMITED:
                         - 4TR # STANDARD - TELEPHONE RPT
+                        - 8TR # New IOT value
+                        - IOT # INTERACTIVE OFFENDER TRAC
+                        - 8LC # LOW COMPLIANT
 
                       StateSupervisionLevel.MINIMUM:
                         - 4MI # STANDARD - MINIMUM
@@ -158,6 +161,7 @@ output:
                         - Z1M # MISDEMEANOR, MIN SUPV
                         - ZMI # MINIMUM SUPV PAROLE
                         - 4EI # MINIMUM INCENTIVE
+                        - 8LO # LOW
 
                       StateSupervisionLevel.MEDIUM:
                         - 3D3 # ELEVATED - DRC PHASE 3
@@ -180,6 +184,7 @@ output:
                         - Z2M # MISDEMEANOR, MED SUPV
                         - ZME # MEDIUM SUPV PAROLE
                         - 3EI # MEDIUM INCENTIVE
+                        - 8MO # MODERATE
 
                       StateSupervisionLevel.HIGH:
                         # TODO(#10634): [Pathways][US_TN] Determine supervision level groupings
@@ -197,6 +202,7 @@ output:
                         - XN3 # SEX OFFENDER NO GPS - MAX
                         - Z3A # MAXIMUM SUPV PROBATION
                         - ZMA # MAXIMUM SUPV PAROLE
+                        - 8HI # HIGH
 
                       StateSupervisionLevel.MAXIMUM:
                         - 1D1 # SPEC RESTRCT - DRC PHASE 1
@@ -274,7 +280,6 @@ output:
                         - 9DP # ADM - DEPORTED
                         - 9RT # ADM - RES. TREATMNT PLCMT
                         - DET # DETAINER STATUS OFFENDER
-                        - IOT # INTERACTIVE OFFENDER TRAC
                         - MSD # MISDEMEANOR OFFENDER
                         - RTP # RESIDENT TREATMT PLACEMNT
                         - WRB # WARRANT ON BOND
@@ -299,3 +304,4 @@ output:
                         - ZTV # TECHNICAL VIOLATOR
                         - 7M1 # PHASE 1 REGULAR
                         - 7RP # REFUSAL TO PARTICIPATE
+                        - 8LM # should not be used, was intended to be low medium
