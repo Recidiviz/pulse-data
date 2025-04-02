@@ -1432,6 +1432,12 @@ US_OZ:
     us_oz_validation.incarceration_population_person_level: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_PA:
+  Criminal_History:
+    workflows_views.us_pa_complete_transfer_to_special_circumstances_supervision_request_record:
+      |-
+      Pending charges can affect eligibility, and agents want them displayed on the sidebar. TODO(#40354) to update in state charge v2
+    workflows_views.us_pa_transfer_to_administrative_supervision_form_record: |-
+      Pending charges can affect eligibility, and agents want them displayed on the sidebar. TODO(#40354) to update in state charge v2
   RECIDIVIZ_REFERENCE_locations_from_supervision_contacts:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

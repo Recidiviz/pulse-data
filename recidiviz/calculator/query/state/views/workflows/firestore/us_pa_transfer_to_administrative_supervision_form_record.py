@@ -26,7 +26,10 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
@@ -94,6 +97,9 @@ US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBi
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_pa_raw_data_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_pa_raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
     sessions_dataset=SESSIONS_DATASET,
