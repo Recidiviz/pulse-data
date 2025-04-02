@@ -97,11 +97,6 @@ class OnCallLogsSearch:
         show_resolved: bool = False,
     ) -> list[dict]:
         """Searches BigQuery for request logs"""
-        view_filter = 'STARTS_WITH(requests_by_status_code.url, "/direct/")'
-
-        if view == LogsView.APP_ENGINE:
-            view_filter = f"NOT {view_filter}"
-
         if view == LogsView.CLOUD_RUN:
             requests_table = "run_googleapis_com_requests"
             view_filter = 'requests_by_status_code.resource.type = "cloud_run_revision"'
@@ -110,8 +105,7 @@ class OnCallLogsSearch:
                 f' ({",".join(map(repr, cloud_run_services))})'
             )
         else:
-            requests_table = "appengine_googleapis_com_nginx_request"
-            service_filter = ""
+            raise ValueError(f"Cannot determine view: {view}")
 
         query_builder = BigQueryQueryBuilder(
             parent_address_overrides=None, parent_address_formatter_provider=None
@@ -127,7 +121,9 @@ class OnCallLogsSearch:
                 if show_resolved
                 else "since_succeeded_timestamp is null",
                 "view_filter": view_filter,
-                "status_filter": f"requests_by_status_code.status NOT IN ({','.join(map(str, ignored_statuses))})",
+                "status_filter": f"requests_by_status_code.status NOT IN ({','.join(map(str, ignored_statuses))})"
+                if ignored_statuses
+                else "TRUE",
                 "cloud_run_service_filter": service_filter or "",
             },
         )

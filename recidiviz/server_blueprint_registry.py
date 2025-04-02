@@ -25,13 +25,10 @@ from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.utils.environment import local_only
 from recidiviz.utils.metadata import CloudRunMetadata
 
-default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = []
-
 
 @local_only
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    # TODO(#24741): Add back admin panel / auth blueprints once removed from blueprint registry
-    return default_blueprints_with_url_prefixes + [
+    return [
         (admin_panel_blueprint, "/admin"),
         (
             get_auth_endpoint_blueprint(

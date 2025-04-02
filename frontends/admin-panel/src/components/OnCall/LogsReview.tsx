@@ -286,19 +286,18 @@ const Component: React.FC = () => {
       });
   }
   const [form] = Form.useForm();
-  const view = Form.useWatch("view", form);
   const statuses = Form.useWatch("ignored_statuses", form);
 
   React.useEffect(() => {
     form.submit();
   }, [form]);
 
-  const [checkAll, setCheckAll] = React.useState(false);
+  const [checkAll, setCheckAll] = React.useState(true);
   const [indeterminate, setIndeterminate] = React.useState(true);
 
   const onChange = (list: CheckboxValueType[]) => {
     form.setFieldsValue({
-      statuses: list,
+      ignored_statuses: list,
     });
     setIndeterminate(!!list.length && list.length < NOISY_STATUSES.length);
     setCheckAll(list.length === NOISY_STATUSES.length);
@@ -306,7 +305,7 @@ const Component: React.FC = () => {
 
   const onCheckAllChange = (e: CheckboxChangeEvent) => {
     form.setFieldsValue({
-      statuses: e.target.checked
+      ignored_statuses: e.target.checked
         ? NOISY_STATUSES.map((option) => option.value)
         : [],
     });
@@ -324,7 +323,7 @@ const Component: React.FC = () => {
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 18 }}
           initialValues={{
-            view: "direct_ingest",
+            view: "cloud_run",
             ignored_statuses: NOISY_STATUSES.map((option) => option.value),
             cloud_run_services: [
               "application-data-import",
@@ -337,30 +336,24 @@ const Component: React.FC = () => {
         >
           <Form.Item name="view" label="Services">
             <Radio.Group
-              options={[
-                { label: "Direct Ingest", value: "direct_ingest" },
-                { label: "App Engine", value: "app_engine" },
-                { label: "Cloud Run", value: "cloud_run" },
-              ]}
+              options={[{ label: "Cloud Run", value: "cloud_run" }]}
             />
           </Form.Item>
 
-          {view === "cloud_run" ? (
-            <Form.Item name="cloud_run_services" wrapperCol={{ offset: 4 }}>
-              <Checkbox.Group
-                options={[
-                  {
-                    label: "Application Data Import",
-                    value: "application-data-import",
-                  },
-                  { label: "Asset Generation", value: "asset-generation" },
-                  { label: "Case Triage", value: "case-triage-web" },
-                  { label: "Justice Counts", value: "justice-counts-web" },
-                  { label: "Admin Panel", value: "admin-panel" },
-                ]}
-              />
-            </Form.Item>
-          ) : null}
+          <Form.Item name="cloud_run_services" wrapperCol={{ offset: 4 }}>
+            <Checkbox.Group
+              options={[
+                {
+                  label: "Application Data Import",
+                  value: "application-data-import",
+                },
+                { label: "Asset Generation", value: "asset-generation" },
+                { label: "Case Triage", value: "case-triage-web" },
+                { label: "Justice Counts", value: "justice-counts-web" },
+                { label: "Admin Panel", value: "admin-panel" },
+              ]}
+            />
+          </Form.Item>
 
           <Form.Item name="ignored_statuses" label="Ignored statuses">
             <Checkbox
