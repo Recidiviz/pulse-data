@@ -68,7 +68,7 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(critical_date AS group_projected_parole_release_date)) AS reason,
         critical_date AS group_projected_parole_release_date
     FROM critical_date_has_passed_spans
-    WHERE start_date < {nonnull_end_date_clause('end_date')}
+    WHERE start_date < LEAST({nonnull_end_date_clause('end_date')}, critical_date)
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
