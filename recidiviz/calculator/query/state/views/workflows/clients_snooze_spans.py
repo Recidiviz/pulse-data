@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -148,6 +149,39 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
         AND a.person_id IS NULL  -- exclude snoozes that are already captured above
         AND e.person_id IS NULL
         AND DATETIME(timestamp) < "{{first_snooze_archive_date}}"
+    ),
+    -- case_note_snooze_spans captures Maine snoozes recorded in case notes. A new case note for an opportunity supercedes any
+    -- snooze that's currently active, which we capture in end_date_scheduled.
+    case_note_snooze_spans AS (
+        WITH extracted_case_notes AS (
+            SELECT
+                person_id,
+                state_code,
+                person_external_id,
+                JSON_VALUE(note, '$.opportunity_type') AS opportunity_type,
+                PARSE_DATE('%Y-%m-%d', JSON_VALUE(note, '$.start_date')) AS start_date,
+                JSON_VALUE(note, '$.officer_email') AS snoozed_by,
+                JSON_VALUE_ARRAY(note, '$.denial_reasons') AS denial_reasons,
+                JSON_VALUE(note, '$.other_text') AS other_reason,
+                PARSE_DATE('%Y-%m-%d', JSON_VALUE(note, '$.end_date')) AS end_date_scheduled,
+                LEAD(PARSE_DATE('%Y-%m-%d', JSON_VALUE(note, '$.start_date')))
+                    OVER (PARTITION BY person_id, JSON_VALUE(note, '$.opportunity_type')
+                          ORDER BY PARSE_DATE('%Y-%m-%d', JSON_VALUE(note, '$.start_date'))) AS next_start_date
+            FROM `{{project_id}}.{{supplemental_dataset}}.us_me_snoozed_opportunities`
+            WHERE is_valid_snooze_note
+        )
+        SELECT
+            * EXCEPT (next_start_date),
+            CASE
+                -- If there is another snooze for the same person and opportunity type that starts before this snooze ends
+                WHEN next_start_date < end_date_scheduled THEN next_start_date
+                -- If the scheduled end date has passed
+                WHEN end_date_scheduled < CURRENT_DATE('US/Eastern') THEN end_date_scheduled
+                -- Otherwise, end_date_actual is NULL
+                ELSE NULL
+            END AS end_date_actual
+        FROM extracted_case_notes
+        WHERE start_date != end_date_scheduled  -- Filter out zero-length "snoozes": these are created to cancel a previous snooze
     )
 
     SELECT * FROM archive_snooze_spans
@@ -157,6 +191,10 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
     SELECT 
         *, LEAST(end_date_scheduled, "{{first_snooze_archive_date}}") as end_date_actual
     FROM event_snooze_spans
+
+    UNION ALL
+
+    SELECT * FROM case_note_snooze_spans
   
     -- migrations per https://github.com/Recidiviz/recidiviz-dashboards/issues/4060  
     UNION ALL
@@ -212,6 +250,7 @@ CLIENTS_SNOOZE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     workflows_dataset=WORKFLOWS_VIEWS_DATASET,
     reference_dataset=REFERENCE_VIEWS_DATASET,
+    supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     first_snooze_archive_date="2024-03-27",
 )
 
