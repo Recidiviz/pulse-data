@@ -39,7 +39,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers
     supervision_metric_query_template,
 )
 from recidiviz.calculator.query.state.views.outliers.utils import (
-    most_recent_staff_attrs_cte,
     officer_aggregated_metrics_plus_inclusion,
 )
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
@@ -94,36 +93,6 @@ _OFFICER_CASELOAD_CATEGORIES_CTE = "\n    UNION ALL\n".join(
         for category_type in InsightsCaseloadCategoryType
     ]
 )
-
-_INCLUDE_IN_OUTCOMES_METRICS_CTE = """
-    WITH most_recent_include_in_outcomes AS (
-        SELECT * from include_in_outcomes_cte
-        -- We only need the most recent month's value for each officer
-        WHERE end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
-        AND period="YEAR"
-    )
-    SELECT
-        o.state_code,
-        o.external_id as officer_id,
-        IFNULL(end_date, DATE_TRUNC(CURRENT_DATE, MONTH)) as end_date,
-        "YEAR" AS period,
-        "ALL" AS category_type,
-        "ALL" AS caseload_category,
-        "BOOLEAN" AS value_type, 
-        "include_in_outcomes" AS metric_id,
-        CASE 
-            WHEN include_in_outcomes THEN 1
-            ELSE 0
-        END AS metric_value,
-    FROM
-        `{project_id}.outliers_views.supervision_officers_materialized` o
-    -- Left join so that we can set a value for every current officer, even if they weren't
-    -- present in the CTE source tables.
-    LEFT JOIN 
-        most_recent_include_in_outcomes i
-    ON 
-      o.external_id = i.officer_id and o.state_code = i.state_code
-"""
 
 
 def _supervision_vitals_metric_query_template() -> str:
@@ -247,16 +216,8 @@ def _zero_grants_metrics_cte() -> str:
 
 
 def _include_in_outcomes_cte() -> str:
-    """
-    Joins relevant officer aggregated metrics and attributes views to calculate the
-    include_in_outcomes value for supervision officers across various periods.
-    """
     state_specific_ctes = []
 
-    attrs_join_statement = """
-    INNER JOIN attrs
-        ON attrs.state_code = o.state_code AND attrs.officer_id = o.external_id
-"""
     for state_code in get_outliers_enabled_states_for_bigquery():
         config = get_outliers_backend_config(state_code)
         state_specific_ctes.append(
@@ -266,27 +227,16 @@ def _include_in_outcomes_cte() -> str:
         m.officer_id,
         m.end_date,
         m.period,
-        -- The include_in_outcomes column combines staff and metric exclusion conditions
-        -- and is used to determine which officers' outcomes metrics rows should be 
-        -- pulled into insights product views. The value for the most recent period
-        -- will be stored as an officer metric row itself.
-        {f"{config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else "TRUE"} {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""} 
+        include_in_outcomes {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""} 
     AS include_in_outcomes
     FROM `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` m
     -- Join on staff product view to ensure staff exclusions are applied
     INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
         ON m.state_code = o.state_code AND m.officer_id = o.external_id
-    {attrs_join_statement if config.supervision_staff_exclusions else ""}
     WHERE m.state_code = "{state_code}"
 """
         )
-    unioned_state_queries = "\n      UNION ALL\n".join(state_specific_ctes)
-    return f"""
-    WITH attrs AS (
-        {most_recent_staff_attrs_cte()}
-    )
-    {unioned_state_queries}
-"""
+    return "\n      UNION ALL\n".join(state_specific_ctes)
 
 
 _QUERY_TEMPLATE = f"""
@@ -311,9 +261,6 @@ officer_vitals_metrics AS (
 ),
 zero_grants_metrics AS (
     {_zero_grants_metrics_cte()}
-),
-officer_inclusion_metrics AS (
-    {_INCLUDE_IN_OUTCOMES_METRICS_CTE}
 )
 
 SELECT 
@@ -324,8 +271,6 @@ USING (state_code, officer_id, end_date, period)
 FULL OUTER JOIN officer_vitals_metrics
 USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
 FULL OUTER JOIN zero_grants_metrics
-USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
-FULL OUTER JOIN officer_inclusion_metrics
 USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
 """
 
@@ -345,6 +290,7 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "value_type",
         "category_type",
         "caseload_category",
+        "include_in_outcomes",
     ],
 )
 

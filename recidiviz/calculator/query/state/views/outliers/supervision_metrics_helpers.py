@@ -38,6 +38,11 @@ def columns_for_unit_of_analysis(
         "period",
         "end_date",
     ]
+    if (
+        unit_of_analysis.type
+        == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+    ):
+        shared_subquery_columns.append("include_in_outcomes")
     return shared_subquery_columns
 
 

@@ -48,7 +48,7 @@ statewide_iqrs AS (
         category_type,
         APPROX_QUANTILES(metric_value, 4)[OFFSET(3)] - APPROX_QUANTILES(metric_value, 4)[OFFSET(1)] AS iqr
     FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized`
-    WHERE value_type = 'RATE' AND period = 'YEAR'
+    WHERE value_type = 'RATE' AND period = 'YEAR' AND include_in_outcomes
     GROUP BY 1, 2, 3, 4, 5
 )
 , statewide_highlight_values AS (

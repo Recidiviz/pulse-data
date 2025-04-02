@@ -50,6 +50,7 @@ from recidiviz.outliers.types import (
     OutlierMetricInfo,
     OutliersBackendConfig,
     OutliersMetricConfig,
+    OutliersMetricValueType,
     OutliersProductConfiguration,
     PersonName,
     SupervisionOfficerEntity,
@@ -887,25 +888,6 @@ class OutliersQuerier:
 
             return id_to_entities[officer_external_id]
 
-    def _include_in_outcomes_subquery(self) -> Any:
-        """
-        Returns a subquery for pulling the current include_in_outcomes values for all
-        supervision officers.
-        """
-        with self.insights_database_session() as session:
-            return (
-                session.query(
-                    SupervisionOfficerMetric.officer_id,
-                    SupervisionOfficerMetric.metric_value.label("include_in_outcomes"),
-                )
-                .filter(
-                    SupervisionOfficerMetric.end_date
-                    == self._get_latest_period_end_date(session),
-                    SupervisionOfficerMetric.metric_id == "include_in_outcomes",
-                )
-                .subquery()
-            )
-
     def get_all_supervision_officers_required_info_only(
         self,
     ) -> List[SupervisionOfficerEntity]:
@@ -917,22 +899,15 @@ class OutliersQuerier:
             List[SupervisionOfficerEntity]: A list of SupervisionOfficerEntity instances.
         """
         with self.insights_database_session() as session:
-            include_in_outcomes_subquery = self._include_in_outcomes_subquery()
             officers = (
-                session.query(SupervisionOfficer)
-                .join(
-                    include_in_outcomes_subquery,
-                    include_in_outcomes_subquery.c.officer_id
-                    == SupervisionOfficer.external_id,
-                )
-                .with_entities(
+                session.query(
                     SupervisionOfficer.external_id,
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
-                    include_in_outcomes_subquery.c.include_in_outcomes,
+                    SupervisionOfficer.include_in_outcomes,
                     SupervisionOfficer.email,
                 )
             ).all()
@@ -945,7 +920,7 @@ class OutliersQuerier:
                     supervisor_external_id=officer.supervisor_external_id,
                     supervisor_external_ids=officer.supervisor_external_ids,
                     district=officer.supervision_district,
-                    include_in_outcomes=bool(officer.include_in_outcomes),
+                    include_in_outcomes=officer.include_in_outcomes,
                     email=officer.email,
                 )
                 for officer in officers
@@ -969,18 +944,20 @@ class OutliersQuerier:
         :rtype: Optional[SupervisionOfficerOutcomes]
         """
         with self.insights_database_session() as session:
-            # Return early if there is no officer with the given pseudo ID.
+            # Return early if there is no officer included in outcomes calculations
+            # with the given pseudo ID.
             officer_external_id = (
                 session.query(SupervisionOfficer.external_id)
                 .filter(
                     SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id,
+                    SupervisionOfficer.include_in_outcomes,
                 )
                 .scalar()
             )
 
             if officer_external_id is None:
                 logging.info(
-                    "Requested officer with provided pseudonymized_id not found: %s",
+                    "Requested officer with provided pseudonymized_id not found (or is not included in outcomes): %s",
                     pseudonymized_officer_id,
                 )
                 return None
@@ -1246,6 +1223,8 @@ class OutliersQuerier:
             )
 
         with self.insights_database_session() as session:
+            end_date = self._get_latest_period_end_date(session)
+
             zero_grants_metrics_end_date = self._get_latest_period_end_date(
                 session, daily_metric=True
             )
@@ -1269,7 +1248,35 @@ class OutliersQuerier:
                 .subquery()
             )
 
-            include_in_outcomes_subquery = self._include_in_outcomes_subquery()
+            # TODO(#38094): Make include_in_outcomes a metric row in the SupervisionOfficerMetric table
+            # Pull the include_in_outcomes flag value from the SupervisionOfficerMetric
+            # table (this table is the final source of truth for whether an officer
+            # should be included in outcomes).
+            include_in_outcomes_subquery = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                    # All rows for a given officer and given end date share the same flag value so we
+                    # can just pull the first value.
+                    func.array_agg(SupervisionOfficerMetric.include_in_outcomes)[
+                        1
+                    ].label("include_in_outcomes"),
+                )
+                .filter(
+                    SupervisionOfficerMetric.end_date == end_date,
+                    SupervisionOfficerMetric.category_type
+                    == category_type_to_compare.value,
+                    # Should exclude vitals and zg metrics rows
+                    SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
+                    SupervisionOfficerMetric.value_type.in_(
+                        [
+                            OutliersMetricValueType.RATE.value,
+                            OutliersMetricValueType.AVERAGE.value,
+                        ]
+                    ),
+                )
+                .group_by(SupervisionOfficerMetric.officer_id)
+                .subquery()
+            )
 
             # The entities we'll be selecting from our query
             query_entities = [
@@ -1417,7 +1424,7 @@ class OutliersQuerier:
                         if include_workflows_info
                         else None
                     ),
-                    include_in_outcomes=bool(record.include_in_outcomes),
+                    include_in_outcomes=record.include_in_outcomes,
                 )
 
             return officer_external_id_to_entity

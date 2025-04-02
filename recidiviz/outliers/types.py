@@ -62,8 +62,6 @@ class OutliersMetricValueType(Enum):
     # Implies that the value is divided by the avg_daily_population
     RATE = "RATE"
     PROPORTION = "PROPORTION"
-    # Implies the value is 1.0 or 0.0
-    BOOLEAN = "BOOLEAN"
 
 
 class ConfigurationStatus(Enum):
@@ -455,7 +453,7 @@ class SupervisionOfficerEntity:
     district: str = attr.ib()
     # The officer's email
     email: str = attr.ib()
-    # Whether this officer is currently included in outcomes calculations
+    # Whether this officer is included in outcomes calculations
     include_in_outcomes: bool = attr.ib()
     # The officer's avg caseload size in the latest period
     avg_daily_population: Optional[float] = attr.ib(default=None)
