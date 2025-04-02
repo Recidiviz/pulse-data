@@ -25,6 +25,9 @@ max_allowed_error_overrides:
   - validation_name: outliers_staff_count_percent_change_intermonth
     hard_max_allowed_error_override: .05
     override_reason: This is likely expected variation.
+  - validation_name: outliers_staff_count_percent_change_intramonth
+    hard_max_allowed_error_override: .05
+    override_reason: This is likely expected variation.
 num_allowed_rows_overrides:
   - validation_name: product_roster_upcoming_blocks
     hard_num_allowed_rows_override: 15
