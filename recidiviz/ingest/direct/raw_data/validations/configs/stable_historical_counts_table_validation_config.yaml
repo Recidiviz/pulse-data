@@ -53,3 +53,17 @@ defaults:
 #            reason:
 #              "This is an example of a date range exclusion for a specific file in
 #              a specific state."
+
+custom:
+  US_TN:
+    file_tags:
+      VantagePointProgram:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2022-03-22T00:00:00Z"
+            datetime_end_exclusive: "2025-04-01T00:00:00Z"
+            reason:
+              "This table was modified on 2024-03-30 to seperate 'classes' from 'programs'
+              so the table went from 48 records to 10. This is expected so we want to
+              add a data-bounded exclusion from the first case of a file being
+              received --> today, which will exclude those dates from validation & from
+              being used to calculate the median historical row count"
