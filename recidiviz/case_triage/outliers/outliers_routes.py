@@ -160,11 +160,6 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
 
-            period_end_date = (
-                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
-                if "period_end_date" in request.args
-                else None
-            )
         except ValueError as e:
             return jsonify_response(
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
@@ -201,7 +196,6 @@ def create_outliers_api_blueprint() -> Blueprint:
             primary_category_type,
             user_context.can_access_supervision_workflows,
             num_lookback_periods,
-            period_end_date,
         )
 
         officers = [
@@ -450,7 +444,6 @@ def create_outliers_api_blueprint() -> Blueprint:
             pseudonymized_officer_id=pseudonymized_officer_id,
             include_workflows_info=user_context.can_access_supervision_workflows,
             num_lookback_periods=0,
-            period_end_date=period_end_date,
         )
         if officer_entity is None:
             return jsonify_response(
@@ -614,11 +607,6 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
 
-            period_end_date = (
-                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
-                if "period_end_date" in request.args
-                else None
-            )
         except ValueError as e:
             return jsonify_response(
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
@@ -637,7 +625,6 @@ def create_outliers_api_blueprint() -> Blueprint:
             category_type_to_compare,
             user_context.can_access_supervision_workflows,
             num_lookback_periods,
-            period_end_date,
         )
         if officer_entity is None:
             return jsonify_response(

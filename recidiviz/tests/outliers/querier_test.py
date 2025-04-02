@@ -387,26 +387,23 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_supervision_officer_entity_found_match_uses_most_recent_avg_caseload(
         self,
     ) -> None:
-        # Return matching supervision officer entity for prior end date (2023-04-01)
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
             include_workflows_info=True,
             num_lookback_periods=0,
-            period_end_date=TEST_PREV_END_DATE,
         )
         self.assertEqual(actual.avg_daily_population, 54.321)  # type: ignore[union-attr]
 
     def test_get_supervision_officer_entity_found_match_multiperiod_uses_most_recent_avg_caseload(
         self,
     ) -> None:
-        # Return matching supervision officer entity for most recent end date (2023-05-01) with multiple periods
+        # Return matching supervision officer entity with multiple lookback periods
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
             include_workflows_info=True,
             num_lookback_periods=4,
-            period_end_date=TEST_END_DATE,
         )
         self.assertEqual(actual.avg_daily_population, 54.321)  # type: ignore[union-attr]
 
@@ -497,18 +494,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
             external_id="invalidid"
         )
         self.assertFalse(actual)
-
-    def test_get_supervision_officer_entity_no_metrics(self) -> None:
-        # Return None because none found
-        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
-            pseudonymized_officer_id="officerhash9",
-            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
-            include_workflows_info=True,
-            num_lookback_periods=0,
-            period_end_date=TEST_PREV_END_DATE,
-        )
-
-        self.assertIsNone(actual)
 
     def test_get_officer_outcomes_found_match(self) -> None:
         # Return matching supervision officer outcomes entity

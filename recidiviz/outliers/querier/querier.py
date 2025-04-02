@@ -543,7 +543,6 @@ class OutliersQuerier:
         category_type_to_compare: InsightsCaseloadCategoryType,
         include_workflows_info: bool,
         num_lookback_periods: Optional[int] = None,
-        period_end_date: Optional[date] = None,
     ) -> List[SupervisionOfficerEntity]:
         """
         Returns a list of SupervisionOfficerEntity objects that represent the supervisor's officers and
@@ -552,13 +551,11 @@ class OutliersQuerier:
         :param supervisor_external_id: The external id of the supervisor to get outlier information for
         :param category_type_to_compare: The category type to use to determine the officers' caseload categories
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
-        :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :rtype: List[SupervisionOfficerEntity]
         """
         id_to_entities = self.get_id_to_supervision_officer_entities(
             category_type_to_compare=category_type_to_compare,
             num_lookback_periods=num_lookback_periods,
-            period_end_date=period_end_date,
             supervisor_external_id=supervisor_external_id,
             include_workflows_info=include_workflows_info,
         )
@@ -851,16 +848,14 @@ class OutliersQuerier:
         category_type_to_compare: InsightsCaseloadCategoryType,
         include_workflows_info: bool,
         num_lookback_periods: Optional[int],
-        period_end_date: Optional[date] = None,
     ) -> Optional[SupervisionOfficerEntity]:
         """
-        Get the SupervisionOfficerEntity object for the requested officer, an entity that includes information on the state's metrics that the officer is an outlier for.
-        If the officer doesn't have metrics for the period, return None.
+        Get the SupervisionOfficerEntity object for the requested officer. Returns None
+        if officer is not found.
 
         :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
         :param category_type_to_compare: The category type to use to determine the officer's caseload category
         :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
-        :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
         :rtype: Optional[SupervisionOfficerEntity]
         """
         with self.insights_database_session() as session:
@@ -880,21 +875,14 @@ class OutliersQuerier:
             id_to_entities = self.get_id_to_supervision_officer_entities(
                 category_type_to_compare=category_type_to_compare,
                 num_lookback_periods=num_lookback_periods,
-                period_end_date=period_end_date,
                 officer_external_id=officer_external_id,
                 include_workflows_info=include_workflows_info,
             )
 
             if officer_external_id not in id_to_entities:
-                end_date_str = (
-                    period_end_date.strftime("%Y-%m-%d")
-                    if period_end_date
-                    else self._get_latest_period_end_date(session).strftime("%Y-%m-%d")
-                )
                 logging.info(
-                    "Requested officer with external id %s does not have metrics for the period ending in %s",
+                    "Query for requested officer entity with external id %s was unsuccessful",
                     officer_external_id,
-                    end_date_str,
                 )
                 return None
 
@@ -1211,17 +1199,14 @@ class OutliersQuerier:
         category_type_to_compare: InsightsCaseloadCategoryType,
         include_workflows_info: bool,
         num_lookback_periods: Optional[int],
-        period_end_date: Optional[date] = None,
         officer_external_id: Optional[str] = None,
         supervisor_external_id: Optional[str] = None,
     ) -> Dict[str, SupervisionOfficerEntity]:
         """
-        Returns a dictionary of officer external id to SupervisionOfficerEntity objects that includes information
-        on the state's metrics that the officer is an outlier for or is in the top x% for.
+        Returns a dictionary of officer external id to SupervisionOfficerEntity objects.
 
         :param category_type_to_compare: The category type to use to determine the officers' caseload categories
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
-        :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :param officer_external_id: The external id of an officer to filter by.
         :param supervisor_external_id: The external id of the supervisor to get officer entities for
         :rtype: Dict[str, SupervisionOfficerEntity]
@@ -1238,11 +1223,7 @@ class OutliersQuerier:
             )
 
         with self.insights_database_session() as session:
-            end_date = (
-                self._get_latest_period_end_date(session)
-                if period_end_date is None
-                else period_end_date
-            )
+            end_date = self._get_latest_period_end_date(session)
 
             zero_grants_metrics_end_date = self._get_latest_period_end_date(
                 session, daily_metric=True

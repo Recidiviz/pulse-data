@@ -520,7 +520,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             response = self.test_client.get(
-                "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+                "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -583,7 +583,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             response = self.test_client.get(
-                "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+                "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -608,7 +608,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+            "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -3400,7 +3400,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_PA/officer/invalidhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/invalidhash",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -3454,7 +3454,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_supervisor_exists.return_value = True
 
         response = self.test_client.get(
-            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -3513,7 +3513,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_supervisor_exists.return_value = False
 
         response = self.test_client.get(
-            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -3524,7 +3524,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             # include_workflows_info is True when relevant permission is set
             True,
             None,
-            datetime.strptime("2023-05-01", "%Y-%m-%d"),
         )
         self.snapshot.assert_match(response.json, name="test_get_officer_success")  # type: ignore[attr-defined]
 
@@ -3575,7 +3574,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_supervisor_exists.return_value = False
 
         response = self.test_client.get(
-            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -3586,7 +3585,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             # include_workflows_info is False when relevant permission is not set
             False,
             None,
-            datetime.strptime("2023-05-01", "%Y-%m-%d"),
         )
 
     @patch(
