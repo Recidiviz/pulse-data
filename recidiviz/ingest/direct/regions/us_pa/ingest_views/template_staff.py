@@ -121,7 +121,7 @@ STAFF_QUERY_TEMPLATE = """
                     UPPER(SupervisorName) AS SupervisorName,
                     LTRIM(Supervisor_EmpNum, '0') AS Supervisor_EmpNum,
                     UPPER(TRIM(SPLIT(SupervisorName, ",")[OFFSET(0)])) as Supervisor_last_name,
-                    TRIM(SPLIT(REGEXP_REPLACE(SupervisorName, r'[^\\d]+', ','), ",")[OFFSET(1)]) AS org_cd,
+                    NULLIF(TRIM(SPLIT(REGEXP_REPLACE(SupervisorName, r'[^\\d]+', ','), ",")[OFFSET(1)]), "0") AS org_cd,
                     NULLIF(LTRIM(TRIM(SPLIT(REGEXP_REPLACE(SupervisorName, r'[^\\d]+', ','), ",")[OFFSET(2)]), '0'), "") AS Supervisor_PosNo,
                     DATE(LastModifiedDateTime) AS start_date,
                     LastModifiedDateTime 
