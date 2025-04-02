@@ -85,6 +85,10 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
 
     @property
+    def observation_name(self) -> str:
+        return self.span_type.value.lower()
+
+    @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         return self.span_type.unit_of_observation_type
 

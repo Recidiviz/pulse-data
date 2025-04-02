@@ -29,12 +29,14 @@ from recidiviz.big_query.big_query_view_collector import (
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
+from recidiviz.observations.span_type import SpanType
 from recidiviz.observations.views import events, spans
 from recidiviz.utils.types import assert_type_list
 
@@ -152,3 +154,28 @@ class ObservationBigQueryViewCollector(
 
             builders_by_unit[unit_of_observation_type] = list(builders)
         return builders_by_unit
+
+    def _get_view_builder_for_event(
+        self, event_type: EventType
+    ) -> EventObservationBigQueryViewBuilder:
+        for builder in self.collect_event_builders():
+            if builder.event_type == event_type:
+                return builder
+        raise ValueError(f"Could not find view builder for event type [{event_type}]")
+
+    def _get_view_builder_for_span(
+        self, span_type: SpanType
+    ) -> SpanObservationBigQueryViewBuilder:
+        for builder in self.collect_span_builders():
+            if builder.span_type == span_type:
+                return builder
+        raise ValueError(f"Could not find view builder for span type [{span_type}]")
+
+    def get_view_builder_for_observation_type(
+        self, observation_type: EventType | SpanType
+    ) -> ObservationBigQueryViewBuilder:
+        if isinstance(observation_type, EventType):
+            return self._get_view_builder_for_event(observation_type)
+        if isinstance(observation_type, SpanType):
+            return self._get_view_builder_for_span(observation_type)
+        raise ValueError(f"Unexpected observation type [{observation_type}]")

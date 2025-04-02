@@ -80,6 +80,10 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
 
     @property
+    def observation_name(self) -> str:
+        return self.event_type.value.lower()
+
+    @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         return self.event_type.unit_of_observation_type
 
