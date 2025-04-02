@@ -17,6 +17,10 @@
 """Sessions for incarceration staff caseloads in Idaho"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,35 +33,70 @@ US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = (
     """Sessions for incarceration staff caseloads in Idaho"""
 )
 
-US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
- #TODO(#40129): Ingest these mappings
- SELECT
-  pei.state_code,
-  pei.person_id,
-  pei.external_id AS person_external_id,
-  DATE(FromDate) AS start_date,
-  IF(ToDate = "9999-12-31 00:00:00", NULL, DATE(ToDate)) AS end_date_exclusive,
-  sei.staff_id AS incarceration_staff_assignment_id,
-  EmployeeId AS incarceration_staff_assignment_external_id,
-  "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
-  --everyone in this view is by necessity a case manager and so should have "COUNSELOR" role subtype
-  "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
-  ROW_NUMBER() OVER (PARTITION BY person_id, FromDate, ToDate ORDER BY IF(ToDate IS NULL, 0, 1), FromDate DESC) AS case_priority,
-FROM `{project_id}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignment_latest` 
-LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignmentType_latest` 
-    USING (CounselorAssignmentTypeId)
-LEFT JOIN `{project_id}.normalized_state.state_person_external_id` pei
+US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
+#TODO(#40129): Ingest these mappings
+WITH 
+assignments AS (
+    SELECT
+      OffenderID,
+      DATE(FromDate) AS FromDate,
+      DATE(ToDate) AS ToDate,
+      -- Keep these around so we can use it for prioritization later, even though rows
+      -- will be broken up into sub-sessions
+      DATE(FromDate) AS original_FromDate,
+      DATE(ToDate) AS original_ToDate,
+      EmployeeId
+    FROM `{{project_id}}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignment_latest` 
+    LEFT JOIN `{{project_id}}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignmentType_latest` 
+        USING (CounselorAssignmentTypeId)
+    WHERE
+        offenderId IS NOT NULL
+        -- Filter out zero-day periods
+        AND (ToDate IS NULL OR DATE(FromDate) < DATE(ToDate))
+        --only include primary case manager <> resident mappings
+        AND CounselorAssignmentTypeName = "Primary" 
+    -- We see a regular pattern in ID of two assignment rows getting created on the same
+    -- day, for the same case manager, with one of those rows getting closed out 
+    -- properly when the new row is added / the case manager is changed, but one of
+    -- those rows staying open for a much longer time. We attempt here to drop all those
+    -- rows that were opened erroneously and kept open too long.  
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY OffenderId, FromDate, EmployeeId 
+        ORDER BY DATE({nonnull_end_date_clause('ToDate')})
+    ) = 1
+),
+-- Sub-sessionize to allow us to prioritize any overlapping periods
+{create_sub_sessions_with_attributes(table_name ='assignments',
+                                     start_date_field_name="FromDate",
+                                     end_date_field_name='ToDate',
+                                     index_columns=['OffenderID'])}
+SELECT
+    "US_IX" AS state_code,
+    pei.person_id,
+    pei.external_id AS person_external_id,
+    FromDate AS start_date,
+    ToDate AS end_date_exclusive,
+    sei.staff_id AS incarceration_staff_assignment_id,
+    EmployeeId AS incarceration_staff_assignment_external_id,
+    "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
+    --everyone in this view is by necessity a case manager and so should have "COUNSELOR" role subtype
+    "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
+    ROW_NUMBER() OVER (
+        PARTITION BY OffenderID, FromDate, ToDate 
+        -- Give priority to assignments that started later and for those that started on
+        -- the same day, the one that ended sooner (given pattern in ID we've seen where
+        -- old assignments are kept open erroneously after new assignments have been 
+        -- added).
+        ORDER BY original_FromDate DESC, {nonnull_end_date_clause("original_FromDate")}
+    ) AS case_priority
+FROM sub_sessions_with_attributes
+LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
     ON pei.external_id = OffenderID
     AND pei.id_type = 'US_IX_DOC'
-LEFT JOIN `{project_id}.normalized_state.state_staff_external_id` sei
+LEFT JOIN `{{project_id}}.normalized_state.state_staff_external_id` sei
     ON EmployeeId = sei.external_id
     AND sei.state_code = "US_IX"
     AND sei.id_type = 'US_IX_EMPLOYEE'
-WHERE offenderId IS NOT NULL
-    AND FromDate < ToDate
-    --only include primary case manager <> resident mappings
-    AND CounselorAssignmentTypeName = "Primary"
-
 """
 
 US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
