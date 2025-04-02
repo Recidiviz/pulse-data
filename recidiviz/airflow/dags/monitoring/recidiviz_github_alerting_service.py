@@ -202,7 +202,9 @@ class RecidivizGitHubService(RecidivizAlertingService):
         )
 
         issue = self._repo.create_issue(
-            title=incident.unique_incident_id, body=body, labels=self.issue_labels
+            title=self._get_issue_title_from_incident(incident),
+            body=body,
+            labels=self.issue_labels,
         )
         logging.info(
             "Created new issue [#%s] for [%s]",

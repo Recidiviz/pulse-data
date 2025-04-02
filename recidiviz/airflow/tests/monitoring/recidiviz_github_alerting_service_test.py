@@ -281,7 +281,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         self.github_repo_mock.create_issue.assert_called_with(
-            title="test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            title="[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             body="Failed run of [`a.job.id`] on the following dates: [ `2024-01-01T00:00:00+00:00`, `2024-01-02T00:00:00+00:00`, `2024-01-03T00:00:00+00:00` ].",
             labels=[
                 "Raw Data Import Failure",
@@ -310,7 +310,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         self.github_repo_mock.create_issue.assert_called_with(
-            title="test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            title="[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             body="""Failed run of [`a.job.id`] on the following dates: [ `2024-01-01T00:00:00+00:00`, `2024-01-02T00:00:00+00:00`, `2024-01-03T00:00:00+00:00` ]. Most recent error message:
 ```a.job has failed for the sake of testing ~~```""",
             labels=[
