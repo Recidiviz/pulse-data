@@ -113,8 +113,6 @@ SELECT
     incarceration_staff_assignment_id AS facility_counselor_id,
 FROM
     `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
-WHERE
-    incarceration_staff_assignment_role_subtype = "COUNSELOR"
 """,
     (
         MetricUnitOfObservationType.PERSON_ID,

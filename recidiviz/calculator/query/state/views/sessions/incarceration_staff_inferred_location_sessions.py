@@ -53,8 +53,8 @@ incarceration_staff_assignment_sessions AS (
         state_code,
         incarceration_staff_assignment_id AS incarceration_staff_id,
         person_id,
-        DATE(start_date) AS start_date,
-        DATE(end_date_exclusive) AS end_date_exclusive,
+        start_date AS start_date,
+        end_date_exclusive AS end_date_exclusive,
     FROM `{{project_id}}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
 )
 {create_intersection_spans(

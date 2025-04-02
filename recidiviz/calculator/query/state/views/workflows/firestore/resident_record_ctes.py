@@ -282,12 +282,12 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
         SELECT DISTINCT
             state_code,
             incarceration_staff_assignment_external_id as officer_id,
-            person_external_id
+            person_id
         FROM `{project_id}.{sessions_dataset}.incarceration_staff_assignment_sessions_preprocessed_materialized`
         WHERE
             state_code IN ('US_ME', 'US_ND', 'US_AZ', 'US_IX')
             AND end_date_exclusive IS NULL
-            AND case_priority = 1
+            AND relationship_priority = 1
     ),
 """
 
@@ -397,7 +397,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
         LEFT JOIN metadata m
           USING(person_id)
         LEFT JOIN officer_assignments
-          USING(state_code, person_external_id)
+          USING(state_code, person_id)
     ),
 """
 

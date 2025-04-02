@@ -59,9 +59,6 @@ US_AZ:
     analyst_data.us_az_action_queue: |-
       Needed a way to cleanly view raw data from a specific screen in ACIS. No place
       for this exists in our schema, and there isn't a good reason to make one.
-  AZ_CM_INMATE_ASSIGNMENT:
-    sessions.us_az_incarceration_staff_assignment_sessions_preprocessed: |-
-      Get CM staff assignments to residents.
   AZ_DOC_DRUG_TRANSITION_PRG_AGRMNT:
     analyst_data.us_az_agreement_form_signatures: |-
       Require information on Signature IDs for Drug Program Early Release Agreement Forms
@@ -1472,9 +1469,6 @@ US_PA:
     experiments_metadata.person_assignments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_TN:
-  AssignedStaff:
-    sessions.us_tn_incarceration_staff_assignment_sessions_preprocessed: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   BoardAction:
     sessions.us_tn_parole_board_hearing_decisions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

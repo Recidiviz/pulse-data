@@ -29,20 +29,58 @@ INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = (
     """Materialized view for incarceration staff assignments"""
 )
 INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
-    SELECT *
-    FROM `{project_id}.sessions.us_tn_incarceration_staff_assignment_sessions_preprocessed` 
+    WITH legacy_relationships AS (
+      # TODO(#40129): Remove this pre-processing view when we've ingested IX case manager 
+      #  relationships into state_person_staff_relationship_period 
+      SELECT * FROM `{project_id}.sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed`
+      
+      UNION ALL
+      
+      # TODO(#32754), TODO(#40128): Remove this pre-processing view when we've ingested 
+      #  ME case manager relationships into state_person_staff_relationship_period 
+      SELECT * FROM `{project_id}.sessions.us_me_incarceration_staff_assignment_sessions_preprocessed`
+      
+      UNION ALL
+      
+      # TODO(#32753): Remove this pre-processing view when we've ingested ND case manager 
+      #  relationships into state_person_staff_relationship_period 
+      SELECT * FROM `{project_id}.sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed`
+    )
+    SELECT
+      state_code,
+      person_id,
+      DATE(start_date) AS start_date,
+      DATE(end_date_exclusive) AS end_date_exclusive,
+      incarceration_staff_assignment_id,
+      incarceration_staff_assignment_external_id,
+      case_priority AS relationship_priority
+    FROM
+      legacy_relationships
+
     UNION ALL
-    SELECT *
-    FROM `{project_id}.sessions.us_me_incarceration_staff_assignment_sessions_preprocessed`
-    UNION ALL
-    SELECT *
-    FROM `{project_id}.sessions.us_nd_incarceration_staff_assignment_sessions_preprocessed` 
-    UNION ALL
-    SELECT *
-    FROM `{project_id}.sessions.us_az_incarceration_staff_assignment_sessions_preprocessed` 
-    UNION ALL
-    SELECT *
-    FROM `{project_id}.sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed` 
+    
+    # TODO(#32754), TODO(#40128): Update to join agent_multiple_ids_map to support ME?
+    SELECT 
+        state_code,
+        person_id,
+        relationship_start_date AS start_date,
+        relationship_end_date_exclusive AS end_date_exclusive,
+        associated_staff_id AS incarceration_staff_assignment_id,
+        associated_staff_external_id AS incarceration_staff_assignment_external_id,
+        relationship_priority
+    FROM `{project_id}.normalized_state.state_person_staff_relationship_period`
+    WHERE state_code NOT IN (
+        # TODO(#40129): Remove this filter when IX relationships are ingested and we 
+        #   remove us_ix_incarceration_staff_assignment_sessions_preprocessed above
+        'US_IX', 
+        # TODO(#32754), TODO(#40128): Remove this filter when IX relationships are 
+        #   ingested and we remove us_me_incarceration_staff_assignment_sessions_preprocessed above
+        'US_ME', 
+        # TODO(#32753): Remove this filter when IX relationships are ingested and we 
+        #   remove us_nd_incarceration_staff_assignment_sessions_preprocessed above
+        'US_ND'
+    ) 
+    AND system_type = 'INCARCERATION' AND relationship_type = 'CASE_MANAGER'
 """
 
 INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -34,7 +34,7 @@ US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = ""
     Note that there are apparently some stray non-incarceration (supervision) caseloads in this dataset."""
 
 US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
-# TODO(#32754): Ingest these mappings
+# TODO(#32754), TODO(#40128): Ingest these mappings
     SELECT DISTINCT
         "US_ME" AS state_code,
         pei.person_id,
