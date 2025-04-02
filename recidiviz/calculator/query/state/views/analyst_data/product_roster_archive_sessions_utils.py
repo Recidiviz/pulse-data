@@ -29,7 +29,6 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
-    create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -156,36 +155,14 @@ roster_sessions_with_role_flags AS (
     GROUP BY 1, 2, 3, 4, 5, 6
 )
 ,
-aggregated_roster_sessions AS (
-    {aggregate_adjacent_spans(
-        table_name='roster_sessions_with_role_flags',
-        index_columns=["state_code", f"{product_name_str}_user_email_address"],
-        attribute=['system_type', 'location_id', 'is_primary_user'],
-        session_id_output_name='registration_session_id',
-        end_date_field_name='end_date_exclusive'
-    )}
-)
-,
-auth0_registration_spans AS (
+registration_sessions AS (
     SELECT
         state_code,
         {product_name_str}_user_email_address,
         DATE({product_name_str}_registration_date) AS start_date,
         CAST(NULL AS DATE) AS end_date_exclusive,
-        TRUE AS is_registered,
     FROM
         `{{project_id}}.analyst_data.{product_name_str}_user_auth0_registrations_materialized`
-)
-,
-registration_sessions AS (
-    {create_intersection_spans(
-        table_1_name="aggregated_roster_sessions",
-        table_2_name="auth0_registration_spans",
-        index_columns=["state_code", f"{product_name_str}_user_email_address"],
-        use_left_join=True,
-        table_1_columns=["system_type", "location_id", "is_primary_user"],
-        table_2_columns=["is_registered"]
-    )}
 )
 ,
 inferred_facility_location_sessions AS (
@@ -229,9 +206,25 @@ registration_sessions_with_inferred_location AS (
         start_date,
         end_date_exclusive,
         system_type,
-        is_registered,
+        TRUE AS is_provisioned,
+        NULL AS is_registered,
         is_primary_user,
         location_id,
+        CAST(NULL AS STRING) AS facility_inferred,
+        CAST(NULL AS STRING) AS facility_ingested,
+    FROM
+        roster_sessions_with_role_flags
+    UNION ALL
+    SELECT
+        state_code,
+        {product_name_str}_user_email_address,
+        start_date,
+        end_date_exclusive,
+        NULL AS system_type,
+        NULL AS is_provisioned,
+        TRUE is_registered,
+        NULL AS is_primary_user,
+        CAST(NULL AS STRING) location_id,
         CAST(NULL AS STRING) AS facility_inferred,
         CAST(NULL AS STRING) AS facility_ingested,
     FROM
@@ -243,6 +236,7 @@ registration_sessions_with_inferred_location AS (
         start_date,
         end_date_exclusive,
         CAST(NULL AS STRING) AS system_type,
+        NULL AS is_provisioned,
         NULL AS is_registered,
         NULL AS is_primary_user,
         CAST(NULL AS STRING) AS location_id,
@@ -257,6 +251,7 @@ registration_sessions_with_inferred_location AS (
         start_date,
         end_date_exclusive,
         CAST(NULL AS STRING) AS system_type,
+        NULL AS is_provisioned,
         NULL AS is_registered,
         NULL AS is_primary_user,
         CAST(NULL AS STRING) AS location_id,
@@ -287,6 +282,7 @@ sub_sessions_dedup AS (
     FROM
         sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
+    HAVING LOGICAL_OR(is_provisioned)
 )
 ,
 aggregated_registration_sessions_with_inferred_location AS (
