@@ -331,3 +331,45 @@ output:
             $enum_mapping:
               $raw_text: lgl_stat_desc
               $custom_parser: us_ut_custom_enum_parsers.parse_supervision_type
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: sprvsn_lvl_desc
+              $mappings:
+                StateCustodialAuthority.OTHER_STATE:
+                  - COMPACT OUT
+                StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                  - DORA FUGITIVE # Drug Offender Reform Act
+                  - FUGITIVE
+                  - MAXIMUM FELONY
+                  - MAXIMUM SUPERVISION
+                  - MAXIMUM PAROLE
+                  - MAXIMUM MISDEMEANOR
+                  - INTENSIVE
+                  - DORA INTENSIVE
+                  - HIGH
+                  - ISP I # Intensive Supervision Probation (ISP)
+                  - ISP II # Intensive Supervision Probation (ISP)
+                  - MEDIUM PAROLE
+                  - MEDIUM SUPERVISION
+                  - MODERATE
+                  - MEDIUM FELONY
+                  - MIN/MED MISDEMEANOR
+                  - LOW
+                  - MINIMUM SUPERVISION
+                  - MINIMUM PAROLE
+                  - MINIMUM FELONY
+                  - TELEPHONIC
+                  - ADMINISTRATION
+                  - RESIDENTIAL
+                  - DORA RESIDENTIAL # Drug Offender Reform Act
+                  - DORA INCARCERATED # Drug Offender Reform Act
+                  - INCARCERATED
+                  - COLLECTION ONLY
+                  - UNKNOWN
+                  - IDS I
+                  - IDS II
+                  - SPECIAL NEEDS OFFNDR
+                  - SEX OFFENDER I
+                  - SEX OFFENDER II
+                  - SEX OFFENDER III
+                  - APPEAL

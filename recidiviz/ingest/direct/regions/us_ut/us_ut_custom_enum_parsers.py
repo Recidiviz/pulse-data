@@ -94,7 +94,7 @@ def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
             return StateSentencingAuthority.COUNTY
         if "FEDERAL" in raw_text or raw_text == "US SUPREME COURT":
             return StateSentencingAuthority.FEDERAL
-        if "COMPACT" in raw_text:
+        if "COMPACT" in raw_text or "OTHER STATE" in raw_text:
             return StateSentencingAuthority.OTHER_STATE
         # The catch-all STATE sentencing authority here includes:
         # District Courts - the state trial court of general jurisdiction.
