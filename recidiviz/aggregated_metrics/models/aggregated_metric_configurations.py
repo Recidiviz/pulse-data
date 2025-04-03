@@ -96,6 +96,30 @@ ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     ),
 )
 
+ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE = EventCountMetric(
+    name="absconsions_bench_warrants_from_parole",
+    display_name="Absconsions/Bench Warrants From Parole",
+    description="Number of absconsions or bench warrants from parole",
+    event_selector=EventSelector(
+        event_type=EventType.ABSCONSION_BENCH_WARRANT,
+        event_conditions_dict={
+            "inflow_from_level_2": ["PAROLE"],
+        },
+    ),
+)
+
+ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION = EventCountMetric(
+    name="absconsions_bench_warrants_from_probation",
+    display_name="Absconsions/Bench Warrants From Probation",
+    description="Number of absconsions or bench warrants from probation",
+    event_selector=EventSelector(
+        event_type=EventType.ABSCONSION_BENCH_WARRANT,
+        event_conditions_dict={
+            "inflow_from_level_2": ["PROBATION"],
+        },
+    ),
+)
+
 ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
     name="any_incarceration_365",
     display_name="Any Incarceration Start Within 1 Year of Assignment",
@@ -1416,6 +1440,34 @@ INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     event_selector=EventSelector(
         event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
         event_conditions_dict={"is_discretionary": ["true"]},
+    ),
+)
+
+INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE = EventCountMetric(
+    name="incarceration_starts_and_inferred_from_parole",
+    display_name="Incarceration Starts And Inferred Incarcerations From Parole",
+    description="Number of total observed discretionary incarceration starts or inferred "
+    "incarcerations from parole",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+        event_conditions_dict={
+            "is_discretionary": ["true"],
+            "latest_active_supervision_type": ["PAROLE"],
+        },
+    ),
+)
+
+INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION = EventCountMetric(
+    name="incarceration_starts_and_inferred_from_probation",
+    display_name="Incarceration Starts And Inferred Incarcerations From Probation",
+    description="Number of total observed discretionary incarceration starts or inferred "
+    "incarcerations from probation",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+        event_conditions_dict={
+            "is_discretionary": ["true"],
+            "latest_active_supervision_type": ["PROBATION"],
+        },
     ),
 )
 
