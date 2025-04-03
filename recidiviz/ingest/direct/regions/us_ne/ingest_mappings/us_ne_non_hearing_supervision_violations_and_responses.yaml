@@ -308,6 +308,8 @@ output:
                                   - Dual Diagnosis Treatment
                                   - Relapse Prevention
                                   - Support Group or Self-help Program with Verification
+                                  - Non-clinical Program Referral
+                                  - Obtain a treatment assessment and follow the recommendations
 
                                 StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
                                   - zzPREP Loss of Pass
