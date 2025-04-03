@@ -157,8 +157,14 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
+    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.user_metrics.workflows_user_available_actions import (
+    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
@@ -428,6 +434,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     ON_MINIMUM_AFTER_UNASSIGNED.address: (
         "Will be used after TN launches full new policy B. See #38953 (Damini Sharma 03/03/2025)"
+    ),
+    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
+        "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
+    ),
+    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
+        "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
     ),
 }
 

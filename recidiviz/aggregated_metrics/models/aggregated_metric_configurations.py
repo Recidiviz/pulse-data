@@ -2311,6 +2311,22 @@ WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
     ),
 )
 
+WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_almost_eligible_and_actionable",
+    display_name="Distinct Population: Almost Eligible And Actionable",
+    description="Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+        },
+    ),
+)
+
 WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS = EventCountMetric(
     name="workflows_primary_user_active_usage_events",
     display_name="Total Active Usage Events, Primary Workflows Users",
@@ -2907,6 +2923,18 @@ DISTINCT_PRIMARY_INSIGHTS_USERS_VIEWED_ANY_PAGE_FOR_30_SECONDS = EventDistinctUn
         event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
         event_conditions_dict={
             "event": ["VIEWED_PAGE_30_SECONDS"],
+        },
+    ),
+)
+
+DISTINCT_OUTLIER_OFFICERS = SpanDistinctUnitCountMetric(
+    name="distinct_outlier_officers_visible_in_tool",
+    display_name="Distinct Number Of Outlier Officers Visible In Tool",
+    description="Number of distinct outlier officers visible in the tool",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_OUTLIER_STATUS_SESSION,
+        span_conditions_dict={
+            "is_surfaceable_outlier": ["true"],
         },
     ),
 )

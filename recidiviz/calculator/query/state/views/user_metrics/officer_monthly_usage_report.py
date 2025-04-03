@@ -43,9 +43,9 @@ officer_monthly_usage_metrics AS (
         monthly_metrics.workflows_primary_user_logins AS logins_this_month,
         IFNULL(end_of_month_metrics.workflows_distinct_people_eligible_and_actionable, 0) AS clients_eligible_end_of_month,
     FROM
-        `{{project_id}}.{{user_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` AS monthly_metrics
+        `{{project_id}}.{{user_metrics_dataset}}.workflows__supervision_officer_aggregated_metrics_materialized` AS monthly_metrics
     LEFT JOIN
-        `{{project_id}}.{{user_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` AS end_of_month_metrics
+        `{{project_id}}.{{user_metrics_dataset}}.workflows__supervision_officer_aggregated_metrics_materialized` AS end_of_month_metrics
     USING
         (state_code, officer_id, end_date)
     LEFT JOIN

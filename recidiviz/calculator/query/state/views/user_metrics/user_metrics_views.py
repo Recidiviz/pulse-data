@@ -18,10 +18,18 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
+    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.user_metrics.workflows_user_available_actions import (
+    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
 
 USAGE_REPORTS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
+    INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
+    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 ]

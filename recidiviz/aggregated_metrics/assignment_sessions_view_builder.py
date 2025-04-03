@@ -352,6 +352,34 @@ FROM
     `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
 """,
     (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
+    (
         MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
         MetricUnitOfAnalysisType.ALL_STATES,
     ): "SELECT *, TRUE AS in_signed_state FROM `{project_id}.analyst_data.workflows_record_archive_surfaceable_caseload_sessions_materialized`",
@@ -402,6 +430,21 @@ WHERE
         AND is_primary_user
 """,
     (
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        staff_id AS unit_supervisor,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    WHERE
+        is_registered
+        AND is_primary_user
+""",
+    (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
@@ -433,6 +476,30 @@ FROM
         start_date,
         end_date_exclusive,
         location_id AS district,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        staff_id AS unit_supervisor,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        staff_external_id AS officer_id,
     FROM
         `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
 """,

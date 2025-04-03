@@ -29,7 +29,10 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    DISTINCT_OUTLIER_OFFICERS,
+    DISTINCT_PROVISIONED_INSIGHTS_USERS,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
+    WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE,
     WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
     WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS,
     WORKFLOWS_PRIMARY_USER_LOGINS,
@@ -46,13 +49,16 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def build_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+
+    current_date = current_date_us_eastern()
 
     # Start the first user report on Jan 2024, so set the first monthly end date as Feb 1, 2024
     min_end_date = datetime.date(2024, 2, 1)
-    max_end_date = first_day_of_month(current_date_us_eastern())
+    max_end_date = first_day_of_month(current_date)
 
     return AggregatedMetricsCollection(
+        collection_tag="workflows",
         output_dataset_id=USER_METRICS_DATASET_ID,
         population_configs={
             MetricPopulationType.SUPERVISION: AggregatedMetricsCollectionPopulationConfig(
@@ -66,6 +72,10 @@ def build_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetri
                     WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS,
                     WORKFLOWS_PRIMARY_USER_LOGINS,
                     WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
+                    WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+                    # Used for supervisors who supervise clients to distinguish
+                    # the users who do not have access to Insights yet
+                    DISTINCT_PROVISIONED_INSIGHTS_USERS,
                 ],
             ),
         },
@@ -81,6 +91,19 @@ def build_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetri
                 description=f"Daily metric periods for the last day of the month starting {min_end_date}",
                 config_name="end_of_month_starting_jan_2024",
                 period_name="DAY",
+            ),
+            # Current day metrics
+            MetricTimePeriodConfig(
+                interval_unit=MetricTimePeriod.DAY,
+                interval_length=1,
+                # Set the end date to tomorrow since periods are end-date exclusive
+                min_period_end_date=current_date + datetime.timedelta(days=1),
+                max_period_end_date=current_date + datetime.timedelta(days=1),
+                rolling_period_unit=None,
+                rolling_period_length=None,
+                description="Single day metric periods for the current day",
+                config_name="day_current_date",
+                period_name="CURRENT_DAY",
             ),
             # Monthly metrics
             MetricTimePeriodConfig(
@@ -98,14 +121,56 @@ def build_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetri
     )
 
 
-USER_METRICS_AGGREGATED_METRICS_COLLECTION_CONFIG = (
-    build_user_metrics_aggregated_metrics_collection_config()
-)
+def _build_insights_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+
+    current_date = current_date_us_eastern()
+
+    return AggregatedMetricsCollection(
+        collection_tag="insights",
+        output_dataset_id=USER_METRICS_DATASET_ID,
+        population_configs={
+            MetricPopulationType.SUPERVISION: AggregatedMetricsCollectionPopulationConfig(
+                output_dataset_id=USER_METRICS_DATASET_ID,
+                population_type=MetricPopulationType.SUPERVISION,
+                units_of_analysis={
+                    MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+                },
+                metrics=[
+                    DISTINCT_OUTLIER_OFFICERS,
+                    WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
+                    WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+                ],
+            ),
+        },
+        time_periods=[
+            # Current day metrics
+            MetricTimePeriodConfig(
+                interval_unit=MetricTimePeriod.DAY,
+                interval_length=1,
+                # Set the end date to tomorrow since periods are end-date exclusive
+                min_period_end_date=current_date + datetime.timedelta(days=1),
+                max_period_end_date=current_date + datetime.timedelta(days=1),
+                rolling_period_unit=None,
+                rolling_period_length=None,
+                description="Single day metric periods for the current day",
+                config_name="day_current_date",
+                period_name="CURRENT_DAY",
+            ),
+        ],
+    )
+
+
+def get_aggregated_metrics_collections() -> list[AggregatedMetricsCollection]:
+    return [
+        _build_workflows_user_metrics_aggregated_metrics_collection_config(),
+        _build_insights_user_metrics_aggregated_metrics_collection_config(),
+    ]
 
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for vb in collect_aggregated_metric_view_builders_for_collection(
-            USER_METRICS_AGGREGATED_METRICS_COLLECTION_CONFIG
-        ):
-            vb.build_and_print()
+        for collection in get_aggregated_metrics_collections():
+            for vb in collect_aggregated_metric_view_builders_for_collection(
+                collection
+            ):
+                vb.build_and_print()
