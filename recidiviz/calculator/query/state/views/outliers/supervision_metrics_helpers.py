@@ -101,7 +101,7 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 SELECT
     {list_to_query_string(shared_subquery_columns)},
     "{metric.name}" AS metric_id,
-    {metric.name} / avg_daily_population AS metric_value,
+    {metric.name} / {metric.rate_denominator} AS metric_value,
     "{OutliersMetricValueType.RATE.value}" AS value_type
 FROM {source_table}
 WHERE state_code = '{state_code}'
@@ -110,7 +110,7 @@ AND period = "YEAR"
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 -- For officers, we only need these metrics if this officer is included in outcomes
 -- TODO(#38725): Avoid unexpected null values via a custom metrics collection
-{f"AND include_in_outcomes AND {metric.name} / avg_daily_population IS NOT NULL" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
+{f"AND include_in_outcomes AND {metric.name} / {metric.rate_denominator} IS NOT NULL" if unit_of_analysis_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
 """
 
             subqueries.extend([rate_subquery, count_subquery])

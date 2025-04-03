@@ -112,6 +112,7 @@ def build_test_metric_3(state_code: StateCode) -> OutliersMetricConfig:
         event_name_past_tense="absconded",
         is_absconsion_metric=True,
         list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
+        rate_denominator="test_denominator",
     )
 
 

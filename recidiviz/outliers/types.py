@@ -59,7 +59,7 @@ class TargetStatus(Enum):
 class OutliersMetricValueType(Enum):
     COUNT = "COUNT"
     AVERAGE = "AVERAGE"
-    # Implies that the value is divided by the avg_daily_population
+    # Implies that the value is divided by the avg population defined in the metric config
     RATE = "RATE"
     PROPORTION = "PROPORTION"
     # Implies the value is 1.0 or 0.0
@@ -221,6 +221,9 @@ class OutliersMetricConfig:
     # Helper text to display with list of metric events
     list_table_text: str | None = attr.ib(default=None)
 
+    # Outcomes metric rate denominator
+    rate_denominator: str = attr.ib(default="avg_daily_population")
+
     @classmethod
     def build_from_metric(
         cls,
@@ -237,6 +240,7 @@ class OutliersMetricConfig:
         top_x_pct: int | None = None,
         is_absconsion_metric: bool = False,
         list_table_text: str | None = None,
+        rate_denominator: str = "avg_daily_population",
     ) -> "OutliersMetricConfig":
         return cls(
             state_code=state_code,
@@ -253,6 +257,7 @@ class OutliersMetricConfig:
             top_x_pct=top_x_pct,
             is_absconsion_metric=is_absconsion_metric,
             list_table_text=list_table_text,
+            rate_denominator=rate_denominator,
         )
 
 
@@ -315,7 +320,7 @@ class OutliersBackendConfig:
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
-        # Omit the state_code, event_observation_type, and
+        # Omit the rate_denominator, state_code, event_observation_type, and
         # metric_event_conditions_string fields since they are only used in BQ views.
         metrics_unst_hook = make_dict_unstructure_fn(
             OutliersMetricConfig,
@@ -323,6 +328,7 @@ class OutliersBackendConfig:
             metric_event_conditions_string=override(omit=True),
             event_observation_type=override(omit=True),
             state_code=override(omit=True),
+            rate_denominator=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
@@ -672,7 +678,7 @@ class OutliersProductConfiguration:
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
-        # Omit the state_code, event_observation_type, and
+        # Omit the rate_denominator, state_code, event_observation_type, and
         # metric_event_conditions_string fields since they are only used in BQ views.
         metrics_unst_hook = make_dict_unstructure_fn(
             OutliersMetricConfig,
@@ -680,6 +686,7 @@ class OutliersProductConfiguration:
             metric_event_conditions_string=override(omit=True),
             event_observation_type=override(omit=True),
             state_code=override(omit=True),
+            rate_denominator=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
