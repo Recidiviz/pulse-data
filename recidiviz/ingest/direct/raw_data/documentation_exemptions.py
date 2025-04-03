@@ -538,7 +538,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "CONTACT_CODE_ID",
                 "OTHER",
                 "INT_NB_OF_DAYS",
-                "CHANGE_ID",
                 "CONDITION_FORM_ID",
                 "INT_VIOLATION",
                 "REF_NUMBER",
