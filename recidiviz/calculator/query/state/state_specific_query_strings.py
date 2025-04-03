@@ -855,9 +855,11 @@ def workflows_state_specific_supervision_level() -> str:
                 END)
             WHEN sl.state_code = 'US_TN' THEN 
                 (CASE 
-                    -- US_TN has specific supervision levels for those on sex offense caseloads. We map them to MEDIUM in
-                    -- ingest but need to separate them out in tools
-                    WHEN session_attributes.correctional_level_raw_text IN ('6P1','6P2','6P3','6P4')
+                    -- US_TN has specific supervision levels for those on sex offense caseloads (6PX). 
+                    -- We map them to MEDIUM in ingest but need to separate them out in tools
+                    -- US_TN also switched from 4MI (minimum) to 8LO (low) in April 2025. We map both to MINIMUM but
+                    -- want to show Low on the front end. Same with 4ME (medium) and 8MO (moderate)
+                    WHEN session_attributes.correctional_level_raw_text IN ('6P1','6P2','6P3','6P4','8LO','8MO')
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
