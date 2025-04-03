@@ -190,6 +190,11 @@ STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-0
 # Dates before this date likely are erroneous values (e.g. typos in data).
 MAX_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2500-01-01")
 
+# Standard lower bound value for person birthdate values in our schema.
+# Some states store records about people who are quite old and there's no reason not to
+# ingest these people.
+BIRTHDATE_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1700-01-01")
+
 # Standard lower bound value for datetime fields in our schema. Dates before this date
 # likely are erroneous values (e.g. typos in data) or data that is so old that it is too
 # unreliable to ingest.
@@ -484,8 +489,39 @@ class StatePerson(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    birthdate: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    birthdate: datetime.date | None = attr.ib(
+        default=None,
+        # TODO(#40483): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=BIRTHDATE_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40485): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 1000-01-01.
+                    #  - Found dates as high as 2076-05-14.
+                    StateCode.US_AR,
+                    # TODO(#36562): Stop hydrating CO ingest data
+                    StateCode.US_CO,
+                    # TODO(#40486): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as high as 2068-12-29.
+                    StateCode.US_MA,
+                    # TODO(#40487): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as high as 9999-01-01.
+                    StateCode.US_ME,
+                    # TODO(#40488): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 0001-01-01.
+                    StateCode.US_NC,
+                    # TODO(#40489): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 0973-07-14.
+                    #  - Found dates as high as 6196-10-12.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
 
     gender: Optional[StateGender] = attr.ib(

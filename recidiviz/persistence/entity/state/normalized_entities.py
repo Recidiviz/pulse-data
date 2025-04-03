@@ -153,6 +153,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
+    BIRTHDATE_REASONABLE_LOWER_BOUND,
     MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
@@ -3221,7 +3222,38 @@ class NormalizedStatePerson(
     full_name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     birthdate: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#40483): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=BIRTHDATE_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40485): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 1000-01-01.
+                    #  - Found dates as high as 2076-05-14.
+                    StateCode.US_AR,
+                    # TODO(#36562): Stop hydrating CO ingest data
+                    StateCode.US_CO,
+                    # TODO(#40486): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as high as 2068-12-29.
+                    StateCode.US_MA,
+                    # TODO(#40487): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as high as 9999-01-01.
+                    StateCode.US_ME,
+                    # TODO(#40488): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 0001-01-01.
+                    StateCode.US_NC,
+                    # TODO(#40489): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                    #  - Found dates as low as 0973-07-14.
+                    #  - Found dates as high as 6196-10-12.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
 
     gender: StateGender | None = attr.ib(
