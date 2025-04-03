@@ -1408,6 +1408,19 @@ US_ND:
       Get CM staff assignments to residents.
     workflows_views.incarceration_staff_record: |-
       Get CM staff assignments to residents.
+US_NE:
+  CodeValue:
+    sessions.us_ne_special_condition_compliance_sessions: |-
+      Get the descriptions of special conditions.
+  PIMSCasePlan:
+    sessions.us_ne_special_condition_compliance_sessions: |-
+      Identify case plans (check-ins) for special conditions.
+  PIMSCasePlanSpecialCondition:
+    sessions.us_ne_special_condition_compliance_sessions: |-
+      Get records of compliance for special conditions.
+  PIMSSpecialCondition:
+    sessions.us_ne_special_condition_compliance_sessions: |-
+      Get special conditions imposed during supervision.
 US_OR:
   RCDVZ_CISPRDDTA_CMOFFT:
     workflows_views.us_or_earned_discharge_sentence_record: |-

@@ -303,6 +303,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_work_release_sessions_preprocessing import (
     US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_ne.us_ne_special_condition_compliance_sessions import (
+    US_NE_SPECIAL_CONDITION_COMPLIANCE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_pa.us_pa_supervision_population_metrics_preprocessed import (
     US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -422,6 +425,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
     US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER,
+    US_NE_SPECIAL_CONDITION_COMPLIANCE_SESSIONS_VIEW_BUILDER,
     US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,

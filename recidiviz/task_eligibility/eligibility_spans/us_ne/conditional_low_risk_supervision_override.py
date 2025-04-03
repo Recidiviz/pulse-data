@@ -45,7 +45,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # TODO(#40003): Implement special conditions criterion
         compliant_with_special_conditions.VIEW_BUILDER,
         # TODO(#40171): Refine this criterion once we have more information on which
         # violations to include/exclude.
