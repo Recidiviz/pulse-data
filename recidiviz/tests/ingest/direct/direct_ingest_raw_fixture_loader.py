@@ -19,13 +19,10 @@ for ingest tests.
 """
 import datetime
 import json
-from collections import defaultdict
 from concurrent import futures
 from types import ModuleType
-from typing import Dict, Iterable, List
 
 import pytz
-from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
@@ -34,7 +31,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     DirectIngestViewRawFileDependency,
-    RawFileHistoricalRowsFilterType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -57,7 +53,7 @@ class DirectIngestRawDataFixtureLoader:
         self.raw_tables_dataset_id = raw_tables_dataset_for_region(
             state_code=self.state_code, instance=DirectIngestInstance.PRIMARY
         )
-        self.raw_file_config = get_region_raw_file_config(
+        self.raw_region_config = get_region_raw_file_config(
             self.state_code.value, region_module
         )
         # The default upper bound datetime for raw data fixtures
@@ -67,13 +63,13 @@ class DirectIngestRawDataFixtureLoader:
                 file_tag: datetime.datetime.now(tz=pytz.UTC)
                 .replace(tzinfo=None)
                 .isoformat()
-                for file_tag in self.raw_file_config.raw_file_tags
+                for file_tag in self.raw_region_config.raw_file_tags
             }
         )
 
     def load_raw_fixtures_to_emulator(
         self,
-        ingest_views: List[DirectIngestViewQueryBuilder],
+        ingest_views: list[DirectIngestViewQueryBuilder],
         ingest_test_identifier: str,
         create_tables: bool,
     ) -> None:
@@ -86,15 +82,23 @@ class DirectIngestRawDataFixtureLoader:
         self.bq_client.create_dataset_if_necessary(
             dataset_id=self.raw_tables_dataset_id
         )
+        all_dependency_tags = {
+            dependency.file_tag
+            for ingest_view in ingest_views
+            for dependency in ingest_view.raw_table_dependency_configs
+        }
         with futures.ThreadPoolExecutor() as executor:
             create_table_futures = [
                 executor.submit(
                     self._load_dependency_to_emulator,
-                    dependency=dependency,
+                    dependency=DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
+                        raw_table_dependency_arg_name=file_tag,
+                        region_raw_table_config=self.raw_region_config,
+                    ),
                     ingest_test_identifier=ingest_test_identifier,
                     create_tables=create_tables,
                 )
-                for dependency in self._raw_dependencies_for_ingest_views(ingest_views)
+                for file_tag in all_dependency_tags
             ]
         for future in futures.as_completed(create_table_futures):
             future.result()
@@ -122,48 +126,3 @@ class DirectIngestRawDataFixtureLoader:
                 f" for {dependency.raw_table_dependency_arg_name} for test "
                 f"{ingest_test_identifier}"
             ) from e
-
-    # TODO(#38355) This will just be the set of file tags
-    # when all fixtures are @ALL fixtures
-    def _raw_dependencies_for_ingest_views(
-        self,
-        ingest_views: List[DirectIngestViewQueryBuilder],
-    ) -> Iterable[DirectIngestViewRawFileDependency]:
-        """
-        Generates the minimum set of DirectIngestViewRawFileDependency objects.
-        If we use both LATEST and ALL for a data source, we'll only yield the ALL.
-        """
-        configs_by_file_tag: Dict[
-            str, List[DirectIngestViewRawFileDependency]
-        ] = defaultdict(list)
-        for ingest_view in ingest_views:
-            for config in ingest_view.raw_table_dependency_configs:
-                configs_by_file_tag[config.file_tag].append(config)
-
-        for dependency_configs in configs_by_file_tag.values():
-            dependencies_by_type = defaultdict(set)
-            for dependency in dependency_configs:
-                dependencies_by_type[dependency.filter_type].add(
-                    dependency.raw_table_dependency_arg_name
-                )
-
-            # For a given raw file tag, we expect to only have exactly one distinct
-            # raw_table_dependency_arg_name for a given filter type.
-            # If there are any @ALL dependencies, we choose he fixture associated with
-            # that filter type, otherwise we choose the LATEST fixture.
-            if RawFileHistoricalRowsFilterType.ALL in dependencies_by_type:
-                raw_table_dependency_arg_name = one(
-                    dependencies_by_type[RawFileHistoricalRowsFilterType.ALL]
-                )
-            else:
-                raw_table_dependency_arg_name = one(
-                    dependencies_by_type[RawFileHistoricalRowsFilterType.LATEST]
-                )
-
-            # We use the selected raw_table_dependency_arg_name to build a single
-            # dependency for this raw file which will be used to locate the fixture we
-            # care about.
-            yield DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
-                raw_table_dependency_arg_name=raw_table_dependency_arg_name,
-                region_raw_table_config=self.raw_file_config,
-            )

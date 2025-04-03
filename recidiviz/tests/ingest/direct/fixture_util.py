@@ -85,11 +85,6 @@ def fixture_path_for_address(
     )
 
 
-STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES = {
-    StateCode.US_DD,
-}
-
-
 def fixture_path_for_raw_data_dependency(
     state_code: StateCode,
     raw_data_dependency: DirectIngestViewRawFileDependency,
@@ -104,15 +99,6 @@ def fixture_path_for_raw_data_dependency(
         StateCode.US_PA,
     }:
         file_name = "__SHARED_CODE_FILE__"
-    # TODO(#38355) Migrate all states to @ALL fixtures
-    if state_code in STATES_TO_MIGRATE_TO_ALL_RAW_DATA_FIXTURES:
-        return os.path.join(
-            DIRECT_INGEST_FIXTURES_ROOT,
-            state_code.value.lower(),
-            "raw",
-            raw_data_dependency.raw_table_dependency_arg_name,
-            f"{file_name}.csv",
-        )
     return os.path.join(
         DIRECT_INGEST_FIXTURES_ROOT,
         state_code.value.lower(),
