@@ -51,6 +51,10 @@ JOIN
   {{est_dt}} dt
 USING 
   (intr_case_num)
+LEFT JOIN 
+  {{crt_loc}} cl
+USING 
+  (crt_loc_cd, crt_typ_cd)
 -- Exclude sentences with no imposed date. These are all in the past, and make up 5% of closed cases.
 WHERE sent_dt IS NOT NULL
 -- Exclude sentences with unreasonable sentence dates. This only excludes 8 rows.
@@ -59,6 +63,8 @@ AND cast(sent_dt as datetime) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOU
 AND sched_expire_dt IS NOT NULL 
 -- These are dates corresponding to probation sentences. We want to ensure they are null.
 AND sched_trmn_dt IS NULL AND early_trmn_dt IS NULL
+-- Excludes rows with no sentencing authority. This currently excludes exactly one row.
+AND cl.crt_loc_desc IS NOT NULL
 
 UNION ALL 
 
@@ -75,6 +81,10 @@ JOIN
   {{est_dt}} dt
 USING 
   (intr_case_num)
+LEFT JOIN 
+  {{crt_loc}} cl
+USING 
+  (crt_loc_cd, crt_typ_cd)
 -- Exclude sentences with no imposed date. These are all in the past, and make up 5% of closed cases.
 WHERE sent_dt IS NOT NULL
 -- Exclude sentences with unreasonable sentence dates. This only excludes 8 rows.
@@ -82,4 +92,6 @@ AND cast(sent_dt as datetime) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOU
 -- Rows with any probation sentence information are ingested as probation sentences.
 -- This includes cases where a prison sentence is suspended while a person serves probation.
 AND (sched_trmn_dt IS NOT NULL OR early_trmn_dt IS NOT NULL)
+-- Excludes rows with no sentencing authority. This currently excludes exactly one row.
+AND cl.crt_loc_desc IS NOT NULL
 """
