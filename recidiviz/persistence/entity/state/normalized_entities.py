@@ -419,7 +419,25 @@ class NormalizedStateAssessment(
     # Attributes
     #   - When
     assessment_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        # TODO(#40499): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40500): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 5018-05-17.
+                    StateCode.US_IX,
+                    # TODO(#40501): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 3013-04-30.
+                    StateCode.US_PA,
+                },
+            ),
+        ),
     )
 
     #   - What

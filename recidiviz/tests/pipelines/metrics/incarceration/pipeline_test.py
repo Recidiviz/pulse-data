@@ -263,7 +263,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             assessment_id=298374,
             external_id="a1",
             state_code=state_code,
-            assessment_date=date(2015, 3, 19),
+            assessment_date=date(2015, 1, 19),
             assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id,
         )
