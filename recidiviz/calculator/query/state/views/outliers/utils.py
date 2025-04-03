@@ -165,7 +165,6 @@ def get_highlight_percentile_value_query() -> str:
         AND metric_id = '{metric.name}'
         AND state_code = '{state_code}'
         AND category_type = 'ALL' -- highlights are done statewide for now
-        AND include_in_outcomes
     GROUP BY 1, 2, 3
 """
             )
