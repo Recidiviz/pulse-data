@@ -47,6 +47,7 @@ output:
                   - HP # High Property Felony Risk
                   - HV # High Violent Felony Risk
                   - HVPD # High Violent, Property, and Drug Felony Risk
+                  - HIGH # New High Value for Strong R 2.0
           assessment_metadata:
             $normalized_values_json_dict:
               FRIENDS_NEED_LEVEL: FriendsNeedLevel
