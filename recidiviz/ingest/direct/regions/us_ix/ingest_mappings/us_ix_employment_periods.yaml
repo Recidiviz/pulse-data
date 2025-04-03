@@ -33,14 +33,14 @@ output:
                   - Irregular
                   - Part Time
                 StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
-                  - Homemaker
-                  - Retired
                   - Seasonal
                   - Volunteer
                 StateEmploymentPeriodEmploymentStatus.STUDENT:
                   - Student
                 StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
                   - Disabled
+                  - Retired
+                  - Homemaker
                 StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
                   - Unemployed
           start_date: StartDate
