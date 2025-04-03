@@ -46,24 +46,11 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#40144): If we decide to undo the backdating workarounds for TN, we'll need to
 # revise this completion event.
 _QUERY_TEMPLATE = f"""
-    WITH supervision_level_raw_text_sessions AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            supervision_level_raw_text,
-            LAG(supervision_level_raw_text) OVER continuous_session_window AS previous_supervision_level_raw_text_within_continuous_session,
-        FROM `{{project_id}}.{{analyst_dataset}}.us_tn_supervision_level_raw_text_sessions_inferred_materialized`
-        WINDOW continuous_session_window AS (
-            PARTITION BY state_code, person_id, date_gap_id
-            ORDER BY start_date
-        )
-    )
     SELECT
         state_code,
         person_id,
         start_date AS completion_event_date,
-    FROM supervision_level_raw_text_sessions
+    FROM `{{project_id}}.{{analyst_dataset}}.us_tn_supervision_level_raw_text_sessions_inferred_materialized`
     WHERE supervision_level_raw_text IN ({list_to_query_string(SDS_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
         /* Filter out SDS supervision-level session starts that are coming immediately
         after an existing SDS session. This is done to handle the switch from the
@@ -71,7 +58,7 @@ _QUERY_TEMPLATE = f"""
         want to count the start of a session with '9SD' as a new start if the session
         before it was 'SDS', meaning that the person was already on SDS and the new
         session start just reflects the change in supervision-level codes). */
-        AND COALESCE(previous_supervision_level_raw_text_within_continuous_session, 'UNKNOWN') NOT IN ({list_to_query_string(SDS_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+        AND COALESCE(previous_supervision_level_raw_text, 'UNKNOWN') NOT IN ({list_to_query_string(SDS_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (

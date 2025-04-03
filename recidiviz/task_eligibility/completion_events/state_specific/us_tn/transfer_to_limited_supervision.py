@@ -38,24 +38,11 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#40144): If we decide to undo the backdating workarounds for TN, we'll need to
 # revise this completion event.
 _QUERY_TEMPLATE = """
-    WITH supervision_level_raw_text_sessions AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            supervision_level,
-            LAG(supervision_level) OVER continuous_session_window AS previous_supervision_level_within_continuous_session,
-        FROM `{project_id}.{analyst_dataset}.us_tn_supervision_level_raw_text_sessions_inferred_materialized`
-        WINDOW continuous_session_window AS (
-            PARTITION BY state_code, person_id, date_gap_id
-            ORDER BY start_date
-        )
-    )
     SELECT
         state_code,
         person_id,
         start_date AS completion_event_date,
-    FROM supervision_level_raw_text_sessions
+    FROM `{project_id}.{analyst_dataset}.us_tn_supervision_level_raw_text_sessions_inferred_materialized`
     WHERE supervision_level='LIMITED'
         /* Filter out CR supervision-level session starts that are coming immediately
         after an existing CR session. This is done to handle cases in which a person has
@@ -64,7 +51,7 @@ _QUERY_TEMPLATE = """
         level goes from the usual '4TR' to 'EXTERNAL_UNKNOWN', which could happen due to
         upstream normalization/inference that determines someone's still on 'LIMITED'
         even if we don't have a raw-text level for them at that time. */
-        AND COALESCE(previous_supervision_level_within_continuous_session, 'UNKNOWN')!='LIMITED'
+        AND COALESCE(previous_supervision_level, 'UNKNOWN')!='LIMITED'
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (

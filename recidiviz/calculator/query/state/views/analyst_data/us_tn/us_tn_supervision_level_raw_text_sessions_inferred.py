@@ -242,6 +242,11 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
     )
     SELECT
         *,
+        /* These fields are present in the original sessions view, so we re-create them
+        here too. */
+        DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        LAG(supervision_level) OVER w AS previous_supervision_level,
+        LAG(supervision_level_raw_text) OVER w AS previous_supervision_level_raw_text,
     FROM (
         /* Aggregate adjacent spans so that we can end up with the same session and
         date-gap ID fields as the original sessions view. We don't expect any actual
@@ -255,6 +260,10 @@ US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_QUERY_TEMPLATE = f"""
             session_id_output_name="supervision_level_session_id",
             attribute=['supervision_level', 'supervision_level_raw_text', 'case_type']
         )}
+    )
+    WINDOW w AS (
+        PARTITION BY state_code, person_id, date_gap_id
+        ORDER BY start_date
     )
 """
 

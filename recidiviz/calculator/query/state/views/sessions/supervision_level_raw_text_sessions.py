@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level and case
-type, using a state's internal mappings"""
+"""Sessionized view of non-overlapping periods of continuous stay on supervision on a
+given supervision level and case type, using a state's internal mappings."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -24,9 +24,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_NAME = "supervision_level_raw_text_sessions"
-
-SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level and
-case type, using a state's internal mappings"""
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
     WITH sub_sessions_attributes_unnested AS
@@ -80,14 +77,14 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
         LAG(supervision_level) OVER w AS previous_supervision_level,
         LAG(supervision_level_raw_text) OVER w AS previous_supervision_level_raw_text,
     FROM sessionized_cte
-    WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
-    """
+    WINDOW w AS (PARTITION BY person_id, state_code, date_gap_id ORDER BY start_date)
+"""
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_NAME,
     view_query_template=SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE,
-    description=SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
