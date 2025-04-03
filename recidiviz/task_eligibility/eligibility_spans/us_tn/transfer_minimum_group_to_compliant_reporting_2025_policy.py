@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Task eligibility spans view that shows the spans of time when someone in TN is
-eligible for Compliant Reporting under the policy implemented in 2025, for the Low-Moderate group.
+eligible for Compliant Reporting under the policy implemented in 2025, for the Minimum (Low) group.
 """
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     has_permanent_fines_fees_exemption,
     latest_drug_test_is_negative_or_missing,
     no_supervision_violation_report_within_6_months,
-    on_minimum_or_low_medium_supervision_at_least_six_months,
+    on_minimum_supervision_at_least_six_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     assessed_not_high_on_strong_r_domains,
@@ -57,15 +57,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # The new compliant reporting policy has 2 "pathways" to get the opportunity: Group A are people who are on
-# Intake (Unassigned) for 60 days and test Low and meet criteria set A;
-# Group B are people who have been on Low-Medium for 6+ months and meeting criteria set B. There is some criteria set
+# Intake (Unassigned) for 60 days and test LOW on Vantage 2.0 and meet criteria set A;
+# Group B are people who have been on LOW (new supervision level, mapped to MINIMUM internally)
+# for 6+ months and meeting criteria set B. There is some criteria set
 # that is applied to both groups. This TES file is for Group B, and TRANSFER_UNASSIGNED_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
 # is for Group A. Both are combined in one opportunity record query.
-
-# TODO(#37898): Update supervision levels when new StrongR 2.0 is launched
-# As of February 2025, TN has not rolled out the new supervision levels which will be needed for Policy B - Intake/Low
-# and Low-Medium. Until the new StrongR 2.0 is launched, pilot districts (and therefore we) are applying criteria set B
-# to people who are on Minimum for 6+ months.
 
 _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = OrTaskCriteriaGroup(
     criteria_name="US_TN_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION",
@@ -78,11 +74,11 @@ _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = OrTaskCriteriaGroup(
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
-    task_name="TRANSFER_LOW_MEDIUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY",
+    task_name="TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY",
     description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        on_minimum_or_low_medium_supervision_at_least_six_months.VIEW_BUILDER,
+        on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
         not_serving_ineligible_cr_offense_policy_b.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center_location.VIEW_BUILDER,
@@ -104,15 +100,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     EligibleCriteriaCondition(
-                        criteria=on_minimum_or_low_medium_supervision_at_least_six_months.VIEW_BUILDER,
+                        criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
                         description="Eligible for supervision level time served",
                     ),
                     TimeDependentCriteriaCondition(
-                        criteria=on_minimum_or_low_medium_supervision_at_least_six_months.VIEW_BUILDER,
+                        criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
                         reasons_date_field="minimum_time_served_date",
                         interval_length=30,
                         interval_date_part=BigQueryDateInterval.DAY,
-                        description="30 days from enough time on low-medium",
+                        description="30 days from enough time on minimum",
                     ),
                 ],
                 at_least_n_conditions_true=1,
@@ -128,11 +124,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         description="No FEEP code in last 90 days and no permanent exemption",
                     ),
                     TimeDependentCriteriaCondition(
-                        criteria=on_minimum_or_low_medium_supervision_at_least_six_months.VIEW_BUILDER,
+                        criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
                         reasons_date_field="minimum_time_served_date",
                         interval_length=30,
                         interval_date_part=BigQueryDateInterval.DAY,
-                        description="30 days from enough time on unassigned",
+                        description="30 days from enough time on minimum",
                     ),
                 ],
                 at_least_n_conditions_true=1,

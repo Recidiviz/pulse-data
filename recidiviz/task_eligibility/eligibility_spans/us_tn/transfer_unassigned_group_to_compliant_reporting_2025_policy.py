@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Task eligibility spans view that shows the spans of time when someone in TN is
-eligible for Compliant Reporting under the policy implemented in 2025, for those who test Low on Unassigned/Intake
-status.
+eligible for Compliant Reporting under the policy implemented in 2025, for those who test Low (on Vantage
+ 2.0) and would have been placed on Low (mapped to Minimum) but are eligible for Compliant Reporting directly from
+ on Unassigned/Intake status.
 """
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -47,7 +48,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
-from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_low_medium_group_to_compliant_reporting_2025_policy import (
+from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_minimum_group_to_compliant_reporting_2025_policy import (
     _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -57,15 +58,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # The new compliant reporting policy has 2 "pathways" to get the opportunity: Group A are people who are on
-# Intake (Unassigned) for 60 days and test Low and meet criteria set A;
-# Group B are people who have been on Low-Medium for 6+ months and meeting criteria set B. There is some criteria set
-# that is applied to both groups. This TES file is for Group A, and TRANSFER_LOW_MEDIUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
+# Intake (Unassigned) for 60 days and test LOW on Vantage 2.0 and meet criteria set A;
+# Group B are people who have been on LOW (new supervision level, mapped to MINIMUM internally)
+# for 6+ months and meeting criteria set B. There is some criteria set
+# that is applied to both groups. This TES file is for Group A, and TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
 # is for Group B. Both are combined in one opportunity record query.
-
-# TODO(#37898): Update supervision levels when new StrongR 2.0 is launched
-# As of February 2025, TN has not rolled out the new supervision levels which will be needed for Policy B - Intake/Low
-# and Low-Medium. Until the new StrongR 2.0 is launched, pilot districts (and therefore we) are applying criteria set B
-# to people who are on Minimum for 6+ months.
 
 # TODO(#38506): Revisit "Minimum after Intake group" (i.e. "in between Groups A and B") after launch of full policy
 # This criteria exists as a safeguard for TN's new Compliant Reporting policy. After the new standards are rolled

@@ -39,14 +39,16 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn.assessed_not_high_
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_low_medium_group_to_compliant_reporting_2025_policy import (
-    VIEW_BUILDER as US_TN_LOW_MEDIUM_COMPLIANT_REPORTING_2025_TES_VIEW_BUILDER,
+from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_minimum_group_to_compliant_reporting_2025_policy import (
+    VIEW_BUILDER as US_TN_MINIMUM_COMPLIANT_REPORTING_2025_TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
-    US_TN_LOW_MEDIUM_COMPLIANT_REPORTING_2025_TES_VIEW_BUILDER
+_COLLAPSED_TES_SPANS_ADDRESS_MINIMUM = (
+    build_collapsed_tes_spans_view_materialized_address(
+        US_TN_MINIMUM_COMPLIANT_REPORTING_2025_TES_VIEW_BUILDER
+    )
 )
 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_NAME = (
     "us_tn_transfer_to_compliant_reporting_2025_policy_record"
@@ -58,7 +60,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_NAME = (
 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
     WITH base AS (
         SELECT
-            "LOW-MODERATE" AS metadata_task_name,
+            "MINIMUM (LOW)" AS metadata_task_name,
             tes.external_id,
             tes.person_id,
             tes.state_code,
@@ -71,12 +73,12 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
         FROM (
         {join_current_task_eligibility_spans_with_external_id(
             state_code= "'US_TN'", 
-            tes_task_query_view = 'transfer_low_medium_group_to_compliant_reporting_2025_policy_materialized',
+            tes_task_query_view = 'transfer_minimum_group_to_compliant_reporting_2025_policy_materialized',
             id_type = "'US_TN_DOC'",
             eligible_and_almost_eligible_only=True,
             additional_columns="reasons_v2"
         )}) tes
-        INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS.to_str()}` tes_collapsed
+        INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS_MINIMUM.to_str()}` tes_collapsed
             ON tes_collapsed.state_code = tes.state_code
             AND tes_collapsed.person_id = tes.person_id 
             AND CURRENT_DATE('US/Pacific') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}

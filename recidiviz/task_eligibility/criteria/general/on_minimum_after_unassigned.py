@@ -27,9 +27,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#37898): Replace "Minimum" with "Low" after Low SL exists in TN (or expand to capture Low from raw text to
-# distinguish from former Minimum)
-
 _CRITERIA_NAME = "ON_MINIMUM_AFTER_UNASSIGNED"
 
 _QUERY_TEMPLATE = """
@@ -45,7 +42,6 @@ _QUERY_TEMPLATE = """
         supervision_level,
         start_date AS supervision_level_start_date
     FROM `{project_id}.sessions.supervision_level_sessions_materialized`
-    # TODO(#37898): Replace "Minimum" with "Low" after Low SL exists in TN
     WHERE supervision_level = 'MINIMUM' AND previous_supervision_level = 'UNASSIGNED'
 """
 

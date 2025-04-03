@@ -76,7 +76,15 @@ STRONG_R_ASSESSMENT_METADATA_KEYS = [
     "EDUCATION_NEED_LEVEL",
 ]
 # TODO(#38066): Add a unittest to make sure this list matches domains in ingest mappings
-STRONG_R2_ASSESSMENT_METADATA_KEYS = STRONG_R_ASSESSMENT_METADATA_KEYS
+STRONG_R2_ASSESSMENT_METADATA_KEYS = [
+    "V2_FRIENDS_RESIDENTIAL_NEED_LEVEL",
+    "V2_ATTITUDE_BEHAVIOR_NEED_LEVEL",
+    "V2_AGGRESSION_NEED_LEVEL",
+    "V2_MENTAL_HEALTH_NEED_LEVEL",
+    "V2_ALCOHOL_DRUG_NEED_LEVEL",
+    "V2_FAMILY_NEED_LEVEL",
+    "V2_EDUCATION_EMPLOYMENT_NEED_LEVEL",
+]
 
 # Combines state_supervision_violation_response with state_supervision_violation_response_decision_entry
 # to keep person-date level sanctions. We filter out certain types of decisions that don't result in an impact
