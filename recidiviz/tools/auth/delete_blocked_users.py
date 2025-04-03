@@ -37,13 +37,17 @@ recidiviz.tools.auth.delete_blocked_users --state_code US_XX
 
 To run against Cloud SQL, specify the project id: python -m
 recidiviz.tools.auth.delete_blocked_users --project_id recidiviz-staging --state_code US_XX
+
+You can also optionally include a comma-separated list of email addresses for the specific users you would like
+to delete: docker exec -it pulse-data-admin_panel_backend-1 pipenv run python -m
+recidiviz.tools.auth.delete_blocked_users --state_code US_XX --emails user1@recidiviz.org,user2@recidiviz.org
 """
 
 import argparse
 import logging
 import sys
 from datetime import datetime, timedelta
-from typing import List, Tuple, Type
+from typing import List, Optional, Tuple, Type
 
 from dateutil.tz import tzlocal
 from sqlalchemy import and_, delete, select
@@ -69,6 +73,7 @@ from recidiviz.utils.environment import (
     in_development,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_list
 
 
 def format_user_strings(users: List[Tuple[str, datetime]]) -> str:
@@ -104,24 +109,35 @@ def delete_users_from_table(
     )
 
 
-def delete_blocked_users(session: Session, state_code: str) -> None:
-    """Delete from UserOverride and PermissionsOverride any users that have been blocked
-    for 30+ days and don't exist in Roster"""
+def get_eligible_users(
+    session: Session, state_code: str, user_emails: Optional[List[str]] = None
+) -> List[Tuple[str, datetime]]:
     thirty_days_ago = datetime.now(tzlocal()) - timedelta(days=30)
+
+    conditions = [
+        Roster.email_address.is_(None),
+        UserOverride.state_code == state_code,
+        UserOverride.blocked_on <= thirty_days_ago,
+    ]
+
+    if user_emails:
+        conditions.append(UserOverride.email_address.in_(user_emails))
 
     results = session.execute(
         select(UserOverride)
         .outerjoin(Roster, UserOverride.email_address == Roster.email_address)
-        .where(
-            and_(
-                Roster.email_address.is_(None),
-                UserOverride.state_code == state_code,
-                UserOverride.blocked_on <= thirty_days_ago,
-            )
-        )
+        .where(and_(*conditions))
         .order_by(UserOverride.email_address)
     ).scalars()
-    users_to_delete = [(user.email_address, user.blocked_on) for user in results]
+    return [(user.email_address, user.blocked_on) for user in results]
+
+
+def delete_blocked_users(
+    session: Session, state_code: str, user_emails: Optional[List[str]] = None
+) -> None:
+    """Delete from UserOverride and PermissionsOverride any users that have been blocked
+    for 30+ days and don't exist in Roster"""
+    users_to_delete = get_eligible_users(session, state_code, user_emails)
 
     if not users_to_delete:
         logging.info("No users found to delete, exiting")
@@ -158,6 +174,11 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         required=True,
     )
 
+    parser.add_argument(
+        "--emails",
+        type=str_to_list,
+    )
+
     return parser.parse_known_args(argv)
 
 
@@ -174,7 +195,9 @@ if __name__ == "__main__":
         ), SessionFactory.for_proxy(
             db_key
         ) as global_session:
-            delete_blocked_users(global_session, known_args.state_code.value)
+            delete_blocked_users(
+                global_session, known_args.state_code.value, known_args.emails
+            )
     else:
         if not in_development():
             raise RuntimeError(
@@ -182,4 +205,6 @@ if __name__ == "__main__":
             )
         SQLAlchemyEngineManager.init_engine(db_key)
         with SessionFactory.using_database(db_key) as global_session:
-            delete_blocked_users(global_session, known_args.state_code.value)
+            delete_blocked_users(
+                global_session, known_args.state_code.value, known_args.emails
+            )

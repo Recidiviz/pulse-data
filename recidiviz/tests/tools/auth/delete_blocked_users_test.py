@@ -175,6 +175,54 @@ class DeleteBlockedUsersTest(TestCase):
         self.assertEqual(override_permissions, permissions_override_result)
 
     @patch("recidiviz.tools.auth.delete_blocked_users.prompt_for_confirmation")
+    def test_non_specified_emails_not_deleted(self, mock_prompt: MagicMock) -> None:
+        mock_prompt.return_value = True
+
+        override_user_to_delete_1 = generate_fake_user_overrides(
+            email="leadership@testdomain.com",
+            region_code="US_CO",
+            blocked_on=self.past_blocked_on_date_more_than_30_days,
+        )
+        override_permissions_to_delete_1 = generate_fake_permissions_overrides(
+            email="leadership@testdomain.com", routes={}, feature_variants={}
+        )
+        override_user_to_delete_2 = generate_fake_user_overrides(
+            email="user@testdomain.com",
+            region_code="US_CO",
+            blocked_on=self.past_blocked_on_date_more_than_30_days,
+        )
+        override_user_to_keep = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            blocked_on=self.past_blocked_on_date_more_than_30_days,
+        )
+        override_permissions_to_keep = generate_fake_permissions_overrides(
+            email="parameter@testdomain.com", routes={}, feature_variants={}
+        )
+        self.session.add_all(
+            [
+                override_user_to_delete_1,
+                override_permissions_to_delete_1,
+                override_user_to_delete_2,
+                override_user_to_keep,
+                override_permissions_to_keep,
+            ]
+        )
+
+        delete_blocked_users(
+            self.session,
+            state_code="US_CO",
+            user_emails=["leadership@testdomain.com", "user@testdomain.com"],
+        )
+        user_override_result = self.session.execute(select(UserOverride)).scalar()
+        self.assertEqual(override_user_to_keep, user_override_result)
+
+        permissions_override_result = self.session.execute(
+            select(PermissionsOverride)
+        ).scalar()
+        self.assertEqual(override_permissions_to_keep, permissions_override_result)
+
+    @patch("recidiviz.tools.auth.delete_blocked_users.prompt_for_confirmation")
     def test_non_specified_states_not_deleted(self, mock_prompt: MagicMock) -> None:
         mock_prompt.return_value = True
 
