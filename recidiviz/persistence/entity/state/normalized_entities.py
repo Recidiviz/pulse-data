@@ -3144,10 +3144,17 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    address_start_date: date = attr.ib(validator=attr_validators.is_not_future_date)
+    address_start_date: date = attr.ib(
+        validator=attr_validators.is_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
 
     address_end_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_not_future_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     address_is_verified: bool | None = attr.ib(

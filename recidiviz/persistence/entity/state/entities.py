@@ -250,11 +250,16 @@ class StatePersonAddressPeriod(
     )
 
     address_start_date: datetime.date = attr.ib(
-        default=None, validator=attr_validators.is_not_future_date
+        validator=attr_validators.is_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
-    address_end_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_not_future_date
+    address_end_date: datetime.date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     address_is_verified: Optional[bool] = attr.ib(
