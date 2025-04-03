@@ -30,14 +30,35 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ix.complete_discharge_early_from_parole_dual_supervision_request import (
+    VIEW_BUILDER as US_IX_COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_TES_VIEW_BUILDER,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ix.complete_discharge_early_from_probation_supervision_request import (
+    VIEW_BUILDER as US_IX_COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_NAME = (
     "us_ix_complete_discharge_early_from_supervision_request_record"
+)
+
+_COLLAPSED_TES_SPANS_PROBATION_ADDRESS = (
+    build_collapsed_tes_spans_view_materialized_address(
+        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_TES_VIEW_BUILDER
+    )
+)
+
+_COLLAPSED_TES_SPANS_PAROLE_ADDRESS = (
+    build_collapsed_tes_spans_view_materialized_address(
+        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_TES_VIEW_BUILDER
+    )
 )
 
 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_DESCRIPTION = """
@@ -341,7 +362,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             tes.is_almost_eligible,
             pei.external_id AS external_id,
             tes.state_code,
-            tes.start_date AS eligible_start_date,
+            COALESCE(tes_probation_collapsed.start_date, tes_parole_collapsed.start_date) AS eligible_date,
             ses.start_date AS supervision_start_date,
             pi.client_name AS form_information_client_name,
             IF(tes.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST", "Probation", "Parole") 
@@ -409,6 +430,14 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ON tes.state_code = ncic.state_code
             AND tes.person_id = ncic.person_id
             AND DATE_ADD(review_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
+        LEFT JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_PROBATION_ADDRESS.to_str()}` tes_probation_collapsed
+            ON tes_probation_collapsed.state_code = tes.state_code
+            AND tes_probation_collapsed.person_id = tes.person_id
+            AND CURRENT_DATE('US/Pacific') BETWEEN tes_probation_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_probation_collapsed.end_date')}
+        LEFT JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_PAROLE_ADDRESS.to_str()}` tes_parole_collapsed
+            ON tes_parole_collapsed.state_code = tes.state_code
+            AND tes_parole_collapsed.person_id = tes.person_id
+            AND CURRENT_DATE('US/Pacific') BETWEEN tes_parole_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_parole_collapsed.end_date')}
         WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
             AND tes.state_code = 'US_IX'
             AND (tes.is_eligible OR tes.is_almost_eligible)

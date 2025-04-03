@@ -63,7 +63,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ia_complete_e
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_full_term_early_from_supervision_request_record import (
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_full_term_discharge_from_supervision_request_record import (
     US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (

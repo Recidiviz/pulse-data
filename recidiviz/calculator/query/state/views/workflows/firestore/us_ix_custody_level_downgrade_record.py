@@ -47,7 +47,7 @@ US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
         tes.is_eligible,
         tes.is_almost_eligible,
         tes.ineligible_criteria,
-        tes_collapsed.start_date AS metadata_eligible_date
+        tes_collapsed.start_date AS eligible_date
     FROM `{{project_id}}.{US_IX_CUSTODY_LEVEL_DOWNGRADE_TES_VIEW_BUILDER.table_for_query.to_str()}` tes
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON tes.state_code = pei.state_code 

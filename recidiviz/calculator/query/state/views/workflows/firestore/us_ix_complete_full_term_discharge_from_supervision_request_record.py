@@ -21,8 +21,14 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_claus
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ix.complete_full_term_discharge_from_supervision import (
+    VIEW_BUILDER as US_IX_COMPLETE_FULL_TERM_DISCHARGE_TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,18 +41,28 @@ US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_DESCRIPTION =
     View containing clients eligibile for full-term release in Idaho
 """
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    US_IX_COMPLETE_FULL_TERM_DISCHARGE_TES_VIEW_BUILDER
+)
+
 US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 SELECT
     pei.external_id,
     tes.state_code,
-    reasons,
-    is_eligible,
-    is_almost_eligible,
+    tes.reasons,
+    tes.is_eligible,
+    tes.is_almost_eligible,
+    -- this should be equivalent to the supervision full term completion date
+    tes_collapsed.start_date AS eligible_date
 FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-ON tes.state_code = pei.state_code 
+    ON tes.state_code = pei.state_code
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_IX_DOC"
+LEFT JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS.to_str()}` tes_collapsed
+    ON tes_collapsed.state_code = tes.state_code
+    AND tes_collapsed.person_id = tes.person_id
+    AND CURRENT_DATE('US/Pacific') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_IX'

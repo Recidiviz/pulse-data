@@ -77,6 +77,7 @@ CRC. This means they could be transferred into the facility to work and live the
 permission to leave the facility for work purposes.
 """
 
+# TODO(#39379): Add eligible_date field to the opportunity record query
 US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 WITH eligible_and_almost_eligible AS (
     -- Keep only current incarcerated individuals

@@ -42,11 +42,14 @@ SELECT
     reasons,
     is_eligible,
     is_almost_eligible,
+    JSON_VALUE(r, "$.reason.latest_assessment_date") AS eligible_date
 FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
 ON tes.state_code = pei.state_code 
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_IX_DOC"
+LEFT JOIN UNNEST(JSON_QUERY_ARRAY(reasons)) AS r
+    ON JSON_VALUE(r, "$.criteria_name") = "US_IX_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL"
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_IX'

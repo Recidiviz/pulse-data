@@ -312,7 +312,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           tes.is_eligible,
           tes.is_almost_eligible,
           tes.state_code,
-          tes.start_date AS eligible_start_date,
+          tes.start_date AS eligible_date,
           ses.start_date AS supervision_start_date,
           DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
           --aggregate all relevant charge descriptions 

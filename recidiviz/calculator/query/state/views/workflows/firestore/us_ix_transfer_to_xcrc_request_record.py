@@ -67,6 +67,7 @@ US_IX_TRANSFER_TO_XCRC_DESCRIPTION = """
 Queries information needed to surface eligible folks for XCRC in ID.
 """
 
+# TODO(#39379): Add eligible_date field to the opportunity record query
 US_IX_TRANSFER_TO_XCRC_QUERY_TEMPLATE = f"""
 WITH eligible_and_almost_eligible AS (
     -- Keep only people currently in a CRC who are eligible or almost eligible
