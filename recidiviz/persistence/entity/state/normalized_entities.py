@@ -3390,8 +3390,57 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
 
     # Attributes
     #   - When
-    start_date: date = attr.ib(validator=attr_validators.is_date)
-    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    start_date: date = attr.ib(
+        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_date,
+            state_exempted_validator(
+                attr_validators.is_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1111-01-01.
+                    #  - Found dates as high as 3012-03-28.
+                    StateCode.US_AR,
+                    # TODO(#40471): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_ME,
+                    # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_MI,
+                    # TODO(#40473): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_MO,
+                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_TN,
+                },
+            ),
+        )
+    )
+    end_date: date | None = attr.ib(
+        default=None,
+        # TODO(#40469): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 2025-04-01.
+                    StateCode.US_AR,
+                    # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_TN,
+                },
+            ),
+        ),
+    )
 
     #   - What
     role_type: StateStaffRoleType = attr.ib(
@@ -3433,8 +3482,29 @@ class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdE
 
     # Attributes
     #   - When
-    start_date: date = attr.ib(validator=attr_validators.is_date)
-    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    start_date: date = attr.ib(
+        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_date,
+            state_exempted_validator(
+                attr_validators.is_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_TN,
+                },
+            ),
+        )
+    )
+    end_date: date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
 
     #   - What
     supervisor_staff_external_id: str = attr.ib(validator=attr_validators.is_str)
@@ -3466,8 +3536,44 @@ class NormalizedStateStaffLocationPeriod(NormalizedStateEntity, HasExternalIdEnt
 
     # Attributes
     #   - When
-    start_date: date = attr.ib(validator=attr_validators.is_date)
-    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    start_date: date = attr.ib(
+        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_date,
+            state_exempted_validator(
+                attr_validators.is_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 2025-04-07.
+                    StateCode.US_AR,
+                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_TN,
+                },
+            ),
+        )
+    )
+    end_date: date | None = attr.ib(
+        default=None,
+        # TODO(#40469): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_TN,
+                },
+            ),
+        ),
+    )
 
     #   - What
     location_external_id: str = attr.ib(validator=attr_validators.is_str)
@@ -3506,10 +3612,19 @@ class NormalizedStateStaffCaseloadTypePeriod(
     # Attributes
     #   - When
     # The beginning of the period where this officer had this type of specialized caseload
-    start_date: date = attr.ib(validator=attr_validators.is_date)
+    start_date: date = attr.ib(
+        validator=attr_validators.is_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
 
     # The end of the period where this officer had this type of specialized caseload
-    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    end_date: date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
     # Primary key
     staff_caseload_type_period_id: int = attr.ib(validator=attr_validators.is_int)
 
