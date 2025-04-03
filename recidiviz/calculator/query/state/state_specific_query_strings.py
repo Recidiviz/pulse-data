@@ -864,6 +864,8 @@ def workflows_state_specific_supervision_level() -> str:
                     ELSE sl.most_recent_active_supervision_level 
                 END)
             WHEN sl.state_code = 'US_TX' THEN supervision_level
+            -- US_IA uses level numbers instead of names (level 0 = unsupervised, 1 = limited, 2 = minimum, 3 = medium)
+            WHEN sl.state_code = 'US_IA' THEN SPLIT(correctional_level_raw_text, ' -')[SAFE_OFFSET(0)]
             ELSE most_recent_active_supervision_level
         END
     """

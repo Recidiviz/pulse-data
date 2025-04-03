@@ -22,7 +22,6 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_6_months,
-    supervision_level_is_medium_or_lower,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     completed_mandated_programs,
@@ -31,6 +30,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     no_sex_offender_specialty,
     not_serving_ineligible_offense_for_early_discharge,
     supervision_fees_paid,
+    supervision_level_is_0_not_available_1_2_or_3,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -47,7 +47,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_level_is_medium_or_lower.VIEW_BUILDER,  # TODO(#39493) Address IC-OUT cases with missing supervision levels
+        supervision_level_is_0_not_available_1_2_or_3.VIEW_BUILDER,  # TODO(#39493) Address IC-OUT cases with missing supervision levels
         no_pending_charges.VIEW_BUILDER,
         no_supervision_violation_within_6_months.VIEW_BUILDER,
         no_open_supervision_modifiers.VIEW_BUILDER,
