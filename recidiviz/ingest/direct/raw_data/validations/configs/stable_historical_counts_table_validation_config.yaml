@@ -137,3 +137,7 @@ custom:
         tolerance_override:
           percent_change_tolerance: 0.5
           reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
+      sprvsn_tsk_grp_cd:
+        tolerance_override:
+          percent_change_tolerance: 0.5
+          reason: "This file contains fewer than 10 rows, so a 50% change is still a very small difference."
