@@ -505,7 +505,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         result = (
             deserialize_entity_factories.StateSupervisionViolationFactory.deserialize(
                 external_id="VIOLATION_ID",
-                violation_date="1/2/2111",
+                violation_date="1/2/2011",
                 state_code="us_xx",
                 is_violent="false",
             )
@@ -514,7 +514,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         # Assert
         expected_result = entities.StateSupervisionViolation(
             external_id="VIOLATION_ID",
-            violation_date=date(year=2111, month=1, day=2),
+            violation_date=date(year=2011, month=1, day=2),
             state_code="US_XX",
             is_violent=False,
         )
@@ -599,7 +599,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             deciding_staff_external_id="abc",
             deciding_staff_external_id_type="US_XX_STAFF_ID",
             external_id="RESPONSE_ID",
-            response_date="1/2/2111",
+            response_date="1/2/2011",
             state_code="us_xx",
             is_draft="True",
         )
@@ -614,7 +614,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             deciding_staff_external_id="ABC",
             deciding_staff_external_id_type="US_XX_STAFF_ID",
             external_id="RESPONSE_ID",
-            response_date=date(year=2111, month=1, day=2),
+            response_date=date(year=2011, month=1, day=2),
             state_code="US_XX",
             is_draft=True,
         )

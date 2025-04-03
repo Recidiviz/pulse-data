@@ -1599,8 +1599,38 @@ class StateSupervisionViolation(
 
     # Attributes
     #   - When
-    violation_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    violation_date: datetime.date | None = attr.ib(
+        default=None,
+        # TODO(#40455): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 0019-07-02.
+                    #  - Found dates as high as 2109-03-18.
+                    StateCode.US_AR,
+                    # TODO(#40464): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 3201-01-22.
+                    StateCode.US_IX,
+                    # TODO(#40465): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1776-07-04.
+                    StateCode.US_MO,
+                    # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1004-02-02.
+                    #  - Found dates as high as 9914-07-01.
+                    StateCode.US_OR,
+                    # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    #  - Found dates as high as 6200-06-15.
+                    StateCode.US_PA,
+                },
+            ),
+        ),
     )
 
     #   - What
@@ -1717,8 +1747,45 @@ class StateSupervisionViolationResponse(
 
     # Attributes
     #   - When
-    response_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    response_date: datetime.date | None = attr.ib(
+        default=None,
+        # TODO(#40455): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_past_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+                ),
+                exempted_states={
+                    # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 2913-10-22.
+                    StateCode.US_AR,
+                    # TODO(#40457): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    StateCode.US_AZ,
+                    # TODO(#40458): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as high as 2105-12-30.
+                    StateCode.US_CA,
+                    # TODO(#40459): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1800-06-25.
+                    #  - Found dates as high as 9994-12-31.
+                    StateCode.US_MI,
+                    # TODO(#40460): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1200-10-10.
+                    #  - Found dates as high as 5399-11-01.
+                    StateCode.US_ND,
+                    # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1004-02-02.
+                    #  - Found dates as high as 9914-07-01.
+                    StateCode.US_OR,
+                    # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                    #  - Found dates as low as 1900-01-01.
+                    #  - Found dates as high as 2029-01-28.
+                    StateCode.US_PA,
+                },
+            ),
+        ),
     )
 
     #   - What
