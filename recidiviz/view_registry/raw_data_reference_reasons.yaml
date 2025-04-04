@@ -304,12 +304,14 @@ US_IX:
     task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
       Needed to identify discretionary overrides. 01/23/2025
   com_InvestigationStatus:
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to determine investigation status of a case 02/28/2025
   com_PSIReport:
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_disposition: |-
+      Used to grab PSI information. 04/04/24
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab PSI information. 05/21/24
-    sentencing_views.sentencing_client_record: |-
+    sentencing_views.sentencing_client_record_historical: |-
       Used to grab PSI information. 05/21/24
     sentencing_views.sentencing_staff_record: |-
       Used to grab PSI information. 05/21/24
@@ -410,7 +412,7 @@ US_IX:
   ind_ContactMode:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_resident_metadata: |-
       Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
@@ -426,7 +428,7 @@ US_IX:
   ind_OffenderNote:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_resident_metadata: |-
       Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
@@ -439,7 +441,7 @@ US_IX:
   ind_OffenderNoteInfo:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_resident_metadata: |-
       Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
@@ -452,7 +454,7 @@ US_IX:
   ind_OffenderNoteInfo_ContactMode:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_resident_metadata: |-
       Case notes for crc workflows to enable proper sorting. Samantha Norcia 2/20/25
@@ -469,7 +471,7 @@ US_IX:
     task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
       Needed to identify discretionary overrides. 01/23/2025
   ind_Offender_Address:
-    sentencing_views.sentencing_client_record: |-
+    sentencing_views.sentencing_client_record_historical: |-
       Used to grab JII address for PSI tool. 05/21/24
     workflows_views.us_ix_supervision_tasks_record: |-
       Used to track address changes for next recommended home contacts dates.  The alternative 
@@ -508,12 +510,12 @@ US_IX:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ref_Address:
-    sentencing_views.sentencing_client_record: |-
+    sentencing_views.sentencing_client_record_historical: |-
       Used for sentencing PSI tool, we need it to grab client's county. 5/21/24
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ref_Employee:
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab PSI information. 11/06/24
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -530,7 +532,9 @@ US_IX:
   ref_Location:
     reference_views.us_ix_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    sentencing_views.sentencing_client_record: |-
+    sentencing_views.sentencing_case_disposition: |-
+      Used for sentencing PSI tool, we need it as a reference for client's county. 4/4/25
+    sentencing_views.sentencing_client_record_historical: |-
       Used for sentencing PSI tool, we need it as a reference for client's county. 5/21/24
     validation_views.supervisor_roster_exclusions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1297,16 +1301,16 @@ US_ND:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   docstars_offensestable:
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to get county information for psi reports. 11/26/24
     task_eligibility_criteria_us_nd.has_registration_requirements: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   docstars_psi:
-    sentencing_views.sentencing_case_record: |-
+    sentencing_views.sentencing_case_record_historical: |-
       Used to grab PSI information. 11/26/24
-    sentencing_views.sentencing_client_record: |-
+    sentencing_views.sentencing_client_record_historical: |-
       Used to grab PSI information. 11/26/24
     sentencing_views.sentencing_staff_record: |-
       Used to grab PSI information. 11/26/24

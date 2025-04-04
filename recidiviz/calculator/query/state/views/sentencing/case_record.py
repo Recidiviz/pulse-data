@@ -19,16 +19,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_case_template import (
-    US_IX_SENTENCING_CASE_TEMPLATE,
-)
-from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_case_template import (
-    US_ND_SENTENCING_CASE_TEMPLATE,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -38,22 +28,17 @@ SENTENCING_CASE_RECORD_DESCRIPTION = """
     Sentencing case records to be exported to frontend to power PSI tools.
     """
 
-SENTENCING_CASE_RECORD_QUERY_TEMPLATE = f"""
-WITH 
-    ix_cases AS 
-        ({US_IX_SENTENCING_CASE_TEMPLATE}), 
-    nd_cases AS 
-        ({US_ND_SENTENCING_CASE_TEMPLATE}), 
-    -- full_query serves as a template for when Sentencing expands to other states and we union other views
-    full_query AS 
-    (
-        SELECT * FROM ix_cases
-        UNION ALL
-        SELECT * FROM nd_cases
-    ) 
+SENTENCING_CASE_RECORD_QUERY_TEMPLATE = """
     SELECT
-        {{columns}}
-    FROM full_query
+        {columns}
+    FROM `{project_id}.sentencing_views.sentencing_case_record_historical_materialized`
+    WHERE
+        -- Make sure that case is either not completed or completed within the last three months 
+        (completion_date > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR completion_date IS NULL)
+        -- For US_ND, only keep cases within the past year (there are some very old cases that were never completed)
+        AND (state_code != 'US_ND' OR due_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
+        -- Don't include cases where the staff member is inactive
+        AND employee_inactive = "0"
 """
 
 SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -61,13 +46,6 @@ SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.SENTENCING_OUTPUT_DATASET,
     view_query_template=SENTENCING_CASE_RECORD_QUERY_TEMPLATE,
     description=SENTENCING_CASE_RECORD_DESCRIPTION,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
-    ),
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-    ),
     should_materialize=True,
     columns=[
         "state_code",

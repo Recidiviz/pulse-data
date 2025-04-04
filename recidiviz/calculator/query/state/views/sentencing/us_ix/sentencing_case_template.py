@@ -24,14 +24,16 @@ WITH
     DISTINCT OffenderId AS client_id,
     "US_IX" AS state_code,
     AssignedToUserId AS staff_id,
-    DueDate AS due_date,
-    CompletedDate AS completion_date,
-    AssignedDate AS assigned_date,
+    DATE(DueDate) AS due_date,
+    DATE(CompletedDate) AS completion_date,
+    DATE(SentenceDate) AS sentence_date,
+    DATE(AssignedDate) AS assigned_date,
     SPLIT(UPPER(lmm.location_name), ' - ')[SAFE_OFFSET(0)] AS county,
     PSIReportId AS external_id,
     id.person_id,
     JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') AS district,
-    ist.InvestigationStatusDesc AS investigation_status
+    ist.InvestigationStatusDesc AS investigation_status,
+    e.Inactive AS employee_inactive
   FROM
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
   LEFT JOIN
@@ -52,12 +54,7 @@ WITH
   LEFT JOIN
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_InvestigationStatus_latest` ist
   USING
-    (InvestigationStatusId)
-  WHERE
-    e.Inactive = "0" AND
-    -- Make sure that case is either not completed or completed within the last 3 months
-    (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
-      OR CompletedDate IS NULL)),
+    (InvestigationStatusId)),
   -- this CTE uses the OffenderNote table to infer the type of PSI report requested
   report_type_cte AS (
   SELECT
@@ -126,13 +123,13 @@ WITH
   SELECT
     cirt.*,
     CASE
-      WHEN report_type = "PSI Assigned Full" OR report_type = "PSI File Review w/LSI Assigned" AND assessment_date >= DATE(assigned_date) AND assessment_date <= DATE(completion_date) THEN CAST(assessment_score AS INT64)
+      WHEN report_type = "PSI Assigned Full" OR report_type = "PSI File Review w/LSI Assigned" AND assessment_date >= assigned_date AND assessment_date <= completion_date THEN CAST(assessment_score AS INT64)
       WHEN report_type = "PSI File Review Assigned" THEN CAST(assessment_score AS INT64)
       ELSE NULL
   END
     AS lsir_score,
     CASE
-      WHEN report_type = "PSI Assigned Full" OR report_type = "PSI File Review w/LSI Assigned" AND assessment_date >= DATE(assigned_date) AND assessment_date <= DATE(completion_date) THEN assessment_level
+      WHEN report_type = "PSI Assigned Full" OR report_type = "PSI File Review w/LSI Assigned" AND assessment_date >= assigned_date AND assessment_date <= completion_date THEN assessment_level
       WHEN report_type = "PSI File Review Assigned%" THEN assessment_level
       ELSE NULL
   END
@@ -149,12 +146,16 @@ SELECT
   client_id,
   staff_id,
   due_date,
+  completion_date,
+  sentence_date,
+  assigned_date,
   lsir_score,
   lsir_level,
   report_type,
   county,
   district,
-  investigation_status
+  investigation_status,
+  employee_inactive
 FROM
   case_info_with_report_type_and_assessment
 """

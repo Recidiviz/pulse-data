@@ -18,17 +18,26 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
+    SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.case_insights_record import (
     SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.case_record import (
     SENTENCING_CASE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.case_record_historical import (
+    SENTENCING_CASE_RECORD_HISTORICAL_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.charge_record import (
     SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.client_record import (
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentencing.client_record_historical import (
+    SENTENCING_CLIENT_RECORD_HISTORICAL_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.community_opportunity_record import (
     SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
@@ -51,7 +60,13 @@ CASE_INSIGHTS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCE_COHORT_VIEW_BUILDER,
 ]
 
+SENTENCING_HISTORICAL_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    SENTENCING_CASE_RECORD_HISTORICAL_VIEW_BUILDER,
+    SENTENCING_CLIENT_RECORD_HISTORICAL_VIEW_BUILDER,
+]
+
 SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
     SENTENCING_CASE_RECORD_VIEW_BUILDER,
     SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
     SENTENCING_STAFF_RECORD_VIEW_BUILDER,

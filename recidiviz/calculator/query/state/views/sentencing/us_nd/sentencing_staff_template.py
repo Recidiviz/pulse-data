@@ -37,12 +37,6 @@ WITH
       CAST(RecDate AS DATETIME)) AS case_ids,
   FROM
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-  WHERE
-    -- Only pick cases that have been completed in the last three months or are not yet completed
-    -- AND were ordered within the past year (there are some very old cases that were never completed)
-    (DATE(DATE_COM) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
-      OR DATE_COM IS NULL)
-    AND (DATE(DATE_DUE) > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
   GROUP BY
     surname,
     given_names),

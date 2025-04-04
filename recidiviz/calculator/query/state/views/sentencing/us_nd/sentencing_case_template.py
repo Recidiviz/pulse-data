@@ -29,13 +29,7 @@ WITH
         (0)])) AS surname,
     UPPER(TRIM(SPLIT(NAME, ',')[SAFE_OFFSET(1)])) AS given_names,
   FROM
-    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-  WHERE
-    -- Only pick cases that have been completed in the last three months or are not yet completed
-    -- AND were ordered within the past year (there are some very old cases that were never completed)
-    (DATE(DATE_COM) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
-      OR DATE_COM IS NULL)
-    AND (DATE(DATE_DUE) > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))),
+    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`),
   staff AS (
   SELECT
     *
@@ -82,7 +76,10 @@ SELECT
   REPLACE(psi.RecID,',','') AS external_id,
   REPLACE(psi.SID,',','') AS client_id,
   s.external_id AS staff_id,
-  DATE_DUE AS due_date,
+  DATE(DATE_DUE) AS due_date,
+  DATE(DATE_COM) AS completion_date,
+  CAST(NULL AS DATE) AS sentence_date,
+  DATE(DATE_ORD) AS assigned_date,
   NULL AS lsir_score,
   CAST(NULL AS STRING) AS lsir_level,
   CAST(NULL AS STRING) AS report_type,
@@ -90,6 +87,7 @@ SELECT
   COALESCE(court_to_county1.county, court_to_county2.county, court_to_county3.county) AS county,
   CAST(NULL AS STRING) AS district,
   CAST(NULL AS STRING) AS investigation_status,
+  "0" AS employee_inactive
 FROM
   psi
 LEFT JOIN

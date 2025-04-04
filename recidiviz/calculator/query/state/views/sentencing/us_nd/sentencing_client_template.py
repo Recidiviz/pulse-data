@@ -28,15 +28,14 @@ WITH
     REPLACE(SID, ',', '') AS SID,
     STRING_AGG(CONCAT('"',REPLACE(RecId, ',', ''),'"'), ','
     ORDER BY
-      LAST_UPDATE) AS case_ids
+      LAST_UPDATE) AS case_ids,
+  -- If any DATE_COM is NULL, then max_completion_date is NULL
+  IF(LOGICAL_OR(DATE_COM IS NULL),
+     NULL,
+     MAX(DATE(DATE_COM))
+     ) AS max_completion_date
   FROM
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-  WHERE
-    -- Only pick cases that have been completed in the last three months or are not yet completed
-    -- AND were ordered within the past year (there are some very old cases that were never completed)
-    (DATE(DATE_COM) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
-      OR DATE_COM IS NULL)
-    AND (DATE(DATE_DUE) > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
   GROUP BY
     SID)
 SELECT
@@ -57,6 +56,7 @@ END
   AS county,
   CONCAT('[', case_ids,']') AS case_ids,
   CAST(NULL AS STRING) AS district,
+  psi.max_completion_date AS completion_date
 FROM
   psi
 LEFT JOIN
