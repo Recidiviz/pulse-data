@@ -595,10 +595,12 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=PRODUCT_ROSTER_BLOCKED_30_DAYS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
