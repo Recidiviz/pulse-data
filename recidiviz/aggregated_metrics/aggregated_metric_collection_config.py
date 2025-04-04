@@ -116,9 +116,11 @@ class AggregatedMetricsCollection:
             MetricPopulationType, list[MetricUnitOfAnalysisType]
         ],
         metrics_by_population_type: dict[MetricPopulationType, list[AggregatedMetric]],
+        collection_tag: str | None = None,
     ) -> "AggregatedMetricsCollection":
         return AggregatedMetricsCollection(
             output_dataset_id=output_dataset_id,
+            collection_tag=collection_tag,
             time_periods=time_periods,
             population_configs={
                 population_type: AggregatedMetricsCollectionPopulationConfig(

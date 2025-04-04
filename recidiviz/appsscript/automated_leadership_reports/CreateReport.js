@@ -118,7 +118,8 @@ function main(e) {
     } = constructUsageAndImpactText(
       stateCode,
       endDateString,
-      completionEventType
+      completionEventType,
+      system
     );
 
     const {

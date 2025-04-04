@@ -42,6 +42,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION,
     DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS,
     DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS,
     DISTINCT_ACTIVE_USERS_INCARCERATION,
@@ -122,38 +124,42 @@ def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> (
         )
     ]
 
-    return AggregatedMetricsCollection(
+    return AggregatedMetricsCollection.build(
         output_dataset_id=IMPACT_REPORTS_DATASET_ID,
         collection_tag="impact_funnel",
-        population_configs={
-            MetricPopulationType.JUSTICE_INVOLVED: AggregatedMetricsCollectionPopulationConfig(
-                output_dataset_id=IMPACT_REPORTS_DATASET_ID,
-                population_type=MetricPopulationType.JUSTICE_INVOLVED,
-                units_of_analysis={
-                    MetricUnitOfAnalysisType.STATE_CODE,
-                    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-                    MetricUnitOfAnalysisType.FACILITY,
-                },
-                metrics=[
-                    # We don't actually use this, but generate this metric to make sure
-                    # that one row is generated for every possible metric period.
-                    AVG_DAILY_POPULATION,
-                    *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
-                    *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
-                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION,
-                ],
-            ),
-        },
         time_periods=time_periods,
+        unit_of_analysis_types_by_population_type={
+            MetricPopulationType.SUPERVISION: [
+                MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+            ],
+            MetricPopulationType.INCARCERATION: [
+                MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.FACILITY,
+            ],
+        },
+        metrics_by_population_type={
+            MetricPopulationType.SUPERVISION: [
+                AVG_DAILY_POPULATION,
+                *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
+            ],
+            MetricPopulationType.INCARCERATION: [
+                AVG_DAILY_POPULATION,
+                *AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
+                *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION,
+            ],
+        },
     )
 
 

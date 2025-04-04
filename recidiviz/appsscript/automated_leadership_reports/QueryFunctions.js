@@ -195,11 +195,11 @@ function getUsageAndImpactDistrictData(
   if (system === "SUPERVISION") {
     usageAndImpactXAxisColumn = "district_name";
     tableName =
-      "impact_funnel__justice_involved_district_aggregated_metrics_materialized";
+      "impact_funnel__supervision_district_aggregated_metrics_materialized";
   } else if (system === "INCARCERATION") {
     usageAndImpactXAxisColumn = "facility_name";
     tableName =
-      "impact_funnel__justice_involved_facility_aggregated_metrics_materialized";
+      "impact_funnel__incarceration_facility_aggregated_metrics_materialized";
   } else {
     throw new Error(
       "Invalid system provided. Please check all Google Form Inputs."
@@ -486,7 +486,8 @@ function getMetricPeriodStartDate(timePeriod, endDateString) {
 function constructUsageAndImpactText(
   stateCode,
   endDateString,
-  completionEventType
+  completionEventType,
+  system
 ) {
   const almostEligibleColumn = `avg_daily_population_task_almost_eligible_${completionEventType.toLowerCase()}`;
   const eligibleColumn = `avg_population_task_eligible_${completionEventType.toLowerCase()}`;
@@ -494,7 +495,7 @@ function constructUsageAndImpactText(
   const eligibleAndViewedColumn = `avg_daily_population_task_eligible_and_viewed_${completionEventType.toLowerCase()}`;
   const eligibleAndNotViewedColumn = `avg_daily_population_task_eligible_and_not_viewed_${completionEventType.toLowerCase()}`;
 
-  const metricsTable = `impact_funnel__justice_involved_state_aggregated_metrics_materialized`;
+  const metricsTable = `impact_funnel__${system.toLowerCase()}_state_aggregated_metrics_materialized`;
 
   const queryString = `
     SELECT

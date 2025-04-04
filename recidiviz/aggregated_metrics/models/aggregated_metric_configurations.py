@@ -2975,6 +2975,42 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
+AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_marked_submitted_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Marked Submitted, {b.task_title}",
+        description=f"Average daily count of clients marked submitted for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "in_progress": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_marked_submitted_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Marked Submitted, {b.task_title}",
+        description=f"Average daily count of residents marked submitted for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "in_progress": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
