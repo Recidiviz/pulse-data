@@ -71,6 +71,7 @@ locals {
     # Firestore roles
     "roles/datastore.user",
     "roles/datastore.importExportAdmin",
+    "roles/storage.objectUser",
   ])
 }
 
@@ -243,7 +244,7 @@ resource "google_cloud_run_service" "application-data-import" {
     spec {
       timeout_seconds = 600
 
-      container_concurrency = 2
+      container_concurrency = 8
 
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
@@ -261,7 +262,7 @@ resource "google_cloud_run_service" "application-data-import" {
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "1024Mi"
+            memory = "2048Mi"
           }
         }
       }
