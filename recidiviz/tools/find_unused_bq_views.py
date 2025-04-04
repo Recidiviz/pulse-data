@@ -433,7 +433,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
     ),
     ON_MINIMUM_AFTER_UNASSIGNED.address: (
-        "Will be used after TN launches full new policy B. See #38953 (Damini Sharma 03/03/2025)"
+        "Will be used after TN launches full new policy B. See #38506 (Damini Sharma 03/03/2025)"
     ),
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
