@@ -49,6 +49,7 @@ export const PATHWAYS_PERMISSIONS_LABELS = {
 
 export const PSI_PERMISSIONS_LABELS = {
   psi: "PSI",
+  psiSupervision: "PSI Supervisor View",
 };
 
 export const LANTERN_PERMISSIONS_LABELS = {
