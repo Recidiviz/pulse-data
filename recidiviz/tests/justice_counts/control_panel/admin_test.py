@@ -1551,3 +1551,76 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "boop": None,
             },  # replaces all subdimensions
         )
+
+    def test_get_other_sub_dimensions(self) -> None:
+        """Test GET /agency/<agency_id>/metric-setting returns correct other sub-dimensions structure."""
+        self.load_users_and_agencies()
+        agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+
+        # Add metric setting with 'Other Funding'
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key="LAW_ENFORCEMENT_FUNDING",
+                is_metric_enabled=True,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={FundingType.OTHER: True},
+                        dimension_to_other_sub_dimension_to_enabled_status={
+                            FundingType.OTHER: {"Santa Claus": None, "Gifts": True}
+                        },
+                    )
+                ],
+            ),
+        )
+
+        self.session.commit()
+
+        response = self.client.get(f"/admin/agency/{agency.id}/metric-setting")
+        response_json = assert_type(response.json, list)
+        self.assertEqual(response.status_code, 200)
+        law_enforcement_entry = next(
+            (entry for entry in response_json if entry["system"] == "LAW_ENFORCEMENT"),
+        )
+        self.assertIsNotNone(law_enforcement_entry)
+
+        funding_metric = next(
+            (
+                m
+                for m in law_enforcement_entry["metric_settings"]
+                if m["metric_key"] == "LAW_ENFORCEMENT_FUNDING"
+            )
+        )
+        self.assertIsNotNone(funding_metric)
+
+        disaggregations = funding_metric.get("disaggregations", [])
+        self.assertEqual(len(disaggregations), 1)
+        other_sub_dimensions = disaggregations[0]["other_sub_dimensions"]
+        self.assertEqual(other_sub_dimensions[0]["dimension_key"], "OTHER")
+        self.assertEqual(other_sub_dimensions[0]["dimension_name"], "Other Funding")
+        self.assertEqual(
+            other_sub_dimensions[0]["other_options"],
+            ["Gifts", "Santa Claus"],
+        )
+
+        expense_metric = next(
+            (
+                m
+                for m in law_enforcement_entry["metric_settings"]
+                if m["metric_key"] == "LAW_ENFORCEMENT_EXPENSES"
+            )
+        )
+
+        disaggregations = expense_metric.get("disaggregations", None)
+        self.assertEqual(len(disaggregations), 1)
+        other_sub_dimensions = disaggregations[0]["other_sub_dimensions"]
+        self.assertEqual(other_sub_dimensions[0]["dimension_key"], "OTHER")
+        self.assertEqual(other_sub_dimensions[0]["dimension_name"], "Other Expenses")
+        self.assertEqual(
+            other_sub_dimensions[0]["other_options"],
+            [],
+        )

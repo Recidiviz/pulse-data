@@ -35,6 +35,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
@@ -925,5 +926,106 @@ def get_admin_blueprint(
 
         current_session.commit()
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @admin_blueprint.route("/agency/<agency_id>/metric-setting", methods=["GET"])
+    @auth_decorator
+    def get_other_sub_dimensions(agency_id: int) -> Response:
+        """Get 'other sub-dimensions' defined for each metric's aggregated dimensions.
+
+        Returns, for each system, the list of metrics with any configured custom
+        sub-dimension values (e.g. "Other Funding - Santa Claus"). Excludes standard
+        identity-based disaggregations (e.g. Race, BiologicalSex).
+        """
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+
+        metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
+            session=current_session, agency=agency
+        )
+
+        system_to_other_subdimensions = defaultdict(list)
+
+        for metric_interface in metric_interfaces:
+            # Skip identity-based dimensions
+            aggregated_dimensions = [
+                a
+                for a in metric_interface.aggregated_dimensions
+                if a.dimension_identifier()
+                not in {
+                    BiologicalSex.dimension_identifier(),
+                    RaceAndEthnicity.dimension_identifier(),
+                }
+            ]
+            if not aggregated_dimensions:
+                continue
+
+            metric_interface_json: Dict[str, Any] = {
+                "metric_key": metric_interface.metric_definition.key,
+                "metric_display_name": metric_interface.metric_definition.display_name,
+            }
+
+            dimension_id_to_metric_definition = {
+                d.dimension_identifier(): d
+                for d in metric_interface.metric_definition.aggregated_dimensions or []
+            }
+
+            dimension_id_to_existing_metric_settting = {
+                d.dimension_identifier(): d for d in aggregated_dimensions
+            }
+
+            disaggregations = []
+            for (
+                dimension_id,
+                metric_setting,
+            ) in dimension_id_to_existing_metric_settting.items():
+                definition = dimension_id_to_metric_definition.get(dimension_id)
+                if not definition:
+                    continue
+
+                other_subdimensions = []
+                for dim in definition.dimension:  # type: ignore[attr-defined]
+                    if "OTHER" in dim.name:
+                        other_subdimensions.append(
+                            {
+                                "dimension_key": dim.name,
+                                "dimension_name": dim.value,
+                                "other_options": (
+                                    sorted(
+                                        list(
+                                            metric_setting.dimension_to_other_sub_dimension_to_enabled_status.get(
+                                                dim, {}
+                                            ).keys()
+                                        )
+                                    )
+                                ),
+                            }
+                        )
+
+                if other_subdimensions:
+                    disaggregations.append(
+                        {
+                            "disaggregation_display_name": definition.dimension.display_name(),
+                            "dimension_id": definition.dimension_identifier(),
+                            "other_sub_dimensions": other_subdimensions,
+                        }
+                    )
+
+            if disaggregations:
+                metric_interface_json["disaggregations"] = disaggregations
+                system_to_other_subdimensions[
+                    metric_interface.metric_definition.system.value
+                ].append(metric_interface_json)
+
+        response = [
+            {
+                "system": system,
+                "metric_settings": metric_settings,
+            }
+            for system, metric_settings in system_to_other_subdimensions.items()
+        ]
+
+        return jsonify(response)
 
     return admin_blueprint
