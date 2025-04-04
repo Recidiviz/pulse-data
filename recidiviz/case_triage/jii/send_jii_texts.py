@@ -402,6 +402,7 @@ def send_jii_texts(
                     "batch_ids": ArrayUnion([current_batch_id]),
                     "po_names": ArrayUnion([po_name]),
                     "districts": ArrayUnion([district]),
+                    "group_name": "MANUAL",
                 },
                 merge=True,
             )
@@ -425,6 +426,7 @@ def send_jii_texts(
                     "batch_id": current_batch_id,
                     "po_name": po_name,
                     "district": district,
+                    "workflow_execution_id": "MANUAL",
                 },
                 merge=True,
             )
