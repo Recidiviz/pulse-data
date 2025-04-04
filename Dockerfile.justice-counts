@@ -1,4 +1,4 @@
-FROM node:16-alpine as justice-counts-build
+FROM node:20-alpine as justice-counts-build
 
 # e.g. https://github.com/Recidiviz/justice-counts/archive/<branch name>.tar.gz or
 # https://github.com/Recidiviz/justice-counts/archive/refs/tags/<tag name>.tar.gz
