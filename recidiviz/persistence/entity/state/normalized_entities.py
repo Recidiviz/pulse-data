@@ -1409,10 +1409,16 @@ class NormalizedStateEarlyDischarge(NormalizedStateEntity, HasExternalIdEntity):
     # Attributes
     #   - When
     request_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
     decision_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     #  - What

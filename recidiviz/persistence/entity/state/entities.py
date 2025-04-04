@@ -2015,11 +2015,17 @@ class StateEarlyDischarge(
 
     # Attributes
     #   - When
-    request_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    request_date: datetime.date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
-    decision_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    decision_date: datetime.date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
     )
 
     #  - What
