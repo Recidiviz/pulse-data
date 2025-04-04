@@ -54,7 +54,7 @@ get_start_date AS (
     SELECT DISTINCT
         DPPE.PERSON_ID,
         DPPE.DPP_ID,
-        SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
+        FIRST_VALUE(SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3)) OVER (PARTITION BY PERSON_ID, DPP_ID ORDER BY CREATE_DTM, UPDT_DTM NULLS FIRST) AS SUPV_LEVEL,
         CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         CASE 
@@ -65,7 +65,7 @@ get_start_date AS (
         CAST(NULL AS DATETIME) as INTAKE_DATE,
         CAST(NULL AS DATETIME) AS DATE_ASSESSMENT,
         CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
-    FROM {DPP_EPISODE} DPPE 
+    FROM {DPP_EPISODE@ALL} DPPE 
     LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
     LEFT JOIN {LOOKUPS} LRELTYPE ON DPPE.RELEASE_TYPE_ID = LRELTYPE.LOOKUP_ID
 ),
@@ -92,19 +92,19 @@ get_officer_change_dates AS (
 get_level_change_dates AS (
     SELECT DISTINCT
         DPPE.PERSON_ID,
-        ACCAT.DPP_ID,
+        DPPE.DPP_ID,
         SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
         CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         'SUPV LEVEL ASSESSMENT' AS MOVEMENT_DESCRIPTION,
         CAST(NULL AS DATETIME) AS BEGAN_DATE,
         CAST(NULL AS DATETIME) AS INTAKE_DATE,
-        CAST(DATE_ASSESSMENT AS DATETIME) AS DATE_ASSESSMENT,
+        CAST(UPDT_DTM AS DATETIME) AS DATE_ASSESSMENT,
         CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
-    FROM {AZ_CS_OMS_ACCAT} ACCAT
-    JOIN {DPP_EPISODE} DPPE ON DPPE.DPP_ID = ACCAT.DPP_ID
-    LEFT JOIN {LOOKUPS} LLEVEL ON ACCAT.LEVEL_ID = LLEVEL.LOOKUP_ID
-    WHERE ACCAT.DATE_ASSESSMENT IS NOT NULL
+    FROM {DPP_EPISODE@ALL} DPPE
+    LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
+    -- do not include the first assigned level because that is included in the get_start_date CTE
+    WHERE DPPE.UPDT_DTM IS NOT NULL
 ),
 -- Get dates that particular period-ending movements happened and their descriptions, 
 -- This is the first method by which we close periods. The remaining methods are included
@@ -296,8 +296,12 @@ SELECT
 FROM infer_ends
 LEFT JOIN admin_35day_indicator
 USING(DPP_ID)
-WHERE start_reason NOT LIKE "END - %"
-AND start_reason NOT LIKE '%DPPE END'
+WHERE (start_reason NOT LIKE "END - %"
+AND start_reason NOT LIKE '%DPPE END')
+-- Only allow zero-day periods if they are attached to a start or end reason.
+AND ((date(start_date) != date(end_date) OR end_date IS NULL)
+OR (date(start_date) = date(end_date) AND (end_reason LIKE 'END - %' OR end_reason = 'DPPE END' 
+OR start_reason LIKE 'START - %' OR start_reason = 'DPPE START' OR start_reason = 'Releasee Abscond'))) 
 )
 WHERE start_date != '0001-01-01'
 """
