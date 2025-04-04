@@ -104,7 +104,7 @@ export interface StateUserForm extends StateUserPermissionsResponse, Routes {
 export interface StateRolePermissionsResponse {
   stateCode: string;
   role: string;
-  routes: Routes;
+  routes: RouteRecord;
   featureVariants: FeatureVariants;
 }
 export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
@@ -116,7 +116,9 @@ export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
   }[];
 }
 
-type FeatureVariantValue = { activeDate?: Date; variant?: string } | false;
+export type FeatureVariantValue =
+  | { activeDate?: Date; variant?: string }
+  | false;
 /*
  * For each feature, an optional activeDate can control when the user gets access.
  * If this is missing, access will be granted immediately.

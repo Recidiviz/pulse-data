@@ -238,13 +238,13 @@ class AuthEndpointTests(TestCase):
                     "role": LEADERSHIP_ROLE,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": True, "C": False},
-                    "featureVariants": None,
+                    "featureVariants": {},
                 },
                 {
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": False},
-                    "featureVariants": None,
+                    "featureVariants": {},
                 },
             ]
             response = self.client.get(
@@ -271,7 +271,7 @@ class AuthEndpointTests(TestCase):
                 {
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
-                    "routes": None,
+                    "routes": {},
                     "featureVariants": {"A": True},
                 },
             ]
@@ -311,8 +311,8 @@ class AuthEndpointTests(TestCase):
                 {
                     "role": "unknown",
                     "stateCode": "US_MO",
-                    "routes": None,
-                    "featureVariants": None,
+                    "routes": {},
+                    "featureVariants": {},
                 },
             ]
             response = self.client.get(
@@ -437,7 +437,7 @@ class AuthEndpointTests(TestCase):
                 "stateCode": "US_TN",
                 "role": LEADERSHIP_ROLE,
                 "routes": {"A": True, "B": False, "C": True},
-                "featureVariants": None,
+                "featureVariants": {},
             }
 
             self.assertEqual(expected, json.loads(response.data))

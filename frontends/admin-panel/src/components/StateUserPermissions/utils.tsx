@@ -17,10 +17,15 @@
 import { InfoCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, FormInstance, Input, Space, Tooltip, Typography } from "antd";
 import { ColumnType, FilterDropdownProps } from "antd/lib/table/interface";
+import { isFuture, isPast } from "date-fns";
 import moment from "moment";
 
 import {
+  FeatureVariantRecord,
   FeatureVariants,
+  FeatureVariantValue,
+  Route,
+  RouteRecord,
   Routes,
   StateRolePermissionsResponse,
   StateUserForm,
@@ -90,7 +95,7 @@ export const formatText = (
   text: string | boolean,
   record: StateUserPermissionsResponse
 ): string | boolean | JSX.Element => {
-  if (!!record.blockedOn && isDateInPast(record.blockedOn)) {
+  if (!!record.blockedOn && isPast(record.blockedOn)) {
     return (
       <Text type="secondary" italic>
         {text}
@@ -314,21 +319,23 @@ export const getUserPermissionsTableColumns = (
         text: Record<string, unknown>,
         record: StateUserPermissionsResponse
       ) => {
-        const role = stateRoleData.find(
-          (d) =>
-            d.stateCode === record.stateCode && record.roles?.includes(d.role)
-        );
+        const allRoutes = stateRoleData
+          .filter(
+            (r) =>
+              r.stateCode === record.stateCode && record.roles?.includes(r.role)
+          )
+          .map((r) => r.routes);
+        const mergedRoutes = mergeRoutes(allRoutes);
         return {
           props: {
             style: {
-              background:
-                JSON.stringify(role?.routes) === JSON.stringify(record.routes)
-                  ? "none"
-                  : "yellow",
               whiteSpace: "pre",
             },
           },
-          children: formatRoutes(text),
+          children: getHighlightedPermissions(
+            mergedRoutes,
+            record.routes ?? {}
+          ),
         };
       },
     },
@@ -345,22 +352,23 @@ export const getUserPermissionsTableColumns = (
         text: Record<string, string>,
         record: StateUserPermissionsResponse
       ) => {
-        const role = stateRoleData.find(
-          (d) =>
-            d.stateCode === record.stateCode && record.roles?.includes(d.role)
-        );
+        const allFvs = stateRoleData
+          .filter(
+            (r) =>
+              r.stateCode === record.stateCode && record.roles?.includes(r.role)
+          )
+          .map((r) => r.featureVariants);
+        const mergedFvs = mergeFeatureVariants(allFvs);
         return {
           props: {
             style: {
-              background:
-                JSON.stringify(role?.featureVariants ?? {}) ===
-                JSON.stringify(record.featureVariants ?? {})
-                  ? "none"
-                  : "yellow",
               whiteSpace: "pre",
             },
           },
-          children: formatFeatureVariants(text),
+          children: getHighlightedPermissions(
+            mergedFvs,
+            record.featureVariants ?? {}
+          ),
         };
       },
     },
@@ -562,7 +570,7 @@ export const getRolePermissionsTableColumns = (
               whiteSpace: "pre",
             },
           },
-          children: formatRoutes(text),
+          children: formatPermission(text),
         };
       },
     },
@@ -582,7 +590,7 @@ export const getRolePermissionsTableColumns = (
               whiteSpace: "pre",
             },
           },
-          children: formatFeatureVariants(text),
+          children: formatPermission(text),
         };
       },
     },
@@ -626,33 +634,22 @@ export const aggregateFormPermissionResults = (
   return { routes, featureVariantsToAdd, featureVariantsToRemove };
 };
 
-export const formatRoutes = (
-  text: Record<string, unknown | boolean>
-): string => {
+export const formatPermission = (text: Record<string, string>): string => {
   if (!text) return "";
   return Object.keys(text)
     .sort()
-    .filter((route) => !!text[route])
-    .join("\n");
-};
-
-export const formatFeatureVariants = (
-  text: Record<string, string | boolean>
-): string => {
-  if (!text) return "";
-  return Object.keys(text)
-    .sort()
-    .filter((fvName) => !!text[fvName])
-    .map((fvName) => {
-      const rawVariant = text[fvName];
-      const variant =
-        typeof rawVariant === "string" ? JSON.parse(rawVariant) : rawVariant;
-      const activeDate = variant?.activeDate && new Date(variant.activeDate);
+    .filter((permission) => !!text[permission])
+    .map((permission) => {
+      const value =
+        typeof text[permission] === "string"
+          ? JSON.parse(text[permission])
+          : text[permission];
+      const activeDate = value?.activeDate && new Date(value.activeDate);
       const now = new Date();
 
       return !activeDate || activeDate < now
-        ? fvName
-        : `${fvName}: ${moment(activeDate).format("lll")}`;
+        ? permission
+        : `${permission}: ${moment(activeDate).format("lll")}`;
     })
     .join("\n");
 };
@@ -692,6 +689,147 @@ const sortOnBlockStatus = (record: StateUserPermissionsResponse) => {
   return 3;
 };
 
-export const isDateInPast = (date: string): boolean => {
-  return new Date(date) < new Date();
+/**
+ * Reconciles/prioritizes routes if user has multiple roles. For routes, if any
+ * of a user's roles grant permission to a route, ignore/override when any of their
+ * other roles don't grant that permission.
+ */
+export const mergeRoutes = (permissionsList: RouteRecord[]): RouteRecord => {
+  /* eslint-disable no-param-reassign -- reduce() requires modifying the accumulator directly */
+  return permissionsList.reduce((newPermissions, permission) => {
+    Object.entries(permission).forEach(([key, value]) => {
+      const existingValue = newPermissions[key as Route];
+
+      if (!existingValue) {
+        newPermissions[key as Route] = value;
+      }
+    });
+    return newPermissions;
+  }, {} as RouteRecord);
+};
+
+/**
+ * Reconciles/prioritizes feature variants if user has multiple roles.
+ * For feature variants, when comparing different permissions for the same variant,
+ * order of priority is:
+ *     1) always on (value of variant will not have an activeDate attribute)
+ *     2) earliest active date
+ *     3) false
+ */
+export const mergeFeatureVariants = (
+  permissionsList: FeatureVariants[]
+): FeatureVariantRecord => {
+  /* eslint-disable no-param-reassign -- reduce() requires modifying the accumulator directly */
+  return permissionsList.reduce((newPermissions, permission) => {
+    Object.entries(permission).forEach(([key, value]) => {
+      const existingValue = newPermissions[key];
+
+      if (!existingValue) {
+        newPermissions[key] = value;
+      } else if (
+        typeof existingValue === "object" &&
+        "activeDate" in existingValue
+      ) {
+        if (typeof value === "object" && "activeDate" in value) {
+          newPermissions[key] = {
+            activeDate: new Date(
+              Math.min(
+                new Date(existingValue.activeDate as Date).getTime(),
+                new Date(value.activeDate as Date).getTime()
+              )
+            ),
+          };
+        } else if (value !== false) {
+          newPermissions[key] = value;
+        }
+      }
+    });
+    return newPermissions;
+  }, {} as FeatureVariantRecord);
+};
+
+/**
+ * Checks for equivalence between merged default permissions and merged default +
+ * override permissions (i.e., user permissions). Equivalence is defined as the permission
+ * being currently enabled/disabled for both default and user permissions, regardless
+ * of the exact values.
+ * - Routes
+ *   - If `defaultPermissions` is `true`, it is always equivalent.
+ *   - If `defaultPermissions` is `false`, it is equivalent if `userPermissions` is also `false`.
+ *   - Otherwise, it is not equivalent.
+ *
+ * - Feature variants
+ *   - If `defaultPermissions` is always on (empty object), it is always equivalent.
+ *   - If `defaultPermissions` is a past date, it is equivalent if:
+ *     - `userPermissions` is always on, or
+ *     - `userPermissions` is also a past date.
+ *   - If `defaultPermissions` is a future date, it is equivalent if:
+ *     - `userPermissions` is also a future date.
+ *   - If `defaultPermissions` is a future date it is not equivalent if:
+ *     - `userPermissions` is always on, or
+ *     - `userPermissions` is a past date.
+ */
+export const checkPermissionsEquivalence = (
+  defaultPermissions: FeatureVariantValue | boolean,
+  userPermissions: FeatureVariantValue | boolean
+): boolean => {
+  if (typeof defaultPermissions === "object") {
+    if (!Object.keys(defaultPermissions).length) return true;
+
+    if ("activeDate" in defaultPermissions && defaultPermissions.activeDate) {
+      if (isPast(defaultPermissions.activeDate)) {
+        return true;
+      }
+      if (
+        typeof userPermissions === "object" &&
+        "activeDate" in userPermissions &&
+        userPermissions.activeDate
+      ) {
+        return (
+          isFuture(defaultPermissions.activeDate) &&
+          isFuture(userPermissions.activeDate)
+        );
+      }
+      return false;
+    }
+  }
+  if (defaultPermissions) return true;
+
+  return userPermissions === false;
+};
+
+const getHighlightedPermissions = (
+  defaultPermissions: FeatureVariantRecord | RouteRecord,
+  userPermissions: FeatureVariantRecord | RouteRecord
+) => {
+  const keys = Array.from(
+    new Set([
+      ...Object.keys(defaultPermissions),
+      ...Object.keys(userPermissions),
+    ])
+  );
+
+  return keys
+    .filter((key) => !!userPermissions[key as keyof typeof userPermissions])
+    .map((key) => {
+      const defaultValue =
+        defaultPermissions[key as keyof typeof defaultPermissions] ?? false;
+      const userValue =
+        userPermissions[key as keyof typeof userPermissions] ?? false;
+      return (
+        <div
+          key={key}
+          style={{
+            background: !checkPermissionsEquivalence(defaultValue, userValue)
+              ? "yellow"
+              : "none",
+            padding: "2px",
+          }}
+        >
+          {formatPermission({
+            [key]: JSON.stringify(userValue),
+          })}
+        </div>
+      );
+    });
 };

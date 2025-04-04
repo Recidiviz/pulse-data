@@ -195,8 +195,10 @@ def get_auth_endpoint_blueprint(
                     {
                         "stateCode": res.state_code,
                         "role": res.role,
-                        "routes": res.routes,
-                        "featureVariants": res.feature_variants,
+                        "routes": res.routes if res.routes is not None else {},
+                        "featureVariants": res.feature_variants
+                        if res.feature_variants is not None
+                        else {},
                     }
                     for res in state_permissions
                 ]
@@ -229,8 +231,12 @@ def get_auth_endpoint_blueprint(
                             {
                                 "name": per.role,
                                 "permissions": {
-                                    "routes": per.routes,
-                                    "feature_variants": per.feature_variants,
+                                    "routes": per.routes
+                                    if per.routes is not None
+                                    else {},
+                                    "feature_variants": per.feature_variants
+                                    if per.feature_variants is not None
+                                    else {},
                                 },
                             }
                             for per in role_permissions
@@ -395,8 +401,12 @@ def get_auth_endpoint_blueprint(
                         {
                             "stateCode": state_role.state_code,
                             "role": state_role.role,
-                            "routes": state_role.routes,
-                            "featureVariants": state_role.feature_variants,
+                            "routes": state_role.routes
+                            if state_role.routes is not None
+                            else {},
+                            "featureVariants": state_role.feature_variants
+                            if state_role.feature_variants is not None
+                            else {},
                         }
                     ),
                     HTTPStatus.OK,

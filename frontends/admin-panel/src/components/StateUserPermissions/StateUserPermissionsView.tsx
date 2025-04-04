@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Button, message, PageHeader, Space, Spin, Table, Tooltip } from "antd";
+import { isPast } from "date-fns";
 import * as React from "react";
 import { useEffect, useState } from "react";
 
@@ -46,7 +47,6 @@ import {
   aggregateFormPermissionResults,
   checkResponse,
   getUserPermissionsTableColumns,
-  isDateInPast,
   updatePermissionsObject,
 } from "./utils";
 
@@ -97,7 +97,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     selectedRowKeys,
     onChange: onSelectChange,
     getCheckboxProps: (record: StateUserPermissionsResponse) => ({
-      disabled: !!record.blockedOn && isDateInPast(record.blockedOn),
+      disabled: !!record.blockedOn && isPast(record.blockedOn),
     }),
   };
 
