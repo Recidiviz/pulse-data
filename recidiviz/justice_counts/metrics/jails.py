@@ -385,7 +385,86 @@ total_admissions = MetricDefinition(
                 OffenseType.OTHER: "The total number of admission events in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
                 OffenseType.UNKNOWN: "The total number of admission events in which the most serious offense charge type is not known.",
             },
-        )
+        ),
+        AggregatedDimension(
+            dimension=BehavioralHealthNeedType,
+            required=False,
+            dimension_to_includes_excludes={
+                BehavioralHealthNeedType.MENTAL_HEALTH: [
+                    IncludesExcludesSet(
+                        members=MentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            MentalHealthNeedIncludesExcludes.SELF_REPORT,
+                            MentalHealthNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            MentalHealthNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            MentalHealthNeedIncludesExcludes.PSYCHOTROPIC_MEDICATION,
+                            MentalHealthNeedIncludesExcludes.JAIL_CLASSIFICATION,
+                            MentalHealthNeedIncludesExcludes.SUICIDE_RISK_SCREENING,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.SUBSTANCE_USE: [
+                    IncludesExcludesSet(
+                        members=SubstanceUseNeedIncludesExcludes,
+                        excluded_set={
+                            SubstanceUseNeedIncludesExcludes.SELF_REPORT,
+                            SubstanceUseNeedIncludesExcludes.POSITIVE_DRUG_TEST,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            SubstanceUseNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            SubstanceUseNeedIncludesExcludes.MAT_RECEIVING,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_JAIL,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: [
+                    IncludesExcludesSet(
+                        members=CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_MENTAL_HEALTH,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_SUBSTANCE_USE,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.SUBSTANCE_USE_AND_OTHER_NEED,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.MENTAL_HEALTH_AND_OTHER_NEED,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.OTHER: [
+                    IncludesExcludesSet(
+                        members=OtherBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            OtherBehavioralHealthNeedIncludesExcludes.CHRONIC_DISEASES,
+                            OtherBehavioralHealthNeedIncludesExcludes.MENTAL_HEALTH_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.SUBSTANCE_USE_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.PSYCHOSOCIAL_PROBLEMS,
+                            OtherBehavioralHealthNeedIncludesExcludes.ECONOMIC_HOUSING_EDUCATION,
+                            OtherBehavioralHealthNeedIncludesExcludes.SOCIAL_SUPPORT_PROBLEMS,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.UNKNOWN: [
+                    IncludesExcludesSet(
+                        members=UnknownBehavioralHealthNeedIncludesExcludes,
+                    ),
+                ],
+                BehavioralHealthNeedType.NONE: [
+                    IncludesExcludesSet(
+                        members=NoBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_MENTAL_HEALTH_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_SUBSTANCE_USE_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.CO_OCCURRING_NEEDS,
+                        },
+                    ),
+                ],
+            },
+            dimension_to_description={
+                BehavioralHealthNeedType.MENTAL_HEALTH: "A condition involving significant changes in thinking, emotion, and/or behavior that cause distress and/or problems functioning in daily activities.",
+                BehavioralHealthNeedType.SUBSTANCE_USE: "A condition involving a pattern of substance use that causes significant impairment or distress.",
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: "The co-occurrence of both a mental health and a substance use need.",
+                BehavioralHealthNeedType.OTHER: "Conditions associated with life stressors, crisis, and stress-related physical symptoms that cannot be classified as either a mental health or substance use condition.",
+                BehavioralHealthNeedType.UNKNOWN: "Behavioral health needs are unknown.",
+                BehavioralHealthNeedType.NONE: "The absence of an identified behavioral health condition.",
+            },
+        ),
     ],
 )
 
@@ -755,6 +834,85 @@ total_daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=BiologicalSex,
             required=False,
+        ),
+        AggregatedDimension(
+            dimension=BehavioralHealthNeedType,
+            required=False,
+            dimension_to_includes_excludes={
+                BehavioralHealthNeedType.MENTAL_HEALTH: [
+                    IncludesExcludesSet(
+                        members=MentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            MentalHealthNeedIncludesExcludes.SELF_REPORT,
+                            MentalHealthNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            MentalHealthNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            MentalHealthNeedIncludesExcludes.PSYCHOTROPIC_MEDICATION,
+                            MentalHealthNeedIncludesExcludes.JAIL_CLASSIFICATION,
+                            MentalHealthNeedIncludesExcludes.SUICIDE_RISK_SCREENING,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.SUBSTANCE_USE: [
+                    IncludesExcludesSet(
+                        members=SubstanceUseNeedIncludesExcludes,
+                        excluded_set={
+                            SubstanceUseNeedIncludesExcludes.SELF_REPORT,
+                            SubstanceUseNeedIncludesExcludes.POSITIVE_DRUG_TEST,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            SubstanceUseNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            SubstanceUseNeedIncludesExcludes.MAT_RECEIVING,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_JAIL,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: [
+                    IncludesExcludesSet(
+                        members=CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_MENTAL_HEALTH,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_SUBSTANCE_USE,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.SUBSTANCE_USE_AND_OTHER_NEED,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.MENTAL_HEALTH_AND_OTHER_NEED,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.OTHER: [
+                    IncludesExcludesSet(
+                        members=OtherBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            OtherBehavioralHealthNeedIncludesExcludes.CHRONIC_DISEASES,
+                            OtherBehavioralHealthNeedIncludesExcludes.MENTAL_HEALTH_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.SUBSTANCE_USE_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.PSYCHOSOCIAL_PROBLEMS,
+                            OtherBehavioralHealthNeedIncludesExcludes.ECONOMIC_HOUSING_EDUCATION,
+                            OtherBehavioralHealthNeedIncludesExcludes.SOCIAL_SUPPORT_PROBLEMS,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.UNKNOWN: [
+                    IncludesExcludesSet(
+                        members=UnknownBehavioralHealthNeedIncludesExcludes,
+                    ),
+                ],
+                BehavioralHealthNeedType.NONE: [
+                    IncludesExcludesSet(
+                        members=NoBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_MENTAL_HEALTH_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_SUBSTANCE_USE_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.CO_OCCURRING_NEEDS,
+                        },
+                    ),
+                ],
+            },
+            dimension_to_description={
+                BehavioralHealthNeedType.MENTAL_HEALTH: "A condition involving significant changes in thinking, emotion, and/or behavior that cause distress and/or problems functioning in daily activities.",
+                BehavioralHealthNeedType.SUBSTANCE_USE: "A condition involving a pattern of substance use that causes significant impairment or distress.",
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: "The co-occurrence of both a mental health and a substance use need.",
+                BehavioralHealthNeedType.OTHER: "Conditions associated with life stressors, crisis, and stress-related physical symptoms that cannot be classified as either a mental health or substance use condition.",
+                BehavioralHealthNeedType.UNKNOWN: "Behavioral health needs are unknown.",
+                BehavioralHealthNeedType.NONE: "The absence of an identified behavioral health condition.",
+            },
         ),
     ],
 )
@@ -1176,6 +1334,87 @@ total_releases = MetricDefinition(
             members=TotalReleasesIncludesExcludes,
             excluded_set={TotalReleasesIncludesExcludes.TEMPORARY_RELEASES_EXCLUDE},
         ),
+    ],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=BehavioralHealthNeedType,
+            required=False,
+            dimension_to_includes_excludes={
+                BehavioralHealthNeedType.MENTAL_HEALTH: [
+                    IncludesExcludesSet(
+                        members=MentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            MentalHealthNeedIncludesExcludes.SELF_REPORT,
+                            MentalHealthNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            MentalHealthNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            MentalHealthNeedIncludesExcludes.PSYCHOTROPIC_MEDICATION,
+                            MentalHealthNeedIncludesExcludes.JAIL_CLASSIFICATION,
+                            MentalHealthNeedIncludesExcludes.SUICIDE_RISK_SCREENING,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.SUBSTANCE_USE: [
+                    IncludesExcludesSet(
+                        members=SubstanceUseNeedIncludesExcludes,
+                        excluded_set={
+                            SubstanceUseNeedIncludesExcludes.SELF_REPORT,
+                            SubstanceUseNeedIncludesExcludes.POSITIVE_DRUG_TEST,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_PRIOR,
+                            SubstanceUseNeedIncludesExcludes.PRIOR_TREATMENT_HISTORY,
+                            SubstanceUseNeedIncludesExcludes.MAT_RECEIVING,
+                            SubstanceUseNeedIncludesExcludes.CLINICAL_ASSESSMENT_JAIL,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: [
+                    IncludesExcludesSet(
+                        members=CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes,
+                        excluded_set={
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_MENTAL_HEALTH,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.ONLY_SUBSTANCE_USE,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.SUBSTANCE_USE_AND_OTHER_NEED,
+                            CoOccurringSubstanceUseMentalHealthNeedIncludesExcludes.MENTAL_HEALTH_AND_OTHER_NEED,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.OTHER: [
+                    IncludesExcludesSet(
+                        members=OtherBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            OtherBehavioralHealthNeedIncludesExcludes.CHRONIC_DISEASES,
+                            OtherBehavioralHealthNeedIncludesExcludes.MENTAL_HEALTH_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.SUBSTANCE_USE_NEED,
+                            OtherBehavioralHealthNeedIncludesExcludes.PSYCHOSOCIAL_PROBLEMS,
+                            OtherBehavioralHealthNeedIncludesExcludes.ECONOMIC_HOUSING_EDUCATION,
+                            OtherBehavioralHealthNeedIncludesExcludes.SOCIAL_SUPPORT_PROBLEMS,
+                        },
+                    ),
+                ],
+                BehavioralHealthNeedType.UNKNOWN: [
+                    IncludesExcludesSet(
+                        members=UnknownBehavioralHealthNeedIncludesExcludes,
+                    ),
+                ],
+                BehavioralHealthNeedType.NONE: [
+                    IncludesExcludesSet(
+                        members=NoBehavioralHealthNeedIncludesExcludes,
+                        excluded_set={
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_MENTAL_HEALTH_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.IDENTIFIED_SUBSTANCE_USE_NEED,
+                            NoBehavioralHealthNeedIncludesExcludes.CO_OCCURRING_NEEDS,
+                        },
+                    ),
+                ],
+            },
+            dimension_to_description={
+                BehavioralHealthNeedType.MENTAL_HEALTH: "A condition involving significant changes in thinking, emotion, and/or behavior that cause distress and/or problems functioning in daily activities.",
+                BehavioralHealthNeedType.SUBSTANCE_USE: "A condition involving a pattern of substance use that causes significant impairment or distress.",
+                BehavioralHealthNeedType.CO_OCCURRING_DISORDERS: "The co-occurrence of both a mental health and a substance use need.",
+                BehavioralHealthNeedType.OTHER: "Conditions associated with life stressors, crisis, and stress-related physical symptoms that cannot be classified as either a mental health or substance use condition.",
+                BehavioralHealthNeedType.UNKNOWN: "Behavioral health needs are unknown.",
+                BehavioralHealthNeedType.NONE: "The absence of an identified behavioral health condition.",
+            },
+        )
     ],
 )
 
