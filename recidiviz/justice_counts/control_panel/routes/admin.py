@@ -31,6 +31,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.control_panel.utils import get_auth0_user_id
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
@@ -855,31 +856,12 @@ def get_admin_blueprint(
         """Update 'other sub-dimensions' for metric dimensions in an agency's metric settings.
 
         Accepts partial updates (deltas) to the 'other_options' values for specific
-        sub-dimensions within metric dimensions.
-
-        Request format:
-        "updates": [
-            {
-                "metric_key": "<metric_key>",
-                "breakdowns": [
-                    {
-                        "dimension_id": "<dimension_id>",
-                        "sub_dimensions": [
-                            {
-                                "dimension_key": "<enum key>",
-                                "other_options": ["<value>", ...]
-                            }
-                        ]
-                    }
-                ]
-            },
-            ...
-        ]
+        sub-dimensions within metric dimensions. Any missing sub-dimensions for a given
+        enum member are removed, and new ones are added with a default enabled value of True.
 
         Returns:
-        200 OK with {"status": "ok"} on success.
+            200 OK with {"status": "ok"} on success.
         """
-
         request_json = assert_type(request.json, dict)
         user = UserAccountInterface.get_user_by_auth0_user_id(
             session=current_session,
@@ -900,38 +882,45 @@ def get_admin_blueprint(
 
         for update_json in update_jsons:
             metric_interface = metric_key_to_metric_interface[update_json["metric_key"]]
+
             for breakdown in update_json.get("breakdowns", []):
-                dimension_id_to_dimension_metric_interface = {
+                dimension_id = breakdown["dimension_id"]
+                dimension_enum = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]
+
+                dim_id_to_metric_data = {
                     a.dimension_identifier(): a
                     for a in metric_interface.aggregated_dimensions
                 }
-                dimension_metric_interface = (
-                    dimension_id_to_dimension_metric_interface.get(
-                        breakdown["dimension_id"]
+                dimension_metric_interface = dim_id_to_metric_data.get(dimension_id)
+                if not dimension_metric_interface:
+                    continue
+
+                # Start fresh
+                updated_dimension_to_other_sub_dimension_to_enabled_status: Dict[
+                    DimensionBase, Dict[str, Optional[bool]]
+                ] = defaultdict(dict)
+
+                for sub_dimension_json in breakdown.get("sub_dimensions", []):
+                    enum_member = dimension_enum[sub_dimension_json["dimension_key"]]
+                    existing_other_sub_dimension_to_enabled_status = dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status.get(
+                        enum_member, {}
                     )
+                    for option in sub_dimension_json["other_options"]:
+                        updated_dimension_to_other_sub_dimension_to_enabled_status[
+                            enum_member
+                        ][option] = existing_other_sub_dimension_to_enabled_status.get(
+                            option, None
+                        )
+
+                dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status = (
+                    updated_dimension_to_other_sub_dimension_to_enabled_status
                 )
-                dimension_to_other_sub_dimensions = (
-                    dimension_metric_interface.dimension_to_other_sub_dimensions
-                    if dimension_metric_interface is not None
-                    else {}
-                )
-
-                dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[breakdown["dimension_id"]]
-                for sub_dimension in breakdown.get("sub_dimensions", []):
-                    dimension_to_other_sub_dimensions[
-                        dimension[sub_dimension["dimension_key"]]
-                    ] = sub_dimension["other_options"]
-
-                if dimension_metric_interface is not None:
-                    dimension_metric_interface.dimension_to_other_sub_dimensions = (
-                        dimension_to_other_sub_dimensions
-                    )
-
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=current_session,
                 agency=agency,
                 agency_metric_updates=metric_interface,
                 user_account=user,
+                replace_fields={"dimension_to_other_sub_dimension_to_enabled_status"},
             )
 
         current_session.commit()

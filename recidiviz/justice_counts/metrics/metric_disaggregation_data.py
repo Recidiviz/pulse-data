@@ -70,11 +70,11 @@ class MetricAggregatedDimensionData:
     # Indicates whether the agency considers this disaggregation's breakdowns to be
     # turned on/off to their satisfaction
     is_breakdown_configured: Optional[ConfigurationStatus] = attr.field(default=None)
-    # Maps each dimension to a list of user-defined labels that further break down
-    # the "Other" categories.
-    dimension_to_other_sub_dimensions: Dict[DimensionBase, List[str]] = attr.Factory(
-        dict
-    )
+    # Maps each dimension (e.g. FundingType.OTHER) to a dict of sub-dimension labels
+    # and their enabled status. For example: {FundingType.OTHER: {"Santa Claus": True, "Gifts": False}}
+    dimension_to_other_sub_dimension_to_enabled_status: Dict[
+        DimensionBase, Dict[str, Optional[bool]]
+    ] = attr.Factory(dict)
 
     def dimension_identifier(self) -> str:
         # Identifier of the Dimension class that this breakdown corresponds to
@@ -141,9 +141,9 @@ class MetricAggregatedDimensionData:
                 dimension.to_enum().name: ConfigurationStatus.to_json(config_status)
                 for dimension, config_status in self.dimension_to_includes_excludes_configured_status.items()
             },
-            "dimension_to_other_sub_dimensions": {
-                dimension.to_enum().name: other_sub_dimensions
-                for dimension, other_sub_dimensions in self.dimension_to_other_sub_dimensions.items()
+            "dimension_to_other_sub_dimension_to_enabled_status": {
+                dimension.to_enum().name: sub_dimension_to_enabled_status
+                for dimension, sub_dimension_to_enabled_status in self.dimension_to_other_sub_dimension_to_enabled_status.items()
             },
         }
 
@@ -237,12 +237,16 @@ class MetricAggregatedDimensionData:
                     ],
                 )
 
-        dimension_to_other_sub_dimensions: Dict[DimensionBase, List[str]] = {}
-        for dimension_str, other_sub_dimensions in json.get(
-            "dimension_to_other_sub_dimensions", {}
+        dimension_to_other_sub_dimension_to_enabled_status: Dict[
+            DimensionBase, Dict[str, Optional[bool]]
+        ] = {}
+        for dimension_str, sub_dimension_to_enabled_status in json.get(
+            "dimension_to_other_sub_dimension_to_enabled_status", {}
         ).items():
             dimension = dimension_str_to_dimension[dimension_str]
-            dimension_to_other_sub_dimensions[dimension] = other_sub_dimensions
+            dimension_to_other_sub_dimension_to_enabled_status[
+                dimension
+            ] = sub_dimension_to_enabled_status
 
         return cls(
             dimension_to_value=dimension_to_value,
@@ -250,7 +254,7 @@ class MetricAggregatedDimensionData:
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
             dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
-            dimension_to_other_sub_dimensions=dimension_to_other_sub_dimensions,
+            dimension_to_other_sub_dimension_to_enabled_status=dimension_to_other_sub_dimension_to_enabled_status,
             contexts=MetricContextData.get_metric_context_data_from_storage_json(
                 stored_metric_contexts=json.get("contexts", {}),
                 metric_definition_contexts=aggregated_dimension.contexts or [],

@@ -56,7 +56,11 @@ def handle_invariants(metric_interface_json: Dict[str, Any]) -> Dict[str, Any]:
     return metric_interface_json
 
 
-def apply_updates(original: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str, Any]:
+def apply_updates(
+    original: Dict[str, Any],
+    updates: Dict[str, Any],
+    replace_fields: Optional[Set[str]] = None,
+) -> Dict[str, Any]:
     """
     Recursively updates the 'original' with the values from 'updates'. Does not
     overwrite if the value of 'updates' is None.
@@ -71,11 +75,13 @@ def apply_updates(original: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str
     - updates (json): The updates to apply. Must also be formatted as a storage json.
     """
     for key, value in updates.items():
-        if isinstance(value, dict) and key in original:
-            apply_updates(original[key], value)
-        # If `key` is not in `original`, we add the full key-value pair from `updates`
-        # to `original` as-is. This applies regardless of whether `value` is a
-        # dictionary or a primitive value.
+        if replace_fields and key in replace_fields:
+            # If `key` is not in `original`, we add the full key-value pair from `updates`
+            # to `original` as-is. This applies regardless of whether `value` is a
+            # dictionary or a primitive value.
+            original[key] = value
+        elif isinstance(value, dict) and key in original:
+            apply_updates(original[key], value, replace_fields)
         elif value is not None:
             original[key] = value
     return original
@@ -106,6 +112,7 @@ class MetricSettingInterface:
         agency: schema.Agency,
         agency_metric_updates: MetricInterface,
         user_account: Optional[schema.UserAccount] = None,
+        replace_fields: Optional[Set[str]] = None,
     ) -> None:
         """Overwrite an agency's metric setting with the given metric interface."""
 
@@ -126,7 +133,9 @@ class MetricSettingInterface:
             # Using deepcopy so that the existing metric interface is only modified once
             # apply_updates returns.
             existing_setting.metric_interface = handle_invariants(
-                apply_updates(deepcopy(existing_setting.metric_interface), updates)
+                apply_updates(
+                    deepcopy(existing_setting.metric_interface), updates, replace_fields
+                )
             )
             existing_setting.last_updated = datetime.datetime.now(
                 tz=datetime.timezone.utc
@@ -160,6 +169,7 @@ class MetricSettingInterface:
         agency: schema.Agency,
         agency_metric_updates: MetricInterface,
         user_account: Optional[schema.UserAccount] = None,
+        replace_fields: Optional[Set[str]] = None,
     ) -> None:
         """Add or update an agency's metric setting with the given metric interface.
 
@@ -214,6 +224,7 @@ class MetricSettingInterface:
             agency=agency,
             agency_metric_updates=agency_metric_updates,
             user_account=user_account,
+            replace_fields=replace_fields,
         )
 
     @staticmethod

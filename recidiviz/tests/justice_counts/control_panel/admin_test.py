@@ -1390,7 +1390,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_enabled_status={FundingType.OTHER: True},
-                        dimension_to_other_sub_dimensions={},
+                        dimension_to_other_sub_dimension_to_enabled_status={},
                     )
                 ],
             ),
@@ -1407,9 +1407,9 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                             ForceType.OTHER: True,
                             ForceType.OTHER_WEAPON: True,
                         },
-                        dimension_to_other_sub_dimensions={
-                            ForceType.OTHER: ["foo, bar"],
-                            ForceType.OTHER_WEAPON: ["bar"],
+                        dimension_to_other_sub_dimension_to_enabled_status={
+                            ForceType.OTHER: {"foo": True, "bar": False},
+                            ForceType.OTHER_WEAPON: {"bar": None},
                         },
                     )
                 ],
@@ -1424,8 +1424,11 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_enabled_status={ExpenseType.OTHER: True},
-                        dimension_to_other_sub_dimensions={
-                            ExpenseType.OTHER: ["One Dimension", "Two Dimension"]
+                        dimension_to_other_sub_dimension_to_enabled_status={
+                            ExpenseType.OTHER: {
+                                "One Dimension": True,
+                                "Two Dimension": False,
+                            },
                         },
                     )
                 ],
@@ -1514,31 +1517,37 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             law_enforcement.funding.key
         ].aggregated_dimensions[0]
         self.assertEqual(
-            funding_dim.dimension_to_other_sub_dimensions[FundingType.OTHER],
-            ["Another Option"],  # added a new sub-dimension
+            funding_dim.dimension_to_other_sub_dimension_to_enabled_status[
+                FundingType.OTHER
+            ],
+            {"Another Option": None},  # added a new sub-dimension
         )
 
         expenses_dim = updated_settings[
             law_enforcement.expenses.key
         ].aggregated_dimensions[0]
         self.assertEqual(
-            expenses_dim.dimension_to_other_sub_dimensions[ExpenseType.OTHER],
-            ["One Dimension", "Three Dimension"],  # replaced one dimension
+            expenses_dim.dimension_to_other_sub_dimension_to_enabled_status[
+                ExpenseType.OTHER
+            ],
+            {"One Dimension": True, "Three Dimension": None},  # replaced one dimension
         )
 
         use_of_forces_discharges = updated_settings[
             law_enforcement.use_of_force_incidents.key
         ].aggregated_dimensions[0]
         self.assertEqual(
-            use_of_forces_discharges.dimension_to_other_sub_dimensions[ForceType.OTHER],
-            [],  # deletes all sub-dimensions
+            use_of_forces_discharges.dimension_to_other_sub_dimension_to_enabled_status.get(
+                ForceType.OTHER, {}
+            ),
+            {},  # deletes all sub-dimensions
         )
         self.assertEqual(
-            use_of_forces_discharges.dimension_to_other_sub_dimensions[
+            use_of_forces_discharges.dimension_to_other_sub_dimension_to_enabled_status[
                 ForceType.OTHER_WEAPON
             ],
-            [
-                "beep",
-                "boop",
-            ],  # replaces all subdimensions
+            {
+                "beep": None,
+                "boop": None,
+            },  # replaces all subdimensions
         )
