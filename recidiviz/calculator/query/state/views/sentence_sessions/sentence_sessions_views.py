@@ -25,9 +25,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_agg
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates_v1_states import (
-    INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.overlapping_sentence_serving_periods import (
     OVERLAPPING_SENTENCE_SERVING_PERIODS_VIEW_BUILDER,
 )
@@ -68,8 +65,6 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
     # NormalizedStateSentenceLength aggregated to inferred groups
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
-    # V1 state version of the above view
-    INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER,
     # Combined sentence and charge metadata
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
     # Date that a sentence starts being served

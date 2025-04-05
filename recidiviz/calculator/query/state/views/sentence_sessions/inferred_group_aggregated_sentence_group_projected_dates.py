@@ -72,11 +72,12 @@ INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID = (
 QUERY_TEMPLATE = f"""
 WITH sentence_group_projected_dates AS
 (
-SELECT
+SELECT DISTINCT
     p.*,
     s.sentence_inferred_group_id,
+    LOGICAL_OR(s.is_life) OVER(PARTITION BY state_code, person_id, sentence_group_id, start_date) AS is_life,
 FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_group_projected_date_sessions_materialized` p
-JOIN `{{project_id}}.normalized_state.state_sentence_group` s
+JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` s
     USING(state_code, person_id, sentence_group_id)
 )
 ,
@@ -94,10 +95,10 @@ SELECT
     sentence_inferred_group_id,
     start_date,
     end_date_exclusive,
-    MAX({nonnull_end_date_clause('parole_eligibility_date')}) AS parole_eligibility_date,
-    MAX({nonnull_end_date_clause('projected_parole_release_date')}) AS projected_parole_release_date,
-    MAX({nonnull_end_date_clause('projected_full_term_release_date_min')}) AS projected_full_term_release_date_min,
-    MAX({nonnull_end_date_clause('projected_full_term_release_date_max')}) AS projected_full_term_release_date_max,   
+    MAX(parole_eligibility_date) AS parole_eligibility_date,
+    MAX(projected_parole_release_date) AS projected_parole_release_date,
+    MAX(projected_full_term_release_date_min) AS projected_full_term_release_date_min,
+    MAX(IF(is_life, {nonnull_end_date_clause('projected_full_term_release_date_max')}, projected_full_term_release_date_max)) AS projected_full_term_release_date_max,   
     ARRAY_AGG(
         STRUCT(
             sentence_group_id,
@@ -118,9 +119,9 @@ SELECT
     sentence_inferred_group_id,
     start_date,
     end_date_exclusive,
-    {revert_nonnull_end_date_clause('parole_eligibility_date')} AS parole_eligibility_date,
-    {revert_nonnull_end_date_clause('projected_parole_release_date')} AS projected_parole_release_date,
-    {revert_nonnull_end_date_clause('projected_full_term_release_date_min')} AS projected_full_term_release_date_min, 
+    parole_eligibility_date,
+    projected_parole_release_date,
+    projected_full_term_release_date_min, 
     {revert_nonnull_end_date_clause('projected_full_term_release_date_max')} AS projected_full_term_release_date_max,
     sentence_group_array,
 FROM 

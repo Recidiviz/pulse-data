@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests the inferred_sentence_group_aggregated_sentence_projected_dates view in sentence_sessions."""
 from datetime import date, datetime, timedelta
-from typing import Dict, List
 
 from google.cloud import bigquery
 
@@ -26,30 +25,16 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates_v1_states import (
-    INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions import (
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
+    SENTENCES_AND_CHARGES_VIEW_BUILDER,
+)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entities_bq_schema import (
-    get_bq_schema_for_entity_table,
-)
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    queryable_address_for_normalized_entity,
-)
-from recidiviz.persistence.entity.state import (
-    normalized_entities as normalized_state_module,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSentence,
-)
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
 )
-from recidiviz.utils.types import assert_subclass
 
 
 class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
@@ -58,12 +43,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     sentence_projected_dates_address = (
         SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query
     )
-    state_sentence_address = queryable_address_for_normalized_entity(
-        NormalizedStateSentence
-    )
-    v1_states_address = (
-        INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_V1_STATES_VIEW_BUILDER.table_for_query
-    )
+    sentences_and_charges_address = SENTENCES_AND_CHARGES_VIEW_BUILDER.table_for_query
 
     state_code = StateCode.US_XX
     person_id = hash("TEST-PERSON-1")
@@ -121,42 +101,12 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 schema_field_for_type("good_time_days", int),
                 schema_field_for_type("earned_time_days", int),
             ],
-            self.state_sentence_address: get_bq_schema_for_entity_table(
-                normalized_state_module,
-                assert_subclass(NormalizedStateSentence, Entity).get_table_id(),
-            ),
-            self.v1_states_address: [
+            self.sentences_and_charges_address: [
                 schema_field_for_type("state_code", str),
                 schema_field_for_type("person_id", int),
+                schema_field_for_type("sentence_id", int),
                 schema_field_for_type("sentence_inferred_group_id", int),
-                schema_field_for_type("start_date", date),
-                schema_field_for_type("end_date_exclusive", date),
-                schema_field_for_type("parole_eligibility_date", date),
-                schema_field_for_type("projected_parole_release_date", date),
-                schema_field_for_type("projected_full_term_release_date_min", date),
-                schema_field_for_type("projected_full_term_release_date_max", date),
-                bigquery.SchemaField(
-                    "sentence_array",
-                    "RECORD",
-                    mode="REPEATED",
-                    fields=(
-                        schema_field_for_type("sentence_id", int),
-                        schema_field_for_type("sentence_parole_eligibility_date", date),
-                        schema_field_for_type(
-                            "sentence_projected_parole_release_date", date
-                        ),
-                        schema_field_for_type(
-                            "sentence_projected_full_term_release_date_min", date
-                        ),
-                        schema_field_for_type(
-                            "sentence_projected_full_term_release_date_max", date
-                        ),
-                        schema_field_for_type("sentence_length_days_min", int),
-                        schema_field_for_type("sentence_length_days_max", int),
-                        schema_field_for_type("sentence_good_time_days", int),
-                        schema_field_for_type("sentence_earned_time_days", int),
-                    ),
-                ),
+                schema_field_for_type("is_life", bool),
             ],
         }
 
@@ -187,22 +137,22 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
-        state_sentence_data = [
+        sentences_and_charges_data = [
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_1,
                 "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": False,
             },
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_2,
                 "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": False,
             },
         ]
-
-        v1_states_data: List[Dict] = []
 
         expected_data = [
             # first session has only sentence 1 and the date associated with that sentence is the max of the group
@@ -296,55 +246,58 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
         self.run_simple_view_builder_query_test_from_data(
             {
                 self.sentence_projected_dates_address: projected_dates_data,
-                self.state_sentence_address: state_sentence_data,
-                self.v1_states_address: v1_states_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
             },
             expected_data,
         )
 
-    def test_nulls_preserved_in_aggregation(self) -> None:
-        """Tests that when sentences get aggregated to an inferred group, that NULL projected dates are preserved"""
-
+    def test_dates_preserved_when_no_life_sentence(self) -> None:
+        """Tests than when overlapping sentences are aggregated to an inferred group, that if none of the sentences are
+        life sentences, we take non-null projected dates over null projected dates.
+        """
+        # Sentence 1 has null min and max projected dates, and sentence 2 has non-null values. The two sentences
+        # perfectly overlap each other
         projected_dates_data = [
-            # Sentence 1 has a NULL `projected_full_term_release_date_min` and we want to see that this value is
-            # preserved for the entire time period that this group is being served (critical date 1 to critical date 3)
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_1,
                 "start_date": self.critical_date_1,
-                "end_date_exclusive": self.critical_date_3,
+                "end_date_exclusive": self.critical_date_2,
                 "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
             },
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_2,
-                "start_date": self.critical_date_2,
-                "end_date_exclusive": None,
-                "projected_full_term_release_date_min": self.projected_date_1_max,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+                "projected_full_term_release_date_max": self.projected_date_1_max,
             },
         ]
 
-        state_sentence_data = [
+        # Both sentences are in the same inferred group and neither is a life sentence
+        sentences_and_charges_data = [
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_1,
                 "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": False,
             },
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
                 "sentence_id": self.sentence_id_2,
                 "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": False,
             },
         ]
 
-        v1_states_data: List[Dict] = []
-
+        # The inferred group level min and max dates are non-null (from sentence 2)
         expected_data = [
-            # first session has only sentence 1 and which has a null projected date
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
@@ -353,34 +306,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "end_date_exclusive": self.critical_date_2.date(),
                 "parole_eligibility_date": None,
                 "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": None,
-                "sentence_array": [
-                    {
-                        "sentence_id": self.sentence_id_1,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": None,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            # second session has both sentences and the 2nd sentence's date is not null, but the null date from
-            # sentence 1 still overrides it
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "start_date": self.critical_date_2.date(),
-                "end_date_exclusive": self.critical_date_3.date(),
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": None,
-                "projected_full_term_release_date_max": None,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+                "projected_full_term_release_date_max": self.projected_date_1_max,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -397,33 +324,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_id": self.sentence_id_2,
                         "sentence_parole_eligibility_date": None,
                         "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
-                        "sentence_projected_full_term_release_date_max": None,
-                        "sentence_length_days_min": None,
-                        "sentence_length_days_max": None,
-                        "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
-                    },
-                ],
-            },
-            # third session only has the second sentence, and we take the projected date from that sentence
-            {
-                "state_code": self.state_code.value,
-                "person_id": self.person_id,
-                "sentence_inferred_group_id": self.inferred_group_id,
-                "start_date": self.critical_date_3.date(),
-                "end_date_exclusive": None,
-                "parole_eligibility_date": None,
-                "projected_parole_release_date": None,
-                "projected_full_term_release_date_min": self.projected_date_1_max,
-                "projected_full_term_release_date_max": None,
-                "sentence_array": [
-                    {
-                        "sentence_id": self.sentence_id_2,
-                        "sentence_parole_eligibility_date": None,
-                        "sentence_projected_parole_release_date": None,
-                        "sentence_projected_full_term_release_date_min": self.projected_date_1_max,
-                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_min,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_max,
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
@@ -435,8 +337,101 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
         self.run_simple_view_builder_query_test_from_data(
             {
                 self.sentence_projected_dates_address: projected_dates_data,
-                self.state_sentence_address: state_sentence_data,
-                self.v1_states_address: v1_states_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
+            },
+            expected_data,
+        )
+
+    def test_nulls_preserved_when_is_life_sentence(self) -> None:
+        """Tests than when overlapping sentences are aggregated to an inferred group, that a life sentence with a null
+        projected max completion date has that null date preserved. Null dates for other types of dates (min completion
+        date, parole eligibility date, etc. should not be preserved over non-null values even when the sentence is a
+        life sentence)
+        """
+        # Sentence 1 has null min and max projected dates, and sentence 2 has non-null values. The two sentences
+        # perfectly overlap each other
+        projected_dates_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+                "projected_full_term_release_date_max": self.projected_date_1_max,
+            },
+        ]
+
+        # Both sentences are in the same inferred group and sentence 1 is a life sentence
+        sentences_and_charges_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": True,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "is_life": False,
+            },
+        ]
+
+        # The inferred group level min date is not null (gets pulled from sentence 2), but the max date is null because
+        # it is null in sentence 1 and sentence 1 is a life sentence
+        expected_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": self.projected_date_1_min,
+                "projected_full_term_release_date_max": None,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": self.projected_date_1_min,
+                        "sentence_projected_full_term_release_date_max": self.projected_date_1_max,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
             },
             expected_data,
         )
