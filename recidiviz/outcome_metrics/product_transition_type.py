@@ -23,6 +23,7 @@ class ProductTransitionType(Enum):
     """Represents the type of transition event based on the product or product component
     that is anticipated to drive that type of transition"""
 
+    PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
     SUPERVISOR_OUTCOMES_MODULE = "SUPERVISOR_OUTCOMES_MODULE"
     SUPERVISOR_OPPORTUNITIES_MODULE_DISCRETIONARY = (
         "SUPERVISOR_OPPORTUNITIES_MODULE_DISCRETIONARY"

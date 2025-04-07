@@ -28,6 +28,7 @@ class DecarceralImpactType(Enum):
     FURLOUGH = "FURLOUGH"
     RELEASE_TO_LIBERTY_FROM_SUPERVISION = "RELEASE_TO_LIBERTY_FROM_SUPERVISION"
     RELEASE_TO_PAROLE = "RELEASE_TO_PAROLE"
+    SENTENCE_TO_PROBATION = "SENTENCE_TO_PROBATION"
     TRANSFER_OUT_OF_SOLITARY_CONFINEMENT = "TRANSFER_OUT_OF_SOLITARY_CONFINEMENT"
     TRANSFER_TO_COMMUNITY_CONFINEMENT = "TRANSFER_TO_COMMUNITY_CONFINEMENT"
     TRANSFER_TO_LIMITED_SUPERVISION = "TRANSFER_TO_LIMITED_SUPERVISION"
@@ -55,6 +56,10 @@ _DECARCERAL_IMPACT_TYPE_DESCRIPTIONS: Dict[DecarceralImpactType, str] = {
     " supervision to liberty.",
     DecarceralImpactType.RELEASE_TO_PAROLE: "Events related to release from incarceration"
     " to parole, excluding releases from temporary custody to parole (ie. parole reinstatement).",
+    DecarceralImpactType.SENTENCE_TO_PROBATION: "Events related to a sentencing decision"
+    " that places a person in probation. While the alternative to probation is not necessarily"
+    " incarceration, a sentence to probation is on average a more decarceral option and one"
+    " that is influenceable by our pre-sentencing tools.",
     DecarceralImpactType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT: "Events related to transitions"
     " out of solitary confinement/restrictive housing into a type of non-solitary/non-restrictive"
     " housing.",
