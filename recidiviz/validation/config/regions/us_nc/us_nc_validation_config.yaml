@@ -1,7 +1,7 @@
 # Configuration for which validations to run for region US_NC.
 
 region_code: US_NC
-# TODO(#19861): Enable validations for US_NC.
+# TODO(#34198): Enable validations for US_NC.
 dev_mode: True
 exclusions: []
 max_allowed_error_overrides: []
