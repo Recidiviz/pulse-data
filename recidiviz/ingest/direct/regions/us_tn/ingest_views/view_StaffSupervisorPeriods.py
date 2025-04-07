@@ -24,28 +24,39 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH 
+-- doing some intial cleaning so the following CTEs don't interpret the raw data differently
+upper_case_roster AS (
+  SELECT
+    UPPER(external_id) as StaffID, 
+    UPPER(SupervisorID) as SupervisorID,
+    update_datetime as UpdateDate,
+    UPPER(CaseloadType) AS CaseloadType,
+    IF(UPPER(CaseloadType) LIKE '%SEX%' OR UPPER(CaseloadType) LIKE'%SCU%', 'Y', 'N') AS SCU_caseload,
+    UPPER(Active) AS Active
+  FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
+),
 -- First, identify the first ever reported surpervisor for each staff member sent to us by TN
 first_reported_supervisor AS (
   SELECT
-    UPPER(external_id) as StaffID, 
-    UPPER(SupervisorID) as StaffSupervisorID,
-    update_datetime as UpdateDate,
-    IF(UPPER(CaseloadType) LIKE '%SEX%' OR UPPER(CaseloadType) LIKE'%SCU%', 'Y', 'N') AS SCU_caseload
-  FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
-  WHERE external_id IS NOT NULL AND SupervisorID IS NOT NULL AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY update_datetime ASC) = 1
+    StaffID, 
+    SupervisorID AS StaffSupervisorID,
+    UpdateDate,
+    SCU_caseload,
+  FROM upper_case_roster
+  WHERE StaffID IS NOT NULL AND SupervisorID IS NOT NULL AND Active IN ('YES', 'Y', 'ACTIVE')
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY UpdateDate ASC) = 1
 ),
 -- Then, determine when the supervisor sent for a given person has changed since the last time TN sent us a roster
 supervisor_change_recorded AS (
   SELECT 
-      UPPER(external_id) as StaffID, 
-      UPPER(SupervisorID) as CurrentStaffSupervisorID,
-      LAG(UPPER(SupervisorID)) OVER (PARTITION BY external_id ORDER BY update_datetime ASC, SupervisorId) AS PreviousStaffSupervisorID,
-      update_datetime as UpdateDate,
-      IF(UPPER(CaseloadType) LIKE '%SEX%' OR UPPER(CaseloadType) LIKE'%SCU%', 'Y', 'N') AS SCU_caseload
-  FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
-  WHERE external_id IS NOT NULL
-  AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
+      StaffID, 
+      SupervisorID AS CurrentStaffSupervisorID,
+      LAG(SupervisorID) OVER (PARTITION BY StaffID ORDER BY UpdateDate ASC, SupervisorId) AS PreviousStaffSupervisorID,
+      UpdateDate,
+      SCU_caseload
+  FROM upper_case_roster
+  WHERE StaffID IS NOT NULL
+  AND Active IN ('YES', 'Y', 'ACTIVE')
 ),
 -- Start all periods far back in the past, then add any key change dates, to get a list of all dates that a person has changed supervisors
 key_supervisor_change_dates AS(
@@ -53,7 +64,7 @@ key_supervisor_change_dates AS(
   SELECT DISTINCT 
     StaffID, 
     StaffSupervisorID, 
-    CAST('1900-01-01 00:00:00' AS DATETIME) as UpdateDate, 
+    CAST('1900-01-02 00:00:00' AS DATETIME) as UpdateDate, 
     SCU_caseload
   FROM first_reported_supervisor
   WHERE StaffID IS NOT NULL
