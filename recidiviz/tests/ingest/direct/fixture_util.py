@@ -91,8 +91,6 @@ def fixture_path_for_raw_data_dependency(
     file_name: str,
 ) -> str:
     if raw_data_dependency.raw_file_config.is_code_file and state_code not in {
-        # TODO(#40112) Update code file fixtures and remove this exemption
-        StateCode.US_AZ,
         # TODO(#40113) Update code file fixtures and remove this exemption
         StateCode.US_IX,
         # TODO(#40114) Update code file fixtures and remove this exemption
