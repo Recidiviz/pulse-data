@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  CLASS_ARREST_HISTORY_ID: STRING
+  PERSON_ID: STRING
+  OFFENSE_DATE: DATETIME
+  county: STRING
+  disposition: STRING
+  ARS_CODE: STRING
+  charge_description: STRING
+  SEX_OFFENCE: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentences:
+      # TODO(#40354): These are placeholder sentences constructed so that we can ingest
+      # charges for which we have no sentence information. This view & mapping will ultimately
+      # produce only charges.
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ARREST")
+                - CLASS_ARREST_HISTORY_ID
+          imposed_date: OFFENSE_DATE
+          county_code: county
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - county
+                    - $literal("Other")
+                $then: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateSentencingAuthority.COUNTY)
+          sentence_type:
+            $enum_mapping:
+              $raw_text: disposition
+              $mappings:
+                StateSentenceType.INTERNAL_UNKNOWN:
+                  - ADJUDICATED DELINQUENT
+                  - GUILTY-OTHER SANCTION
+                  - NO CONTEST
+                  - JUVENILE OTHER
+                  - JUVENILE DETENTION
+                  - DRUG COURT
+                StateSentenceType.COUNTY_JAIL:
+                  - COUNTY JAIL-FELONY
+                  - SHOCK INCARCERATION
+                StateSentenceType.FEDERAL_PRISON:
+                  - FEDERAL PRISON
+                StateSentenceType.FINES_RESTITUTION:
+                  - RESTITUTION
+                  - FINED
+                StateSentenceType.STATE_PRISON:
+                  - AZ-STATE PRISON NOT ENTERED IN AIMS
+                  - PROBATION REVOKED
+                  - FELONY CONVICTION-OTHER STATE PRISON
+                StateSentenceType.PROBATION:
+                  - COMMUNITY SUPERVISION
+                  - FELONY CONVICTION-PROBATION
+                  - JUVENILE PROBATION
+                  - FELONY SEX OFFENSE W/FUTURE CONVICTION/PROBATION
+                  - LIFETIME PROBATION-AZ SEX OFF ONLY
+                  - FELONY SEX OFFENSE SERVED PROBATION
+                  - MISDEMEANOR CONVICTION
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("ARREST")
+                      - CLASS_ARREST_HISTORY_ID
+                offense_date: OFFENSE_DATE
+                county_code: county
+                statute:
+                  $concat:
+                    $values:
+                      - ARS_CODE
+                description: charge_description
+                is_sex_offense:
+                  $equal:
+                    - SEX_OFFENCE
+                    - $literal("Y")
+                # We filtered charges in the ingest view so the only ones mapped are
+                # those that led to a conviction.
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
