@@ -194,7 +194,8 @@ def execute_metric_view_data_export(
         )
 
     if (
-        export_collection.publish_success_pubsub_message
+        export_launched
+        and export_collection.publish_success_pubsub_message
         and export_collection.pubsub_topic_name
     ):
         # If the export has a specified output project, publish the Pub/Sub message in
