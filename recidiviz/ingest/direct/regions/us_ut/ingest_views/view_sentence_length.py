@@ -69,7 +69,8 @@ SELECT
   CAST(dt.updt_dt AS DATETIME) AS updt_dt,
   CAST(sched_expire_dt AS DATETIME) AS sched_expire_dt,
   CAST(early_trmn_dt AS DATETIME) AS early_trmn_dt,
-  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt
+  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt,
+  CAST(parole_sprvsn_strt_dt AS DATETIME) AS parole_sprvsn_strt_dt
 FROM
   {{est_dt_hist}} dt
 
@@ -80,7 +81,8 @@ SELECT
   CAST(dt.updt_dt AS DATETIME) AS updt_dt,
   CAST(sched_expire_dt AS DATETIME) AS sched_expire_dt,
   CAST(early_trmn_dt AS DATETIME) AS early_trmn_dt,
-  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt
+  CAST(sched_trmn_dt AS DATETIME) AS sched_trmn_dt,
+  CAST(parole_sprvsn_strt_dt AS DATETIME) AS parole_sprvsn_strt_dt
 FROM
   {{est_dt}} dt 
 ),
@@ -93,6 +95,7 @@ SELECT
   case_dates.sched_expire_dt,
   case_dates.early_trmn_dt,
   case_dates.sched_trmn_dt,
+  case_dates.parole_sprvsn_strt_dt,
   rev.lgl_stat_chg_desc,
   rev.stat_beg_dt
 FROM
@@ -115,6 +118,7 @@ SELECT DISTINCT
   intr_case_num,
   max_end_dt,
   early_trmn_dt,
+  parole_sprvsn_strt_dt,
   updt_dt,  
   ROW_NUMBER() OVER (
     PARTITION BY ofndr_num, intr_case_num, sentence_type 
@@ -137,6 +141,7 @@ FROM (
       WHEN sentence_type = 'INCARCERATION' THEN sched_expire_dt
     END AS max_end_dt,
     early_trmn_dt,
+    parole_sprvsn_strt_dt,
     updt_dt
   FROM
     cases_with_dates
