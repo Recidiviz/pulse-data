@@ -12,7 +12,7 @@ input_columns:
   comment: STRING
   employer_name: STRING
   verified_date: DATE
-  hours_per_week: INTEGER
+  hours_per_week: STRING
 unused_columns: []
 output:
   StatePerson:

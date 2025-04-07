@@ -40,7 +40,7 @@ SELECT
         vrfy_dt IS NOT NULL AND vrfy_rslt_flg = 'Y' THEN DATE(vrfy_dt) 
         ELSE CAST(NULL AS DATE)
     END AS verified_date,
-    CAST(hrs_work_wk AS INT64) AS hours_per_week,
+    hrs_work_wk AS hours_per_week,
 FROM
     {emplymt}
 LEFT JOIN
