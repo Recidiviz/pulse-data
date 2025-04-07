@@ -482,10 +482,29 @@ class CalculationDocumentationGenerator:
 
         return dataflow_str
 
+    def _get_aggregated_metrics_summary_str(self) -> str:
+        agg_metric_str = "- Aggregated Metrics\n"
+
+        agg_metric_pages = {
+            "observations": "Observations",
+            "aggregated_metrics": "Metrics",
+        }
+        agg_metric_str += (
+            self.bulleted_list(
+                [
+                    f"[{page_title}](calculation/aggregated_metrics/{page_name}.md)"
+                    for page_name, page_title in agg_metric_pages.items()
+                ],
+            )
+            + "\n"
+        )
+        return agg_metric_str
+
     def generate_summary_strings(self) -> List[str]:
         logging.info("Generating calculation summary markdown")
         calculation_catalog_summary = ["## Calculation Catalog\n\n"]
 
+        calculation_catalog_summary.extend([self._get_aggregated_metrics_summary_str()])
         calculation_catalog_summary.extend([self._get_calculation_states_summary_str()])
         calculation_catalog_summary.extend([self._get_products_summary_str()])
         calculation_catalog_summary.extend([self._get_views_summary_str()])
