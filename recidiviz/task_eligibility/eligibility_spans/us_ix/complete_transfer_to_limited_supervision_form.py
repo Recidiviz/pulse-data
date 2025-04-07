@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    negative_da_within_90_days,
     supervision_level_is_not_diversion,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
@@ -59,7 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        negative_da_within_90_days.VIEW_BUILDER,
         lsir_level_low_for_90_days.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,

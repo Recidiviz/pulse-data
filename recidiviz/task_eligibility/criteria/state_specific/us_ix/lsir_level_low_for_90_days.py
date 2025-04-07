@@ -16,10 +16,8 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone in ID has a valid LSIR level for the required number of days:
--LSI-R score at or below the low potential level to reoffend with no increase in risk
+someone in ID has a LSI-R score at or below the low potential level to reoffend with no increase in risk
  for the 90 days of active supervision
--At or below moderate potential to reoffend can have no increase in risk level 360 days prior
 """
 from google.cloud import bigquery
 
