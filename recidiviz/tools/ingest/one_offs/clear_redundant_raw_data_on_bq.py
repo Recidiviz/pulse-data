@@ -97,10 +97,10 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
     command = (
         "SELECT file_tag, min(update_datetime) as min_datetimes_contained, "
         "max(update_datetime) as max_datetimes_contained "
-        f"FROM direct_ingest_raw_big_query_file_metadata"
+        f"FROM direct_ingest_raw_big_query_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         "AND is_invalidated is False "
-        "AND raw_data_instance = 'PRIMARY'"
+        "AND raw_data_instance = 'PRIMARY' "
         f"GROUP BY file_tag;"
     )
     results = session.execute(sqlalchemy.text(command))
@@ -125,13 +125,13 @@ def get_min_and_max_file_ids_in_postgres(
     )
     command = (
         "SELECT DISTINCT file_id "
-        f"FROM direct_ingest_raw_big_query_file_metadata"
+        f"FROM direct_ingest_raw_big_query_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime in ('{min_datetimes_contained}', "
-        f"'{max_datetimes_contained}')"
+        f"'{max_datetimes_contained}') "
         "AND is_invalidated is FALSE "
-        "AND raw_data_instance = 'PRIMARY'"
+        "AND raw_data_instance = 'PRIMARY' "
         "ORDER BY file_id asc;"
     )
     postgres_results = session.execute(sqlalchemy.text(command))
@@ -195,12 +195,12 @@ def get_redundant_raw_file_ids(
     within the bounds the associated (non-invalidated) min and max update_datetime."""
     command = (
         "SELECT DISTINCT file_id "
-        f"FROM direct_ingest_raw_big_query_file_metadata"
+        f"FROM direct_ingest_raw_big_query_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime > '{min_datetimes_contained}' "
         f"AND update_datetime < '{max_datetimes_contained}' "
-        "AND raw_data_instance = 'PRIMARY'"
+        "AND raw_data_instance = 'PRIMARY' "
         "AND is_invalidated is False;"
     )
     results = session.execute(sqlalchemy.text(command))
