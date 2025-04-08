@@ -21,6 +21,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.persistence.entity.state.entities import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -95,7 +96,10 @@ AND CAST(oc.PAROLE_FR AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWE
 sentence_dates AS (
 SELECT DISTINCT 
   CASE_NUMBER,
-  PAROLE_TO, 
+  -- NULL out PAROLE_TO values that are not within a reasonable range.
+  IF(PAROLE_TO BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND '{STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND}', 
+    CAST(PAROLE_TO AS DATETIME), 
+    CAST(NULL AS DATETIME)) AS PAROLE_TO, 
   TERM_DATE,
   SENT_YY,
   SENT_MM,
