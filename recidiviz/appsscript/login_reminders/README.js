@@ -33,4 +33,11 @@ Common errors and how to deal with them:
 If you have any questions or concerns, please reach out in the #email_reminder_rollouts
 Slack channel.
 
+Script IDs
+The script ids associated with each duplicated project. Replace the `scriptId` in the `.clasp.json` file with the AppScript project you'd like to point to when using clasp commands. `clasp pull` from the PRODUCTION environment before you begin.
+
+- PRODUCTION: 1m983Lc4jmUj35Is6ggepLwL4AJqqhjKlqA1wne0ggGZU_H5g5L5pRGZl
+- [TEST_ABC]: 13mNJdx0BlvO6XT9meQ68sank6KL9FAJSpSc2gK_Hof14NJtR-17cofCE
+- [TEST_XYZ]: 1tlwG_FHvGGJzW-9KlhFKlvLeN04PmYyrLFwkkQ8oUYjPaBgC8QvAP236
+
 */
