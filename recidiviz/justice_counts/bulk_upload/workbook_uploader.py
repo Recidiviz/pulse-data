@@ -30,7 +30,7 @@ from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
@@ -181,6 +181,11 @@ class WorkbookUploader:
             1. Previously uploaded datapoints have been changed
             2. A datapoint has been added to a previously uploaded Report
         """
+
+        if self.metadata.upload_method == UploadMethod.AUTOMATED_BULK_UPLOAD:
+            # When published reports are edited via SFTP, we do not revert them back to drafts.
+            return
+
         unique_key_difference = set(existing_datapoints_dict_changed.keys()).difference(
             existing_datapoints_dict_unchanged.keys()
         )

@@ -57,7 +57,11 @@ class BulkUploadMetadata:
         self.agency = agency
         self.session = session
         self.user_account = user_account
-        self.upload_method = UploadMethod.BULK_UPLOAD
+        self.upload_method = (
+            UploadMethod.BULK_UPLOAD
+            if user_account is not None
+            else UploadMethod.AUTOMATED_BULK_UPLOAD
+        )
         self.is_single_page_upload = False
         self.chunk_size = chunk_size
         self.inserts: List[schema.Datapoint] = []
