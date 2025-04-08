@@ -170,7 +170,7 @@ def generate_metric_export_configs(
       ON
         metrics.supervising_officer_staff_id = staff.staff_id
       WHERE
-        state_code = '{state_code.upper()}'
+        metrics.state_code = '{state_code.upper()}'
         AND date_of_supervision >= '{start_date.isoformat()}'
     """
 
@@ -216,7 +216,7 @@ def generate_metric_export_configs(
       ON
         metrics.supervising_officer_staff_id = staff.staff_id
       WHERE
-        state_code = '{state_code.upper()}'
+        metrics.state_code = '{state_code.upper()}'
         AND Date(year, month, 1) >= Date({start_date.year}, {start_date.month}, 1)
       ORDER BY
         year,
