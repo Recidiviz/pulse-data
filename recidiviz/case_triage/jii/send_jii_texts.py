@@ -544,7 +544,7 @@ def attempt_to_send_text(
             return False
 
     # If this is an eligibility text, and the individual has
-    # received an eligibility text (all time), do not attempt to send
+    # received an eligibility text the last 90 days, do not attempt to send
     # them an eligibility text
     if message_type == MessageType.ELIGIBILITY_TEXT.value:
         for document_id in document_ids:
@@ -552,11 +552,18 @@ def attempt_to_send_text(
                 eligibility_text_document_ids_to_text_timestamp.get(document_id)
                 is not None
             ):
-                logging.info(
-                    "Individual with document id [%s] has already received an eligibility text. Do not attempt to send eligibility text.",
-                    document_id,
+                text_timestamp = eligibility_text_document_ids_to_text_timestamp.get(
+                    document_id
                 )
-                return False
+                ninety_days_ago = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - datetime.timedelta(days=90)
+                if text_timestamp > ninety_days_ago:  # type: ignore[operator]
+                    logging.info(
+                        "Individual with document id [%s] has already received an eligibility text in the past 90 days. Do not attempt to send eligibility text.",
+                        document_id,
+                    )
+                    return False
 
     return True
 
