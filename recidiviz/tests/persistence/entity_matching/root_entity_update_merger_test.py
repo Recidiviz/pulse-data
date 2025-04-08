@@ -762,6 +762,7 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
                 found_root_entities=[result],
                 expected_root_entities=[expected_result],
                 entities_module_context=entities_module_context,
+                region_code="US_XX",
             )
 
         self.assertEqual(expected_result, result)

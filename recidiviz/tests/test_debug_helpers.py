@@ -18,7 +18,6 @@
 import webbrowser
 from typing import Any, Sequence
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import write_entity_tree_to_file
 from recidiviz.utils.log_helpers import write_html_diff_to_file
@@ -28,7 +27,7 @@ def launch_entity_tree_html_diff_comparison(
     found_root_entities: Sequence[Any],
     expected_root_entities: Sequence[Any],
     entities_module_context: EntitiesModuleContext,
-    region_code: str = StateCode.US_XX.value.lower(),
+    region_code: str,
     print_tree_structure_only: bool = False,
 ) -> None:
     """Launches an HTML diff of the two root entity lists."""

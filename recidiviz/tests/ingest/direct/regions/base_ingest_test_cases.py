@@ -32,6 +32,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -50,9 +53,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.tests.common.constants.state.external_id_types_test import (
-    external_id_types_by_state_code,
-)
 from recidiviz.tests.ingest.direct.fixture_util import (
     INGEST_MAPPING_OUTPUT_SUBDIR,
     enum_parsing_fixture_path,

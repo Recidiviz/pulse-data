@@ -125,12 +125,15 @@ def _get_config_filter(
     )
 
 
+# TODO(#39680) Update error handling so that data dependencies that do not relate
+# to a root entity ID are as helpful as possible.
 def build_root_entity_filtered_raw_data_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
     external_id_value: str,
     dataset: str,
     project_id: str,
+    file_tags_to_skip_with_reason: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """
     Returns a dictionary mapping raw data file tags to queries.
@@ -141,17 +144,20 @@ def build_root_entity_filtered_raw_data_queries(
     all_dependencies = view_builder.raw_table_dependency_configs_by_file_tag
     subset_queries = {}
     for file_tag, raw_file_dependency in all_dependencies.items():
-        subset_queries[file_tag] = (
-            f"SELECT * FROM {project_id}.{dataset}.{file_tag} "
-            + _get_config_filter(
-                raw_file_dependency.raw_file_config,
-                external_id_type,
-                external_id_value,
-                dataset,
-                project_id,
-                all_dependencies,
-            )
-        ).strip()
+        if file_tags_to_skip_with_reason and file_tag in file_tags_to_skip_with_reason:
+            subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
+        else:
+            subset_queries[file_tag] = (
+                f"SELECT * FROM {project_id}.{dataset}.{file_tag} "
+                + _get_config_filter(
+                    raw_file_dependency.raw_file_config,
+                    external_id_type,
+                    external_id_value,
+                    dataset,
+                    project_id,
+                    all_dependencies,
+                )
+            ).strip()
     return subset_queries
 
 
@@ -184,40 +190,3 @@ def main(
         # TODO(#39680): Execute the query against BigQuery and download.
         # and/or incorporate into the fixture generation script.
         print(f"Query for {file_tag}:\n", query)
-
-
-# TODO(#39680): Execute the query against BigQuery and download.
-# and/or incorporate into the fixture generation script.
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Build raw data subset queries for a given ingest view."
-    )
-    parser.add_argument(
-        "--state_code", type=str, help="The state code for the region (e.g., 'US_AZ')."
-    )
-    parser.add_argument(
-        "--ingest_view_name",
-        type=str,
-        help="The name of the ingest view (e.g., 'state_sentence').",
-    )
-    parser.add_argument(
-        "--external_id_type",
-        type=str,
-        help="The external ID type to filter on (e.g., 'US_AZ_PERSON_ID').",
-    )
-
-    parser.add_argument(
-        "--external_id_value",
-        type=str,
-        help="The external ID value to filter on (e.g., '12345').",
-    )
-    args = parser.parse_args()
-
-    main(
-        state_code=StateCode(args.state_code.upper()),
-        ingest_view_name=args.ingest_view_name,
-        external_id_type=args.external_id_type,
-        external_id_value=args.external_id_value,
-    )

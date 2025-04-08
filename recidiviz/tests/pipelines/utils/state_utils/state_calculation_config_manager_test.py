@@ -20,6 +20,9 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -48,9 +51,6 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.tests.common.constants.state.external_id_types_test import (
-    external_id_types_by_state_code,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     get_all_delegate_getter_fn_names,
