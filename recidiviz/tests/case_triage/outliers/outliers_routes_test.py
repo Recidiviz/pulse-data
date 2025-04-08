@@ -45,12 +45,12 @@ from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     ActionStrategyType,
     CaseloadCategory,
-    IntercomTicketResponse,
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersProductConfiguration,
     OutliersVitalsMetricConfig,
     PersonName,
+    RosterChangeRequestResponseSchema,
     SupervisionOfficerEntity,
     SupervisionOfficerOutcomes,
     SupervisionOfficerSupervisorEntity,
@@ -5237,7 +5237,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 request_return_value = None
 
                 if expected_status is HTTPStatus.OK:
-                    request_return_value = IntercomTicketResponse(
+                    request_return_value = RosterChangeRequestResponseSchema(
                         id="1",
                         email="mock_email",
                     )

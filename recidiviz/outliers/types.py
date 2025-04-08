@@ -752,17 +752,6 @@ class IntercomTicketResponse:
 
     # The id for the created ticket
     id: str
-    # Email for the client
-    email: str
-
-    @classmethod
-    def from_intercom_dict(cls, data: Dict[str, Any]) -> "IntercomTicketResponse":
-        """Converts the response back to an object"""
-        contacts = data.get("contacts", [])
-        return cls(
-            id=data.get("id", ""),
-            email=contacts[0].get("email", "") if contacts else "",
-        )
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -781,6 +770,19 @@ class RosterChangeRequestSchema:
     request_change_type: RosterChangeType
     request_note: str
     requester_name: str
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s(auto_attribs=True)
+class RosterChangeRequestResponseSchema:
+    """Schema that represents the response from the RosterTicketService"""
+
+    # The id for the created ticket
+    id: str
+    # Email for the client
+    email: str
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

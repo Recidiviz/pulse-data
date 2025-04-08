@@ -30,6 +30,7 @@ from recidiviz.outliers.types import (
     IntercomTicketResponse,
     OutliersProductConfiguration,
     PersonName,
+    RosterChangeRequestResponseSchema,
     RosterChangeType,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
@@ -80,7 +81,7 @@ class IntercomAPIClient:
 
         response = self._session.post(url, json=ticket_payload, timeout=10.0)
         response.raise_for_status()
-        return IntercomTicketResponse.from_intercom_dict(response.json())
+        return IntercomTicketResponse(id=response.json().get("id", ""))
 
 
 @attrs.define(kw_only=True)
@@ -115,6 +116,8 @@ class RosterTicketService:
         officers: List[SupervisionOfficer],
     ) -> str:
         """Constructs a formatted ticket description."""
+
+        # Prepare mappings
         supervisor_map = {s.external_id: s for s in supervisors}
         officer_to_supervisors = {
             o: [
@@ -125,25 +128,31 @@ class RosterTicketService:
             for o in officers
         }
 
+        # Helper formatters
         def format_officer_into_bullet_point(o: SupervisionOfficer) -> str:
             return f"- {PersonName(**o.full_name).formatted_first_last}, {o.supervision_district} (supervised by {', '.join(PersonName(**s.full_name).formatted_first_last for s in officer_to_supervisors[o])})\n"
 
         def format_supervisor_into_bullet_point(s: SupervisionOfficerSupervisor) -> str:
             return f"- {PersonName(**s.full_name).formatted_first_last}\n"
 
-        product_config = self._get_querier_product_config
+        # Contextual values
         action = "added to" if change_type == RosterChangeType.ADD else "removed from"
+        officer_label = self._get_querier_product_config.supervision_officer_label
 
+        # Build sections
+        officer_section = "".join(map(format_officer_into_bullet_point, officers))
+        supervisor_section = "".join(
+            map(format_supervisor_into_bullet_point, supervisors)
+        )
+
+        # Final message
         return (
-            f"{requester_name} has requested that the following {product_config.supervision_officer_label}(s) "
+            f"{requester_name} has requested that the following {officer_label}(s) "
             f"be {action} the caseload of {target_name}:\n"
-            + "".join(map(format_officer_into_bullet_point, officers))
-            + "\n"
-            + "Other staff affected by this change:\n"
-            + "".join(map(format_supervisor_into_bullet_point, supervisors))
-            + "\n"
-            + "Note from user:\n"
-            + note
+            f"{officer_section}\n"
+            f"Other staff affected by this change:\n"
+            f"{supervisor_section}\n"
+            f"Note from user:\n{note}"
         )
 
     def request_roster_change(
@@ -154,7 +163,7 @@ class RosterTicketService:
         target_supervisor_id: str,
         officer_ids: List[str],
         note: str,
-    ) -> IntercomTicketResponse:
+    ) -> RosterChangeRequestResponseSchema:
         """Creates a roster change request ticket."""
         officer_label = self._get_querier_product_config.supervision_officer_label
         officers = self._fetch_entities(
@@ -188,6 +197,8 @@ class RosterTicketService:
             supervisors,
             officers,
         )
-        title = f"Team {'Addition' if change_type == RosterChangeType.ADD else 'Removal'} Request Submitted"
+        action = "Addition" if change_type == RosterChangeType.ADD else "Removal"
+        title = f"Team {action} Request Submitted"
+        response = self.intercom_api_client.create_ticket(title, description, email)
 
-        return self.intercom_api_client.create_ticket(title, description, email)
+        return RosterChangeRequestResponseSchema(email=email, id=response.id)

@@ -10,11 +10,13 @@ from __future__ import unicode_literals
 
 from snapshottest import Snapshot
 
+
 snapshots = Snapshot()
 
-snapshots[
-    "test_build_ticket_description[add_multiple_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be added to the caseload of Alice Supervisor:
+snapshots["test_request_roster_change[add_multiple_officer] 1"] = {
+    "contacts": [{"email": "requester@example.com"}],
+    "ticket_attributes": {
+        "_default_description_": """Test Requester has requested that the following officer(s) be added to the caseload of Alice Supervisor:
 - Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 - John Officer, District B (supervised by Bob Supervisor)
 
@@ -24,11 +26,16 @@ Other staff affected by this change:
 
 Note from user:
 Add these officers to the caseload.It's imperative that they're added.
-Please speak with admin about this."""
+Please speak with admin about this.""",
+        "_default_title_": "Team Addition Request Submitted",
+    },
+    "ticket_type_id": 1,
+}
 
-snapshots[
-    "test_build_ticket_description[add_single_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be added to the caseload of Alice Supervisor:
+snapshots["test_request_roster_change[add_single_officer] 1"] = {
+    "contacts": [{"email": "requester@example.com"}],
+    "ticket_attributes": {
+        "_default_description_": """Test Requester has requested that the following officer(s) be added to the caseload of Alice Supervisor:
 - Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 
 Other staff affected by this change:
@@ -36,11 +43,16 @@ Other staff affected by this change:
 - Bob Supervisor
 
 Note from user:
-Add this officer, please."""
+Add this officer, please.""",
+        "_default_title_": "Team Addition Request Submitted",
+    },
+    "ticket_type_id": 1,
+}
 
-snapshots[
-    "test_build_ticket_description[remove_multiple_officers] 1"
-] = """Requesting Person has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
+snapshots["test_request_roster_change[remove_multiple_officers] 1"] = {
+    "contacts": [{"email": "requester@example.com"}],
+    "ticket_attributes": {
+        "_default_description_": """Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
 - Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 - John Officer, District B (supervised by Bob Supervisor)
 
@@ -49,11 +61,16 @@ Other staff affected by this change:
 - Bob Supervisor
 
 Note from user:
-Remove these officers from my caseloads."""
+Remove these officers from my caseloads.""",
+        "_default_title_": "Team Removal Request Submitted",
+    },
+    "ticket_type_id": 1,
+}
 
-snapshots[
-    "test_build_ticket_description[remove_single_officer] 1"
-] = """Requesting Person has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
+snapshots["test_request_roster_change[remove_single_officer] 1"] = {
+    "contacts": [{"email": "requester@example.com"}],
+    "ticket_attributes": {
+        "_default_description_": """Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
 - Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 
 Other staff affected by this change:
@@ -62,4 +79,8 @@ Other staff affected by this change:
 
 Note from user:
 Remove this officer from my caseload.
-Thank you!"""
+Thank you!""",
+        "_default_title_": "Team Removal Request Submitted",
+    },
+    "ticket_type_id": 1,
+}
