@@ -72,6 +72,8 @@ locals {
     "roles/datastore.user",
     "roles/datastore.importExportAdmin",
     "roles/storage.objectUser",
+    # Backup manager role
+    "roles/cloudsql.editor"
   ])
 }
 
