@@ -47,7 +47,12 @@ output:
           - $if: $variable(has_sentence_group)
             $then:
               StateSentenceGroup:
-                external_id: OFFENDER_BOOK_ID
+                external_id:
+                  $concat:
+                    $values:
+                      - COURT_INFO_ID
+                      - OFFENDER_BOOK_ID
+                    $separator: "|"
     sentences:
       - StateSentence:
           external_id:
@@ -61,7 +66,12 @@ output:
             # for those sentences.
             $conditional:
               - $if: $variable(has_sentence_group)
-                $then: OFFENDER_BOOK_ID
+                $then:
+                  $concat:
+                    $values:
+                      - COURT_INFO_ID
+                      - OFFENDER_BOOK_ID
+                    $separator: "|"
           sentence_type:
             $enum_mapping:
               $raw_text: sentence_type

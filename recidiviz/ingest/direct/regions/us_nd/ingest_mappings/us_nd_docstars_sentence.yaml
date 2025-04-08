@@ -23,6 +23,7 @@ input_columns:
   SENT_YY: STRING
   SENT_MM: STRING
   RecDate: STRING
+  RECORDCRDATE: STRING
 variables:
   # This field sometimes includes invalid NCIC codes in raw data.
   # If the NCIC code attached to this charge is known, it appears
@@ -98,7 +99,14 @@ output:
                   - "Deferred"
                   - "IC Probation"
                   - "Suspended"
-          imposed_date: PAROLE_FR
+          # Use the RECORDCRDATE as the sentence imposed date when hydrated, since that is when the supervision "case" was entered/imposed.
+          # Fall back to the PAROLE_FR otherwise, since RECORDCRDATE is not hydrated for sentences imposed before the docstars migration.
+          imposed_date:
+            $conditional:
+              - $if:
+                  $not_null: RECORDCRDATE
+                $then: RECORDCRDATE
+              - $else: PAROLE_FR
           parole_possible: $literal_bool(True)
           # If a person is on an interstate compact, this will be the county in ND in
           # which they are supervised.

@@ -44,6 +44,7 @@ docstars_offendercasestable_cleaned AS (
     IF((ot.COUNTY IS NOT NULL AND CAST(ot.COUNTY AS INT64) > 100), NULL, ot.COURT_NUMBER) AS COURT_NUMBER,
     oct_all.DESCRIPTION,
     oct_all.TA_TYPE,
+    DATE(oct_all.PAROLE_FR) AS PAROLE_FR,
     IF(DATE(oct_all.TERM_DATE) > @update_timestamp, NULL, CAST(oct_all.TERM_DATE AS DATETIME)) AS TERM_DATE,
     IF(DATE(oct_all.REV_DATE) > @update_timestamp, NULL, CAST(oct_all.REV_DATE AS DATETIME)) AS REV_DATE,
     CAST(oct_all.RecDate AS DATETIME) AS RecDate,
@@ -74,6 +75,7 @@ all_entries AS (
     -- sorts and partitions in this view.
     IFNULL(COURT_NUMBER, 'NULL') AS COURT_NUMBER,
     DESCRIPTION,
+    PAROLE_FR,
     TA_TYPE,
     TERM_DATE,
     LAG(TERM_DATE) OVER (PARTITION BY SID, CASE_NUMBER, IFNULL(COURT_NUMBER, 'NULL') ORDER BY REV_DATE, TERM_DATE, RecDate) AS PREV_TERM_DATE,
@@ -82,9 +84,29 @@ all_entries AS (
     RecDate,
   FROM docstars_offendercasestable_cleaned
   ),
--- This CTE collects and infers statuses based on the TA_TYPE field and the REV_DATE and 
--- TERM_DATE fields in the raw data.  
+-- This CTE collects and infers the sentence statuses
 dates_and_statuses AS (
+-- Start with the SERVING statuses using the supervision sentence start date PAROLE_FR
+SELECT DISTINCT
+  SID,
+  CASE_NUMBER,
+  COURT_NUMBER,
+  PAROLE_FR AS STATUS_UPDATE_DATETIME,
+  'SERVING' AS STATUS,
+FROM all_entries
+WHERE
+    -- Only hydrate SERVING statuses that are in the past, and occurred before the
+    -- sentence completion/revocation date
+    PAROLE_FR < @update_timestamp
+    AND PAROLE_FR < CASE
+        WHEN PREV_REV_DATE IS NULL AND REV_DATE IS NOT NULL THEN REV_DATE
+        WHEN PREV_TERM_DATE IS NULL AND TERM_DATE IS NOT NULL THEN TERM_DATE
+        ELSE DATE("9999-12-31")
+      END
+
+-- Union in the COMPLETED/REVOKED/SUSPENDED statuses based on the TA_TYPE field and the REV_DATE and
+-- TERM_DATE fields in the raw data
+UNION ALL
 SELECT
   SID,
   CASE_NUMBER, 
@@ -109,15 +131,22 @@ SELECT
     WHEN REV_DATE IS NULL AND TERM_DATE IS NOT NULL AND TA_TYPE = '13' THEN 'SUSPENDED'
     WHEN REV_DATE IS NULL AND TERM_DATE IS NOT NULL AND (TA_TYPE != '13' OR TA_TYPE IS NULL) THEN 'COMPLETED'
     WHEN REV_DATE IS NULL AND TERM_DATE IS NULL AND TA_TYPE IS NULL AND UPPER(DESCRIPTION) = 'PRE-TRIAL' THEN 'PENDING'
-    WHEN REV_DATE IS NULL AND TERM_DATE IS NULL AND TA_TYPE IS NULL AND UPPER(DESCRIPTION) IN ('SUSPENDED', 'DEFERRED') THEN 'SUSPENDED'
-    WHEN REV_DATE IS NULL AND TERM_DATE IS NULL AND TA_TYPE IS NULL AND UPPER(DESCRIPTION) NOT IN ('PRE-TRIAL','DEFERRED','SUSPENDED') THEN 'SERVING'
     -- This is included to map to PRESENT_WITHOUT_INFO, so that we can track how many 
     -- updates are not covered by our logic over time and judge when an update may be 
     -- necessary. It is a protective measure and currently does not appear in the ingest 
     -- view results.
     ELSE 'NO STATUS'
   END AS STATUS
-FROM all_entries),
+FROM all_entries
+-- Only infer a sentence termination status for sentences with an end date
+WHERE (
+  REV_DATE IS NOT NULL
+  OR TERM_DATE IS NOT NULL
+  OR TA_TYPE IS NOT NULL
+)
+-- Pick the earliest record for each sentence and status
+QUALIFY ROW_NUMBER() OVER (PARTITION BY SID, CASE_NUMBER, COURT_NUMBER, STATUS ORDER BY STATUS_UPDATE_DATETIME) = 1
+),
 -- There are 14 cases as of 12/11/2024 that have data entry errors that suggest a person
 -- was revoked or absconded after they were released from supervision. There is also
 -- one case where a person is listed as being revoked on two subsequent days. 
@@ -138,7 +167,7 @@ SELECT DISTINCT
   SID,
   CASE_NUMBER,
   -- Set NULL COURT_NUMBER values to actual NULLs instead of placeholders used for sorting.
-  -- This will enture that sentence external IDs match across views. 
+  -- This will ensure that sentence external IDs match across views.
   IF(COURT_NUMBER = 'NULL', CAST(NULL AS STRING), COURT_NUMBER) AS COURT_NUMBER,
   STATUS_UPDATE_DATETIME,
   STATUS,

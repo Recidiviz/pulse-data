@@ -41,10 +41,15 @@ all_entries AS (
   SELECT DISTINCT 
     bookings.OFFENDER_BOOK_ID,
     SENTENCE_SEQ,
+    bookings.BOOKING_BEGIN_DATE,
+    bookings.BOOKING_END_DATE,
+    sentences.EFFECTIVE_DATE,
+    sentences.START_DATE,
+    sentences.SENTENCE_EXPIRY_DATE,
     ACTIVE_FLAG AS status,
     LAG(ACTIVE_FLAG) OVER (PARTITION BY bookings.OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME)) AS prev_status,
-    LEAD(ACTIVE_FLAG) OVER (PARTITION BY bookings.OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME)) AS next_status,
-    COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME) AS STATUS_UPDATE_DATETIME
+    COALESCE(bookings.MODIFY_DATETIME,bookings.CREATE_DATETIME) AS STATUS_UPDATE_DATETIME,
+    bookings.update_datetime,
   FROM
     {{elite_offenderbookingstable@ALL}} bookings
 -- Inner join these two tables because if a booking does not lead to a sentence, we do not
@@ -64,48 +69,74 @@ all_entries AS (
   -- Filter out 6 rows where CONVICTION_DATE values are not within a reasonable range.
   WHERE CAST(orders.CONVICTION_DATE AS DATETIME) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 ),
--- Preserve only updates that signify the start or end of a sentence, or a change in 
--- the status of the sentence. This removes all rows that do not contain a substantive
--- change in status from the results.
-changed_statuses_only AS (
-SELECT DISTINCT
-    *
-FROM
-  all_entries
-WHERE
-  -- The first status for this booking
-  (prev_status IS NULL AND status IS NOT NULL)
-  -- Any change in status for the booking
-  OR (status != prev_status)
-  -- The final status for the booking
-  OR (prev_status IS NOT NULL AND status IS NULL)
-)
-
-SELECT
-  OFFENDER_BOOK_ID,
-  SENTENCE_SEQ,
-  STATUS_UPDATE_DATETIME,
-  CASE  
-    -- When someone escapes from incarceration, the value of this field becomes 'N' until
-    -- they return. This is the only scenario when an 'N' is followed by a 'Y', so we denote
-    -- it specifically and map the status to SUSPENDED.
-      WHEN status = 'N' and next_status = 'Y' THEN 'ESCAPE'
-      WHEN status = 'N' THEN 'INACTIVE'
-      WHEN status = 'Y' THEN 'ACTIVE'
-      ELSE status
-    END AS status_processed
-FROM (
-  SELECT 
+-- Pull out the initial sentence serving start date from the `all_entries` CTE
+sentence_serving_starts AS (
+  SELECT DISTINCT
     OFFENDER_BOOK_ID,
     SENTENCE_SEQ,
-    STATUS_UPDATE_DATETIME,
-    status,
-    -- We need to reindex the previous and subsequent statuses now that we have removed
-    -- all static updates from the results.
-    LAG(status) OVER (PARTITION BY OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY STATUS_UPDATE_DATETIME) AS prev_status,
-    LEAD(status) OVER (PARTITION BY OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY STATUS_UPDATE_DATETIME) AS next_status
-  FROM changed_statuses_only
+    COALESCE(START_DATE, EFFECTIVE_DATE) AS STATUS_UPDATE_DATETIME,
+    "ACTIVE" AS status_processed,
+  FROM all_entries
+  WHERE
+      -- Drop sentences that have been imposed but not yet started, this can happen for a few reasons:
+      -- sentence start/effective date is set in the near future
+      -- sentence is consecutive and the parent sentence (often a life sentence) has not been completed yet
+      CAST(COALESCE(START_DATE, EFFECTIVE_DATE) AS DATETIME) < update_datetime
+      -- Drop sentence status starts for sentences that were start/completed on the same day or
+      -- are marked as starting after the booking end date, only ingest the COMPLETED status for those sentences
+      AND CAST(COALESCE(START_DATE, EFFECTIVE_DATE) AS DATETIME) < LEAST(CAST(IFNULL(SENTENCE_EXPIRY_DATE, "9999-12-31") AS DATETIME), CAST(IFNULL(BOOKING_END_DATE, "9999-12-31") AS DATETIME))
+),
+-- Pull out the final sentence completion date from the `all_entries` CTE
+sentence_serving_ends AS (
+  SELECT
+    OFFENDER_BOOK_ID,
+    SENTENCE_SEQ,
+    -- Use the SENTENCE_EXPIRY_DATE as the sentence completion date when it comes before the
+    -- BOOKING_END_DATE to account for concurrent sentence sequences with shorter sentence lengths
+    CAST(LEAST(CAST(IFNULL(SENTENCE_EXPIRY_DATE, "9999-12-31") AS DATETIME), CAST(IFNULL(BOOKING_END_DATE, "9999-12-31") AS DATETIME)) AS STRING) AS STATUS_UPDATE_DATETIME,
+    "INACTIVE" AS status_processed,
+  FROM all_entries
+  WHERE LEAST(CAST(IFNULL(SENTENCE_EXPIRY_DATE, "9999-12-31") AS DATETIME), CAST(IFNULL(BOOKING_END_DATE, "9999-12-31") AS DATETIME)) < update_datetime
+  -- Pick the most recently ingested row per sentence for the sentence completion date
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY OFFENDER_BOOK_ID, SENTENCE_SEQ ORDER BY update_datetime DESC) = 1
+),
+-- Pull out the any escape start statuses from the `all_entries` CTE
+escape_starts AS (
+  SELECT DISTINCT
+    OFFENDER_BOOK_ID,
+    SENTENCE_SEQ,
+    escape_start.STATUS_UPDATE_DATETIME,
+    "ESCAPE" AS status_processed,
+  FROM all_entries escape_start
+  LEFT JOIN sentence_serving_ends
+  USING (OFFENDER_BOOK_ID, SENTENCE_SEQ)
+  WHERE status = 'N' AND prev_status = 'Y'
+  -- Do not include escapes that occurred after this sentence sequence was already completed, which can occur when a
+  -- subset of consecutive sentences have finished/expired, but at least 1 is still active
+  AND CAST(escape_start.STATUS_UPDATE_DATETIME AS DATETIME) < CAST(IFNULL(sentence_serving_ends.STATUS_UPDATE_DATETIME, "9999-12-31") AS DATETIME)
+),
+-- Pull out the any escape return statuses from the `all_entries` CTE
+escape_ends AS (
+  SELECT DISTINCT
+    OFFENDER_BOOK_ID,
+    SENTENCE_SEQ,
+    escape_return.STATUS_UPDATE_DATETIME,
+    "ACTIVE" AS status_processed,
+  FROM all_entries escape_return
+  LEFT JOIN sentence_serving_ends
+  USING (OFFENDER_BOOK_ID, SENTENCE_SEQ)
+  WHERE status = 'Y' AND prev_status = 'N'
+  -- Do not include escapes that occurred after this sentence sequence was already completed, which can occur when a
+  -- subset of consecutive sentences have finished/expired, but at least 1 is still active
+  AND CAST(escape_return.STATUS_UPDATE_DATETIME AS DATETIME) < CAST(IFNULL(sentence_serving_ends.STATUS_UPDATE_DATETIME, "9999-12-31") AS DATETIME)
 )
+SELECT * FROM sentence_serving_starts
+UNION ALL
+SELECT * FROM sentence_serving_ends
+UNION ALL
+SELECT * FROM escape_starts
+UNION ALL
+SELECT * FROM escape_ends
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

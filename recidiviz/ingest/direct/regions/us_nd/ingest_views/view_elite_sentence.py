@@ -186,7 +186,7 @@ SELECT DISTINCT
     terms.MONTHS,
     terms.DAYS,
     consecutive_sentences.parent_sentence_external_id_array,
-    (aggs.OFFENDER_BOOK_ID IS NOT NULL) AS has_sentence_group
+    (charges.COURT_INFO_ID IS NOT NULL) AS has_sentence_group
     FROM sentences
     -- Inner join to charge information because we cannot ingest a sentence without 
     -- any charges.
@@ -198,12 +198,6 @@ SELECT DISTINCT
     USING (OFFENDER_BOOK_ID, SENTENCE_SEQ)
     LEFT JOIN life_status
     USING (OFFENDER_BOOK_ID, SENTENCE_SEQ)
-    -- Do not ingest sentences that attach to bookings that are not included in 
-    -- aggregate sentence information. This only applies to 12 sentences as of 11/19/24.
-    -- Storing this in a separate field in the ingest view results will also allow us
-    -- to track the number of sentences to which this caveat applies over time.
-    LEFT JOIN {{elite_offendersentenceaggs}} aggs
-    ON(sentences.OFFENDER_BOOK_ID = REPLACE(REPLACE(aggs.OFFENDER_BOOK_ID,',',''), '.00', ''))
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
