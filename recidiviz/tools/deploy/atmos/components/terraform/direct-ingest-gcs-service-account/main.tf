@@ -17,7 +17,8 @@ resource "google_project_iam_custom_role" "direct-ingest-data-writer-role" {
     "storage.buckets.list",
     "storage.objects.create",
     "storage.objects.get",
-    "storage.objects.list"
+    "storage.objects.list",
+    "storage.objects.delete"
   ]
 }
 
