@@ -1046,6 +1046,7 @@ class AgencySettingType(enum.Enum):
         "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE"
     )
     SECTOR_INCLUDES_EXCLUDES = "SECTOR_INCLUDES_EXCLUDES"
+    STEPPING_UP = "STEPPING_UP"
 
 
 class AgencySetting(JusticeCountsBase):
