@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client has not had a DUI offense for 12 months."""
+"""Describes the spans of time when a TN client has not had a DUI offense in the past 5
+years.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -33,9 +36,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NO_DUI_OFFENSE_IN_PAST_5_YEARS"
-
-_DESCRIPTION = """Describes the spans of time when a TN client has not had a DUI offense for 12 months.
-"""
 
 _QUERY_TEMPLATE = f"""
     WITH dui_offense_cte AS
@@ -72,9 +72,9 @@ _QUERY_TEMPLATE = f"""
     ,
     dedup_cte AS
     /*
-    If a person has more than 1 DUI offense in a 5 month period, they will have duplicate sub-sessions for the period of
+    If a person has more than 1 DUI offense in a 5 year period, they will have duplicate sub-sessions for the period of
     time where there were more than 1 offense. For example, if a person has a offense on Jan 1 and March 1
-    there would be duplicate sessions for the period March 1 - Dec 31 because both DUI offenses are relevant at that time.
+    there would be duplicate sessions for the period starting March 1 because both DUI offenses are relevant at that time.
     We deduplicate below so that we surface the most-recent DUI offense that is relevant at each time. 
     */
     (
@@ -93,7 +93,6 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(latest_dui_offense_date AS latest_dui_offense)) AS reason,
         latest_dui_offense_date,
     FROM dedup_cte
-    
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -101,7 +100,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[

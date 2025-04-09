@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -55,8 +55,8 @@ _QUERY_TEMPLATE = f"""
         supervision_level,
     FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized`
     WHERE state_code = 'US_TN'
-        AND supervision_level IN ('MINIMUM','MEDIUM')
-        AND supervision_level_raw_text NOT IN ('{{exclude_medium}}')
+        AND supervision_level IN ('MINIMUM', 'MEDIUM')
+        AND COALESCE(supervision_level_raw_text, 'UNKNOWN') NOT IN ('{{exclude_medium}}')
     )
     ,
     /*
