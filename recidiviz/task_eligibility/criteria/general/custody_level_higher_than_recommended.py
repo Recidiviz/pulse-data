@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a resident is in a custody level that is higher than the one recommended."""
+"""Describes the spans of time when a resident is in a custody level that is higher than
+the one recommended.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import (
@@ -33,8 +36,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "CUSTODY_LEVEL_HIGHER_THAN_RECOMMENDED"
 
-_DESCRIPTION = """Describes the spans of time when a resident is in a custody level that is higher than the one recommended."""
-
 _QUERY_TEMPLATE = f"""
      -- Lower levels are prioritized lower for deduplication, so they have a higher priority "number"
      -- So if the recommended number is higher than the current number, the recommended custody level is lower
@@ -48,7 +49,7 @@ _QUERY_TEMPLATE = f"""
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
@@ -57,17 +58,17 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="recommended_custody_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Recommended custody level",
             ),
             ReasonsField(
                 name="custody_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Custody level",
             ),
             ReasonsField(
                 name="upcoming_eligibility_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date which client becomes eligible",
+                description="Date when client becomes eligible",
             ),
         ],
     )

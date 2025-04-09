@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has not had a murder conviction."""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -33,9 +34,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NO_MURDER_CONVICTIONS"
-
-_DESCRIPTION = """Describes the spans of time when a TN client has not had a murder conviction.
-"""
 
 _QUERY_TEMPLATE = f"""
     WITH homicide_offense_cte AS 
@@ -99,14 +97,14 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
                 name="latest_homicide_offense_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of latest homicide offense",
             ),
         ],
     )

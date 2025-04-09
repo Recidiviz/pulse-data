@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when the latest CAF assessment for a resident did not have an override."""
+"""Describes spans of time when the latest CAF assessment for a resident in TN did not
+have an override.
+"""
 
 from google.cloud import bigquery
 
@@ -31,8 +33,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_LATEST_CAF_ASSESSMENT_NOT_OVERRIDE"
-
-_DESCRIPTION = """Describes spans of time when the latest CAF assessment for a resident did not have an override."""
 
 _QUERY_TEMPLATE = f"""
     WITH critical_dates AS (
@@ -80,7 +80,7 @@ _QUERY_TEMPLATE = f"""
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         state_code=StateCode.US_TN,
@@ -89,7 +89,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="override_reason",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Override reason",
             ),
         ],
     )

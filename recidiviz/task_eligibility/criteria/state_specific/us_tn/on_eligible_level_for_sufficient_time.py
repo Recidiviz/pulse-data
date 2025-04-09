@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client has been on an eligible supervision level for a sufficient amount of
-time"""
+"""Describes the spans of time when a TN client has been on a qualifying supervision
+level for a sufficient amount of time for Compliant Reporting eligibility.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -35,10 +37,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_ON_ELIGIBLE_LEVEL_FOR_SUFFICIENT_TIME"
-
-_DESCRIPTION = """Describes the spans of time when a TN client has been on an eligible supervision level for a
-sufficient amount of time"""
-
 
 # TODO(#22511) potentially refactor to build off of a general criteria view builder
 _QUERY_TEMPLATE = f"""
@@ -129,33 +127,31 @@ _QUERY_TEMPLATE = f"""
     FROM critical_date_has_passed_spans
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_TN,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        meets_criteria_default=False,
-        sessions_dataset=SESSIONS_DATASET,
-        exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_level",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="eligible_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="start_date_on_eligible_level",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=__doc__,
+    meets_criteria_default=False,
+    sessions_dataset=SESSIONS_DATASET,
+    exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
+    reasons_fields=[
+        ReasonsField(
+            name="eligible_level",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The client's current supervision level",
+        ),
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when individual has (or will have) been at a qualifying level for sufficient time",
+        ),
+        ReasonsField(
+            name="start_date_on_eligible_level",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date from which time has been accrued",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

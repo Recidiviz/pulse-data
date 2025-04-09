@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client is serving sentences for an offense that could potentially make a person
-ineligible for compliant reporting."""
+"""Describes the spans of time when a TN client is serving any sentence(s) for any
+offense(s) that could potentially make them ineligible for Compliant Reporting.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -28,10 +30,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE"
-
-_DESCRIPTION = """Describes the spans of time when a TN client is serving sentences for an offense that could
-potentially make a person ineligible for compliant reporting.
-"""
 
 _QUERY_TEMPLATE = """
     WITH sentence_prep AS 
@@ -78,19 +76,19 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
                 name="ineligible_offenses",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="Disqualifying offenses",
             ),
             ReasonsField(
                 name="ineligible_sentences_expiration_date",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="Expiration dates for sentences for disqualifying offenses",
             ),
         ],
     )

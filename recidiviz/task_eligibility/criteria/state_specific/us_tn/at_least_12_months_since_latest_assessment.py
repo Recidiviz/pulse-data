@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when at least 12 months have passed since a resident's last classification assessment."""
+"""Describes the spans of time when at least 12 months have passed since a TN resident's
+last classification assessment.
+"""
 
 from google.cloud import bigquery
 
@@ -30,9 +32,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_AT_LEAST_12_MONTHS_SINCE_LATEST_ASSESSMENT"
-
-_DESCRIPTION = """Describes the spans of time when at least 12 months have passed since a resident's last
-classification assessment."""
 
 _QUERY_TEMPLATE = f"""
     WITH assessment_sessions_cte AS
@@ -98,14 +97,14 @@ _QUERY_TEMPLATE = f"""
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     state_code=StateCode.US_TN,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     meets_criteria_default=True,
     reasons_fields=[
         ReasonsField(
             name="most_recent_assessment_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="#TODO(#29059): Add reasons field description",
+            description="Date of most recent assessment",
         ),
         ReasonsField(
             name="assessment_due_date",

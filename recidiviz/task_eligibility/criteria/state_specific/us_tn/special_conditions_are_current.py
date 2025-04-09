@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -213,27 +213,25 @@ _QUERY_TEMPLATE = f"""
 
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        state_code=StateCode.US_TN,
-        meets_criteria_default=True,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_TN,
+    meets_criteria_default=True,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
+    exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
+    reasons_fields=[
+        ReasonsField(
+            name="spe_note_due_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Due date for next contact note related to special conditions",
         ),
-        exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
-        reasons_fields=[
-            ReasonsField(
-                name="spe_note_due_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+    ],
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

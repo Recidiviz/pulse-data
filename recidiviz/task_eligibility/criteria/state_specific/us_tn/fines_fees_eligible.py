@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client either has a low fines/fees balance, has a permanent exemption, or
-has made regular payments."""
+"""Describes the spans of time when a TN client either has a low fines/fees balance, has
+a permanent exemption, or has made regular payments.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -39,9 +41,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_FINES_FEES_ELIGIBLE"
-
-_DESCRIPTION = """Describes the spans of time when a TN client either has a low fines/fees balance, has a permanent
-exemption, or has made regular payments."""
 
 _QUERY_TEMPLATE = f"""
     WITH combine_views AS (
@@ -104,31 +103,29 @@ _QUERY_TEMPLATE = f"""
         1,2,3,4
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_TN,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
-        reasons_fields=[
-            ReasonsField(
-                name="amount_owed",
-                type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="consecutive_monthly_payments",
-                type=bigquery.enums.StandardSqlTypeNames.INT64,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="current_exemptions",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=__doc__,
+    criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
+    reasons_fields=[
+        ReasonsField(
+            name="amount_owed",
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
+            description="Amount that a client owes in fines/fees",
+        ),
+        ReasonsField(
+            name="consecutive_monthly_payments",
+            type=bigquery.enums.StandardSqlTypeNames.INT64,
+            description="Number of consecutive monthly payments that a client has made",
+        ),
+        ReasonsField(
+            name="current_exemptions",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Reasons that a client has a permanent exemption from paying fines/fees",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

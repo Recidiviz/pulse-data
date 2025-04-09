@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client is not eligible due to being permanently rejected from
-compliant reporting."""
+"""Describes the spans of time when a TN client has been permanently rejected from
+Compliant Reporting.
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
@@ -30,10 +32,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NOT_PERMANENTLY_REJECTED_FROM_COMPLIANT_REPORTING"
-
-_DESCRIPTION = """Describes the spans of time when a TN client is not eligible due to being permanently rejected from
-compliant reporting.
-"""
 
 _QUERY_TEMPLATE = """
     WITH cte AS 
@@ -78,7 +76,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_TN,
@@ -89,12 +87,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="contact_code",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Contact-note type for latest permanent rejection",
             ),
             ReasonsField(
                 name="contact_code_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of contact note with latest permanent rejection",
             ),
         ],
     )

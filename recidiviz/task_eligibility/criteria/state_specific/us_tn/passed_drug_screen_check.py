@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client has passed the drug screen check."""
+"""Describes the spans of time when a TN client has passed the drug screen check for
+Compliant Reporting.
+
+Identifies when the following is true for a TN client:
+- For people considered “low drug risk”:
+    - One negative screen in the last 12 months
+    - At least 6 months since most recent positive test
+    - Latest test is negative
+- For people considered “high drug risk”:
+    - Two negative screens in the last 12 months
+    - At least 12 months since most recent positive test
+    - Latest test is negative
+"""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -45,17 +58,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_PASSED_DRUG_SCREEN_CHECK"
-
-_DESCRIPTION = """Describes the spans of time when a TN client has the following:
-- For people considered “low drug risk”
-    - One negative screen in the last 12 months
-    - At least 6 months since most recent positive test
-    - Latest test is negative
-- For people considered “high drug risk”
-    - Two negative screens in the last 12 months
-    - At least 12 months since most recent positive test
-    - Latest test is negative
-"""
 
 _QUERY_TEMPLATE = f"""
     WITH combine_views AS (
@@ -255,43 +257,41 @@ _QUERY_TEMPLATE = f"""
     FROM grouped
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_TN,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        criteria_dataset=has_at_least_1_negative_drug_test_past_year_builder.dataset_id,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=False,
-        reasons_fields=[
-            ReasonsField(
-                name="alc_drug_need_level",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="negative_drug_screen_history_array",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="most_recent_positive_test_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="latest_drug_screen_result",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-            ReasonsField(
-                name="latest_drug_screen_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=__doc__,
+    criteria_dataset=has_at_least_1_negative_drug_test_past_year_builder.dataset_id,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    meets_criteria_default=False,
+    reasons_fields=[
+        ReasonsField(
+            name="alc_drug_need_level",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Latest assessed need level for alcohol/drugs",
+        ),
+        ReasonsField(
+            name="negative_drug_screen_history_array",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Array that contains dates and results of all negative drug screens within the relevant lookback period",
+        ),
+        ReasonsField(
+            name="most_recent_positive_test_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date of latest positive drug screen",
+        ),
+        ReasonsField(
+            name="latest_drug_screen_result",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="Result of latest drug screen",
+        ),
+        ReasonsField(
+            name="latest_drug_screen_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date of latest drug screen",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

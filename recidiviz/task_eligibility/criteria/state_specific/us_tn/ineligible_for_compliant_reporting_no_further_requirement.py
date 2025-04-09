@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,13 +33,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_INELIGIBLE_FOR_COMPLIANT_REPORTING_NO_FURTHER_REQUIREMENT"
-
-_DESCRIPTION = """
-Describes the spans of time when a TN client may be eligible either with discretion or almost-eligible
- for a required criteria. This criteria is true if and only if a person is not already eligible without discretion
- or further action/requirement
-"""
-
 
 _QUERY_TEMPLATE = """
     SELECT
@@ -85,7 +78,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_TN
         ),
@@ -93,7 +86,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="ineligible_criteria",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="Criteria not met for Compliant Reporting",
             ),
         ],
     )

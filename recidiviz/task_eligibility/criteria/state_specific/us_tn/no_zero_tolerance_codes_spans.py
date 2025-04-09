@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ within their sentence span. Probation clients with zero-tolerance codes recorded
 likelihood of missing ingested sentencing data in TN. Parole clients are excluded as they do not
 have missing sentence data issues.
 """
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
@@ -39,12 +40,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NO_ZERO_TOLERANCE_CODES_SPANS"
-
-_DESCRIPTION = """Describes the spans of time when a TN client on Probation has no zero-tolerance codes recorded
-within their sentence span. Probation clients with zero-tolerance codes recorded have a high
-likelihood of missing ingested sentencing data in TN. Parole clients are excluded as they do not
-have missing sentence data issues.
-"""
 
 _QUERY_TEMPLATE = f"""
     -- TODO(#38294) Update this to use sentence serving periods
@@ -178,14 +173,14 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         reasons_fields=[
             ReasonsField(
                 name="zero_tolerance_code_dates",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="#TODO(#29059): Add reasons field description",
+                description="Dates of zero-tolerance codes",
             ),
         ],
     )

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time during which someone in TN
-is supervised at a stricter level than the risk assessment policy recommends.
+"""Describes the spans of time during which someone in TN is supervised at a stricter
+level than the risk-assessment policy recommends.
 """
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -37,10 +38,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL"
 
-_DESCRIPTION = """Describes the spans of time during which someone in TN
-is supervised at a stricter level than the risk assessment policy recommends.
-"""
-
 _QUERY_TEMPLATE = f"""
     WITH supervision_and_assessments AS (
       SELECT 
@@ -54,7 +51,8 @@ _QUERY_TEMPLATE = f"""
         assessment_level_raw_text,
         assessment_date,
       FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
-      WHERE assessment_type = "STRONG_R"
+      WHERE state_code='US_TN'
+        AND assessment_type = "STRONG_R"
     
       UNION ALL
     
@@ -70,7 +68,8 @@ _QUERY_TEMPLATE = f"""
         NULL AS assessment_date,
         --TODO(#20035): Use supervision_level_raw_text_sessions when deduping is consistent across views 
       FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-      WHERE compartment_level_1 = 'SUPERVISION'
+      WHERE state_code='US_TN'
+        AND compartment_level_1 = 'SUPERVISION'
     ),
     {create_sub_sessions_with_attributes('supervision_and_assessments')}
     , 
@@ -132,7 +131,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
         exclude_high="', '".join(EXCLUDED_HIGH_RAW_TEXT),
@@ -140,17 +139,17 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="supervision_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Supervision level",
             ),
             ReasonsField(
                 name="assessment_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="#TODO(#29059): Add reasons field description",
+                description="Assessed risk level",
             ),
             ReasonsField(
                 name="latest_assessment_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="#TODO(#29059): Add reasons field description",
+                description="Date of latest risk assessment",
             ),
         ],
     )
