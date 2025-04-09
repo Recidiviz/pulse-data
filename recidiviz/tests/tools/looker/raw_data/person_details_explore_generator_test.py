@@ -21,7 +21,6 @@ from types import ModuleType
 from typing import List
 
 import attr
-from freezegun import freeze_time
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -410,7 +409,6 @@ class LookMLExploreTest(PersonDetailsLookMLGeneratorTest):
     def generator_modules(cls) -> List[ModuleType]:
         return [person_details_view_generator, person_details_explore_generator]
 
-    @freeze_time("2000-06-30")
     def test_generate_lookml_explores(self) -> None:
         all_views = _generate_state_raw_data_views()
         self.generate_files(

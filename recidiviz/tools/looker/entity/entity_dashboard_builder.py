@@ -47,7 +47,7 @@ from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
-from recidiviz.tools.looker.state.state_dataset_dashboard_element_providers import (
+from recidiviz.tools.looker.entity.state_dataset_dashboard_element_providers import (
     get_elements_provider,
 )
 

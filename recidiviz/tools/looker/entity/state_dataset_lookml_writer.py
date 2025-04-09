@@ -27,6 +27,7 @@ import argparse
 import os
 from types import ModuleType
 
+import recidiviz
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
@@ -44,6 +45,7 @@ from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.constants import (
     DASHBOARDS_DIR,
     EXPLORES_DIR,
+    GENERATED_DIR,
     LOOKER_REPO_NAME,
     VIEWS_DIR,
 )
@@ -121,7 +123,8 @@ def _parse_arguments() -> argparse.Namespace:
         "--looker_repo_root",
         help="Specifies local path to the Looker repo, where all files will be saved to",
         type=str,
-        required=True,
+        required=False,
+        default=None,
     )
 
     return parser.parse_args()
@@ -130,12 +133,19 @@ def _parse_arguments() -> argparse.Namespace:
 if __name__ == "__main__":
     args = _parse_arguments()
 
-    if os.path.basename(args.looker_repo_root).lower() != LOOKER_REPO_NAME:
-        raise ValueError(
-            f"Expected looker_repo_root to be at the root of [{LOOKER_REPO_NAME}] repo, but instead got [{args.looker_repo_root}]"
+    # TODO(#36190) Remove option to write directly to looker repo
+    # in favor of copying generated files from tools/looker/generated
+    if args.looker_repo_root:
+        if os.path.basename(args.looker_repo_root).lower() != LOOKER_REPO_NAME:
+            raise ValueError(
+                f"Expected looker_repo_root to be at the root of [{LOOKER_REPO_NAME}] repo, but instead got [{args.looker_repo_root}]"
+            )
+        prompt_for_confirmation(
+            f"Warning: .lkml files will be deleted/overwritten in {args.looker_repo_root}\nProceed?"
         )
-    prompt_for_confirmation(
-        f"Warning: .lkml files will be deleted/overwritten in {args.looker_repo_root}\nProceed?"
+
+    output_dir = args.looker_repo_root or os.path.join(
+        os.path.dirname(recidiviz.__file__), GENERATED_DIR
     )
 
     for dataset, module in [
@@ -143,5 +153,5 @@ if __name__ == "__main__":
         (NORMALIZED_STATE_DATASET, normalized_entities),
     ]:
         write_lookml_files(
-            looker_dir=args.looker_repo_root, dataset_id=dataset, entities_module=module
+            looker_dir=output_dir, dataset_id=dataset, entities_module=module
         )

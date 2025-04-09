@@ -19,8 +19,6 @@
 from types import ModuleType
 from typing import List
 
-from freezegun import freeze_time
-
 from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
     PersonDetailsLookMLGeneratorTest,
 )
@@ -51,7 +49,6 @@ class LookMLDashboardTest(PersonDetailsLookMLGeneratorTest):
             person_details_dashboard_generator,
         ]
 
-    @freeze_time("2000-06-30")
     def test_generate_lookml_dashboards(self) -> None:
         all_views = _generate_state_raw_data_views()
         all_explores = _generate_all_state_explores(all_views)

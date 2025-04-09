@@ -17,12 +17,11 @@
 """Utility functions shared by classes modeling LookML files"""
 
 import os
-from datetime import date
 
 import recidiviz
 from recidiviz.utils.string import StrictStringFormatter
 
-FILE_TEMPLATE = """# This file was automatically generated using a pulse-data script on {date_str}.
+FILE_TEMPLATE = """# This file was automatically generated using a pulse-data script.
 # To regenerate, see `{script_repo_relative_path}`.
 
 {file_body}
@@ -37,7 +36,6 @@ def write_lookml_file(
     header indicating the date and script source of the auto-generated file.
     The input file name must include the .lkml extension, such as .view.lkml
     """
-    date_str = date.today().isoformat()
     script_repo_relative_path = os.path.join(
         "recidiviz",
         os.path.relpath(source_script_path, os.path.dirname(recidiviz.__file__)),
@@ -52,7 +50,6 @@ def write_lookml_file(
     ) as file:
         file_text = StrictStringFormatter().format(
             FILE_TEMPLATE,
-            date_str=date_str,
             script_repo_relative_path=script_repo_relative_path,
             file_body=file_body,
         )

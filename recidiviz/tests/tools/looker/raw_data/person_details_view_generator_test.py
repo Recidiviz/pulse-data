@@ -18,8 +18,6 @@
 from types import ModuleType
 from typing import List
 
-from freezegun import freeze_time
-
 from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
     PersonDetailsLookMLGeneratorTest,
 )
@@ -36,7 +34,6 @@ class LookMLViewTest(PersonDetailsLookMLGeneratorTest):
     def generator_modules(cls) -> List[ModuleType]:
         return [person_details_view_generator]
 
-    @freeze_time("2000-06-30")
     def test_generate_lookml_views(self) -> None:
         self.generate_files(
             function_to_test=generate_lookml_views,

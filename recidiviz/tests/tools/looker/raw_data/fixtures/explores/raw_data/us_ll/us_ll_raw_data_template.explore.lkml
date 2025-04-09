@@ -1,4 +1,4 @@
-# This file was automatically generated using a pulse-data script on 2000-06-30.
+# This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_explore_generator.py`.
 
 explore: us_ll_raw_data_template {
