@@ -401,6 +401,7 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
                 {placeholder_columns_query_string},
                 DATE("{MAGIC_START_DATE}") AS assignment_date,
                 CAST(NULL AS DATE) AS end_date_exclusive,
+                FALSE AS assignment_is_first_day_in_population,
         )"""
 
     return f"""
@@ -409,6 +410,7 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
         {shared_columns_string},
         assignment_date,
         end_date_exclusive AS end_date,
+        assignment_is_first_day_in_population,
         CONCAT({primary_columns_str}) AS unit_of_analysis,
     FROM
         {source_table}
@@ -470,6 +472,7 @@ FROM (
         state_code, person_id,
         start_date AS assignment_date,
         end_date_exclusive AS end_date,
+        assignment_is_first_day_in_population,
         CONCAT(state_code, person_id) AS unit_of_analysis,
     FROM
         `sessions.system_sessions_materialized`
@@ -598,7 +601,7 @@ assignment_sessions AS (
     SELECT * FROM ${{{assignment_sessions_table_name}.SQL_TABLE_NAME}}
 )
 SELECT
-    *,
+    * EXCEPT(assignment_is_first_day_in_population),
 {output_column_clauses_query_fragment}FROM
     time_periods
 JOIN
