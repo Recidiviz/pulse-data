@@ -29,7 +29,6 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
 from recidiviz.calculator.query.state.views.outliers.utils import (
     most_recent_staff_attrs_cte,
 )
-from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,7 +43,6 @@ def query_template() -> str:
     """Creates a query to identify supervision officers in Insights"""
     state_queries = []
     for state in get_outliers_enabled_states_for_bigquery():
-        config = get_outliers_backend_config(state)
         state_queries.append(
             f"""
     SELECT
@@ -62,9 +60,6 @@ def query_template() -> str:
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
         assignment.earliest_person_assignment_date,
-        -- The include_in_outcomes flag will demarcate which officers should be included 
-        -- when calculating metric benchmarks and outliers in child product views
-        {f"{config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else "TRUE"} as include_in_outcomes
     FROM (
         -- A supervision officer in the Insights product is anyone that has open session 
         -- in supervision_officer_sessions, in which they are someone's supervising officer 
@@ -129,7 +124,6 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "supervision_district",
         "specialized_caseload_type",
         "earliest_person_assignment_date",
-        "include_in_outcomes",
     ],
 )
 

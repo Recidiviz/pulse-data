@@ -98,8 +98,6 @@ class SupervisionOfficer(PersonBase, InsightsBase):
     specialized_caseload_type = Column(String, nullable=True)
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date = Column(Date, nullable=True)
-    # Indicates whether this officer is included in outcomes calculations
-    include_in_outcomes = Column(Boolean)
 
 
 class SupervisionOfficerSupervisor(PersonBase, InsightsBase):
@@ -159,8 +157,6 @@ class SupervisionOfficerMetric(MetricBase, InsightsBase):
     category_type = Column(String, primary_key=True)
     # Caseload category of the officer within category_type during the period during which this metric was measured
     caseload_category = Column(String)
-    # Indicates whether this officer is included in outcomes calculations
-    include_in_outcomes = Column(Boolean)
 
     __tableargs__ = (
         ForeignKeyConstraint(

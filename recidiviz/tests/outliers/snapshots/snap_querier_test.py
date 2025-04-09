@@ -52,7 +52,7 @@ snapshots[
         "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='12', middle_names='', name_suffix=''), external_id='12', pseudonymized_id='officerhash12', supervisor_external_id='105', supervisor_external_ids=['105'], district=None, email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='13', middle_names='', name_suffix=''), external_id='13', pseudonymized_id='officerhash13', supervisor_external_id='105', supervisor_external_ids=['105'], district=None, email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='13', middle_names='', name_suffix=''), external_id='13', pseudonymized_id='officerhash13', supervisor_external_id='105', supervisor_external_ids=['105'], district=None, email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
     ),
 ]
 

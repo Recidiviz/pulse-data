@@ -345,7 +345,6 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "value_type",
         "category_type",
         "caseload_category",
-        "include_in_outcomes",
     ],
 )
 
