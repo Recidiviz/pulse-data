@@ -921,7 +921,6 @@ def get_admin_blueprint(
                 agency=agency,
                 agency_metric_updates=metric_interface,
                 user_account=user,
-                replace_fields={"dimension_to_other_sub_dimension_to_enabled_status"},
             )
 
         current_session.commit()

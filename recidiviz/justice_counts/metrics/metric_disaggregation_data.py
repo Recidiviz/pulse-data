@@ -548,6 +548,10 @@ class MetricAggregatedDimensionData:
         dimension_enum_value_to_includes_excludes_member_to_setting = {}
         dimension_to_includes_excludes_configured_status = {}
         dimension_to_contexts = {}
+        dimension_to_other_sub_dimension_to_enabled_status: Dict[
+            DimensionBase, Dict[str, Optional[bool]]
+        ] = {}
+
         for dim in json.get("dimensions", []):
             dimension_key = dim["key"]
             # First, process the settings (i.e. the includes excludes)
@@ -577,6 +581,24 @@ class MetricAggregatedDimensionData:
             ] = ConfigurationStatus.from_json(
                 dim.get("is_dimension_includes_excludes_configured")
             )
+
+            for sub_dimension in dim.get("sub_dimensions", []):
+                # Each sub-dimension will be in the format:
+                # {"name": "Sub-Dimension Label", "enabled": True or False or None}
+                # This loop builds or updates the `dimension_to_other_sub_dimension_to_enabled_status`
+                # mapping for the given dimension key.
+                dimension_enum = dimension_class(dimension_key)  # type: ignore[abstract]
+                if (
+                    dimension_enum
+                    not in dimension_to_other_sub_dimension_to_enabled_status
+                ):
+                    dimension_to_other_sub_dimension_to_enabled_status[
+                        dimension_enum
+                    ] = {}
+
+                dimension_to_other_sub_dimension_to_enabled_status[dimension_enum][
+                    sub_dimension["name"]
+                ] = sub_dimension["enabled"]
 
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
@@ -628,6 +650,7 @@ class MetricAggregatedDimensionData:
             contexts=disaggregation_contexts,
             is_breakdown_configured=is_breakdown_configured,
             dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
+            dimension_to_other_sub_dimension_to_enabled_status=dimension_to_other_sub_dimension_to_enabled_status,
         )
 
     ### To/From JSON Helpers ###
@@ -666,6 +689,16 @@ class MetricAggregatedDimensionData:
                     ),
                 }
                 json["contexts"] = []
+                if (
+                    dimension in self.dimension_to_other_sub_dimension_to_enabled_status
+                    and is_v2 is False
+                    and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
+                ):
+                    json["sub_dimensions"] = dict(
+                        self.dimension_to_other_sub_dimension_to_enabled_status[
+                            dimension
+                        ].items()
+                    )
                 if dimension_to_contexts is not None:
                     # contexts we expect for this dimension, according to its definition.
                     # For OTHER and UNKNOWN contexts, this should always be a singleton list

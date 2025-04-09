@@ -27,6 +27,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricInterface,
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.utils.constants import REPLACE_FIELDS
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -59,7 +60,6 @@ def handle_invariants(metric_interface_json: Dict[str, Any]) -> Dict[str, Any]:
 def apply_updates(
     original: Dict[str, Any],
     updates: Dict[str, Any],
-    replace_fields: Optional[Set[str]] = None,
 ) -> Dict[str, Any]:
     """
     Recursively updates the 'original' with the values from 'updates'. Does not
@@ -75,13 +75,13 @@ def apply_updates(
     - updates (json): The updates to apply. Must also be formatted as a storage json.
     """
     for key, value in updates.items():
-        if replace_fields and key in replace_fields:
+        if key in REPLACE_FIELDS:
             # If `key` is not in `original`, we add the full key-value pair from `updates`
             # to `original` as-is. This applies regardless of whether `value` is a
             # dictionary or a primitive value.
             original[key] = value
         elif isinstance(value, dict) and key in original:
-            apply_updates(original[key], value, replace_fields)
+            apply_updates(original[key], value)
         elif value is not None:
             original[key] = value
     return original
@@ -112,7 +112,6 @@ class MetricSettingInterface:
         agency: schema.Agency,
         agency_metric_updates: MetricInterface,
         user_account: Optional[schema.UserAccount] = None,
-        replace_fields: Optional[Set[str]] = None,
     ) -> None:
         """Overwrite an agency's metric setting with the given metric interface."""
 
@@ -134,7 +133,8 @@ class MetricSettingInterface:
             # apply_updates returns.
             existing_setting.metric_interface = handle_invariants(
                 apply_updates(
-                    deepcopy(existing_setting.metric_interface), updates, replace_fields
+                    deepcopy(existing_setting.metric_interface),
+                    updates,
                 )
             )
             existing_setting.last_updated = datetime.datetime.now(
@@ -169,7 +169,6 @@ class MetricSettingInterface:
         agency: schema.Agency,
         agency_metric_updates: MetricInterface,
         user_account: Optional[schema.UserAccount] = None,
-        replace_fields: Optional[Set[str]] = None,
     ) -> None:
         """Add or update an agency's metric setting with the given metric interface.
 
@@ -224,7 +223,6 @@ class MetricSettingInterface:
             agency=agency,
             agency_metric_updates=agency_metric_updates,
             user_account=user_account,
-            replace_fields=replace_fields,
         )
 
     @staticmethod

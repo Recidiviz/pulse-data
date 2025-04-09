@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts MetricSettingInterface."""
 
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -445,3 +446,87 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                 metric_settings.updates, funding_metric.to_storage_json()
             )
             self.assertEqual(metric_settings.user_account_id, user.id)
+
+    def test_update_other_sub_dimensions(self) -> None:
+        """Test that updating other sub-dimensions in a metric setting correctly overwrites
+        previous values, including replacing None with False.
+        """
+        agency = self.test_schema_objects.test_agency_A
+        reported_crime_metric = self.test_schema_objects.get_reported_crime_metric()
+        user = self.test_schema_objects.test_user_A
+
+        with SessionFactory.using_database(self.database_key) as session:
+            # Add agency and user to the database
+            session.add_all([agency, user])
+            session.commit()
+            session.refresh(agency)
+            session.refresh(user)
+
+            # Set initial sub-dimension settings
+            reported_crime_metric.aggregated_dimensions[
+                0
+            ].dimension_to_other_sub_dimension_to_enabled_status[OffenseType.OTHER] = {
+                "One Sub-Dimension": None,
+                "Two Sub-Dimension": True,
+            }
+
+            # First insert
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric_updates=reported_crime_metric,
+                user_account=user,
+            )
+            session.commit()
+
+            # Confirm initial values
+            agency_metrics = MetricSettingInterface.get_agency_metric_interfaces(
+                session=session, agency=agency
+            )
+            updated_funding_dim = None
+            for metric in agency_metrics:
+                if metric.key == reported_crime_metric.key:
+                    updated_funding_dim = metric.aggregated_dimensions[0]
+                    self.assertDictEqual(
+                        updated_funding_dim.dimension_to_other_sub_dimension_to_enabled_status,
+                        {
+                            OffenseType.OTHER: {
+                                "One Sub-Dimension": None,
+                                "Two Sub-Dimension": True,
+                            }
+                        },
+                    )
+
+            # Update sub-dimensions
+            reported_crime_metric.aggregated_dimensions[
+                0
+            ].dimension_to_other_sub_dimension_to_enabled_status[OffenseType.OTHER] = {
+                "One Sub-Dimension": False,
+                "Two Sub-Dimension": True,
+            }
+
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric_updates=reported_crime_metric,
+                user_account=user,
+            )
+            session.commit()
+
+            # Confirm update
+            agency_metrics = MetricSettingInterface.get_agency_metric_interfaces(
+                session=session, agency=agency
+            )
+            for metric in agency_metrics:
+                if metric.key == reported_crime_metric.key:
+                    updated_funding_dim = metric.aggregated_dimensions[0]
+
+                    self.assertDictEqual(
+                        updated_funding_dim.dimension_to_other_sub_dimension_to_enabled_status,
+                        {
+                            OffenseType.OTHER: {
+                                "One Sub-Dimension": False,
+                                "Two Sub-Dimension": True,
+                            }
+                        },
+                    )

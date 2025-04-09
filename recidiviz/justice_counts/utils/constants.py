@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Contains Justice Counts constants """
+"""Contains Justice Counts constants"""
 import enum
 import re
 
@@ -32,6 +32,8 @@ MAXIMUM_CSV_FILE_NAME_LENGTH = 31
 
 # Unsubscribe group ID number for SendGrid for Justice Counts
 UNSUBSCRIBE_GROUP_ID = 26272
+
+REPLACE_FIELDS = {"dimension_to_other_sub_dimension_to_enabled_status"}
 
 METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY = {
     "PROSECUTION_CASES REFERRED": "PROSECUTION_CASES_REFERRED",

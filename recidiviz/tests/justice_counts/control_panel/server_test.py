@@ -1768,6 +1768,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 .dimension_to_contexts[StaffType.UNKNOWN][0]
                 .value,
             )
+            self.assertListEqual(
+                [
+                    {"name": "Dimension 1", "enabled": True},
+                    {"name": "Dimension 2", "enabled": False},
+                    {"name": "Dimension 3", "enabled": False},
+                ],
+                [
+                    {"name": a[0], "enabled": a[1]}
+                    for a in key_to_metric_interfaces["PRISONS_TOTAL_STAFF"]
+                    .aggregated_dimensions[0]
+                    .dimension_to_other_sub_dimension_to_enabled_status[StaffType.OTHER]
+                    .items()
+                ],
+            )
 
             # GET request
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
@@ -1828,6 +1842,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "is_dimension_includes_excludes_configured"
                 ],
                 None,
+            )
+            self.assertEqual(
+                {
+                    "Dimension 1": True,
+                    "Dimension 2": False,
+                    "Dimension 3": False,
+                },
+                response_json[2]["disaggregations"][0]["dimensions"][4][
+                    "sub_dimensions"
+                ],
             )
 
     def test_update_metric_settings(self) -> None:
@@ -1890,6 +1914,21 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ].includes_excludes_member_to_setting.get(
                 PrisonStaffIncludesExcludes.INTERN
             )
+
+            self.assertListEqual(
+                [
+                    {"name": "Dimension 1", "enabled": True},
+                    {"name": "Dimension 2", "enabled": False},
+                    {"name": "Dimension 3", "enabled": False},
+                ],
+                [
+                    {"name": a[0], "enabled": a[1]}
+                    for a in key_to_metric_interfaces["PRISONS_TOTAL_STAFF"]
+                    .aggregated_dimensions[0]
+                    .dimension_to_other_sub_dimension_to_enabled_status[StaffType.OTHER]
+                    .items()
+                ],
+            )
             self.assertIsNotNone(intern_setting)
             if intern_setting:
                 self.assertEqual("Yes", intern_setting.value)
@@ -1934,6 +1973,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ].includes_excludes_member_to_setting.get(
                 PrisonStaffIncludesExcludes.INTERN
             )
+
+            self.assertDictEqual(
+                {},
+                key_to_metric_interfaces["PRISONS_TOTAL_STAFF"]
+                .aggregated_dimensions[0]
+                .dimension_to_other_sub_dimension_to_enabled_status,
+            )
+
             self.assertIsNotNone(intern_setting)
             if intern_setting:
                 self.assertEqual("No", intern_setting.value)

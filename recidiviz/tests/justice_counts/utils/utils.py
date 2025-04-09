@@ -682,6 +682,15 @@ class JusticeCountsSchemaTestObjects:
                                             "value": "Other user entered text...",
                                         }
                                     ],
+                                    "sub_dimensions": (
+                                        [
+                                            {"name": "Dimension 1", "enabled": True},
+                                            {"name": "Dimension 2", "enabled": False},
+                                            {"name": "Dimension 3", "enabled": False},
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                                 {
                                     "key": StaffType.UNKNOWN.value,
@@ -866,6 +875,7 @@ class JusticeCountsSchemaTestObjects:
                         OffenseType.DRUG: None,
                         OffenseType.PERSON: None,
                         OffenseType.PROPERTY: None,
+                        OffenseType.PUBLIC_ORDER: None,
                         OffenseType.UNKNOWN: None,
                         OffenseType.OTHER: None,
                     },
@@ -873,6 +883,7 @@ class JusticeCountsSchemaTestObjects:
                         OffenseType.DRUG: True,
                         OffenseType.PERSON: True,
                         OffenseType.PROPERTY: True,
+                        OffenseType.PUBLIC_ORDER: True,
                         OffenseType.UNKNOWN: True,
                         OffenseType.OTHER: True,
                     },
