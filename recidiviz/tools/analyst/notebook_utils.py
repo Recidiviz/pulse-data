@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,21 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Utilities for (DADS) folks working in jupyter notebooks.
+"""Utilities for (DADS) folks working in Jupyter notebooks.
 
 In a cell in your notebook, run:
 
-%run {path}/pulse-data/recidiviz/tools/analyst/notebook_utils.py
+    %run "{path}/pulse-data/recidiviz/tools/analyst/notebook_utils.py"
 
-For a typical file structure with both pulse-data and recidiviz-research repos
-in the same parent folder, this will look like:
+For notebooks in `pulse-data`, this will look something like:
+    %run "../../../tools/analyst/notebook_utils.py"
 
-%run ../../pulse-data/recidiviz/tools/analyst/notebook_utils.py
+For notebooks in `recidiviz-research`, given a typical file structure with the
+`pulse-data` and `recidiviz-research` repositories in the same parent folder, this
+will look something like:
+    %run "../../../pulse-data/recidiviz/tools/analyst/notebook_utils.py"
 """
 
+# TODO(#40735): Remove reference to `recidiviz-research` in the above docstring once
+# that repository is deleted and we've fully migrated to `pulse-data`.
+
 # pylint: disable=W0611, W0614  # unused imports
-# pylint: disable=C0411  # import order
+# pylint: disable=C0411  # wrong-import-order
 # pylint: disable=C0413  # wrong-import-position
 
 
@@ -50,12 +55,6 @@ import seaborn as sns
 from IPython import get_ipython
 from IPython.display import HTML, display
 from tqdm.notebook import tqdm
-
-# adds pulse-data repo to path
-# note that file structure must be:
-# parent folder:
-#  - pulse-data repo
-#  - recidiviz-research repo
 
 # get path of this file
 current_file_path = os.path.dirname(__file__)
