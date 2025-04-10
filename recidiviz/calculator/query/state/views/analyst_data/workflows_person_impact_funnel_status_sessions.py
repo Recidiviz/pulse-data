@@ -226,6 +226,7 @@ FROM
                 ("marked_ineligible", bigquery.enums.StandardSqlTypeNames.BOOL),
                 ("denial_reasons", bigquery.enums.StandardSqlTypeNames.STRING),
             ],
+            truncate_spans_at_reset_dates=False,
         ),
         # Marked Submitted
         FunnelStatusSpanQueryBuilder(
@@ -248,6 +249,7 @@ WHERE
             status_cols_by_type=[
                 ("in_progress", bigquery.enums.StandardSqlTypeNames.BOOL)
             ],
+            truncate_spans_at_reset_dates=False,
         ),
         # Task Completed
         FunnelStatusEventQueryBuilder(
