@@ -37,7 +37,7 @@ persistent=yes
 load-plugins=recidiviz.tools.lint.pylint_checkers
 
 # Whitelists trusted C, Python extensions outside of the standard library.
-extension-pkg-whitelist=lxml,mypy,numpy
+extension-pkg-whitelist=mypy,numpy
 
 # TODO(#33545) remove this once we have no functions w/ more than 5 non-keyword-required args
 max-positional-arguments=9

@@ -50,8 +50,6 @@ REQUIRED_PACKAGES = [
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
     "google-cloud-tasks==2.19.2",
-    "html5lib",
-    "lxml",
     "iteration-utilities",
     "jsonschema",
     "more-itertools",
@@ -72,7 +70,6 @@ REQUIRED_PACKAGES = [
     "protobuf==5.29.4",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
-    "pyjwt",
     "psycopg2-binary",
     "pytablewriter",
     "SQLAlchemy==1.4.54",
