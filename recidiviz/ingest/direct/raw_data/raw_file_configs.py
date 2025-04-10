@@ -136,6 +136,11 @@ class RawDataExportLookbackWindow(Enum):
     # to incremental exports.
     FULL_HISTORICAL_LOOKBACK = "FULL_HISTORICAL_LOOKBACK"
 
+    # We expect each raw data file to ONLY include the last two months worth of data for this
+    # file tag. This means that this file tag or table itself likely has some sort of
+    # audit column that allows the state to generate date-bounded diffs.
+    TWO_MONTH_INCREMENTAL_LOOKBACK = "TWO_MONTH_INCREMENTAL_LOOKBACK"
+
     # We expect each raw data file to ONLY include the last two weeks worth of data for this
     # file tag. This means that this file tag or table itself likely has some sort of
     # audit column that allows the state to generate date-bounded diffs.
