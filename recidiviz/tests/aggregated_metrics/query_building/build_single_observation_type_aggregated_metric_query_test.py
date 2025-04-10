@@ -58,6 +58,7 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
                 MY_DRUG_SCREENS_METRIC,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -128,6 +129,7 @@ GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_
                 MY_CONTACTS_COMPLETED_METRIC,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -198,6 +200,25 @@ GROUP BY state_code, unit_supervisor, metric_period_start_date, metric_period_en
 
         self.assertEqual(expected_result, result)
 
+    def test_build_period_event_metric__overlapping_attributes_error(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found attributes \['status'\] in `disaggregate_by_observation_attributes` "
+            r"that are referenced by metric conditions for metric `my_contacts_attempted`. "
+            r"If metric is already filtering on an attribute, disaggregation is unnecessary/redundant.",
+        ):
+            _ = build_single_observation_type_aggregated_metric_query_template(
+                observation_type=EventType.SUPERVISION_CONTACT,
+                unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+                metric_class=PeriodEventAggregatedMetric,
+                single_observation_type_metrics=[
+                    MY_CONTACTS_ATTEMPTED_METRIC,
+                    MY_CONTACTS_COMPLETED_METRIC,
+                ],
+                assignments_by_time_period_cte_name="person_assignments_by_time_period",
+                disaggregate_by_observation_attributes=["status"],
+            )
+
     def test_build_period_span_metric__single(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=SpanType.ASSESSMENT_SCORE_SESSION,
@@ -207,6 +228,7 @@ GROUP BY state_code, unit_supervisor, metric_period_start_date, metric_period_en
                 MY_AVG_LSIR_SCORE,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -297,6 +319,96 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
 
         self.assertEqual(expected_result, result)
 
+    def test_build_period_span_metric__with_disaggregate_by_observation_attributes(
+        self,
+    ) -> None:
+        result = build_single_observation_type_aggregated_metric_query_template(
+            observation_type=SpanType.COMPARTMENT_SESSION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+            metric_class=PeriodSpanAggregatedMetric,
+            single_observation_type_metrics=[
+                MY_AVG_DAILY_POPULATION,
+            ],
+            assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=[
+                "compartment_level_1",
+                "compartment_level_2",
+            ],
+        )
+
+        expected_result = """
+WITH
+observations AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        compartment_level_1,
+        compartment_level_2
+    FROM 
+        `{project_id}.observations__person_span.compartment_session_materialized`
+    WHERE
+        TRUE
+),
+observations_by_assignments AS (
+    SELECT
+        person_assignments_by_time_period.person_id,
+        person_assignments_by_time_period.state_code,
+        person_assignments_by_time_period.officer_id,
+        person_assignments_by_time_period.metric_period_start_date,
+        person_assignments_by_time_period.metric_period_end_date_exclusive,
+        person_assignments_by_time_period.period,
+        person_assignments_by_time_period.assignment_start_date,
+        person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+        person_assignments_by_time_period.intersection_start_date,
+        person_assignments_by_time_period.intersection_end_date_exclusive_nonnull,
+        observations.start_date,
+        observations.end_date,
+        observations.compartment_level_1,
+        observations.compartment_level_2
+    FROM 
+        person_assignments_by_time_period
+    JOIN 
+        observations
+    ON
+        observations.person_id = person_assignments_by_time_period.person_id
+        AND observations.state_code = person_assignments_by_time_period.state_code
+        AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
+        AND (
+            observations.end_date IS NULL OR
+            observations.end_date > person_assignments_by_time_period.intersection_start_date
+        )
+)
+SELECT
+    state_code,
+    officer_id,
+    metric_period_start_date,
+    metric_period_end_date_exclusive,
+    period,
+    compartment_level_1,
+    compartment_level_2,
+    SUM(
+        (
+            DATE_DIFF(
+                LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
+        IFNULL(observations_by_assignments.end_date, "9999-12-31"),
+        assignment_end_date_exclusive_nonnull
+    ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
+                GREATEST(metric_period_start_date, GREATEST(
+        observations_by_assignments.start_date,
+        assignment_start_date
+    )),
+                DAY)
+            ) * (IF((TRUE), 1, 0)) / DATE_DIFF(metric_period_end_date_exclusive, metric_period_start_date, DAY)
+        ) AS my_avg_daily_population
+FROM observations_by_assignments
+GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period, compartment_level_1, compartment_level_2
+"""
+
+        self.maxDiff = None
+        self.assertEqual(expected_result, result)
+
     def test_build_period_span_metric__multiple(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=SpanType.COMPARTMENT_SESSION,
@@ -307,6 +419,7 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
                 MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -404,6 +517,7 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
                 MY_ANY_INCARCERATION_365,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -467,6 +581,7 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
                 MY_DAYS_TO_FIRST_INCARCERATION_100,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -583,6 +698,7 @@ GROUP BY state_code, district, office, metric_period_start_date, metric_period_e
             metric_class=AssignmentSpanAggregatedMetric,
             single_observation_type_metrics=[MY_MAX_DAYS_STABLE_EMPLOYMENT_365],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -691,6 +807,7 @@ GROUP BY state_code, district, office, metric_period_start_date, metric_period_e
                 MY_DAYS_AT_LIBERTY_365,
             ],
             assignments_by_time_period_cte_name="person_assignments_by_time_period",
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """

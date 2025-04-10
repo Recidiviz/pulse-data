@@ -46,13 +46,16 @@ from recidiviz.aggregated_metrics.query_building.build_aggregated_metric_query i
     build_aggregated_metric_query_template,
     metric_output_column_clause,
 )
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.utils.string_formatting import fix_indent
 
 
 def get_custom_aggregated_metrics_query_template(
+    *,
     metrics: List[AggregatedMetric],
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     population_type: MetricPopulationType,
+    disaggregate_by_observation_attributes: Optional[list[str]],
     time_interval_unit: MetricTimePeriod,
     time_interval_length: int,
     min_end_date: datetime,
@@ -102,6 +105,7 @@ def get_custom_aggregated_metrics_query_template(
             metrics=metrics_for_class,
             time_period=metric_time_period,
             read_from_cached_assignments_by_time_period=False,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
         single_class_queries_by_class[metric_class] = query_template
 
@@ -119,6 +123,12 @@ def get_custom_aggregated_metrics_query_template(
     ]
     metric_class_cte_names_sorted = sorted(metric_class_cte_names)
 
+    all_index_columns = MetricUnitOfAnalysis.for_type(
+        unit_of_analysis_type
+    ).primary_key_columns
+    if disaggregate_by_observation_attributes:
+        all_index_columns.extend(disaggregate_by_observation_attributes)
+
     metric_class_join = (
         ""
         if len(metric_class_cte_names_sorted) == 1
@@ -128,7 +138,7 @@ def get_custom_aggregated_metrics_query_template(
 FULL OUTER JOIN
     {cte_name}
 USING
-    ({MetricUnitOfAnalysis.for_type(unit_of_analysis_type).get_primary_key_columns_query_string()}, period, start_date, end_date)"""
+    ({list_to_query_string(all_index_columns)}, period, start_date, end_date)"""
                 for cte_name in metric_class_cte_names_sorted[1:]
             ]
         )
@@ -141,7 +151,7 @@ USING
     query_template = f"""
 WITH {all_metric_class_ctes_query_template}
 SELECT
-    {MetricUnitOfAnalysis.for_type(unit_of_analysis_type).get_primary_key_columns_query_string()},
+    {list_to_query_string(all_index_columns)},
     period,
     start_date,
     end_date,

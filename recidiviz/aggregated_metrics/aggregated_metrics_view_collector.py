@@ -255,6 +255,7 @@ def collect_aggregated_metric_view_builders_for_collection(
                         metrics=metrics,
                         time_period=time_period,
                         collection_tag=collection_config.collection_tag,
+                        disaggregate_by_observation_attributes=collection_config.disaggregate_by_observation_attributes,
                     )
                     time_period_specific_builders[builder.address] = builder
                 builders.update(time_period_specific_builders)

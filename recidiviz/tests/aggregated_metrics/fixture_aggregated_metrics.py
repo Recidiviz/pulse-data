@@ -93,6 +93,16 @@ MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION = DailyAvgSpanCountMetric(
     ),
 )
 
+MY_TASK_COMPLETIONS = EventCountMetric(
+    name="my_task_completions",
+    display_name="My Task Completions",
+    description="My count of task completions",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
+)
+
 MY_AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="my_avg_lsir_score",
     display_name="My Average LSI-R Score",

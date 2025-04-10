@@ -66,6 +66,7 @@ class TestAggregatedMetricsUtils(unittest.TestCase):
             rolling_period_length=2,
             min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
+            disaggregate_by_observation_attributes=None,
         )
         _ = get_custom_aggregated_metrics_query_template(
             metrics=[
@@ -78,6 +79,7 @@ class TestAggregatedMetricsUtils(unittest.TestCase):
             time_interval_length=2,
             min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
+            disaggregate_by_observation_attributes=None,
         )
 
     def test_get_custom_aggregated_metrics_query_template(self) -> None:
@@ -94,6 +96,7 @@ class TestAggregatedMetricsUtils(unittest.TestCase):
             rolling_period_length=3,
             min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
+            disaggregate_by_observation_attributes=["my_attribute"],
         )
         expected_query = f"""
 WITH period_event_metrics AS (
@@ -113,6 +116,7 @@ WITH period_event_metrics AS (
             period_name=MetricTimePeriod.CUSTOM.value,
         ),
         read_from_cached_assignments_by_time_period=False,
+        disaggregate_by_observation_attributes=["my_attribute"],
     ),
     indent_level=4
 )}
@@ -134,12 +138,13 @@ assignment_span_metrics AS (
             period_name=MetricTimePeriod.CUSTOM.value,
         ),
         read_from_cached_assignments_by_time_period=False,
+        disaggregate_by_observation_attributes=["my_attribute"],
     ),
     indent_level=4
 )}
 )
 SELECT
-    state_code,
+    state_code, my_attribute,
     period,
     start_date,
     end_date,
@@ -150,6 +155,6 @@ FROM
 FULL OUTER JOIN
     period_event_metrics
 USING
-    (state_code, period, start_date, end_date)
+    (state_code, my_attribute, period, start_date, end_date)
 """
         self.assertEqual(expected_query, actual_query)

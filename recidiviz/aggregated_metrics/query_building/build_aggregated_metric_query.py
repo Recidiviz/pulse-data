@@ -16,7 +16,7 @@
 # =============================================================================
 """Helper for building aggregated metrics queries."""
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Optional
 
 from more_itertools import one
 
@@ -48,6 +48,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
@@ -87,6 +88,7 @@ def _build_output_rows_cte_query(
     *,
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     single_unit_of_observation_cte_names: list[str],
+    disaggregate_by_observation_attributes: Optional[list[str]],
 ) -> str:
     """Returns a query with one row per primary key that will be produced by the overall
     aggregated metrics query. This will serve as the base table we will join all single
@@ -97,16 +99,24 @@ def _build_output_rows_cte_query(
     )
     output_rows_cte_parts = []
     for cte_name in single_unit_of_observation_cte_names:
+        observation_attributes_cols_clause = (
+            f", {list_to_query_string(disaggregate_by_observation_attributes)}"
+            if disaggregate_by_observation_attributes
+            else ""
+        )
+
         output_rows_cte_parts.append(
             f"""
-            SELECT DISTINCT {metric_primary_key_columns_clause}
+            SELECT DISTINCT {metric_primary_key_columns_clause}{observation_attributes_cols_clause}
             FROM {cte_name}
             """
         )
 
-    return "\nUNION DISTINCT\n".join(
+    output_rows_cte_query_fragment = "\nUNION DISTINCT\n".join(
         fix_indent(p, indent_level=0) for p in output_rows_cte_parts
     )
+
+    return output_rows_cte_query_fragment
 
 
 def _build_single_observation_type_cte_queries(
@@ -114,6 +124,7 @@ def _build_single_observation_type_cte_queries(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
     metrics_by_observation_type: dict[ObservationType, list[AggregatedMetric]],
+    disaggregate_by_observation_attributes: Optional[list[str]],
 ) -> dict[str, str]:
     """Returns a dictionary mapping CTE name to the CTE query for all CTEs that produce
     single observation type metrics.
@@ -128,6 +139,7 @@ def _build_single_observation_type_cte_queries(
             assignments_by_time_period_cte_name=get_assignments_by_time_period_cte_name(
                 observation_type.unit_of_observation_type
             ),
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
         cte_name = f"{observation_type.name.lower()}_metrics"
         cte_queries_by_name[cte_name] = single_observation_metrics
@@ -177,12 +189,18 @@ def metric_output_column_clause(metric: AggregatedMetric) -> str:
 def _single_observation_type_cte_join_clause(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     single_observation_type_cte_name: str,
+    disaggregate_by_observation_attributes: Optional[list[str]],
 ) -> str:
     """Returns a join clause that will join the metrics columns from this single
     observation type CTE into the final result.
     """
+    if not disaggregate_by_observation_attributes:
+        disaggregate_by_observation_attributes = []
     metric_primary_key_columns_clause = list_to_query_string(
-        metric_group_by_columns(unit_of_analysis_type)
+        [
+            *metric_group_by_columns(unit_of_analysis_type),
+            *disaggregate_by_observation_attributes,
+        ]
     )
     return f"""LEFT OUTER JOIN
     {single_observation_type_cte_name}
@@ -195,15 +213,23 @@ def _build_join_metric_collections_query(
     metric_collections_table_names: list[str],
     metric_names: list[str],
     output_col_clause_fn: Callable[[str], str],
+    disaggregate_by_observation_attributes: Optional[list[str]],
 ) -> str:
     """Builds a query that joins collections of metrics in different sub-tables that
     share primary key structure (i.e. share the same unit of analysis) into a single
     table with all metrics.
     """
 
+    if not disaggregate_by_observation_attributes:
+        disaggregate_by_observation_attributes = []
+
     output_cols = [
         output_col_clause_fn(col)
-        for col in [*metric_group_by_columns(unit_of_analysis_type), *metric_names]
+        for col in [
+            *metric_group_by_columns(unit_of_analysis_type),
+            *disaggregate_by_observation_attributes,
+            *metric_names,
+        ]
     ]
     output_cols_str = ",\n".join(output_cols)
 
@@ -212,6 +238,7 @@ def _build_join_metric_collections_query(
         _single_observation_type_cte_join_clause(
             unit_of_analysis_type=unit_of_analysis_type,
             single_observation_type_cte_name=name,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
         for name in metric_collections_table_names
     ]
@@ -231,6 +258,7 @@ def _build_unit_of_observation_aggregated_metric_query_template(
     unit_of_observation_type: MetricUnitOfObservationType,
     metrics: list[AggregatedMetric],
     time_period: MetricTimePeriodConfig,
+    disaggregate_by_observation_attributes: Optional[list[str]],
     output_column_aliases: dict[str, str] | None,
     read_from_cached_assignments_by_time_period: bool = True,
 ) -> str:
@@ -299,24 +327,60 @@ def _build_unit_of_observation_aggregated_metric_query_template(
     metric_primary_key_columns_clause = list_to_query_string(
         metric_group_by_columns(unit_of_analysis_type)
     )
-    cte_queries_by_name[
-        _OUTPUT_ROW_KEYS_CTE_NAME
-    ] = f"""
-        SELECT DISTINCT {metric_primary_key_columns_clause}
-        FROM {assignments_by_time_period_cte_name}
-        """
 
     single_observation_type_ctes_by_name = _build_single_observation_type_cte_queries(
         unit_of_analysis_type=unit_of_analysis_type,
         metric_class=metric_class,
         metrics_by_observation_type=metrics_by_observation_type,
+        disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
     )
+
+    unit_of_analysis_primary_key_columns = MetricUnitOfAnalysis.for_type(
+        unit_of_analysis_type
+    ).get_primary_key_columns_query_string()
+
+    all_observation_attributes_join_query_fragment = ""
+    if disaggregate_by_observation_attributes:
+        attributes_query_fragment = ",\n".join(disaggregate_by_observation_attributes)
+        all_observation_attributes_key_subqueries = [
+            f"""SELECT DISTINCT
+{fix_indent(unit_of_analysis_primary_key_columns, indent_level=4)},
+{fix_indent(attributes_query_fragment, indent_level=4)}
+FROM
+    {cte_name}"""
+            for cte_name in sorted(single_observation_type_ctes_by_name)
+        ]
+
+        all_observation_attributes_key_cte = fix_indent(
+            "\nUNION DISTINCT\n".join(all_observation_attributes_key_subqueries),
+            indent_level=4,
+        )
+        all_observation_attributes_join_query_fragment = f"""
+LEFT JOIN (
+{all_observation_attributes_key_cte}
+)
+USING ({unit_of_analysis_primary_key_columns})
+"""
+
+    observation_attributes_cols_clause = (
+        f", {list_to_query_string(disaggregate_by_observation_attributes)}"
+        if disaggregate_by_observation_attributes
+        else ""
+    )
+
+    cte_queries_by_name[
+        _OUTPUT_ROW_KEYS_CTE_NAME
+    ] = f"""
+    SELECT DISTINCT {metric_primary_key_columns_clause}{observation_attributes_cols_clause}
+FROM {assignments_by_time_period_cte_name}{all_observation_attributes_join_query_fragment}
+    """
+
     cte_queries_by_name.update(single_observation_type_ctes_by_name)
 
     ordered_cte_names = [
         assignments_by_time_period_cte_name,
-        _OUTPUT_ROW_KEYS_CTE_NAME,
         *sorted(single_observation_type_ctes_by_name),
+        _OUTPUT_ROW_KEYS_CTE_NAME,
     ]
 
     ctes = ",\n".join(
@@ -345,6 +409,9 @@ def _build_unit_of_observation_aggregated_metric_query_template(
         ),
         metric_names=sorted(metric_name_to_metric.keys()),
         output_col_clause_fn=_output_col_clause_fn,
+        disaggregate_by_observation_attributes=disaggregate_by_observation_attributes
+        if disaggregate_by_observation_attributes
+        else [],
     )
 
     return f"""
@@ -360,6 +427,7 @@ def build_aggregated_metric_query_template(
     metric_class: AggregatedMetricClassType,
     metrics: list[AggregatedMetric],
     time_period: MetricTimePeriodConfig,
+    disaggregate_by_observation_attributes: Optional[list[str]],
     read_from_cached_assignments_by_time_period: bool = True,
 ) -> str:
     """Returns a query template (with a project_id format arg) that can be used to
@@ -410,6 +478,7 @@ def build_aggregated_metric_query_template(
             time_period=time_period,
             output_column_aliases=output_column_aliases,
             read_from_cached_assignments_by_time_period=read_from_cached_assignments_by_time_period,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
 
     # BUILD UP CTES
@@ -429,6 +498,7 @@ def build_aggregated_metric_query_template(
             time_period=time_period,
             output_column_aliases=None,
             read_from_cached_assignments_by_time_period=read_from_cached_assignments_by_time_period,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
         cte_name = (
             f"all_metrics__{unit_of_observation_type.short_name}_unit_of_observation"
@@ -440,6 +510,7 @@ def build_aggregated_metric_query_template(
     cte_queries_by_name[_OUTPUT_ROW_KEYS_CTE_NAME] = _build_output_rows_cte_query(
         unit_of_analysis_type=unit_of_analysis_type,
         single_unit_of_observation_cte_names=sorted(single_unit_of_observation_ctes),
+        disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
     )
 
     ordered_cte_names = [
@@ -466,6 +537,7 @@ def build_aggregated_metric_query_template(
         metric_collections_table_names=sorted(single_unit_of_observation_ctes.keys()),
         metric_names=[metric.name for metric in sorted(metrics, key=lambda m: m.name)],
         output_col_clause_fn=_output_col_clause_fn,
+        disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
     )
 
     return f"""

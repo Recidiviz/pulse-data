@@ -200,6 +200,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
             collection_tag=None,
+            disaggregate_by_observation_attributes=None,
         )
 
         self.assertEqual(
@@ -241,6 +242,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
             collection_tag="my_tag",
+            disaggregate_by_observation_attributes=None,
         )
 
         self.assertEqual(

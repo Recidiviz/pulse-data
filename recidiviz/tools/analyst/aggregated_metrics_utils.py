@@ -60,18 +60,20 @@ def get_custom_aggregated_metrics(
     rolling_period_length: Optional[int] = None,
     print_query_template: bool = False,
     project_id: str = "recidiviz-staging",
+    disaggregate_by_observation_attributes: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     """Returns a dataframe consisting of all metrics for specified unit of analysis, population, and time periods"""
     query_template = get_custom_aggregated_metrics_query_template(
-        metrics,
-        unit_of_analysis_type,
-        population_type,
-        time_interval_unit,
-        time_interval_length,
-        min_date,
-        max_date,
-        rolling_period_unit,
-        rolling_period_length,
+        metrics=metrics,
+        unit_of_analysis_type=unit_of_analysis_type,
+        population_type=population_type,
+        time_interval_unit=time_interval_unit,
+        time_interval_length=time_interval_length,
+        min_end_date=min_date,
+        max_end_date=max_date,
+        rolling_period_unit=rolling_period_unit,
+        rolling_period_length=rolling_period_length,
+        disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         # strip the project id prefix from the query template, since this can not be read by pd.read_gbq
     ).replace("{project_id}.", "")
     if print_query_template:

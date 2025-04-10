@@ -162,6 +162,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         metrics: list[AggregatedMetric],
         time_period: MetricTimePeriodConfig,
         collection_tag: str | None,
+        disaggregate_by_observation_attributes: list[str] | None,
     ) -> None:
         self.dataset_id = dataset_id
         self.view_id = self._build_view_id(
@@ -176,6 +177,9 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.metric_class = metric_class
         self.metrics = metrics
         self.time_period = time_period
+        self.disaggregate_by_observation_attributes = (
+            disaggregate_by_observation_attributes
+        )
 
         self.view_query_template = build_aggregated_metric_query_template(
             population_type=population_type,
@@ -183,6 +187,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             metric_class=metric_class,
             metrics=metrics,
             time_period=time_period,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )
         self.projects_to_deploy = None
         self.materialized_address = self._build_materialized_address(

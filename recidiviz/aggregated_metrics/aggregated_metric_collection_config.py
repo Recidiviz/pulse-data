@@ -77,6 +77,11 @@ class AggregatedMetricsCollection:
     # Which time periods to calculate the metrics for
     time_periods: list[MetricTimePeriodConfig]
 
+    # A list of observation attributes that will be used to disaggregate all
+    # metrics in the collection. If disaggregate_by_observation_attributes are
+    # included, the output schema will include a column for every attribute in the list.
+    disaggregate_by_observation_attributes: list[str] | None = attr.ib()
+
     # A tag that will be prepended to all view names for this metrics collection.
     # This tag may be used when we want to store more than one collection in the same
     # dataset and those collections have overlapping populations.
@@ -117,6 +122,7 @@ class AggregatedMetricsCollection:
         ],
         metrics_by_population_type: dict[MetricPopulationType, list[AggregatedMetric]],
         collection_tag: str | None = None,
+        disaggregate_by_observation_attributes: list[str] | None = None,
     ) -> "AggregatedMetricsCollection":
         return AggregatedMetricsCollection(
             output_dataset_id=output_dataset_id,
@@ -135,4 +141,5 @@ class AggregatedMetricsCollection:
                 if population_type in unit_of_analysis_types_by_population_type
                 and population_type in metrics_by_population_type
             },
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
         )

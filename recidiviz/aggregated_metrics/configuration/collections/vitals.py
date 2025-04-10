@@ -111,6 +111,7 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                 ),
             ),
         ],
+        disaggregate_by_observation_attributes=None,
     )
 
 

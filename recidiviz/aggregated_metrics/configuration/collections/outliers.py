@@ -78,6 +78,7 @@ OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.buil
     ],
     unit_of_analysis_types_by_population_type=_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
     metrics_by_population_type=_METRICS_BY_POPULATION_TYPE,
+    disaggregate_by_observation_attributes=None,
 )
 
 if __name__ == "__main__":

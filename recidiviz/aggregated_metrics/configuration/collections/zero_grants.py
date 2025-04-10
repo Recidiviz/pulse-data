@@ -101,6 +101,7 @@ def build_zero_grants_aggregated_metrics_collection_config() -> AggregatedMetric
                 description=("Year-long metric periods, ending on the current day"),
             ),
         ],
+        disaggregate_by_observation_attributes=None,
     )
 
 

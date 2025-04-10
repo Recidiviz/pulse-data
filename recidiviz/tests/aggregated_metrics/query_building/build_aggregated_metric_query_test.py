@@ -45,6 +45,7 @@ from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
     MY_DRUG_SCREENS_METRIC,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
     MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
+    MY_TASK_COMPLETIONS,
 )
 
 
@@ -65,15 +66,12 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
                 MY_CONTACTS_COMPLETED_METRIC,
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            disaggregate_by_observation_attributes=None,
         )
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
     SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_intersection_event_attribution__last_12_months_materialized`
-),
-output_row_keys AS (
-    SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM person_assignments_by_time_period
 ),
 drug_screen_metrics AS (
     WITH
@@ -186,6 +184,10 @@ supervision_contact_metrics AS (
         )) AS my_contacts_completed
     FROM observations_by_assignments
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM person_assignments_by_time_period
 )
 SELECT
     state_code,
@@ -216,6 +218,7 @@ USING (state_code, officer_id, metric_period_start_date, metric_period_end_date_
                 MY_LOGINS_BY_PRIMARY_WORKFLOWS,
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            disaggregate_by_observation_attributes=None,
         )
 
         expected_result = """
@@ -224,10 +227,6 @@ all_metrics__person_unit_of_observation AS (
     WITH 
     person_assignments_by_time_period AS (
         SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_intersection_event_attribution__last_12_months_materialized`
-    ),
-    output_row_keys AS (
-        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-        FROM person_assignments_by_time_period
     ),
     drug_screen_metrics AS (
         WITH
@@ -340,6 +339,10 @@ all_metrics__person_unit_of_observation AS (
             )) AS my_contacts_completed
         FROM observations_by_assignments
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+        FROM person_assignments_by_time_period
     )
     SELECT
         state_code,
@@ -361,10 +364,6 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
     WITH 
     workflows_primary_user_assignments_by_time_period AS (
         SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_intersection_event_attribution__last_12_months_materialized`
-    ),
-    output_row_keys AS (
-        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-        FROM workflows_primary_user_assignments_by_time_period
     ),
     workflows_user_login_metrics AS (
         WITH
@@ -420,6 +419,10 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
             )) AS my_logins_primary_workflows_user
         FROM observations_by_assignments
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+        FROM workflows_primary_user_assignments_by_time_period
     )
     SELECT
         state_code,
@@ -460,6 +463,226 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
 
         self.assertEqual(expected_result, result)
 
+    def test_build__period_event__multiple_units_of_observation__with_observation_attributes(
+        self,
+    ) -> None:
+        result = build_aggregated_metric_query_template(
+            population_type=MetricPopulationType.SUPERVISION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+            metric_class=PeriodEventAggregatedMetric,
+            metrics=[
+                MY_TASK_COMPLETIONS,
+                MY_LOGINS_BY_PRIMARY_WORKFLOWS,
+            ],
+            time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            disaggregate_by_observation_attributes=["system_type"],
+        )
+
+        expected_result = """
+WITH 
+all_metrics__person_unit_of_observation AS (
+    WITH 
+    person_assignments_by_time_period AS (
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_intersection_event_attribution__last_12_months_materialized`
+    ),
+    task_completed_metrics AS (
+        WITH
+        observations AS (
+            SELECT
+                person_id,
+                state_code,
+                event_date,
+                system_type
+            FROM 
+                `{project_id}.observations__person_event.task_completed_materialized`
+            WHERE
+                TRUE
+        ),
+        observations_by_assignments AS (
+            SELECT
+                person_assignments_by_time_period.person_id,
+                person_assignments_by_time_period.state_code,
+                person_assignments_by_time_period.district,
+                person_assignments_by_time_period.metric_period_start_date,
+                person_assignments_by_time_period.metric_period_end_date_exclusive,
+                person_assignments_by_time_period.period,
+                person_assignments_by_time_period.assignment_start_date,
+                person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.intersection_event_attribution_start_date,
+                person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.assignment_is_first_day_in_population,
+                observations.event_date,
+                observations.system_type
+            FROM 
+                person_assignments_by_time_period
+            JOIN 
+                observations
+            ON
+                observations.person_id = person_assignments_by_time_period.person_id
+                AND observations.state_code = person_assignments_by_time_period.state_code
+                -- Include events occurring on the last date of an end-date exclusive span,
+                -- but exclude events occurring on the last date of an end-date exclusive 
+                -- analysis period.
+                AND observations.event_date >= person_assignments_by_time_period.intersection_event_attribution_start_date
+                AND observations.event_date <  person_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
+        )
+        SELECT
+            state_code,
+            district,
+            metric_period_start_date,
+            metric_period_end_date_exclusive,
+            period,
+            system_type,
+            COUNT(DISTINCT IF(
+                (TRUE),
+                CONCAT(
+                    observations_by_assignments.person_id, observations_by_assignments.state_code, 
+                    observations_by_assignments.event_date
+                ), NULL
+            )) AS my_task_completions
+        FROM observations_by_assignments
+        GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+        FROM person_assignments_by_time_period
+        LEFT JOIN (
+            SELECT DISTINCT
+                district, state_code,
+                system_type
+            FROM
+                task_completed_metrics
+        )
+        USING (district, state_code)
+    )
+    SELECT
+        state_code,
+        district,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
+        system_type,
+        IFNULL(my_task_completions, 0) AS my_task_completions
+    FROM output_row_keys
+    LEFT OUTER JOIN
+        task_completed_metrics
+    USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type)
+),
+all_metrics__workflows_primary_user_unit_of_observation AS (
+    WITH 
+    workflows_primary_user_assignments_by_time_period AS (
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_intersection_event_attribution__last_12_months_materialized`
+    ),
+    workflows_user_login_metrics AS (
+        WITH
+        observations AS (
+            SELECT
+                email_address,
+                state_code,
+                event_date,
+                system_type
+            FROM 
+                `{project_id}.observations__workflows_primary_user_event.workflows_user_login_materialized`
+            WHERE
+                TRUE
+        ),
+        observations_by_assignments AS (
+            SELECT
+                workflows_primary_user_assignments_by_time_period.email_address,
+                workflows_primary_user_assignments_by_time_period.state_code,
+                workflows_primary_user_assignments_by_time_period.district,
+                workflows_primary_user_assignments_by_time_period.metric_period_start_date,
+                workflows_primary_user_assignments_by_time_period.metric_period_end_date_exclusive,
+                workflows_primary_user_assignments_by_time_period.period,
+                workflows_primary_user_assignments_by_time_period.assignment_start_date,
+                workflows_primary_user_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                workflows_primary_user_assignments_by_time_period.intersection_event_attribution_start_date,
+                workflows_primary_user_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull,
+                workflows_primary_user_assignments_by_time_period.assignment_is_first_day_in_population,
+                observations.event_date,
+                observations.system_type
+            FROM 
+                workflows_primary_user_assignments_by_time_period
+            JOIN 
+                observations
+            ON
+                observations.email_address = workflows_primary_user_assignments_by_time_period.email_address
+                AND observations.state_code = workflows_primary_user_assignments_by_time_period.state_code
+                -- Include events occurring on the last date of an end-date exclusive span,
+                -- but exclude events occurring on the last date of an end-date exclusive 
+                -- analysis period.
+                AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_event_attribution_start_date
+                AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_event_attribution_end_date_exclusive_nonnull
+        )
+        SELECT
+            state_code,
+            district,
+            metric_period_start_date,
+            metric_period_end_date_exclusive,
+            period,
+            system_type,
+            COUNT(DISTINCT IF(
+                (TRUE),
+                CONCAT(
+                    observations_by_assignments.email_address, observations_by_assignments.state_code, 
+                    observations_by_assignments.event_date
+                ), NULL
+            )) AS my_logins_primary_workflows_user
+        FROM observations_by_assignments
+        GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+        FROM workflows_primary_user_assignments_by_time_period
+        LEFT JOIN (
+            SELECT DISTINCT
+                district, state_code,
+                system_type
+            FROM
+                workflows_user_login_metrics
+        )
+        USING (district, state_code)
+    )
+    SELECT
+        state_code,
+        district,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
+        system_type,
+        IFNULL(my_logins_primary_workflows_user, 0) AS my_logins_primary_workflows_user
+    FROM output_row_keys
+    LEFT OUTER JOIN
+        workflows_user_login_metrics
+    USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type)
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+    FROM all_metrics__person_unit_of_observation
+    UNION DISTINCT
+    SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type
+    FROM all_metrics__workflows_primary_user_unit_of_observation
+)
+SELECT
+    state_code,
+    district,
+    metric_period_start_date AS start_date,
+    metric_period_end_date_exclusive AS end_date,
+    period,
+    system_type,
+    my_logins_primary_workflows_user,
+    my_task_completions
+FROM output_row_keys
+LEFT OUTER JOIN
+    all_metrics__person_unit_of_observation
+USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type)
+LEFT OUTER JOIN
+    all_metrics__workflows_primary_user_unit_of_observation
+USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period, system_type)
+"""
+
+        self.assertEqual(expected_result, result)
+
     def test_build__period_span__single_unit_of_observation(self) -> None:
         result = build_aggregated_metric_query_template(
             population_type=MetricPopulationType.INCARCERATION,
@@ -470,15 +693,12 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
                 MY_AVG_LSIR_SCORE,
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            disaggregate_by_observation_attributes=None,
         )
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
     SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.incarceration__person_to_facility__by_intersection__last_12_months_materialized`
-),
-output_row_keys AS (
-    SELECT DISTINCT state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM person_assignments_by_time_period
 ),
 assessment_score_session_metrics AS (
     WITH
@@ -627,6 +847,10 @@ compartment_session_metrics AS (
             ) AS my_avg_daily_population
     FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM person_assignments_by_time_period
 )
 SELECT
     state_code,
@@ -658,15 +882,12 @@ USING (state_code, facility, metric_period_start_date, metric_period_end_date_ex
             time_period=MetricTimePeriodConfig.quarter_periods_rolling_monthly(
                 lookback_months=12
             ),
+            disaggregate_by_observation_attributes=None,
         )
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
     SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_assignment__quarters_rolling_last_12_months_materialized`
-),
-output_row_keys AS (
-    SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM person_assignments_by_time_period
 ),
 incarceration_start_metrics AS (
     WITH
@@ -767,6 +988,10 @@ incarceration_start_metrics AS (
         ) AS my_days_to_first_incarceration_100
     FROM observations_by_assignments
     GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM person_assignments_by_time_period
 )
 SELECT
     state_code,
@@ -795,15 +1020,12 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
             time_period=MetricTimePeriodConfig.quarter_periods_rolling_monthly(
                 lookback_months=12
             ),
+            disaggregate_by_observation_attributes=None,
         )
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
     SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_assignment__quarters_rolling_last_12_months_materialized`
-),
-output_row_keys AS (
-    SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM person_assignments_by_time_period
 ),
 compartment_session_metrics AS (
     WITH
@@ -956,6 +1178,10 @@ employment_period_metrics AS (
         ) AS my_max_days_stable_employment_365
     FROM observations_by_assignments
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM person_assignments_by_time_period
 )
 SELECT
     state_code,

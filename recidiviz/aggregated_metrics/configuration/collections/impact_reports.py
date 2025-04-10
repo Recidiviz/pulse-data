@@ -110,6 +110,7 @@ def _build_impact_reports_usage_aggregated_metrics_collection() -> (
             ),
         },
         time_periods=time_periods,
+        disaggregate_by_observation_attributes=None,
     )
 
 
@@ -160,6 +161,7 @@ def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> (
                 *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION,
             ],
         },
+        disaggregate_by_observation_attributes=None,
     )
 
 
@@ -193,6 +195,7 @@ def _build_impact_reports_report_metrics_aggregated_metrics_collection() -> (
             ),
         },
         time_periods=time_periods,
+        disaggregate_by_observation_attributes=None,
     )
 
 

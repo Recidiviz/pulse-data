@@ -49,6 +49,9 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
 )
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.observation_big_query_view_collector import (
+    ObservationBigQueryViewCollector,
+)
 from recidiviz.observations.observation_selector import ObservationSelector
 from recidiviz.observations.observation_type_utils import ObservationTypeT
 from recidiviz.observations.span_observation_big_query_view_builder import (
@@ -362,6 +365,7 @@ def build_single_observation_type_aggregated_metric_query_template(
     metric_class: AggregatedMetricClassType,
     single_observation_type_metrics: list[AggregatedMetric[ObservationTypeT]],
     assignments_by_time_period_cte_name: str,
+    disaggregate_by_observation_attributes: Optional[list[str]],
 ) -> str:
     """Returns a query template (with a project_id format arg) that can be used to
     calculate aggregated metrics for metrics matching a single observation type and
@@ -394,8 +398,39 @@ def build_single_observation_type_aggregated_metric_query_template(
                 f"[{observation_type}]"
             )
 
+        if disaggregate_by_observation_attributes:
+            overlapping_observation_attributes = [
+                attribute
+                for attribute in disaggregate_by_observation_attributes
+                if attribute in set(metric.referenced_observation_attributes())
+            ]
+            if overlapping_observation_attributes:
+                raise ValueError(
+                    f"Found attributes {overlapping_observation_attributes} in "
+                    "`disaggregate_by_observation_attributes` that "
+                    f"are referenced by metric conditions for metric `{metric.name}`. "
+                    "If metric is already filtering on an attribute, disaggregation "
+                    "is unnecessary/redundant."
+                )
+
+    # For observation attributes that aren't present in a given observation query,
+    # fill with NULL
+    if not disaggregate_by_observation_attributes:
+        disaggregate_by_observation_attributes = []
+    observation_attribute_columns = [
+        col
+        if col
+        in ObservationBigQueryViewCollector()
+        .get_view_builder_for_observation_type(observation_type)
+        .attribute_cols
+        else f"CAST(NULL AS STRING) AS {col}"
+        for col in disaggregate_by_observation_attributes
+    ]
+
     observations_cte = build_observations_query_template_for_metrics(
-        observation_type, single_observation_type_metrics
+        observation_type=observation_type,
+        single_observation_type_metrics=single_observation_type_metrics,
+        additional_attribute_column_clauses=observation_attribute_columns,
     )
 
     observations_by_assignments_cte = build_observations_by_assignments_query_template(
@@ -404,9 +439,17 @@ def build_single_observation_type_aggregated_metric_query_template(
         metric_class,
         single_observation_type_metrics,
         assignments_by_time_period_cte_name,
+        additional_observation_attribute_columns=disaggregate_by_observation_attributes,
     )
 
-    group_by_cols: list[str] = metric_group_by_columns(unit_of_analysis_type)
+    if not disaggregate_by_observation_attributes:
+        disaggregate_by_observation_attributes = []
+
+    group_by_cols: list[str] = (
+        metric_group_by_columns(unit_of_analysis_type)
+        + disaggregate_by_observation_attributes
+    )
+
     output_column_strs = [
         *group_by_cols,
         *[

@@ -118,6 +118,7 @@ def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> Aggr
                 period_name="MONTH",
             ),
         ],
+        disaggregate_by_observation_attributes=None,
     )
 
 
@@ -157,6 +158,7 @@ def _build_insights_user_metrics_aggregated_metrics_collection_config() -> Aggre
                 period_name="CURRENT_DAY",
             ),
         ],
+        disaggregate_by_observation_attributes=None,
     )
 
 
