@@ -1785,15 +1785,19 @@ US_TX:
     task_eligibility_criteria_us_tx.meets_type_agnostic_contact_standards: |-
       Used as a reference table to indicate agnostic contact type cadences. 12/30/2024.
   RECIDIVIZ_REFERENCE_RiskAssessmentCadence:
-    task_eligibility_criteria_us_tx.meets_risk_assessment_standards: |-
+    task_eligibility_criteria_us_tx.meets_risk_assessment_event_triggers: |-
       Used as a reference table to determine the next due assessment based on previous assessment type and level. 02/13/2025.
   RECIDIVIZ_REFERENCE_RiskAssessmentEvents:
-    task_eligibility_criteria_us_tx.meets_risk_assessment_standards: |-
+    task_eligibility_criteria_us_tx.meets_risk_assessment_event_triggers: |-
       Used as a reference table to determine the next due assessment based event type and case type. 02/13/2025.
   SupervisionPeriod:
+    task_eligibility_criteria_us_tx.supervision_within_6_months_of_release_date:
+      |-
+      Used to pull in expiration dates into a criteria since we have it on the supervision period level and not the
+      sentence level so we can't ingest it at the moment. 04/04/2025. See TODO(#40740)
     workflows_views.client_record: |-
       Used to pull in expiration dates into the client record since we have it on the supervision period level and not the
-      sentence level so we can't ingest it at the moment. 03/28/2025
+      sentence level so we can't ingest it at the moment. 03/28/2025. See TODO(#40740)
   ViolationResponses:
     task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
       |-

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria view that shows spans of time for which supervision clients
-meet risk assessment standards
+have had an event that triggers a new assessment, such as completing an assessment or starting supervision.
 """
 from google.cloud import bigquery
 
@@ -32,10 +32,10 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_MEETS_RISK_ASSESSMENT_STANDARDS"
+_CRITERIA_NAME = "US_TX_MEETS_RISK_ASSESSMENT_EVENT_TRIGGERS"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
-meet risk assessment standards.
+have had an event that triggers a new assessment, such as completing an assessment or starting supervision.
 """
 
 _QUERY_TEMPLATE = f"""
@@ -51,7 +51,6 @@ supervision_periods AS (
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` AS state_supervision_period
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry`
         USING (supervision_period_id)
-    WHERE supervision_level IS DISTINCT FROM 'IN_CUSTODY'
 ),
 -- Aggregate above periods by case_type
 case_type_periods AS (
@@ -214,7 +213,9 @@ events_with_reference_data AS (
       ELSE COALESCE(event_ref.next_assessment_type_due, cadence_ref.next_assessment_type_due)
       END AS due_assessment_type,
     CAST(COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS INT64) AS due_assessment_months,
-    DATE_ADD(event_date, INTERVAL CAST(COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS INT64) MONTH) AS due_assessment_date,
+    LAST_DAY(DATE_ADD(event_date, INTERVAL CAST(
+        COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) AS INT64) MONTH
+        )) AS due_assessment_date,
     CASE 
         WHEN COALESCE(event_ref.next_assessment_due_in_months, cadence_ref.next_assessment_due_in_months) = "1" 
             THEN "1 MONTH"
@@ -253,130 +254,17 @@ next_events AS (
     LEAD(this_assessment_type) OVER (PARTITION BY person_id ORDER BY event_date ASC, event_priority DESC) AS next_assessment_type,
     frequency
 FROM events_with_reference_data
-),
-
--- TES output:
--- Meets criteria = True from date of the triggering event to either the next event OR next assessment due date, whichever comes first.
--- Meets criteria = False from next assessment due date to next triggering event, if the due date occurs before the next event. 
-meets_criteria_true_records AS (
-    SELECT
-        person_id,
-        "US_TX" as state_code,
-        event_date as start_date,
-        LEAST(due_assessment_date, COALESCE(next_event_date, due_assessment_date)) AS end_date,
-        TRUE AS meets_criteria,
-        event_date,
-        event_type,
-        case_type,
-        last_assessment_type,
-        last_assessment_level,
-        due_assessment_months,
-        due_assessment_date,
-        due_assessment_type,
-        next_event_date,
-        next_event_type,
-        next_assessment_type,
-        frequency,
-        TO_JSON(STRUCT(
-          event_date,
-          event_type,
-          case_type,
-          last_assessment_type,
-          last_assessment_level,
-          due_assessment_months,
-          due_assessment_date,
-          due_assessment_type,
-          next_event_date,
-          next_event_type,
-          next_assessment_type,
-          frequency
-        )) AS reason
-    FROM next_events
-    -- If we don't have matching due date logic, don't include in TES as there will be null start dates
-    WHERE due_assessment_date is not null
-),
-meets_criteria_false_records AS (
-    SELECT
-        person_id,
-        "US_TX" as state_code,
-        due_assessment_date as start_date,
-        next_event_date AS end_date,
-        FALSE AS meets_criteria,
-        event_date,
-        event_type,
-        case_type,
-        last_assessment_type,
-        last_assessment_level,
-        due_assessment_months,
-        due_assessment_date,
-        due_assessment_type,
-        next_event_date,
-        next_event_type,
-        next_assessment_type,
-        frequency,
-        TO_JSON(STRUCT(
-          event_date,
-          event_type,
-          case_type,
-          last_assessment_type,
-          last_assessment_level,
-          due_assessment_months,
-          due_assessment_date,
-          due_assessment_type,
-          next_event_date,
-          next_event_type,
-          next_assessment_type,
-          frequency
-        )) AS reason
-    FROM next_events
-    WHERE (next_event_date IS NULL OR next_event_date > due_assessment_date)
-        -- If we don't have matching due date logic, don't include in TES as there will be null start dates
-        AND due_assessment_date is not null
-),
-all_criteria_records AS (
-    SELECT * FROM meets_criteria_true_records
-    UNION ALL
-    SELECT * FROM meets_criteria_false_records
-),
-parole_active_population AS (
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive,
-        compartment_level_1
-    FROM
-        `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-    WHERE
-        compartment_level_1 IN ('SUPERVISION')
-        AND metric_source != "INFERRED"
-        AND compartment_level_2 IN ('PAROLE')
-	AND compartment_level_2 NOT IN ('INTERNAL_UNKNOWN', 'ABSCONSION', 'BENCH_WARRANT')
-	AND correctional_level NOT IN ('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')
-	AND start_date >= '1900-01-01'
-),
-aggregated_active_persons AS (
-    {aggregate_adjacent_spans(
-        table_name='parole_active_population',
-        attribute=['compartment_level_1'],
-        session_id_output_name='aggregated_active_persons',
-        end_date_field_name='end_date_exclusive'
-    )}
 )
 SELECT
-    all_criteria_records.person_id,
-    all_criteria_records.state_code,
-    all_criteria_records.start_date,
-    CASE
-        WHEN all_criteria_records.end_date IS NULL AND aggregated_active_persons.end_date_exclusive IS NULL THEN NULL
-        WHEN all_criteria_records.end_date IS NULL THEN aggregated_active_persons.end_date_exclusive
-        WHEN aggregated_active_persons.end_date_exclusive IS NULL THEN all_criteria_records.end_date
-        ELSE LEAST(all_criteria_records.end_date, aggregated_active_persons.end_date_exclusive)
-    END AS end_date,
-    meets_criteria,
+    person_id,
+    "US_TX" as state_code,
+    event_date as start_date,
+    next_event_date AS end_date,
+    -- Meets criteria is always true for this criteria because it pulls events which trigger an assessment to come due
+    TRUE AS meets_criteria,
     event_date,
     event_type,
-    all_criteria_records.case_type,
+    case_type,
     last_assessment_type,
     last_assessment_level,
     due_assessment_months,
@@ -386,11 +274,23 @@ SELECT
     next_event_type,
     next_assessment_type,
     frequency,
-    reason
-FROM all_criteria_records
-INNER JOIN aggregated_active_persons
-    ON all_criteria_records.person_id = aggregated_active_persons.person_id
-    AND all_criteria_records.start_date >= DATE_SUB(aggregated_active_persons.start_date, INTERVAL 6 MONTH)
+    TO_JSON(STRUCT(
+      event_date,
+      event_type,
+      case_type,
+      last_assessment_type,
+      last_assessment_level,
+      due_assessment_months,
+      due_assessment_date,
+      due_assessment_type,
+      next_event_date,
+      next_event_type,
+      next_assessment_type,
+      frequency
+    )) AS reason
+FROM next_events
+-- If we don't have matching due date logic, don't include as having an assessment due
+WHERE due_assessment_date is not null
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
