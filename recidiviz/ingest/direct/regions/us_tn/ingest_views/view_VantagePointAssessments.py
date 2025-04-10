@@ -28,6 +28,7 @@ VIEW_QUERY_TEMPLATE = """
       AssessmentID,
       REGEXP_REPLACE(CompleteByStaffID, r'[^A-Z0-9]', '') as ConductingStaffID,
       CompletedDate as AssessmentDate,
+      AssessmentTitle,
       RiskLevel,
       FriendsNeedLevel,
       AttitudeBehaviorNeedLevel,
@@ -38,6 +39,13 @@ VIEW_QUERY_TEMPLATE = """
       FamilyNeedLevel,
       EmploymentNeedLevel,
       EducationNeedLevel,
+      V2EducationEmploymentNeedLevel,
+      V2FriendsAssociatesResidentialNeedLevel,
+      V2AlcoholDrugsNeedLevel,
+      V2MentalHealthNeedLevel,
+      V2AggressionNeedLevel,
+      V2AttitudesBehaviorsNeedLevel,
+      V2PartnerFamilyChildrenNeedLevel,
     FROM {VantagePointAssessments}
 """
 

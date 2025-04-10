@@ -7,6 +7,7 @@ input_columns:
   AssessmentID: STRING
   ConductingStaffID: STRING
   AssessmentDate: STRING
+  AssessmentTitle: STRING
   RiskLevel: STRING
   FriendsNeedLevel: STRING
   AttitudeBehaviorNeedLevel: STRING
@@ -17,6 +18,13 @@ input_columns:
   FamilyNeedLevel: STRING
   EmploymentNeedLevel: STRING
   EducationNeedLevel: STRING
+  V2EducationEmploymentNeedLevel: STRING
+  V2FriendsAssociatesResidentialNeedLevel: STRING
+  V2AlcoholDrugsNeedLevel: STRING
+  V2MentalHealthNeedLevel: STRING
+  V2AggressionNeedLevel: STRING
+  V2AttitudesBehaviorsNeedLevel: STRING
+  V2PartnerFamilyChildrenNeedLevel: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -32,7 +40,14 @@ output:
                 - OffenderID
                 - AssessmentID
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
-          assessment_type: $literal_enum(StateAssessmentType.STRONG_R)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: AssessmentTitle
+              $mappings:
+                StateAssessmentType.STRONG_R:
+                  - SR
+                StateAssessmentType.STRONG_R2:
+                  - S2
           assessment_date: AssessmentDate
           assessment_level:
             $enum_mapping:
@@ -59,6 +74,13 @@ output:
               FAMILY_NEED_LEVEL: FamilyNeedLevel
               EMPLOYMENT_NEED_LEVEL: EmploymentNeedLevel
               EDUCATION_NEED_LEVEL: EducationNeedLevel
+              V2_EDUCATION_EMPLOYMENT_NEED_LEVEL: V2EducationEmploymentNeedLevel
+              V2_FRIENDS_RESIDENTIAL_NEED_LEVEL: V2FriendsAssociatesResidentialNeedLevel
+              V2_ALCOHOL_DRUG_NEED_LEVEL: V2AlcoholDrugsNeedLevel
+              V2_MENTAL_HEALTH_NEED_LEVEL: V2MentalHealthNeedLevel
+              V2_AGGRESSION_NEED_LEVEL: V2AggressionNeedLevel
+              V2_ATTITUDE_BEHAVIOR_NEED_LEVEL: V2AttitudesBehaviorsNeedLevel
+              V2_FAMILY_NEED_LEVEL: V2PartnerFamilyChildrenNeedLevel
           conducting_staff_external_id: ConductingStaffID
           conducting_staff_external_id_type:
             $conditional:
