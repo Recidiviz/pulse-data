@@ -100,7 +100,7 @@ WHERE
   (latest_eligible_opportunities.total_opportunities IS NOT NULL OR latest_outliers.total_outliers IS NOT NULL)
   AND supervisors.state_code IN ( ${supervisorStatesForQuery} )`;
 
-function sendSupervisorEmailReminders() {
+function sendSupervisorEmailReminders_() {
   sendAllLoginReminders(
     true,
     SUPERVISOR_QUERY,

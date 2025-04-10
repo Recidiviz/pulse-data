@@ -350,3 +350,59 @@ function getUserLoginInfoByBatch(batch, authToken) {
     lastLogin: new Date(o.last_login),
   }));
 }
+
+/**
+ * Adds a custom menu that allows users to send reminder emails from the spreadsheet
+ */
+function onOpen() {
+  const sheet = SpreadsheetApp.getUi();
+  sheet
+    .createMenu("Send Emails")
+    .addItem("Send line staff emails", "sendLinestaffEmailRemindersMenuItem")
+    .addItem("Send supervisor emails", "sendSupervisorEmailRemindersMenuItem")
+    .addToUi();
+}
+
+/**
+ * Menu item for sending line staff emails
+ */
+function sendLinestaffEmailRemindersMenuItem() {
+  const sheet = SpreadsheetApp.getUi();
+  const confirmation = getConfirmation(sheet, false);
+
+  if (confirmation) {
+    sendLinestaffEmailReminders_();
+    sheet.alert("Line staff emails sent successfully!");
+  }
+}
+
+/**
+ * Menu item for sending supervisor emails
+ */
+function sendSupervisorEmailRemindersMenuItem() {
+  const sheet = SpreadsheetApp.getUi();
+  const confirmation = getConfirmation(sheet, true);
+
+  if (confirmation) {
+    sendSupervisorEmailReminders_();
+    sheet.alert("Supervisor emails sent successfully!");
+  }
+}
+
+/**
+ * Triggers a confirmation alert before sending emails
+ * @param {Ui} sheet the linked email reminders spreadsheet
+ * @param {boolean} isSupervisors true if emailing supervisors, false if line staff
+ * @returns true if the user confirms, false otherwise
+ */
+function getConfirmation(sheet, isSupervisors) {
+  const result = sheet.alert(
+    "Please confirm",
+    `This will send login reminder emails to ${
+      isSupervisors ? "supervisors" : "line staff"
+    }. Are you sure you want to continue?`,
+    sheet.ButtonSet.YES_NO
+  );
+
+  return result === sheet.Button.YES;
+}

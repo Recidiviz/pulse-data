@@ -120,7 +120,7 @@ WHERE
   latest_eligible_opportunities.total_opportunities IS NOT NULL
   AND officers.state_code IN ( ${linestaffStatesForQuery} )`;
 
-function sendLinestaffEmailReminders() {
+function sendLinestaffEmailReminders_() {
   sendAllLoginReminders(
     false,
     LINESTAFF_QUERY,
