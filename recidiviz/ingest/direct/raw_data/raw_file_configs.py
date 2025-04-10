@@ -64,6 +64,7 @@ class RawDataClassification(Enum):
     VALIDATION = "validation"
 
 
+# TODO(#40717) Add BIRTHDATE
 class RawTableColumnFieldType(Enum):
     """Field type for a single raw data column"""
 
@@ -379,6 +380,7 @@ class RawTableColumnInfo:
         DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_YY)
         DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_WW)
 
+    # TODO(#40717) Check BIRTHDATE is PII and DATETIME is not
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
         if self.known_values and self.field_type != RawTableColumnFieldType.STRING:
@@ -884,6 +886,11 @@ class DirectIngestRawFileConfig:
         """
         now = datetime.now(timezone.utc)
         return [column for column in self._columns if column.exists_at_datetime(now)]
+
+    @property
+    def current_pii_columns(self) -> List[RawTableColumnInfo]:
+        """Filters to only current columns that have PII."""
+        return [column for column in self.current_columns if column.is_pii]
 
     @property
     def current_documented_columns(self) -> List[RawTableColumnInfo]:

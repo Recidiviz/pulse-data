@@ -42,6 +42,7 @@ Example Usage:
     --regenerate_fixtures_from_sheet_id GOOGLE_SHEETS_ID \
     --credentials_directory /Your/local/google/credentials/path \
 
+# TODO(#39680) DEPRECATE THIS SCRIPT
 """
 import argparse
 import sys

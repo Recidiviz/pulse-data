@@ -47,6 +47,8 @@ Example Usage:
     [--datetime_format '%m/%d/%y'] \
     [--overwrite True] \
     [--randomized_values_map '{"person_id_here": "randomized_id_here", "birthdate_value_here": "randomized_date_here"}']
+
+# TODO(#39680) DEPRECATE THIS SCRIPT
 """
 import argparse
 import json

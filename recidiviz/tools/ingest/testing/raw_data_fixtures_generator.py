@@ -47,11 +47,11 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 )
 from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.randomize_fixture_data import (
-    randomize_value,
+    legacy_randomize_value,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
-# TODO(#40159) Delete this constant when randomization capabilities are updated
+# TODO(#39680) DEPRECATE THIS FILE
 RANDOMIZED_COLUMN_PREFIX = "recidiviz_randomized_"
 
 
@@ -99,7 +99,6 @@ class RawDataFixturesGenerator:
         )
 
         # TODO(#12178) Rely only on pii fields once all states have labeled PII fields.
-        # TODO(#40159) Update randomization capabilities
         self.columns_to_randomize = [
             column
             for raw_config in self.ingest_view_raw_table_dependency_configs
@@ -186,7 +185,6 @@ class RawDataFixturesGenerator:
                 f"Table [{raw_table_dataset_id}].[{raw_file_config.file_tag}] does not exist, exiting."
             )
 
-    # TODO(#40159) Update randomization capabilities
     def randomize_column_data(
         self,
         query_results: DataFrame,
@@ -239,7 +237,7 @@ class RawDataFixturesGenerator:
             if original_value is None:
                 return ""
             if original_value not in self.randomized_values_map:
-                self.randomized_values_map[original_value] = randomize_value(
+                self.randomized_values_map[original_value] = legacy_randomize_value(
                     original_value, column_info, self.datetime_format
                 )
             return self.randomized_values_map[original_value]

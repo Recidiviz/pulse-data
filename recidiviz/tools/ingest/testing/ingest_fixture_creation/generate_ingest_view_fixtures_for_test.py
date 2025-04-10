@@ -59,6 +59,9 @@ from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.pull_root_entity_filtered_raw_data_for_ingest_view import (
     build_root_entity_filtered_raw_data_queries,
 )
+from recidiviz.tools.ingest.testing.ingest_fixture_creation.randomize_fixture_data import (
+    randomize_fixture_data,
+)
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
@@ -285,6 +288,10 @@ def main() -> None:
         args.project_id,
         fixtures_to_skip,
     )
+    # TODO(#39686) No longer prompt when encrypted PII is in configs.
+    _ = prompt_for_confirmation(
+        "\n\nHave you recorded this information in our tracker here? ---> https://go/fixture-pii"
+    )
     bq_client = BigQueryClientImpl(args.project_id)
     for (
         file_tag,
@@ -297,13 +304,7 @@ def main() -> None:
             use_query_cache=True,
         )
         df = query_job.result().to_dataframe()
-        # TODO(#40159) Update randomization capabilities
-        raise NotImplementedError(
-            "#40159) Do NOT use until we can at least randomize PII."
-        )
-        # Randomize data as needed in the DataFrame
-        # TODO(#39681) Encrypt data in the dataframe as needed
-        # pylint: disable=unreachable
+        df = randomize_fixture_data(df, dependency.raw_file_config)
         RawDataFixture(dependency).write_dataframe_into_fixture_file(
             df,
             args.test_characteristic,
