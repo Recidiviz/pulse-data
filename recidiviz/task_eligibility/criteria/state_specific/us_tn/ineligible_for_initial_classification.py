@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN resident is ineligible for annual
-reclassification.
-"""
+"""Describes the spans of time when a resident is ineligible for initial classification."""
 
 from google.cloud import bigquery
 
@@ -31,7 +29,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_INELIGIBLE_FOR_ANNUAL_RECLASSIFICATION"
+_CRITERIA_NAME = "US_TN_INELIGIBLE_FOR_INITIAL_CLASSIFICATION"
 
 _QUERY_TEMPLATE = """
     SELECT
@@ -39,10 +37,10 @@ _QUERY_TEMPLATE = """
         person_id,
         start_date,
         end_date,
-        NOT is_eligible AND NOT is_almost_eligible AS meets_criteria,
+        NOT is_eligible AS meets_criteria,
         TO_JSON(STRUCT((ineligible_criteria) AS ineligible_criteria)) AS reason,
         ineligible_criteria,
-    FROM `{project_id}.{task_eligibility_dataset}.annual_reclassification_review_materialized` tes
+    FROM `{project_id}.{task_eligibility_dataset}.initial_classification_review_materialized` tes
     WHERE
         tes.state_code = 'US_TN'
 """
@@ -60,7 +58,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             ReasonsField(
                 name="ineligible_criteria",
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Criteria not met for annual reclassification",
+                description="Criteria not met for initial classification",
             ),
         ],
     )

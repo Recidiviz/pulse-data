@@ -42,7 +42,7 @@ _DESCRIPTION = """Builder for a task eligibility spans view that shows the spans
 someone in TN is eligible for an initial classification.
 """
 
-NOT_INITIAL_CLASSIFICATION_SINCE_STATE_PRISON_CUSTODY_START = (
+NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY = (
     InvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
     )
@@ -54,7 +54,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        NOT_INITIAL_CLASSIFICATION_SINCE_STATE_PRISON_CUSTODY_START,
+        NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,
         custody_level_is_not_max.VIEW_BUILDER,
         # This criteria is used to add the current and recommended custody levels into the reasons blob for easier
         # access to the fields on the front end. This could also be done via the opportunity record query but doing it
