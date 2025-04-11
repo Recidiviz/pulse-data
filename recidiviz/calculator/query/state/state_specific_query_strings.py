@@ -230,6 +230,8 @@ def state_specific_facility_exclusion(optional_prefix: Optional[str] = None) -> 
 def state_specific_supervision_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE 
+          WHEN {state_code_table_prefix}.state_code = 'US_AR'
+          THEN 'US_AR_OFFENDERID'
           WHEN {state_code_table_prefix}.state_code = 'US_AZ'
           THEN 'US_AZ_PERSON_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_CA'
@@ -265,6 +267,8 @@ def state_specific_supervision_external_id_type(state_code_table_prefix: str) ->
 def state_specific_incarceration_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE
+          WHEN {state_code_table_prefix}.state_code = 'US_AR'
+          THEN 'US_AR_OFFENDERID'
           WHEN {state_code_table_prefix}.state_code = 'US_AZ'
           THEN 'US_AZ_PERSON_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_CA'
