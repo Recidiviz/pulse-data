@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  pkReviewHearingDetail: STRING
+  pkAllegationID: STRING
+  allegationType: STRING
+  hearingDate: DATE
+  outcome_action: STRING
+  charges: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - pkReviewHearingDetail
+                - pkAllegationID
+          violation_date: hearingDate # only have hearing date for the violations in hearing table
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: allegationType
+                    $mappings:
+                      StateSupervisionViolationType.LAW:
+                        - Law
+                      StateSupervisionViolationType.TECHNICAL:
+                        - Technical
+                      StateSupervisionViolationType.ABSCONDED:
+                        - Abscond
+          supervision_violated_conditions:
+            - StateSupervisionViolatedConditionEntry:
+                condition:
+                  $enum_mapping:
+                    $raw_text: charges
+                    $mappings:
+                      StateSupervisionViolatedConditionType.FINANCIAL:
+                        - Financial Obligations
+                      StateSupervisionViolatedConditionType.LAW:
+                        - Drugs - Felony
+                        - Drugs - Misdemeanor
+                        - Drugs - Traffic
+                        - Arson - Felony
+                        - Assault - Felony
+                        - Assault - Misdemeanor
+                        - Burglary - Felony
+                        - Burglary - Misdemeanor
+                        - Theft - Felony
+                        - Theft - Misdemeanor
+                        - Weapons - Felony
+                        - Weapons - Misdemeanor
+                        - Restraint - Felony
+                        - Restraint - Misdemeanor
+                        - Robbery - Felony
+                        - Sex Offenses - Felony
+                        - Sex Offenses - Misdemeanor
+                        - Other - Felony
+                        - Other - Misdemeanor
+                        - Morals - Felony
+                        - Morals - Misdemeanor
+                        - Motor Vehicle - Felony
+                        - Motor Vehicle - Misdemeanor
+                        - Fraud - Felony
+                        - Fraud - Misdemeanor
+                        - Homicide - Felony
+                        - Laws/Failure to conduct self as good citizen
+                      StateSupervisionViolatedConditionType.EMPLOYMENT:
+                        - Employment
+                      StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                        - Special Conditions
+                        - Written Directives
+                        - Personalized Plan
+                        - Directives
+                      StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                        - Leaving the County
+                        - Leaving the State
+                      StateSupervisionViolatedConditionType.FAILURE_TO_REPORT:
+                        - Failure to Report
+                        - Failure to report law contact
+                      StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                        - Abscond
+                        - Communication Devices
+                        - Criminal Associates
+                        - Motor Vehicle - Traffic
+                        - Other - Traffic
+                        - Release
+                        - Residence
+                        - Weapons
+
+                      StateSupervisionViolatedConditionType.SUBSTANCE:
+                        - Narcotics
+                        - Narcotics - (A/metha)mphetamine
+                        - Narcotics - (A/metha)mphetamine Cannabinoids
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine Opiates
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine PCP
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Opiates
+                        - Narcotics - (A/metha)mphetamine Cocaine
+                        - Narcotics - (A/metha)mphetamine Cocaine Opiates
+                        - Narcotics - (A/metha)mphetamine Cocaine PCP Opiates
+                        - Narcotics - (A/metha)mphetamine Opiates
+                        - Narcotics - Cannabinoids
+                        - Narcotics - Cannabinoids Cocaine
+                        - Narcotics - Cannabinoids Cocaine Opiates
+                        - Narcotics - Cannabinoids Cocaine PCP
+                        - Narcotics - Cannabinoids Opiates
+                        - Narcotics - Cannabinoids PCP
+                        - Narcotics - Cocaine
+                        - Narcotics - Cocaine Opiates
+                        - Narcotics - Cocaine PCP
+                        - Narcotics - Opiates
+                        - Narcotics - PCP
+                        - Intoxicants
+
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - inmateNumber
+                      - pkReviewHearingDetail
+                      - pkAllegationID
+                response_type:
+                  $enum_mapping:
+                    $raw_text: outcome_action
+                    $mappings:
+                      StateSupervisionViolationResponseType.PERMANENT_DECISION:
+                        - revokeBoard
+                        - revokeReparole
+                      StateSupervisionViolationResponseType.INTERNAL_UNKNOWN:
+                        - unknown
+                        - continueParole
+                response_date: hearingDate
+                deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $enum_mapping:
+                          $raw_text: outcome_action
+                          $mappings:
+                            StateSupervisionViolationResponseDecision.CONTINUANCE:
+                              - continueParole
+                            StateSupervisionViolationResponseDecision.REVOCATION:
+                              - revokeBoard
+                              - revokeReparole
+                            StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                              - residenceVerification
+                              - unknown

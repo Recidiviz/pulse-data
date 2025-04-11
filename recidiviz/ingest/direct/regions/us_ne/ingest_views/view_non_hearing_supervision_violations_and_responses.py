@@ -17,7 +17,7 @@
 """Query containing supervision violations and responses information that does not result in hearing.
 These are considered less serious violations they can handle without offical hearings.
 If they are more serious or refuse these violation responses they will be ingested
-seperately (#39539): Ingest PIMSReviewHearing serious violations
+seperately in view_hearing_supervision_violations_and_responses
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -29,7 +29,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH 
 -- joining all tables with violation and response information, not including violation requiring a hearing
--- those are to be ingested seperately TODO(#39539): Ingest violation hearings
+-- those are ingested seperately in view_hearing_supervision_violations_and_responses
 vio_and_resp AS (
   SELECT 
     a.id,
