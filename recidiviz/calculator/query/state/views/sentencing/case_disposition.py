@@ -65,6 +65,7 @@ SENTENCING_CASE_DISPOSITION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "client_id",
         "person_id",
         "case_id",
+        "psi_email",
         "gender",
         "lsir_score",
         "assessment_score",
@@ -76,6 +77,11 @@ SENTENCING_CASE_DISPOSITION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "sentence_date",
         "assigned_date",
         "sentence_start_date",
+        "most_severe_description",
+        "any_is_violent_uniform",
+        "any_is_drug_uniform",
+        "any_is_sex_offense",
+        "assigned_date_diff_days",
     ],
 )
 

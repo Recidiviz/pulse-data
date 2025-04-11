@@ -29,7 +29,17 @@ SELECT
         WHEN sess.compartment_level_2 = "GENERAL" THEN "TERM"
     END AS cohort_group,
     sess.start_date AS sentence_start_date,
+    imposed_summary.most_severe_description,
+    imposed_summary.any_is_violent_uniform,
+    imposed_summary.any_is_drug_uniform,
+    imposed_summary.any_is_sex_offense,
 FROM `{project_id}.sessions.compartment_sessions_materialized` sess
+LEFT JOIN `{project_id}.sessions.compartment_sessions_closest_sentence_imposed_group` closest_imposed_group
+  ON sess.person_id = closest_imposed_group.person_id
+  AND sess.session_id = closest_imposed_group.session_id
+LEFT JOIN `{project_id}.sessions.sentence_imposed_group_summary_materialized` imposed_summary
+  ON closest_imposed_group.person_id = imposed_summary.person_id
+  AND closest_imposed_group.sentence_imposed_group_id = imposed_summary.sentence_imposed_group_id
 WHERE
     sess.compartment_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE",
                                  "SUPERVISION", "SUPERVISION_OUT_OF_STATE")
@@ -43,11 +53,21 @@ SELECT
     sess.assessment_score_start AS assessment_score,
     "PROBATION" AS cohort_group,
     sp.effective_date AS sentence_start_date,
+    imposed_summary.most_severe_description,
+    imposed_summary.any_is_violent_uniform,
+    imposed_summary.any_is_drug_uniform,
+    imposed_summary.any_is_sex_offense,
 FROM `{project_id}.sessions.sentences_preprocessed_materialized` sp
 INNER JOIN `{project_id}.sessions.compartment_sessions_materialized` sess
   ON sp.state_code = sess.state_code
   AND sp.person_id = sess.person_id
   AND sp.session_id_closest = sess.session_id
+LEFT JOIN `{project_id}.sessions.compartment_sessions_closest_sentence_imposed_group` closest_imposed_group
+  ON sess.person_id = closest_imposed_group.person_id
+  AND sess.session_id = closest_imposed_group.session_id
+LEFT JOIN `{project_id}.sessions.sentence_imposed_group_summary_materialized` imposed_summary
+  ON closest_imposed_group.person_id = imposed_summary.person_id
+  AND closest_imposed_group.sentence_imposed_group_id = imposed_summary.sentence_imposed_group_id
 WHERE sentence_sub_type = "PROBATION"
 ),
 sentence_cohort AS (
@@ -81,7 +101,11 @@ SELECT
   cases.sentence_date AS sentence_date,
   cases.assigned_date AS assigned_date,
   sentence_cohort.sentence_start_date,
-  DATE_DIFF(assigned_date, sentence_cohort.sentence_start_date, DAY) as assigned_date_diff_days,
+  DATE_DIFF(sentence_cohort.sentence_start_date, assigned_date, DAY) as assigned_date_diff_days,
+  most_severe_description,
+  any_is_violent_uniform,
+  any_is_drug_uniform,
+  any_is_sex_offense,
 FROM `{project_id}.sentencing_views.sentencing_client_record_historical_materialized` clients,
 UNNEST(JSON_VALUE_ARRAY(case_ids)) AS case_id
 INNER JOIN psi_cases
