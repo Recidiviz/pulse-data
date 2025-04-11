@@ -820,7 +820,7 @@ INCARCERATION_SENTENCE_LENGTHS_FRAGMENT = f"""
             component.TIMECOMPFLAG,
             compute.PAROLEREVOKEDFLAG
         FROM sentence_lengths sl
-        LEFT JOIN {{SENTENCECOMPONENT}} component
+        INNER JOIN {{SENTENCECOMPONENT}} component
         ON 
             sl.OFFENDERID = component.OFFENDERID AND 
             sl.COMMITMENTPREFIX = component.COMMITMENTPREFIX AND 

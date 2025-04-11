@@ -48,7 +48,7 @@ sentence_start_dates AS (
         sc.SENTENCEIMPOSEDDATE,
         sc.SENTENCEBEGINDATE
     FROM sentence_lengths_life_flags sl
-    INNER JOIN {{SENTENCECOMPONENT}} sc
+    LEFT JOIN {{SENTENCECOMPONENT}} sc
     ON 
         sl.OFFENDERID = sc.OFFENDERID AND
         sl.COMMITMENTPREFIX = sc.COMMITMENTPREFIX AND
