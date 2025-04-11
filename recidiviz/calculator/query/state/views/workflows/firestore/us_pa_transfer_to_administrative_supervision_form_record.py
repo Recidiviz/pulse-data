@@ -67,19 +67,32 @@ WITH
   ),
   form_information AS (
     SELECT person_id,
-        LOGICAL_OR(form_information_drug_charge_initial) AS form_information_drug_charge_initial,
-        LOGICAL_OR(form_information_statue_14) AS form_information_statue_14,
-        LOGICAL_OR(form_information_statue_30) AS form_information_statue_30,
-        LOGICAL_OR(form_information_statue_37) AS form_information_statue_37,
+        LOGICAL_OR(form_information_drug_charge_initial AND guilty_charge_indicator) AS form_information_drug_conviction_initial,
+        LOGICAL_OR(form_information_statute_14 AND guilty_charge_indicator) AS form_information_statute_14_conviction,
+        LOGICAL_OR(form_information_statute_30 AND guilty_charge_indicator) AS form_information_statute_30_conviction,
+        LOGICAL_OR(form_information_statute_37 AND guilty_charge_indicator) AS form_information_statute_37_conviction,
+        LOGICAL_OR(form_information_drug_charge_initial AND unreported_disposition_indicator) AS form_information_drug_unreported_disposition_initial,
+        LOGICAL_OR(form_information_statute_14 AND unreported_disposition_indicator) AS form_information_statute_14_unreported_disposition,
+        LOGICAL_OR(form_information_statute_30 AND unreported_disposition_indicator) AS form_information_statute_30_unreported_disposition,
+        LOGICAL_OR(form_information_statute_37 AND unreported_disposition_indicator) AS form_information_statute_37_unreported_disposition,
     FROM ({adm_form_information_helper()})
     GROUP BY 1
   )
   SELECT
     eligible_and_almost_eligible.*,
     array_case_notes_cte.case_notes,
-    form_information.* EXCEPT(person_id, form_information_drug_charge_initial),
-    (form_information_drug_charge_initial OR form_information_statue_14 OR form_information_statue_30 OR form_information_statue_37)
-        AS form_information_drug_charge, -- make sure that if sub-section is checked, drug charge box is checked 
+    (form_information_statute_14_conviction OR form_information_statute_14_unreported_disposition) AS form_information_statue_14, #TODO(#40577) to remove once front end is updated
+    (form_information_statute_14_conviction OR form_information_statute_14_unreported_disposition) AS form_information_statute_14,
+    (form_information_statute_30_conviction OR form_information_statute_30_unreported_disposition) AS form_information_statue_30,  #TODO(#40577) to remove once front end is updated
+    (form_information_statute_30_conviction OR form_information_statute_30_unreported_disposition) AS form_information_statute_30,
+    (form_information_statute_37_conviction OR form_information_statute_37_unreported_disposition) AS form_information_statue_37,  #TODO(#40577) to remove once front end is updated
+    (form_information_statute_37_conviction OR form_information_statute_37_unreported_disposition) AS form_information_statute_37,
+    (form_information_drug_conviction_initial OR form_information_statute_14_conviction OR form_information_statute_30_conviction OR form_information_statute_37_conviction)
+        AS form_information_drug_conviction, -- make sure that if sub-section is checked because of a conviction, the first drug box is checked 
+    (form_information_drug_conviction_initial OR form_information_statute_14_conviction OR form_information_statute_30_conviction OR form_information_statute_37_conviction)
+        AS form_information_drug_charge, #TODO(#40577) to remove once front end is updated
+    (form_information_drug_unreported_disposition_initial OR form_information_statute_14_unreported_disposition OR form_information_statute_30_unreported_disposition OR form_information_statute_37_unreported_disposition)
+        AS form_information_drug_unreported_disposition, -- make sure that if sub-section is checked because of an unreported disposition, the second drug box is checked 
   FROM eligible_and_almost_eligible
   LEFT JOIN array_case_notes_cte 
     ON eligible_and_almost_eligible.external_id = array_case_notes_cte.external_id

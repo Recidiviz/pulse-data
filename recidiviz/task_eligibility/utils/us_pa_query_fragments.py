@@ -626,8 +626,7 @@ def adm_form_information_helper() -> str:
         WITH sentences_and_charges AS ({sentences_and_charges_cte()})
         SELECT person_id,
         (offense_type = 'DRUGS' 
-            OR(offense_type IS NULL
-                AND (description LIKE '%DRUG%'
+            OR(offense_type IS NULL AND (description LIKE '%DRUG%'
                     OR description LIKE '%DRG%'
                     OR description LIKE '%MARIJUANA%'
                     OR description LIKE '%MARA%'
@@ -652,7 +651,7 @@ def adm_form_information_helper() -> str:
                 AND description LIKE '%ADMIN%' 
                 AND description LIKE '%DISP%' 
                 AND description LIKE '%DEL%' 
-                AND description LIKE '%PRAC%')) AS form_information_statue_14,
+                AND description LIKE '%PRAC%')) AS form_information_statute_14,
 
         -- 35 P.S. 780-113 (30) - manufacture, sale, delivery, or possession with intent to deliver 
         ((statute LIKE '%13A30%' 
@@ -669,13 +668,16 @@ def adm_form_information_helper() -> str:
                     OR description LIKE '%M/S/D%')
                 AND (description NOT LIKE '%PAR%' -- doesn't include paraphernalia 
                     AND description NOT LIKE '%NON%' -- doesn't include non-controlled substances
-                    AND description NOT LIKE 'ID THEFT%'))) AS form_information_statue_30,  -- doesn't include possession of id with intent to use
+                    AND description NOT LIKE 'ID THEFT%'))) AS form_information_statute_30,  -- doesn't include possession of id with intent to use
 
         -- 35 P.S. 780-113 (37) - possessing excessive amounts of steroids
         ((statute LIKE '%13A37%'
                 OR statute LIKE '%13.A37%')
-            OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
+            OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statute_37, 
             -- steroids is misspelled in the data,
+        
+        (status = 'CONVICTED') AS guilty_charge_indicator,
+        (status = 'EXTERNAL_UNKNOWN') as unreported_disposition_indicator,
         date_imposed,
     FROM sentences_and_charges
     WHERE state_code = 'US_PA'
@@ -878,9 +880,9 @@ def adm_case_notes_helper() -> str:
     SELECT DISTINCT pei.external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DRUG' AS note_title,
-      CASE WHEN form_information_statue_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
-        WHEN form_information_statue_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
-        WHEN form_information_statue_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+      CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
+        WHEN form_information_statute_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+        WHEN form_information_statute_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
         END AS note_body,
       date_imposed AS event_date,
     FROM ({adm_form_information_helper()}) form
@@ -888,9 +890,9 @@ def adm_case_notes_helper() -> str:
       ON form.person_id = pei.person_id
       AND pei.state_code = 'US_PA'
       AND id_type = 'US_PA_PBPP'
-    WHERE (form.form_information_statue_14
-      OR form.form_information_statue_30
-      OR form.form_information_statue_37)
+    WHERE (form.form_information_statute_14
+      OR form.form_information_statute_30
+      OR form.form_information_statute_37)
     
     UNION ALL 
     
@@ -907,14 +909,22 @@ def adm_case_notes_helper() -> str:
         WHERE Disposition = 'Active Case'
     )
     SELECT DISTINCT
-      external_id,
+      pc.external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'PENDING CHARGE' AS note_title,
       CASE WHEN {offense_is_admin_ineligible()} THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
-        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have pending charges
+        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have new pending charges
         END AS note_body,
       event_date,
-    FROM pending_charges
+    FROM pending_charges pc
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON pc.external_id = pei.external_id
+      AND pei.state_code = 'US_PA'
+      AND id_type = 'US_PA_PBPP'
+    LEFT JOIN ({us_pa_supervision_super_sessions()}) ss
+      ON ss.person_id = pei.person_id
+    WHERE {offense_is_admin_ineligible()}
+      OR event_date >= release_date -- only include admin ineligible charges OR newly incurred charges while on supervision
     )
     """
 
