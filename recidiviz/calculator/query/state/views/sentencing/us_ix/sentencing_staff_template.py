@@ -23,7 +23,7 @@ WITH
         SELECT DISTINCT
             AssignedToUserId,
             STRING_AGG(CONCAT('"',PSIReportId,'"'), ',' ORDER BY UpdateDate) AS case_ids
-        FROM   `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
         GROUP BY AssignedToUserId
     )
     SELECT DISTINCT
@@ -34,12 +34,12 @@ WITH
         CONCAT('[', case_ids,']') AS case_ids,
         supervisor_roster.supervisorExternalId AS supervisor_id
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
-    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` id 
-        ON psi.AssignedToUserId = id.external_id and id_type = 'US_IX_EMPLOYEE'
-    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff` staff 
-        ON  staff.staff_id = id.staff_id
-    LEFT JOIN caseIds c 
-        ON psi.AssignedToUserId = c.AssignedToUserId
-    LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_psi_supervisor_roster_latest` supervisor_roster
+    FULL OUTER JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_psi_supervisor_roster_latest` supervisor_roster
         ON psi.AssignedToUserId = supervisor_roster.externalId
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` id 
+        ON COALESCE(psi.AssignedToUserId, supervisor_roster.externalId) = id.external_id and id_type = 'US_IX_EMPLOYEE'
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff` staff 
+        ON staff.staff_id = id.staff_id
+    LEFT JOIN caseIds c
+        ON COALESCE(psi.AssignedToUserId, supervisor_roster.externalId) = c.AssignedToUserId
 """
