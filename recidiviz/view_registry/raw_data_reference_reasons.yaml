@@ -1387,6 +1387,10 @@ US_ND:
   recidiviz_elite_Assessments:
     task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
       Used to create a criteria using data from a referral tool.
+    user_metrics.us_nd_transfer_to_min_eligible_pending_approval: |-
+      This view references instances when a resident has been recommended for minimum housing which does not have a logical place in our current schema.
+    user_metrics.us_nd_transfer_to_min_eligible_waiting_for_transfer: |-
+      This view references instances when a resident has been recommended for minimum housing which does not have a logical place in our current schema.
     workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
       Used to flag minimum facility referrals in the side panel of the dashboard.
   recidiviz_elite_CourseActivities:
@@ -1395,6 +1399,10 @@ US_ND:
   recidiviz_elite_OffenderAssessments:
     task_eligibility_criteria_us_nd.no_recent_referrals_to_minimum_housing: |-
       Used to create a criteria using data from a referral tool.
+    user_metrics.us_nd_transfer_to_min_eligible_pending_approval: |-
+      Used to flag residents pending approvals to be eligible to transfer to min security in leadership report.
+    user_metrics.us_nd_transfer_to_min_eligible_waiting_for_transfer: |-
+      Used to flag residents eligible for to transfer to min security and awaiting transfer in leadership report.
     workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
       Used to flag minimum facility referrals in the side panel of the dashboard.
   recidiviz_elite_offender_alerts:

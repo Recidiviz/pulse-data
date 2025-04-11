@@ -407,6 +407,7 @@ MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
         reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
         SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
         SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
+        reoa.REVIEW_PLACE_AGY_LOC_ID AS referral_facility,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` rea
     ON reoa.ASSESSMENT_TYPE_ID = rea.ASSESSMENT_ID
@@ -434,6 +435,7 @@ min_referrals_with_external_id AS (
         mr.committee_comment_text,
         mr.evaluation_date AS start_date,
         mr.next_review_date,
+        mr.referral_facility,
     FROM min_referrals mr
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
         ON mr.external_id = peid.external_id
@@ -482,6 +484,87 @@ min_referrals_with_external_id_and_ce AS (
             AND mr.state_code = ce.state_code
     GROUP BY 1,2,3,4,5,6,7,8,9
 )"""
+
+
+def get_recent_denials_query() -> str:
+    """
+    Returns a SQL query that retrieves minimum housing referrals data.
+    """
+    return """
+    WITH recent_denials AS (
+      SELECT 
+          sn.state_code,
+          sn.person_external_id,
+          SAFE_CAST(sn.start_date AS DATE) AS marked_ineligible_date,
+          SAFE_CAST(sn.end_date_scheduled AS DATE) AS snoozed_until_date,
+          sn.snoozed_by AS denied_by_email,
+          STRING_AGG(denial_reason, ' - ' ORDER BY denial_reason) AS denied_reasons,
+      FROM `{project_id}.workflows_views.clients_snooze_spans_materialized` sn,
+      UNNEST(denial_reasons) AS denial_reason
+      WHERE sn.state_code = 'US_ND'
+          AND sn.opportunity_type = 'usNdTransferToMinFacility'
+          AND CURRENT_DATE('US/Eastern') BETWEEN SAFE_CAST(sn.start_date AS DATE) AND SAFE_CAST(sn.end_date_scheduled AS DATE)
+      GROUP BY 1,2,3,4,5
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sn.state_code, sn.person_external_id ORDER BY marked_ineligible_date DESC) = 1
+)"""
+
+
+def get_recent_referrals_query(evaluation_result: str) -> str:
+    """
+    Returns a SQL query that retrieves minimum housing referrals data based on the given evaluation_result.
+    Raises a ValueError if evaluation_result is not provided.
+    """
+    if not evaluation_result:
+        raise ValueError("evaluation_result must be provided.")
+
+    return f"""
+    recent_referrals AS (
+        SELECT *
+        FROM min_referrals_with_external_id
+        WHERE evaluation_result = '{evaluation_result}'
+    )
+
+    SELECT 
+        rr.person_external_id AS elite_no,
+        CONCAT(
+            JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
+            JSON_EXTRACT_SCALAR(rr.person_name, '$.surname')
+        ) AS person_name,
+        rr.facility_id,
+        rr.unit_id AS living_unit,
+        rr.release_date,
+        DATE_DIFF(CURRENT_DATE("US/Pacific"), sp.birthdate, YEAR) AS age_in_years,
+        rr.custody_level,
+        rr.state_code,
+        CONCAT(
+            sr.given_names, ' ', sr.surname
+        ) AS officer_name,
+        r_ref.start_date AS referral_date, 
+        r_ref.referral_facility
+    FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_minimum_facility_form_materialized` tes
+    INNER JOIN recent_referrals r_ref
+        USING(person_id, state_code)
+    LEFT JOIN `{{project_id}}.workflows_views.resident_record_materialized` rr
+        USING(person_id, state_code)
+    LEFT JOIN `{{project_id}}.workflows_views.incarceration_staff_record_materialized` sr
+        ON sr.id = rr.officer_id
+            AND sr.state_code = 'US_ND'
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
+        USING(person_id)
+    WHERE CURRENT_DATE("US/Pacific") BETWEEN tes.start_date AND IFNULL(tes.end_date, '9999-12-31')
+        -- Not in a minimum security facility
+        AND JSON_EXTRACT_SCALAR(
+                (SELECT item FROM UNNEST(JSON_EXTRACT_ARRAY(reasons, "$")) AS item
+                WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"), 
+                "$.reason.minimum_facility") IS NULL
+        -- Not in work-release already
+        AND JSON_EXTRACT_SCALAR(
+            (SELECT item FROM UNNEST(JSON_EXTRACT_ARRAY(reasons, "$")) AS item
+            WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "NOT_IN_WORK_RELEASE"), 
+            "$.reason.most_recent_work_release_start_date") IS NULL
+        AND custody_level != 'EXTERNAL_UNKNOWN'
+    ORDER BY facility_id, officer_name, release_date DESC
+"""
 
 
 _SSI_NOTE_TEXT_REGEX = "|".join(

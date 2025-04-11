@@ -24,12 +24,28 @@ from recidiviz.calculator.query.state.views.user_metrics.insights_user_available
 from recidiviz.calculator.query.state.views.user_metrics.officer_monthly_usage_report import (
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_marked_ineligible import (
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_MARKED_INELIGIBLE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_pending_approval import (
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_PENDING_APPROVAL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_waiting_for_transfer import (
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_without_referral import (
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.workflows_user_available_actions import (
     WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
 
 USAGE_REPORTS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER,
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER,
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_MARKED_INELIGIBLE_VIEW_BUILDER,
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_PENDING_APPROVAL_VIEW_BUILDER,
+    US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
     WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 ]
