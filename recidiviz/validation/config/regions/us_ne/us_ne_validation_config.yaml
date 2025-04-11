@@ -2,8 +2,26 @@
 
 region_code: US_NE
 dev_mode: False
-exclusions: []
-max_allowed_error_overrides: []
+exclusions:
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: NE is being hydrated only with v2 sentences
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: NE is being hydrated only with v2 sentences
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: NE is being hydrated only with v2 sentences
+max_allowed_error_overrides:
+  - validation_name: state_supervision_violation_response_by_response_date_stable_counts
+    hard_max_allowed_error_override: .38
+    override_reason: This is standard variation for this entity month to month.
+  - validation_name: state_supervision_violation_by_violation_date_stable_counts
+    hard_max_allowed_error_override: .38
+    override_reason: This is standard variation for this entity month to month.
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    hard_max_allowed_error_override: .38
+    override_reason: This is standard variation for this entity month to month.
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 12
