@@ -34,6 +34,9 @@
 
 """
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragments import (
+    PERIOD_EXCLUSIONS_FRAGMENT,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -411,15 +414,7 @@ period_info_agg AS (
     FROM period_info_agg
     WHERE 
         status IS NULL
-        OR status NOT IN(
-            "Death reported",
-            "Deported OOC",
-            "Death",
-            "Discharge",
-            "Erroneous Release Returned to ID",
-            "Full pardon",
-            "Sentence Reversed"
-        )
+        OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tx",

@@ -16,8 +16,11 @@
 # =============================================================================
 """CTE Logic that is shared across US_TX Workflows queries."""
 
+from recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragments import (
+    PERIOD_EXCLUSIONS_FRAGMENT,
+)
 
-US_TX_MAX_TERMINATION_DATES = """
+US_TX_MAX_TERMINATION_DATES = f"""
     WITH 
         tx_most_recent_max_dates_by_supervision_period AS (
             SELECT *
@@ -27,19 +30,11 @@ US_TX_MAX_TERMINATION_DATES = """
                     Period_ID_Number,
                     CAST(RMF_TIMESTAMP AS DATETIME) as update_datetime,
                     COALESCE(DATE(Max_termination_Date), DATE(9999,9,9)) AS Max_termination_Date
-                FROM `{project_id}.{us_tx_raw_data_up_to_date_dataset}.SupervisionPeriod_latest`
+                FROM `{{project_id}}.{{us_tx_raw_data_up_to_date_dataset}}.SupervisionPeriod_latest`
                 WHERE DATE(RMF_TIMESTAMP) IS NOT NULL -- only 172 cases where this is null and in those cases there's no start or end dates for the supervision periods so we'll exclude
                     AND (
                         status IS NULL
-                        OR status NOT IN(
-                            "Death reported",
-                            "Deported OOC",
-                            "Death",
-                            "Discharge",
-                            "Erroneous Release Returned to ID",
-                            "Full pardon",
-                            "Sentence Reversed"
-                    ) 
+                        OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
         )
             )
             QUALIFY ROW_NUMBER() OVER(PARTITION BY SID_Number, Period_ID_Number ORDER BY update_datetime DESC) = 1
