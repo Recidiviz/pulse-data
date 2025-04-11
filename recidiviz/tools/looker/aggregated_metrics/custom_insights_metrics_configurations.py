@@ -24,6 +24,9 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.outliers.aggregated_metrics_collector import (
+    OutliersAggregatedMetricsCollector,
+)
 
 INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
     "ALL_SUPERVISION_STATES": (
@@ -59,10 +62,8 @@ INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
 
 INSIGHTS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION,
-    metric_config.ABSCONSIONS_BENCH_WARRANTS,
-    metric_config.VIOLATIONS_ABSCONSION,
-    metric_config.INCARCERATION_STARTS,
-    metric_config.INCARCERATION_STARTS_AND_INFERRED,
+    # All outcome metrics reference in outliers configs
+    *OutliersAggregatedMetricsCollector().get_metrics(),
     metric_config.DISTINCT_PROVISIONED_INSIGHTS_USERS,
     metric_config.DISTINCT_REGISTERED_PROVISIONED_INSIGHTS_USERS,
     metric_config.DISTINCT_PROVISIONED_PRIMARY_INSIGHTS_USERS,
