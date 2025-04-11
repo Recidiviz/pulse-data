@@ -52,8 +52,26 @@ output:
                     $mappings:
                       StateSupervisionLevel.LIMITED:
                         - Annual
+              - $else_if:
+                  $equal:
+                    - case_type
+                    - $literal("Non-reporting")
+                $then:
+                  $enum_mapping:
+                    $raw_text: case_type
+                    $mappings:
                       StateSupervisionLevel.UNSUPERVISED:
                         - Non-reporting
+              - $else_if:
+                  $equal:
+                    - case_type
+                    - $literal("Electronic monitoring")
+                $then:
+                  $enum_mapping:
+                    $raw_text: case_type
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - Electronic monitoring
               - $else_if:
                   $and:
                     - $not_in:
