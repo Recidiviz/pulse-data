@@ -983,6 +983,7 @@ class DirectIngestRawFileConfig:
             StateCode.US_MI: {
                 "RECIDIVIZ_REFERENCE_leadership_roster": "We want to use this in views w/ @ALL"
             },
+            StateCode.US_AR: {"INTERVENTSANCTION": "We use this in views with @ALL"},
         }
 
         if self.file_tag in exempt_files.get(self.state_code, {}):
