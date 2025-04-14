@@ -152,8 +152,8 @@ def parse_specialized_pfi(raw_text: str) -> StateSpecializedPurposeForIncarcerat
 
 def parse_supervision_level(raw_text: str) -> StateSupervisionLevel:
     if raw_text:
-        level, status = raw_text.split("-")
-        if "COMPACT IN" in status or level == "COMPACT OUT":
+        level = raw_text.split("-")[0]
+        if level == "COMPACT OUT":
             return StateSupervisionLevel.INTERSTATE_COMPACT
         if "FUGITIVE" in level:
             return StateSupervisionLevel.WARRANT
