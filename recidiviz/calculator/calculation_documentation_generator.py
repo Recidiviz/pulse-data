@@ -29,7 +29,6 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 import attr
 from google.cloud import bigquery
-from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
 import recidiviz
@@ -41,10 +40,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.build_views_to_update import build_views_to_update
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
 )
@@ -275,8 +271,6 @@ class CalculationDocumentationGenerator:
         )
 
         self.dag_walker = BigQueryViewDagWalker(views_to_update)
-        self.dag_walker.populate_ancestor_sub_dags()
-        self.dag_walker.populate_descendant_sub_dags()
         self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
         self.metric_pipelines = self.prod_templates_yaml.pop_dicts("metric_pipelines")
@@ -316,11 +310,7 @@ class CalculationDocumentationGenerator:
         ]
 
         # Cached results of calls to _big_query_address_formatter_for_gitbook().
-        # Boolean keys are the value of the `products_section` argument.
-        self.formatted_address_cache: dict[bool, dict[BigQueryAddress, str]] = {
-            True: {},
-            False: {},
-        }
+        self.formatted_address_cache: dict[BigQueryAddress, str] = {}
 
     @staticmethod
     def _get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
@@ -405,19 +395,6 @@ class CalculationDocumentationGenerator:
                     for state_name in state_names
                 ]
             )
-        )
-
-    def _get_products_summary_str(self) -> str:
-        header = "\n- Products\n"
-
-        product_names = sorted([product.name for product in self.products])
-        return header + self.bulleted_list(
-            [
-                f"[{product_name}](calculation/products/"
-                f"{self._normalize_string_for_path(product_name)}/"
-                f"{self._normalize_string_for_path(product_name)}_summary.md)"
-                for product_name in product_names
-            ]
         )
 
     def _get_views_summary_str(self) -> str:
@@ -506,7 +483,6 @@ class CalculationDocumentationGenerator:
 
         calculation_catalog_summary.extend([self._get_aggregated_metrics_summary_str()])
         calculation_catalog_summary.extend([self._get_calculation_states_summary_str()])
-        calculation_catalog_summary.extend([self._get_products_summary_str()])
         calculation_catalog_summary.extend([self._get_views_summary_str()])
         calculation_catalog_summary.extend([self._get_dataflow_metrics_summary_str()])
 
@@ -526,12 +502,7 @@ class CalculationDocumentationGenerator:
         ):
             return "N/A"
 
-        return self.bulleted_list(
-            [
-                f"[{product}](../products/{self._normalize_string_for_path(product)}/{self._normalize_string_for_path(product)}_summary.md)"
-                for product in self.products_by_state[state_code][environment]
-            ]
-        )
+        return self.bulleted_list(list(self.products_by_state[state_code][environment]))
 
     def states_list_for_env(
         self, product: ProductConfig, environment: GCPEnvironment
@@ -546,26 +517,6 @@ class CalculationDocumentationGenerator:
 
         return self.bulleted_list(states_list) if states_list else "  N/A"
 
-    def _get_shipped_states_str(self, product: ProductConfig) -> str:
-        """Returns a string containing lists of shipped states and states in development
-        for a given product."""
-
-        shipped_states_str = self.states_list_for_env(
-            product, GCPEnvironment.PRODUCTION
-        )
-
-        development_states_str = self.states_list_for_env(
-            product, GCPEnvironment.STAGING
-        )
-
-        return (
-            "## SHIPPED STATES\n"
-            + shipped_states_str
-            + "\n\n## STATES IN DEVELOPMENT\n"
-            + development_states_str
-            + "\n\n"
-        )
-
     @staticmethod
     def _get_addresses_by_dataset(
         addresses: Set[BigQueryAddress],
@@ -578,140 +529,6 @@ class CalculationDocumentationGenerator:
         for key in sorted(addresses):
             datasets_to_views[key.dataset_id].append(key)
         return datasets_to_views
-
-    def _get_dataset_headers_to_views_str(
-        self, addresses: Set[BigQueryAddress], source_tables_section: bool = False
-    ) -> str:
-        """
-        Given a set of BigQueryAddresses, returns a str list of
-        those addresses, organized by dataset.
-        """
-        datasets_to_descriptions = {
-            **self.all_source_table_datasets_to_descriptions,
-            NORMALIZED_STATE_DATASET: (
-                "Contains normalized versions of the entities in the state dataset "
-                "produced by the ingest pipeline."
-            ),
-        }
-        datasets_to_addresses = self._get_addresses_by_dataset(addresses)
-        views_str = ""
-        for address_list in datasets_to_addresses.values():
-            address_list = [
-                (
-                    assert_type(
-                        self.dag_walker.nodes_by_address[a].view.materialized_address,
-                        BigQueryAddress,
-                    )
-                    if a.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
-                    else a
-                )
-                for a in address_list
-            ]
-            dataset = one({a.dataset_id for a in address_list})
-
-            views_str += f"#### {dataset}\n"
-            views_str += (
-                f"_{datasets_to_descriptions[dataset]}_\n"
-                if source_tables_section
-                else ""
-            )
-            views_str += (
-                self.bulleted_list(
-                    [
-                        self._big_query_address_formatter_for_gitbook(
-                            address=address, products_section=True
-                        )
-                        + " <br/>"
-                        for address in sorted(address_list)
-                    ],
-                    escape_underscores=False,
-                )
-            ) + "\n\n"
-
-        return views_str
-
-    def _get_views_str_for_product(self, view_addresses: Set[BigQueryAddress]) -> str:
-        """Returns the string containing the VIEWS section of the product markdown."""
-        views_header = "## VIEWS\n\n"
-        if not view_addresses:
-            return views_header + "*This product does not use any BigQuery views.*\n\n"
-        return views_header + self._get_dataset_headers_to_views_str(view_addresses)
-
-    def _get_source_tables_str_for_product(
-        self, source_table_addresses: Set[BigQueryAddress]
-    ) -> str:
-        """Returns the string containing the SOURCE TABLES section of the product markdown."""
-        source_tables_header = (
-            "## SOURCE TABLES\n"
-            "_Reference views that are used by other views. Some need to be updated manually._\n\n"
-        )
-        if not source_table_addresses:
-            return (
-                source_tables_header
-                + "*This product does not reference any source tables.*\n\n"
-            )
-        return source_tables_header + self._get_dataset_headers_to_views_str(
-            source_table_addresses, source_tables_section=True
-        )
-
-    def _get_metrics_str_for_product(
-        self, metric_view_addresses: Set[BigQueryAddress]
-    ) -> str:
-        """Builds the Metrics string for the product markdown file. Creates a table of
-        necessary metric types and whether a state calculates those metrics"""
-        metrics_header = (
-            "## METRICS\n_All metrics required to support this product and"
-            " whether or not each state regularly calculates the metric._"
-            "\n\n** DISCLAIMER **\nThe presence of all required metrics"
-            " for a state does not guarantee that this product is ready to"
-            " launch in that state.\n\n"
-        )
-
-        if not metric_view_addresses:
-            return (
-                metrics_header + "*This product does not rely on Dataflow metrics.*\n"
-            )
-        state_codes = sorted(
-            self._get_dataflow_pipeline_enabled_states(), key=lambda code: code.value
-        )
-
-        headers = ["**Metric**"] + [
-            f"**{state_code.value}**" for state_code in state_codes
-        ]
-
-        table_matrix = [
-            [
-                f"[{DATAFLOW_TABLES_TO_METRIC_TYPES[metric_view_address.table_id].value}](../../metrics/{self.generic_types_by_metric_name[metric_view_address.table_id].lower()}/{metric_view_address.table_id}.md)"
-            ]
-            + [
-                self._get_metric_supported_text_per_state(
-                    metric_view_address, state_code
-                )
-                for state_code in state_codes
-            ]
-            for metric_view_address in sorted(metric_view_addresses)
-        ]
-
-        writer = MarkdownTableWriter(
-            headers=headers, value_matrix=table_matrix, margin=0
-        )
-        return metrics_header + writer.dumps()
-
-    def _get_metric_supported_text_per_state(
-        self, metric_view_address: BigQueryAddress, state_code: StateCode
-    ) -> str:
-        metrics = self.metric_calculations_by_state[str(state_code.get_state())]
-        state_metrics = []
-        for metric in metrics:
-            if (
-                metric.name
-                == DATAFLOW_TABLES_TO_METRIC_TYPES[metric_view_address.table_id].value
-            ):
-                state_metrics.append(metric)
-        state_metric_texts = ""
-        for metric in state_metrics:
-            state_metric_texts += f"{metric.month_count} months {'(staging_only)' if metric and metric.staging_only else ''}"
-        return state_metric_texts
 
     @staticmethod
     def _get_all_config_view_addresses_for_product(
@@ -736,122 +553,10 @@ class CalculationDocumentationGenerator:
 
         return all_config_view_addresses
 
-    def _get_all_parent_addresses_for_product(
-        self, product: ProductConfig
-    ) -> Set[BigQueryAddress]:
-        """Returns a set containing a BigQueryAddress for every view that this product relies upon."""
-        all_config_view_addresses = self._get_all_config_view_addresses_for_product(
-            product
-        )
-
-        all_parent_addresses: Set[BigQueryAddress] = set()
-        for view_address in all_config_view_addresses:
-            all_related_addresses = self.dag_walker.related_ancestor_addresses(
-                address=view_address, terminating_datasets=LATEST_VIEW_DATASETS
-            )
-            all_parent_addresses |= all_related_addresses
-
-        # Ignore materialized metric views as relevant metric info can be found in a
-        # different dataset (DATAFLOW_METRICS_DATASET).
-        all_parent_addresses.difference_update(
-            {
-                address
-                for address in all_parent_addresses
-                if address.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
-            }
-        )
-        return all_parent_addresses
-
-    def _get_product_information(self, product: ProductConfig) -> str:
-        """Returns a string containing all relevant information for a given product
-        including name, views used, source tables, and required metrics."""
-
-        documentation = f"# {product.name.upper()}\n"
-        documentation += product.description + "\n"
-
-        documentation += self._get_shipped_states_str(product)
-
-        all_parent_addresses = {
-            address
-            for address in self._get_all_parent_addresses_for_product(product)
-            # Ignore all state-specific ingest output addresses - these will get
-            # surfaced instead as being a source table in the normalized_state dataset.
-            if address.dataset_id not in STATE_SPECIFIC_NORMALIZED_STATE_DATASETS
-        }
-
-        source_table_addresses = {
-            address
-            for address in all_parent_addresses
-            if address.dataset_id
-            in self.all_source_table_datasets
-            - {
-                # Metric info will be included in the metric-specific section
-                DATAFLOW_METRICS_DATASET,
-            }
-            # Even though they aren't technically source tables, parent addresses
-            # in the normalized_state_views dataset should be treated as source tables.
-            or address.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
-        }
-
-        metric_view_addresses = {
-            address
-            for address in all_parent_addresses
-            if address.dataset_id == DATAFLOW_METRICS_DATASET
-        }
-
-        # Remove metric addresses as they are surfaced in a metric-specific section. Remove
-        # source table addresses as they are surfaced in a reference-specific section
-        view_addresses = (
-            all_parent_addresses - metric_view_addresses - source_table_addresses
-        )
-
-        documentation += self._get_views_str_for_product(view_addresses)
-        documentation += self._get_source_tables_str_for_product(source_table_addresses)
-        documentation += self._get_metrics_str_for_product(metric_view_addresses)
-
-        return documentation
-
     @staticmethod
     def _normalize_string_for_path(target_string: str) -> str:
         """Returns a lowercase, underscore-separated string."""
         return target_string.lower().replace(" ", "_")
-
-    def generate_products_markdowns(self) -> bool:
-        """Generates markdown files if necessary for the docs/calculation/products
-        directories"""
-        logging.info("Generating product documentation")
-        anything_modified = False
-
-        products_dir_path = os.path.join(self.root_calc_docs_dir, "products")
-
-        existing_product_files: Set[str] = get_all_files_recursive(products_dir_path)
-        new_product_files: Set[str] = set()
-
-        for product in self.products:
-            # Generate documentation for each product
-            documentation = self._get_product_information(product)
-
-            # Write documentation to markdown files
-            product_name_for_path = self._normalize_string_for_path(product.name)
-            product_dir_path = os.path.join(products_dir_path, product_name_for_path)
-            os.makedirs(product_dir_path, exist_ok=True)
-            product_filename = f"{product_name_for_path}_summary.md"
-            product_markdown_path = os.path.join(product_dir_path, product_filename)
-
-            anything_modified |= persist_file_contents(
-                documentation, product_markdown_path
-            )
-
-            # Keep track of new product files
-            new_product_files.add(product_markdown_path)
-
-        # Delete any deprecated product files
-        deprecated_files = existing_product_files.difference(new_product_files)
-        if deprecated_files:
-            delete_files(deprecated_files, delete_empty_dirs=True)
-            anything_modified |= True
-
-        return anything_modified
 
     @staticmethod
     def _get_state_metric_calculations(
@@ -921,11 +626,11 @@ class CalculationDocumentationGenerator:
         documentation = f"# {state_name}\n\n"
 
         # Products section
-        documentation += "## Shipped Products\n\n"
+        documentation += "## Enabled Product Metric Exports (PROD)\n\n"
         documentation += self.products_list_for_env(
             state_code, GCPEnvironment.PRODUCTION
         )
-        documentation += "\n\n## Products in Development\n\n"
+        documentation += "\n\n## Enabled Product Metric Exports (STAGING)\n\n"
         documentation += self.products_list_for_env(state_code, GCPEnvironment.STAGING)
 
         # Metrics section
@@ -975,15 +680,12 @@ class CalculationDocumentationGenerator:
         return anything_modified
 
     def _big_query_address_formatter_for_gitbook(
-        self,
-        *,
-        address: BigQueryAddress,
-        products_section: bool,
+        self, *, address: BigQueryAddress
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
 
-        if address in self.formatted_address_cache[products_section]:
-            return self.formatted_address_cache[products_section][address]
+        if address in self.formatted_address_cache:
+            return self.formatted_address_cache[address]
 
         is_source_table = address.dataset_id in self.all_source_table_datasets or (
             address.dataset_id
@@ -1023,11 +725,9 @@ class CalculationDocumentationGenerator:
 
         table_name_str = (
             # Include brackets if metric or view
-            ("[" if products_section else f"[{address.dataset_id}.")
-            + f"{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
+            f"[{address.dataset_id}.{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
             if is_documented_view or is_metric
-            else ("" if products_section else f"{address.dataset_id}.")
-            + f"{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+            else f"{address.dataset_id}.{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
         )
 
         if is_raw_data_table or is_raw_data_view:
@@ -1042,12 +742,12 @@ class CalculationDocumentationGenerator:
         if is_metric:
             table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[address.table_id].lower()}/{address.table_id}.md)"
         elif is_documented_view:
-            table_name_str += f"(../{'../views/' if products_section else ''}{address.dataset_id}/{address.table_id}.md)"
+            table_name_str += f"(../{address.dataset_id}/{address.table_id}.md)"
         else:
             table_name_str += (
                 f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
             )
-        self.formatted_address_cache[products_section][address] = table_name_str
+        self.formatted_address_cache[address] = table_name_str
         return table_name_str
 
     def _get_view_tree_string(
@@ -1076,10 +776,7 @@ class CalculationDocumentationGenerator:
                 suffix = " (...)" + suffix
 
             return (
-                self._big_query_address_formatter_for_gitbook(
-                    address=address, products_section=False
-                )
-                + suffix
+                self._big_query_address_formatter_for_gitbook(address=address) + suffix
             )
 
         datasets_to_skip = set(RAW_TABLE_DATASETS)
@@ -1514,8 +1211,7 @@ def _create_ingest_catalog_calculation_summary(
 def generate_calculation_documentation(
     docs_generator: CalculationDocumentationGenerator,
 ) -> bool:
-    modified = docs_generator.generate_products_markdowns()
-    modified |= docs_generator.generate_states_markdowns()
+    modified = docs_generator.generate_states_markdowns()
     modified |= docs_generator.generate_view_markdowns()
     modified |= docs_generator.generate_metric_markdowns()
     modified |= docs_generator.generate_aggregated_metric_markdowns()
