@@ -28,7 +28,7 @@ from recidiviz.ingest.direct import direct_ingest_regions, regions
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
-    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
@@ -146,7 +146,7 @@ class DirectIngestRawDataTableLatestViewCollector(
         self.regions_module = regions_module
 
     def collect_view_builders(self) -> List[DirectIngestRawDataTableLatestViewBuilder]:
-        region_raw_file_config = DirectIngestRegionRawFileConfig(
+        region_raw_file_config = get_region_raw_file_config(
             self.region_code, region_module=self.regions_module
         )
         raw_file_configs = region_raw_file_config.raw_file_configs
