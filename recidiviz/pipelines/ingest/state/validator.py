@@ -286,9 +286,7 @@ def _sentencing_entities_checks(
       do not have a PAROLE or PROBATION sentence_type.
     """
 
-    # TODO(#29961) We need to update the test fixtures for sentence group checks.
-    if state_person.state_code != StateCode.US_AZ.value:
-        yield from _sentence_group_checks(state_person)
+    yield from _sentence_group_checks(state_person)
 
     external_ids = set(s.external_id for s in state_person.sentences)
 
