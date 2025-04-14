@@ -28,10 +28,10 @@ WITH
     )
     SELECT DISTINCT
         "US_IX" AS state_code,
-        psi.AssignedToUserId as external_id,
+        COALESCE(psi.AssignedToUserId, supervisor_roster.externalId) as external_id,
         staff.full_name,
         staff.email,
-        CONCAT('[', case_ids,']') AS case_ids,
+        COALESCE(CONCAT('[', case_ids, ']'), '[]') AS case_ids,
         supervisor_roster.supervisorExternalId AS supervisor_id
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     FULL OUTER JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_psi_supervisor_roster_latest` supervisor_roster
