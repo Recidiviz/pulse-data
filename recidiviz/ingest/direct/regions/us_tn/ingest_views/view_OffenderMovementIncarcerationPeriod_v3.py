@@ -96,8 +96,8 @@ WITH
         AND EXTRACT(YEAR FROM CAST(AssignmentDateTime AS DATETIME)) > 2002  # Data is not reliable before 2002
     
     ),
-    -- Here, we filter to only movements in the OffenderMovement table related to incarceration stays and then join the reast of the information about custody level and housing unit to make a ledger of all critical dates for a person
-    filter_to_only_incarceration as (
+    -- Here, we filter to only movements in the OffenderMovement table related to incarceration stays and then join the housing unit information to make a ledger of all critical dates for a person, with the exception of custody changes which will be added later.
+    filter_to_only_incarceration_no_custody as (
         SELECT
             OffenderID,
             CAST(MovementDateTime AS DATETIME) AS MovementDateTime,
@@ -105,27 +105,13 @@ WITH
             MovementReason,
             FromLocationID,
             ToLocationID,
-            null AS RecommendedCustody,
+            CAST(null AS STRING) AS RecommendedCustody,
             null AS HousingUnit
         FROM remove_extraneous_chars
         -- Filter to only rows that are to/from/within incarceration facilities. There are a few cases from pre-1993 where 
         -- someone follows unintuitive OffenderMovements and we do not see them transfer from FA to supervision but then see 
         -- a movement for supervision to discharge (such as PADI). We include 'DI' movements then to ensure that all these periods are properly closed out.
         WHERE RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT','DI') OR LEFT(MovementType, 2) IN ('FA', 'FH', 'CT') 
-
-        UNION ALL # to pull in custody level changes as periods	
-
-        SELECT  	
-            OffenderId, 	
-            CAST(ClassificationDate AS DATETIME) AS MovementDateTime,	
-            'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly	
-            'CUST_CHANGE' AS MovementReason, 	
-            null AS FromLocationID, 	
-            null AS ToLocationID,	
-            RecommendedCustody,
-            null AS HousingUnit	
-        FROM Classification_filter	
-        WHERE CustLevel = 1
 
         UNION ALL # to pull in housing unit changes from CellBedAssignment table
 
@@ -136,7 +122,7 @@ WITH
             'UNIT_MOVEMENT' AS MovementReason, 
             FromLocationID, 	
             ToLocationID,
-            null AS RecommendedCustody,
+            CAST(null AS STRING) AS RecommendedCustody,
             HousingUnit
         FROM cell_bed_assignment_setup
         WHERE HousingUnit != COALESCE(LastHousingUnit, 'NoHousingUnit')
@@ -150,18 +136,71 @@ WITH
             'UNIT_MOVEMENT' AS MovementReason, 
             FromLocationID, 	
             ToLocationID,
-            null AS RecommendedCustody,
+            CAST(null AS STRING) AS RecommendedCustody,
             HousingUnit
         FROM cell_bed_assignment_setup
         WHERE HasOpenPeriod > 0 AND AssignmentStatus = 'OPEN' AND LastAssignmentEndDate IS NOT NULL
-
     ), 
+    -- Certain movement codes (PRDI, CCDI, PAFA, PRFA, and PADI) can represent a status change without a physical movement.
+    -- We need to filter these out, without impacting the cases where these codes do represent a physical movement.
+    -- When a movement has one of these codes and meets the following criteria, we assume that it's being used to 
+    -- represent a non-movement status change and filter it out.
+    -- 1. The 'to' and 'from' locations of the movement don't match the locations in the preceding and subsequent movements
+    -- 2. The 'to' location of the preceding movement matches the 'from' location of the subsequent movement,
+    --    meaning that the movement in between is interrupting an otherwise logical sequence of locations.
+    add_adjacent_location_flags AS (
+        SELECT
+            *,
+            MovementType IN ('PRDI', 'CCDI', 'PAFA', 'PRFA', 'PADI', 'CTPR') AND
+                -- Because of the COALESCEs, we will never filter out a movement this way
+                -- if it is someone's first or final movement.
+                COALESCE(last_location_to,'NONE') = COALESCE(next_location_from,'NONE') AND 
+                (
+                    -- TODO(#40569): This condition can't be changed to use an OR without
+                    -- substantially increasing external accuracy validation errors, but we
+                    -- should figure out a way to handle the rare cases where one of these
+                    -- non-physical movements does have a matching location with one of the adjacent movements.
+                    FromLocationID != COALESCE(last_location_to,FromLocationID) AND 
+                    ToLocationID != COALESCE(next_location_from,ToLocationID) 
+                )
+            AS is_non_physical_movement
+        FROM (
+            SELECT 
+                *,
+                LAG(ToLocationID) OVER ordered_movements AS last_location_to,
+                LEAD(FromLocationID) OVER ordered_movements AS next_location_from
+            FROM filter_to_only_incarceration_no_custody
+            WINDOW ordered_movements AS (PARTITION BY OffenderID ORDER BY MovementDateTime)
+        )
+    ),
+    -- Use the flags from the previous CTE to remove movements that look more like status changes. Then, union in custody information 
+    -- (this couldn't be done with the previous unions, because custody movements lack location data and therefore create errors with the LAG and LEAD in the previous CTE)
+    remove_non_physical_movements_add_custody AS (
+        SELECT 
+            * EXCEPT(is_non_physical_movement,last_location_to,next_location_from)
+        FROM add_adjacent_location_flags
+        WHERE NOT is_non_physical_movement
+
+        UNION ALL # to pull in custody level changes as periods	
+
+        SELECT  	
+            OffenderId, 	
+            CAST(ClassificationDate AS DATETIME) AS MovementDateTime,	
+            'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly	
+            'CUST_CHANGE' AS MovementReason, 	
+            CAST(null AS STRING) AS FromLocationID, 	
+            CAST(null AS STRING) AS ToLocationID,	
+            RecommendedCustody,
+            null AS HousingUnit	
+        FROM Classification_filter	
+        WHERE CustLevel = 1
+    ),
     -- This determines the previous MovementType and MovementReason
     Lag_MovementType AS (
         SELECT *, 
             LAG(MovementType) OVER (PARTITION BY OffenderID ORDER BY MovementDateTime) AS LAST_MovementType,
             LAG(MovementReason) OVER (PARTITION BY OffenderID ORDER BY MovementDateTime) AS LAST_MovementReason,
-        FROM filter_to_only_incarceration
+        FROM remove_non_physical_movements_add_custody
     ), 
     -- This sets up our initial period creation from the ledger of critical dates 
     initial_setup as (
