@@ -29,6 +29,10 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
@@ -39,6 +43,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     infer_incarceration_periods_from_in_custody_sps,
     legacy_standardize_purpose_for_incarceration_values,
+    standard_date_sort_for_incarceration_periods,
 )
 
 
@@ -204,15 +209,224 @@ def _us_tn_infer_additional_periods(
     """
     If we have a supervision period in TN with the supervision_level of IN_CUSTODY, we want to infer an
     incarceration_period for that time in order to begin sessions at the correct incarceration start.
+
+    We then override the custodial authority for certain periods (if the custodial authority changes
+    in a period that has "-T" in the admission reason, and the "T" period comes after a period with "-P"
+    in the admission reason, then the "T" period will be updated to use the custodial authority from the "P" period).
+
+    Finally, infer periods to fill the gaps between certain temporary transfer periods. Periods
+    will only be inferred between 2 periods if the 2 periods have a gap (i.e. release date for the first period
+    is before the admission date for the second), if the 2 periods have the same custodial authority,
+    the 1st period has a "-T" in the release reason and the 2nd has a "-T" in the admission reason,
+    and the release reason for the 1st period and the admission reason for the 2nd period both
+    include paired movement codes indicating a transfer to another jurisdiction or a work release.
     """
 
     # Infer a temporary custody incarceration period if supervision level is IN_CUSTODY
-    all_incarceration_periods = infer_incarceration_periods_from_in_custody_sps(
-        person_id=person_id,
-        state_code=StateCode.US_TN,
-        incarceration_periods=incarceration_periods,
-        supervision_period_index=supervision_period_index,
-        temp_custody_custodial_authority=StateCustodialAuthority.COUNTY,
+    incarceration_periods_with_inferred_temp_custody_periods = (
+        infer_incarceration_periods_from_in_custody_sps(
+            person_id=person_id,
+            state_code=StateCode.US_TN,
+            incarceration_periods=incarceration_periods,
+            supervision_period_index=supervision_period_index,
+            temp_custody_custodial_authority=StateCustodialAuthority.COUNTY,
+        )
+    )
+
+    # Override custodial authority for "T" periods
+    incarceration_periods_with_custodial_authority_overrides = (
+        _us_tn_override_custodial_authority_for_temporary_movements(
+            incarceration_periods_with_inferred_temp_custody_periods
+        )
+    )
+
+    # Infer periods between certain "T" transfer periods
+    all_incarceration_periods = _us_tn_infer_periods_between_temporary_transfers(
+        person_id, incarceration_periods_with_custodial_authority_overrides
     )
 
     return all_incarceration_periods
+
+
+def _us_tn_override_custodial_authority_for_temporary_movements(
+    incarceration_periods: List[StateIncarcerationPeriod],
+) -> List[StateIncarcerationPeriod]:
+    """
+    Override the custodial authority for certain periods (if the custodial authority changes
+    in a period that has "-T" in the admission reason, and the "T" period comes after a period with "-P"
+    in the admission reason, then the "T" period will be updated to use the custodial authority from the "P" period).
+    """
+
+    sorted_incarceration_periods = standard_date_sort_for_incarceration_periods(
+        incarceration_periods
+    )
+    # Get all the non-zero-day periods that don't have a "-T" flag in their admission reason.
+    non_temporary_movement_or_zero_day_periods = [
+        ip
+        for ip in sorted_incarceration_periods
+        if ip.admission_reason_raw_text
+        and not ip.admission_reason_raw_text.endswith("-T")
+        and ip.admission_date
+        and ip.release_date
+        # Don't include zero-day periods
+        and ip.admission_date != ip.release_date
+    ]
+    updated_incarceration_periods: List[StateIncarcerationPeriod] = []
+
+    if len(non_temporary_movement_or_zero_day_periods) > 0:
+        for ip in sorted_incarceration_periods:
+            # Store the period's original custodial authority to use as a default value
+            new_custodial_authority = ip.custodial_authority
+            if (
+                ip.admission_reason_raw_text
+                and ip.admission_date
+                and ip.admission_reason_raw_text.endswith("-T")
+            ):
+                # If the period has a "-T" flag, retrieve the periods from non_temporary_movement_or_zero_day_periods
+                # that start before the "T" period.
+                prior_non_temporary_movement_or_zero_day_periods = [
+                    past_ip
+                    for past_ip in non_temporary_movement_or_zero_day_periods
+                    if past_ip.custodial_authority
+                    and past_ip.admission_reason_raw_text
+                    and past_ip.admission_date
+                    and past_ip.admission_date < ip.admission_date
+                ]
+                # Get the subset of prior_non_temporary_movement_or_zero_day_periods that
+                # have "-P" flags.
+                prior_permanent_movement_periods = [
+                    pmp
+                    for pmp in prior_non_temporary_movement_or_zero_day_periods
+                    if pmp.admission_reason_raw_text
+                    and pmp.admission_reason_raw_text.endswith("-P")
+                ]
+                if len(prior_permanent_movement_periods) > 0:
+                    # If there are periods with "P" flags before the "T" period, check
+                    # to see if the most recent "P" or unflagged period has a different
+                    # custodial authority than the "T" period.
+                    if (
+                        ip.custodial_authority
+                        != prior_non_temporary_movement_or_zero_day_periods[
+                            -1
+                        ].custodial_authority
+                    ):
+                        # If the custodial authority has changed since the most recent "P"
+                        # or unflagged period, then get the custodial authority from the most
+                        # recent "P" period to use as an override for the "T" period's custodial
+                        # authority.
+                        new_custodial_authority = prior_permanent_movement_periods[
+                            -1
+                        ].custodial_authority
+            # This new period will be the same as the original unless the custodial authority
+            # override occurred.
+            updated_ip = deep_entity_update(
+                ip, custodial_authority=new_custodial_authority
+            )
+            updated_incarceration_periods.append(updated_ip)
+        return updated_incarceration_periods
+
+    # If non_temporary_movement_or_zero_day_periods is empty, then this function will just
+    # use the input as output.
+    return sorted_incarceration_periods
+
+
+def _us_tn_infer_periods_between_temporary_transfers(
+    person_id: int, incarceration_periods: List[StateIncarcerationPeriod]
+) -> List[StateIncarcerationPeriod]:
+    """
+    This function infers periods to fill the gap (if one exists) between certain temporary
+    transfer movements. Specifically, if someone is transferred to another jurisdiction
+    or sent to work release, then if the next incarceration period shows them returning
+    from another jurisdiction/work release and has an admission date greater than (NOT
+    equal to) the release date of the prior period, infers a period to fill the gap. This
+    period will have very little information, but will have the same custodial authority
+    as the surrounding periods so that the person's custody period will no longer be interrupted.
+    """
+    sorted_incarceration_periods = standard_date_sort_for_incarceration_periods(
+        incarceration_periods
+    )
+    inferred_incarceration_periods: List[StateIncarcerationPeriod] = []
+    for index, ip in enumerate(sorted_incarceration_periods):
+        # By default, we will not infer a period. can_infer_period will be set to TRUE if
+        # certain conditions below are met.
+        can_infer_period = False
+        # These default values should never show up, because if the conditions for inferring
+        # a period are met, these values will always be set. Pylint doesn't recognize this,
+        # though, so we specify default values so that there's clearly no chance of these
+        # variables being referenced before assignment. If we ever see an ID or facility
+        # containing these strings, we'll know that something's gone wrong with the logic here.
+        new_period_id_flag = "ERROR"
+        new_period_facility = "ERROR"
+        if index + 1 != len(sorted_incarceration_periods):
+            next_ip = sorted_incarceration_periods[index + 1]
+            # For a given period, check if the release reason and the admission reason for
+            # the next period both have "T" flags, and if the next period starts after (not on)
+            # the date that the period ends, and if the period has the same custodial authority
+            # as the next period.
+            if (
+                ip.release_reason_raw_text
+                and next_ip.admission_reason_raw_text
+                and ip.release_date
+                and next_ip.admission_date
+                and next_ip.admission_date > ip.release_date
+            ):
+                # Would like to include these conditions with the if statement above, but
+                # pylint doesn't want there to be >5 conditions in a single if statement
+                if (
+                    ip.custodial_authority
+                    and next_ip.custodial_authority
+                    and ip.custodial_authority == next_ip.custodial_authority
+                    and ip.release_reason_raw_text.endswith("-T")
+                    and next_ip.admission_reason_raw_text.endswith("-T")
+                ):
+                    # If the period and the next period have paired "OJ" codes in the release/admission
+                    # reasons, we can infer a "other jurisdiction" period to fill the gap between them.
+                    if ip.release_reason_raw_text.startswith(
+                        "FAOJ"
+                    ) and next_ip.admission_reason_raw_text.startswith("OJFA"):
+                        can_infer_period = True
+                        new_period_id_flag = "OJ"
+                        new_period_facility = "INFERRED_OTHER_JURISDICTION"
+                    # If the period and the next period have paired "WR" codes in the release/admission
+                    # reasons, we can infer a "work release" period to fill the gap between them.
+                    elif ip.release_reason_raw_text.startswith(
+                        "FAWR"
+                    ) and next_ip.admission_reason_raw_text.startswith("WRFA"):
+                        can_infer_period = True
+                        new_period_id_flag = "WR"
+                        new_period_facility = "INFERRED_WORK_RELEASE"
+
+                    if can_infer_period:
+                        # Infer a period to fill the gap. Because we don't know the details of
+                        # the person's incarceration during this gap, we don't hydrate most
+                        # fields for the inferred period. When a period is inferred between 2
+                        # periods, the external ID will be the same as the first period's ID,
+                        # with "-INFERRED-OJ" or "-INFERRED-WR" appended to it. The custodial authority
+                        # will be the same as it is for both periods, which necessarily will
+                        # have the same custodial authority as one another. Facility is hydrated
+                        # with a placeholder string (INFERRED_OTHER_JURISDICTION or INFERRED_WORK_RELEASE),
+                        # indicating that we don't know the specifics of where the person was
+                        # during the inferred period.
+                        new_incarceration_period = StateIncarcerationPeriod(
+                            state_code=StateCode.US_TN.value,
+                            external_id=f"{ip.external_id}-INFERRED-{new_period_id_flag}",
+                            admission_date=ip.release_date,
+                            release_date=next_ip.admission_date,
+                            custodial_authority=ip.custodial_authority,
+                            custodial_authority_raw_text=ip.custodial_authority_raw_text,
+                            facility=new_period_facility,
+                            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+                            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+                        )
+
+                        # Add a unique id to the new IP
+                        update_entity_with_globally_unique_id(
+                            root_entity_id=person_id, entity=new_incarceration_period
+                        )
+                        inferred_incarceration_periods.append(new_incarceration_period)
+
+    # Sort and return the original incarceration periods along with any periods that were inferred
+    # in the loop above.
+    return standard_date_sort_for_incarceration_periods(
+        sorted_incarceration_periods + inferred_incarceration_periods
+    )
