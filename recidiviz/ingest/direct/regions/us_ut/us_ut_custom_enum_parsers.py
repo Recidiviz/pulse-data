@@ -22,6 +22,7 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ut_custom_enum_parsers.<function name>
 """
+
 from recidiviz.common.constants.state.state_charge import (
     StateChargeV2ClassificationType,
 )
@@ -35,6 +36,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
 
@@ -146,3 +148,32 @@ def parse_specialized_pfi(raw_text: str) -> StateSpecializedPurposeForIncarcerat
             return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
         return StateSpecializedPurposeForIncarceration.GENERAL
     return StateSpecializedPurposeForIncarceration.GENERAL
+
+
+def parse_supervision_level(raw_text: str) -> StateSupervisionLevel:
+    if raw_text:
+        level, status = raw_text.split("-")
+        if "COMPACT IN" in status or level == "COMPACT OUT":
+            return StateSupervisionLevel.INTERSTATE_COMPACT
+        if "FUGITIVE" in level:
+            return StateSupervisionLevel.WARRANT
+        if "MAXIMUM" in level:
+            return StateSupervisionLevel.MAXIMUM
+        if "MEDIUM" in level or "MODERATE" in level:
+            return StateSupervisionLevel.MEDIUM
+        if level == "MIN/MED MISDEMEANOR":
+            return StateSupervisionLevel.LOW_MEDIUM
+        if "MINIMUM" in level or level == "LOW":
+            return StateSupervisionLevel.MINIMUM
+        if level in ("TELEPHONIC", "ADMINISTRATION"):
+            return StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY
+        if level == "COLLECTION ONLY":
+            return StateSupervisionLevel.UNSUPERVISED
+        if "INTENSIVE" in level or "ISP" in level or level == "HIGH":
+            return StateSupervisionLevel.HIGH
+        if "RESIDENTIAL" in level or "INCARCERATED" in level:
+            return StateSupervisionLevel.RESIDENTIAL_PROGRAM
+        if level == "UNKNOWN":
+            return StateSupervisionLevel.EXTERNAL_UNKNOWN
+        return StateSupervisionLevel.INTERNAL_UNKNOWN
+    return StateSupervisionLevel.PRESENT_WITHOUT_INFO
