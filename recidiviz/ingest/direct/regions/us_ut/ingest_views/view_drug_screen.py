@@ -19,10 +19,13 @@
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.state.entities import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 SELECT
   t.ofndr_num,
   t.tst_id,
@@ -33,21 +36,22 @@ SELECT
   r.admit_use_flg,
   r.med_invalidate_flg
 FROM
-  {sbstnc_tst} t
+  {{sbstnc_tst}} t
 JOIN
-  {sbstnc_rslt} r
+  {{sbstnc_rslt}} r
 USING
   (tst_id)
 JOIN
-  {sbstnc_sbstnc_cd} s
+  {{sbstnc_sbstnc_cd}} s
 ON
   (r.sbstnc_cd = s.sbstnc_sbstnc_cd)
 LEFT JOIN
-  {smpl_typ_cd} st
+  {{smpl_typ_cd}} st
 USING
   (smpl_typ_cd)
 WHERE 
   tst_dt IS NOT NULL
+  AND CAST(LEFT(t.tst_dt, 10) AS DATE) BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' AND @update_timestamp
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

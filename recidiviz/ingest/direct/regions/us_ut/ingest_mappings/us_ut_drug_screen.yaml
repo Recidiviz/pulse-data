@@ -52,6 +52,8 @@ output:
                   - SALIVA
                 StateDrugScreenSampleType.BLOOD:
                   - BLOOD
+                StateDrugScreenSampleType.BREATH:
+                  - BREATH
                 StateDrugScreenSampleType.HAIR:
                   - HAIR
                 StateDrugScreenSampleType.NO_SAMPLE:
