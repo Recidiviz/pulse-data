@@ -105,6 +105,11 @@ get_level_change_dates AS (
     LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
     -- do not include the first assigned level because that is included in the get_start_date CTE
     WHERE DPPE.UPDT_DTM IS NOT NULL
+    -- We can only observe updates to supervision levels for changes that happened after the system migration on 2019-11-30. 
+    -- All rows for periods that ended before that migration have an UPDT_DTM that is 
+    -- the date of the migration, so any information about the timing of previous updates was lost.
+    -- For these people, we can only know their last-assigned supervision level.
+    AND DPPE.UPDT_DTM > '2019-11-30'
 ),
 -- Get dates that particular period-ending movements happened and their descriptions, 
 -- This is the first method by which we close periods. The remaining methods are included
