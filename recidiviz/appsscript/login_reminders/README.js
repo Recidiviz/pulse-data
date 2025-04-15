@@ -5,7 +5,7 @@ by running the functions sendTestLinestaffEmails and sendTestSupervisorEmails
 within TestEmailReminders.gs. Review the wording of the emails in your inbox.
 
 If there are any changes, please request for an engineer to make the change
-by posting in #email_reminder_rollouts. Here are the locations of text:
+by posting in #email-reminders-eng. Here are the locations of text:
 - State-specific wording is in EmailReminderHelpers.gs -- search for stateSpecificText
 - General wording is at the top of SendLinestaffEmailReminders.gs and SendSupervisorEmailReminders.gs
 
@@ -30,7 +30,7 @@ Common errors and how to deal with them:
 - "Gmail operation not allowed": This error happens randomly sometimes. You can safely
   rerun the script, and it will skip everyone who has already been emailed.
 
-If you have any questions or concerns, please reach out in the #email_reminder_rollouts
+If you have any questions or concerns, please reach out in the #email-reminders-eng
 Slack channel.
 
 Script IDs

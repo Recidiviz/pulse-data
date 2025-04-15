@@ -18,6 +18,8 @@ on a schedule or by some action, such as submission of a connected Google Form
 For communication about the Leadership Reports project, join the
 #leadership-reports-eng and #leadership-reports-xfn Slack channels.
 
+For communication about Login Email Reminders, join the #email-reminders-eng Slack channel.
+
 1. Download and install the
    [clasp library](https://github.com/google/clasp?tab=readme-ov-file#install).
    Clasp allows us to develop Apps Script projects locally, so we can check them
@@ -36,9 +38,6 @@ For communication about the Leadership Reports project, join the
    [this doc](https://docs.google.com/document/d/10BGRf4FbWQ3GIS5-KggtRIxQEvRjcS8RHlygA_CdbDM/edit)).
    To circumvent this, we have created an apps-script@recidiviz.org account for
    using clasp.
-
-3. If you use VS Code, consider
-   [enabling `appsscript.json` and `.clasp.json` autocomplete](https://github.com/google/clasp/blob/master/docs/settings.md).
 
 ## Developing with clasp
 
