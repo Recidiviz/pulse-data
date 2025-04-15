@@ -16,6 +16,8 @@
 # =============================================================================
 """View logic to prepare US_IX Sentencing charge data for PSI tools"""
 
+
+# TODO(#40354): Once we've switched to sentencing v2 we should have non-sentenced charges and we won't have to manually include offenses from scl_OffenseType_latest.
 US_IX_SENTENCING_CHARGE_TEMPLATE = """
 WITH
   charges AS (
@@ -46,6 +48,22 @@ WITH
     AND description IS NOT NULL
   GROUP BY
     description),
+  non_sentenced_charges AS (
+  SELECT
+    DISTINCT OffenseTypeDesc AS description,
+    0 AS frequency,
+    FALSE AS is_violent,
+    FALSE AS is_sex_offense
+  FROM
+    `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_OffenseType_latest`
+  WHERE
+    OffenseTypeDesc NOT IN (
+    SELECT
+      description
+    FROM
+      charges)
+    AND Inactive = '0'
+    AND LOWER(OffenseTypeDesc) IN (LOWER('Computer Crime-Alters, Damages or Destroys Computer or Computer Equipment'))),
   mms AS (
   SELECT
     OffenseName,
@@ -69,8 +87,16 @@ SELECT
   is_violent,
   is_sex_offense,
   mandatory_minimums
-FROM
-  charges
+FROM (
+  SELECT
+    *
+  FROM
+    charges
+  UNION ALL
+  SELECT
+    *
+  FROM
+    non_sentenced_charges)
 LEFT JOIN
   mms
 ON

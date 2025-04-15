@@ -602,6 +602,8 @@ US_IX:
     analyst_data.us_ix_sls_q3: |-
       Used to determine sentence severity for classification of custody
       level. Currently there is nowhere to ingest this. 12/2/2024
+    sentencing_views.sentencing_charge_record: |-
+      Used to pull in specific offenses that aren't available in normalized_state.state_charge. TODO(#40354): Once we've switched to sentencing v2 we should have non-sentenced charges. 04/14/25
   scl_RetainedJurisdiction:
     task_eligibility_criteria_us_ix.not_serving_a_rider_sentence: |-
       We do not ingest any info to identify retained jurisdiction sentences. 05/31/2024
