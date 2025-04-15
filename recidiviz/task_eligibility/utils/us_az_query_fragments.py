@@ -305,7 +305,7 @@ def acis_date_not_set_criteria_builder(
             state_code,
             person_id,
             JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') AS sentence_group_external_id,
-            DATE_ADD(SAFE_CAST(MIN(update_datetime) AS DATE), INTERVAL 1 DAY) AS acis_set_date,
+            SAFE_CAST(MIN(update_datetime) AS DATE) AS acis_set_date,
         FROM `{{project_id}}.normalized_state.state_task_deadline`
         WHERE task_type = 'DISCHARGE_FROM_INCARCERATION_MIN' 
             AND task_subtype = '{task_subtype}'
