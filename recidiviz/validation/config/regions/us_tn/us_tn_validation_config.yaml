@@ -69,3 +69,6 @@ num_allowed_rows_overrides:
       still show up as a supervisor in open supervisor periods for the officers they used to supervise. We bump this threshold
       here as a running list of the supervisors who have gone inactive and therefore we need to make sure to check in with
       TN staff the next time we ask them for manual rosters. There is currently 1 failing row as of 12/12/2023.
+  - validation_name: officer_monthly_usage_report_actions_without_logins
+    hard_num_allowed_rows_override: 1
+    override_reason: Will be resolved with the Polaris segment ad blocker work around
