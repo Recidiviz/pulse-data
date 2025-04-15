@@ -232,27 +232,43 @@ def test_create_ticket_fails(
 
 
 @pytest.mark.parametrize(
-    "change_type, note, num_of_officers",
+    "change_type, note, num_of_officers, is_test",
     [
-        (RosterChangeType.ADD, "Add this officer, please.", 1),
+        (RosterChangeType.ADD, "Add this officer, please.", 1, False),
         (
             RosterChangeType.ADD,
             "Add these officers to the caseload."
             + "It's imperative that they're added.\nPlease speak with admin about this.",
-            5,
+            2,
+            False,
         ),
         (
             RosterChangeType.REMOVE,
             "Remove this officer from my caseload.\nThank you!",
             1,
+            False,
         ),
-        (RosterChangeType.REMOVE, "Remove these officers from my caseloads.", 5),
+        (RosterChangeType.REMOVE, "Remove these officers from my caseloads.", 2, False),
+        (
+            RosterChangeType.REMOVE,
+            "As a recidiviz user, I'm asking to remove these officers from my caseloads",
+            2,
+            True,
+        ),
+        (
+            RosterChangeType.ADD,
+            "From staging, this request is to add these officers to my caseloads",
+            2,
+            True,
+        ),
     ],
     ids=[
         "add_single_officer",
         "add_multiple_officer",
         "remove_single_officer",
         "remove_multiple_officers",
+        "remove_multiple_officers_test",
+        "add_multiple_officers_test",
     ],
 )
 def test_request_roster_change(
@@ -261,6 +277,7 @@ def test_request_roster_change(
     change_type: RosterChangeType,
     note: str,
     num_of_officers: int,
+    is_test: bool,
     snapshot: Any,
 ) -> None:
     """
@@ -280,12 +297,20 @@ def test_request_roster_change(
             :num_of_officers
         ],
         note=note,
+        is_test=is_test,
     )
 
     # Capture and verify the API call
     request = ticket_service.intercom_api_client._session.post.call_args[1]["json"]  # type: ignore # pylint: disable=protected-access
+    ticket_attributes = request.get("ticket_attributes", {})
+    title = ticket_attributes.get("_default_title_")
+    description = ticket_attributes.get("_default_description_")
 
     assert RosterChangeRequestResponseSchema(id="1", email=email) == response
+    # These are expected only if this is test_mode
+    assert ("[TEST] " in title) == is_test
+    assert ("PLEASE DISREGARD. THIS IS A TEST REQUEST." in description) == is_test
+
     snapshot.assert_match(request)
 
 
@@ -333,4 +358,5 @@ def test_request_roster_change_fails(
             target_supervisor_id=mock_entities["supervisors"][0].external_id,
             officer_ids=[o.external_id for o in mock_entities["officers"]],
             note="This test should fail",
+            is_test=False,
         )

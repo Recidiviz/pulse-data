@@ -47,6 +47,7 @@ from recidiviz.outliers.types import (
     SupervisionOfficerEntity,
     VitalsMetric,
 )
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -1134,6 +1135,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             target_supervisor_id=target_supervisor.external_id,
             officer_ids=roster_change_request_schema.affected_officers_external_ids,
             note=roster_change_request_schema.request_note,
+            is_test=user_external_id == "RECIDIVIZ" or not in_gcp_production(),
         )
 
         return jsonify(

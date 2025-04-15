@@ -163,6 +163,7 @@ class RosterTicketService:
         target_supervisor_id: str,
         officer_ids: List[str],
         note: str,
+        is_test: bool,
     ) -> RosterChangeRequestResponseSchema:
         """Creates a roster change request ticket."""
         officer_label = self._get_querier_product_config.supervision_officer_label
@@ -197,8 +198,14 @@ class RosterTicketService:
             supervisors,
             officers,
         )
+        test_tag = "[TEST] " if is_test else ""
+        test_disclaimer = (
+            "PLEASE DISREGARD. THIS IS A TEST REQUEST.\n" if is_test else ""
+        )
         action = "Addition" if change_type == RosterChangeType.ADD else "Removal"
-        title = f"Team {action} Request Submitted"
-        response = self.intercom_api_client.create_ticket(title, description, email)
+        title = f"{test_tag}Team {action} Request Submitted"
+        response = self.intercom_api_client.create_ticket(
+            title, test_disclaimer + description, email
+        )
 
         return RosterChangeRequestResponseSchema(email=email, id=response.id)
