@@ -111,7 +111,7 @@ class StableHistoricalRawDataCountsTableValidation(
     def validation_applies_to_table(
         file_config: DirectIngestRawFileConfig,
     ) -> bool:
-        return file_config.always_historical_export
+        return file_config.always_historical_export and not file_config.is_code_file
 
     @staticmethod
     def should_run_validation(
@@ -120,9 +120,15 @@ class StableHistoricalRawDataCountsTableValidation(
         file_tag: str,
         file_update_datetime: datetime.datetime,
     ) -> bool:
-        """Returns True if always_historical_export is True for the file tag
-        and file's update_datetime doesn't fall within a date range that is
-        excluded for that file in stable_historical_counts_table_validation_config.yaml.
+        """Returns True if always_historical_export is True for the file tag,
+        is_code_file is False for the file tag, and file's update_datetime doesn't fall
+        within a date range that is excluded for that file in
+        stable_historical_counts_table_validation_config.yaml.
+
+        Excluding code files prevents very small code files from failing to import
+        when one or two rows are added or removed. This is relatively safe to do since
+        these files are not expected to change much and are not highly consequential on
+        their own.
         """
 
         return StableHistoricalRawDataCountsTableValidation.validation_applies_to_table(
