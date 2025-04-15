@@ -156,6 +156,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_minimum_facility_form_record import (
     US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ne_conditional_low_risk_override_record import (
+    US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_or_earned_discharge_sentence_record import (
     US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER,
 )
@@ -227,6 +230,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
     US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
     US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER,
+    US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_VIEW_BUILDER,
     US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
     US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,

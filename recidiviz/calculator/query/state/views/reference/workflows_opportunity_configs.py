@@ -503,6 +503,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_NE,
+        opportunity_type="usNeConditionalLowRiskOverride",
+        experiment_id="US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_WORKFLOWS",
+        opportunity_record_view_name="us_ne_conditional_low_risk_override_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        source_filename="us_ne_conditional_low_risk_override_record.json",
+        export_collection_name="US_NE-ConditionalLowRiskOverrideReferrals",
+        opportunity_type_path_str="ConditionalLowRiskOverride",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_OR,
         opportunity_type="usOrEarnedDischargeSentence",
         experiment_id="US_OR_EARNED_DISCHARGE_WORKFLOWS",
