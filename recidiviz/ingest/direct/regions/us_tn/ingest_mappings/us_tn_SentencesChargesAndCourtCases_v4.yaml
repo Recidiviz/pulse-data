@@ -104,6 +104,7 @@ variables:
         - $equal: [sentence_source, $literal("DIVERSION")] # All diversion sentences automatically are supervision sentences
   - sentence_external_id:
       $concat:
+        $separator: "@@"
         $values:
           - OffenderID
           - ConvictionCounty
