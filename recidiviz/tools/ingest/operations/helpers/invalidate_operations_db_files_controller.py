@@ -313,17 +313,27 @@ class InvalidateOperationsDBFilesController:
         self, session: Session, file_ids: Set[int], gcs_file_ids: Set[int]
     ) -> None:
         """Executes invalidation by updating metadata tables."""
-        bq_metadata_query_str = StrictStringFormatter().format(
-            UPDATE_BQ_METADATA_QUERY,
-            file_ids=", ".join(map(str, file_ids)),
-        )
+
+        if not gcs_file_ids:
+            raise ValueError(
+                "Found no GCS file ids - this function should never have been called."
+            )
         gcs_metadata_query_str = StrictStringFormatter().format(
             UPDATE_GCS_METADATA_QUERY,
             gcs_file_ids=", ".join(map(str, gcs_file_ids)),
         )
-
-        session.execute(text(bq_metadata_query_str))
         session.execute(text(gcs_metadata_query_str))
+
+        # It's possible for files to have entries in the
+        # direct_ingest_raw_gcs_file_metadata table but not in the
+        # direct_ingest_raw_big_query_file_metadata table, e.g. if the file_tag for the
+        # file is not recognized / a file config has not been deployed yet.
+        if file_ids:
+            bq_metadata_query_str = StrictStringFormatter().format(
+                UPDATE_BQ_METADATA_QUERY,
+                file_ids=", ".join(map(str, file_ids)),
+            )
+            session.execute(text(bq_metadata_query_str))
 
         session.commit()
 

@@ -50,6 +50,33 @@ class TestRawFilesGroupedByTagAndId(unittest.TestCase):
         )
         self.assertFalse(non_empty_grouped_files.empty())
 
+    def test_gcs_file_ids_only(self) -> None:
+        """Tests RawFilesGroupedByTagAndId for files that only have gcs_file_ids, not
+        BQ file_ids.
+        """
+        grouped_files = RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(
+            [
+                (
+                    "tag1",
+                    None,
+                    "unprocessed_2020-01-01T00:00:00:000000_raw_tag1.csv",
+                    11,
+                ),
+                (
+                    "tag1",
+                    None,
+                    "unprocessed_2020-01-02T00:00:00:000000_raw_tag1.csv",
+                    12,
+                ),
+            ]
+        )
+        self.assertFalse(grouped_files.empty())
+        self.assertEqual(set(), grouped_files.file_ids)
+        self.assertEqual(
+            {"tag1": {None: [11, 12]}}, grouped_files.file_tag_to_file_id_dict
+        )
+        self.assertEqual({11, 12}, grouped_files.gcs_file_ids)
+
     def test_get_file_ids(self) -> None:
         grouped_files = RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(
             self.tuple_list
@@ -160,6 +187,56 @@ WHERE gcs_file_id in (8, 6, 7)
         assert any(
             expected_gcs_query in query for query in actual_queries
         ), "GCS query not found in execute calls."
+
+    @patch(
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
+    )
+    @patch(
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
+    )
+    def test_run_execute_invalidation_gcs_file_ids_only(
+        self, _mock_proxy_control: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        file_data = [
+            ("tag1", None, "file1.csv", 6),
+            ("tag1", None, "file3.csv", 7),
+            ("tag2", None, "file2.csv", 8),
+        ]
+        mock_session = MagicMock()
+        mock_session.execute.side_effect = [
+            MagicMock(fetchall=lambda: file_data),
+            None,
+            None,
+        ]
+        mock_session_factory.return_value.__enter__.return_value = mock_session
+        self.controller.dry_run = False
+
+        self.controller.run()
+
+        expected_select_query = """
+SELECT file_tag, file_id, normalized_file_name, gcs_file_id
+FROM direct_ingest_raw_gcs_file_metadata
+WHERE region_code = 'US_XX' 
+    AND raw_data_instance = 'PRIMARY' 
+    AND is_invalidated IS NOT True
+    AND file_tag IN ('tag1')
+    AND DATE(update_datetime) >= '2024-11-01' AND DATE(update_datetime) <= '2024-11-10'
+"""
+        expected_gcs_query = """
+UPDATE direct_ingest_raw_gcs_file_metadata
+SET is_invalidated = True
+WHERE gcs_file_id in (8, 6, 7)
+"""
+
+        # Assertions to check if both queries are in the captured execute calls
+        actual_queries = [
+            call[0][0].text for call in mock_session.execute.call_args_list
+        ]
+        assert len(actual_queries) == 2
+
+        # We query and run the deprecation query for direct_ingest_raw_gcs_file_metadata
+        # but not direct_ingest_raw_big_query_file_metadata
+        assert [expected_select_query, expected_gcs_query] == sorted(actual_queries)
 
     @patch(
         "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
