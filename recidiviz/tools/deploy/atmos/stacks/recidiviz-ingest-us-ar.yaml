@@ -54,6 +54,13 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         region: us-central1
         state_code: "{{ .settings.context.state_code }}"
+        # AR uses an IBM CloudPak module to upload files to our GCS bucket. The upload process writes a set
+        # of temporary files to the bucket that have a long numerical suffix tacked to the end. We filter out these
+        # files by only allowing files that match expected file names, but excluding files that have those file names
+        # plus the extra temporary file prefix. We maintain a list of expected files and excluded prefixes that we
+        # specify here.These must be the paths relative to the isolated-direct-ingest-bucket-with-replication module.
+        replication_spec_include_prefixes_file_path: "../../../../../../../recidiviz/ingest/direct/regions/us_ar/raw_data/expected_file_names.txt"
+        replication_spec_exclude_prefixes_file_path: "../../../../../../../recidiviz/ingest/direct/regions/us_ar/raw_data/excluded_file_name_prefixes.txt"
 
     # This is the service account with permissions
     direct-ingest-gcs-service-account:

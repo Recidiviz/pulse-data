@@ -76,6 +76,24 @@ resource "google_storage_transfer_job" "copy_to_project" {
   description = "Copies ${var.state_code} data to ${each.key}."
 
   replication_spec {
+    dynamic "object_conditions" {
+      for_each = (
+      var.replication_spec_include_prefixes_file_path != null || var.replication_spec_exclude_prefixes_file_path != null
+      ) ? [1] : []
+
+      content {
+        include_prefixes = (
+        var.replication_spec_include_prefixes_file_path != null
+        ? split("\n", trimspace(file(var.replication_spec_include_prefixes_file_path)))
+        : null
+        )
+        exclude_prefixes = (
+        var.replication_spec_exclude_prefixes_file_path != null
+        ? split("\n", trimspace(file(var.replication_spec_exclude_prefixes_file_path)))
+        : null
+        )
+      }
+    }
 
     gcs_data_source {
       bucket_name = module.gcs_bucket.name
