@@ -19,6 +19,7 @@
 from unittest.mock import MagicMock
 
 import pandas as pd
+import pytest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -103,6 +104,19 @@ def test_randomize_birthdate() -> None:
     for (value, parsers), expected in pairs + pairs:
         randomized_value = FAKER.randomize_birthdate(value, parsers)
         assert randomized_value == expected
+
+    assert FAKER.randomize_birthdate("", ["DATE_PARSE('%Y-%m-%d', {col_name})"]) == ""
+
+    with pytest.raises(
+        ValueError,
+        match="Could not parse the date string '1495-04-30' with any of the provided formats",
+    ):
+        FAKER.randomize_birthdate(
+            "1495-04-30",
+            [
+                "DATE_PARSE('%Y/%m/%d', {col_name})",
+            ],
+        )
 
 
 def test_randomize_fixture_data() -> None:

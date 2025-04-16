@@ -26,6 +26,12 @@ python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest
     --external_id_value 12345 \
     --ingest_view_name sentence \
     --test_characteristic revocation
+    [--files_to_make_empty <file tags to skip>]
+
+files_to_make_empty should be a last resort when an existing ingest view
+needs new test cases, but the logic connecting raw dependencies isn't
+clean enough to connect your specific test case. Please try updating
+the ingest view and raw data dependencies first!
 """
 import argparse
 import os
@@ -66,6 +72,7 @@ from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 _SKIP_CODE_FILE_MESSAGE = "SKIPPING ALREADY DOWNLOADED CODE FILE"
+_EMPTY_FIXTURE_MESSAGE = "WRITING EMPTY FIXTURE FILE"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -124,6 +131,15 @@ def _parse_args() -> argparse.Namespace:
         "--skip_code_files",
         action="store_true",
         help="If this flag is included, the script will skip code files if they already exist.",
+    )
+    parser.add_argument(
+        "--files_to_make_empty",
+        nargs="+",
+        required=False,
+        help=(
+            "Space separated list of file tags to NOT query, resulting in an empty fixture. "
+            "Please only use this as a last resort!"
+        ),
     )
     args = parser.parse_args()
 
@@ -264,6 +280,10 @@ def _validate_and_preview_queries(
 def main() -> None:
     """Generates raw data fixtures from command line arguments."""
     args = _parse_args()
+    if args.files_to_make_empty is not None:
+        _ = prompt_for_confirmation(
+            f"\n\nThe following files will be made empty: {args.files_to_make_empty}. Are you sure!?!?"
+        )
     view_builder = _validate_and_preview_external_id(
         args.project_id,
         args.state_code,
@@ -274,19 +294,21 @@ def main() -> None:
     dataset = raw_tables_dataset_for_region(
         args.state_code, DirectIngestInstance.PRIMARY
     )
-    fixtures_to_skip = _validate_and_preview_file_paths(
+    fixtures_to_skip_queries = _validate_and_preview_file_paths(
         args.state_code,
         view_builder,
         args.test_characteristic,
         args.skip_code_files,
     )
+    for file_tag in args.files_to_make_empty:
+        fixtures_to_skip_queries[file_tag] = _EMPTY_FIXTURE_MESSAGE
     queries = _validate_and_preview_queries(
         view_builder,
         args.external_id_type,
         args.external_id_value,
         dataset,
         args.project_id,
-        fixtures_to_skip,
+        fixtures_to_skip_queries,
     )
     # TODO(#39686) No longer prompt when encrypted PII is in configs.
     _ = prompt_for_confirmation(
@@ -297,18 +319,23 @@ def main() -> None:
         file_tag,
         dependency,
     ) in view_builder.raw_table_dependency_configs_by_file_tag.items():
-        if (query := queries[file_tag]) == _SKIP_CODE_FILE_MESSAGE:
+        query = queries[file_tag]
+        if query == _SKIP_CODE_FILE_MESSAGE:
             continue
-        query_job = bq_client.run_query_async(
-            query_str=query,
-            use_query_cache=True,
-        )
-        df = query_job.result().to_dataframe()
-        df = randomize_fixture_data(df, dependency.raw_file_config)
-        RawDataFixture(dependency).write_dataframe_into_fixture_file(
-            df,
-            args.test_characteristic,
-        )
+        fixture = RawDataFixture(dependency)
+        if query == _EMPTY_FIXTURE_MESSAGE:
+            fixture.write_empty_fixture(args.test_characteristic)
+        else:
+            query_job = bq_client.run_query_async(
+                query_str=query,
+                use_query_cache=True,
+            )
+            df = query_job.result().to_dataframe()
+            df = randomize_fixture_data(df, dependency.raw_file_config)
+            fixture.write_dataframe_into_fixture_file(
+                df,
+                args.test_characteristic,
+            )
 
 
 if __name__ == "__main__":

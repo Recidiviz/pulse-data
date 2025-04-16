@@ -16,9 +16,9 @@
 # =============================================================================
 """This module has functionality to randomize fixture data."""
 
-import datetime
 import re
 import string
+from datetime import datetime, timedelta
 from enum import Enum
 
 import numpy
@@ -105,11 +105,15 @@ class RecidivizFixtureFaker(Faker):
         self.add_provider(self.StringWithSameCharPatternProvider)
 
     def randomize_string(self, value: str) -> str:
+        if not value:
+            return ""
         self.seed_instance(value)
         return self.patterned_string(value)
 
     def randomize_name(self, value: str, name_type: NameType) -> str:
         """Returns a random first name, last name, or full name based on the input value."""
+        if not value:
+            return ""
         self.seed_instance(value)
         match name_type:
             case NameType.FIRST_NAME:
@@ -120,12 +124,14 @@ class RecidivizFixtureFaker(Faker):
                 return self.name()
         raise ValueError("Unknown name type: {name_type}. Please use a valid NameType.")
 
-    def _shuffle_date(self, dt_value: datetime.datetime) -> datetime.datetime:
+    def _shuffle_date(self, dt_value: datetime) -> datetime:
         self.seed_instance(dt_value.isoformat())
-        return dt_value + datetime.timedelta(days=self.random_int(-365, 365))
+        return dt_value + timedelta(days=self.random_int(-365, 365))
 
     def randomize_birthdate(self, value: str, sql_parsers: list[str]) -> str:
         """Moves the given date by a random number of days and returns the new date as a string in the original format."""
+        if not value:
+            return ""
         for statement in sql_parsers:
             # sql_parser statements start with the function name, e.g.: SAFE.DATE_PARSE('format string', text arg)
             # This regext grabs the format string because it is the first argument.
@@ -136,14 +142,12 @@ class RecidivizFixtureFaker(Faker):
                 raise ValueError(
                     f"Could not find a date format string in the SQL parser '{statement}'."
                 )
-            datetime_format = datetime_match.group(1)
+            dt_format = datetime_match.group(1)
             try:
-                dt_value = self._shuffle_date(
-                    datetime.datetime.strptime(value, datetime_format)
-                )
-                return dt_value.strftime(datetime_format)
+                dt_value = self._shuffle_date(datetime.strptime(value, dt_format))
             except ValueError:
                 continue
+            return dt_value.strftime(dt_format)
         raise ValueError(
             f"Could not parse the date string '{value}' with any of the provided formats: {sql_parsers}"
         )

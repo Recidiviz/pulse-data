@@ -123,3 +123,8 @@ class RawDataFixture:
         self._check_dataframe_schema_against_dependency(df, raw_fixture_path)
         os.makedirs(os.path.dirname(raw_fixture_path), exist_ok=True)
         df.to_csv(raw_fixture_path, index=False)
+
+    def write_empty_fixture(self, test_identifier: str) -> None:
+        """Writes an empty fixture file for the given test identifier."""
+        df = pd.DataFrame(columns=[col.name for col in self.schema])
+        self.write_dataframe_into_fixture_file(df, test_identifier)
