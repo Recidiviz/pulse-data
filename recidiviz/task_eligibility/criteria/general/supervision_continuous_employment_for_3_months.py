@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which
-someone is continuous for at least 3 months
+"""Defines a criteria span view that displays periods when someone has maintained 
+continuous employment, been a student, or had an alternative income source for at 
+least three months.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -39,6 +40,8 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             "EMPLOYED_UNKNOWN_AMOUNT",
             "EMPLOYED_FULL_TIME",
             "EMPLOYED_PART_TIME",
+            "STUDENT",
+            "ALTERNATE_INCOME_SOURCE",
         ],
     )
 )

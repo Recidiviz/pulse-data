@@ -1821,15 +1821,39 @@ US_TX:
       |-
       Policy references warrant dates which we do not yet have normalized state data for. 03/13/2025.
 US_UT:
+  assess_qstn:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
+  assess_qstn_choice:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
   ofndr_tst:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
-      Used to display latest assessment information in side-panel notes.
+      Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
   ofndr_tst_eval:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
-      Used to display latest assessment information in side-panel notes.
+      Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
+  p_p_agrmnt:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display probation conditions information in side-panel notes. TODO(#40922) to ingest in SupervisionPeriod.conditions instead.
+  p_p_spcl_cond:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display probation conditions information in side-panel notes. TODO(#40922) to ingest in SupervisionPeriod.conditions instead.
+  rim_accomplishment_cd:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display accomplishment information in side-panel notes. TODO(#40923) to ingest somewhere instead.
+  rim_category_cd:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display acommplishment information in side-panel notes. TODO(#40923) to ingest somewhere instead.
+  rim_ofndr_accomplishment:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display accomplishment information in side-panel notes. TODO(#40923) to ingest somewhere instead.
   sprvsn_cntc:
     task_eligibility_criteria_us_ut.has_completed_ordered_assessments: |-
       Created a criteria to find out if someone has completed ordered assessments.
+  tst_qstn_rspns:
+    workflows_views.us_ut_early_termination_from_supervision_request_record: |-
+      Used to display latest assessment information in side-panel notes.
   wf_rpt:
     analyst_data.us_ut_early_discharge_sessions_preprocessing: |-
       Used to infer early discharges in UT.

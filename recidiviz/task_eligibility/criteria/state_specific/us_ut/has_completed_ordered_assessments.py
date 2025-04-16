@@ -57,23 +57,16 @@ WITH dedup_assess_by_date AS (
 )
 
 SELECT 
-    sss.state_code,
-    sss.person_id,
-    -- Earliest contact date
-    MIN(assess.contact_date) AS start_date,
-    sss.end_date_exclusive AS end_date,
-    TRUE AS meets_criteria,
+    state_code,
+    person_id,
+    contact_date AS start_date,
+    LEAD(contact_date) OVER(PARTITION BY state_code, person_id ORDER BY contact_date) AS end_date,
+    ordered_assessment_status IN ('NOT ORDERED', 'COMPLETE') AS meets_criteria,
     TO_JSON(STRUCT(
-        STRING_AGG(DISTINCT assess.ordered_assessment_status ORDER BY assess.ordered_assessment_status) AS ordered_assessment_status
+        ordered_assessment_status AS ordered_assessment_status
         )) AS reason,
-   STRING_AGG(DISTINCT assess.ordered_assessment_status ORDER BY assess.ordered_assessment_status) AS ordered_assessment_status,
-FROM `{project_id}.sessions.supervision_super_sessions_materialized` sss
-INNER JOIN dedup_assess_by_date assess
-    ON assess.person_id = sss.person_id
-        AND assess.state_code = sss.state_code
-        AND assess.contact_date BETWEEN sss.start_date AND IFNULL(sss.end_date, '9999-12-31')
-        AND assess.ordered_assessment_status IN ('NOT ORDERED', 'COMPLETE')
-GROUP BY sss.state_code, sss.person_id, sss.end_date_exclusive
+    ordered_assessment_status,
+FROM dedup_assess_by_date
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

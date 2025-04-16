@@ -73,10 +73,23 @@ all_current_spans_with_tab_names AS (
     SELECT *, 'REPORT_DUE_ELIGIBLE' AS metadata_tab_name
     FROM all_current_spans
     WHERE is_eligible
+),
 
+all_current_spans_with_tab_names_and_interstate_compact_in AS (
+    -- Interstate compact in cases
+    SELECT
+        acs.*,
+        IF(slr.supervision_level_raw_text IS NOT NULL, True, False) AS metadata_interstate_compact_in,
+    FROM all_current_spans_with_tab_names acs
+    LEFT JOIN `{{project_id}}.sessions.supervision_level_raw_text_sessions_materialized` slr
+    ON acs.person_id = slr.person_id
+        AND acs.state_code = slr.state_code
+        AND slr.end_date_exclusive IS NULL
+        AND REGEXP_CONTAINS(slr.supervision_level_raw_text, 'COMPACT IN')
 ),
 
 case_notes_cte AS (
+    -- Latest LS/RNR's score
     SELECT 
         peid.external_id,
         'Latest LS/RNR' AS criteria,
@@ -97,6 +110,66 @@ case_notes_cte AS (
         AND id_type = 'US_UT_DOC'
     WHERE ote.eval_desc IS NOT NULL
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id ORDER BY event_date DESC) = 1
+    
+    UNION ALL
+
+    -- Latest LS/RNR's summary of findings
+    # TODO(#40921) Ingest LS/RNR summary of findings into assessment_metadata
+    SELECT 
+        ot.ofndr_num AS external_id,
+        'Latest LS/RNR' AS criteria,
+        'Summary of findings' AS note_title,
+        cmt AS note_body,
+        SAFE_CAST(LEFT(ot.tst_dt, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.ofndr_tst_latest` ot
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.tst_qstn_rspns_latest`
+        USING(ofndr_tst_id, assess_tst_id)
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.assess_qstn_latest` q
+        USING(assess_tst_id, assess_qstn_num, tst_sctn_num)
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.assess_qstn_choice_latest` c
+        USING(assess_tst_id, assess_qstn_num,qstn_choice_num,tst_sctn_num)
+    WHERE cmt IS NOT NULL
+        AND ot.assess_tst_id IN ('48', '84') -- LS/RNR
+        AND q.assess_qstn = 'Summary of Findings'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY ot.ofndr_num ORDER BY event_date DESC) = 1
+
+    UNION ALL 
+
+    -- Accomplishments in the past year
+    # TODO(#40923) Ingest accomplishments somwhere
+    SELECT 
+        peid.external_id,
+        'Accomplishments (in the past year)' AS criteria,
+        rcc.rim_category_title AS note_title,
+        rac.accomplishment_desc AS note_body,
+        SAFE_CAST(LEFT(oa.accomplishment_dt, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.rim_ofndr_accomplishment_latest` oa
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.rim_accomplishment_cd_latest` rac
+        USING(rim_accomplishment_id)
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.rim_category_cd_latest` rcc
+    USING(rim_category_id)
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        ON peid.external_id = oa.ofndr_num
+            AND peid.state_code = 'US_UT'
+            AND peid.id_type = 'US_UT_DOC'
+    -- In the past year
+    WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), SAFE_CAST(LEFT(oa.accomplishment_dt, 10) AS DATE), MONTH)<12
+
+    UNION ALL
+
+    -- Probation conditions
+    # TODO(#40922) Ingest probation conditions into SupervisionPeriod.conditions
+    SELECT 
+        ofndr_num AS external_id,
+        'Probation conditions' AS criteria,
+        '' AS note_title,
+        s.cond_desc AS note_body,
+        SAFE_CAST(LEFT(s.strt_dt, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.p_p_agrmnt_latest` p
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.p_p_spcl_cond_latest` s
+        USING(p_p_agrmnt_id)
+    -- Only include conditions that are active today
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN SAFE_CAST(LEFT(s.strt_dt, 10) AS DATE) AND IFNULL(SAFE_CAST(LEFT(s.end_dt, 10) AS DATE), '9999-12-31')
 ),
 
 array_case_notes_cte AS (
@@ -104,8 +177,8 @@ array_case_notes_cte AS (
 )
 
 {opportunity_query_final_select_with_case_notes(
-    from_cte="all_current_spans_with_tab_names",
-    additional_columns="metadata_tab_name",)}
+    from_cte="all_current_spans_with_tab_names_and_interstate_compact_in",
+    additional_columns="metadata_tab_name, metadata_interstate_compact_in",)}
 """
 
 US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
