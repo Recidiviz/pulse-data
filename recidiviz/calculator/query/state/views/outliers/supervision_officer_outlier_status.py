@@ -22,7 +22,13 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 )
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.outliers.outliers_configs import METRICS_BY_OUTCOME_TYPE
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states_for_bigquery,
+)
+from recidiviz.outliers.outliers_configs import (
+    METRICS_BY_OUTCOME_TYPE,
+    get_outliers_backend_config,
+)
 from recidiviz.outliers.types import MetricOutcome
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,9 +42,21 @@ def get_metric_id_by_outcome(metric_outcome: MetricOutcome) -> List[str]:
     return sorted(metric.name for metric in METRICS_BY_OUTCOME_TYPE[metric_outcome])
 
 
+def get_primary_caseload_category_types_by_state() -> str:
+    return "\nUNION ALL\n".join(
+        [
+            f'SELECT "{state_code}" AS state_code, "{get_outliers_backend_config(state_code).primary_category_type.value}" AS primary_category_type'
+            for state_code in get_outliers_enabled_states_for_bigquery()
+        ]
+    )
+
+
 _QUERY_TEMPLATE = f"""
 WITH
-officer_metrics_with_caseload_type AS (
+primary_caseload_category_types_by_state AS (
+  {get_primary_caseload_category_types_by_state()}
+)
+, officer_metrics_with_caseload_type AS (
   SELECT 
     m.state_code,
     m.officer_id,
@@ -48,9 +66,12 @@ officer_metrics_with_caseload_type AS (
     m.metric_value AS metric_rate,
     category_type,
     caseload_category,
+    category_type = c.primary_category_type AS is_surfaced_category_type,
     -- TODO(#31634): Remove caseload_type
     caseload_category AS caseload_type
-  FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m 
+  FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m
+  INNER JOIN primary_caseload_category_types_by_state c
+    USING(state_code)
   WHERE
     m.value_type = 'RATE'
 )
@@ -117,6 +138,7 @@ SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBui
         "category_type",
         "caseload_type",
         "caseload_category",
+        "is_surfaced_category_type",
         "target",
         "threshold",
         "status",
