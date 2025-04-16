@@ -222,7 +222,7 @@ WITH
   FROM
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_community_opportunities_latest`)
 SELECT
-  "US_IX" AS state_code,
+  "US_ND" AS state_code,
   OpportunityName,
   Description,
   ProviderName,
