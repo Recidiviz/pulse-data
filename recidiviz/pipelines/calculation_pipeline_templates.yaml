@@ -212,6 +212,10 @@ metric_pipelines:
     state_code: US_CA
     metric_types: SUPERVISION_START
     region: us-east1
+  - pipeline: incarceration_metrics
+    state_code: US_CA
+    metric_types: INCARCERATION_POPULATION_SPAN INCARCERATION_RELEASE INCARCERATION_ADMISSION
+    region: us-east1
 
   # Daily US_MO calculations -- Lantern v1
   - pipeline: supervision_metrics
