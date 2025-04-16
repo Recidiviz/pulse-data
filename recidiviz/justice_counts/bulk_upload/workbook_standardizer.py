@@ -701,51 +701,6 @@ class WorkbookStandardizer:
                             row_number=row_number,
                             additional_description="Data from this row will be saved with an Annual reporting frequency.",
                         )
-            # Check for invalid disaggregation values
-            if metric_file is None:
-                possible_disaggregation_categories_for_metric = ", ".join(
-                    [
-                        m.disaggregation_column_name
-                        for m in self.metadata.metric_files
-                        if m.definition.key == metric_key
-                        and m.disaggregation_column_name is not None
-                    ]
-                )
-                # Add error if breakdown category does not correspond to the metric.
-                self._add_row_value_error(
-                    column_name=BREAKDOWN_CATEGORY,
-                    value=row[BREAKDOWN_CATEGORY],
-                    row_number=row_number,
-                    metric_key=metric_key,
-                    sheet_name=sheet_name,
-                    additional_description=f"The breakdown category does not correspond to the metric. Possible breakdown categories include: {possible_disaggregation_categories_for_metric}.",
-                )
-
-            if (
-                metric_file is not None
-                and metric_file.disaggregation_column_name is not None
-            ):
-                text = (
-                    row.get(metric_file.disaggregation_column_name)
-                    if self.metadata.is_single_page_upload is False
-                    else row.get(BREAKDOWN)
-                )
-                column_name = (
-                    metric_file.disaggregation_column_name
-                    if self.metadata.is_single_page_upload is False
-                    else BREAKDOWN
-                )
-                disaggregation_value = self.fuzzy_match_against_options(
-                    text=text,
-                    column_name=column_name,
-                    options=[d.value for d in list(metric_file.disaggregation)],  # type: ignore[call-overload]
-                    sheet_name=sheet_name,
-                    row_number=row_number,
-                    metric_key=metric_key,
-                )
-
-                if disaggregation_value is not None:
-                    row[metric_file.disaggregation_column_name] = disaggregation_value
 
             # Check for invalid 'system' values
             if (
@@ -838,6 +793,65 @@ class WorkbookStandardizer:
                     row_number=row_number,
                     additional_description=f"The metric in this row does not correspond to a metric for this agency. The valid values for this row are {valid_metrics}.",
                 )
+                # If the metric is invalid, don't bother checking breakdown / breakdown category
+                continue
+
+            # Check for invalid disaggregation values
+            if metric_file is None:
+                possible_disaggregation_categories_for_metric = ", ".join(
+                    [
+                        m.disaggregation_column_name
+                        for m in self.metadata.metric_files
+                        if m.definition.key == metric_key
+                        and m.disaggregation_column_name is not None
+                    ]
+                )
+                # Add error if breakdown category does not correspond to the metric.
+                self._add_row_value_error(
+                    column_name=BREAKDOWN_CATEGORY,
+                    value=row[BREAKDOWN_CATEGORY],
+                    row_number=row_number,
+                    metric_key=metric_key,
+                    sheet_name=sheet_name,
+                    additional_description=f"The breakdown category does not correspond to the metric. Possible breakdown categories include: {possible_disaggregation_categories_for_metric}.",
+                )
+
+            if (
+                metric_file is not None
+                and metric_file.disaggregation_column_name is not None
+            ):
+                text = (
+                    row.get(metric_file.disaggregation_column_name)
+                    if self.metadata.is_single_page_upload is False
+                    else row.get(BREAKDOWN)
+                )
+                column_name = (
+                    metric_file.disaggregation_column_name
+                    if self.metadata.is_single_page_upload is False
+                    else BREAKDOWN
+                )
+                options = [d.value for d in list(metric_file.disaggregation)]  # type: ignore[call-overload]
+                disaggregation_value = self.fuzzy_match_against_options(
+                    text=text,
+                    column_name=column_name,
+                    options=options,
+                    sheet_name=sheet_name,
+                    row_number=row_number,
+                    metric_key=metric_key,
+                )
+                if disaggregation_value is not None:
+                    row[column_name] = disaggregation_value
+                else:
+                    # Add error if breakdown does not correspond to the metric.
+                    options_string = ", ".join(options)
+                    self._add_row_value_error(
+                        column_name=column_name,
+                        value=text,
+                        row_number=row_number,
+                        metric_key=metric_key,
+                        sheet_name=sheet_name,
+                        additional_description=f"The breakdown does not correspond to the metric. Possible breakdowns include: {options_string}.",
+                    )
 
             num_errors_after = len(
                 self.metadata.metric_key_to_errors.get(metric_key, [])
