@@ -239,13 +239,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             CAST(DATE_DIFF(current_sentences.sentence_end_date_latest, pss.start_date, YEAR) AS STRING)
         ) AS form_information_supervision_duration,
         site.AddressCity AS form_information_supervision_office_location,
-        /* TODO(#38270): Remove this form-information field once Polaris removes it on
-        the front end and no longer needs the stub here for the NCIC info. */
-        STRUCT(
-            CAST(NULL AS DATE) AS contact_date,
-            CAST(NULL AS STRING) AS contact_type,
-            CAST(NULL AS STRING) AS contact_comment
-        ) AS form_information_latest_ncic,
     FROM base
     LEFT JOIN contact_latest_negative_arrest_check
         ON base.person_id=contact_latest_negative_arrest_check.person_id
