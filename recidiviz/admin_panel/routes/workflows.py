@@ -217,6 +217,9 @@ class OpportunityConfigurationsAPI(MethodView):
             overdue_opportunity_callout_copy=body_args.get(
                 "overdue_opportunity_callout_copy"
             ),
+            snooze_companion_opportunity_types=body_args.get(
+                "snooze_companion_opportunity_types"
+            ),
         )
         return new_config_id
 

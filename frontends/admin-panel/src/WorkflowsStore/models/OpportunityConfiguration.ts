@@ -158,6 +158,8 @@ export const babyOpportunityConfigurationSchema = z
     highlightCasesOnHomepage: z.boolean().default(false),
     highlightedCaseCtaCopy: nullishAsUndefined(z.string()),
     overdueOpportunityCalloutCopy: nullishAsUndefined(z.string()),
+
+    snoozeCompanionOpportunityTypes: z.array(z.string()).default([]),
   })
   .strict();
 // strict() prevents us from accidentally dropping fields the frontend doesn't know about

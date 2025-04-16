@@ -354,6 +354,7 @@ class WorkflowsQuerier:
         highlight_cases_on_homepage: bool,
         highlighted_case_cta_copy: Optional[str],
         overdue_opportunity_callout_copy: Optional[str],
+        snooze_companion_opportunity_types: Optional[list[str]],
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -418,6 +419,7 @@ class WorkflowsQuerier:
                     highlight_cases_on_homepage=highlight_cases_on_homepage,
                     highlighted_case_cta_copy=highlighted_case_cta_copy,
                     overdue_opportunity_callout_copy=overdue_opportunity_callout_copy,
+                    snooze_companion_opportunity_types=snooze_companion_opportunity_types,
                 )
                 .returning(OpportunityConfiguration.id)
             )

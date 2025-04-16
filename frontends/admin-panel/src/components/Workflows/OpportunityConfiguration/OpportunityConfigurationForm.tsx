@@ -49,6 +49,7 @@ const OPTIONAL_FIELDS: OpportunityConfigurationField[] = [
   "nonOmsCriteriaHeader",
   "highlightedCaseCtaCopy",
   "overdueOpportunityCalloutCopy",
+  "snoozeCompanionOpportunityTypes",
 ];
 
 const OpportunityConfigurationForm = ({

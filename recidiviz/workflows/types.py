@@ -113,6 +113,8 @@ class OpportunityConfig:
     highlighted_case_cta_copy: Optional[str] = attr.ib()
     overdue_opportunity_callout_copy: Optional[str] = attr.ib()
 
+    snooze_companion_opportunity_types: Optional[List[str]] = attr.ib()
+
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
 

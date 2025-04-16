@@ -41,6 +41,10 @@ import {
 } from "./fieldComponents/SidebarComponents";
 import { SnoozeEdit, SnoozeView } from "./fieldComponents/Snooze";
 import {
+  SnoozeCompanionsEditWrapper,
+  SnoozeCompanionsView,
+} from "./fieldComponents/SnoozeCompanions";
+import {
   SubcategoryHeadingsEdit,
   SubcategoryHeadingsView,
 } from "./fieldComponents/SubcategoryHeadings";
@@ -153,6 +157,11 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
       hideDenialRevert: {
         label: "Hide Denial Revert?",
         Edit: Checkbox,
+      },
+      snoozeCompanionOpportunityTypes: {
+        multiple: true,
+        Edit: SnoozeCompanionsEditWrapper,
+        View: SnoozeCompanionsView,
       },
     },
   },

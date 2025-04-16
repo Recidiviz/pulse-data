@@ -96,6 +96,7 @@ snapshots[
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
     },
     {
         "callToAction": "do something",
@@ -162,6 +163,7 @@ snapshots[
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
     },
     {
         "callToAction": "do something",
@@ -228,5 +230,6 @@ snapshots[
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
     },
 ]

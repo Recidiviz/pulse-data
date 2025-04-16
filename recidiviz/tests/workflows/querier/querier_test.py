@@ -164,6 +164,7 @@ def make_add_config_arguments(
         "highlight_cases_on_homepage": False,
         "highlighted_case_cta_copy": "Opportunity name",
         "overdue_opportunity_callout_copy": "overdue for opportunity",
+        "snooze_companion_opportunity_types": ["usNdOppType1", "usNdOppType2"],
     }
 
 
