@@ -36,6 +36,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        leave_last_sentence_span_open=True,
     )
 )
 

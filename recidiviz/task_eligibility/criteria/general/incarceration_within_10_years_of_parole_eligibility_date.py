@@ -35,8 +35,9 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         compartment_level_1_filter="INCARCERATION",
         meets_criteria_leading_window_time=10,
         date_part="YEAR",
-        critical_date_column="parole_eligibility_date",
+        critical_date_column="sentence_parole_eligibility_date",
         critical_date_name_in_reason="parole_eligibility_date",
+        leave_last_sentence_span_open=True,
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
     )

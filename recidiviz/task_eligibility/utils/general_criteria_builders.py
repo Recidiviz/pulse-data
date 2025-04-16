@@ -35,6 +35,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+    STATES_WITH_NO_INFERRED_OPEN_SPANS,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -1059,8 +1063,9 @@ def is_past_completion_date_criteria_builder(
     compartment_level_1_filter: str = "SUPERVISION",
     date_part: str = "DAY",
     critical_date_name_in_reason: str = "eligible_date",
-    critical_date_column: str = "projected_completion_date_max",
+    critical_date_column: str = "sentence_projected_full_term_release_date_max",
     negate_critical_date_has_passed: bool = False,
+    leave_last_sentence_span_open: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query that has spans of time when the projected completion date
@@ -1080,10 +1085,14 @@ def is_past_completion_date_criteria_builder(
         critical_date_name_in_reason (str, optional): The name of the critical date in
             the reason column. Defaults to "eligible_date".
         critical_date_column (str, optional): The name of the column that contains the
-            critical date. Defaults to "projected_completion_date_max".
+            critical date. Defaults to "sentence_projected_full_term_release_date_max".
         negate_critical_date_has_passed (bool, optional): If True, the critical date has
             passed will be negated. This means the periods where this date has passed
             will become False. Defaults to False.
+        leave_last_sentence_span_open (bool, optional): If True, the most recent
+            sentence spans are left open in order to cover cases where an open incarceration
+            or supervision session has no overlapping sentence span. The projected dates from
+            the latest (non-overlapping) sentence span will be applied. Defaults to False.
     Raises:
         ValueError: if compartment_level_1_filter is different from "supervision" or
             "incarceration".
@@ -1094,18 +1103,66 @@ def is_past_completion_date_criteria_builder(
     """
     raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
 
+    excluded_incarceration_states = list_to_query_string(
+        string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+        quoted=True,
+    )
+    no_inferred_open_span_states = list_to_query_string(
+        string_list=STATES_WITH_NO_INFERRED_OPEN_SPANS,
+        quoted=True,
+    )
     # Transform compartment_level_1_filter to a string to be used in the query
-    compartment_level_1 = compartment_level_1_filter.lower()
+    if compartment_level_1_filter == "INCARCERATION":
+        query_where_clause_str = "WHERE sentence_type IN ('STATE_PRISON')"
+    elif compartment_level_1_filter == "SUPERVISION":
+        query_where_clause_str = f"""
+        WHERE (state_code NOT IN ({excluded_incarceration_states})
+        OR
+        sentence_type IN ('PAROLE','PROBATION'))
+        """
+    else:
+        query_where_clause_str = ""
+
+    if leave_last_sentence_span_open:
+        end_date_str = f"""
+                IF(
+                    state_code NOT IN ({no_inferred_open_span_states}) 
+                    AND start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id)
+                    AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}<=CURRENT_DATE('US/Eastern'),
+                    NULL,
+                    end_date_exclusive
+                ) AS end_date_exclusive
+                """
+    else:
+        end_date_str = "end_date_exclusive"
 
     criteria_query = f"""
-    WITH critical_date_spans AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date AS start_datetime,
-            end_date AS end_datetime,
-            {revert_nonnull_end_date_clause(critical_date_column)} AS critical_date
-        FROM `{{project_id}}.{{sessions_dataset}}.{compartment_level_1}_projected_completion_date_spans_materialized`
+    WITH sentences AS
+    (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        {end_date_str},
+        {critical_date_column},
+        is_life,
+        FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized`,
+        UNNEST(sentence_array)
+        JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
+            USING(state_code, person_id, sentence_id)
+        {query_where_clause_str}
+    )
+    ,
+    critical_date_spans AS 
+    (
+    SELECT
+        state_code,
+        person_id,
+        start_date AS start_datetime,
+        end_date_exclusive AS end_datetime,
+        {revert_nonnull_end_date_clause(f"MAX(IF(is_life, {nonnull_end_date_exclusive_clause(f'{critical_date_column}')}, {critical_date_column}))")} AS critical_date,
+        FROM sentences
+        GROUP BY 1,2,3,4
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time = meets_criteria_leading_window_time,
                                         date_part=date_part)}
@@ -1124,7 +1181,6 @@ def is_past_completion_date_criteria_builder(
         criteria_name=criteria_name,
         criteria_spans_query_template=criteria_query,
         description=description,
-        sessions_dataset=SESSIONS_DATASET,
         reasons_fields=[
             ReasonsField(
                 name=critical_date_name_in_reason,
