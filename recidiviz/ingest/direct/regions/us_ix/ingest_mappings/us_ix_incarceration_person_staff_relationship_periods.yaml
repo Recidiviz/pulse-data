@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_person_staff_relationship_periods` to
+# the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  FromDate: DATE
+  ToDate: DATE
+  EmployeeId: STRING
+  location_external_id: STRING
+  relationship_priority: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_IX_DOC")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: FromDate
+          relationship_end_date_exclusive: ToDate
+          associated_staff_external_id: EmployeeId
+          associated_staff_external_id_type: $literal("US_IX_EMPLOYEE")
+          # Everyone in this view is by necessity an incarceration case manager
+          system_type: $literal_enum(StateSystemType.INCARCERATION)
+          relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
+          relationship_priority: relationship_priority
+          location_external_id: location_external_id

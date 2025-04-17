@@ -300,8 +300,9 @@ def main() -> None:
         args.test_characteristic,
         args.skip_code_files,
     )
-    for file_tag in args.files_to_make_empty:
-        fixtures_to_skip_queries[file_tag] = _EMPTY_FIXTURE_MESSAGE
+    if args.files_to_make_empty is not None:
+        for file_tag in args.files_to_make_empty:
+            fixtures_to_skip_queries[file_tag] = _EMPTY_FIXTURE_MESSAGE
     queries = _validate_and_preview_queries(
         view_builder,
         args.external_id_type,
