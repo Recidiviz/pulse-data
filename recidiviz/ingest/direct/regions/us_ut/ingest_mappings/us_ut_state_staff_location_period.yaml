@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_staff` to
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  usr_id: STRING
+  agcy_id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  sequence_num: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: usr_id
+          id_type: $literal("US_UT_USR_ID")
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - usr_id
+                - sequence_num
+          location_external_id: agcy_id
+          start_date: start_date
+          end_date: end_date
