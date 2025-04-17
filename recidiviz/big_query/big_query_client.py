@@ -1223,7 +1223,12 @@ class BigQueryClientImpl(BigQueryClient):
         job = self.run_query_async(
             query_str="\n".join(policy_queries), use_query_cache=False
         )
-        job.result()
+        # Applying row level permissions is very flaky and has been periodically failing with
+        # various 400 errors.
+        retry_policy = retry.Retry(
+            predicate=lambda e: isinstance(e, exceptions.BadRequest)
+        )
+        job.result(retry=retry_policy)
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
