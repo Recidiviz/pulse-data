@@ -15,8 +15,8 @@
 # along with this program.    If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-View that returns supervisors in US_IX and US_PA that don't have a supervision_district 
-or one that is not matched to any of the district managers' districts in the 
+View that returns supervisors in US_IX and US_PA that don't have a supervision_district
+or one that is not matched to any of the district managers' districts in the
 DM outliers product view and vice cersa.
 """
 
@@ -70,11 +70,11 @@ officers_with_metrics AS (
     s.state_code,
     s.email,
     s.external_id,
-    UPPER(supervision_district) AS supervisor_district,
+    UPPER(s.supervision_district) AS supervisor_district,
     UPPER(dm.supervision_district) AS dm_district,
   FROM supervisors_for_officers_with_metrics s 
   FULL OUTER JOIN `{project_id}.{outliers_dataset}.supervision_district_managers_materialized` dm 
-    USING (state_code, supervision_district)
+    ON s.state_code = dm.state_code AND UPPER(s.supervision_district) = UPPER(dm.supervision_district)
   WHERE
     s.state_code IN ('US_IX', 'US_PA')
   ORDER BY 1, 2

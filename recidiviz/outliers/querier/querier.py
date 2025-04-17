@@ -138,8 +138,10 @@ class OutliersQuerier:
                         # for the supervisor, it doesn't matter which location we choose because
                         # we only send emails for PA which has the same value for both location
                         # fields
-                        SupervisionOfficerSupervisor.supervision_location_for_list_page
-                        == SupervisionDistrictManager.supervision_district,
+                        func.lower(
+                            SupervisionOfficerSupervisor.supervision_location_for_list_page
+                        )
+                        == func.lower(SupervisionDistrictManager.supervision_district),
                     ),
                     # Ensure to use a LEFT OUTER JOIN
                     isouter=True,
