@@ -45,12 +45,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 # <report start date, report end date, agency id, metric definition,
 # context key, disaggregations>
 DatapointUniqueKey = Tuple[
-    datetime.date,
-    datetime.date,
-    int,
-    str,
-    Optional[str],
-    Optional[str],
+    datetime.date, datetime.date, int, str, Optional[str], Optional[str], Optional[str]
 ]
 
 
@@ -272,6 +267,7 @@ class DatapointInterface:
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
+        sub_dimension: Optional[str] = None,
         uploaded_via_breakdown_sheet: bool = False,
         user_account: Optional[schema.UserAccount] = None,
         agency: Optional[schema.Agency] = None,
@@ -329,6 +325,7 @@ class DatapointInterface:
                 if dimension
                 else None
             ),
+            sub_dimension,
         )
         existing_datapoint = existing_datapoints_dict.get(datapoint_key)
         if uploaded_via_breakdown_sheet:
@@ -360,6 +357,9 @@ class DatapointInterface:
             source_id=report.source_id,
             is_report_datapoint=True,
             upload_method=upload_method.value,
+            sub_dimension_name=(
+                sub_dimension.upper() if sub_dimension is not None else None
+            ),  # Normalize all sub_dimensions to be all-caps
         )
 
         # Store the new datapoint in this dict, so that it can be

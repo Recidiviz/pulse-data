@@ -75,6 +75,11 @@ class MetricAggregatedDimensionData:
     dimension_to_other_sub_dimension_to_enabled_status: Dict[
         DimensionBase, Dict[str, Optional[bool]]
     ] = attr.Factory(dict)
+    # Maps each dimension (e.g. FundingType.OTHER) to a dict of sub-dimension labels
+    # and their values. For example: {FundingType.OTHER: {"Santa Claus": 12, "Gifts": 200}}
+    dimension_to_other_sub_dimension_to_value: Dict[
+        DimensionBase, Dict[str, Any]
+    ] = attr.Factory(dict)
 
     def dimension_identifier(self) -> str:
         # Identifier of the Dimension class that this breakdown corresponds to
@@ -497,13 +502,34 @@ class MetricAggregatedDimensionData:
         )
 
         if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
-            return cls(
-                dimension_to_value={
-                    dimension: dimension_enum_value_to_value.get(
-                        dimension.to_enum().value, None
+            dimension_to_value: Dict[DimensionBase, Any] = {}
+            dimension_to_other_sub_dimension_to_value: Dict[
+                DimensionBase, Dict[str, Any]
+            ] = {}
+
+            for dimension_enum_value, value in dimension_enum_value_to_value.items():
+                try:
+                    dim_enum = dimension_class(dimension_enum_value)  # type: ignore[abstract]
+                    dimension_to_value[
+                        dim_enum
+                    ] = value  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20})
+                except ValueError:
+                    # In this case, it is a custom sub-dimension.
+                    dimension_enum_value, sub_dimension = tuple(
+                        part.strip() for part in dimension_enum_value.split("-", 1)
                     )
-                    for dimension in dimension_class  # type: ignore[attr-defined]
-                },
+                    # example: dimension_enum_value = RaceAndEthnicity.BLACK sub_dimension="FOOBAR"
+                    dim_enum = dimension_class(dimension_enum_value)  # type: ignore[abstract]
+                    if dim_enum not in dimension_to_other_sub_dimension_to_value:
+                        dimension_to_other_sub_dimension_to_value[dim_enum] = {}
+
+                    dimension_to_other_sub_dimension_to_value[dim_enum][
+                        sub_dimension
+                    ] = value
+
+            return cls(
+                dimension_to_value=dimension_to_value,
+                dimension_to_other_sub_dimension_to_value=dimension_to_other_sub_dimension_to_value,
                 contexts=[
                     MetricContextData(
                         key=ContextKey[context["key"]],
@@ -511,7 +537,7 @@ class MetricAggregatedDimensionData:
                     )
                     for context in json.get("contexts", [])
                 ],
-            )  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20})
+            )
 
         # default_dimension_enabled_status will be True or False if a disaggregation is being turned off/on,
         # and None otherwise.

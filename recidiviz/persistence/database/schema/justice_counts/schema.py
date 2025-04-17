@@ -820,6 +820,10 @@ class Datapoint(JusticeCountsBase):
     # (e.g {"global/gender/restricted": "FEMALE"})
     dimension_identifier_to_member = Column(JSONB, nullable=True)
 
+    # Optional sub-dimension label provided by the agency when the dimension value is 'OTHER'.
+    # Stored in all caps. Only one sub-dimension is allowed per datapoint.
+    sub_dimension_name = Column(String, nullable=True)
+
     # Numeric value of this datapoint. All non-null values are saved as strings.
     # datapoints that represent unreported metric values will have a value of None.
     value = Column(String, nullable=True)

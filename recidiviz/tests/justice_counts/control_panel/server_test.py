@@ -44,7 +44,7 @@ from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.law_enforcement import ForceType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.prisons import StaffType
 from recidiviz.justice_counts.includes_excludes.prisons import (
@@ -1534,7 +1534,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ).timestamp(),
                     "metrics": [
                         {
-                            "key": law_enforcement.calls_for_service.key,
+                            "key": law_enforcement.use_of_force_incidents.key,
                             "value": value,
                         }
                     ],
@@ -1558,23 +1558,51 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ).timestamp(),
                     "metrics": [
                         {
-                            "key": law_enforcement.calls_for_service.key,
+                            "key": law_enforcement.use_of_force_incidents.key,
                             "value": value + 10,
                             "disaggregations": [
                                 {
-                                    "key": CallType.dimension_identifier(),
+                                    "key": ForceType.dimension_identifier(),
                                     "dimensions": [
                                         {
-                                            "key": CallType.EMERGENCY.value,
+                                            "key": ForceType.FIREARM.value,
                                             "value": value,
                                         },
                                         {
-                                            "key": CallType.NON_EMERGENCY.value,
+                                            "key": ForceType.PHYSICAL.value,
                                             "value": 10,
                                         },
                                         {
-                                            "key": CallType.UNKNOWN.value,
+                                            "key": ForceType.RESTRAINT.value,
                                             "value": None,
+                                        },
+                                        {
+                                            "key": ForceType.UNKNOWN.value,
+                                            "value": None,
+                                        },
+                                        {
+                                            "key": ForceType.OTHER.value,
+                                            "value": 30,
+                                        },
+                                        {
+                                            "key": ForceType.OTHER_WEAPON.value,
+                                            "value": 30,
+                                        },
+                                        {
+                                            "key": "Other Force - Foo",
+                                            "value": 15,
+                                        },
+                                        {
+                                            "key": "Other Force - Bar",
+                                            "value": 15,
+                                        },
+                                        {
+                                            "key": "Other Weapon - Beep",
+                                            "value": 10,
+                                        },
+                                        {
+                                            "key": "Other Weapon - Boop",
+                                            "value": 20,
                                         },
                                     ],
                                 }
@@ -1591,14 +1619,98 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             report = self.session.query(Report).one_or_none()
             self.assertEqual(report.status, ReportStatus.PUBLISHED)
-            values = sorted(
-                [get_value(dp) for dp in report.datapoints],
-                key=lambda v: (v is None, v),
+            sorted_datapoints = sorted(
+                report.datapoints,
+                key=lambda dp: get_value(dp) if get_value(dp) is not None else -1,
             )
-            expected = sorted(
-                [110, value, 10, None, None, 2000000], key=lambda v: (v is None, v)
+            self.assertEqual(len(sorted_datapoints), 12)
+            self.assertEqual(get_value(sorted_datapoints[0]), None)
+            self.assertEqual(
+                sorted_datapoints[0].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.RESTRAINT.name},
             )
-            self.assertEqual(values, expected)
+            self.assertEqual(get_value(sorted_datapoints[1]), None)
+            self.assertEqual(
+                sorted_datapoints[1].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.UNKNOWN.name},
+            )
+            self.assertEqual(get_value(sorted_datapoints[2]), 10)
+            self.assertEqual(
+                sorted_datapoints[2].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.PHYSICAL.name},
+            )
+            self.assertEqual(get_value(sorted_datapoints[3]), 10)
+            self.assertEqual(
+                sorted_datapoints[3].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER_WEAPON.name},
+            )
+            self.assertEqual(sorted_datapoints[3].sub_dimension_name, "BEEP")
+            self.assertEqual(get_value(sorted_datapoints[4]), 15)
+            self.assertEqual(
+                sorted_datapoints[4].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER.name},
+            )
+            self.assertEqual(
+                sorted_datapoints[4].sub_dimension_name,
+                "FOO",
+            )
+            self.assertEqual(get_value(sorted_datapoints[5]), 15)
+            self.assertEqual(
+                sorted_datapoints[5].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER.name},
+            )
+            self.assertEqual(
+                sorted_datapoints[5].sub_dimension_name,
+                "BAR",
+            )
+
+            self.assertEqual(get_value(sorted_datapoints[6]), 20)
+            self.assertEqual(
+                sorted_datapoints[6].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER_WEAPON.name},
+            )
+            self.assertEqual(
+                sorted_datapoints[6].sub_dimension_name,
+                "BOOP",
+            )
+            self.assertEqual(get_value(sorted_datapoints[7]), 30)
+            self.assertEqual(
+                sorted_datapoints[7].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER_WEAPON.name},
+            )
+            self.assertIsNone(
+                sorted_datapoints[7].sub_dimension_name,
+            )
+            self.assertEqual(get_value(sorted_datapoints[8]), 30)
+            self.assertEqual(
+                sorted_datapoints[8].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.OTHER.name},
+            )
+            self.assertIsNone(
+                sorted_datapoints[8].sub_dimension_name,
+            )
+            self.assertEqual(get_value(sorted_datapoints[9]), 100)
+            self.assertEqual(
+                sorted_datapoints[9].dimension_identifier_to_member,
+                {ForceType.dimension_identifier(): ForceType.FIREARM.name},
+            )
+            self.assertIsNone(
+                sorted_datapoints[9].sub_dimension_name,
+            )
+            self.assertEqual(get_value(sorted_datapoints[10]), 110)
+            self.assertIsNone(
+                sorted_datapoints[10].dimension_identifier_to_member,
+            )
+            self.assertIsNone(
+                sorted_datapoints[10].sub_dimension_name,
+            )
+            self.assertEqual(get_value(sorted_datapoints[11]), 2000000)
+            self.assertIsNone(
+                sorted_datapoints[11].dimension_identifier_to_member,
+            )
+            self.assertIsNone(
+                sorted_datapoints[11].sub_dimension_name,
+            )
 
     def test_update_multiple_report_statuses(self) -> None:
         monthly_report_1 = self.test_schema_objects.test_report_monthly

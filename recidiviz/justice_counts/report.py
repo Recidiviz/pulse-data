@@ -550,6 +550,9 @@ class ReportInterface:
 
         # Next, add a datapoint for each dimension
         all_dimensions_to_values: Dict[DimensionBase, Any] = {}
+        all_dimensions_to_sub_dimension_to_values: Dict[
+            DimensionBase, Dict[str, Any]
+        ] = {}
         for reported_aggregated_dimension in report_metric.aggregated_dimensions:
             if reported_aggregated_dimension.dimension_to_value:
                 if upload_method == UploadMethod.BULK_UPLOAD:
@@ -566,33 +569,56 @@ class ReportInterface:
                     all_dimensions_to_values.update(
                         reported_aggregated_dimension.dimension_to_value
                     )
+                    all_dimensions_to_sub_dimension_to_values.update(
+                        reported_aggregated_dimension.dimension_to_other_sub_dimension_to_value
+                    )
 
         for aggregated_dimension in metric_definition.aggregated_dimensions or []:
             for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                 aggregated_dimension.dimension.dimension_identifier()
             ]:  # type: ignore[attr-defined]
-                if d not in all_dimensions_to_values:
-                    # If this dimension wasn't reported, skip it. Don't add a blank
-                    # datapoint, which will overwrite any previously reported values.
-                    continue
-
-                datapoint_json_list.append(
-                    DatapointInterface.add_report_datapoint(
-                        session=session,
-                        inserts=inserts,
-                        updates=updates,
-                        histories=histories,
-                        existing_datapoints_dict=existing_datapoints_dict,
-                        user_account=user_account,
-                        current_time=current_time,
-                        metric_definition_key=metric_definition.key,
-                        report=report,
-                        value=all_dimensions_to_values[d],
-                        dimension=d,
-                        agency=agency,
-                        upload_method=upload_method,
+                if d in all_dimensions_to_values:
+                    datapoint_json_list.append(
+                        DatapointInterface.add_report_datapoint(
+                            session=session,
+                            inserts=inserts,
+                            updates=updates,
+                            histories=histories,
+                            existing_datapoints_dict=existing_datapoints_dict,
+                            user_account=user_account,
+                            current_time=current_time,
+                            metric_definition_key=metric_definition.key,
+                            report=report,
+                            value=all_dimensions_to_values[d],
+                            dimension=d,
+                            agency=agency,
+                            upload_method=upload_method,
+                        )
                     )
-                )
+                if d in all_dimensions_to_sub_dimension_to_values:
+                    sub_dimension_to_value = all_dimensions_to_sub_dimension_to_values[
+                        d
+                    ]
+                    for sub_dimension, value in sub_dimension_to_value.items():
+                        datapoint_json_list.append(
+                            DatapointInterface.add_report_datapoint(
+                                session=session,
+                                inserts=inserts,
+                                updates=updates,
+                                histories=histories,
+                                existing_datapoints_dict=existing_datapoints_dict,
+                                user_account=user_account,
+                                current_time=current_time,
+                                metric_definition_key=metric_definition.key,
+                                report=report,
+                                value=value,
+                                dimension=d,
+                                agency=agency,
+                                upload_method=upload_method,
+                                sub_dimension=sub_dimension,
+                            )
+                        )
+
         return [dp for dp in datapoint_json_list if dp is not None]
 
     ### Helpers ###
@@ -615,6 +641,7 @@ class ReportInterface:
                 DatapointInterface.normalize_dimension(
                     dp.dimension_identifier_to_member
                 ),
+                dp.sub_dimension_name,
             ): dp
             for report in reports
             for dp in report.datapoints

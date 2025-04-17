@@ -16,10 +16,9 @@
 # =============================================================================
 """Functionality for bulk upload of an Excel workbook into the Justice Counts database."""
 
-import datetime
 import logging
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload_metadata import BulkUploadMetadata
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
@@ -28,7 +27,7 @@ from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
 from recidiviz.justice_counts.bulk_upload.workbook_standardizer import (
     WorkbookStandardizer,
 )
-from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
@@ -166,11 +165,11 @@ class WorkbookUploader:
     def _update_report_status(
         self,
         existing_datapoints_dict_changed: Dict[
-            Tuple[datetime.date, datetime.date, int, str, Optional[str], Optional[str]],
+            DatapointUniqueKey,
             schema.Datapoint,
         ],
         existing_datapoints_dict_unchanged: Dict[
-            Tuple[datetime.date, datetime.date, int, str, Optional[str], Optional[str]],
+            DatapointUniqueKey,
             Optional[float],
         ],
     ) -> None:
