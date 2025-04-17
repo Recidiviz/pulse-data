@@ -141,6 +141,9 @@ case_type_changes_cte AS (
         END AS update_date
     FROM case_type_cte
     WHERE prev_Case_type IS DISTINCT FROM Case_Type
+    -- In cases where there are multiple case type entries entered before the start
+    -- date, choose the latest one. 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number, update_date ORDER BY CTH_Creation_DATE DESC) = 1
 ),
 -- Before we look at the supervision officer changes, select the latest change on a given date.
 -- This is to avoid zero day periods where multiple changes were done on a single day.
@@ -185,6 +188,9 @@ status_changes_cte AS (
         END AS update_date
     FROM Status_cte
     WHERE prev_Status IS DISTINCT FROM Status
+    -- In cases where there are multiple status entries entered before the start
+    -- date, choose the latest one. 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number, update_date ORDER BY OSTS_UPDATE_DATE DESC) = 1
 ),
 -- Before we look at the supervision officer changes, select the latest change on a given date.
 -- This is to avoid zero day periods where multiple changes were done on a single day.
@@ -232,6 +238,9 @@ supervision_officer_changes_cte AS (
         END AS update_date
     FROM Supervision_Officer_cte
     WHERE prev_Supervision_Officer IS DISTINCT FROM Supervision_Officer
+    -- In cases where there are multiple officer entries entered before the start
+    -- date, choose the latest one. 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number, update_date ORDER BY WTSK_UPDATE_DATE DESC) = 1
 ),
 -- Gathers assessment data
 assessment_cte AS (
