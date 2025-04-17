@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    incarceration_not_past_projected_parole_release_date,
     incarceration_not_within_6_months_of_full_term_completion_date,
     not_in_treatment_in_prison,
     not_projected_parole_release_date_within_6_months,
@@ -78,6 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_violent_offense.VIEW_BUILDER,
         incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
         not_projected_parole_release_date_within_6_months.VIEW_BUILDER,
+        incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
         # Do not count someone eligible for resident worker status if they are
         # eligible for work release
