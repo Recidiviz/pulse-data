@@ -364,15 +364,10 @@ def parse_supervision_level(raw_text: str) -> Optional[StateSupervisionLevel]:
 def parse_custody_level(
     raw_text: str,
 ) -> Optional[StateIncarcerationPeriodCustodyLevel]:
-    """Parse custody level given classification assessment results and current facility."""
-    # If there is any custody level information, this is the correct way to separate the
-    # raw text value.
-    if len(raw_text.split("-")) == 3:
+    """Parse custody level given classification assessment results."""
+    if raw_text:
         level = raw_text.split("-")[1].upper()
-        prison = raw_text.split("-")[2].upper()
-        # Override all custody level assignments to be INTAKE when a person is housed
-        # in an intake facility.
-        if level == "INTAKE" or prison in ("PERRYVILLE", "PHOENIX"):
+        if level == "INTAKE":
             return StateIncarcerationPeriodCustodyLevel.INTAKE
         if level == "MINIMUM":
             return StateIncarcerationPeriodCustodyLevel.MINIMUM
@@ -386,12 +381,9 @@ def parse_custody_level(
             return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
         if level == "UNKNOWN":
             return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
-    # If there is no custody level information, raw text will be in the form NONE-[Facility Name].
-    if len(raw_text.split("-")) == 2:
-        prison = raw_text.split("-")[1].upper()
-        # Set custody level to INTAKE any time a person is housed in an intake facility.
-        if prison in ("PERRYVILLE", "PHOENIX"):
-            return StateIncarcerationPeriodCustodyLevel.INTAKE
+        # If there is no custody level information provided, the person has not yet
+        # been assigned one.
+        return StateIncarcerationPeriodCustodyLevel.INTAKE
     return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
 
 
