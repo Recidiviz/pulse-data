@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_staff`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Staff_ID_Number: STRING
+  start_date: DATE
+  end_date: DATE
+  Agency_of_Employment: STRING
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: Staff_ID_Number
+          id_type: $literal("US_TX_STAFF_ID")
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $separator: "@@"
+              $values:
+                - Staff_ID_Number
+                - Agency_of_Employment
+                - start_date
+          start_date: start_date
+          end_date: end_date
+          location_external_id: Agency_of_Employment
