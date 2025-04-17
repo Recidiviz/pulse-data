@@ -50,31 +50,77 @@ output:
                             $enum_mapping:
                               $raw_text:
                                 $json_extract:
-                                  $key: VIOLATION_RESULT
+                                  $key: VIOLATION_DECISION_RESULT
                                   $json: $iter_item
                               $mappings:
-                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
-                                  - CONTINUE WARRANT IN EFFECT
-                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
-                                  - AWAITING BPP VOTE
-                                  - NON REVOCATION ACTION - PENDING ADJUDICATION OF CHARGES
-                                  - PROCEED TO REVOCATION HEARING
-                                  - PROCEED TO PRELIMINARY HEARING
-                                StateSupervisionViolationResponseDecision.REVOCATION:
-                                  - REVOKE
+                                # CONTINUANCE mappings
                                 StateSupervisionViolationResponseDecision.CONTINUANCE:
-                                  - NO VIOLATION RECOMENDATION OCCURRED
-                                  - NON REVOCATION ACTION - ALLOW TO DISCHARGE
-                                  - WITHDRAW ISF AND RETURN TO SUPERVISION STATUS
+                                  - "|NON REVOCATION ACTION - ALLOW TO DISCHARGE"
+                                  - "|WITHDRAW ISF AND RETURN TO SUPERVISION STATUS"
+                                  - "CONTINUE SUPERVISION|"
+                                  - "CONTINUE SUPERVISION PENDING DISPOSITON|"
+                                  - "CONTINUE SUPERVISION PENDING PROBATION|"
+                                # DELAYED_ACTION mappings
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - "|NON REVOCATION ACTION - PENDING ADJUDICATION OF CHARGES"
+                                  - "ISSUE WARRANT|AWAITING BPP VOTE"
+                                  - "PENDING ADJUDICATION OF CHARGES|"
+                                  - "|PROCEED TO PRELIMINARY HEARING"
+                                  - "REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)|"
+                                  - "CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES|"
+                                  - "|REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)"
+                                  - "RETURN FOR CORRECTIONS|"
+                                  - "PS RETURN FOR CORRECTIONS|" # This is when a violation is returned to PO so they can fix something. Data entry issue.
+                                # REVOCATION mappings
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - "|PROCEED TO REVOCATION HEARING"
+                                  - "PROCEED TO REVOCATION HEARING|"
+                                  - "|REVOKE"
+                                  - "REVOKE|"
+                                # NEW_CONDITIONS mapping
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
-                                  - NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS
-                                StateSupervisionViolationResponseDecision.OTHER:
-                                  - RETURN FOR CORRECTIONS #This is when a violation is returned to PO so they can fix something. Data entry issue.
-                                  - REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)
-                                  - DENY
+                                  - "|NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS"
+                                # EXTERNAL_UNKNOWN mappings (for blank composite and unknown result)
+                                StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN:
+                                  - "|" # when both decision and result are blank
+                                  - "|UNKNOWN VIOLATION RECOMMENDATION"
+                                  - "UNKNOWN VIOLATION RECOMMENDATION|"
+                                # INTERNAL_UNKNOWN mappings (other unmapped values)
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - "DPO VIOLATION RECOMMENDATION|"
+                                  - "IMPOSE LOCAL INTERVENTIONS|"
+                                  - "INTERVENTIONS|"
+                                  - "|US VIOLATION RECOMMENDATION"
+                                  - "US VIOLATION RECOMMENDATION|"
+                                # TREATMENT_IN_PRISON mappings
                                 StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
-                                  - ISF #Intermediate Sanction Facility (ISF) facilities are short term detention facilities for parole or mandatory supervision offenders who have violated the terms of their release agreement.
-                                  - SAFPF #The Substance Abuse Felony Punishment Facility (SAFPF) provide services to qualified inmates identified as needing substance use treatment.
-                                  - CONTINUE ISF IN EFFECT
-                                  - CONTINUE SAFPF IN EFFECT
-                                  - CONTINUE ISF
+                                  # Intermediate Sanction Facility (ISF) facilities are short term detention facilities for parole or mandatory supervision offenders who have violated the terms of their release agreement.
+                                  # The Substance Abuse Felony Punishment Facility (SAFPF) provide services to qualified inmates identified as needing substance use treatment.
+                                  - "|CONTINUE ISF"
+                                  - "|CONTINUE ISF IN EFFECT"
+                                  - "|CONTINUE SAFPF IN EFFECT"
+                                  - "|ISF"
+                                  - "|SAFPF"
+                                # VIOLATION_UNFOUNDED mappings
+                                StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
+                                  - "|DENY"
+                                  - "DO NOT ISSUE|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "DO NOT ISSUE|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "ADMINISTRATIVE CLOSURE|"
+                                  # Acccounting for typos in "recommendation" that appear in the data
+                                  - "CONTINUE SUPERVISION|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "CONTINUE SUPERVISION|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "ISSUE WARRANT|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "ISSUE WARRANT|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "NO RECOMMENDATION|"
+                                # WARRANT_ISSUED mappings
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "CONTINUE WARRANT IN EFFECT|"
+                                  - "|CONTINUE WARRANT IN EFFECT"
+                                  - "CONTINUE WARRANT IN EFFECT|CONTINUE WARRANT IN EFFECT"
+                                  - "ISSUE SUMMONS|"
+                                  - "ISSUE WARRANT|"
