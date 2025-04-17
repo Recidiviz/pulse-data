@@ -111,6 +111,8 @@ products:
         environment: production
       - state_code: US_MO
         environment: production
+      - state_code: US_NE
+        environment: production
       - state_code: US_ND
         environment: production
       - state_code: US_PA
