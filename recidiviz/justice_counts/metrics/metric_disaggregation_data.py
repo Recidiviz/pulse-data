@@ -715,6 +715,25 @@ class MetricAggregatedDimensionData:
                     ),
                 }
                 json["contexts"] = []
+
+                if (
+                    dimension in self.dimension_to_other_sub_dimension_to_enabled_status
+                    and is_v2 is False
+                    and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
+                ):
+                    json["sub_dimensions"] = [
+                        {
+                            "display_name": display_name.title(),
+                            "value": self.dimension_to_other_sub_dimension_to_value[
+                                dimension
+                            ].get(display_name),
+                            "enabled": enabled,
+                        }
+                        for display_name, enabled in self.dimension_to_other_sub_dimension_to_enabled_status[
+                            dimension
+                        ].items()
+                    ]
+
                 if (
                     dimension in self.dimension_to_other_sub_dimension_to_enabled_status
                     and is_v2 is False

@@ -223,11 +223,32 @@ class DatapointInterface:
 
             # The dimension is in the metric interface's `aggregated_dimensions`.
             if len(dimension_in_metric_interface) == 1:
-                if dimension_in_metric_interface[0].dimension_to_value is None:
-                    dimension_in_metric_interface[0].dimension_to_value = {}
-                dimension_in_metric_interface[0].dimension_to_value[
-                    dimension_enum_member
-                ] = get_value(datapoint=datapoint)
+                if datapoint.sub_dimension_name is None:
+                    if dimension_in_metric_interface[0].dimension_to_value is None:
+                        dimension_in_metric_interface[0].dimension_to_value = {}
+                    dimension_in_metric_interface[0].dimension_to_value[
+                        dimension_enum_member
+                    ] = get_value(datapoint=datapoint)
+                else:
+                    if (
+                        dimension_enum_member
+                        not in dimension_in_metric_interface[
+                            0
+                        ].dimension_to_other_sub_dimension_to_value
+                    ):
+                        dimension_in_metric_interface[
+                            0
+                        ].dimension_to_other_sub_dimension_to_value[
+                            dimension_enum_member
+                        ] = {}
+                    dimension_in_metric_interface[
+                        0
+                    ].dimension_to_other_sub_dimension_to_value[dimension_enum_member][
+                        datapoint.sub_dimension_name
+                    ] = get_value(
+                        datapoint=datapoint
+                    )
+
                 continue
 
             # Dimension is not in `aggregated_dimensions`. Add a new entry for it.

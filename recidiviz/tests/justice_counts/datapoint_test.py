@@ -780,6 +780,22 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension_identifier_to_member={"metric/prisons/funding/type": "OTHER"},
                 value=3000,
             ),
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={"metric/prisons/funding/type": "OTHER"},
+                sub_dimension_name="FOO",
+                value=1000,
+            ),
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={"metric/prisons/funding/type": "OTHER"},
+                sub_dimension_name="BAR",
+                value=2000,
+            ),
         ]
         result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
             metric_key_to_metric_interface=metric_key_to_metric_interface,
@@ -792,6 +808,12 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             interface.aggregated_dimensions[0].dimension_to_value,
             {FundingType.GRANTS: 7000, FundingType.OTHER: 3000},
+        )
+        self.assertEqual(
+            interface.aggregated_dimensions[
+                0
+            ].dimension_to_other_sub_dimension_to_value,
+            {FundingType.OTHER: {"FOO": 1000, "BAR": 2000}},
         )
 
     def test_join_handles_absent_metric_interface(self) -> None:

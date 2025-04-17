@@ -25,7 +25,7 @@ from deepdiff import DeepDiff
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
-from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType, FundingType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     CensusRace,
@@ -169,6 +169,36 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
 
     def test_funding_metric_json(self) -> None:
         reported_metric = self.test_schema_objects.get_funding_metric()
+        reported_metric.aggregated_dimensions = [
+            MetricAggregatedDimensionData(
+                dimension_to_value={
+                    FundingType.ASSET_FORFEITURE: 1234,
+                    FundingType.COUNTY_APPROPRIATION: 23,
+                    FundingType.GRANTS: 567,
+                    FundingType.STATE_APPROPRIATION: 678,
+                    FundingType.UNKNOWN: 909,
+                    FundingType.OTHER: 89,
+                },
+                dimension_to_enabled_status={
+                    FundingType.ASSET_FORFEITURE: True,
+                    FundingType.COUNTY_APPROPRIATION: True,
+                    FundingType.GRANTS: True,
+                    FundingType.STATE_APPROPRIATION: True,
+                    FundingType.UNKNOWN: True,
+                    FundingType.OTHER: True,
+                },
+                dimension_to_other_sub_dimension_to_enabled_status={
+                    FundingType.OTHER: {"FOO": None, "BAR": True, "BEEP": False}
+                    # This tests the scenario where an agency may have added data for a subdimension
+                    # and then the sub-dimension is removed in the admin panel.  In that case, we won't
+                    # delete the data, but it won't surface it in the API response.
+                },
+                dimension_to_other_sub_dimension_to_value={
+                    FundingType.OTHER: {"BOOP": 1234, "BAR": 12345, "BEEP": 5678}
+                },
+            )
+        ]
+
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -195,7 +225,127 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [],
                 "is_includes_excludes_configured": None,
                 "contexts": [],
-                "disaggregations": [],
+                "disaggregations": [
+                    {
+                        "contexts": [],
+                        "dimensions": [
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding derived by the agency through the seizure of assets.",
+                                "enabled": True,
+                                "key": "Asset Forfeiture",
+                                "label": "Asset Forfeiture",
+                                "value": 1234,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding appropriated by counties or municipalities for agency law enforcement activities.",
+                                "enabled": True,
+                                "key": "County or Municipal Appropriation",
+                                "label": "County or Municipal Appropriation",
+                                "value": 23,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding derived by the agency through grants and awards to be used for agency law enforcement activities.",
+                                "enabled": True,
+                                "key": "Grants",
+                                "label": "Grants",
+                                "value": 567,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding appropriated by the state for agency law enforcement activities.",
+                                "enabled": True,
+                                "key": "State Appropriation",
+                                "label": "State Appropriation",
+                                "value": 678,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding to be used for agency law enforcement activities for which the source is not known.",
+                                "enabled": True,
+                                "key": "Unknown Funding",
+                                "label": "Unknown Funding",
+                                "value": 909,
+                            },
+                            {
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                        "value": None,
+                                    }
+                                ],
+                                "datapoints": None,
+                                "description": "The amount of funding to be used for agency law enforcement activities that is not appropriations from the state, appropriations from the county or city, asset forfeiture, or grants.",
+                                "enabled": True,
+                                "key": "Other Funding",
+                                "label": "Other Funding",
+                                "sub_dimensions": [
+                                    {
+                                        "display_name": "Foo",
+                                        "enabled": None,
+                                        "value": None,
+                                    },
+                                    {
+                                        "display_name": "Bar",
+                                        "enabled": True,
+                                        "value": 12345,
+                                    },
+                                    {
+                                        "display_name": "Beep",
+                                        "enabled": False,
+                                        "value": 5678,
+                                    },
+                                ],
+                                "value": 89,
+                            },
+                        ],
+                        "display_name": "Funding Types",
+                        "enabled": True,
+                        "helper_text": None,
+                        "is_breakdown_configured": None,
+                        "key": "metric/law_enforcement/funding/type",
+                        "required": False,
+                        "should_sum_to_total": False,
+                    }
+                ],
                 "datapoints": None,
             },
         )
