@@ -56,8 +56,7 @@ WITH state_assessment AS (
         assessment_score_bucket,
         assessment_metadata,
         sequence_num,
-    FROM
-        `{project_id}.{normalized_state_dataset}.state_assessment`
+    FROM `{project_id}.{normalized_state_dataset}.state_assessment`
     WHERE
         -- keep only relevant assessment types
         (
@@ -70,7 +69,7 @@ WITH state_assessment AS (
             OR (
                 state_code != "US_MI"
                 AND (
-                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT", "LS_RNR", "CCRRA")
+                    assessment_type IN ("LSIR", "STRONG_R", "STRONG_R2", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT", "LS_RNR", "CCRRA")
                     OR assessment_type LIKE "ORAS%"
                 )
             )
