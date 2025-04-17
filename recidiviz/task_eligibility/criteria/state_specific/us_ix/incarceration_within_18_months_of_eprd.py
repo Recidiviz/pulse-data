@@ -32,6 +32,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SENTENCE_SESSIONS_V2_ALL_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -74,6 +75,18 @@ WITH ped_spans AS (
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
     WHERE span.state_code = 'US_IX'
 ),
+tpd_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive as end_date,
+        group_projected_parole_release_date AS tentative_parole_date,
+      FROM
+        `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized`
+      WHERE state_code = "US_IX"
+        AND group_projected_parole_release_date IS NOT NULL 
+),
 ped_tpd_phd_spans AS (
     -- Periods of time that fall within 18 months of the PED.
     -- The end_date does not go past the PED.
@@ -103,7 +116,7 @@ ped_tpd_phd_spans AS (
         pds.tentative_parole_date,
         NULL AS parole_hearing_date,
     FROM ped_spans ped
-    LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
+    LEFT JOIN tpd_spans pds
         USING(state_code, person_id)
     WHERE ped.parole_eligibility_date < pds.tentative_parole_date
 
@@ -147,23 +160,41 @@ ped_tpd_phd_spans AS (
 ),
 {create_sub_sessions_with_attributes(
     table_name="ped_tpd_phd_spans"
-)}
-
+)},
+grouped_sub_sessions AS (
 SELECT
     state_code,
     person_id,
     start_date,
     end_date,
     True AS meets_criteria,
-    TO_JSON(STRUCT(MIN(parole_eligibility_date) AS parole_eligibility_date,
-                    MIN(tentative_parole_date) AS tentative_parole_date,
-                    MIN(parole_hearing_date) AS parole_hearing_date)) AS reason,
     MIN(parole_eligibility_date) AS parole_eligibility_date, 
     MIN(tentative_parole_date) AS tentative_parole_date, 
     MIN(parole_hearing_date) AS parole_hearing_date,
+    MIN(LEAST(  
+        {nonnull_end_date_clause('parole_eligibility_date')},  
+        {nonnull_end_date_clause('tentative_parole_date')},  
+        {nonnull_end_date_clause('parole_hearing_date')}  
+    )) AS earliest_possible_release_date 
 FROM sub_sessions_with_attributes
 WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    TO_JSON(STRUCT(parole_eligibility_date,
+                tentative_parole_date,
+                parole_hearing_date,
+                earliest_possible_release_date)) AS reason,
+    parole_eligibility_date,
+    tentative_parole_date,
+    parole_hearing_date,
+    earliest_possible_release_date
+FROM grouped_sub_sessions
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -171,6 +202,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_v2_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     state_code=StateCode.US_IX,
     reasons_fields=[
@@ -188,6 +220,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
             name="parole_hearing_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Parole Hearing Date (PHD): The date on which the person is scheduled for a parole hearing.",
+        ),
+        ReasonsField(
+            name="earliest_possible_release_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Earliest Possible Release Date (EPRD): The earliest possible date on which the person can be released from incarceration.",
         ),
     ],
 )

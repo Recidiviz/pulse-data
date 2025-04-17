@@ -23,6 +23,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    SENTENCE_SESSIONS_V2_ALL_DATASET,
     SESSIONS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
@@ -172,16 +173,24 @@ crc_facility AS (
 SELECT 
     c.person_id,
     c.crc_facilities,
-    tentative_parole_date AS tentative_parole_date,
-    initial_parole_hearing_date,
-    next_parole_hearing_date
+    p.group_projected_parole_release_date AS tentative_parole_date,
+    i.initial_parole_hearing_date,
+    i.next_parole_hearing_date
 FROM crc_facility c
 LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` i
     ON c.person_id = i.person_id
-WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
+    AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="i.start_date",
-            end_date_column="i.end_date"
+            end_date_column="i.end_date_exclusive"
         )}
+LEFT JOIN `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized` p
+    ON p.state_code = "US_IX"
+    AND p.person_id = c.person_id
+    AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+            start_date_column="p.start_date",
+            end_date_column="p.end_date_exclusive"
+        )}
+
 """
 
 US_IX_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -194,6 +203,7 @@ US_IX_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         StateCode.US_IX
     ),
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_v2_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
     view_id=US_IX_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_IX_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_IX_RESIDENT_METADATA_VIEW_DESCRIPTION,

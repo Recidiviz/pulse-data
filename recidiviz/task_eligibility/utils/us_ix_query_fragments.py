@@ -19,16 +19,10 @@ Helper SQL queries for Idaho
 """
 from typing import List, Optional
 
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    nonnull_start_date_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
-)
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
@@ -63,63 +57,6 @@ DETAINER_TYPE_LST_CLD = [
 ]
 
 IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
-
-
-def date_within_time_span(
-    critical_date_column: str,
-    meets_criteria_leading_window_time: int = 0,
-    date_part: str = "DAY",
-    negate_critical_date_has_passed: bool = False,
-) -> str:
-    """
-    Generates a BigQuery SQL query that uses <critical_date_has_passed_spans> to
-    determine if a critical date has passed within the specified leading window.
-    This is all done using the <us_ix_parole_dates_spans_preprocessing> table.
-
-    Args:
-        critical_date_column (str, optional): The column representing the critical date
-            to be checked within the time spans.
-        meets_criteria_leading_window_days (int, optional): The leading window of days
-            used to determine if a critical date falls within. Default is 0.
-        date_part (str, optional): The date part to use for the date interval. Default is 'DAY'.
-        negate_critical_date_has_passed (bool, optional): Whether to negate the critical date
-            has passed condition. Default is False.
-
-    Returns:
-        str: A formatted BigQuery SQL query that selects time spans and determines if the
-        critical date has passed within the specified leading window.
-
-    Example usage:
-        query = date_within_time_span(meets_criteria_leading_window_days=5, critical_date_column="custom_date")
-        # Execute the generated query using your preferred method
-    """
-    return f"""
-    WITH
-      critical_date_spans AS (
-          SELECT
-            state_code,
-            person_id,
-            {nonnull_start_date_clause('start_date')} as start_datetime,
-            end_date as end_datetime,
-            {critical_date_column} AS critical_date
-          FROM
-            `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized`
-          WHERE {critical_date_column} IS NOT NULL 
-            ),
-      {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time = meets_criteria_leading_window_time,
-                                          date_part = date_part)},
-      {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        {'NOT' if negate_critical_date_has_passed else ''} LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
-        TO_JSON(STRUCT(MAX(critical_date) AS {critical_date_column})) AS reason,
-        MAX(critical_date) AS {critical_date_column}
-    FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4
-    """
 
 
 def ix_crc_facilities_in_location_sessions(

@@ -18,10 +18,11 @@
 IX. This will be used to create criteria queries for the CRC and XCRC workflows."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+    sessionize_ledger_data,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,25 +34,40 @@ US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_NAME = (
 US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_DESCRIPTION = """This view has one record per term and person. It contains parole related information for residents in
 IX. This will be used to create criteria queries for the CRC and XCRC workflows."""
 
-US_IX_PAROLE_DATES_SPANS_PREPROCESSING_QUERY_TEMPLATE = """
-SELECT
-  pei.person_id,
-  pei.state_code,
-  OffenderId,
-  TermId,
-  SAFE_CAST(LEFT(TermStartDate, 10) AS DATE) AS start_date,
-  SAFE_CAST(LEFT(ReleaseDate, 10) AS DATE) AS end_date,
-  SAFE_CAST(LEFT(TentativeParoleDate, 10) AS DATE) AS tentative_parole_date,
-  SAFE_CAST(LEFT(NextHearingDate, 10) AS DATE) AS next_parole_hearing_date,
-  SAFE_CAST(LEFT(InitialParoleHearingDate, 10) AS DATE) AS initial_parole_hearing_date,
-FROM
-  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_Term_latest`
-INNER JOIN
-  `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-ON
-  pei.external_id = OffenderId
-  AND pei.state_code = 'US_IX'
-  AND pei.id_type = 'US_IX_DOC'
+US_IX_PAROLE_DATES_SPANS_PREPROCESSING_QUERY_TEMPLATE = f"""
+WITH parole_hearing_date_deadlines AS (
+SELECT 
+    state_code,
+    person_id,
+    update_datetime,
+    task_subtype,
+    IF(task_subtype = 'INITIAL', eligible_date, NULL) AS initial_parole_hearing_date,
+    IF(task_subtype = 'SUBSEQUENT', eligible_date, NULL) AS next_parole_hearing_date
+FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
+WHERE 
+    state_code = 'US_IX'
+    AND task_type = 'PAROLE_HEARING'
+    AND task_subtype IN ('INITIAL', 'SUBSEQUENT')
+),
+parole_hearing_date_spans AS (
+ SELECT * 
+ FROM ({sessionize_ledger_data(table_name = 'parole_hearing_date_deadlines', 
+                               index_columns = ['state_code', 'person_id', 'task_subtype'], 
+                               update_column_name = 'update_datetime', 
+                               attribute_columns = ['initial_parole_hearing_date', 'next_parole_hearing_date'])})
+),
+{create_sub_sessions_with_attributes(table_name='parole_hearing_date_spans',
+                                     index_columns=['state_code', 'person_id'], 
+                                     end_date_field_name='end_date_exclusive')}
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date_exclusive,
+    MAX(initial_parole_hearing_date) AS initial_parole_hearing_date,
+    MAX(next_parole_hearing_date) AS next_parole_hearing_date
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
 """
 
 US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -61,9 +77,6 @@ US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_IX_PAROLE_DATES_SPANS_PREPROCESSING_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
-    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
-    ),
 )
 
 if __name__ == "__main__":

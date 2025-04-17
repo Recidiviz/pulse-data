@@ -60,7 +60,7 @@ WITH min_max_parole_hearing_date_spans AS (
                 state_code,
                 person_id,
                 {nonnull_start_date_clause('start_date')} as start_datetime,
-                end_date as end_datetime,
+                end_date_exclusive as end_datetime,
                 -- We can have at most two parole hearing dates. We first categorize them
                 --    as min and max. This way we can use this info to create relevant spans. 
                 LEAST({nonnull_end_date_clause('initial_parole_hearing_date')},
