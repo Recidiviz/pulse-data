@@ -68,13 +68,26 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
     WITH
     -- archive_snooze_spans captures snoozes active on and since the creation of workflows_snooze_status_archive.
     -- These statuses always reflect what a user would have seen in Workflows, even if a snooze is manually cancelled before it expires
-    archive_snooze_spans AS (
+    archive_data AS (
+        SELECT
+            IF(state_code = "US_ID", "US_IX", state_code) as state_code,
+            IF(state_code = "US_MI" AND NOT STARTS_WITH(person_external_id, "0"), "0" || person_external_id, person_external_id) AS person_external_id,
+            opportunity_type, 
+            snooze_start_date,
+            snoozed_by,
+            denial_reasons,
+            other_reason,
+            snooze_end_date,
+            as_of
+        FROM `{{project_id}}.{{export_archives_dataset}}.workflows_snooze_status_archive`
+    )
+    , archive_snooze_spans AS (
         SELECT
             -- "archive" as provenance,
             person_id,
-            IF(a.state_code = "US_ID", "US_IX", a.state_code) as state_code,
-            a.person_external_id, 
-            opportunity_type, 
+            a.state_code,
+            a.person_external_id,
+            a.opportunity_type, 
             snooze_start_date as start_date, 
             ANY_VALUE(snoozed_by) as snoozed_by,
             ANY_VALUE(denial_reasons) as denial_reasons,
@@ -84,11 +97,11 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
                 MAX(as_of)<(SELECT MAX(as_of) FROM `{{project_id}}.{{export_archives_dataset}}.workflows_snooze_status_archive`),
                 max(as_of),
                 null) as end_date_actual
-        FROM `{{project_id}}.{{export_archives_dataset}}.workflows_snooze_status_archive` a
+        FROM archive_data a
         LEFT JOIN `{{project_id}}.{{reference_dataset}}.workflows_opportunity_configs_materialized` config
             USING (state_code, opportunity_type)
         LEFT JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
-            ON pei.state_code = IF(a.state_code = "US_ID", "US_IX", a.state_code)
+            ON pei.state_code = a.state_code
             AND UPPER(pei.person_external_id) = UPPER(a.person_external_id)
             AND pei.system_type = IF(config.person_record_type = "CLIENT", "SUPERVISION", "INCARCERATION")
         GROUP BY person_id, state_code, person_external_id, opportunity_type, start_date

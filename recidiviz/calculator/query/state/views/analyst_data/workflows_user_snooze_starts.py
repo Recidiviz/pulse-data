@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with events where the officer snoozed a client, according to export archive.
-"""
+"""View with events where the officer snoozed a client, according to export archive."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -33,7 +32,7 @@ SELECT
     LOWER(snoozed_by) AS email_address,
     opportunity_type,
     snooze_start_date,
-    person_external_id,
+    IF(state_code = "US_MI" AND NOT STARTS_WITH(person_external_id, "0"), "0" || person_external_id, person_external_id) AS person_external_id,
 FROM
     `{project_id}.export_archives.workflows_snooze_status_archive`
 """

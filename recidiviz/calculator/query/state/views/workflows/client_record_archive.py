@@ -47,7 +47,8 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     , records_by_state_by_date AS (
         -- dedupes repeat uploads for the same date
         SELECT DISTINCT
-            * EXCEPT (path_parts, remaining_criteria_needed, all_eligible_opportunities),
+            * EXCEPT (path_parts, person_external_id, remaining_criteria_needed, all_eligible_opportunities),
+            IF(path_parts[OFFSET(2)] = "US_MI" AND NOT STARTS_WITH(person_external_id, "0"), "0" || person_external_id, person_external_id) AS person_external_id,
             CAST(remaining_criteria_needed AS INT64) AS remaining_criteria_needed,
             ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
             DATE(path_parts[OFFSET(1)]) AS export_date,

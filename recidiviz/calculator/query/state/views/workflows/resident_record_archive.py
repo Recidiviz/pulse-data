@@ -40,17 +40,23 @@ RESIDENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         -- exclude temp files we may have inadvertently archived
         WHERE _FILE_NAME NOT LIKE "%/staging/%"
     )
-    SELECT DISTINCT
-        split_path.* EXCEPT (path_parts, all_eligible_opportunities, person_id),
-        ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
-        DATE(path_parts[SAFE_OFFSET(1)]) AS export_date,
-        IF(path_parts[SAFE_OFFSET(2)]="US_ID", "US_IX", path_parts[SAFE_OFFSET(2)]) AS state_code,
-        latest_person_id.person_id,
-    FROM split_path
+    , records_by_state_by_date AS (
+        SELECT DISTINCT
+            split_path.* EXCEPT (path_parts, person_external_id, all_eligible_opportunities, person_id),
+            ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
+            DATE(path_parts[SAFE_OFFSET(1)]) AS export_date,
+            IF(path_parts[OFFSET(2)] = "US_MI" AND NOT STARTS_WITH(person_external_id, "0"), "0" || person_external_id, person_external_id) AS person_external_id,
+            IF(path_parts[SAFE_OFFSET(2)]="US_ID", "US_IX", path_parts[SAFE_OFFSET(2)]) AS state_code
+        FROM split_path
+    )
+    SELECT
+        records_by_state_by_date.*,
+        person_id
+    FROM records_by_state_by_date
     -- Pull the person_id from the latest version of ingested data
     INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` latest_person_id
-        ON latest_person_id.state_code = IF(path_parts[SAFE_OFFSET(2)]="US_ID", "US_IX", path_parts[SAFE_OFFSET(2)])
-        AND latest_person_id.person_external_id = split_path.person_external_id
+        ON latest_person_id.state_code = records_by_state_by_date.state_code
+        AND latest_person_id.person_external_id = records_by_state_by_date.person_external_id
         AND latest_person_id.system_type = "INCARCERATION"
 """
 
