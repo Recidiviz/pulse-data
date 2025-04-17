@@ -907,9 +907,12 @@ def get_admin_blueprint(
                         enum_member, {}
                     )
                     for option in sub_dimension_json["other_options"]:
+                        option_normalized = option.upper().strip()
                         updated_dimension_to_other_sub_dimension_to_enabled_status[
                             enum_member
-                        ][option] = existing_other_sub_dimension_to_enabled_status.get(
+                        ][
+                            option_normalized
+                        ] = existing_other_sub_dimension_to_enabled_status.get(
                             option, None
                         )
 
@@ -990,14 +993,13 @@ def get_admin_blueprint(
                             {
                                 "dimension_key": dim.name,
                                 "dimension_name": dim.value,
-                                "other_options": (
-                                    sorted(
-                                        list(
-                                            metric_setting.dimension_to_other_sub_dimension_to_enabled_status.get(
-                                                dim, {}
-                                            ).keys()
-                                        )
-                                    )
+                                "other_options": sorted(
+                                    [
+                                        option.title()
+                                        for option in metric_setting.dimension_to_other_sub_dimension_to_enabled_status.get(
+                                            dim, {}
+                                        ).keys()
+                                    ]
                                 ),
                             }
                         )

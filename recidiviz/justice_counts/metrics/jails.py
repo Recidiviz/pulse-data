@@ -377,6 +377,44 @@ total_admissions = MetricDefinition(
         AggregatedDimension(
             dimension=OffenseType,
             required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={
+                            PropertyOffenseIncludesExcludes.ROBBERY,
+                        },
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(
+                        members=DrugOffenseIncludesExcludes,
+                    ),
+                ],
+            },
             dimension_to_description={
                 OffenseType.PERSON: "The total number of admission events in which the most serious charge was for an offense against a person.",
                 OffenseType.PROPERTY: "The total number of admission events in which the most serious charge was for a property offense.",
@@ -806,6 +844,44 @@ total_daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=OffenseType,
             required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={
+                            PropertyOffenseIncludesExcludes.ROBBERY,
+                        },
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(
+                        members=DrugOffenseIncludesExcludes,
+                    ),
+                ],
+            },
             dimension_to_description={
                 OffenseType.PERSON: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for an offense against a person.",
                 OffenseType.PROPERTY: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a property offense.",
@@ -833,7 +909,26 @@ total_daily_population = MetricDefinition(
         ),
         AggregatedDimension(
             dimension=BiologicalSex,
-            required=False,
+            required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people incarcerated in the agency’s jurisdiction whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+            },
         ),
         AggregatedDimension(
             dimension=BehavioralHealthNeedType,

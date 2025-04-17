@@ -1520,7 +1520,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             funding_dim.dimension_to_other_sub_dimension_to_enabled_status[
                 FundingType.OTHER
             ],
-            {"Another Option": None},  # added a new sub-dimension
+            {"ANOTHER OPTION": None},  # added a new sub-dimension
         )
 
         expenses_dim = updated_settings[
@@ -1530,7 +1530,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             expenses_dim.dimension_to_other_sub_dimension_to_enabled_status[
                 ExpenseType.OTHER
             ],
-            {"One Dimension": True, "Three Dimension": None},  # replaced one dimension
+            {"ONE DIMENSION": True, "THREE DIMENSION": None},  # replaced one dimension
         )
 
         use_of_forces_discharges = updated_settings[
@@ -1547,8 +1547,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 ForceType.OTHER_WEAPON
             ],
             {
-                "beep": None,
-                "boop": None,
+                "BEEP": None,
+                "BOOP": None,
             },  # replaces all subdimensions
         )
 
