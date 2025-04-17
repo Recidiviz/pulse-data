@@ -30,11 +30,13 @@ from progress.bar import Bar
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import attr_validators
 from recidiviz.tools.gsutil_shell_helpers import (
+    GSUTIL_DEFAULT_TIMEOUT_SEC,
     gsutil_cp,
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_mv,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.log_helpers import make_log_output_path
 
 
@@ -46,8 +48,8 @@ class IngestFilesOperationType(Enum):
         return self.value.rstrip("E") + "ING"
 
 
-# TODO(##37517) make start_date_bound -> state_datetime_inclusive and make it datetime | None instead of string
-# TODO(##37517) in _do_file_operation filter by datetime too
+# TODO(#37517) make start_date_bound -> state_datetime_inclusive and make it datetime | None instead of string
+# TODO(#37517) in _do_file_operation filter by datetime too
 @attr.define
 class OperateOnStorageRawFilesController:
     """Class with functionality to copy or move raw files consumed by ingest from
@@ -241,11 +243,6 @@ class OperateOnStorageRawFilesController:
                 from_path=from_path, to_path=to_path, allow_empty=allow_empty
             )
 
-        with self.mutex:
-            self.operations_list.append(operation_paths)
-            if self.file_operation_progress:
-                self.file_operation_progress.next()
-
     def _get_operations_for_subdir(self, subdir_path_str: str) -> List[Tuple[str, str]]:
         """Returns a list of (from_path, to_path) tuples representing operations
         that should be done against files in this subdirectory.
@@ -285,9 +282,16 @@ class OperateOnStorageRawFilesController:
         all_operations = list(itertools.chain(*operations_lists))
         logging.debug("ALL OPERATIONS: %s", all_operations)
         dry_run_str = "[DRY_RUN] " if self.dry_run else ""
-        self.file_operation_progress = Bar(
-            f"{dry_run_str}{self.operation_type.gerund().capitalize()} files from subdirectories...",
-            max=len(all_operations),
+        progress_bar_message = f"{dry_run_str}{self.operation_type.gerund().capitalize()} files from subdirectories..."
+        result = map_fn_with_progress_bar_results(
+            work_items=all_operations,
+            work_fn=self._do_file_operation,
+            progress_bar_message=progress_bar_message,
+            # Add a timeout that is generously longer than the timeout for the
+            # GSUTIL copy call
+            single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
+            # 4 hour timeout
+            overall_timeout_sec=60 * 60 * 4,
         )
-        thread_pool.map(self._do_file_operation, all_operations)
-        self.file_operation_progress.finish()
+
+        self.operations_list.extend([operation for operation, _ in result.successes])

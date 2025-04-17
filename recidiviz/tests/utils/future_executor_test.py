@@ -21,29 +21,33 @@ from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 
 
 def test_map_fn_with_progress_bar_results(capfd: Any) -> None:
-    def fake_futures_function(number: int, raises: Any) -> int:
+    def fake_futures_work_function(
+        number_and_raises: tuple[int, ValueError | None]
+    ) -> int:
+        number, raises = number_and_raises
         if raises:
             raise raises
         return number
 
     ten_minutes = 10 * 60
     value_error = ValueError("An exception happened!")
-    successes, exceptions = map_fn_with_progress_bar_results(
-        fn=fake_futures_function,
-        kwargs_list=[
-            {"number": 1, "raises": False},
-            {"number": 2, "raises": False},
-            {"number": 3, "raises": value_error},
+    result = map_fn_with_progress_bar_results(
+        work_fn=fake_futures_work_function,
+        work_items=[
+            (1, None),
+            (2, None),
+            (3, value_error),
         ],
         max_workers=8,
-        timeout=ten_minutes,
+        overall_timeout_sec=ten_minutes,
+        single_work_item_timeout_sec=ten_minutes,
         progress_bar_message="test progress message",
     )
-    assert sorted(successes, key=lambda x: x[0]) == [
-        (1, {"number": 1, "raises": False}),
-        (2, {"number": 2, "raises": False}),
+    assert sorted(result.successes, key=lambda x: x[0]) == [
+        ((1, None), 1),
+        ((2, None), 2),
     ]
-    assert exceptions == [(value_error, {"number": 3, "raises": value_error})]
+    assert result.exceptions == [((3, value_error), value_error)]
     assert capfd.readouterr().err == (
         "\x1b[?25l"
         "\r"

@@ -38,11 +38,7 @@ import argparse
 import logging
 import os
 import re
-import threading
-from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
-
-from progress.bar import Bar
 
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
@@ -65,6 +61,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawDataResourceLock,
 )
 from recidiviz.tools.gsutil_shell_helpers import (
+    GSUTIL_DEFAULT_TIMEOUT_SEC,
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
     gsutil_mv,
@@ -72,6 +69,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -127,10 +125,8 @@ class MoveFilesFromStorageController:
             project_id=self.destination_project_id,
         )
 
-        self.mutex = threading.Lock()
-        self.collect_progress: Optional[Bar] = None
-        self.move_progress: Optional[Bar] = None
-        self.moves_list: List[Tuple[str, str]] = []
+        self.successful_moves_list: List[Tuple[str, str]] = []
+        self.failed_moves_list: List[Tuple[str, str]] = []
 
         self.lock_manager = DirectIngestRawDataResourceLockManager(
             region_code=self.region,
@@ -179,14 +175,8 @@ class MoveFilesFromStorageController:
             )
 
         try:
-            thread_pool = ThreadPool(processes=12)
-            files_to_move = self.collect_files_to_move(date_subdir_paths, thread_pool)
-
-            self.move_files(files_to_move, thread_pool)
-
-            thread_pool.close()
-            thread_pool.join()
-
+            files_to_move = self.collect_files_to_move(date_subdir_paths)
+            self.move_files(files_to_move)
             self.write_moves_to_log_file()
 
             if self.dry_run:
@@ -215,27 +205,26 @@ class MoveFilesFromStorageController:
             lower_bound_date=self.start_date_bound,
         )
 
-    def collect_files_to_move(
-        self, date_subdir_paths: List[str], thread_pool: ThreadPool
-    ) -> List[str]:
+    def collect_files_to_move(self, date_subdir_paths: List[str]) -> List[str]:
         """Searches the given list of directory paths for files directly in those directories that should be moved to
         the ingest directory and returns a list of string paths to those files.
         """
         msg_prefix = "[DRY RUN] " if self.dry_run else ""
-        self.collect_progress = Bar(
-            f"{msg_prefix}Gathering paths to move...", max=len(date_subdir_paths)
+
+        result = map_fn_with_progress_bar_results(
+            work_items=date_subdir_paths,
+            work_fn=self.get_files_to_move_from_path,
+            progress_bar_message=f"{msg_prefix}Gathering paths to move...",
+            # Add a timeout that is generously longer than the timeout for the
+            # GSUTIL ls call
+            single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
+            # 4 hour timeout
+            overall_timeout_sec=60 * 60 * 4,
         )
-        collect_files_res = thread_pool.map(
-            self.get_files_to_move_from_path, date_subdir_paths
-        )
 
-        if not self.collect_progress:
-            raise ValueError("Progress bar should not be None")
-        self.collect_progress.finish()
+        return [f for _subdir, sublist in result.successes for f in sublist]
 
-        return [f for sublist in collect_files_res for f in sublist]
-
-    def move_files(self, files_to_move: List[str], thread_pool: ThreadPool) -> None:
+    def move_files(self, files_to_move: List[str]) -> None:
         """Moves files at the given paths to the ingest directory, changing the prefix to 'unprocessed' as necessary.
 
         For the given list of file paths:
@@ -252,12 +241,22 @@ class MoveFilesFromStorageController:
         Note: Move order is not guaranteed - file moves are parallelized.
         """
         msg_prefix = "[DRY RUN] " if self.dry_run else ""
-        self.move_progress = Bar(f"{msg_prefix}Moving files...", max=len(files_to_move))
-        thread_pool.map(self.move_file, files_to_move)
+        result = map_fn_with_progress_bar_results(
+            work_items=[
+                (original_file_path, self.build_moved_file_path(original_file_path))
+                for original_file_path in files_to_move
+            ],
+            work_fn=self.move_file,
+            progress_bar_message=f"{msg_prefix}Moving files...",
+            # Add a timeout that is generously longer than the timeout for the
+            # GSUTIL mv call
+            single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
+            # 4 hour timeout
+            overall_timeout_sec=60 * 60 * 4,
+        )
 
-        if not self.move_progress:
-            raise ValueError("Progress bar should not be None")
-        self.move_progress.finish()
+        self.successful_moves_list.extend(paths for paths, _ in result.successes)
+        self.failed_moves_list.extend(paths for paths, _ in result.exceptions)
 
     def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
         """Returns files directly in the given directory that should be moved back into the ingest directory."""
@@ -269,30 +268,21 @@ class MoveFilesFromStorageController:
             if re.match(self.FILE_TO_MOVE_RE, file_name):
                 if not self.file_filter or re.search(self.file_filter, file_name):
                     result.append(file_path)
-        with self.mutex:
-            if self.collect_progress:
-                self.collect_progress.next()
         return result
 
-    def move_file(self, original_file_path: str) -> None:
-        """Moves a file at the given path into the ingest directory, updating the name to always have an prefix of
-        'unprocessed'. Logs the file move, which will later be written to a log file.
+    def move_file(self, original_and_new_file_paths: tuple[str, str]) -> None:
+        """Moves a file at the given path into the ingest directory, updating the name
+        to always have an prefix of 'unprocessed'. The result of the file move will
+        later be written to a log file.
 
         If in dry_run mode, merely logs the move, but does not execute it.
         """
-        new_file_path = self.build_moved_file_path(original_file_path)
-
-        if not self.dry_run:
-            gsutil_mv(original_file_path, new_file_path)
-
-        with self.mutex:
-            self.moves_list.append((original_file_path, new_file_path))
-            if self.move_progress:
-                self.move_progress.next()
+        original_file_path, new_file_path = original_and_new_file_paths
+        gsutil_mv(original_file_path, new_file_path)
 
     def build_moved_file_path(self, original_file_path: str) -> str:
-        """Builds the desired path for the given file in the ingest bucket, changing the prefix to 'unprocessed' as is
-        necessary.
+        """Builds the desired path for the given file in the ingest bucket, changing the
+        prefix to 'unprocessed' as is necessary.
         """
 
         path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
@@ -309,7 +299,8 @@ class MoveFilesFromStorageController:
         )
 
     def write_moves_to_log_file(self) -> None:
-        self.moves_list.sort()
+        self.successful_moves_list.sort()
+        self.failed_moves_list.sort()
         with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
                 prefix = "[DRY RUN] Would move"
@@ -318,7 +309,11 @@ class MoveFilesFromStorageController:
 
             f.writelines(
                 f"{prefix} {original_path} -> {new_path}\n"
-                for original_path, new_path in self.moves_list
+                for original_path, new_path in self.successful_moves_list
+            )
+            f.writelines(
+                f"⚠️FAILED TO MOVE {original_path} -> {new_path}\n"
+                for original_path, new_path in self.failed_moves_list
             )
 
 

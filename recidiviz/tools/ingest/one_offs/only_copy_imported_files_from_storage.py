@@ -27,14 +27,11 @@ import argparse
 import datetime
 import logging
 import os
-import threading
 from collections import defaultdict
 from functools import partial
-from multiprocessing.pool import ThreadPool
 
 import attr
 import sqlalchemy
-from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
@@ -55,10 +52,15 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.base_engine_manager import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tools.gsutil_shell_helpers import gsutil_cp, gsutil_ls
+from recidiviz.tools.gsutil_shell_helpers import (
+    GSUTIL_DEFAULT_TIMEOUT_SEC,
+    gsutil_cp,
+    gsutil_ls,
+)
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -246,24 +248,19 @@ def _get_operations_update_datetime_for_processed_raw_files(
     return formatted_results
 
 
-def _move_file(
+def _copy_file(
     file: CopyableRawDataFile,
     *,
     state_code: StateCode,
     raw_data_instance: DirectIngestInstance,
     dry_run: bool,
-    mutex: threading.Lock,
-    progress: Bar,
 ) -> None:
     from_path = file.storage_path.uri()
     to_path = file.ingest_bucket_path(state_code, raw_data_instance).uri()
     if dry_run:
-        print(from_path, " -> ", to_path)
-    else:
-        gsutil_cp(from_path, to_path)
+        return
 
-    with mutex:
-        progress.next()
+    gsutil_cp(from_path, to_path)
 
 
 def run(
@@ -316,11 +313,6 @@ def run(
 
     prompt_for_confirmation("C0nf1rm c0nfl1ct s3l3cti0n???")
 
-    mutex = threading.Lock()
-    progress = Bar(
-        message="Copying files to ingest bucket...", max=len(candidate_files)
-    )
-
     files_to_copy = candidate_files
 
     if net_new_only:
@@ -346,23 +338,31 @@ def run(
             f"Will copy: [{len(files_to_copy)}] of [{len(candidate_files)}] as [{len(candidate_files) - len(files_to_copy)}] are already in the ingest bucket"
         )
 
-    progress.start()
-    _move_func = partial(
-        _move_file,
+    _copy_func = partial(
+        _copy_file,
         state_code=state_code,
         raw_data_instance=DirectIngestInstance.SECONDARY,
         dry_run=dry_run,
-        mutex=mutex,
-        progress=progress,
     )
 
-    thread_pool = ThreadPool(processes=32)
-    thread_pool.map(_move_func, files_to_copy)
-    thread_pool.close()
-    thread_pool.join()
-    progress.finish()
+    result = map_fn_with_progress_bar_results(
+        work_items=files_to_copy,
+        work_fn=_copy_func,
+        progress_bar_message="Copying files to ingest bucket...",
+        # Add a timeout that is generously longer than the timeout for the
+        # GSUTIL copy call
+        single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
+        # 4 hour timeout
+        overall_timeout_sec=60 * 60 * 4,
+    )
 
-    print("Done!")
+    for file, exception in result.exceptions:
+        print(f"❌ Failed to copy {file.storage_path}:\n{exception}")
+
+    if result.exceptions:
+        print(f"Completed with {len(result.exceptions)} failures - see logs.")
+    else:
+        print("Done!")
 
 
 # TODO(#12390) delete once pruning is live???

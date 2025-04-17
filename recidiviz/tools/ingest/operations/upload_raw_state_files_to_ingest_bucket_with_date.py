@@ -131,7 +131,7 @@ class ManualUploadStateFilesToIngestBucketController(
                 gsutil_cp(path, full_file_upload_path.uri())
                 self.uploaded_files.append(path)
                 self.copies_list.append((path, full_file_upload_path.uri()))
-            except ValueError:
+            except Exception:
                 self.unable_to_upload_files.append(path)
         else:
             self.copies_list.append((path, full_file_upload_path.uri()))

@@ -18,37 +18,65 @@
 
 import sys
 from concurrent import futures
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Callable, Generic
 
+import attr
 from progress.bar import Bar
 
 from recidiviz.utils import structured_logging
+from recidiviz.utils.types import T, U
+
+
+@attr.define(kw_only=True)
+class ThreadPoolExecutorResult(Generic[T, U]):
+    # The items that the operation succeeded for
+    successes: list[tuple[T, U]]
+
+    # The items with an operation that raised an exception
+    exceptions: list[tuple[T, Exception]]
 
 
 def map_fn_with_progress_bar_results(
-    fn: Callable,
-    kwargs_list: List[Dict[str, Any]],
-    max_workers: int,
-    timeout: int,
+    *,
+    work_items: list[T],
+    work_fn: Callable[[T], U],
     progress_bar_message: str,
-) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Exception, Dict[str, Any]]]]:
+    overall_timeout_sec: int,
+    single_work_item_timeout_sec: int,
+    max_workers: int = 32,
+) -> ThreadPoolExecutorResult[T, U]:
+    """Processes all items in |work_items| using the provided |work_fn| in parallel,
+    showing a progress bar as work progresses.
+
+    Args:
+        work_items: The list of itemps to process, passed as a single arg to |work_fn|
+        work_fn: The function used to process items
+        progress_bar_message: The message on the progress bar
+        overall_timeout_sec: The timeout for ALL items to complete
+        single_work_item_timeout_sec: The timeout for any single work item
+        max_workers: The maximum number of ThreadPoolExecutor workers to use
+    """
     successes = []
     exceptions = []
     with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         with Bar(
-            progress_bar_message, file=sys.stderr, max=len(kwargs_list), check_tty=False
+            progress_bar_message, file=sys.stderr, max=len(work_items), check_tty=False
         ) as progress_bar:
-            future_to_kwargs_map = {
-                executor.submit(structured_logging.with_context(fn), **kwargs): kwargs
-                for kwargs in kwargs_list
+            future_to_work_item = {
+                executor.submit(
+                    structured_logging.with_context(work_fn), work_item
+                ): work_item
+                for work_item in work_items
             }
-            for future in futures.as_completed(future_to_kwargs_map, timeout=timeout):
-                task_kwargs = future_to_kwargs_map[future]
+            for future in futures.as_completed(
+                future_to_work_item, timeout=overall_timeout_sec
+            ):
+                work_item = future_to_work_item[future]
                 try:
-                    data = future.result()
-                except Exception as ex:
-                    exceptions.append((ex, task_kwargs))
-                else:
-                    successes.append((data, task_kwargs))
-                progress_bar.next()
-    return (successes, exceptions)
+                    result = future.result(timeout=single_work_item_timeout_sec)
+                    successes.append((work_item, result))
+                except Exception as e:
+                    exceptions.append((work_item, e))
+                finally:
+                    progress_bar.next()
+    return ThreadPoolExecutorResult(successes=successes, exceptions=exceptions)

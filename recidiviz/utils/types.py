@@ -37,6 +37,9 @@ ClsT = TypeVar("ClsT", bound=object)
 # A Generic type where the generic can be any object
 T = TypeVar("T")
 
+# A Generic type where the generic can be any object
+U = TypeVar("U")
+
 
 def non_optional(v: Optional[T]) -> T:
     """Converts the type of a value from optional to non-optional, throwing if it is

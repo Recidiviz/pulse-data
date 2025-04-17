@@ -17,7 +17,7 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
-from typing import Any, Iterable
+from typing import Iterable
 
 import attr
 import google
@@ -173,6 +173,18 @@ class SourceTableUpdateManager:
     def __init__(self, client: BigQueryClient | None = None) -> None:
         self.client = client or BigQueryClientImpl()
 
+    def _dry_run_table_work_fn(
+        self,
+        source_table_collection_and_address: tuple[
+            SourceTableCollection, BigQueryAddress
+        ],
+    ) -> tuple[BigQueryAddress, SourceTableUpdateDryRunResult]:
+        (
+            source_table_collection,
+            source_table_address,
+        ) = source_table_collection_and_address
+        return self._dry_run_table(source_table_collection, source_table_address)
+
     def _dry_run_table(
         self,
         source_table_collection: SourceTableCollection,
@@ -269,38 +281,47 @@ class SourceTableUpdateManager:
         result_by_address: dict[BigQueryAddress, SourceTableUpdateDryRunResult] = {}
 
         with redirect_logging_to_file(log_file):
-            successes, exceptions = map_fn_with_progress_bar_results(
-                fn=self._dry_run_table,
-                kwargs_list=[
-                    {
-                        "source_table_collection": source_table_collection,
-                        "source_table_address": source_table_config.address,
-                    }
+            dry_run_result = map_fn_with_progress_bar_results(
+                work_fn=self._dry_run_table_work_fn,
+                work_items=[
+                    (source_table_collection, source_table_config.address)
                     for source_table_collection in source_table_collections
                     for source_table_config in source_table_collection.source_tables
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-                timeout=60 * 10,
+                overall_timeout_sec=60 * 10,
+                single_work_item_timeout_sec=60 * 10,
                 progress_bar_message="Performing source table dry run...",
             )
 
-            if exceptions:
-                for exception in exceptions:
+            if dry_run_result.exceptions:
+                for exception in dry_run_result.exceptions:
                     logging.exception(exception)
                 raise ValueError(
                     "Found exceptions doing a source table update dry run - check logs!"
                 )
 
-            for success_result, _ in successes:
-                address, result = success_result
-
-                result_by_address[address] = result
+            for _, result in dry_run_result.successes:
+                address, dry_run_result_value = result
+                result_by_address[address] = dry_run_result_value
 
         return {
             address: result
             for address, result in result_by_address.items()
             if result.update_type != SourceTableUpdateType.NO_CHANGES
         }
+
+    def _update_table_work_fn(
+        self,
+        source_table_collection_and_address: tuple[
+            SourceTableCollection, BigQueryAddress
+        ],
+    ) -> None:
+        (
+            source_table_collection,
+            source_table_address,
+        ) = source_table_collection_and_address
+        self._update_table(source_table_collection, source_table_address)
 
     def _update_table(
         self,
@@ -410,9 +431,7 @@ class SourceTableUpdateManager:
         source_table_collections: list[SourceTableCollection],
         log_file: str,
         log_output: bool,
-    ) -> tuple[
-        list[tuple[Any, dict[str, Any]]], list[tuple[Exception, dict[str, Any]]]
-    ]:
+    ) -> None:
         """Updates the schemas of all tables specified by the provided list of collections, printing a progress bar
         as tables complete"""
         logging.info("Logs can be found at %s", log_file)
@@ -422,46 +441,49 @@ class SourceTableUpdateManager:
                 for source_table_collection in source_table_collections
             }
 
-            _, exceptions = map_fn_with_progress_bar_results(
-                fn=self._create_dataset_if_necessary,
-                kwargs_list=[
-                    {"source_table_collection": source_table_collection}
-                    for source_table_collection in datasets_to_create.values()
-                ],
+            create_datasets_result = map_fn_with_progress_bar_results(
+                work_fn=self._create_dataset_if_necessary,
+                work_items=list(datasets_to_create.values()),
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-                timeout=60 * 10,  # 3 minutes
+                overall_timeout_sec=60 * 10,  # 3 minutes
+                single_work_item_timeout_sec=60 * 10,  # 3 minutes
                 progress_bar_message="Creating datasets if necessary...",
             )
-            if exceptions:
+            if create_datasets_result.exceptions:
                 raise ExceptionGroup(
                     "Failed to create datasets, encountered the following exception(s)",
-                    [exception for (exception, _task_kwargs) in exceptions],
+                    [
+                        exception
+                        for (
+                            _task_kwargs,
+                            exception,
+                        ) in create_datasets_result.exceptions
+                    ],
                 )
 
-            successes, exceptions = map_fn_with_progress_bar_results(
-                fn=self._update_table,
-                kwargs_list=[
-                    {
-                        "source_table_collection": source_table_collection,
-                        "source_table_address": source_table_config.address,
-                    }
+            update_tables_result = map_fn_with_progress_bar_results(
+                work_fn=self._update_table_work_fn,
+                work_items=[
+                    (source_table_collection, source_table_config.address)
                     for source_table_collection in source_table_collections
                     for source_table_config in source_table_collection.source_tables
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-                timeout=60 * 10,  # 10 minutes
+                overall_timeout_sec=60 * 10,  # 10 minutes
+                single_work_item_timeout_sec=60 * 10,  # 10 minutes
                 progress_bar_message="Updating table schemas...",
             )
 
-            if exceptions:
+            if update_tables_result.exceptions:
                 raise ExceptionGroup(
                     "Failed to update table schemas, encountered the following exceptions",
-                    [exception for (exception, _task_kwargs) in exceptions],
+                    [
+                        exception
+                        for (_task_kwargs, exception) in update_tables_result.exceptions
+                    ],
                 )
 
         if log_output:
             with open(log_file, "r", encoding="utf-8") as file:
                 for line in file.readlines():
                     logging.info(line)
-
-        return successes, exceptions
