@@ -330,6 +330,18 @@ recreate_periods AS (
     endDate, 
   FROM split_periods_for_caseloads
 ),
+--  Adding specialconditionID so there is a way to connect downstream if needed
+-- to determine compliance with special conditions
+supervision_conditions AS (
+  SELECT 
+    inmateNumber,
+    beginDate,
+    endDate,
+    specialConditionId || ' - '||codeValue AS specialConditions,
+  FROM  {PIMSSpecialCondition}
+  LEFT JOIN codevalues c1
+    ON specialConditionType = c1.codeId
+),
 -- some people started Parole before the Audit table was created in 2020 and their information has not changed since, so for those we join back to the original ParoleeInformation table to get their caseload
 populate_caseloads AS (
   SELECT 
@@ -344,12 +356,15 @@ populate_caseloads AS (
     startReason,
     endReason,
     startDate, 
-    endDate, 
+    endDate
   FROM recreate_periods
-)
+),
 -- making sure all IDs are in the parole staff view so normalization won't fail.
-SELECT periodId,
-    inmateNumber,
+-- adding in supervision special conditions for those within a specific supervision period
+adding_conditions AS (
+SELECT 
+    periodId,
+    rp.inmateNumber,
     supervisedLevel,
     CASE 
         WHEN paroleOfficerID IN (SELECT DISTINCT paroleOfficerId FROM {PIMSParoleOfficer})
@@ -363,8 +378,29 @@ SELECT periodId,
     startReason,
     endReason,
     startDate, 
-    endDate, 
- FROM populate_caseloads
+    rp.endDate, 
+    specialConditions
+ FROM populate_caseloads rp
+  LEFT JOIN supervision_conditions sc
+   ON rp.inmateNumber = sc.inmateNumber
+  AND (sc.beginDate BETWEEN rp.startDate AND rp.endDate OR sc.endDate = rp.endDate)
+)
+SELECT 
+  periodId,
+  inmateNumber,
+  supervisedLevel,
+  paroleOfficerID,
+  countyParoledTo,
+  inOutStateIndicator1Code,
+  inOutStateIndicator2Code,
+  inOutStateIndicator3Code,
+  startReason,
+  endReason,
+  startDate, 
+  endDate, 
+  STRING_AGG(specialConditions, ', ' ORDER BY specialConditions) AS specialConditions
+FROM adding_conditions 
+GROUP BY periodId,inmateNumber,supervisedLevel,paroleOfficerID,countyParoledTo,inOutStateIndicator1Code, inOutStateIndicator2Code,inOutStateIndicator3Code, startReason,endReason, startDate, endDate
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

@@ -15,6 +15,7 @@ input_columns:
   endReason: STRING
   startDate: STRING
   endDate: STRING
+  specialConditions: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -104,6 +105,7 @@ output:
                   - Very High
                 StateSupervisionLevel.LIMITED:
                   - "Conditional"
+          conditions: specialConditions
           custodial_authority:
             $enum_mapping:
               $raw_text:
