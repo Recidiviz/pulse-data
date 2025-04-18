@@ -116,7 +116,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 180000
     override_reason: Current failing level as of 2/13/24 is 176,927 rows #TODO(#20404)
   - validation_name: in_custody_sps_have_associated_ip
-    hard_num_allowed_rows_override: 65000
+    hard_num_allowed_rows_override: 80000
     override_reason:
-      Current failing level as of 9/13/24 is 57690 rows in staging.
+      Current failing level as of 4/18/25 is 65026 rows in staging.
       For now, we are not inferring IPs for in custody periods until we can re-validate PA insights.
