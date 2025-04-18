@@ -24,8 +24,8 @@ import argparse
 import logging
 import time
 
+import google.auth
 import sentry_sdk
-from oauth2client.client import GoogleCredentials
 
 from recidiviz.justice_counts.jobs.csg_data_pull import generate_agency_summary_csv
 from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
@@ -79,10 +79,10 @@ if __name__ == "__main__":
         if args.project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
         else "STAGING"
     )
-    # When running via Cloud Run Job, GoogleCredentials.get_application_default()
+    # When running via Cloud Run Job, google.auth.default()
     # will use the service account assigned to the Cloud Run Job.
     # The service account has access to the spreadsheet with editor permissions.
-    credentials = GoogleCredentials.get_application_default()
+    credentials, _ = google.auth.default()
     database_key = SQLAlchemyDatabaseKey.for_schema(
         SchemaType.JUSTICE_COUNTS,
     )
