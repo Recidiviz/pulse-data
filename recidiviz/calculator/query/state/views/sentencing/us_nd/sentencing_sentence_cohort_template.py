@@ -134,10 +134,7 @@ uniform_charges AS (
         `{{project_id}}.reference_views.cleaned_offense_description_to_labels` AS clean_offense
     ON
         charge.description = clean_offense.offense_description
-    WHERE
-      (charge.is_violent = TRUE
-       OR charge.is_sex_offense = TRUE)
-       AND IFNULL(classification_type, "UNKNOWN") = "FELONY"
+    WHERE IFNULL(classification_type, "UNKNOWN") = "FELONY"
 ),
 -- Gathers completion dates to be used in imposed group aggregation
 initial_sentence_lengths AS (
