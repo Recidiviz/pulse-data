@@ -76,10 +76,7 @@ output:
                       - CLASS_ARREST_HISTORY_ID
                 offense_date: OFFENSE_DATE
                 county_code: county
-                statute:
-                  $concat:
-                    $values:
-                      - ARS_CODE
+                statute: ARS_CODE
                 description: charge_description
                 is_sex_offense:
                   $equal:
