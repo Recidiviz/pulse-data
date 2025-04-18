@@ -39,74 +39,108 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_TN_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL"
 
 _QUERY_TEMPLATE = f"""
-    WITH supervision_and_assessments AS (
-      SELECT 
-        state_code, 
-        person_id, 
-        assessment_date AS start_date, 
-        DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
-        NULL AS supervision_level, 
-        NULL AS supervision_level_raw_text, 
-        assessment_level,
-        assessment_level_raw_text,
-        assessment_date,
-      FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
-      WHERE state_code='US_TN'
-        AND assessment_type = "STRONG_R"
-    
-      UNION ALL
-    
-      SELECT 
-        state_code, 
-        person_id, 
-        start_date, 
-        end_date_exclusive AS end_date, 
-        correctional_level AS supervision_level,
-        correctional_level_raw_text AS supervision_level_raw_text, 
-        NULL AS assessment_level,
-        NULL AS assessment_level_raw_text,
-        NULL AS assessment_date,
-        --TODO(#20035): Use supervision_level_raw_text_sessions when deduping is consistent across views 
-      FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-      WHERE state_code='US_TN'
-        AND compartment_level_1 = 'SUPERVISION'
+    WITH strong_r_assessments_prioritized AS (
+        /* Though `assessment_score_sessions_materialized` is already sessionized, there
+        can be overlapping sessions there if multiple assessment types have been used to
+        assess risk in a state. To work around this, we'll take the assessment data from
+        that view but end up constructing criterion-specific spans later in this query,
+        since we want to avoid having overlapping spans. */
+        SELECT
+            state_code,
+            person_id,
+            assessment_type,
+            assessment_date,
+            assessment_level,
+        FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
+        WHERE state_code='US_TN'
+            AND assessment_type IN ('STRONG_R', 'STRONG_R2')
+        /* If someone happened to have both STRONG-R and STRONG-R 2.0 assessments on the
+        same day, prioritize the 2.0 assessment, since it's intended to replace the
+        original assessment. (This probably shouldn't happen, but this QUALIFY statement
+        is here as a safeguard.) */
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY state_code, person_id, assessment_date
+            ORDER BY 
+                CASE
+                    WHEN assessment_type='STRONG_R2' THEN 1
+                    ELSE 2
+                    END
+        ) = 1
     ),
-    {create_sub_sessions_with_attributes('supervision_and_assessments')}
-    , 
+    supervision_and_assessments AS (
+        /* Create STRONG-R (1.0/2.0) spans. We create non-overlapping spans such that if
+        a person has a previous STRONG-R assessment of either type, that span will end
+        when a subsequent STRONG-R assessment is completed, regardless of the type of
+        the subsequent assessment. */
+        SELECT 
+            state_code,
+            person_id,
+            assessment_date AS start_date,
+            LEAD(assessment_date) OVER (
+                PARTITION BY state_code, person_id
+                ORDER BY assessment_date
+            ) AS end_date,
+            CAST(NULL AS STRING) AS supervision_level,
+            CAST(NULL AS STRING) AS supervision_level_raw_text,
+            assessment_type,
+            assessment_level,
+            assessment_date,
+        FROM strong_r_assessments_prioritized
+    
+        UNION ALL
+    
+        /* Pull supervision spans for TN clients. */
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+            correctional_level AS supervision_level,
+            correctional_level_raw_text AS supervision_level_raw_text,
+            CAST(NULL AS STRING) AS assessment_type,
+            CAST(NULL AS STRING) AS assessment_level,
+            CAST(NULL AS DATE) AS assessment_date,
+            --TODO(#20035): Use supervision_level_raw_text_sessions when deduping is consistent across views 
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+        WHERE state_code='US_TN'
+            AND compartment_level_1='SUPERVISION'
+    ),
+    {create_sub_sessions_with_attributes('supervision_and_assessments')}, 
     priority_levels AS (
-        SELECT  DISTINCT
-                person_id, 
-                state_code, 
-                start_date, 
-                end_date, 
-                -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
-                -- value for each span
-                MAX(assessment_level) AS assessment_level,
-                MAX(assessment_level_raw_text) AS assessment_level_raw_text,
-                MAX(assessment_date) AS assessment_date,
-                MAX(supervision_level) AS supervision_level,
-                MAX(supervision_level_raw_text) AS supervision_level_raw_text
+        SELECT DISTINCT
+            person_id, 
+            state_code, 
+            start_date, 
+            end_date, 
+            -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
+            -- value for each span
+            MAX(supervision_level) AS supervision_level,
+            MAX(supervision_level_raw_text) AS supervision_level_raw_text,
+            MAX(assessment_type) AS assessment_type,
+            MAX(assessment_level) AS assessment_level,
+            MAX(assessment_date) AS assessment_date,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     ),
     state_specific_mapping AS (
-        SELECT *,
-            CASE 
-                WHEN assessment_level = 'LOW' 
-                    AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED') 
+        SELECT
+            *,
+            CASE
+                WHEN assessment_level = 'LOW'
+                    AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED')
                     /* 6P3 maps to PSU (Programmed Supervision Unit, for people with sex offenses)
                        which Recidiviz maps to MEDIUM supervision level. However, the PSU designation is
                        determined by courts/judges and thus people in that unit are not eligible for a downgrade 
                        regardless of their assessment score
                     */
-                    AND supervision_level_raw_text NOT IN ('{{exclude_medium}}','{{exclude_high}}') 
+                    AND supervision_level_raw_text NOT IN ('{{exclude_medium}}', '{{exclude_high}}')
                     THEN TRUE
-                WHEN assessment_level = 'MODERATE' 
+                WHEN assessment_level = 'MODERATE'
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED')
-                    AND supervision_level_raw_text NOT IN ('{{exclude_high}}') 
+                    AND supervision_level_raw_text NOT IN ('{{exclude_high}}')
                     THEN TRUE
-                ELSE FALSE 
-                END as meets_criteria
+                ELSE FALSE
+                END AS meets_criteria,
         FROM priority_levels
     )
     SELECT 
@@ -117,12 +151,14 @@ _QUERY_TEMPLATE = f"""
         meets_criteria,
         TO_JSON(STRUCT(
             supervision_level AS supervision_level,
+            assessment_type AS assessment_type,
             assessment_level AS assessment_level,
             assessment_date AS latest_assessment_date
         )) AS reason,
-        supervision_level AS supervision_level,
-        assessment_level AS assessment_level,
-        assessment_date AS latest_assessment_date
+        supervision_level,
+        assessment_type,
+        assessment_level,
+        assessment_date AS latest_assessment_date,
     FROM state_specific_mapping
 """
 
@@ -140,6 +176,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
                 name="supervision_level",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Supervision level",
+            ),
+            ReasonsField(
+                name="assessment_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of latest risk assessment",
             ),
             ReasonsField(
                 name="assessment_level",
