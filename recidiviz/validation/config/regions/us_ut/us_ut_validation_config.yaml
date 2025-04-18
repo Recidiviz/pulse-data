@@ -1,5 +1,4 @@
 # Configuration for which validations to run for region US_UT.
-
 region_code: US_UT
 dev_mode: False
 exclusions:
@@ -12,30 +11,15 @@ exclusions:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: UT is being hydrated only with v2 sentences
-    # TODO(#37991) Remove all stable counts exclusions once UT transfers are automated.
-  - validation_name: state_supervision_violation_by_violation_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-  - validation_name: state_supervision_violation_response_by_response_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-  - validation_name: state_supervision_period_by_termination_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-  - validation_name: state_supervision_period_by_start_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-  - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-  - validation_name: state_incarceration_period_by_release_date_stable_counts
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: UT is not yet sending data regularly, so stable counts violations cannot provide useful information.
-max_allowed_error_overrides:
-  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
-    hard_max_allowed_error_override: 1.0
-    override_reason: This validation will not function as designed until state staff location periods are ingested. (#34257)
+max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 15000
     override_reason: To investigate (#37797)
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 50
+    override_reason: |-
+      This is a very small error that is expected because of the way revocations
+      and shock incarcerations are tracked in the raw data. We can observe all of the 
+      transitions and key details we need despite these 0-day periods having conflicting
+      PFI values.
