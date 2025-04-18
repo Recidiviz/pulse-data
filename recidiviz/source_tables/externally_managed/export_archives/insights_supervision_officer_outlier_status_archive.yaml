@@ -29,6 +29,9 @@ schema:
   - name: caseload_type
     type: STRING
     mode: NULLABLE
+  - name: is_surfaced_category_type
+    type: BOOLEAN
+    mode: NULLABLE
   - name: target
     type: FLOAT
     mode: NULLABLE
