@@ -222,7 +222,7 @@ function sendAllLoginReminders(isSupervisors, query, settings, stateCodes) {
 
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
-  // TODO(#35736): Update this if/when queries are changed
+
   const dataByEmail = Object.fromEntries(
     data.map((row) => [
       row[3].toLowerCase(), // email address, case normalized
