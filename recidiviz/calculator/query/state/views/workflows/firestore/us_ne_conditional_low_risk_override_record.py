@@ -16,11 +16,9 @@
 # =============================================================================
 """Queries information pertinent to Conditional Low Risk supervision overrides in Nebraska."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_exclusive_clause,
-    today_between_start_date_and_nullable_end_date_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     join_current_task_eligibility_spans_with_external_id,
 )
@@ -59,22 +57,14 @@ WITH eligible_clients_with_duplicate_external_ids AS (
     eligible_only=True)}
 )
 ,
--- One person may have multiple external_ids in the state_person_external_id table, for
--- different cycles through the system. We want to make sure we only include the current
--- external_id for each person, so we join with the state_supervision_period table to
--- filter out any external_ids that are not currently active.
--- TODO(#40862): Find a better way, or place, to deduplicate external_ids.
+
 eligible_clients AS (
     SELECT
         eligible.*,
         tes_collapsed.start_date AS metadata_eligible_date,
     FROM eligible_clients_with_duplicate_external_ids eligible
-    INNER JOIN `{{project_id}}.normalized_state.state_supervision_period` sp
-        ON 
-            eligible.state_code = sp.state_code
-            AND eligible.person_id = sp.person_id
-            AND eligible.external_id = SPLIT(sp.external_id ,"-")[OFFSET(0)]
-            AND {today_between_start_date_and_nullable_end_date_clause('sp.start_date', 'sp.termination_date')}
+    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
+        ON eligible.external_id = pei.person_external_id
     INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS_OVERRIDE.to_str()}` tes_collapsed
             ON tes_collapsed.state_code = eligible.state_code
             AND tes_collapsed.person_id = eligible.person_id 
@@ -96,6 +86,7 @@ US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_QUERY_TEMPLATE,
     description=__doc__,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_NE
     ),

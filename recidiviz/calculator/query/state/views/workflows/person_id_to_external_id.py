@@ -17,6 +17,9 @@
 """A view that maps person_id to the external IDs used in Workflows"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    today_between_start_date_and_nullable_end_date_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     state_specific_incarceration_external_id_type,
@@ -33,14 +36,32 @@ PERSON_ID_TO_EXTERNAL_ID_DESCRIPTION = (
 )
 
 
-PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = """
+PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = f"""
     SELECT
         external_id AS person_external_id,
         person_id,
         state_code,
         "SUPERVISION" AS system_type,
-    FROM `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-    WHERE id_type = {supervision_state_id_type}
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    WHERE id_type = {{supervision_state_id_type}}
+    AND state_code != 'US_NE'
+
+    UNION ALL
+
+    -- Nebraska clients may have multiple external IDs, so pick the one for the current supervision period
+    SELECT
+        pei.external_id AS person_external_id,
+        pei.person_id,
+        pei.state_code,
+        "SUPERVISION" AS system_type,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
+    ON 
+        pei.state_code = sp.state_code
+        AND pei.person_id = sp.person_id
+        AND pei.external_id = SPLIT(sp.external_id ,"-")[OFFSET(0)]
+        AND {today_between_start_date_and_nullable_end_date_clause('sp.start_date', 'sp.termination_date')}
+    WHERE pei.state_code = 'US_NE'
 
     UNION ALL
 
@@ -49,8 +70,8 @@ PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = """
         person_id,
         state_code,
         "INCARCERATION" AS system_type,
-    FROM `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-    WHERE id_type = {incarceration_state_id_type}
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    WHERE id_type = {{incarceration_state_id_type}}
 """
 
 PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER = SimpleBigQueryViewBuilder(
