@@ -63,6 +63,9 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_lo
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_tn_location_metadata import (
     US_TN_LOCATION_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.location_metadata.us_ut_location_metadata import (
+    US_UT_LOCATION_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
 )
@@ -108,4 +111,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     get_completion_event_metadata_view_builder(),
     PRODUCT_STAFF_VIEW_BUILDER,
     US_OR_LOCATION_METADATA_VIEW_BUILDER,
+    US_UT_LOCATION_METADATA_VIEW_BUILDER,
 ]

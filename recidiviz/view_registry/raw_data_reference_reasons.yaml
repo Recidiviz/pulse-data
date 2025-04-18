@@ -1818,6 +1818,9 @@ US_TX:
       |-
       Policy references warrant dates which we do not yet have normalized state data for. 03/13/2025.
 US_UT:
+  agcy_loc:
+    reference_views.us_ut_location_metadata: |-
+      Used to pull in location reference data.
   assess_qstn:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
       Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
