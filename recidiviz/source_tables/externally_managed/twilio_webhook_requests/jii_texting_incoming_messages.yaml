@@ -1,0 +1,44 @@
+address:
+  dataset_id: twilio_webhook_requests
+  table_id: jii_texting_incoming_messages
+description:
+  This table contains all of the incoming messages that Twilio sends requests to our
+  webhook URL defined at https://github.com/Recidiviz/recidiviz-dashboards/blob/main/apps/jii-texting-server/src/server/webhooks.ts#L42-L127.
+schema:
+  - name: to
+    type: STRING
+    mode: NULLABLE
+    description: Recidiviz-owned Twilio Phone number that a message was sent to
+  - name: from
+    type: STRING
+    mode: NULLABLE
+    description: Phone number that the message was sent from
+  - name: message_sid
+    type: STRING
+    mode: NULLABLE
+    description: This is the message identifier as assigned by Twilio
+  - name: body
+    type: STRING
+    mode: NULLABLE
+    description: The body of the incoming message
+  - name: opt_out_type
+    type: STRING
+    mode: NULLABLE
+    description: Twilio supported opt-out and opt-in keywords
+  - name: account_sid
+    type: STRING
+    mode: NULLABLE
+    description: Twilio AccountSid that the message is associated with
+  - name: messaging_service_sid
+    type: STRING
+    mode: NULLABLE
+    description: Twilio Messaging service that the message is associated with
+  - name: time_received
+    type: DATETIME
+    mode: NULLABLE
+    description: Time that Twilio made the request to the Webhook URL
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+    description: State code that the phone number/service id is associated with
+clustering_fields: null

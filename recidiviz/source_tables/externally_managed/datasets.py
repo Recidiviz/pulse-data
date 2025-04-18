@@ -42,6 +42,8 @@ VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
 
 ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
+TWILIO_WEBHOOK_REQUESTS_DATASET_ID: str = "twilio_webhook_requests"
+
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
         f"Contains one-off validation data provided directed by "
@@ -99,4 +101,5 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores results from our data validations framework."
     ),
     ALL_BILLING_DATA_DATASET: "Stores information about our GCP cloud costs",
+    TWILIO_WEBHOOK_REQUESTS_DATASET_ID: "Stores requests from Twilio made to internal webhooks",
 }

@@ -60,6 +60,8 @@ COMMON_VESTIGES = [
     "external_reference.us_tn_supervision_facility_names",
     # TODO(#16661): Remove this section once US_ID fully deprecated
     "static_reference_tables.state_incarceration_facilities",
+    # This view is used by Polaris to monitor/analyze incoming messages to our Twilio phone numbers
+    "twilio_webhook_requests.jii_texting_incoming_messages",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph
