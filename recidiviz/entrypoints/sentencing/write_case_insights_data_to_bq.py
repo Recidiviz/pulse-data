@@ -20,7 +20,8 @@ import argparse
 import datetime
 import itertools
 import json
-from typing import Any, Dict, Iterable, List, Tuple
+import re
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -38,52 +39,96 @@ from recidiviz.tools.analyst.cohort_methods import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
+# TODO(#40901): Move these constant variables to a config
+
 # Comma-delimited strings of supported states
-SUPPORTED_STATES_STR = "'US_IX'"
+SUPPORTED_STATES_STR = "'US_IX','US_ND'"
 UNKNOWN_ATTRIBUTE = "UNKNOWN"
 
 # Attributes to aggregate by at each level of rollup, starting with most fine-grained
-ROLLUP_ATTRIBUTES = [
-    # Specific charge + LSI-R score bucket
-    [
-        "state_code",
-        "cohort_group",
-        "gender",
-        "assessment_score_bucket_start",
-        "assessment_score_bucket_end",
-        "most_severe_description",
+ROLLUP_ATTRIBUTES = {
+    "US_ND": [
+        # Specific charge + LSI-R score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_description",
+        ],
+        # Specific charge
+        ["state_code", "cohort_group", "most_severe_description", "gender"],
+        # NCIC category + LSI-R score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_ncic_category_uniform",
+        ],
+        # NCIC category + gender
+        ["state_code", "cohort_group", "most_severe_ncic_category_uniform", "gender"],
+        # Combined offense category + gender
+        ["state_code", "cohort_group", "combined_offense_category", "gender"],
+        # Combined offense category
+        ["state_code", "cohort_group", "combined_offense_category"],
+        # Violent/non-violent
+        ["state_code", "cohort_group", "any_is_violent"],
+        # All offenses
+        ["state_code", "cohort_group"],
     ],
-    # Specific charge
-    ["state_code", "cohort_group", "most_severe_description"],
-    # NCIC category + LSI-R score bucket
-    [
-        "state_code",
-        "cohort_group",
-        "gender",
-        "assessment_score_bucket_start",
-        "assessment_score_bucket_end",
-        "most_severe_ncic_category_uniform",
+    "US_IX": [
+        # Specific charge + LSI-R score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_description",
+        ],
+        # Specific charge
+        ["state_code", "cohort_group", "most_severe_description"],
+        # NCIC category + LSI-R score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_ncic_category_uniform",
+        ],
+        # NCIC category
+        ["state_code", "cohort_group", "most_severe_ncic_category_uniform"],
+        # Combined offense category
+        ["state_code", "cohort_group", "combined_offense_category"],
+        # Violent/non-violent
+        ["state_code", "cohort_group", "any_is_violent"],
+        # All offenses
+        ["state_code", "cohort_group"],
     ],
-    # NCIC category
-    ["state_code", "cohort_group", "most_severe_ncic_category_uniform"],
-    # Combined offense category
-    ["state_code", "cohort_group", "combined_offense_category"],
-    # Violent/non-violent
-    ["state_code", "cohort_group", "any_is_violent_uniform"],
-    # All offenses
-    ["state_code", "cohort_group"],
-]
+}
+
 # NOTE: All keys in ATTRIBUTE_MAPPING must be in the first level of ROLLUP_ATTRIBUTES
 ATTRIBUTE_MAPPING = {
     "most_severe_description": [
         "most_severe_ncic_category_uniform",
         "combined_offense_category",
-        "any_is_violent_uniform",
+        "any_is_violent",
     ]
 }
 RECIDIVISM_MONTHS = [0, 3, 6, 9, 12, 18, 24, 30, 36]
 # If the CI size for any disposition is above this threshold, roll up to a higher level
-ROLLUP_CI_THRESHOLD = 0.2
+ROLLUP_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.3}
+# Which disposition's CI to apply the threshold to (currently only "largest" and "2nd smallest" are supported)
+ROLLUP_CRITERIA = {"US_IX": "largest", "US_ND": "2nd smallest"}
+# After rollup, if any disposition has a CI above this threshold, don't include it; on the front end, we will indicate
+# that there is insufficient data for that disposition and no recidivism rate will be shown for it
+INCLUSION_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.6}
+RECIDIVISM_SERIES_COLUMN_REGEX = r"recidivism_(.*)_series"
+DISPOSITION_PERCENTAGE_COLUMN_REGEX = r"disposition_(.*)_pc"
 
 
 class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
@@ -191,9 +236,9 @@ def adjust_ncic_category(cohort_df_row: pd.Series) -> str:
 
 def get_combined_offense_category(cohort_df_row: pd.Series) -> str:
     categories = []
-    if cohort_df_row.any_is_violent_uniform:
+    if cohort_df_row.any_is_violent:
         categories.append("Violent offense")
-    if cohort_df_row.any_is_drug_uniform:
+    if cohort_df_row.any_is_drug:
         categories.append("Drug offense")
     if cohort_df_row.any_is_sex_offense:
         categories.append("Sex offense")
@@ -213,8 +258,8 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
         get_gendered_assessment_score_bucket_range, axis=1, result_type="expand"
     )
 
-    cohort_df.any_is_violent_uniform = cohort_df.any_is_violent_uniform.fillna(False)
-    cohort_df.any_is_drug_uniform = cohort_df.any_is_drug_uniform.fillna(False)
+    cohort_df.any_is_violent = cohort_df.any_is_violent.fillna(False)
+    cohort_df.any_is_drug = cohort_df.any_is_drug.fillna(False)
     cohort_df.any_is_sex_offense = cohort_df.any_is_sex_offense.fillna(False)
     cohort_df.any_is_sex_offense = cohort_df.apply(
         adjust_any_is_sex_offense,
@@ -236,7 +281,7 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
 def get_cohort_df(project_id: str) -> pd.DataFrame:
     cohort_query = f"""
     SELECT *
-    FROM `sentencing_views.sentence_cohort`
+    FROM `{project_id}.sentencing_views.sentence_cohort`
     WHERE state_code IN ({SUPPORTED_STATES_STR})
     """
     cohort_df = pd.read_gbq(cohort_query, project_id=project_id)
@@ -249,7 +294,7 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
 
     event_query = f"""
     SELECT *
-    FROM `sentencing_views.recidivism_event`
+    FROM `{project_id}.sentencing_views.recidivism_event`
     WHERE state_code IN ({SUPPORTED_STATES_STR})
     """
     event_df = pd.read_gbq(event_query, project_id=project_id)
@@ -257,14 +302,14 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
     return event_df
 
 
-def get_disposition_df(cohort_df: pd.DataFrame) -> pd.DataFrame:
+def get_disposition_df(cohort_df: pd.DataFrame, state_code: str) -> pd.DataFrame:
     """
     Returns: DataFrame with columns 'state_code', 'gender', 'assessment_score_bucket_start',
         'assessment_score_bucket_end', 'most_severe_description', 'disposition_probation_pc', 'disposition_rider_pc',
         'disposition_term_pc'
     """
     raw_disposition_df = (
-        cohort_df.groupby(ROLLUP_ATTRIBUTES[0])
+        cohort_df.groupby(ROLLUP_ATTRIBUTES[state_code][0])
         .size()
         .unstack(level="cohort_group")
         .rename_axis(columns=None)
@@ -314,21 +359,21 @@ def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
         "cohort_group",
         "cohort_start_date",
         "most_severe_ncic_category_uniform",
-        "any_is_violent_uniform",
-        "any_is_drug_uniform",
+        "any_is_violent",
+        "any_is_drug",
         "any_is_sex_offense",
     ]
     placeholder_rows = pd.DataFrame(columns=cols, data=itertools.product(*data))
     # person_id must be unique per row, and it's set to be negative numbers starting with -1
     placeholder_rows["person_id"] = range(-1, -1 * (placeholder_rows.shape[0] + 1), -1)
     placeholder_rows["most_severe_description"] = placeholder_rows.apply(
-        lambda row: f'[PLACEHOLDER] {row["any_is_violent_uniform"]}, {row["any_is_drug_uniform"]}, {row["any_is_sex_offense"]}',
+        lambda row: f'[PLACEHOLDER] {row["any_is_violent"]}, {row["any_is_drug"]}, {row["any_is_sex_offense"]}',
         axis=1,
     )
     return pd.concat([cohort_df, placeholder_rows]).reset_index(drop=True)
 
 
-def add_all_combinations(disposition_df: pd.DataFrame) -> pd.DataFrame:
+def add_all_combinations(disposition_df: pd.DataFrame, state_code: str) -> pd.DataFrame:
     """Add rows for every possible combination of key columns.
 
     Key columns are 'state_code', 'gender', 'assessment_score_bucket_start', 'assessment_score_bucket_end',
@@ -342,12 +387,10 @@ def add_all_combinations(disposition_df: pd.DataFrame) -> pd.DataFrame:
     (FEMALE, 21, 30) as values for (gender, assessment_score_bucket_start, assessment_score_bucket_end), then those will
     be the only values present in the output; this method won't also add combinations such as (MALE, 21, 30),
     (MALE, 0, 30), (FEMALE, 0, 22), etc.
-
-    TODO(#35492): Perform this enumeration of all combinations separately for each state once we have a 2nd state.
     """
 
     def flatten_row(row: Tuple[Any]) -> list[Any]:
-        """Flatten e.g. ('US_IX', 'DUI DRIVING', ('FEMALE', 0, 22)] into ['US_IX', 'DUI DRIVING', 'FEMALE', 0, 22]"""
+        """Flatten e.g. ('DUI DRIVING', ('FEMALE', 0, 22)] into ['DUI DRIVING', 'FEMALE', 0, 22]"""
         return [
             item
             for sublist in row
@@ -360,41 +403,38 @@ def add_all_combinations(disposition_df: pd.DataFrame) -> pd.DataFrame:
         "assessment_score_bucket_start",
         "assessment_score_bucket_end",
     ]
-    disposition_cols = [
-        "disposition_probation_pc",
-        "disposition_rider_pc",
-        "disposition_term_pc",
-        "disposition_num_records",
-    ]
+    disposition_cols = [col for col in original_cols if col.startswith("disposition")]
     other_attribute_cols = list(
         set(original_cols)
         .difference(set(risk_bucket_cols))
         .difference(set(disposition_cols))
-        .difference({"cohort_group"})
+        .difference({"cohort_group", "state_code"})
     )
 
-    # Get the unique values for each column
+    attribute_cols = ["state_code"] + other_attribute_cols + risk_bucket_cols
+
+    # Get the unique values for each column except for state_code
     unique_vals = [disposition_df[col].unique() for col in other_attribute_cols]
     # Get the unique combinations of values for the risk bucket columns
     unique_vals.append(list(disposition_df.groupby(risk_bucket_cols).size().index))
     # Create a row for each combination of unique values
     rows = list(itertools.product(*unique_vals))
 
-    # Create a DataFrame with all combinations, with 0's in the disposition columns
-    data = [flatten_row(row) for row in rows]
-    attribute_cols = other_attribute_cols + risk_bucket_cols
+    # Create a DataFrame with all combinations, adding back in the state_code, with 0's in the disposition columns
+    data = [[state_code] + flatten_row(row) for row in rows]
     all_combinations_df = pd.DataFrame(data=data, columns=attribute_cols)
     all_combinations_df.set_index(attribute_cols, inplace=True)
     all_combinations_df[disposition_cols] = 0
 
     # Insert the disposition_df values into the DataFrame with all combinations
-    disposition_df_indexed = disposition_df.set_index(attribute_cols)
+    state_disposition_df_indexed = disposition_df.set_index(attribute_cols)
     all_combinations_df.loc[
-        disposition_df_indexed.index, disposition_cols
-    ] = disposition_df_indexed[disposition_cols]
+        state_disposition_df_indexed.index, disposition_cols
+    ] = state_disposition_df_indexed[disposition_cols]
 
     # Set the index back to columns and make sure the original columns order is restored
     all_combinations_df.reset_index(inplace=True)
+
     all_combinations_df = all_combinations_df[original_cols]
 
     return all_combinations_df
@@ -508,7 +548,7 @@ def concatenate_recidivism_series(
     """Get the concatenated string and final CI size for each grouping across months, for each cohort_group.
 
     For each group of cohort_attribute_col, produce the concatenated event_rate_dict for all cohort_months (as a string
-    of a JSON array, the CI size of the final month, and the cohort size.
+    of a JSON array), the CI size of the final month, and the cohort size.
 
     The returned DataFrame is indexed by the columns of cohort_attribute_col except for 'cohort_group', and has the
     following three columns for each cohort_group:
@@ -556,7 +596,10 @@ def get_recidivism_series_df_for_rollup_level(
 
 
 def get_all_rollup_aggregated_df(
-    recidivism_df: pd.DataFrame, time_index: Iterable[int], index_df: pd.DataFrame
+    recidivism_df: pd.DataFrame,
+    time_index: Iterable[int],
+    index_df: pd.DataFrame,
+    state_code: str,
 ) -> pd.DataFrame:
     """Create a combined DataFrame that has columns for calculations at each rollup level.
 
@@ -571,7 +614,9 @@ def get_all_rollup_aggregated_df(
     The input index_df is used to seed the index of the output dataframe. This is to ensure that during rollup we don't
     drop any rows that would be dropped because there is no data at a given rollup level.
     """
-    index_attributes = set(ROLLUP_ATTRIBUTES[0]).difference({"cohort_group"})
+    index_attributes = set(ROLLUP_ATTRIBUTES[state_code][0]).difference(
+        {"cohort_group"}
+    )
     index = index_df.set_index(sorted(list(index_attributes))).index
     all_rollup_levels_df = pd.DataFrame(
         index=index,
@@ -581,7 +626,7 @@ def get_all_rollup_aggregated_df(
             names=["metric", "cohort_group", "rollup_level"],
         ),
     )
-    for idx, cohort_attribute_col in enumerate(ROLLUP_ATTRIBUTES):
+    for idx, cohort_attribute_col in enumerate(ROLLUP_ATTRIBUTES[state_code]):
         recidivism_series_df = get_recidivism_series_df_for_rollup_level(
             recidivism_df, time_index, cohort_attribute_col
         )
@@ -612,10 +657,15 @@ def get_all_rollup_aggregated_df(
     return all_rollup_levels_df
 
 
-def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
+def extract_rollup_columns(
+    all_rollup_levels_df: pd.DataFrame, state_code: str
+) -> pd.DataFrame:
     """Determine which rollup level is appropriate for each row and select the corresponding columns.
 
-    A rollup level qualifies as appropriate if the CI sizes for all three dispositions are under ROLLUP_CI_THRESHOLD.
+    A rollup level qualifies as appropriate if the CI size corresponding to ROLLUP_CRITERIA is under
+    ROLLUP_CI_THRESHOLDS for the given state. The following two criteria are currently supported:
+    - "largest": requires that the largest CI across all dispositions is under the CI threshold
+    - "2nd smallest": requires that 2nd smallest CI across all dispositions is under the CI threshold
 
     Following get_all_rollup_aggregated_df, if the appropriate rollup level is determined to be 2, for example, then
     (event_rate_dict, PROBATION, 2), etc. will be copied to recidivism_probation_series, etc.
@@ -623,25 +673,45 @@ def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
     The recidivism_rollup column will be populated with a JSON string of all columns and their values for the
     corresponding rollup level.
 
-    The recidivism_num_records column will be the sum of cohort_size across PROBATION, RIDER, TERM for the corresponding
-    rollup level.
+    The recidivism_num_records column will be the sum of cohort_size across dispositions for the corresponding rollup
+    level.
     """
 
     def get_recidivism_rollup(row: pd.Series) -> str:
-        cols_in_rollup = set(ROLLUP_ATTRIBUTES[row.rollup_level]).difference(
-            {"cohort_group"}
-        )
+        cols_in_rollup = set(
+            ROLLUP_ATTRIBUTES[state_code][row.rollup_level]
+        ).difference({"cohort_group"})
         recidivism_rollup_dict = {col: row[col] for col in cols_in_rollup}
 
         return json.dumps(recidivism_rollup_dict, default=int)
 
+    def get_nsmallest(row: pd.Series, n: int = 2) -> float:
+        return row.nsmallest(n).max()
+
     # Get the appropriate rollup level for each row
-    exceeds_ci_threshold = (
-        all_rollup_levels_df.stack(["rollup_level", "cohort_group"])["final_ci_size"]
-        .unstack("cohort_group")
-        .max(1)
-        > ROLLUP_CI_THRESHOLD
-    )
+    if ROLLUP_CRITERIA[state_code] == "largest":
+        exceeds_ci_threshold = (
+            all_rollup_levels_df.stack(["rollup_level", "cohort_group"])[
+                "final_ci_size"
+            ]
+            .unstack("cohort_group")
+            .max(1)
+            > ROLLUP_CI_THRESHOLDS[state_code]
+        )
+    elif ROLLUP_CRITERIA[state_code] == "2nd smallest":
+        exceeds_ci_threshold = (
+            all_rollup_levels_df.stack(["rollup_level", "cohort_group"])[
+                "final_ci_size"
+            ]
+            .unstack("cohort_group")
+            .apply(lambda row: get_nsmallest(row, 2), axis=1)
+            > ROLLUP_CI_THRESHOLDS[state_code]
+        )
+    else:
+        raise ValueError(
+            f"Unsupported ROLLUP_CRITERIA value {ROLLUP_CRITERIA[state_code]}"
+        )
+
     roll_up_level = (
         exceeds_ci_threshold.unstack("rollup_level").fillna(True).idxmin(axis=1)
     )
@@ -655,13 +725,21 @@ def extract_rollup_columns(all_rollup_levels_df: pd.DataFrame) -> pd.DataFrame:
     recidivism_num_records = all_rollup_levels_df["cohort_size"].sum(axis=1)
     all_rollup_levels_df.columns = all_rollup_levels_df.columns.to_flat_index()
     all_rollup_levels_df["recidivism_num_records"] = recidivism_num_records
-    all_rollup_levels_df = all_rollup_levels_df.rename(
-        columns={
-            ("event_rate_dict", "PROBATION"): "recidivism_probation_series",
-            ("event_rate_dict", "RIDER"): "recidivism_rider_series",
-            ("event_rate_dict", "TERM"): "recidivism_term_series",
-        }
+    columns_to_rename = filter(
+        lambda col: (
+            isinstance(col, tuple)
+            and len(col) == 2
+            and col[0] == "event_rate_dict"
+            and isinstance(col[1], str)
+        ),
+        all_rollup_levels_df.columns,
     )
+
+    column_remapping = {
+        col: f"recidivism_{col[1].lower()}_series" for col in columns_to_rename
+    }
+
+    all_rollup_levels_df = all_rollup_levels_df.rename(columns=column_remapping)
     all_rollup_levels_df = all_rollup_levels_df.reset_index()
     all_rollup_levels_df["recidivism_rollup"] = all_rollup_levels_df.apply(
         get_recidivism_rollup, axis=1
@@ -698,60 +776,240 @@ def add_combined_attributes_to_rollup(
 
 
 def create_final_table(
-    rolled_up_recidivism_df: pd.DataFrame, disposition_df: pd.DataFrame
+    rolled_up_recidivism_df: pd.DataFrame, disposition_df: pd.DataFrame, state_code: str
 ) -> pd.DataFrame:
     """Create final table that merges rolled_up_recidivism_df and disposition_df."""
-    attrs_to_join = set(ROLLUP_ATTRIBUTES[0])
+    attrs_to_join = set(ROLLUP_ATTRIBUTES[state_code][0])
     attrs_to_join.remove("cohort_group")
     final_table = rolled_up_recidivism_df.merge(disposition_df, on=list(attrs_to_join))
 
     return final_table
 
 
-def write_case_insights_data_to_bq(project_id: str) -> None:
-    """Write case insights data to BigQuery.
+def extract_cohort_attributes(cohort_column_name: str, columns_regex: str) -> Dict:
+    """Extract the sentence type and length from the recidivism series column name.
 
-    The final tables has a row for every state_code, gender, assessment_score_bucket_start, assessment_score_bucket_end,
-    most_severe_description with:
-    * The disposition percentages of each of PROBATION, RIDER, TERM
-    * The cohort size for this row (disposition_num_records)
-    * The series of recidivism stats over all months for each of PROBATION, RIDER, TERM for the appropriate rollup level
-    * The cohort size of the corresponding rollup level (recidivism_num_records)
-    * The comma-separated values of the rollup level (recidivism_rollup)
+    Columns are named recidivism_<cohort_name>_series (e.g. recidivism_INCARCERATION|1-2 years_series), and cohort_name
+    is a pipe-delimited string that has the sentence type and optionally the sentence length.
     """
-    cohort_df = get_cohort_df(project_id)
-    cohort_df = add_placeholder_cohort_rows(cohort_df)
-    cohort_df = add_offense_attributes(cohort_df)
 
-    event_df = get_recidivism_event_df(project_id)
-    disposition_df = get_disposition_df(cohort_df)
-    disposition_df = add_all_combinations(disposition_df)
+    def extract_sentence_length(length_str: str) -> Tuple[int, Any]:
+        sentence_length_match = re.match(sentence_length_regex, length_str)
+        if not sentence_length_match:
+            raise ValueError(f"Invalid sentence length for cohort_group {length_str}")
+        try:
+            bucket_start = int(sentence_length_match.group(1))
+            if sentence_length_match.group(2) == "?":
+                bucket_end = -1
+            else:
+                bucket_end = int(sentence_length_match.group(2))
+        except (AttributeError, ValueError) as parse_error:
+            raise ValueError(
+                f"Invalid sentence length for cohort_group {length_str}"
+            ) from parse_error
 
-    recidivism_df = gen_cohort_time_to_first_event(
-        cohort_df=cohort_df,
-        event_df=event_df,
+        return bucket_start, bucket_end
+
+    sentence_length_regex = r"(\d+)-(.+) years"
+
+    cohort_match = re.match(columns_regex, cohort_column_name)
+    if not cohort_match:
+        raise ValueError(f"Invalid column name {cohort_column_name}")
+    cohort_str = cohort_match.group(1)
+    type_and_length = cohort_str.split("|")
+
+    cohort_attributes = {}
+    if len(type_and_length) == 1:
+        # If there is no sentence length, only set the sentence type
+        cohort_attributes["sentence_type"] = type_and_length[0].capitalize()
+    elif len(type_and_length) == 2:
+        cohort_attributes["sentence_type"] = type_and_length[0].capitalize()
+        (
+            cohort_attributes["sentence_length_bucket_start"],
+            cohort_attributes["sentence_length_bucket_end"],
+        ) = extract_sentence_length(type_and_length[1])
+    else:
+        raise ValueError(f"Invalid cohort_group {cohort_str}")
+
+    return cohort_attributes
+
+
+def consolidate_cohort_columns(
+    final_table: pd.DataFrame, state_code: str, columns_regex: str, column_name: str
+) -> pd.Series:
+    """Consolidate the various columns corresponding to different cohorts into a single column.
+
+    This is used to consolidate both the recidivism series columns into a single recidivism_series column, and the
+    disposition percentage columns into a single disposition_percentages column.
+
+    The consolidated column value is a JSON string with the cohort info of each column along with the value from that
+    column, e.g.:
+        "[{'sentence_type': 'probation',
+           'percentage': 0.6},
+          {'sentence_type': 'incarceration',
+           'percentage': 0.4},
+         ]"
+    """
+    columns_to_consolidate = list(
+        filter(
+            lambda col: (isinstance(col, str) and re.match(columns_regex, col)),
+            final_table.columns,
+        )
+    )
+
+    def create_consolidated_dict(row: pd.Series, col: str) -> Optional[Dict]:
+        cohort_attributes = extract_cohort_attributes(col, columns_regex)
+
+        # If the column value is a JSON string, first convert it to a dict
+        if isinstance(row[col], str):
+            column_val = json.loads(row[col])
+        else:
+            column_val = row[col]
+
+        # If a particular disposition is above the inclusion threshold, return None so that it's not included
+        if (
+            column_name == "data_points"
+            and column_val[-1]["ci_size"] > INCLUSION_CI_THRESHOLDS[state_code]
+        ):
+            return None
+
+        # If the sentence type is "Other_sentence_type", return None so that it's not included
+        if cohort_attributes["sentence_type"] == "Other_sentence_type":
+            return None
+
+        return cohort_attributes | {column_name: column_val}
+
+    def consolidate_cohorts(row: pd.Series) -> str:
+        consolidated_series = [
+            create_consolidated_dict(row, col)
+            for col in columns_to_consolidate
+            # Exclude any empty or NaN columns
+            if row[col] is not None and not pd.isna(row[col])
+        ]
+        consolidated_series_json = json.dumps(
+            [
+                consolidated_dict
+                for consolidated_dict in consolidated_series
+                if consolidated_dict is not None
+            ]
+        )
+        return consolidated_series_json
+
+    return final_table.apply(consolidate_cohorts, axis=1)
+
+
+def add_consolidated_columns(
+    final_table: pd.DataFrame, state_code: str
+) -> pd.DataFrame:
+    final_table["recidivism_series"] = consolidate_cohort_columns(
+        final_table, state_code, RECIDIVISM_SERIES_COLUMN_REGEX, "data_points"
+    )
+    final_table["dispositions"] = consolidate_cohort_columns(
+        final_table, state_code, DISPOSITION_PERCENTAGE_COLUMN_REGEX, "percentage"
+    )
+    return final_table
+
+
+def create_table_for_state(
+    state_code: str, cohort_df: pd.DataFrame, event_df: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create the case insights table for a given state."""
+
+    cohort_df_for_state = cohort_df[cohort_df.state_code == state_code]
+    event_df_for_state = event_df[event_df.state_code == state_code]
+
+    # Trim out any cohort start dates in the future, which can apparently happen
+    # TODO(#41003): Filter these out in sentence_cohort instead
+    cohort_df_for_state = cohort_df_for_state[
+        cohort_df_for_state.cohort_start_date < datetime.datetime.now()
+    ]
+    cohort_df_for_state = add_offense_attributes(cohort_df_for_state)
+
+    disposition_df_for_state = get_disposition_df(cohort_df_for_state, state_code)
+    disposition_df_for_state = add_all_combinations(
+        disposition_df_for_state, state_code
+    )
+
+    recidivism_df_for_state = gen_cohort_time_to_first_event(
+        cohort_df=cohort_df_for_state,
+        event_df=event_df_for_state,
         cohort_date_field="cohort_start_date",
         event_date_field="recidivism_date",
         join_field=["person_id", "state_code"],
     )
     # Replace None with INTERNAL_UNKNOWN so that these rows aren't dropped by any groupby
-    recidivism_df.most_severe_ncic_category_uniform = (
-        recidivism_df.most_severe_ncic_category_uniform.fillna("INTERNAL_UNKNOWN")
+    recidivism_df_for_state.most_severe_ncic_category_uniform = (
+        recidivism_df_for_state.most_severe_ncic_category_uniform.fillna(
+            "INTERNAL_UNKNOWN"
+        )
     )
     # TODO(#34529): Remove drop_duplicates here once it's properly handled in gen_cohort_time_to_first_event
-    recidivism_df = recidivism_df.drop_duplicates(
+    recidivism_df_for_state = recidivism_df_for_state.drop_duplicates(
         ["state_code", "person_id", "cohort_start_date"]
     )
 
     all_rollup_levels_df = get_all_rollup_aggregated_df(
-        recidivism_df,
-        RECIDIVISM_MONTHS,
-        disposition_df,
+        recidivism_df_for_state, RECIDIVISM_MONTHS, disposition_df_for_state, state_code
     )
-    rolled_up_recidivism_df = extract_rollup_columns(all_rollup_levels_df)
+    rolled_up_recidivism_df = extract_rollup_columns(all_rollup_levels_df, state_code)
     rolled_up_recidivism_df = add_combined_attributes_to_rollup(rolled_up_recidivism_df)
 
-    final_table = create_final_table(rolled_up_recidivism_df, disposition_df)
+    final_table_for_state = create_final_table(
+        rolled_up_recidivism_df, disposition_df_for_state, state_code
+    )
+    final_table_for_state = add_consolidated_columns(final_table_for_state, state_code)
+
+    return final_table_for_state, recidivism_df_for_state, disposition_df_for_state
+
+
+def write_case_insights_data_to_bq(project_id: str) -> None:
+    """Write case insights data to BigQuery.
+
+    The final table has a row for every state_code, gender, assessment_score_bucket_start, assessment_score_bucket_end,
+    most_severe_description with:
+    * The disposition percentages of each of PROBATION, RIDER, TERM (to be deprecated) TODO(#40788)
+    * A `dispositions` column with disposition percentages for all sentence types and lengths
+    * The cohort size for this row (disposition_num_records)
+    * The series of recidivism stats over all months for each of PROBATION, RIDER, TERM for the appropriate rollup level
+        (to be deprecated) TODO(#40788)
+    * A `recidivism_series` column with recidivism rates for all sentence types and lengths
+    * The cohort size of the corresponding rollup level (recidivism_num_records)
+    * The comma-separated values of the rollup level (recidivism_rollup)
+    """
+    cohort_df = get_cohort_df(project_id)
+    cohort_df = add_placeholder_cohort_rows(cohort_df)
+    event_df = get_recidivism_event_df(project_id)
+
+    final_table = None
+    recidivism_df = None
+    disposition_df = None
+    for state_code in cohort_df["state_code"].unique():
+        (
+            final_table_for_state,
+            recidivism_df_for_state,
+            disposition_df_for_state,
+        ) = create_table_for_state(state_code, cohort_df, event_df)
+        if final_table is None:
+            final_table = final_table_for_state
+            recidivism_df = recidivism_df_for_state
+            disposition_df = disposition_df_for_state
+        else:
+            final_table = pd.concat([final_table, final_table_for_state])
+            recidivism_df = pd.concat([recidivism_df, recidivism_df_for_state])
+            disposition_df = pd.concat([disposition_df, disposition_df_for_state])
+
+    if final_table is None:
+        return
+
+    # Temporary stop-gap until we deprecate these columns
+    if "disposition_probation_pc" in final_table.columns:
+        final_table.disposition_probation_pc = (
+            final_table.disposition_probation_pc.fillna(0.0)
+        )
+    if "disposition_rider_pc" in final_table.columns:
+        final_table.disposition_rider_pc = final_table.disposition_rider_pc.fillna(0.0)
+    if "disposition_term_pc" in final_table.columns:
+        final_table.disposition_term_pc = final_table.disposition_term_pc.fillna(0.0)
 
     schema_cols = list(map(lambda x: x["name"], CASE_INSIGHTS_RATES_SCHEMA))
     final_table = final_table[schema_cols]

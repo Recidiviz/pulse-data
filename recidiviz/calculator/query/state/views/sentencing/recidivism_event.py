@@ -17,6 +17,12 @@
 """View of events that can count as recidivism."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_recidivism_event_template import (
+    US_IX_SENTENCING_RECIDIVISM_EVENT_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_recidivism_event_template import (
+    US_ND_SENTENCING_RECIDIVISM_EVENT_TEMPLATE,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -24,7 +30,11 @@ RECIDIVISM_EVENT_VIEW_NAME = "recidivism_event"
 
 RECIDIVISM_EVENT_DESCRIPTION = """
 Incarceration to state prison is the definition of a recidivism event for the purposes of Case Insights calculations.
+
+This combines state-specific sentencing queries with a state-agnostic query for actual incarceration events to serve as
+a backstop in case an incarceration sentence is missed in state-specific logic. 
 """
+
 
 # TODO(#32123): Use state prison incarceration sessions as data source to reduce event counts
 INCARCERATION_EVENT_CTE = """
@@ -36,23 +46,17 @@ INCARCERATION_EVENT_CTE = """
     WHERE incarceration_type = "STATE_PRISON"
 """
 
-NEW_SENTENCE_IMPOSED_CTE = """
-    SELECT
-      sigs.state_code,
-      sigs.person_id,
-      sigs.date_imposed as recidivism_date,
-    FROM `{project_id}.sessions.sentence_imposed_group_summary_materialized` sigs
-    JOIN `{project_id}.sessions.sentences_preprocessed_materialized` sp
-      ON sigs.parent_sentence_id = sp.sentence_id
-    WHERE JSON_EXTRACT_SCALAR(sp.sentence_metadata, "$.sentence_event_type") = 'INITIAL'
-"""
 
 RECIDIVISM_EVENT_QUERY_TEMPLATE = f"""
-SELECT * FROM ({INCARCERATION_EVENT_CTE})
+SELECT * FROM ({US_IX_SENTENCING_RECIDIVISM_EVENT_TEMPLATE})
 
 UNION ALL
 
-SELECT * FROM ({NEW_SENTENCE_IMPOSED_CTE})
+SELECT * FROM ({US_ND_SENTENCING_RECIDIVISM_EVENT_TEMPLATE})
+
+UNION ALL
+
+SELECT * FROM ({INCARCERATION_EVENT_CTE})
 """
 
 

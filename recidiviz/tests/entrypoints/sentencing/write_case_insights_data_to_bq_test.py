@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for write_case_insights_data_to_bq.py"""
 import datetime
+import json
 import unittest
 from unittest.mock import Mock, call, patch
 
@@ -381,8 +382,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
     def test_get_combined_offense_category(self) -> None:
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": True,
-                "any_is_drug_uniform": True,
+                "any_is_violent": True,
+                "any_is_drug": True,
                 "any_is_sex_offense": True,
             }
         )
@@ -395,8 +396,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": True,
-                "any_is_drug_uniform": False,
+                "any_is_violent": True,
+                "any_is_drug": False,
                 "any_is_sex_offense": True,
             }
         )
@@ -407,8 +408,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": False,
-                "any_is_drug_uniform": True,
+                "any_is_violent": False,
+                "any_is_drug": True,
                 "any_is_sex_offense": True,
             }
         )
@@ -419,8 +420,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": True,
-                "any_is_drug_uniform": True,
+                "any_is_violent": True,
+                "any_is_drug": True,
                 "any_is_sex_offense": False,
             }
         )
@@ -431,8 +432,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": True,
-                "any_is_drug_uniform": False,
+                "any_is_violent": True,
+                "any_is_drug": False,
                 "any_is_sex_offense": False,
             }
         )
@@ -443,8 +444,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": False,
-                "any_is_drug_uniform": True,
+                "any_is_violent": False,
+                "any_is_drug": True,
                 "any_is_sex_offense": False,
             }
         )
@@ -455,8 +456,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": False,
-                "any_is_drug_uniform": False,
+                "any_is_violent": False,
+                "any_is_drug": False,
                 "any_is_sex_offense": True,
             }
         )
@@ -467,8 +468,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
 
         input_row = pd.Series(
             {
-                "any_is_violent_uniform": False,
-                "any_is_drug_uniform": False,
+                "any_is_violent": False,
+                "any_is_drug": False,
                 "any_is_sex_offense": False,
             }
         )
@@ -556,7 +557,9 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             }
         )
 
-        disposition_df = write_case_insights_data_to_bq.get_disposition_df(cohort_df)
+        disposition_df = write_case_insights_data_to_bq.get_disposition_df(
+            cohort_df, "US_IX"
+        )
         pd.testing.assert_frame_equal(
             expected_disposition_df.sort_values(
                 [
@@ -589,8 +592,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "cohort_start_date": pd.to_datetime("2024-01-01"),
                 "most_severe_description": ["ASSAULT OR BATTERY"],
                 "most_severe_ncic_category_uniform": ["Assault"],
-                "any_is_violent_uniform": [True],
-                "any_is_drug_uniform": [False],
+                "any_is_violent": [True],
+                "any_is_drug": [False],
                 "any_is_sex_offense": [False],
             }
         )
@@ -670,7 +673,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "[PLACEHOLDER] NCIC CATEGORY",
                     "[PLACEHOLDER] NCIC CATEGORY",
                 ],
-                "any_is_violent_uniform": [
+                "any_is_violent": [
                     True,
                     True,
                     True,
@@ -681,7 +684,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     False,
                     False,
                 ],
-                "any_is_drug_uniform": [
+                "any_is_drug": [
                     False,
                     True,
                     True,
@@ -731,8 +734,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "Sex Offense",
                     "Assault",
                 ],
-                "any_is_violent_uniform": [True, True, True],
-                "any_is_drug_uniform": [False, False, False],
+                "any_is_violent": [True, True, True],
+                "any_is_drug": [False, False, False],
                 "any_is_sex_offense": [False, True, False],
             }
         )
@@ -912,7 +915,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "[PLACEHOLDER] NCIC CATEGORY",
                     "[PLACEHOLDER] NCIC CATEGORY",
                 ],
-                "any_is_violent_uniform": [
+                "any_is_violent": [
                     True,
                     True,
                     True,
@@ -933,7 +936,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     False,
                     False,
                 ],
-                "any_is_drug_uniform": [
+                "any_is_drug": [
                     False,
                     False,
                     False,
@@ -1034,7 +1037,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         )
 
         all_combinations_df = write_case_insights_data_to_bq.add_all_combinations(
-            disposition_df
+            disposition_df, "US_IX"
         )
         pd.testing.assert_frame_equal(
             expected_all_combinations_df.sort_values(
@@ -1068,10 +1071,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         mock_get_recidivism_series_df_for_rollup_level: Mock,
         mock_add_attributes_to_index: Mock,
     ) -> None:
-        mock_rollup_attributes = [
-            ["state_code", "most_severe_description"],
-            ["state_code", "most_severe_ncic_category_uniform"],
-        ]
+        mock_rollup_attributes = {
+            "US_IX": [
+                ["state_code", "most_severe_description"],
+                ["state_code", "most_severe_ncic_category_uniform"],
+            ]
+        }
         recidivism_df = pd.DataFrame(
             {
                 "state_code": ["US_IX", "US_IX"],
@@ -1299,9 +1304,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ):
             all_rollup_levels_df = (
                 write_case_insights_data_to_bq.get_all_rollup_aggregated_df(
-                    recidivism_df,
-                    [0, 3],
-                    index_df,
+                    recidivism_df, [0, 3], index_df, "US_IX"
                 )
             )
 
@@ -1445,7 +1448,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "Non-drug, non-violent, non-sex offense",
                     "Non-drug, non-violent, non-sex offense",
                 ],
-                "any_is_violent_uniform": [
+                "any_is_violent": [
                     False,
                     False,
                     False,
@@ -1491,7 +1494,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             "most_severe_description": [
                 "most_severe_ncic_category_uniform",
                 "combined_offense_category",
-                "any_is_violent_uniform",
+                "any_is_violent",
             ]
         }
         added_attributes_df = write_case_insights_data_to_bq.add_attributes_to_index(
@@ -1538,7 +1541,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "most_severe_description",
                     "most_severe_ncic_category_uniform",
                     "combined_offense_category",
-                    "any_is_violent_uniform",
+                    "any_is_violent",
                 ],
             ),
             data=[5, 6, 7, 8, 9, 10],
@@ -1572,8 +1575,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "SEXUAL ASSAULT",
                     "MURDER II",
                 ],
-                "any_is_violent_uniform": [True, False, True],
-                "any_is_drug_uniform": [True, False, False],
+                "any_is_violent": [True, False, True],
+                "any_is_drug": [True, False, False],
                 "any_is_sex_offense": [False, True, False],
             }
         )
@@ -1596,8 +1599,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "SEXUAL ASSAULT",
                     "MURDER II",
                 ],
-                "any_is_violent_uniform": [True, False, True],
-                "any_is_drug_uniform": [True, False, False],
+                "any_is_violent": [True, False, True],
+                "any_is_drug": [True, False, False],
                 "any_is_sex_offense": [False, True, False],
                 "assessment_score_bucket_start": [0, 0, 0],
                 "assessment_score_bucket_end": [22, 20, 22],
@@ -1742,10 +1745,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         )
 
     def test_extract_rollup_columns(self) -> None:
-        mock_rollup_attributes = [
-            ["state_code", "most_severe_description"],
-            ["state_code"],
-        ]
+        mock_rollup_attributes = {
+            "US_IX": [
+                ["state_code", "most_severe_description"],
+                ["state_code"],
+            ]
+        }
         # The second level should be extracted for each row
         all_rollup_levels_df = pd.DataFrame(
             index=pd.MultiIndex.from_arrays(
@@ -1833,7 +1838,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ):
             rollup_df_with_extracted_columns = (
                 write_case_insights_data_to_bq.extract_rollup_columns(
-                    all_rollup_levels_df
+                    all_rollup_levels_df, "US_IX"
                 )
             )
 
@@ -2561,10 +2566,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         )
 
     def test_create_final_table(self) -> None:
-        mock_rollup_attributes = [
-            ["state_code", "cohort_group", "most_severe_description"],
-            ["state_code", "cohort_group"],
-        ]
+        mock_rollup_attributes = {
+            "US_IX": [
+                ["state_code", "cohort_group", "most_severe_description"],
+                ["state_code", "cohort_group"],
+            ]
+        }
         disposition_df = pd.DataFrame(
             {
                 "state_code": ["US_IX", "US_IX"],
@@ -2638,7 +2645,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             mock_rollup_attributes,
         ):
             final_table = write_case_insights_data_to_bq.create_final_table(
-                rolled_up_recidivism_df, disposition_df
+                rolled_up_recidivism_df, disposition_df, "US_IX"
             )
 
         expected_final_table = pd.DataFrame(
@@ -2707,3 +2714,418 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(expected_final_table, final_table)
+
+    def test_consolidate_cohort_columns(self) -> None:
+        mock_inclusion_ci_thresholds = {"US_ND": 0.6}
+        final_table = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    '[{"event_rate": 0.1, "ci_size": 0.1}, {"event_rate": 0.4, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.3}, {"event_rate": 0.5, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.8}, {"event_rate": 0.5, "ci_size": 0.7}]',  # will be excluded
+                    '[{"event_rate": 0.3, "ci_size": 0.5}, {"event_rate": 0.6, "ci_size": 0.5}]',
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_ND"}',
+                    0.9,
+                    0.06,
+                    0.01,
+                    0.03,
+                ],
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    '[{"event_rate": 0.2, "ci_size": 0.1}, {"event_rate": 0.9, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.3}, {"event_rate": 0.8, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.8}, {"event_rate": 0.8, "ci_size": 0.7}]',  # will be excluded
+                    '[{"event_rate": 0.4, "ci_size": 0.5}, {"event_rate": 0.7, "ci_size": 0.5}]',
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_ND"}',
+                    0.0,
+                    0.4,
+                    0.01,
+                    0.59,
+                ],
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_PROBATION_series",
+                "recidivism_INCARCERATION|0-1 years_series",
+                "recidivism_INCARCERATION|1-3 years_series",
+                "recidivism_INCARCERATION|6-? years_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+                "disposition_PROBATION_pc",
+                "recidivism_INCARCERATION|0-1 years_pc",
+                "recidivism_INCARCERATION|1-3 years_pc",
+                "recidivism_INCARCERATION|6-? years_pc",
+            ],
+        )
+
+        expected_recidivism_series = pd.Series(
+            [
+                json.dumps(
+                    [
+                        {
+                            "sentence_type": "Probation",
+                            "data_points": [
+                                {"event_rate": 0.1, "ci_size": 0.1},
+                                {"event_rate": 0.4, "ci_size": 0.1},
+                            ],
+                        },
+                        {
+                            "sentence_type": "Incarceration",
+                            "sentence_length_bucket_start": 0,
+                            "sentence_length_bucket_end": 1,
+                            "data_points": [
+                                {"event_rate": 0.2, "ci_size": 0.3},
+                                {"event_rate": 0.5, "ci_size": 0.3},
+                            ],
+                        },
+                        {
+                            "sentence_type": "Incarceration",
+                            "sentence_length_bucket_start": 6,
+                            "sentence_length_bucket_end": -1,
+                            "data_points": [
+                                {"event_rate": 0.3, "ci_size": 0.5},
+                                {"event_rate": 0.6, "ci_size": 0.5},
+                            ],
+                        },
+                    ]
+                ),
+                json.dumps(
+                    [
+                        {
+                            "sentence_type": "Probation",
+                            "data_points": [
+                                {"event_rate": 0.2, "ci_size": 0.1},
+                                {"event_rate": 0.9, "ci_size": 0.1},
+                            ],
+                        },
+                        {
+                            "sentence_type": "Incarceration",
+                            "sentence_length_bucket_start": 0,
+                            "sentence_length_bucket_end": 1,
+                            "data_points": [
+                                {"event_rate": 0.3, "ci_size": 0.3},
+                                {"event_rate": 0.8, "ci_size": 0.3},
+                            ],
+                        },
+                        {
+                            "sentence_type": "Incarceration",
+                            "sentence_length_bucket_start": 6,
+                            "sentence_length_bucket_end": -1,
+                            "data_points": [
+                                {"event_rate": 0.4, "ci_size": 0.5},
+                                {"event_rate": 0.7, "ci_size": 0.5},
+                            ],
+                        },
+                    ]
+                ),
+            ]
+        )
+
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.INCLUSION_CI_THRESHOLDS",
+            mock_inclusion_ci_thresholds,
+        ):
+            recidivism_series = (
+                write_case_insights_data_to_bq.consolidate_cohort_columns(
+                    final_table,
+                    "US_ND",
+                    write_case_insights_data_to_bq.RECIDIVISM_SERIES_COLUMN_REGEX,
+                    "data_points",
+                )
+            )
+
+        pd.testing.assert_series_equal(expected_recidivism_series, recidivism_series)
+
+    def test_add_consolidated_columns(self) -> None:
+        mock_inclusion_ci_thresholds = {"US_ND": 0.6}
+        final_table = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    '[{"event_rate": 0.1, "ci_size": 0.1}, {"event_rate": 0.4, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.3}, {"event_rate": 0.5, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.8}, {"event_rate": 0.5, "ci_size": 0.7}]',  # will be excluded
+                    '[{"event_rate": 0.3, "ci_size": 0.5}, {"event_rate": 0.6, "ci_size": 0.5}]',
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_ND"}',
+                    0.9,
+                    0.06,
+                    0.01,
+                    0.03,
+                ],
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    '[{"event_rate": 0.2, "ci_size": 0.1}, {"event_rate": 0.9, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.3}, {"event_rate": 0.8, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.8}, {"event_rate": 0.8, "ci_size": 0.7}]',  # will be excluded
+                    '[{"event_rate": 0.4, "ci_size": 0.5}, {"event_rate": 0.7, "ci_size": 0.5}]',
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_ND"}',
+                    0.0,
+                    0.4,
+                    0.01,
+                    0.59,
+                ],
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_PROBATION_series",
+                "recidivism_INCARCERATION|0-1 years_series",
+                "recidivism_INCARCERATION|1-3 years_series",
+                "recidivism_INCARCERATION|6-? years_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+                "disposition_PROBATION_pc",
+                "disposition_INCARCERATION|0-1 years_pc",
+                "disposition_INCARCERATION|1-3 years_pc",
+                "disposition_INCARCERATION|6-? years_pc",
+            ],
+        )
+
+        expected_final_table = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT OR BATTERY",
+                    "Assault",
+                    1,
+                    15,
+                    20,
+                    25,
+                    '[{"event_rate": 0.1, "ci_size": 0.1}, {"event_rate": 0.4, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.3}, {"event_rate": 0.5, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.2, "ci_size": 0.8}, {"event_rate": 0.5, "ci_size": 0.7}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.5}, {"event_rate": 0.6, "ci_size": 0.5}]',
+                    0.1,
+                    0.05,
+                    0.03,
+                    60,
+                    '{"state_code": "US_ND"}',
+                    0.9,
+                    0.06,
+                    0.01,
+                    0.03,
+                    json.dumps(
+                        [
+                            {
+                                "sentence_type": "Probation",
+                                "data_points": [
+                                    {"event_rate": 0.1, "ci_size": 0.1},
+                                    {"event_rate": 0.4, "ci_size": 0.1},
+                                ],
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 0,
+                                "sentence_length_bucket_end": 1,
+                                "data_points": [
+                                    {"event_rate": 0.2, "ci_size": 0.3},
+                                    {"event_rate": 0.5, "ci_size": 0.3},
+                                ],
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 6,
+                                "sentence_length_bucket_end": -1,
+                                "data_points": [
+                                    {"event_rate": 0.3, "ci_size": 0.5},
+                                    {"event_rate": 0.6, "ci_size": 0.5},
+                                ],
+                            },
+                        ]
+                    ),
+                    json.dumps(
+                        [
+                            {"sentence_type": "Probation", "percentage": 0.9},
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 0,
+                                "sentence_length_bucket_end": 1,
+                                "percentage": 0.06,
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 1,
+                                "sentence_length_bucket_end": 3,
+                                "percentage": 0.01,
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 6,
+                                "sentence_length_bucket_end": -1,
+                                "percentage": 0.03,
+                            },
+                        ]
+                    ),
+                ],
+                [
+                    "US_IX",
+                    "MISUSE OF PUBLIC MONEY",
+                    "Fraud",
+                    1,
+                    16,
+                    21,
+                    26,
+                    '[{"event_rate": 0.2, "ci_size": 0.1}, {"event_rate": 0.9, "ci_size": 0.1}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.3}, {"event_rate": 0.8, "ci_size": 0.3}]',
+                    '[{"event_rate": 0.3, "ci_size": 0.8}, {"event_rate": 0.8, "ci_size": 0.7}]',
+                    '[{"event_rate": 0.4, "ci_size": 0.5}, {"event_rate": 0.7, "ci_size": 0.5}]',
+                    0.09,
+                    0.04,
+                    0.02,
+                    63,
+                    '{"state_code": "US_ND"}',
+                    0.0,
+                    0.4,
+                    0.01,
+                    0.59,
+                    json.dumps(
+                        [
+                            {
+                                "sentence_type": "Probation",
+                                "data_points": [
+                                    {"event_rate": 0.2, "ci_size": 0.1},
+                                    {"event_rate": 0.9, "ci_size": 0.1},
+                                ],
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 0,
+                                "sentence_length_bucket_end": 1,
+                                "data_points": [
+                                    {"event_rate": 0.3, "ci_size": 0.3},
+                                    {"event_rate": 0.8, "ci_size": 0.3},
+                                ],
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 6,
+                                "sentence_length_bucket_end": -1,
+                                "data_points": [
+                                    {"event_rate": 0.4, "ci_size": 0.5},
+                                    {"event_rate": 0.7, "ci_size": 0.5},
+                                ],
+                            },
+                        ]
+                    ),
+                    json.dumps(
+                        [
+                            {"sentence_type": "Probation", "percentage": 0.0},
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 0,
+                                "sentence_length_bucket_end": 1,
+                                "percentage": 0.4,
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 1,
+                                "sentence_length_bucket_end": 3,
+                                "percentage": 0.01,
+                            },
+                            {
+                                "sentence_type": "Incarceration",
+                                "sentence_length_bucket_start": 6,
+                                "sentence_length_bucket_end": -1,
+                                "percentage": 0.59,
+                            },
+                        ]
+                    ),
+                ],
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_PROBATION_series",
+                "recidivism_INCARCERATION|0-1 years_series",
+                "recidivism_INCARCERATION|1-3 years_series",
+                "recidivism_INCARCERATION|6-? years_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+                "disposition_PROBATION_pc",
+                "disposition_INCARCERATION|0-1 years_pc",
+                "disposition_INCARCERATION|1-3 years_pc",
+                "disposition_INCARCERATION|6-? years_pc",
+                "recidivism_series",
+                "dispositions",
+            ],
+        )
+
+        with patch(
+            "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.INCLUSION_CI_THRESHOLDS",
+            mock_inclusion_ci_thresholds,
+        ):
+            final_table_with_added_columns = (
+                write_case_insights_data_to_bq.add_consolidated_columns(
+                    final_table, "US_ND"
+                )
+            )
+
+        pd.testing.assert_frame_equal(
+            expected_final_table, final_table_with_added_columns
+        )

@@ -23,6 +23,7 @@ CASE_INSIGHTS_RATES_ADDRESS = BigQueryAddress(
     dataset_id=SENTENCING_DATASET, table_id="case_insights_rates"
 )
 
+# TODO(#40788): Deprecate probation/rider/term-specific columns
 CASE_INSIGHTS_RATES_SCHEMA = [
     {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
     {"name": "gender", "type": "STRING", "mode": "REQUIRED"},
@@ -34,10 +35,10 @@ CASE_INSIGHTS_RATES_SCHEMA = [
     {"name": "recidivism_probation_series", "type": "STRING", "mode": "NULLABLE"},
     {"name": "recidivism_rider_series", "type": "STRING", "mode": "NULLABLE"},
     {"name": "recidivism_term_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "recidivism_series", "type": "STRING", "mode": "NULLABLE"},
     {"name": "disposition_num_records", "type": "INTEGER", "mode": "REQUIRED"},
     {"name": "disposition_probation_pc", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "disposition_rider_pc", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "disposition_term_pc", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "recidivism_series", "type": "STRING", "mode": "NULLABLE"},
     {"name": "dispositions", "type": "STRING", "mode": "REQUIRED"},
 ]
