@@ -267,6 +267,27 @@ assessment_cte AS (
     WHERE DATE(ASSESSMENT_DATE) < DATE(p.start_date)
     QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY ASSESSMENT_DATE DESC) = 1
 ),
+-- In the rare case where two seperate assessments were done in the same day, 
+-- only around 2k of assessments out of 455k as of 4/18, then choose the lower supervision level.
+cleaned_assessment_cte AS (
+    SELECT
+        SID_Number,
+        Period_ID_Number,
+        assessment_level,
+        update_date,
+    FROM assessment_cte
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY SID_Number, update_date
+        ORDER BY CASE assessment_level
+            WHEN 'L' THEN 1
+            WHEN 'LM' THEN 2
+            WHEN 'M' THEN 3
+            WHEN 'MH' THEN 5
+            WHEN 'H' THEN 5
+            ELSE 6
+        END
+    ) = 1
+),
 -- Combines all of the critical dates where there was a change to one of the period
 -- characteristics.
 union_all_critical_dates AS 
@@ -315,7 +336,7 @@ union_all_critical_dates AS
         SID_Number,
         Period_ID_Number,
         DATE(update_date) as critical_date,
-    FROM assessment_cte
+    FROM cleaned_assessment_cte
 ),
 -- Creates empty periods using the critical dates from union_all_critical_dates
 empty_periods AS
@@ -348,7 +369,7 @@ combined as (
     LEFT JOIN case_type_changes_cte ct
         ON ct.Period_ID_Number = ep.Period_ID_Number
         AND ct.update_date = ep.start_date
-    LEFT JOIN assessment_cte a
+    LEFT JOIN cleaned_assessment_cte a
         ON a.Period_ID_Number = ep.Period_ID_Number
         AND a.update_date = ep.start_date
     WHERE ep.start_date is not null
