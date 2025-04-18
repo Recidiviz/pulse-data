@@ -734,6 +734,7 @@ def supervision_violations_within_time_interval_criteria_builder(
     where_clause_addition: str = "",
     violation_date_name_in_reason_blob: str = "latest_violations",
     return_view_builder: bool = True,
+    exclude_violation_unfounded_decisions: bool = False,
 ) -> Dict | StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a TES criterion view builder that has spans of time where violations that
@@ -757,6 +758,8 @@ def supervision_violations_within_time_interval_criteria_builder(
             field in the reason blob. Defaults to "latest_violations".
         return_view_builder (bool, optional): Whether to return a view builder or just the
             query string + reasons_fields in a dictionary. Defaults to True.
+        exclude_violation_unfounded_decisions (bool, optional): Whether to exclude violations where the LATEST
+            violation response DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
     Returns:
         Union[str, StateAgnosticTaskCriteriaBigQueryViewBuilder]: Either a TES criterion
         view builder that shows the spans of time where the violations that meet any
@@ -773,6 +776,7 @@ def supervision_violations_within_time_interval_criteria_builder(
         {supervision_violations_cte(
         violation_type,
         where_clause_addition,
+        exclude_violation_unfounded_decisions
         )}
     ),
     supervision_violation_ineligibility_spans AS (

@@ -678,12 +678,17 @@ GROUP BY 1,2,3,4
 def supervision_violations_cte(
     violation_type: str = "",
     where_clause_addition: str = "",
+    exclude_violation_unfounded_decisions: bool = False,
 ) -> str:
     """
     Combine state_supervision_violation and state_supervision_violation_response to select violations that
     we want to count for supervision violation related criteria. Violations are filtered based on any
     specified violation-level attributes and any aggregated attributes of violation responses
     (since there can be multiple responses per violation).
+
+    Args:
+        exclude_violation_unfounded_decisions (bool): Only violations where the LATEST violation response
+        DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
 
     Returns:
         str: SQL query as a string.
@@ -696,6 +701,14 @@ def supervision_violations_cte(
             AND v.state_code = vt.state_code
             {violation_type}
         """
+
+    violation_unfounded_decision_join = f"""
+        INNER JOIN (
+            {get_supervision_violations_sans_unfounded()}
+            )
+            USING(supervision_violation_id, person_id, state_code)
+    """
+
     return f"""
         # TODO(#35354): Account for violation decisions when considering which violations
         # should disqualify someone from eligibility.    
@@ -713,6 +726,7 @@ def supervision_violations_cte(
             COALESCE(MIN(v.violation_date), MIN(vr.response_date)) AS violation_date,
         FROM `{{project_id}}.normalized_state.state_supervision_violation` v
         {violation_type_join if violation_type else ""}
+        {violation_unfounded_decision_join if exclude_violation_unfounded_decisions else ""}
         /* NB: there can be multiple responses per violation, so this LEFT JOIN can
         create multiple rows per violation (where each row is a unique violation
         response). */
@@ -741,3 +755,56 @@ def supervision_violations_cte(
         CTE. */
         GROUP BY 1, 2, 3
     """
+
+
+def get_supervision_violations_sans_unfounded() -> str:
+    """
+    Returns a query fragment that only contains violations where the LATEST violation response DOES NOT contain a
+    VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded.
+
+    Returns:
+        str: SQL query as a string.
+    """
+    return """
+        WITH responses_at_latest AS (
+        SELECT
+          vr.state_code,
+          vr.person_id,
+          vr.supervision_violation_id,
+          vr.supervision_violation_response_id
+        FROM `{project_id}.normalized_state.state_supervision_violation_response` AS vr
+        QUALIFY vr.response_date = MAX(vr.response_date)
+            OVER (PARTITION BY vr.state_code, vr.person_id, vr.supervision_violation_id)
+      ),
+      decisions_for_latest AS (
+        SELECT
+          ra.state_code,
+          ra.person_id,
+          ra.supervision_violation_id,
+          ARRAY_AGG(de.decision ORDER BY de.decision) AS latest_decisions
+        FROM
+          responses_at_latest AS ra
+        JOIN `{project_id}.normalized_state.state_supervision_violation_response_decision_entry` AS de
+            USING(state_code, person_id, supervision_violation_response_id)
+        GROUP BY
+          ra.state_code,
+          ra.person_id,
+          ra.supervision_violation_id
+      )
+        SELECT
+          v.state_code,
+          v.person_id,
+          v.supervision_violation_id
+        FROM `{project_id}.normalized_state.state_supervision_violation` AS v
+        LEFT JOIN decisions_for_latest AS dfl
+            USING(state_code, person_id, supervision_violation_id)
+        WHERE
+          NOT EXISTS (
+            SELECT 1 FROM UNNEST(dfl.latest_decisions) AS dec
+            WHERE dec = 'VIOLATION_UNFOUNDED'
+          )
+        GROUP BY
+          v.state_code,
+          v.person_id,
+          v.supervision_violation_id
+"""

@@ -1805,16 +1805,8 @@ US_TX:
     workflows_views.client_record: |-
       Used to pull in expiration dates into the client record since we have it on the supervision period level and not the
       sentence level so we can't ingest it at the moment. 03/28/2025. See TODO(#40740)
-  ViolationResponses:
-    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
-      |-
-      Policy references warrants which "sustain a violation" which we cannot interpret from normalized data. 03/13/2025.
-  Violations:
-    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
-      |-
-      Policy references warrants which "sustain a violation" which we cannot interpret from normalized data. 03/13/2025.
   Warrants:
-    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_7_years:
+    task_eligibility_criteria_us_tx.no_warrant_with_sustained_violation_within_2_years:
       |-
       Policy references warrant dates which we do not yet have normalized state data for. 03/13/2025.
 US_UT:

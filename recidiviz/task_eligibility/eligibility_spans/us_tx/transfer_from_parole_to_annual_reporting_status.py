@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligibility spans view that shows the spans of time during which
-someone in TX, who is on parole or dual parole and probation, is eligible to be transferred
-to Annual Reporting Status (Limited Supervision). This status only affects their parole status,
-not their probation status.
+"""Shows the spans of time during which someone in TX, who is on parole or dual parole and probation,
+is eligible to be transferred to Annual Reporting Status (Limited Supervision). This status only
+affects their parole status, not their probation status.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -27,11 +26,11 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    on_minimum_supervision_at_least_1_year,
+    no_supervision_sustained_violation_within_2_years,
+    supervision_level_is_minimum_for_3_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    no_warrant_with_sustained_violation_within_7_years,
-    not_convicted_of_ineligible_offense_for_ars,
+    no_warrant_with_sustained_violation_within_2_years,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -39,21 +38,15 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = (
-    "Shows the spans of time during which someone in TX, who is on parole or dual parole and probation, is eligible to "
-    "be transferred to Annual Reporting Status (Limited Supervision). This status only affects their parole status, "
-    "not their probation status."
-)
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
     task_name="TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        on_minimum_supervision_at_least_1_year.VIEW_BUILDER,
-        not_convicted_of_ineligible_offense_for_ars.VIEW_BUILDER,
-        no_warrant_with_sustained_violation_within_7_years.VIEW_BUILDER,
+        supervision_level_is_minimum_for_3_years.VIEW_BUILDER,
+        no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
+        no_supervision_sustained_violation_within_2_years.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )

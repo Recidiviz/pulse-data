@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans of time when a client in TX has not had a warrant that sustained a violation within the past 7 years."""
+"""Spans of time when a client in TX has not had a warrant that sustained a violation within the past 2 years."""
 
 from google.cloud import bigquery
 
@@ -31,13 +31,20 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    get_supervision_violations_sans_unfounded,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NO_WARRANT_WITH_SUSTAINED_VIOLATION_WITHIN_7_YEARS"
-
 _QUERY_TEMPLATE = f"""
-    WITH ineligibility_spans AS (
+    WITH 
+    supervision_violations_sans_unfounded AS (
+        -- Returns a query fragment that only contains violations where the LATEST violation response DOES NOT contain a
+        -- VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded.
+        {get_supervision_violations_sans_unfounded()}
+        ),
+    ineligibility_spans AS (
         SELECT 
             pei.state_code,
             pei.person_id,
@@ -45,42 +52,26 @@ _QUERY_TEMPLATE = f"""
             CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE) AS start_date,
             -- Criteria specifies "of the current parole supervision period" so ineligibility ends at the end of the
             -- relevant supervision period 
-            LEAST(DATE_ADD(CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE), INTERVAL 7 YEAR), {nonnull_end_date_clause('sessions.end_date')}) AS end_date,
+            LEAST(DATE_ADD(CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE), INTERVAL 2 YEAR), {nonnull_end_date_clause('sessions.end_date')}) AS end_date,
             sessions.end_date as supervision_end_date,
             FALSE as meets_criteria
         FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Warrants_latest` as warrants
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ViolationResponses_latest` as responses
-          ON responses.violation_id = warrants.wnf_vltn_id
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Violations_latest` as violations
-          ON violations.violation_id = warrants.wnf_vltn_id
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON warrants.sid_number=pei.external_id
             AND pei.id_type='US_TX_SID'
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` as norm_violations
+            ON warrants.wnf_vltn_id = norm_violations.external_id
+            AND warrants.sid_number = pei.external_id
+        INNER JOIN supervision_violations_sans_unfounded as sustained_violations
+            ON norm_violations.state_code = sustained_violations.state_code
+            AND norm_violations.person_id = sustained_violations.person_id
+            AND norm_violations.supervision_violation_id = sustained_violations.supervision_violation_id
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` as sessions
-          ON sessions.state_code = 'US_TX' 
-          AND compartment_level_2 = 'PAROLE'
-          AND sessions.person_id = pei.person_id
-          AND sessions.start_date <= CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
-          AND sessions.end_date > CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
-        WHERE violation_result IN (
-            'REVOKE',
-            'ISF',
-            'NON REVOCATION ACTION - ALLOW TO DISCHARGE',
-            'NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS',
-            'SAFPF',
-            'INTERVENTIONS'
-          )
-          OR violation_decision IN (
-            'CONTINUE SUPERVISION',
-            'CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES',
-            'CONTINUE SUPERVISION PENDING DISPOSITON',
-            'CONTINUE SUPERVISION PENDING PROBATION',
-            'DPO VIOLATION RECOMMENDATION',
-            'IMPOSE LOCAL INTERVENTIONS',
-            'INTERVENTIONS',
-            'PROCEED TO REVOCATION HEARING',
-            'US VIOLATION RECOMMENDATION'
-          )
+            ON sessions.state_code = 'US_TX' 
+            AND compartment_level_2 = 'PAROLE'
+            AND sessions.person_id = pei.person_id
+            AND sessions.start_date <= CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
+            AND sessions.end_date > CAST(CAST(warrants.warrant_date AS DATETIME) AS DATE)
     ),
     /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
     still-relevant warrants at once). */
@@ -115,7 +106,7 @@ _QUERY_TEMPLATE = f"""
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
-    criteria_name=_CRITERIA_NAME,
+    criteria_name="US_TX_NO_WARRANT_WITH_SUSTAINED_VIOLATION_WITHIN_2_YEARS",
     description=__doc__,
     state_code=StateCode.US_TX,
     criteria_spans_query_template=_QUERY_TEMPLATE,
