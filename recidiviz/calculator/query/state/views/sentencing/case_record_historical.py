@@ -42,9 +42,9 @@ SENTENCING_CASE_RECORD_HISTORICAL_DESCRIPTION = """
 SENTENCING_CASE_RECORD_HISTORICAL_QUERY_TEMPLATE = f"""
 WITH 
     ix_cases AS 
-        ({US_IX_SENTENCING_CASE_TEMPLATE}), 
+        ({US_IX_SENTENCING_CASE_TEMPLATE}),
     nd_cases AS 
-        ({US_ND_SENTENCING_CASE_TEMPLATE}), 
+        ({US_ND_SENTENCING_CASE_TEMPLATE}),  
     -- full_query serves as a template for when Sentencing expands to other states and we union other views
     full_query AS 
     (

@@ -93,7 +93,7 @@ def extract_court_case_id_part(
     """
 
 
-ALL_COHORTS_CTE = f"""
+US_ND_SENTENCE_IMPOSED_GROUP_SUMMARY = f"""
 WITH court_cases AS (
 SELECT
   state_code,
@@ -203,10 +203,10 @@ aggregated_sentence_charge_data AS (
     GROUP BY
         person_id, sentence_imposed_group_id, most_severe_charge_v2_id, sentencing_authority, serving_start_date, imposed_date,
         court_case_id_part
-),
-sentence_imposed_group_summary AS
-(SELECT
+)
+SELECT
     most_severe_charge.state_code,
+    person.gender,
     imposed_group.person_id,
     imposed_group.sentence_imposed_group_id,
     imposed_group.most_severe_charge_v2_id,
@@ -246,23 +246,27 @@ sentence_imposed_group_summary AS
     most_severe_charge.ncic_code_uniform AS most_severe_charge_ncic_code_uniform,
     most_severe_charge.offender_book_id_type1,
     most_severe_charge.offender_book_id_type2,
+    most_severe_charge.description AS most_severe_description,
 FROM
     aggregated_sentence_charge_data AS imposed_group
 INNER JOIN uniform_charges AS most_severe_charge
   ON imposed_group.most_severe_charge_v2_id = most_severe_charge.charge_v2_id
-),
-admission_session AS (
+INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person` person
+   ON person.person_id = imposed_group.person_id
+"""
+
+ALL_COHORTS_CTE = f"""
+WITH admission_session AS (
   SELECT
     sigs.*,
     sess.session_id,
     compartment_level_1,
     compartment_level_2,
     sess.start_date,
-    sess.gender,
     sess.assessment_score_end,
     sess.start_reason,
     sess.start_sub_reason,
-  FROM sentence_imposed_group_summary sigs
+  FROM ({US_ND_SENTENCE_IMPOSED_GROUP_SUMMARY}) sigs
   INNER JOIN `{{project_id}}.sessions.compartment_sessions_materialized` sess
     ON sess.person_id = sigs.person_id
     AND (

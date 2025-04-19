@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_case_disposition_template import (
     US_IX_SENTENCING_CASE_DISPOSITION_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_case_disposition_template import (
+    US_ND_SENTENCING_CASE_DISPOSITION_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -38,11 +41,15 @@ SENTENCING_CASE_DISPOSITION_DESCRIPTION = """
 SENTENCING_CASE_DISPOSITION_QUERY_TEMPLATE = f"""
 WITH 
     ix_cases AS 
-        ({US_IX_SENTENCING_CASE_DISPOSITION_TEMPLATE}), 
+        ({US_IX_SENTENCING_CASE_DISPOSITION_TEMPLATE}),  
+    nd_cases AS
+        ({US_ND_SENTENCING_CASE_DISPOSITION_TEMPLATE}),  
     -- full_query serves as a template for when Sentencing expands to other states and we union other views
     full_query AS 
-    (
+    (   
         SELECT * FROM ix_cases
+        UNION ALL
+        SELECT * FROM nd_cases
     ) 
     SELECT
         {{columns}}
