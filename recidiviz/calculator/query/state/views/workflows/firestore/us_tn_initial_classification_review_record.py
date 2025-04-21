@@ -56,7 +56,17 @@ US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_DESCRIPTION = """
     """
 
 US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
-    SELECT *
+    -- These are the questions we fill from the previous available CAF form. For initial classification, this will 
+    -- almost certainly be erroneous information since many of these speak to criminal history which likely changes
+    -- between stints in prison
+    SELECT * EXCEPT(form_information_q3_score,
+                    form_information_q4_score,
+                    form_information_q5_score,
+                    form_information_q9_score),
+            CAST(NULL AS INT64) AS form_information_q3_score,
+            CAST(NULL AS INT64) AS form_information_q4_score,
+            CAST(NULL AS INT64) AS form_information_q5_score,
+            CAST(NULL AS INT64) AS form_information_q9_score,
     FROM ({us_tn_classification_forms(tes_view="initial_classification_review",
                                       where_clause="WHERE "
                                                     "CURRENT_DATE('US/Eastern') BETWEEN tes.start_date "

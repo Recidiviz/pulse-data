@@ -25,7 +25,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     incarceration_assessment_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    custody_level_compared_to_recommended,
     custody_level_is_not_max,
     has_initial_classification_in_state_prison_custody,
 )
@@ -56,11 +55,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,
         custody_level_is_not_max.VIEW_BUILDER,
-        # This criteria is used to add the current and recommended custody levels into the reasons blob for easier
-        # access to the fields on the front end. This could also be done via the opportunity record query but doing it
-        # this way standardizes across all TN facilities opportunities related to classification, including custody
-        # level downgrade. For initial classification, everyone with a span meets the criteria
-        custody_level_compared_to_recommended.VIEW_BUILDER,
     ],
     completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
 )
