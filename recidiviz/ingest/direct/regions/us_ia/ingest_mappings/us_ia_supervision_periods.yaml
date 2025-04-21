@@ -290,6 +290,8 @@ output:
                   - "Special Sentence Granted"
                   - "Release to Shock Probation"
                   - "Release to Non-Shock Probation"
+                StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                  - "Pretrial Release Granted"
                 StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - "Supervised in Other State Ended"
                   - "Paroled from Prison to another State Ended"
