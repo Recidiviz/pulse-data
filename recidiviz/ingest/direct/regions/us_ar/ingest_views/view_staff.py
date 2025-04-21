@@ -149,7 +149,8 @@ FROM (
     CASE 
         WHEN COUNT(DISTINCT deduped_staff.PARTYID) OVER (PARTITION BY deduped_staff.PARTYEMAILADDR) > 1
         THEN "no_email"
-        ELSE deduped_staff.PARTYEMAILADDR 
+        -- Last stage of email cleaning: if an email is incorrectly entered with 2 @ symbols, remove one of them
+        ELSE REPLACE(deduped_staff.PARTYEMAILADDR,"@@","@")
     END AS PARTYEMAILADDR
     FROM (
         SELECT 
