@@ -20,15 +20,13 @@ Critical understaffed offices are determined each month based on staffing vacanc
 An office determined to be critically understaffed has reduced contact standards for that month. 
 We receive an excel file each month from TDCJ with the critically understaffed locations.
 
-
-- Loading the excel file from a given path.
-- Verifying the schema of the file is expected and doing some light cleaning.
-- Loading the file as a CSV to GCS for ingest, with file_tag "manual_upload_critically_understaffed_locations"
+This script verifies the schema of the file and loads it to GCS for ingest.
 
 
 Usage
 -----
-# Download the excel file
+# Download the Google Sheet/ Excel file as a CSV.
+# Make sure the file has the expected columns, including month/year and office information.
 
 python -m recidiviz.tools.ingest.operations.state_data_manual_uploads.load_us_tx_understaffed_locations \
    --excel_path <path> \
@@ -37,7 +35,7 @@ python -m recidiviz.tools.ingest.operations.state_data_manual_uploads.load_us_tx
 """
 import argparse
 import os
-from datetime import date, datetime
+from datetime import datetime
 
 import pandas as pd
 
@@ -52,25 +50,29 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-# input from excel --> output name for csv and BQ
-COLUMNS = {
-    "DPO": "DPO",
-    "ALLOTTED": "ALLOTTED",
-    "VACANT": "VACANT",
-    "LEAVE": "LEAVE",
-    "VACANT & LEAVE TOTAL": "VACANT_AND_LEAVE_TOTAL",
-    "PERCENTAGE NON-CASE CARRYING": "PERCENTAGE_NON_CASE_CARRYING",
+DTYPES = {
+    "DPO": str,
+    "ALLOTTED": int,
+    "VACANT": int,
+    "LEAVE": int,
+    "VACANT_AND_LEAVE_TOTAL": int,
+    "PERCENTAGE_NON_CASE_CARRYING": str,
+    "MONTH": int,
+    "YEAR": int,
+    "OFFC_REGION": str,
+    "OFFC_DISTRICT": str,
+    "OFFC_TYPE": str,
 }
 FILE_TAG = "manual_upload_critically_understaffed_locations"
 
 
-def _parse_args(today: date) -> argparse.Namespace:
+def _parse_args() -> argparse.Namespace:
     """Parses command line arguments."""
     parser = argparse.ArgumentParser(
         description="Load the monthly US TX critically understaffed locations file"
     )
     parser.add_argument(
-        "--excel_path",
+        "--csv_path",
         required=True,
         type=str,
         help="The file path of the excel to load",
@@ -87,67 +89,42 @@ def _parse_args(today: date) -> argparse.Namespace:
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         help="Which project the file(s) should be uploaded to (e.g. recidiviz-123).",
     )
-    parser.add_argument(
-        "--month",
-        type=int,
-        default=today.month,
-        help="The month this data is for. Defaults to the current month.",
-    )
-    parser.add_argument(
-        "--year",
-        type=int,
-        default=today.year,
-        help="The year this data is for. Defaults to the current year.",
-    )
     return parser.parse_args()
 
 
-def _load_df(path: str, month: int, year: int) -> pd.DataFrame:
-    """
-    Loads the excel file.
-      - Confirms all COLUMNS exist. If more columns exist, they are ignored.
-      - Adds MONTH and YEAR columns
-      - Removes "Region" header and total rows
-    """
-    df = pd.read_excel(path)
-    df.columns = df.columns.str.strip().str.upper()
-    # Sometimes staff writes out notes in the margin of the Excel file.
-    # We are only interested in the columns we've defined in the constant,
-    # so this step will remove any columns that are not in the COLUMNS dict.
-    # This will fail if not all of the COLUMNS are present in the file.
-    df = df[list(COLUMNS.keys())].rename(columns=COLUMNS)
-    # filters out any row where DPO starts with region
-    df = df.loc[~df.DPO.str.lower().str.startswith("region")]
-    df["MONTH"] = month
-    df["YEAR"] = year
+def _load_df(path: str) -> pd.DataFrame:
+    """Loads the CSV file and confirms all columns exist."""
+    df = pd.read_csv(path, usecols=DTYPES.keys(), dtype=DTYPES)
     if df.isnull().values.any():
         raise ValueError("There are NULL values in the data!")
+    # These values are zero-padded in the Staff raw data file
+    df["OFFC_REGION"] = df["OFFC_REGION"].str.zfill(2)
+    df["OFFC_DISTRICT"] = df["OFFC_DISTRICT"].str.zfill(2)
     return df
 
 
 def main() -> None:
-    now = datetime.utcnow()
-    args = _parse_args(now.date())
-    df = _load_df(args.excel_path, args.month, args.year)
-    print(df.to_markdown(tablefmt="heavy_grid", index=False))
-    _ = prompt_for_confirmation(
-        f"Load this file to {FILE_TAG} for {args.year},{args.month} in {args.project_id}?"
-    )
+    args = _parse_args()
+    df = _load_df(args.csv_path)
+    print(df.to_markdown(tablefmt="grid", index=False))
+    _ = prompt_for_confirmation(f"Load this file to {FILE_TAG} in {args.project_id}?")
 
     tmp_file = f"{FILE_TAG}.csv"
     print("Creating temporary CSV", tmp_file)
     df.to_csv(tmp_file, index=False)
 
     try:
-        with local_project_id_override(args.project_id):
-            with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
-                upload_raw_state_files_to_ingest_bucket_with_date(
-                    paths=[tmp_file],
-                    project_id=args.project_id,
-                    region=StateCode.US_TX.value,
-                    date=str(now),
-                    dry_run=args.dry_run,
-                )
+        with (
+            local_project_id_override(args.project_id),
+            cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS),
+        ):
+            upload_raw_state_files_to_ingest_bucket_with_date(
+                paths=[tmp_file],
+                project_id=args.project_id,
+                region=StateCode.US_TX.value,
+                date=str(datetime.utcnow()),
+                dry_run=args.dry_run,
+            )
     finally:
         print("Removing temporary CSV", tmp_file)
         os.remove(tmp_file)
