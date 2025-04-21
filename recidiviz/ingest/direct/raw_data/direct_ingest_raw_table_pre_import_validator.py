@@ -110,12 +110,12 @@ class DirectIngestRawTablePreImportValidator:
         ):
             all_validations.append(
                 StableHistoricalRawDataCountsTableValidation.create_table_validation(
-                    file_tag,
-                    self.project_id,
-                    temp_table_address,
-                    state_code,
-                    self.raw_data_instance,
-                    file_update_datetime,
+                    file_tag=file_tag,
+                    project_id=self.project_id,
+                    temp_table_address=temp_table_address,
+                    state_code=state_code,
+                    raw_data_instance=self.raw_data_instance,
+                    file_update_datetime=file_update_datetime,
                 )
             )
 
@@ -131,11 +131,12 @@ class DirectIngestRawTablePreImportValidator:
                 ):
                     all_validations.append(
                         col_validation_cls.create_column_validation(
-                            file_tag,
-                            self.project_id,
-                            temp_table_address,
-                            file_update_datetime,
-                            column,
+                            file_tag=file_tag,
+                            project_id=self.project_id,
+                            state_code=state_code,
+                            temp_table_address=temp_table_address,
+                            file_upload_datetime=file_update_datetime,
+                            column=column,
                         )
                     )
 

@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
@@ -56,8 +57,10 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
     @classmethod
     def create_column_validation(
         cls,
+        *,
         file_tag: str,
         project_id: str,
+        state_code: StateCode,
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime,
         column: RawTableColumnInfo,
@@ -75,6 +78,7 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
             project_id=project_id,
             temp_table_address=temp_table_address,
             file_tag=file_tag,
+            state_code=state_code,
             column_name=temp_table_col_name,
             datetime_sql_parsers=column.datetime_sql_parsers,
             null_values=(

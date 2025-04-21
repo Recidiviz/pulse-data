@@ -88,6 +88,7 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
                 ExpectedTypeColumnValidation(
                     file_tag=self.file_tag,
                     project_id=self.project_id,
+                    state_code=StateCode.US_XX,
                     temp_table_address=self.temp_table_address,
                     column_name=self.sad_col_name,
                     column_type=column_type,

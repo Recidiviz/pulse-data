@@ -130,3 +130,11 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
                     f"Found expected ingest view names with no corresponding view "
                     f"defined: {expected_names_no_view_defined}"
                 )
+
+    def get_ingest_views_referencing(self, file_tag: str) -> set[str]:
+        """Returns all ingest views names that reference |file_tag|."""
+        return {
+            ingest_view.ingest_view_name
+            for ingest_view in self._query_builders_by_name().values()
+            if file_tag in ingest_view.raw_data_table_dependency_file_tags
+        }

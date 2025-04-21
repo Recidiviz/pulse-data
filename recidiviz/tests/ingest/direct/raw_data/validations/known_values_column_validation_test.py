@@ -18,6 +18,7 @@
 
 import datetime
 from typing import Dict, List, Optional, Type
+from unittest.mock import patch
 
 import attr
 
@@ -37,6 +38,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
     RawDataImportBlockingValidationType,
 )
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_case import (
     ColumnValidationTestCase,
 )
@@ -44,6 +46,8 @@ from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_c
 
 class TestKnownValuesColumnValidation(ColumnValidationTestCase):
     """Unit tests for KnownValuesColumnValidation"""
+
+    maxDiff = None
 
     def setUp(self) -> None:
         super().setUp()
@@ -56,6 +60,15 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             self.sad_col,
             known_values=self._known_values_strings_to_enums(self.known_values),
         )
+        self.regions_patcher = patch(
+            "recidiviz.ingest.direct.direct_ingest_regions.direct_ingest_regions_module",
+            fake_regions,
+        )
+        self.regions_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.regions_patcher.stop()
 
     def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
         return KnownValuesColumnValidation
@@ -86,12 +99,14 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
                 column_name=self.sad_col_name,
                 known_values=[],
                 null_values=None,
+                state_code=StateCode.US_XX,
             )
 
     def test_validation_success(self) -> None:
         self.validation_success_test()
 
     def test_validation_failure(self) -> None:
+        self.file_tag = "tagBasicData"
         quoted_known_values = [f'"{v}"' for v in self.known_values]
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
@@ -99,7 +114,8 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
             f"\nDefined known values: [{', '.join(quoted_known_values)}]."
-            f'\nValues that did not parse: ["z"].',
+            f'\nValues that did not parse: ["z"].'
+            f"\nThe following ingest views reference [tagBasicData]:\n\t-basic\n\t-tagBasicData\nIf this column is used in an ingest enum mapping, adding the new values will help ensure that the enum failure occurs at raw data import time instead of ingest time. If it is not used, you can (1) add the new values to list of known_values for [sad_col] if you want to keep the addition of new values as import-blocking; (2) add an import-blocking exclusion if you want to keep the existing documentation but know that it may quickly become stale; or (3) remove all known_values for [sad_col] from the yaml config to remove its designation as an enum.",
         )
 
         self.validation_failure_test(expected_error)
@@ -127,7 +143,8 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
             f'\nDefined known values: ["z"].'
-            f'\nValues that did not parse: ["a", "b"].',
+            f'\nValues that did not parse: ["a", "b"].'
+            f"\nNo ingest views references [test_file_tag]. To resolve this error, you can: (1) update the list of known_values for [sad_col] if you want to keep the addition of new values as import-blocking; (2) add an import-blocking exclusion if you want to keep the existing documentation but know that it may quickly become stale; or (3) remove all known_values for [sad_col] from the yaml config to remove its designation as an enum.",
         )
 
         self.validation_failure_test(expected_error)
@@ -177,6 +194,7 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
         validation = KnownValuesColumnValidation.create_column_validation(
             file_tag=self.file_tag,
             project_id=self.project_id,
+            state_code=StateCode.US_XX,
             temp_table_address=self.temp_table_address,
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,
@@ -198,6 +216,7 @@ WHERE happy_col IS NOT NULL
         validation = KnownValuesColumnValidation.create_column_validation(
             file_tag=self.file_tag,
             project_id=self.project_id,
+            state_code=StateCode.US_XX,
             temp_table_address=self.temp_table_address,
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,

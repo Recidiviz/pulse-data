@@ -399,6 +399,8 @@ def main() -> int:
         "recidiviz.ingest.direct.types.direct_ingest_constants",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.ingest.direct.types.errors",
+        "recidiviz.ingest.direct.views.direct_ingest_view_query_builder",
+        "recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector",
         "recidiviz.ingest.direct.types.raw_data_import_blocking_validation",
         "recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type",
         "recidiviz.ingest.direct.types.raw_data_import_types",

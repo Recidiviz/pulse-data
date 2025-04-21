@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
@@ -30,6 +31,9 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
     RawDataImportBlockingValidationFailure,
     RawDataImportBlockingValidationType,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -58,8 +62,10 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
     @classmethod
     def create_column_validation(
         cls,
+        *,
         file_tag: str,
         project_id: str,
+        state_code: StateCode,
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime,
         column: RawTableColumnInfo,
@@ -84,6 +90,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                 if column.null_values
                 else None
             ),
+            state_code=state_code,
         )
 
     @staticmethod
@@ -113,12 +120,52 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             ),
         )
 
+    def _get_relevancy_error_message(self) -> str:
+        """Fetches and formats an error message about whether or not there are ingest
+        views that reference the file tag associated with this validation.
+        """
+        # TODO(#40421): filter to just relevancy if this column is actually used in an
+        # ingest enum mapping, and say which mapping it is
+        referencing_ingest_views = sorted(
+            DirectIngestViewQueryBuilderCollector.from_state_code(
+                state_code=self.state_code
+            ).get_ingest_views_referencing(self.file_tag)
+        )
+
+        if not referencing_ingest_views:
+            return (
+                f"No ingest views references [{self.file_tag}]. To resolve this error, you can: (1) update the "
+                f"list of known_values for [{self.column_name}] if you want to keep "
+                f"the addition of new values as import-blocking; (2) add an import-blocking "
+                f"exclusion if you want to keep the existing documentation but know that "
+                f"it may quickly become stale; or (3) remove all known_values for "
+                f"[{self.column_name}] from the yaml config to remove its designation as "
+                f"an enum."
+            )
+
+        referencing_ingest_views_str = "\n".join(
+            f"\t-{ingest_view}" for ingest_view in referencing_ingest_views
+        )
+        return (
+            f"The following ingest views reference [{self.file_tag}]:"
+            f"\n{referencing_ingest_views_str}\nIf this column is used in an ingest enum "
+            f"mapping, adding the new values will help ensure that the enum failure "
+            f"occurs at raw data import time instead of ingest time. If it is not used, you can (1) "
+            f"add the new values to list of known_values for [{self.column_name}] if you want to keep "
+            f"the addition of new values as import-blocking; (2) add an import-blocking "
+            f"exclusion if you want to keep the existing documentation but know that "
+            f"it may quickly become stale; or (3) remove all known_values for "
+            f"[{self.column_name}] from the yaml config to remove its designation as "
+            f"an enum."
+        )
+
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
         if results:
             missing_values = [f'"{result[self.column_name]}"' for result in results]
             quoted_known_values = [f'"{v}"' for v in self.known_values]
+            relevancy_error_msg = self._get_relevancy_error_message()
             # At least one row found with a value not in the known_values set
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
@@ -128,6 +175,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                     f"not matching any of the known_values defined in its configuration YAML."
                     f"\nDefined known values: [{', '.join(quoted_known_values)}]."
                     f"\nValues that did not parse: [{', '.join(missing_values)}]."
+                    f"\n{relevancy_error_msg}"
                 ),
             )
         # All rows have values in the known_values set

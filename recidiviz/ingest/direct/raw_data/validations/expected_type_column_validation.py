@@ -22,6 +22,7 @@ import attr
 from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnFieldType,
@@ -64,8 +65,10 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
     @classmethod
     def create_column_validation(
         cls,
+        *,
         file_tag: str,
         project_id: str,
+        state_code: StateCode,
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime,
         column: RawTableColumnInfo,
@@ -85,6 +88,7 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
                 if column.null_values
                 else None
             ),
+            state_code=state_code,
         )
 
     @staticmethod

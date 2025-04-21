@@ -71,6 +71,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         return self.get_validation_class().create_column_validation(
             project_id=self.project_id,
             file_tag=self.file_tag,
+            state_code=StateCode.US_XX,
             temp_table_address=self.temp_table_address,
             column=column,
             file_upload_datetime=datetime.now(tz=timezone.utc),

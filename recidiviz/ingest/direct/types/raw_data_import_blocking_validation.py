@@ -53,6 +53,7 @@ class RawDataImportBlockingValidationFailure:
 class RawDataImportBlockingValidation:
     """Interface for a validation to be run on raw data after it has been loaded to a temporary table"""
 
+    state_code: StateCode
     file_tag: str
     project_id: str
     temp_table_address: BigQueryAddress
@@ -88,8 +89,10 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
     @classmethod
     def create_column_validation(
         cls,
+        *,
         file_tag: str,
         project_id: str,
+        state_code: StateCode,
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime.datetime,
         column: RawTableColumnInfo,
@@ -105,6 +108,7 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
             temp_table_address=temp_table_address,
             column_name=temp_table_col_name,
             file_tag=file_tag,
+            state_code=state_code,
         )
 
     @staticmethod
@@ -133,13 +137,13 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
 class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
     """Interface for a validation to be run on a per-table basis."""
 
-    state_code: StateCode
     raw_data_instance: DirectIngestInstance
     file_update_datetime: datetime.datetime
 
     @classmethod
     def create_table_validation(
         cls,
+        *,
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,

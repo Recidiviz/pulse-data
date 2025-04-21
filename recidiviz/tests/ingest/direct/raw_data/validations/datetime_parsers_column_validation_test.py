@@ -88,6 +88,7 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
                 column_name=self.sad_col_name,
                 datetime_sql_parsers=[],
                 null_values=[],
+                state_code=StateCode.US_XX,
             )
 
     def test_validation_success(self) -> None:
