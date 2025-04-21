@@ -188,7 +188,7 @@ critical_dates as (
         frequency_in_months,
         month_start as critical_date,
     FROM lookback_cte
-    UNION ALL 
+    UNION DISTINCT 
     SELECT 
         person_id,
         month_start,
@@ -198,7 +198,7 @@ critical_dates as (
         frequency_in_months,
         month_end as critical_date,
     FROM lookback_cte
-    UNION ALL
+    UNION DISTINCT
     SELECT 
         person_id,
         month_start,
@@ -220,7 +220,7 @@ divided_periods as (
         frequency_in_months,
         critical_date as period_start,
         LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
-    FROM (SELECT DISTINCT * FROM critical_dates)
+    FROM critical_dates
 ),
 divided_periods_with_contacts as (
     SELECT

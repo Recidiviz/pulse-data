@@ -95,6 +95,11 @@ TASK_CONFIGS: List[TaskConfig] = [
         "table": "meets_type_agnostic_contact_standards_materialized",
         "due_date_field": "contact_due_date",
     },
+    {
+        "type": "usTxInCustodyContact",
+        "table": "meets_weekly_in_custody_contact_standards_materialized",
+        "due_date_field": "contact_due_date",
+    },
 ]
 
 
