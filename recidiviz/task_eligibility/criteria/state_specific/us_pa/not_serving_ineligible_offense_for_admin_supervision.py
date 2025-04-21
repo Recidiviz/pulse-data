@@ -19,7 +19,6 @@ Defines a criteria view that shows spans of time when clients are not serving an
 All offense info for below can be found at https://www.legis.state.pa.us/cfdocs/legis/LI/Public/cons_index.cfm by selecting
 the correct title (typically 18)
 """
-# TODO(#40163) Validate delinquent adjudication logic
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (

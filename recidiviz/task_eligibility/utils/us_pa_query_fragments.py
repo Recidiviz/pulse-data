@@ -490,23 +490,21 @@ def offense_is_admin_ineligible() -> str:
               OR (description LIKE '%OPEN%' AND description LIKE '%LEWD%'))
     
             -- 18 Pa. C.S. 5902(b) Prostitution
-            OR(({statute_code_is_like('18','5902B')} 
+            OR({statute_code_is_like('18','5902B')} 
                 OR {statute_code_is_like('18','5902.B')}
               OR (description LIKE '%PROM%' AND description LIKE '%PROST%' AND (statute IS NULL OR NOT {statute_code_is_like('18','5902.A')})))
               -- for some reason there are records where the statute is 5902.A (engaging in prostitution) but the description is promoting prostitution (which should be 5902.B)
-              AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
               
             -- 18 Pa. C.S. 5903(4)(5)(6) obscene/sexual material/performance where the victim is minor
             -- 5903A4 & 5903A5 can be perpetrated against a non-minor (i) or a minor (ii), 5903A6 always relates to minors
             -- if (i) or (ii) is not specified, we flag in case notes - see adm_case_notes_helper fxn in us_pa_query_fragments
-            OR ((({statute_code_is_like('18','5903.A4II')}  -- write/print/publish obscene materials/performance
+            OR (({statute_code_is_like('18','5903.A4II')}  -- write/print/publish obscene materials/performance
                 OR {statute_code_is_like('18','5903A4II')}
                 OR {statute_code_is_like('18','59023.A5II')}  -- produce/present/direct obscene materials/performance
                 OR {statute_code_is_like('18','5903A5II')}
                 OR {statute_code_is_like('18','5903.A6')}  -- hire/employ/use minor child
                 OR {statute_code_is_like('18','5903A6')})
               OR (description LIKE '%MINOR%' AND description like '%OBSCENE%' AND (description LIKE '%WRITE%' OR description LIKE '%PRODUCE%' OR description LIKE '%HIRE%')))
-              AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
                 
             -- 18 Pa. C.S. Ch. 76 Internet Child Pornography
             -- note: this chapter covers offenses 7621-7630, but there is only one instance of these statute codes being used in the data (CS7622)
@@ -527,7 +525,7 @@ def offense_is_admin_ineligible() -> str:
             -- 9799.14 lists tiers of sexual offenses, and 9799.55 lists sexual offenses which require Megan's Law registration. 
             -- Most of the listed offenses are already excluded because they fall under previously listed
             -- chapters, but I'm including the few remaining ones here as well as any reference to Megan's Law 
-            OR (({statute_code_is_like('18','5903.A3II')}  -- 18 Pa.C.S. § 5903(a)(3)(ii) (relating to obscene and other sexual materials and performances).
+            OR ({statute_code_is_like('18','5903.A3II')}  -- 18 Pa.C.S. § 5903(a)(3)(ii) (relating to obscene and other sexual materials and performances).
                 OR {statute_code_is_like('18','5903A3II')}
                 OR (description LIKE 'MINOR' AND description like '%OBSCENE%' AND description LIKE '%DESIGN%')
                 OR {statute_code_is_like('18','6301.A1II')} -- 18 Pa.C.S. § 6301(a)(1)(ii) (relating to corruption of minors).
@@ -537,14 +535,12 @@ def offense_is_admin_ineligible() -> str:
                 OR (description LIKE '%INVASION%' AND description LIKE '%PRIVACY%')
                 OR description LIKE '%MEGAN%'
                 OR {statute_code_is_like('18','4915')} OR {statute_code_is_like('42','979')})  -- not listed specifically but relates to sex offender registration requirements
-              AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
 
             -- 18 Pa. C.S. 6312 Sexual Abuse of Children
-            OR (({statute_code_is_like('18','6312')}
+            OR ({statute_code_is_like('18','6312')}
               OR (((description LIKE '%SEX%' AND description LIKE '%AB%')
                 OR (description LIKE '%SEX%' AND description LIKE '%PHOT%')
                 OR (description LIKE '%CHILD%' AND description LIKE '%SEX%'))))
-              AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
 
             -- 18 Pa. C.S. 6318 Unlawful Contact with Minor
             OR({statute_code_is_like('18','6318')}
@@ -559,11 +555,10 @@ def offense_is_admin_ineligible() -> str:
             -- so these are both sentencing enhancements rather than offense codes, which we don't have access to
             -- they dictate additional sentencing requirements for any offense where the person used a firearm or other deadly weapon
             -- this has been added to list of things agents still need to check 
-            OR((description LIKE '%ENH%' AND (description LIKE '%WPN%' OR description LIKE '%WEA%'))
-             AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
+            OR(description LIKE '%ENH%' AND (description LIKE '%WPN%' OR description LIKE '%WEA%'))
 
             -- 18 Pa. C.S. Firearms or Dangerous Articles
-            OR ((({statute_code_is_like('18','61')})
+            OR (({statute_code_is_like('18','61')})
               OR ((description LIKE '%FIREARM%'
                 OR (description LIKE '%GUN%' AND description NOT LIKE '%PAINT%')
                 OR description LIKE '%F/A%'
@@ -583,7 +578,6 @@ def offense_is_admin_ineligible() -> str:
                 OR (description LIKE '%CONVEY%' AND description LIKE '%EXPL%') -- 6161 carrying explosives on conveyances
                 OR (description LIKE '%SHIP%' AND description LIKE '%EXPL%')) -- 6162 shipping explosives
               AND description NOT LIKE '%FAILURE TO REPORT INJUR%')) -- failure to report injury by firearm isn't really a firearm-related offense
-             AND status <> 'ADJUDICATED') -- delinquent adjudications not included 
 
             -- Designated as sexually violent predator
             -- This is not a specific offense code, but is checked in not_on_sex_offense_protocol criterion 
@@ -596,9 +590,6 @@ def offense_is_admin_ineligible() -> str:
             -- (I think PFA can also stand for possessing firearm but that should also be excluded so it's ok) 
             OR description LIKE '%PFA%'
             
-            -- 18 Pa.C.S. 2803 Aggravated Hazing
-            OR({statute_code_is_like('18','2803')})
-            -- I don't see any descriptions that relate to hazing
             )
 """
 
@@ -681,7 +672,6 @@ def adm_form_information_helper() -> str:
         date_imposed,
     FROM sentences_and_charges
     WHERE state_code = 'US_PA'
-        AND status <> 'ADJUDICATED'
     """
 
 
@@ -872,8 +862,7 @@ def adm_case_notes_helper() -> str:
       AND sc.state_code = pei.state_code
       AND id_type = 'US_PA_PBPP'
     WHERE sc.state_code = 'US_PA' 
-      AND {obsc_materials_indicator()}
-      AND status <> 'ADJUDICATED')
+      AND {obsc_materials_indicator()})
       
     UNION ALL 
 
