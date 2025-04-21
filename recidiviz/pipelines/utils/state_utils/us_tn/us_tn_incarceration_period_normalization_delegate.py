@@ -124,9 +124,56 @@ class UsTnIncarcerationNormalizationDelegate(
         for US_TN since this was previously the default normalization behavior
         and there hasn't been a use case for skipping this inferrence yet"""
 
-        return legacy_standardize_purpose_for_incarceration_values(
+        # The periods are normalized using legacy_standardize_purpose_for_incarceration_values
+        # before any other logic gets called.
+        legacy_normalized_periods = legacy_standardize_purpose_for_incarceration_values(
             incarceration_periods
         )
+
+        updated_ips: List[StateIncarcerationPeriod] = []
+
+        # This loop identifies safekeeping periods and sets the PFI for these periods to TEMPORARY_CUSTDDY,
+        # leaving all other periods unchanged. It works as follows:
+
+        # - If a period has SAREC (received for safekeeping) in the admission_reason_raw_text, then it's considered a safekeeping period.
+        # - If a period doesn't have SAREC in the admission reason, but comes after a period that did, AND there's no period in between with
+        #   SARET (returned from safekeeping) in the admission reason (including the period being looked at itself), then it's still considered a safekeeping period.
+        # - Once the loop reaches a period that has SARET in the admission reason, the person is no longer considered to be in a safekeeping period, and won't be until
+        #   the loop reaches another period with SARET in the admission reason.
+
+        # Note that this loop only starts after legacy_standardize_purpose_for_incarceration_values has already
+        # run. This means that if there's a safekeeping period in the middle of a set of periods that are all
+        # transfers that would have their PFI overrided by legacy_standardize_purpose_for_incarceration_values,
+        # then all the periods would be subject to legacy_standardize_purpose_for_incarceration_values, and
+        # the safekeeping periods in the middle would then have their PFI reset again by this loop. The transfer
+        # periods on either side of the safekeeping periods would keep whatever PFI was set by legacy_standardize_purpose_for_incarceration_values.
+        in_safekeeping_period = False
+        for ip in standard_date_sort_for_incarceration_periods(
+            legacy_normalized_periods
+        ):
+            in_safekeeping_period = (
+                ip.admission_reason_raw_text is not None
+                # and "-SARET" not in ip.admission_reason_raw_text
+                and ip.admission_reason
+                != StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+                and ("-SAREC" in ip.admission_reason_raw_text or in_safekeeping_period)
+            )
+            if in_safekeeping_period:
+                pfi = StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+
+            else:
+                in_safekeeping_period = False
+                if ip.specialized_purpose_for_incarceration is not None:
+                    pfi = ip.specialized_purpose_for_incarceration
+                else:
+                    pfi = None
+            updated_ip = deep_entity_update(
+                ip,
+                specialized_purpose_for_incarceration=pfi,
+            )
+            updated_ips.append(updated_ip)
+
+        return updated_ips
 
 
 RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES: List[str] = [
