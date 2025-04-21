@@ -30,14 +30,15 @@ from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import get_environment_for_project
-from recidiviz.utils.github import format_region_specific_ticket_title
+from recidiviz.utils.github import (
+    GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
+    HELPERBOT_USER_NAME,
+    RECIDIVIZ_DATA_REPO,
+    format_region_specific_ticket_title,
+)
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type
-
-GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH = 65536
-RECIDIVIZ_DATA_REPO = "Recidiviz/pulse-data"
-HELPERBOT_USER_NAME = "helperbot-recidiviz"
 
 RAW_DATA_DEFAULT_LABELS = ["Raw Data Import Failure", "Team: State Pod"]
 DATAFLOW_DEFAULT_LABELS = ["Dataflow Pipeline Failure", "Team: State Pod"]

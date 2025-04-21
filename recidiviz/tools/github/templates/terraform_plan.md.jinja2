@@ -6,6 +6,10 @@
 ```
 {%  endif %}
 
+{% if terraform_plan_too_long %}
+## $${\textbf{\color{orange} Terraform plan is too long to comment in its entirety; please see cloud run build logs for full plan}}$$
+{% endif %}
+
 {% if terraform_plan_output %}
 <details>
 <summary><strong><em>generated on: {{ generated_on }}</em></strong></summary>

@@ -21,7 +21,9 @@ from github import Github
 from more_itertools import one
 
 from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
+GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH = 65536
 GITHUB_HELPERBOT_TOKEN_SECRET_NAME = "github_deploy_script_pat"  # nosec
 RECIDIVIZ_DATA_REPO = "Recidiviz/pulse-data"
 HELPERBOT_USER_NAME = "helperbot-recidiviz"
@@ -52,11 +54,15 @@ def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -
         if comment.user.login == HELPERBOT_USER_NAME and comment.body.startswith(prefix)
     ]
 
+    body_length_safe = truncate_string_if_necessary(
+        body, max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH
+    )
+
     try:
         comment = one(comments)
-        comment.edit(body=body)
+        comment.edit(body=body_length_safe)
     except ValueError:
-        pull_request.create_issue_comment(body=body)
+        pull_request.create_issue_comment(body=body_length_safe)
 
 
 def format_region_specific_ticket_title(

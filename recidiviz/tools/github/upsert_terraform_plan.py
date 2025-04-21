@@ -31,8 +31,16 @@ from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.github import upsert_helperbot_comment
+from recidiviz.utils.github import (
+    GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
+    upsert_helperbot_comment,
+)
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
+from recidiviz.utils.types import assert_type
+
+# most of the plan comment is the plan output, but let's leave buffer for other text
+TERRAFORM_PLAN_TEXT_MAX_LENGTH = GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH - 2000
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -68,6 +76,17 @@ def main(args: argparse.Namespace) -> None:
     except FileNotFoundError:
         plan_output = None
 
+    terraform_plan_too_long = (
+        plan_output and len(plan_output) > TERRAFORM_PLAN_TEXT_MAX_LENGTH
+    )
+
+    if terraform_plan_too_long:
+        plan_output = truncate_string_if_necessary(
+            assert_type(plan_output, str),
+            max_length=TERRAFORM_PLAN_TEXT_MAX_LENGTH,
+            truncation_message="\n\n[!!!] (truncated, see cloud build for full output)",
+        )
+
     try:
         with open(
             args.terraform_plan_error_logs_path, mode="r", encoding="utf-8"
@@ -90,6 +109,7 @@ def main(args: argparse.Namespace) -> None:
             "cloud_build_url": args.cloud_build_url,
             "commit_ref": args.commit_ref[:8],
             "generated_on": datetime.now().isoformat(),
+            "terraform_plan_too_long": terraform_plan_too_long,
         }
     )
 

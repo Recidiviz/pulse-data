@@ -1,0 +1,19 @@
+# google_storage_bucket_object.recidiviz_source_file["recidiviz/tools/github/upsert_terraform_plan.py"] must be replaced
+-/+ resource "google_storage_bucket_object" "recidiviz_source_file" {
+      + content          = (sensitive value)
+      ~ content_type     = "text/plain; charset=utf-8" -> (known after apply)
+      ~ crc32c           = "xxx" -> (known after apply)
+      ~ detect_md5hash   = "xxxxxxx" -> "different hash" # forces replacement
+      - event_based_hold = false -> null
+      ~ id               = "xxxxxxx/recidiviz/tools/github/upsert_terraform_plan.py" -> (known after apply)
+      + kms_key_name     = (known after apply)
+      ~ md5hash          = "xxxxxx" -> (known after apply)
+      ~ media_link       = "https://link-to-media" -> (known after apply)
+      - metadata         = {} -> null
+        name             = "recidiviz/tools/github/upsert_terraform_plan.py"
+      ~ output_name      = "recidiviz/tools/github/upsert_terraform_plan.py" -> (known after apply)
+      ~ self_link        = "https://link-to-media" -> (known after apply)
+      ~ storage_class    = "STANDARD" -> (known after apply)
+      - temporary_hold   = false -> null
+        # (2 unchanged attributes hidden)
+    }
