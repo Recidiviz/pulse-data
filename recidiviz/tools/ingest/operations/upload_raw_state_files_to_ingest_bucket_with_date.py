@@ -37,45 +37,83 @@ import pytz
 from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockResource,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataResourceLockManager,
+)
 from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
     BaseUploadStateFilesToIngestBucketController,
     UploadStateFilesToIngestBucketDelegate,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestRawDataResourceLock,
+)
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.log_helpers import make_log_output_path
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
+
+LOCK_TTL = 60 * 60  # 1 hour
+LOCK_DESCRIPTION = "Acquiring locks for the duration of upload_raw_state_files_to_ingest_bucket_with_date"
 
 
 class ManualUploadStateFilesToIngestBucketDelegate(
     UploadStateFilesToIngestBucketDelegate
 ):
+    """Delegate responsible for determining how a manual, dated raw file upload should
+    interact with other platform processes.
+    """
+
     def __init__(
         self,
         region_code: str,
         dry_run: bool,
         destination_bucket_override: Optional[GcsfsBucketPath],
+        raw_data_instance: DirectIngestInstance,
     ) -> None:
         self.dry_run = dry_run
         self.region_code = region_code.upper()
         self.destination_bucket_override = destination_bucket_override
+        self._lock_manager = DirectIngestRawDataResourceLockManager(
+            region_code=self.region_code,
+            raw_data_source_instance=raw_data_instance,
+            with_proxy=True,
+        )
+        self._resource_locks: list[DirectIngestRawDataResourceLock] | None = None
 
     def should_pause_processing(self) -> bool:
         return not self.dry_run and not self.destination_bucket_override
 
     def pause_processing(self) -> None:
-        prompt_for_confirmation(
-            f"Have you paused ingest queues for [{self.region_code}] via the admin "
-            f"panel, if they are not paused already?",
-            "Y",
+        if self._resource_locks is not None:
+            raise ValueError(
+                "Resource locks are already populated despite not having acquired them."
+            )
+
+        logging.info("Acquiring raw data bucket resource lock...")
+
+        self._resource_locks = self._lock_manager.acquire_lock_for_resources(
+            resources=[DirectIngestRawDataResourceLockResource.BUCKET],
+            actor=DirectIngestRawDataLockActor.ADHOC,
+            description=LOCK_DESCRIPTION,
+            ttl_seconds=LOCK_TTL,
         )
 
     def unpause_processing(self) -> None:
-        prompt_for_confirmation(
-            f"Have you unpaused ingest queues for [{self.region_code}] via the admin "
-            f"panel?",
-            "Y",
-        )
+        if not self._resource_locks:
+            raise ValueError("Could not find resource locks to release")
+
+        logging.info("Releasing raw data bucket resource lock...")
+
+        for lock in self._resource_locks:
+            self._lock_manager.release_lock_by_id(lock.lock_id)
 
 
 class ManualUploadStateFilesToIngestBucketController(
@@ -103,6 +141,8 @@ class ManualUploadStateFilesToIngestBucketController(
                     region_code=region,
                     dry_run=dry_run,
                     destination_bucket_override=destination_bucket_override,
+                    # super class always defaults to PRIMARY if no override is provided
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ],
             destination_bucket_override=destination_bucket_override,
@@ -310,14 +350,16 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    upload_raw_state_files_to_ingest_bucket_with_date(
-        paths=args.paths,
-        project_id=args.project_id,
-        region=args.region,
-        date=args.date,
-        dry_run=args.dry_run,
-        destination_bucket=args.destination_bucket,
-    )
+    with local_project_id_override(args.project_id):
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            upload_raw_state_files_to_ingest_bucket_with_date(
+                paths=args.paths,
+                project_id=args.project_id,
+                region=args.region,
+                date=args.date,
+                dry_run=args.dry_run,
+                destination_bucket=args.destination_bucket,
+            )
 
 
 if __name__ == "__main__":

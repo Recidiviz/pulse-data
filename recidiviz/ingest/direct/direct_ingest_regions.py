@@ -63,7 +63,7 @@ class DirectIngestRegion:
             raise ValueError(f"Invalid environment: {self.environment}")
 
     def exists_in_env(self) -> bool:
-        """Returns true if the ingest infrastructure (queues, databases, etc.) for this
+        """Returns true if the ingest infrastructure (databases, etc.) for this
         region exist in this environment.
 
         We don't create infrastructure for the playground regions in prod.

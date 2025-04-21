@@ -36,11 +36,14 @@ import recidiviz
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date import (
     upload_raw_state_files_to_ingest_bucket_with_date,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 def read_and_convert_excel_to_csv(
@@ -209,10 +212,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
-    read_and_convert_excel_to_csv(
-        known_args.excel_absolute_file_path,
-        known_args.date,
-        known_args.region,
-        known_args.project_id,
-        known_args.destination_bucket,
-    )
+    with local_project_id_override(known_args.project_id):
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            read_and_convert_excel_to_csv(
+                known_args.excel_absolute_file_path,
+                known_args.date,
+                known_args.region,
+                known_args.project_id,
+                known_args.destination_bucket,
+            )

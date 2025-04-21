@@ -42,11 +42,14 @@ from datetime import date, datetime
 import pandas as pd
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date import (
     upload_raw_state_files_to_ingest_bucket_with_date,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 # input from excel --> output name for csv and BQ
@@ -136,13 +139,15 @@ def main() -> None:
     df.to_csv(tmp_file, index=False)
 
     try:
-        upload_raw_state_files_to_ingest_bucket_with_date(
-            paths=[tmp_file],
-            project_id=args.project_id,
-            region=StateCode.US_TX.value,
-            date=str(now),
-            dry_run=args.dry_run,
-        )
+        with local_project_id_override(args.project_id):
+            with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+                upload_raw_state_files_to_ingest_bucket_with_date(
+                    paths=[tmp_file],
+                    project_id=args.project_id,
+                    region=StateCode.US_TX.value,
+                    date=str(now),
+                    dry_run=args.dry_run,
+                )
     finally:
         print("Removing temporary CSV", tmp_file)
         os.remove(tmp_file)

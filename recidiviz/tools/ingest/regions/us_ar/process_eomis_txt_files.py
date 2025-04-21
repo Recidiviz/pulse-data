@@ -60,6 +60,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnInfo,
     get_region_raw_file_config,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,
 )
@@ -69,8 +70,10 @@ from recidiviz.tools.ingest.development.raw_data_config_writer import (
 from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date import (
     upload_raw_state_files_to_ingest_bucket_with_date,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 US_AR_REFERENCE_SHEET_ID = "1W8NDQ0LtF4LArcsL6lCu3nxgxNKQLpCC9-niRsOXPGk"
@@ -631,14 +634,16 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments(sys.argv)
-    main(
-        args.cred_directory,
-        args.folder_path,
-        args.csv_storage_folder,
-        args.update_configs,
-        args.delimiter,
-        args.encoding,
-        args.project_id,
-        args.destination_bucket,
-        args.files_update_date,
-    )
+    with local_project_id_override(args.project_id):
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            main(
+                args.cred_directory,
+                args.folder_path,
+                args.csv_storage_folder,
+                args.update_configs,
+                args.delimiter,
+                args.encoding,
+                args.project_id,
+                args.destination_bucket,
+                args.files_update_date,
+            )

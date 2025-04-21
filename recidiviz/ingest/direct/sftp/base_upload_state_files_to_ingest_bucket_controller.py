@@ -36,6 +36,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 
 class UploadStateFilesToIngestBucketDelegate:
+    """Delegate responsible for determining how a raw file upload should interact with
+    other platform processes.
+    """
+
     @abc.abstractmethod
     def should_pause_processing(self) -> bool:
         """Returns whether we should pause any automatic processing of new files before
