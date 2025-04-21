@@ -31,6 +31,7 @@ class DatapointJson(TypedDict):
     metric_display_name: NotRequired[str]
     disaggregation_display_name: NotRequired[Optional[str]]
     dimension_display_name: NotRequired[Optional[str]]
+    sub_dimension_name: NotRequired[Optional[str]]
     value: Any
     old_value: NotRequired[Any]
     is_published: NotRequired[bool]

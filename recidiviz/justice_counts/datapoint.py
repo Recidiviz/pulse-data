@@ -152,6 +152,11 @@ class DatapointInterface:
         )
         response["is_published"] = is_published
         response["report_id"] = datapoint.report_id
+        response["sub_dimension_name"] = (
+            datapoint.sub_dimension_name.title()
+            if datapoint.sub_dimension_name is not None
+            else None
+        )
         return response
 
     ### Get Path: Both Agency and Report Datapoints ###
