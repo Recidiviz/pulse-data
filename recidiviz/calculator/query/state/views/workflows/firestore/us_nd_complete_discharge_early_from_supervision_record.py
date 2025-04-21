@@ -225,6 +225,7 @@ individual_sentence_ranks AS (
     INITCAP(JSON_VALUE(PARSE_JSON(dm.full_name), '$.given_names'))
         || " " 
         || INITCAP(JSON_VALUE(PARSE_JSON(dm.full_name), '$.surname')) AS probation_officer_full_name,
+    te.person_id,
     te.reasons, 
     te.is_eligible,
     te.is_almost_eligible,
@@ -247,6 +248,7 @@ individual_sentence_ranks AS (
 )
 
 SELECT 
+    person_id,
     person_external_id AS external_id,
     state_code,
     client_name AS form_information_client_name,

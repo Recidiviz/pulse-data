@@ -272,7 +272,8 @@ array_case_notes_for_eligible_folks AS (
     GROUP BY 1
 )
 
-SELECT 
+SELECT
+    ec.person_id,
     ec.external_id,
     ec.state_code,
     ec.reasons,

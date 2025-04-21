@@ -413,6 +413,7 @@ def us_tn_classification_forms(
            {is_eligible_clause} AS is_eligible,
            {is_almost_eligible_clause} AS is_almost_eligible,
            tes_collapsed.start_date AS metadata_eligible_date,
+           tes.person_id,
            pei.external_id,
            level_care.form_information_level_of_care,
            latest_classification.form_information_latest_classification_date,

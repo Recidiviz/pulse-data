@@ -358,6 +358,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     GROUP BY 1,2
     )
         SELECT
+            tes.person_id,
             tes.is_eligible,
             tes.is_almost_eligible,
             pei.external_id AS external_id,

@@ -44,6 +44,7 @@ _COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_addre
 
 US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 SELECT
+    tes.person_id,
     pei.external_id,
     tes.state_code,
     tes_collapsed.start_date AS metadata_eligible_date,

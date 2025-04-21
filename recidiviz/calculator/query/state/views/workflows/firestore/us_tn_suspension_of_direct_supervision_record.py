@@ -225,6 +225,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
     )
     SELECT
         base.state_code,
+        base.person_id,
         base.external_id,
         base.reasons_v2 AS reasons,
         base.ineligible_criteria,

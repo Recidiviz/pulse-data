@@ -41,6 +41,7 @@ _COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_addre
 
 US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     SELECT
+        tes.person_id,
         pei.external_id,
         tes.state_code,
         tes.reasons,

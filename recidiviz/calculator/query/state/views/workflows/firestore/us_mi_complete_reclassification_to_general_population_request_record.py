@@ -55,6 +55,7 @@ WITH eligible_and_almost_eligible AS (
         eligible_and_almost_eligible_only=True,
     )})
 SELECT 
+    a.person_id,
     a.external_id,
     a.state_code,
     a.reasons,

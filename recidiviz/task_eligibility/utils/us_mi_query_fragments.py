@@ -306,6 +306,7 @@ array_case_notes_cte AS (
 {array_agg_case_notes_by_external_id()}
 )
 SELECT 
+    tes.person_id,
     tes.state_code,
     tes.external_id AS external_id,
     tes.reasons,

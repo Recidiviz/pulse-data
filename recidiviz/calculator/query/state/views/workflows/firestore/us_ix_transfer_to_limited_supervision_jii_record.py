@@ -60,6 +60,7 @@ current_lsir_span AS (
 )
 
 SELECT
+    eae.person_id,
     eae.external_id,
     eae.state_code,
     eae.ineligible_criteria,

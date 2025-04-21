@@ -285,6 +285,7 @@ tes_cte AS (
         AND STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE'
 )
   SELECT
+         tes.person_id,
          tes.state_code,
          pei.external_id,
          tes.reasons,

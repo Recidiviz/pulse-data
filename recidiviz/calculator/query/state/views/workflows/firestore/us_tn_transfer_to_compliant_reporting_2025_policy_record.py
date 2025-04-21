@@ -183,6 +183,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_QUERY_TEMPLATE = f"""
     )
     SELECT
         c.metadata_task_name,
+        c.person_id,
         c.external_id,
         c.state_code,
         reasons_v2 AS reasons,

@@ -101,6 +101,7 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
             f"""
         SELECT
             state_code,
+            person_id,
             external_id AS person_external_id,
             "{config.opportunity_type}" AS opportunity_name,
             is_eligible,

@@ -37,6 +37,7 @@ US_IX_SUPERVISION_LEVEL_DOWNGRADE_RECORD_DESCRIPTION = """
 
 US_IX_SUPERVISION_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
 SELECT
+    tes.person_id,
     pei.external_id,
     tes.state_code,
     reasons,

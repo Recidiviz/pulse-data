@@ -41,6 +41,7 @@ US_AR_WORK_RELEASE_RECORD_QUERY_TEMPLATE = f"""
         )}
     )
     SELECT
+        base.person_id,
         base.external_id,
         base.state_code,
         base.reasons,

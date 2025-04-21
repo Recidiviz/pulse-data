@@ -308,6 +308,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY assessment_date DESC)=1
     )
       SELECT
+          tes.person_id,
           tes.external_id,
           tes.is_eligible,
           tes.is_almost_eligible,

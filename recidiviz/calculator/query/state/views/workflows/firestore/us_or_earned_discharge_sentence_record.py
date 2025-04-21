@@ -239,6 +239,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         GROUP BY 1, 2
     )
     SELECT
+        sentences_with_metadata.person_id,
         sentences_with_metadata.external_id,
         opp_ids.opportunity_id,
         opp_ids.opportunity_pseudonymized_id,

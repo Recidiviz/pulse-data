@@ -52,6 +52,7 @@ WHERE state_code = "US_MI"
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, assessment_id)=1
 ) 
 SELECT
+    tes.person_id,
     pei.external_id,
     tes.state_code,
     TO_JSON([STRUCT(NULL AS note_title, COALESCE(c.recommended_supervision_level, 'MEDIUM') AS note_body, NULL as event_date, 

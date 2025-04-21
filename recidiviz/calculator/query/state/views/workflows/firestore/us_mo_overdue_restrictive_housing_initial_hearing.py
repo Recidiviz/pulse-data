@@ -64,6 +64,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_INITIAL_HEARING_RECORD_QUERY_TEMPLATE = f"""
             AND 'US_MO_NO_D1_SANCTION_AFTER_RESTRICTIVE_HOUSING_START' NOT IN UNNEST(ineligible_criteria)
     )
     SELECT
+        base.person_id,
         base.external_id,
         base.state_code,
         base.reasons,

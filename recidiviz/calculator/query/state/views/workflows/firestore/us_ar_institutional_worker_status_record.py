@@ -41,6 +41,7 @@ US_AR_INSTITUTIONAL_WORKER_STATUS_QUERY_TEMPLATE = f"""
         )}
     )
     SELECT
+        base.person_id,
         base.external_id,
         base.state_code,
         base.reasons,

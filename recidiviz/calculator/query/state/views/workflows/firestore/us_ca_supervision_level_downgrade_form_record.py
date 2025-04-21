@@ -73,6 +73,7 @@ additional_information AS (
 )
 
 SELECT 
+    person_id,
     external_id,
     state_code,
     reasons,

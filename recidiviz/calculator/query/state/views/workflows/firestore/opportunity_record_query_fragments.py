@@ -127,6 +127,7 @@ def opportunity_query_final_select_with_case_notes(
             in a JSON. Defaults to "array_case_notes_cte".
     """
     return f"""    SELECT
+        {from_cte}.person_id,
         external_id,
         state_code,
         reasons,

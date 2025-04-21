@@ -130,6 +130,7 @@ case_notes_array AS (
     GROUP BY 1
 )
 SELECT 
+    person_id,
     external_id,
     state_code,
     reasons,

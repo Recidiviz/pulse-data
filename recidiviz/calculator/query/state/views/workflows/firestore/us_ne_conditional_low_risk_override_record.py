@@ -71,6 +71,7 @@ eligible_clients AS (
             AND CURRENT_DATE('US/Eastern') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}
 )
 SELECT
+    person_id,
     external_id,
     state_code,
     reasons_v2 AS reasons,
