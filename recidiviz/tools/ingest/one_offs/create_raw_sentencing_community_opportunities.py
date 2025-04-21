@@ -22,11 +22,12 @@ Example Usage:
 """
 
 import argparse
-import csv
 import logging
 import sys
 from datetime import datetime
 from typing import List
+
+import pandas as pd
 
 COLUMN_NAME_MAPPING = {
     "Opportunity Name": "OpportunityName",
@@ -52,6 +53,8 @@ COLUMN_NAME_MAPPING = {
     "District (do not edit please!)": "District",
 }
 
+LAST_UPDATED_COLUMN_NAME = "lastUpdatedDate"
+
 ORIGINAL_DELIMITER = ","
 NEW_DELIMITER = "†"
 NEW_LINE_DELIMITER = "‡"
@@ -61,59 +64,29 @@ def create_raw_sentencing_community_opportunities(
     input_file_paths: List[str],
     output_file_path: str,
 ) -> None:
-    """Creates a new CSV file with the specified delimiter for the provided files."""
+    """Combines all of the input csvs, filters and maps the column names, and write them out to a new file with the correct delimiters."""
 
-    date = datetime.today().strftime("%Y-%m-%d")
+    # Reads all of the input files, concatenates them, and filters the columns
+    df = pd.concat(
+        (
+            # Skip the first two rows because they are extra headers
+            pd.read_csv(f, delimiter=ORIGINAL_DELIMITER, skiprows=2)
+            for f in input_file_paths
+        ),
+        ignore_index=True,
+    )
+    df = df[[col for col in df.columns if col in COLUMN_NAME_MAPPING]]
+    df = df.rename(mapper=COLUMN_NAME_MAPPING, axis=1)
 
-    for idx, input_file_path in enumerate(input_file_paths):
-        # Read the entire content of the input file
-        with open(
-            input_file_path, mode="r", newline="", encoding="utf-8"
-        ) as input_file:
-            reader = csv.reader(input_file, delimiter=ORIGINAL_DELIMITER)
+    # Add a new column with the current date
+    df[LAST_UPDATED_COLUMN_NAME] = datetime.today().strftime("%Y-%m-%d")
 
-            # Include the header line for the first file, ignore it for the rest
-            # The first two lines are extra headers, the third line is the real header
-            lines_to_skip = 2 if idx == 0 else 3
-            for _ in range(lines_to_skip):
-                next(reader)
-
-            # Collect the rows and modify as needed
-            modified_rows = []
-
-            # For the first line in the first file, map the header names
-            if idx == 0:
-                # Map the column names to the expected names
-                mapped_columns = [
-                    COLUMN_NAME_MAPPING.get(col, col) for col in next(reader)
-                ]
-
-                # Manually add these columns since they won't be present in the input file
-                extra_columns = [
-                    "lastUpdatedDate",
-                ]
-
-                mapped_columns.extend(extra_columns)
-
-                modified_rows.append(mapped_columns)
-
-            for row in reader:
-                cleaned_row = [field.replace("\n", ",") for field in row]
-
-                # Add the district and last updated date, and capacity columns if they shouldn't be excluded
-                extra_values = [date]
-
-                cleaned_row.extend(extra_values)
-                modified_rows.append(cleaned_row)
-
-        # Write the modified content to the output file
-        with open(
-            output_file_path, mode="a", newline="", encoding="utf-8"
-        ) as output_file:
-            writer = csv.writer(
-                output_file, delimiter=NEW_DELIMITER, lineterminator=NEW_LINE_DELIMITER
-            )
-            writer.writerows(modified_rows)
+    df.to_csv(
+        path_or_buf=output_file_path,
+        sep=NEW_DELIMITER,
+        index=False,
+        lineterminator=NEW_LINE_DELIMITER,
+    )
 
 
 def parse_arguments() -> argparse.Namespace:
