@@ -24,39 +24,46 @@ from recidiviz.common.constants.states import StateCode
 # NOTE: Machine Type zonal availability can vary, and there is no guarantee that a machine is available across
 # all zones within a region depending on Google Cloud's rollout
 
-# NOTE: us-east7 does not seem to be a zone that we can use, yet
+# NOTE: us-east7 and us-west8 do not seem to be zones that we can use, yet
 
 # To find what zones have availability for a given machine, run:
 # $ gcloud compute machine-types list --filter="name=c4a-highcpu-32" | grep "us-"
-# c4a-highcpu-32  us-central1-a      32    64.00
-# c4a-highcpu-32  us-central1-b      32    64.00
-# c4a-highcpu-32  us-central1-c      32    64.00
-# c4a-highcpu-32  us-west1-a         32    64.00
-# c4a-highcpu-32  us-east1-b         32    64.00
-# c4a-highcpu-32  us-east1-c         32    64.00
-# c4a-highcpu-32  us-east1-d         32    64.00
-# c4a-highcpu-32  us-east4-a         32    64.00
-# c4a-highcpu-32  us-east4-b         32    64.00
-# c4a-highcpu-32  us-east4-c         32    64.00
+# c4a-highcpu-32  us-central1-a           32    64.00
+# c4a-highcpu-32  us-central1-b           32    64.00
+# c4a-highcpu-32  us-central1-c           32    64.00
+# c4a-highcpu-32  us-west1-a              32    64.00
+# c4a-highcpu-32  us-west1-c              32    64.00
+# c4a-highcpu-32  us-east1-b              32    64.00
+# c4a-highcpu-32  us-east1-c              32    64.00
+# c4a-highcpu-32  us-east1-d              32    64.00
+# c4a-highcpu-32  us-east4-a              32    64.00
+# c4a-highcpu-32  us-east4-b              32    64.00
+# c4a-highcpu-32  us-east4-c              32    64.00
+# c4a-highcpu-32  us-east7-a              32    64.00
+# c4a-highcpu-32  us-west8-c              32    64.00
 DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
+    # us-east1 (3 zones w/ c4a-highcpu-32)
     StateCode.US_AR: "us-east1",
     StateCode.US_CA: "us-east1",
-    StateCode.US_CO: "us-east4",
-    StateCode.US_IA: "us-east4",
-    StateCode.US_ID: "us-east4",
-    StateCode.US_IX: "us-east4",
-    StateCode.US_MI: "us-central1",
-    StateCode.US_MA: "us-central1",
     StateCode.US_ME: "us-east1",
-    StateCode.US_MO: "us-central1",
-    StateCode.US_NE: "us-east1",
     StateCode.US_NC: "us-east1",
-    StateCode.US_ND: "us-east1",
-    StateCode.US_OZ: "us-east4",
-    StateCode.US_OR: "us-east4",
-    StateCode.US_PA: "us-east4",
-    StateCode.US_AZ: "us-central1",
-    StateCode.US_TN: "us-central1",
-    StateCode.US_TX: "us-central1",
+    StateCode.US_NE: "us-east1",
     StateCode.US_UT: "us-east1",
+    # us-east4 (3 zones w/ c4a-highcpu-32)
+    StateCode.US_CO: "us-east4",  # doesn't run
+    StateCode.US_IA: "us-east4",
+    StateCode.US_ID: "us-east4",  # doesn't run
+    StateCode.US_IX: "us-east4",
+    StateCode.US_OR: "us-east4",  # doesn't run
+    StateCode.US_OZ: "us-east4",
+    StateCode.US_PA: "us-east4",
+    # us-central1 (3 zones w/ c4a-highcpu-32)
+    StateCode.US_AZ: "us-central1",
+    StateCode.US_MA: "us-central1",
+    StateCode.US_MI: "us-central1",
+    StateCode.US_TX: "us-central1",
+    # us-west1 (2 zones w/ c4a-highcpu-32)
+    StateCode.US_MO: "us-west1",
+    StateCode.US_ND: "us-west1",
+    StateCode.US_TN: "us-west1",
 }

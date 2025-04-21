@@ -211,7 +211,7 @@ metric_pipelines:
   - pipeline: supervision_metrics
     state_code: US_CA
     metric_types: SUPERVISION_START
-    region: us-east1
+    region: us-central1
   - pipeline: incarceration_metrics
     state_code: US_CA
     metric_types: INCARCERATION_POPULATION_SPAN INCARCERATION_RELEASE INCARCERATION_ADMISSION
@@ -287,7 +287,7 @@ metric_pipelines:
   - pipeline: supervision_metrics
     state_code: US_UT
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-central1
+    region: us-east1
   - pipeline: incarceration_metrics
     state_code: US_UT
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE

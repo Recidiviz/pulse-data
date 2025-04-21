@@ -67,7 +67,7 @@ PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
 ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS = {
     "c4a": {
         "us-central1": ["a", "b", "c"],
-        "us-west1": ["a"],
+        "us-west1": ["a", "c"],
         "us-east1": ["b", "c", "d"],
         "us-east4": ["a", "b", "c"],
     }

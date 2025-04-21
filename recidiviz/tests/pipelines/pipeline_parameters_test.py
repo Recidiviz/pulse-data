@@ -41,6 +41,7 @@ C4A_MACHINE_TYPE_AVAILABILITY = {
     "us-central1-b",
     "us-central1-c",
     "us-west1-a",
+    "us-west1-c",
     "us-east1-b",
     "us-east1-c",
     "us-east1-d",
