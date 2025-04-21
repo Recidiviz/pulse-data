@@ -39,21 +39,12 @@ from recidiviz.common.str_field_utils import (
 from recidiviz.ingest.direct.regions.us_mo.us_mo_county_code_reference import (
     COUNTY_CODES,
 )
+from recidiviz.ingest.direct.regions.us_mo.us_mo_magic_dates import MAGIC_DATES
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSentenceStatus,
-)
-
-MAGIC_DATES = (
-    "0",
-    "19000000",
-    "20000000",
-    "66666666",  # Should affiliate with pretrial investigation
-    "77777777",
-    "88888888",  # Should denote Interstate Compact or Indeterminate sentence
-    "99999999",  # Often affiliated with a life sentence
 )
 
 

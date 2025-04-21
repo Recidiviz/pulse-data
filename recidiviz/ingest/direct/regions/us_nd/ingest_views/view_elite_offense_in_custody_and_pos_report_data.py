@@ -20,11 +20,11 @@ Incident severity is assigned at the sanction level in ND rather than the incide
 so this view associates the most high-level sanction given as a result of an incident
 with the incident itself."""
 
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

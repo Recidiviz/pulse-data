@@ -15,19 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for file dependency utilities."""
+import importlib
 import os
 import unittest
-from typing import Any
+from functools import partial
+from types import ModuleType
+from typing import Any, Callable
 
 from mock import patch
 
 import recidiviz
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.tools.fixtures import test_importing
+from recidiviz.tests.utils.patch_helpers import before
 from recidiviz.tools.file_dependencies import (
+    DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES,
     Callsite,
     EntrypointDependencies,
+    _collect_modules_for_dynamic_collection,
     parent_package,
 )
+from recidiviz.utils.metadata import local_project_id_override
 
 # Do a bit of path munging here since absolute paths will vary by machine.
 builtin_open = open
@@ -544,3 +556,128 @@ class FileDependenciesTest(unittest.TestCase):
 
     def test_parent_package_other_module(self) -> None:
         assert parent_package("twilio.sms") == "twilio"
+
+
+class DynamicallyCollectedFileDependenciesTest(unittest.TestCase):
+    """Unit tests for finding dynamically collected file dependencies"""
+
+    def test_collect_modules_for_dynamic_collection__simple(self) -> None:
+        modules = _collect_modules_for_dynamic_collection(
+            base_path="recidiviz/tests/tools/fixtures", glob_pattern="a/*/*.py"
+        )
+
+        assert set(modules) == {
+            "recidiviz.tests.tools.fixtures.a.b",
+            "recidiviz.tests.tools.fixtures.a.b.b",
+            "recidiviz.tests.tools.fixtures.a.b.d",
+            "recidiviz.tests.tools.fixtures.a.b.e",
+            "recidiviz.tests.tools.fixtures.a.b.i",
+        }
+
+    def test_collect_modules_for_dynamic_collection__empty(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"glob pattern \[.*\] returned no matches",
+        ):
+
+            _collect_modules_for_dynamic_collection(
+                base_path="recidiviz/tests/tools/fixtures", glob_pattern="a/e/*.py"
+            )
+
+    @staticmethod
+    def ingest_view_builder_collectors(
+        module: ModuleType,
+    ) -> list[tuple[type, Callable]]:
+        return [
+            (
+                module.DirectIngestViewQueryBuilderCollector,
+                module.DirectIngestViewQueryBuilderCollector.from_state_code(
+                    state_code
+                ).get_query_builders,
+            )
+            for state_code in get_existing_direct_ingest_states()
+        ]
+
+    @staticmethod
+    def migration_view_builder_collectors(
+        module: ModuleType,
+    ) -> list[tuple[type, Callable]]:
+        return [
+            (
+                module.DirectIngestRawTableMigrationCollector,
+                module.DirectIngestRawTableMigrationCollector(
+                    region_code=state_code.value,
+                    # this doesn't matter
+                    instance=DirectIngestInstance.PRIMARY,
+                ).collect_raw_table_migrations,
+            )
+            for state_code in get_existing_direct_ingest_states()
+        ]
+
+    def test_all_defined_modules_only_match_python_files(self) -> None:
+        def _add_module_to_cache(
+            module_name: str, *, imported_modules: set[str]
+        ) -> None:
+            if module_name.startswith(recidiviz.__name__):
+                imported_modules.add(module_name)
+
+        for (
+            module_str,
+            module_patterns,
+        ) in DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES.items():
+            for path, pattern in module_patterns:
+                assert pattern.endswith(".py")
+                assert path.startswith(recidiviz.__name__)
+                assert module_str.startswith(recidiviz.__name__)
+
+            collection_classes: list[tuple[type, Callable]]
+            module = importlib.import_module(module_str)
+
+            match module_str:
+                case "recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector":
+                    collection_classes = self.ingest_view_builder_collectors(module)
+                case "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector":
+                    collection_classes = self.migration_view_builder_collectors(module)
+                case _:
+                    raise ValueError(
+                        "Please add mapping for dynamic collection module to ModuleCollectionMixin subclass"
+                    )
+
+            assert len(collection_classes) != 0
+
+            imported_modules: set[str] = set()
+
+            _add = partial(_add_module_to_cache, imported_modules=imported_modules)
+
+            # we use before to capture the calls to importlib.import_module while
+            # still allowing the module to be imported
+            with local_project_id_override("recidiviz-456"), before(
+                "recidiviz.common.module_collector_mixin.importlib.import_module",
+                _add,
+                once=False,
+            ):
+                for (collection_class, collection_callable) in collection_classes:
+                    assert issubclass(collection_class, ModuleCollectorMixin)
+                    _ = collection_callable()
+
+            glob_collection = set(
+                result
+                for (path, pattern) in module_patterns
+                for result in _collect_modules_for_dynamic_collection(path, pattern)
+            )
+
+            self.assertSetEqual(
+                imported_modules - glob_collection,
+                set(),
+                msg=f"Found modules that were imported via [{collection_classes[0][0]}]'s "
+                f"dynamic module collection that were not captured by the provided glob "
+                f"patterns for [{module_str}]",
+            )
+
+            self.assertSetEqual(
+                glob_collection - imported_modules,
+                set(),
+                msg=f"Found modules that were matched by glob patterns for [{module_str}] "
+                f"that were not actually imported by [{collection_classes[0][0]}]'s "
+                f"dynamic module collection.",
+            )

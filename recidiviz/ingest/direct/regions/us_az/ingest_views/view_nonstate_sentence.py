@@ -27,11 +27,11 @@ county jails.
 We prefix sentence external IDs created by this view with "ARREST-" to make them easily 
 distinguishable from sentences that are actual ADCRR commitments.
 """
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

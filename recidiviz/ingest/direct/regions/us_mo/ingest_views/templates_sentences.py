@@ -16,7 +16,7 @@
 # =============================================================================
 """This module has reusable strings for various sentencing queries."""
 
-from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_parsers import MAGIC_DATES
+from recidiviz.ingest.direct.regions.us_mo.us_mo_magic_dates import MAGIC_DATES
 
 INVALID_IMPOSED_DATE = (
     "0",

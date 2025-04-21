@@ -14,5 +14,4 @@
 - [recidiviz/pipelines, "*/template_metadata.json"]
 - [recidiviz/ingest/direct/raw_data/validations/configs, "*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]
-- [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.py"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.csv"]

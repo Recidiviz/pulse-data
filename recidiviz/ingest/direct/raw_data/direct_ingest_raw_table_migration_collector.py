@@ -57,16 +57,10 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
         instance: DirectIngestInstance,
         regions_module_override: Optional[ModuleType] = None,
     ) -> None:
-        regions_module = regions_module_override or regions
+        self.regions_module = regions_module_override or regions
         self.region_code = region_code
         self.instance = instance
-        self.migrations_dir_module = self.get_relative_module(
-            regions_module,
-            [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
-        )
-        self._migration_by_file_tag: Dict[
-            str, List[RawTableMigration]
-        ] = self.collect_raw_table_migrations_by_file_tag()
+        self._migration_by_file_tag: Dict[str, List[RawTableMigration]] = {}
 
     def get_raw_table_migration_queries_for_file_tag(
         self,
@@ -84,10 +78,22 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
                 "data_update_datetime must be a naive datetime object, not a timezone-aware datetime object"
             )
         return RawTableMigrationGenerator.migration_queries(
-            self._migration_by_file_tag[file_tag],
+            self.get_raw_table_migrations_by_file_tag()[file_tag],
             raw_table_address=raw_table_address,
             data_update_datetime=data_update_datetime,
         )
+
+    def get_raw_table_migrations_by_file_tag(
+        self,
+    ) -> Dict[str, List[RawTableMigration]]:
+        """Returns cached migrations by file tag, if it has been loaded; if not,
+        descends and collects them.
+        """
+        if self._migration_by_file_tag:
+            return self._migration_by_file_tag
+
+        self._migration_by_file_tag = self.collect_raw_table_migrations_by_file_tag()
+        return self._migration_by_file_tag
 
     def collect_raw_table_migrations_by_file_tag(
         self,
@@ -101,8 +107,12 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
 
     def collect_raw_table_migrations(self) -> List[RawTableMigration]:
         """Finds all raw table migration objects defined for this region."""
+        migrations_dir_module = self.get_relative_module(
+            self.regions_module,
+            [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
+        )
         table_migrations_modules = self.get_submodules(
-            self.migrations_dir_module, RAW_TABLE_MIGRATION_FILE_PREFIX
+            migrations_dir_module, RAW_TABLE_MIGRATION_FILE_PREFIX
         )
 
         all_migrations = []

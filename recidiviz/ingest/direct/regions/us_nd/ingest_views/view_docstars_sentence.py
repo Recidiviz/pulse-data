@@ -16,12 +16,12 @@
 # =============================================================================
 """Query containing sentence information from the Docstars system."""
 
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.common.constants.reasonable_dates import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

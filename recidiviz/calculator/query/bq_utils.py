@@ -21,10 +21,6 @@
 
 from typing import Iterable, List, Optional, Sequence, Set
 
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states_for_bigquery,
-)
-
 MAGIC_END_DATE = "9999-12-31"
 MAGIC_START_DATE = "1000-01-01"
 
@@ -166,14 +162,6 @@ def add_age_groups(age_field: str = "age") -> str:
                 WHEN {age_field} is null THEN NULL
             end AS age_group,
     """
-
-
-def filter_to_pathways_states(
-    state_code_column: str,
-) -> str:
-    return filter_to_states(
-        state_code_column, get_pathways_enabled_states_for_bigquery()
-    )
 
 
 def filter_to_states(

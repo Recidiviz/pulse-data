@@ -30,7 +30,7 @@ as well as helpful constants to avoid multiple joins in queries.
 # Add a UNION ALL here with their case if we need to include it. Also add sentence lengths for those if needed.
 # ------------------------------------------------------------------------
 
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.common.constants.reasonable_dates import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
 )

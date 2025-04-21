@@ -21,11 +21,8 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.big_query.with_metadata_query_big_query_view import (
     WithMetadataQueryBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import (
-    add_age_groups,
-    filter_to_pathways_states,
-    get_person_full_name,
-)
+from recidiviz.calculator.query.bq_utils import add_age_groups, get_person_full_name
+from recidiviz.calculator.query.pathways_bq_utils import filter_to_pathways_states
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,

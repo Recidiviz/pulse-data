@@ -275,7 +275,6 @@ def main() -> int:
                     "recidiviz.big_query.big_query_view_sandbox_context",
                     "recidiviz.calculator.query.bq_utils",
                     "recidiviz.calculator.query.state.dataset_config",
-                    "recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states",
                     "recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs",
                     "recidiviz.task_eligibility.dataset_config",
                     "recidiviz.task_eligibility.task_completion_event_big_query_view_builder",
@@ -287,6 +286,8 @@ def main() -> int:
                 {
                     "recidiviz.big_query.big_query_address_formatter",
                     "recidiviz.big_query.big_query_query_builder",
+                    "recidiviz.calculator.query.sessions_query_fragments",
+                    "recidiviz.calculator.query.bq_utils",
                     "recidiviz.ingest",
                     "recidiviz.persistence",
                 }
@@ -365,6 +366,8 @@ def main() -> int:
         "recidiviz.big_query.constants",
         "recidiviz.big_query.export.export_query_config",
         "recidiviz.big_query.row_access_policy_query_builder",
+        "recidiviz.calculator.query.sessions_query_fragments",
+        "recidiviz.calculator.query.bq_utils",
         "recidiviz.cloud_resources",
         "recidiviz.cloud_storage.gcs_file_system",
         "recidiviz.cloud_storage.gcs_file_system_impl",

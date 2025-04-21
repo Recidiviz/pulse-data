@@ -43,14 +43,14 @@ hydrate intermediate status updates as this time. There seems to not be a
 SUSPENDED status to affect downstream projected date calculations.
 """
 
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_and_utils import (
     VALID_PEOPLE_AND_SENTENCES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

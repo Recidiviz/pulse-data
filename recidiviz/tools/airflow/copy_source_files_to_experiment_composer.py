@@ -85,6 +85,8 @@ def _get_paths_list_from_file_pattern(file_pattern: Tuple[str, str]) -> List[str
 
 
 def get_airflow_source_file_paths() -> List[str]:
+    """Lists all paths that are airflow source files."""
+    # copy all dag dependency files
     dag_files: List[str] = _get_paths_list_from_file_pattern(
         ("recidiviz/airflow/dags", "*dag*.py")
     )

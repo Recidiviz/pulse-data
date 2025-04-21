@@ -25,15 +25,15 @@ A majority of sentences are directly to probation; the next most prevalent sente
 the suspended sentence described above. Sentences directly to prison follow suspended sentences
 in prevalence."""
 
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
 from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_and_utils import (
     VALID_PEOPLE_AND_SENTENCES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

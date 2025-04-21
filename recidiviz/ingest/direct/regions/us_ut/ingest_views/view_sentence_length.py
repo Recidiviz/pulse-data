@@ -26,16 +26,16 @@ with their sentences are the dates they may be released from probation. If and w
 is revoked and required to serve their prison sentence, these dates will change to reflect
 the person's projected release dates from prison."""
 
+from recidiviz.common.constants.reasonable_dates import (
+    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
 from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_and_utils import (
     VALID_PEOPLE_AND_SENTENCES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

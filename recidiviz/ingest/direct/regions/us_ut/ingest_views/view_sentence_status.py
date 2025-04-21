@@ -23,14 +23,14 @@ prison sentence. These types of sentences are ingested as probation sentences, a
 appear as probation sentences even if the term of probation is revoked and the person 
 is required to face incarceration."""
 
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_sentencing_views_and_utils import (
     VALID_PEOPLE_AND_SENTENCES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-)
-from recidiviz.persistence.entity.state.entities import (
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

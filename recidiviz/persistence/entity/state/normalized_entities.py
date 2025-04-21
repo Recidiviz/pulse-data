@@ -30,6 +30,13 @@ from more_itertools import first, last
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import is_list
+from recidiviz.common.constants.reasonable_dates import (
+    BIRTHDATE_REASONABLE_LOWER_BOUND,
+    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -153,11 +160,6 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
-    BIRTHDATE_REASONABLE_LOWER_BOUND,
-    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-    STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
     StateSupervisionViolationResponseSeverity,
 )
 from recidiviz.persistence.entity.state.entity_field_validators import appears_with

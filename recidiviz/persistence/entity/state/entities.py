@@ -28,6 +28,13 @@ import attr
 
 from recidiviz.common import attr_utils, attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
+from recidiviz.common.constants.reasonable_dates import (
+    BIRTHDATE_REASONABLE_LOWER_BOUND,
+    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+    STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -174,33 +181,6 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
 # we have written this entity to the persistence layer
 
 # Cross-entity relationships
-
-
-# Standard lower bound value for date fields in our schema. Dates before this date
-# likely are erroneous values (e.g. typos in data) or data that is so old that it is too
-# unreliable to ingest. This date was picked carefully to not include 1900-01-01, which
-# is a common placeholder date used in place of NULL.
-STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1900-01-02")
-
-# Standard upper bound value for date fields in our schema. Dates before this date
-# likely are erroneous values (e.g. typos in data).
-STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-01-01")
-
-# Standard upper bound value for maximum date projection fields in our schema.
-# Dates before this date likely are erroneous values (e.g. typos in data).
-MAX_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2500-01-01")
-
-# Standard lower bound value for person birthdate values in our schema.
-# Some states store records about people who are quite old and there's no reason not to
-# ingest these people.
-BIRTHDATE_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1700-01-01")
-
-# Standard lower bound value for datetime fields in our schema. Dates before this date
-# likely are erroneous values (e.g. typos in data) or data that is so old that it is too
-# unreliable to ingest.
-STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND = datetime.datetime.fromisoformat(
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND.isoformat()
-)
 
 
 @attr.s(eq=False, kw_only=True)

@@ -19,6 +19,7 @@
 import ast
 import os
 from collections import defaultdict, deque
+from glob import glob
 from typing import DefaultDict, Dict, List, Optional, Set, Tuple
 
 import attr
@@ -27,6 +28,30 @@ import recidiviz
 
 RECIDIVIZ_PACKAGE = recidiviz.__name__
 RECIDIVIZ_PATH = os.path.dirname(recidiviz.__file__)
+
+
+# We have a pattern where we dynamically collect python dependencies by walking the
+# repo's filesystem instead of explicitly importing them. In these cases, we cannot
+# reliably walk the AST dependency tree in order to determine all of the recidiviz
+# modules that are imported. In order to solve for that, we maintain a mapping of python
+# modules that dynamically collect python dependencies to glob patterns that match all
+# of the python files that the module will dynamically import so we can add them to our
+# module dependency graph and visit all of the modules that they rely on.
+
+# There is also a test in  file_dependencies_test that validates that all of the modules
+# imported by the dynamic python dependencies are an exact match for the globs listed
+# here, to ensure that we are accurately reproducing our dynamic behavior here.
+DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES: dict[str, tuple[tuple[str, str], ...]] = {
+    "recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector": (
+        ("recidiviz/ingest/direct/regions", "*/ingest_views/**/*.py"),
+        ("recidiviz/ingest/direct/regions", "*/__init__.py"),
+    ),
+    "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector": (
+        ("recidiviz/ingest/direct/regions", "*/raw_data/migrations/**/*.py"),
+        ("recidiviz/ingest/direct/regions", "*/__init__.py"),
+        ("recidiviz/ingest/direct/regions/", "*/raw_data/__init__.py"),
+    ),
+}
 
 
 @attr.s
@@ -110,6 +135,8 @@ def convert_recidiviz_module_to_filepath(module: str) -> str:
 def convert_path_to_recidiviz_module(path: str) -> str:
     if not path.startswith(RECIDIVIZ_PATH):
         raise ValueError(f"'{path}' must start with '{RECIDIVIZ_PATH}'")
+    if path.endswith("/__init__.py"):
+        path = path.removesuffix("/__init__.py")
     return (
         os.path.splitext(path)[0]
         .replace(RECIDIVIZ_PATH, RECIDIVIZ_PACKAGE, 1)
@@ -162,6 +189,27 @@ def matching_test_guard_node_in_lineage(
     return False
 
 
+def _collect_modules_for_dynamic_collection(
+    base_path: str, glob_pattern: str
+) -> list[str]:
+    if not base_path.startswith(RECIDIVIZ_PACKAGE):
+        raise ValueError(f"{base_path}' must start with '{RECIDIVIZ_PACKAGE}'")
+
+    # only replace 1 instance, which we know is the start of the path
+    glob_pattern = (
+        f"{base_path.replace(RECIDIVIZ_PACKAGE, RECIDIVIZ_PATH, 1)}/{glob_pattern}"
+    )
+
+    file_matches = glob(glob_pattern, recursive=True)
+
+    if len(file_matches) == 0:
+        raise ValueError(f"glob pattern [{glob_pattern}] returned no matches")
+
+    return [
+        convert_path_to_recidiviz_module(matched_path) for matched_path in file_matches
+    ]
+
+
 def _get_direct_dependencies(
     module: str,
 ) -> Tuple[Dict[str, List[Callsite]], Dict[str, List[Callsite]]]:
@@ -188,6 +236,17 @@ def _get_direct_dependencies(
     node_lineage: NodeLineage = {}
     Lineage(node_lineage).visit(root)
 
+    if module in DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES:
+        module_callsite = Callsite(filepath=filepath, lineno=0, col_offset=0)
+
+        for (base_path, glob_pattern) in DYNAMICALLY_COLLECTED_PYTHON_DEPENDENCIES[
+            module
+        ]:
+            for dynamically_import_module in _collect_modules_for_dynamic_collection(
+                base_path, glob_pattern
+            ):
+                module_dependencies[dynamically_import_module].append(module_callsite)
+
     for node in ast.walk(root):
         if isinstance(node, ast.ImportFrom) and node.module:
             callsite = Callsite(
@@ -204,9 +263,11 @@ def _get_direct_dependencies(
                     continue
 
             if node.module.startswith(RECIDIVIZ_PACKAGE):
+
                 if os.path.isdir(
                     _convert_recidiviz_module_to_directory_path(node.module)
                 ):
+
                     for name in node.names:
                         module_dependencies[f"{node.module}.{name.name}"].append(
                             callsite

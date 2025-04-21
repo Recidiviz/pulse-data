@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Pathways helper view to map from location ID to aggregating office name."""
-from recidiviz.calculator.query.bq_utils import filter_to_pathways_states
+from recidiviz.calculator.query.pathways_bq_utils import filter_to_pathways_states
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
