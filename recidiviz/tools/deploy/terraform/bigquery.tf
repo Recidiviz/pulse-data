@@ -161,22 +161,6 @@ resource "google_bigquery_table" "workflows_snooze_status_archive" {
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_snooze_status_archive.yaml"))["schema"])
 }
 
-resource "google_bigquery_table" "insights_supervision_officer_outlier_status_archive" {
-  dataset_id          = module.export_archives_dataset.dataset_id
-  table_id            = "insights_supervision_officer_outlier_status_archive"
-  description         = "This table contains daily archives of the supervision_officer_outlier_status export for Insights, which are read directly from Cloud Storage."
-  deletion_protection = false
-  external_data_configuration {
-    autodetect            = false
-    ignore_unknown_values = true
-    max_bad_records       = 0
-    source_format         = "NEWLINE_DELIMITED_JSON"
-    source_uris           = ["gs://${var.project_id}-insights-etl-data-archive/*/supervision_officer_outlier_status.json"]
-  }
-  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officer_outlier_status_archive.yaml"))["schema"])
-
-}
-
 resource "google_bigquery_table" "insights_supervision_officer_supervisors_archive" {
   dataset_id          = module.export_archives_dataset.dataset_id
   table_id            = "insights_supervision_officer_supervisors_archive"
