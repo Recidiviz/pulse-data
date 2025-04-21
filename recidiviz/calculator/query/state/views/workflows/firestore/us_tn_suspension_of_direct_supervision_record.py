@@ -31,14 +31,27 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.criteria.general import (
+    on_supervision_at_least_2_years_and_assessed_risk_low_while_on_supervision_at_least_2_years,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_tn.suspension_of_direct_supervision import (
+    FINES_FEES_CRITERIA_GROUP,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_NAME = (
     "us_tn_suspension_of_direct_supervision_record"
+)
+
+US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_ACCRUED_TIME_CRITERION_NAME = (
+    on_supervision_at_least_2_years_and_assessed_risk_low_while_on_supervision_at_least_2_years.VIEW_BUILDER.criteria_name
+)
+US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_FINES_FEES_CRITERION_NAME = (
+    FINES_FEES_CRITERIA_GROUP.criteria_name
 )
 
 # TODO(#38270): Finish adding necessary information to opportunity record in accordance
@@ -217,6 +230,18 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
+        -- used to create subcategories within the almost-eligible tab
+        CASE
+            -- clients becoming eligible soon (who may also owe limited fines/fees)
+            WHEN '{US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_ACCRUED_TIME_CRITERION_NAME}' IN UNNEST(base.ineligible_criteria) THEN 'INSUFFICIENT_TIME_ACCRUED'
+            -- clients already wholly eligible aside from having any fines/fees balance
+            WHEN (
+                '{US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_FINES_FEES_CRITERION_NAME}' IN UNNEST(base.ineligible_criteria)
+                AND ARRAY_LENGTH(base.ineligible_criteria)=1
+            ) THEN 'HAS_FINES_FEES_BALANCE'
+            ELSE NULL
+            END
+            AS metadata_tab_name,
         -- metadata
         contact_latest_negative_arrest_check.latest_negative_arrest_check AS metadata_latest_negative_arrest_check,
         -- case notes

@@ -201,7 +201,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
         ReasonsField(
             name="eligible_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Date when individual has (or will have) been at a qualifying risk level for the required time period",
+            description="Date when individual has been at a qualifying risk level for the required time period",
         ),
     ],
 )
