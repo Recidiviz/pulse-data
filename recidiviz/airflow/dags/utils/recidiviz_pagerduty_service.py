@@ -83,13 +83,30 @@ class RecidivizPagerDutyService(RecidivizAlertingService):
     def airflow_service_for_state_code(
         cls, project_id: str, state_code: StateCode
     ) -> "RecidivizPagerDutyService":
-        """Returns the service for alerts related to state-specific Airflow data
-        platform task failures for the given state_code.
+        """Returns the service for alerts related to non-raw data, state-specific
+        Airflow data platform task failures for the given state_code.
         """
         state_code_str = state_code.value.lower().replace("_", "-")
         base_username = f"{state_code_str}-airflow"
         return RecidivizPagerDutyService(
-            name=f"{state_code.value} PagerDuty Service",
+            name=f"{state_code.value} Airflow (Default) PagerDuty Service",
+            project_id=project_id,
+            service_integration_email=cls._build_integration_email(
+                base_username, project_id=project_id
+            ),
+        )
+
+    @classmethod
+    def raw_data_service_for_state_code(
+        cls, project_id: str, state_code: StateCode
+    ) -> "RecidivizPagerDutyService":
+        """Returns the service for alerts related to state-specific raw data import
+        task failures for the given state_code.
+        """
+        state_code_str = state_code.value.lower().replace("_", "-")
+        base_username = f"{state_code_str}-airflow-raw-data"
+        return RecidivizPagerDutyService(
+            name=f"{state_code.value} Airflow (Raw Data) PagerDuty Service",
             project_id=project_id,
             service_integration_email=cls._build_integration_email(
                 base_username, project_id=project_id

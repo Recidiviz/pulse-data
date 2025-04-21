@@ -16,16 +16,34 @@
 # =============================================================================
 
 locals {
-   # See: https://recidiviz.pagerduty.com/escalation_policies#P7Y4PYG
-   implementation_engineer_escalation_policy_id = "P7Y4PYG"
+  # See: https://recidiviz.pagerduty.com/escalation_policies#P7Y4PYG
+  implementation_engineer_escalation_policy_id = "P7Y4PYG"
 }
 
-module "airflow-tasks-pagerduty-service" {
+module "airflow-default-tasks-pagerduty-service" {
   source = "../pagerduty-service"
 
-  project_id = var.project_id
-  service_base_name                = "Airflow Tasks: ${var.state_code}"
-  service_description         = "Airflow tasks that do data processing specific to ${var.state_code}."
-  escalation_policy_id        = local.implementation_engineer_escalation_policy_id
-  integration_email_base_username  = "${local.lower_state_code}-airflow"
+  project_id                      = var.project_id
+  service_base_name               = "Airflow Tasks: ${var.state_code}"
+  service_description             = "Non-raw data Airflow tasks that do data processing specific to ${var.state_code}."
+  escalation_policy_id            = local.implementation_engineer_escalation_policy_id
+  integration_email_base_username = "${local.lower_state_code}-airflow"
+}
+
+# airflow-default-tasks-pagerduty-service used to be called airflow-tasks-pagerduty-service
+# and this block indicates that we re-named it so tf doesn't delete and recreate it
+moved {
+  from = module.airflow-tasks-pagerduty-service
+  to   = module.airflow-default-tasks-pagerduty-service
+}
+
+
+module "airflow-tasks-raw-data-pagerduty-service" {
+  source = "../pagerduty-service"
+
+  project_id                      = var.project_id
+  service_base_name               = "Airflow Tasks (Raw Data): ${var.state_code}"
+  service_description             = "Raw data import tasks specific to ${var.state_code}."
+  escalation_policy_id            = local.implementation_engineer_escalation_policy_id
+  integration_email_base_username = "${local.lower_state_code}-airflow-raw-data"
 }

@@ -144,7 +144,7 @@ def get_alerting_services_for_incident(
         if _job_id_part_matches(job_id=job_id, regex=_STATE_CODE_BEGINNING_REGEX):
             state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
             return [
-                RecidivizPagerDutyService.airflow_service_for_state_code(
+                RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
                 RecidivizGitHubService.raw_data_service_for_state_code(
@@ -157,7 +157,7 @@ def get_alerting_services_for_incident(
         ):
             state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
             return [
-                RecidivizPagerDutyService.airflow_service_for_state_code(
+                RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
                 RecidivizGitHubService.raw_data_service_for_state_code(

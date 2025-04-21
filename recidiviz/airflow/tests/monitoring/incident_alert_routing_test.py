@@ -270,7 +270,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         self.assertEqual(
             [
-                RecidivizPagerDutyService.airflow_service_for_state_code(
+                RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
                 RecidivizGitHubService.raw_data_service_for_state_code(
@@ -287,7 +287,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         self.assertEqual(
             [
-                RecidivizPagerDutyService.airflow_service_for_state_code(
+                RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
                 RecidivizGitHubService.raw_data_service_for_state_code(
