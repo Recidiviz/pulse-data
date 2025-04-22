@@ -29,16 +29,21 @@ SENTENCING_CASE_RECORD_DESCRIPTION = """
     """
 
 SENTENCING_CASE_RECORD_QUERY_TEMPLATE = """
-    SELECT
-        {columns}
-    FROM `{project_id}.sentencing_views.sentencing_case_record_historical_materialized`
-    WHERE
-        -- Make sure that case is either not completed or completed within the last three months 
-        (completion_date > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR completion_date IS NULL)
-        -- For US_ND, only keep cases within the past year (there are some very old cases that were never completed)
-        AND (state_code != 'US_ND' OR due_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
-        -- Don't include cases where the staff member is inactive
-        AND employee_inactive = "0"
+SELECT
+  {columns}
+FROM
+  `{project_id}.sentencing_views.sentencing_case_record_historical_materialized`
+WHERE
+  -- Make sure that case is either not completed or completed within the last three months
+  (completion_date > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
+    OR completion_date IS NULL)
+  -- For US_ND, only keep cases within the past year (there are some very old cases that were never completed)
+  AND (state_code != 'US_ND'
+    OR due_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
+  -- Don't include cases where the staff member is inactive
+  AND employee_inactive = "0"
+  -- Don't include cases where the staff member wasn't matched, it means it wasn't assigned or there is an issue linking the case up
+  AND staff_id IS NOT NULL
 """
 
 SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
