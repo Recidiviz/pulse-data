@@ -1426,6 +1426,8 @@ US_NE:
   PIMSCasePlan:
     sessions.us_ne_special_condition_compliance_sessions: |-
       Identify case plans (check-ins) for special conditions.
+    workflows_views.us_ne_conditional_low_risk_override_record: |-
+      Get the latest contact note for someone surfaced in the CLR override workflow. TODO(#40952): remove once contacts are ingested
   PIMSCasePlanSpecialCondition:
     sessions.us_ne_special_condition_compliance_sessions: |-
       Get records of compliance for special conditions.

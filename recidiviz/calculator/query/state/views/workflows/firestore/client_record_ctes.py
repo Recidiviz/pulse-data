@@ -462,7 +462,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
             ON state_ids.state_name = state.LocationName
             WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date')}
         )
-        WHERE state_code IN ("US_IX", "US_CA")
+        WHERE state_code IN ("US_IX", "US_CA", "US_NE")
         GROUP BY state_code, person_id
     ),
 """

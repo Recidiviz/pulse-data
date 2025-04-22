@@ -16,7 +16,10 @@
 # =============================================================================
 """Queries information pertinent to Conditional Low Risk supervision overrides in Nebraska."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    today_between_start_date_and_nullable_end_date_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
@@ -60,25 +63,103 @@ WITH eligible_clients_with_duplicate_external_ids AS (
 
 eligible_clients AS (
     SELECT
-        eligible.*,
+        eligible.state_code,
+        eligible.external_id,
+        eligible.person_id,
+        eligible.reasons_v2 AS reasons,
+        eligible.is_eligible,
+        eligible.is_almost_eligible,
         tes_collapsed.start_date AS metadata_eligible_date,
     FROM eligible_clients_with_duplicate_external_ids eligible
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
         ON eligible.external_id = pei.person_external_id
     INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS_OVERRIDE.to_str()}` tes_collapsed
-            ON tes_collapsed.state_code = eligible.state_code
+        ON 
+            tes_collapsed.state_code = eligible.state_code
             AND tes_collapsed.person_id = eligible.person_id 
             AND CURRENT_DATE('US/Eastern') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}
+)
+,
+last_four_oras_scores AS (
+    SELECT
+        state_code,
+        person_id,
+        TO_JSON(
+            ARRAY_AGG(
+                STRUCT(
+                    assessment_level AS assessment_level,
+                    assessment_date AS assessment_date
+                )
+                ORDER BY assessment_date DESC LIMIT 4
+            )
+        ) AS last_four_oras_scores,
+        MAX(assessment_date) AS latest_assessment_date,
+        DATE_ADD(MAX(assessment_date), INTERVAL 6 MONTH) AS next_assessment_date,
+    FROM `{{project_id}}.normalized_state.state_assessment`
+    WHERE
+        state_code = 'US_NE'
+        AND assessment_type = 'ORAS_COMMUNITY_SUPERVISION_SCREENING'
+    GROUP BY 1,2
+)
+,
+last_case_plan_check_in_as_case_notes AS (
+    SELECT
+        inmateNumber AS external_id,
+        TO_JSON(
+            ARRAY_AGG(
+                STRUCT(
+                    NULL AS note_title, 
+                    checkIn AS note_body, 
+                    DATE(casePlanDate) AS event_date, 
+                    "Latest Case Plan Check-in" AS criteria
+                )
+                ORDER BY DATE(casePlanDate) DESC, checkIn LIMIT 1
+            )
+        ) AS case_notes,
+    -- TODO(#40952): replace with state_supervision_contact once address periods are ingested
+    FROM `{{project_id}}.us_ne_raw_data_up_to_date_views.PIMSCasePlan_latest` case_plan
+    GROUP BY 1
+)
+,
+special_conditions AS (
+    SELECT
+        state_code,
+        person_id,
+        TO_JSON(
+            ARRAY_AGG(
+                STRUCT(
+                    special_condition_type AS special_condition_type,
+                    compliance AS compliance
+                )
+                ORDER BY special_condition_type ASC
+            )
+        ) AS special_conditions,
+    FROM `{{project_id}}.sessions.us_ne_special_condition_compliance_sessions_materialized`
+    WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date_exclusive')}
+    GROUP BY 1,2
 )
 SELECT
     person_id,
     external_id,
     state_code,
-    reasons_v2 AS reasons,
+    reasons,
     is_eligible,
     is_almost_eligible,
+    last_case_plan_check_in_as_case_notes.case_notes AS case_notes,
     metadata_eligible_date,
+    last_four_oras_scores.last_four_oras_scores AS metadata_recent_oras_scores,
+    last_four_oras_scores.latest_assessment_date AS metadata_latest_assessment_date, -- Form + Metadata
+    last_four_oras_scores.next_assessment_date AS metadata_next_assessment_date, -- Form + Metadata
+    IFNULL(special_conditions.special_conditions, TO_JSON([])) AS metadata_special_conditions, -- Form + Metadata
+    -- TODO(#40171): Add latest disqualifying violation date to the view once we have a criterion
+    -- built specifically for disqualifying (more severe) violations
 FROM eligible_clients
+LEFT JOIN last_four_oras_scores
+    USING(state_code, person_id)
+LEFT JOIN special_conditions
+    USING(state_code, person_id)
+LEFT JOIN last_case_plan_check_in_as_case_notes
+    USING(external_id)
 """
 
 US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -91,9 +172,6 @@ US_NE_CONDITIONAL_LOW_RISK_OVERRIDE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_NE
     ),
-    # raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-    #     state_code=StateCode.US_NE, instance=DirectIngestInstance.PRIMARY
-    # ),
     should_materialize=True,
 )
 
