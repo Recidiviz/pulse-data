@@ -1,8 +1,8 @@
 # Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-ar project
 
-# Import billing_account and organization_id
 import:
-  - ../catalogs/organization-settings
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
 
 settings:
   context:
@@ -12,20 +12,6 @@ settings:
 # The variables set here are automatically provided to any components used in this stack.
 vars:
   project_id: "{{ .settings.context.project_id }}"
-
-terraform:
-  # Describes where the Terraform state file for these centrally-managed components is stored
-  # https://atmos.tools/core-concepts/components/terraform/backends#google-cloud-storage-backend
-  backend_type: gcs
-  backend:
-    gcs:
-      bucket: recidiviz-devops-tf-state
-      prefix: "projects/{{ .settings.context.project_id }}/{{ .component }}"
-  # This provides the default configuration for our Terraform providers
-  # https://atmos.tools/core-concepts/components/terraform/providers
-  providers:
-    google:
-      project: "{{ .settings.context.project_id }}"
 
 components:
   terraform:

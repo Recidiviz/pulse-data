@@ -1,0 +1,34 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-ar project
+
+import:
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+settings:
+  context:
+    project_id: recidiviz-ingest-us-ne
+    state_code: US_NE
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+
+components:
+  terraform:
+    # Provisions the recidiviz-ingest-us-ne project
+    vendor/core-project-factory:
+      vars:
+        name: "{{ .settings.context.project_id }}"
+        org_id: "{{ .settings.context.organization_id }}"
+        folder_id: "{{ .settings.context.hipaa_folder_id }}"
+        billing_account: "{{ .settings.context.billing_account }}"
+        # This project predates provisioning with the core-project-factory component so it may be using
+        # the default service accounts for some of its resources. We normally de-privilege them, but
+        # in this case, we'll keep them
+        default_service_account: KEEP
+        deletion_policy: PREVENT
+        domain: "{{ .settings.context.organization_domain }}"
+        # Grant the owner security group owner access (can be gained with go/jit)
+        group_name: "s-{{ .settings.context.project_id }}-owner"
+        group_role: roles/owner
+        auto_create_network: true
