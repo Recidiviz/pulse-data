@@ -39,6 +39,11 @@ approaches has been approved by ACIS administrators at ADCRR.
    a) Had intake completed at an office for which DPP_OFFICE_LOCATION.ACTIVE_FLAG = 'N' (the office no longer exists)
    b) Had intake completed > 5 years ago by an officer who is no longer active in MEA_PROFILES, and nothing has been tracked since then. 
    - Use previous start date as the end date (create only zero-day periods). 
+
+If a period was open and closed prior to the system migration on 2019-11-30, we will
+only be able to observe the most recent supervision level they were assigned. This is
+because original UPDT_DTM values signifying when an assignment happened were all overwritten
+with the date of the system migration, so we cannot place the assignments in time.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -88,12 +93,41 @@ get_officer_change_dates AS (
     WINDOW location_agent_window AS (PARTITION BY DIA.PERSON_ID, DIA.DPP_ID, DIA.ASSIGNED_FROM 
     ORDER BY INTAKE_ASSIGNMENT_ID ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
 ),
--- Get dates that supervision level changed
+-- Get all updates to supervision level and the previously assigned supervision level
+-- to facilitate comparison.
+level_changes_with_lag AS (
+    SELECT
+      DPPE.PERSON_ID,
+      DPPE.DPP_ID,
+      SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
+      CAST(DPPE.SUPERVISION_LEVEL_STARTDATE AS DATETIME) AS BEGAN_DATE,
+      CAST(DPPE.UPDT_DTM AS DATETIME) AS UPDT_DTM,
+      LAG(SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3), 1, NULL) OVER (
+        PARTITION BY
+          DPPE.PERSON_ID,
+          DPPE.DPP_ID
+        ORDER BY
+          DPPE.SUPERVISION_LEVEL_STARTDATE,
+          DPPE.UPDT_DTM
+      ) AS previous_supv_level
+    FROM
+      {DPP_EPISODE@ALL} DPPE
+      LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
+    WHERE   
+    -- do not include the first assigned level because that is included in the get_start_date CTE
+      DPPE.UPDT_DTM IS NOT NULL
+    -- We can only observe updates to supervision levels for changes that happened after the system migration on 2019-11-30. 
+    -- All rows for periods that ended before that migration have an UPDT_DTM that is 
+    -- the date of the migration, so any information about the timing of previous updates was lost.
+    -- For these people, we can only know their last-assigned supervision level.
+      AND DPPE.UPDT_DTM > '2019-12-01'
+  ),
+-- Isolate dates that supervision level changed
 get_level_change_dates AS (
     SELECT DISTINCT
-        DPPE.PERSON_ID,
-        DPPE.DPP_ID,
-        SUBSTR(UPPER(COALESCE(LLEVEL.CODE, 'UNK')), 1, 3) AS SUPV_LEVEL,
+        PERSON_ID,
+        DPP_ID,
+        SUPV_LEVEL,
         CAST(NULL AS STRING) AS OFFICE, 
         CAST(NULL AS STRING) AS OFFICER,
         'SUPV LEVEL ASSESSMENT' AS MOVEMENT_DESCRIPTION,
@@ -101,15 +135,8 @@ get_level_change_dates AS (
         CAST(NULL AS DATETIME) AS INTAKE_DATE,
         CAST(UPDT_DTM AS DATETIME) AS DATE_ASSESSMENT,
         CAST(NULL AS DATETIME) AS CRITICAL_MOVEMENT_DATE,
-    FROM {DPP_EPISODE@ALL} DPPE
-    LEFT JOIN {LOOKUPS} LLEVEL ON DPPE.SUPERVISION_LEVEL_ID = LLEVEL.LOOKUP_ID
-    -- do not include the first assigned level because that is included in the get_start_date CTE
-    WHERE DPPE.UPDT_DTM IS NOT NULL
-    -- We can only observe updates to supervision levels for changes that happened after the system migration on 2019-11-30. 
-    -- All rows for periods that ended before that migration have an UPDT_DTM that is 
-    -- the date of the migration, so any information about the timing of previous updates was lost.
-    -- For these people, we can only know their last-assigned supervision level.
-    AND DPPE.UPDT_DTM > '2019-11-30'
+    FROM level_changes_with_lag DPPE
+    WHERE SUPV_LEVEL != previous_supv_level
 ),
 -- Get dates that particular period-ending movements happened and their descriptions, 
 -- This is the first method by which we close periods. The remaining methods are included
