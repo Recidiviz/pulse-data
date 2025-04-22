@@ -31,7 +31,6 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.control_panel.utils import get_auth0_user_id
-from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
@@ -896,29 +895,22 @@ def get_admin_blueprint(
                 if not dimension_metric_interface:
                     continue
 
-                # Start fresh
-                updated_dimension_to_other_sub_dimension_to_enabled_status: Dict[
-                    DimensionBase, Dict[str, Optional[bool]]
-                ] = defaultdict(dict)
-
                 for sub_dimension_json in breakdown.get("sub_dimensions", []):
                     enum_member = dimension_enum[sub_dimension_json["dimension_key"]]
-                    existing_other_sub_dimension_to_enabled_status = dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status.get(
-                        enum_member, {}
-                    )
+                    updated_other_sub_dimension_to_enabled_status = {}
                     for option in sub_dimension_json["other_options"]:
                         option_normalized = option.upper().strip()
-                        updated_dimension_to_other_sub_dimension_to_enabled_status[
-                            enum_member
-                        ][
+                        updated_other_sub_dimension_to_enabled_status[
                             option_normalized
-                        ] = existing_other_sub_dimension_to_enabled_status.get(
-                            option, None
+                        ] = dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status.get(
+                            enum_member, {}
+                        ).get(
+                            option_normalized, None
                         )
+                    dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status[
+                        enum_member
+                    ] = updated_other_sub_dimension_to_enabled_status
 
-                dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status = (
-                    updated_dimension_to_other_sub_dimension_to_enabled_status
-                )
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=current_session,
                 agency=agency,

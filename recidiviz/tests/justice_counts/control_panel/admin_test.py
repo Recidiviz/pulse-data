@@ -1408,8 +1408,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                             ForceType.OTHER_WEAPON: True,
                         },
                         dimension_to_other_sub_dimension_to_enabled_status={
-                            ForceType.OTHER: {"foo": True, "bar": False},
-                            ForceType.OTHER_WEAPON: {"bar": None},
+                            ForceType.OTHER: {"FOO": True, "BAR": False},
+                            ForceType.OTHER_WEAPON: {"BAR": None},
                         },
                     )
                 ],
@@ -1426,8 +1426,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                         dimension_to_enabled_status={ExpenseType.OTHER: True},
                         dimension_to_other_sub_dimension_to_enabled_status={
                             ExpenseType.OTHER: {
-                                "One Dimension": True,
-                                "Two Dimension": False,
+                                "ONE DIMENSION": True,
+                                "TWO DIMENSION": False,
                             },
                         },
                     )
