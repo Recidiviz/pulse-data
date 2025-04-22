@@ -1,0 +1,159 @@
+{
+  "clusters": {
+    "usMiEarlyDischarge": {
+      "Financial Obligations": [
+        "Fines and Fees/Restitution",
+        "Child Support (FOC)",
+        "Other"
+      ],
+      "Compliance Issues": [
+        "Recent/Pending Violations",
+        "Non-Compliance with Conditions (General)",
+        "Absconding/Warrant Status",
+        "New Criminal Activity/Charges",
+        "Other"
+      ],
+      "Time Constraints": [
+        "Too Early in Supervision",
+        "Specific Discharge Date Set/Near Discharge",
+        "Waiting Period After Event",
+        "Other"
+      ],
+      "Judge/Court Decisions": [
+        "Judge's Decision/Policy",
+        "Court Program Requirements",
+        "HYTA Status",
+        "Delayed Sentence",
+        "Other"
+      ],
+      "Other Actor Requests/Requirements": [
+        "Sentencing County Requirements/Disagreements",
+        "Other"
+      ],
+      "Case-Specific Circumstances": [
+        "Assessment/Evaluation Needed",
+        "Pending Information/Investigation",
+        "Deceased",
+        "Medical Reasons/Hospitalization",
+        "Incarcerated",
+        "Incomplete Treatment/Programming",
+        "Incomplete Community Service",
+        "Other"
+      ],
+      "Other": [
+        "Other"
+      ]
+    },
+    "usMiClassificationReview": {
+      "Financial Obligations": [
+        "Fines and Fees/Restitution",
+        "Other"
+      ],
+      "Compliance Issues": [
+        "Recent/Pending Violations",
+        "Non-Compliance with Conditions (General)",
+        "Absconding/Warrant Status",
+        "New Criminal Activity/Charges",
+        "Other"
+      ],
+      "Time Constraints": [
+        "Too Early in Supervision",
+        "Specific Discharge Date Set/Near Discharge",
+        "Waiting Period After Event",
+        "Other"
+      ],
+      "Judge/Court Decisions": [
+        "Court Program Requirements",
+        "Other"
+      ],
+      "Other Actor Requests/Requirements": [
+        "Interstate Compact",
+        "Other"
+      ],
+      "Case-Specific Circumstances": [
+        "Assessment/Evaluation Needed",
+        "Pending Information/Investigation",
+        "Deceased",
+        "Medical Reasons/Hospitalization",
+        "Incomplete Community Service",
+        "Severity Of Crime Type",
+        "Other"
+      ],
+      "Other": [
+        "Other"
+      ]
+    },
+    "usMiMinimumTelephoneReporting": {
+      "Financial Obligations": [
+        "Fines and Fees/Restitution",
+        "Child Support (FOC)",
+        "Other"
+      ],
+      "Compliance Issues": [
+        "Recent/Pending Violations",
+        "Non-Compliance with Conditions (General)",
+        "Absconding/Warrant Status",
+        "New Criminal Activity/Charges",
+        "Other"
+      ],
+      "Time Constraints": [
+        "Too Early in Supervision",
+        "Other"
+      ],
+      "Judge/Court Decisions": [
+        "Judge's Decision/Policy",
+        "Court Program Requirements",
+        "Delayed Sentence",
+        "Other"
+      ],
+      "Other Actor Requests/Requirements": [
+        "Other Agency/Party Request",
+        "Interstate Compact",
+        "Other"
+      ],
+      "Case-Specific Circumstances": [
+        "Pending Information/Investigation",
+        "Incomplete Treatment/Programming",
+        "Deceased",
+        "Other"
+      ],
+      "Other": [
+        "Other"
+      ]
+    },
+    "usMiSupervisionLevelDowngrade": {
+      "Financial Obligations": [
+        "Fines and Fees/Restitution",
+        "Other"
+      ],
+      "Compliance Issues": [
+        "Recent/Pending Violations",
+        "Non-Compliance with Conditions (General)",
+        "Absconding/Warrant Status",
+        "New Criminal Activity/Charges",
+        "Other"
+      ],
+      "Time Constraints": [
+        "Too Early in Supervision",
+        "Other"
+      ],
+      "Judge/Court Decisions": [
+        "Court Program Requirements",
+        "Other"
+      ],
+      "Other Actor Requests/Requirements": [
+        "Other Agency/Party Request",
+        "Other"
+      ],
+      "Case-Specific Circumstances": [
+        "Assessment/Evaluation Needed",
+        "Medical Reasons/Hospitalization",
+        "Incomplete Treatment/Programming",
+        "Other"
+      ],
+      "Other": [
+        "Other"
+      ]
+    }
+  }
+}
