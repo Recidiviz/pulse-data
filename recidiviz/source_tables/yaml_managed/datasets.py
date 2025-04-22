@@ -19,7 +19,6 @@ managed by our standard source table update process, with schemas defined in a Y
 in this directory.
 """
 from recidiviz.calculator.query.state.dataset_config import (
-    EXPORT_ARCHIVES_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SPARK_OUTPUT_DATASET,
 )
@@ -47,7 +46,4 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
     HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
-    EXPORT_ARCHIVES_DATASET: (
-        "Contains tables that archive the contents of daily exports."
-    ),
 }
