@@ -588,7 +588,7 @@ class OtherBehavioralHealthNeedIncludesExcludes(Enum):
     ECONOMIC_HOUSING_EDUCATION = (
         "People with economic, housing, or educational problems"
     )
-    SOCIAL_SUPPORT_PROBLEMS = "People with problems with a primary support group or relating to their social environment"
+    SOCIAL_SUPPORT_PROBLEMS = "People with problems with close relationships or with relating to their social environment"
 
 
 class UnknownBehavioralHealthNeedIncludesExcludes(Enum):
