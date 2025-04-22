@@ -39,16 +39,25 @@ WITH
             REGEXP_REPLACE(ToLocationID, r'[^A-Z0-9]', '') as ToLocationID,
          FROM {OffenderMovement}
     ),
-    -- It is a known data issue that some people will have a final movement of Discharge in OffenderMovement, but we will 
+    -- It is a known data issue that some people will have a final movement in OffenderMovement, but we will 
     -- still see them having unit movements in CellBedAssignment or Custody Level info in Clssification. This CTE finds 
-    -- people whose last movement in OffenderMovement is a Discharge and then sets the MaxDischargeDate so that we don't 
+    -- people whose last movement in OffenderMovement is a Discharge, movement to supervision, or court and then sets the MaxOutDate so that we don't 
     -- add in info from CellBedAssignment or Classification that would create open periods when the person's should be closed out. 
-    -- If someone's most recent movement in OffenderMovement is NOT a discharge, we don't restrict any data, ensuring that all updates 
-    -- for actively incarcerated are tracked. 
+    -- If someone's most recent movement in OffenderMovement is NOT a discharge/supervision release/court, we don't restrict any data, ensuring that all updates 
+    -- for actively incarcerated are tracked. We have included court as well because sometimes the last movement is to court
+    -- but if there is any offendermovement after movement to court they will have the correct unit and custody information
     find_max_offender_discharge_movement_date AS (
         SELECT 
             OffenderID, 
-            CASE WHEN MovementType LIKE '%DI' THEN MovementDateTime ELSE NULL END as MaxDischargeDate
+            CASE 
+                WHEN MovementType LIKE '%DI' THEN MovementDateTime 
+                WHEN MovementType LIKE '%PA' THEN MovementDateTime 
+                WHEN MovementType LIKE '%PR' THEN MovementDateTime 
+                WHEN MovementType LIKE '%CC' THEN MovementDateTime 
+                WHEN MovementType LIKE '%DV' THEN MovementDateTime 
+                WHEN MovementType LIKE '%CT' THEN MovementDateTime 
+                ELSE NULL 
+            END as MaxOutDate
         FROM (
             SELECT 
             OffenderID,
@@ -56,7 +65,7 @@ WITH
             MovementDateTime,
             ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementDateTime DESC) as max_movement_entry
             FROM {OffenderMovement}) AS a
-        WHERE max_movement_entry = 1 AND RIGHT(MovementType, 2) = 'DI'
+        WHERE max_movement_entry = 1 AND RIGHT(MovementType, 2) IN ('DI', 'PA', 'PR', 'CC', 'DV', 'CT')
     ),
     -- Next, we pull information from the Classification data table to hydrate custody level information for a person throughout their periods
     classification_filter AS (	
@@ -73,7 +82,7 @@ WITH
         LEFT JOIN find_max_offender_discharge_movement_date USING (OffenderID)
         WHERE ClassificationDecision = 'A'  # denotes final custody level	
         AND EXTRACT(YEAR FROM CAST(ClassificationDate AS DATETIME)) > 2002  # Data is not reliable before 	
-        AND ClassificationDate <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
+        AND ClassificationDate <= COALESCE(MaxOutDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
     ), 
     -- Then, we pull information from CellBedAssignment to hydrate housing unit information. Note that this table sometimes does not match with the OffenderMovement location information, so we incorporate some logic to help deal with edge cases
     cell_bed_assignment_setup AS (
@@ -90,9 +99,16 @@ WITH
             COUNTIF(EndDate IS NULL) OVER (PARTITION BY OffenderID ORDER BY AssignmentDateTime range between UNBOUNDED preceding and UNBOUNDED FOLLOWING) AS HasOpenPeriod, # This determines if a given person has any open housing unit periods in this table (regardless of it being the last one chronologically by StartDate
             LAST_VALUE(AssignmentDateTime ignore nulls) OVER (PARTITION BY OffenderID ORDER BY AssignmentDateTime range between UNBOUNDED preceding and UNBOUNDED FOLLOWING) AS LastAssignmentDate, # This determines when the last assignment was given in CellBedAssignment for a given person
             LAST_VALUE(EndDate) OVER (PARTITION BY OffenderID ORDER BY AssignmentDateTime range between UNBOUNDED preceding and UNBOUNDED FOLLOWING) AS LastAssignmentEndDate # This determines if the last period assigned to a person has an end date or is an open period
-        FROM {CellBedAssignment}
+        FROM (
+            -- Some records have an assignment end date on or before the assignment start
+            -- date. These are omitted when constructing incarceration periods because the
+            -- dates don't make sense and we don't know what the correct ones are.
+            SELECT *
+            FROM {CellBedAssignment}
+            WHERE EndDate IS NULL OR EndDate > AssignmentDateTime
+        )
         LEFT JOIN find_max_offender_discharge_movement_date USING (OffenderID)
-        WHERE RequestedUnitID IS NOT NULL and AssignmentDateTime <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
+        WHERE RequestedUnitID IS NOT NULL and AssignmentDateTime <= COALESCE(MaxOutDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
         AND EXTRACT(YEAR FROM CAST(AssignmentDateTime AS DATETIME)) > 2002  # Data is not reliable before 2002
     
     ),
