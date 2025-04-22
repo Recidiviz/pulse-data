@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query that generates drug screen information."""
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -26,7 +29,7 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#16038): Revisit after Atlas launch to see if this field is hydrated
 # FacTestReasonId = 57 (Admitted Use)
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 SELECT
     DrugTestResultId,
     OffenderId,
@@ -38,9 +41,11 @@ SELECT
         WHEN '0' THEN 'Not All Negative Results'
         WHEN '1' THEN 'All Negative Results'
     END AS AllNegative,
-FROM {drg_DrugTestResult}
-LEFT JOIN {drg_TestingMethod}
+FROM {{drg_DrugTestResult}}
+LEFT JOIN {{drg_TestingMethod}}
     USING (TestingMethodId)
+WHERE DATE(CollectionDate)
+    BETWEEN '{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}' and @update_timestamp 
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
