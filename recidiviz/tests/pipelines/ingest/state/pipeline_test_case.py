@@ -297,6 +297,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
                         columns_to_ignore=columns_to_ignore,
                         create_expected=create_expected,
                         expect_missing_fixtures_on_empty_results=True,
+                        expect_unique_output_rows=True,
                     )
                 except FileNotFoundError as e:
                     raise ValueError(

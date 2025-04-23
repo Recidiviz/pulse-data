@@ -256,6 +256,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         expected_output_fixture_path: str,
         expect_missing_fixtures_on_empty_results: bool,
         create_expected: bool,
+        expect_unique_output_rows: bool,
     ) -> None:
         project_specific_address = address.to_project_specific_address(
             metadata.project_id()
@@ -275,6 +276,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             expected_output_fixture_path=expected_output_fixture_path,
             create_expected=create_expected,
             expect_missing_fixtures_on_empty_results=expect_missing_fixtures_on_empty_results,
+            expect_unique_output_rows=expect_unique_output_rows,
         )
 
     @classmethod
@@ -284,6 +286,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         expected_output_fixture_path: str,
         expect_missing_fixtures_on_empty_results: bool,
         create_expected: bool,
+        expect_unique_output_rows: bool,
     ) -> None:
         """Compares the results in the given Dataframe that have been presumably read
         out of the BQ emulator and compares them to the data in the fixture file at the
@@ -338,6 +341,12 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         pd.options.display.max_columns = 999
         pd.options.display.max_rows = 999
         pd.options.display.max_colwidth = 999
+
+        if expect_unique_output_rows and results.duplicated().any():
+            raise ValueError(
+                f"Expected unique output rows in results, but found duplicates: "
+                f"{expected_output_fixture_path=} \n\n {results}"
+            )
 
         print(f"Loading expected results from path [{expected_output_fixture_path}]")
         expected = load_dataframe_from_path(

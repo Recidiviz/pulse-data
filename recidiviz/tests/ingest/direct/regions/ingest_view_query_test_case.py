@@ -320,6 +320,7 @@ class LegacyIngestViewEmulatorQueryTestCase(
             expected_output_fixture_path,
             create_expected=create_expected,
             expect_missing_fixtures_on_empty_results=False,
+            expect_unique_output_rows=True,
         )
         lint_ingest_view_query(self.ingest_view(), self.query_run_dt, self.state_code())
 
@@ -533,6 +534,7 @@ class StateIngestViewTestCase(
             expected_output_fixture_path,
             create_expected=create_expected_output,
             expect_missing_fixtures_on_empty_results=False,
+            expect_unique_output_rows=True,
         )
 
     def _run_ingest_view_query(self) -> pd.DataFrame:
