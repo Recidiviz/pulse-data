@@ -31,6 +31,9 @@ from collections import namedtuple
 from queue import Queue
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_METADATA_COLUMNS,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     DirectIngestViewRawFileDependency,
@@ -135,8 +138,11 @@ def build_root_entity_filtered_raw_data_queries(
         if file_tags_to_skip_with_reason and file_tag in file_tags_to_skip_with_reason:
             subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
         else:
+            cols = [c.name for c in raw_file_dependency.current_columns] + list(
+                sorted(RAW_DATA_METADATA_COLUMNS)
+            )
             subset_queries[file_tag] = (
-                f"SELECT {', '.join(c.name for c in raw_file_dependency.current_columns)} "
+                f"SELECT {', '.join(cols)} "
                 + f"FROM {project_id}.{dataset}.{file_tag} "
                 + _get_config_filter(
                     raw_file_dependency.raw_file_config,

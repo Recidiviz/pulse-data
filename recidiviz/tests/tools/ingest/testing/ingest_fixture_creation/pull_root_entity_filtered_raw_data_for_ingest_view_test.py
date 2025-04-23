@@ -44,7 +44,7 @@ def test_get_raw_data_dependency_subsets() -> None:
         "mo_example_queries.json",
         encoding="utf-8",
     ) as f:
-        expected_queries = json.loads(f.read())
+        expected_queries = json.load(f)
     assert queries == expected_queries
 
     # Testing with a code_file, some files
@@ -63,5 +63,5 @@ def test_get_raw_data_dependency_subsets() -> None:
         "az_example_queries.json",
         encoding="utf-8",
     ) as f:
-        expected_queries = json.loads(f.read())
+        expected_queries = json.load(f)
     assert queries == expected_queries
