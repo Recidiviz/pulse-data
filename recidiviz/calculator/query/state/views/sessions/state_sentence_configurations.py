@@ -51,6 +51,7 @@ STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [
 STATES_WITH_NO_INFERRED_OPEN_SPANS = [
     StateCode.US_ME.name,
     StateCode.US_MI.name,
+    StateCode.US_UT.name,
 ]
 
 # Handle the processing of these states separately until all states have migrated to the sentence v2 schema

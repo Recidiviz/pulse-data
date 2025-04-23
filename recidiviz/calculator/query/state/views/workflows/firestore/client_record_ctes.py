@@ -25,6 +25,10 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
     workflows_state_specific_supervision_type,
 )
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
+    STATES_WITH_NO_INFERRED_OPEN_SPANS,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
     US_CA_MOST_RECENT_CLIENT_DATA,
 )
@@ -66,29 +70,38 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         {US_CA_MOST_RECENT_CLIENT_DATA}
     ), 
 
-    us_ut_projected_completion_dates_spans AS (
+    us_tx_max_termination_dates AS (
+        {US_TX_MAX_TERMINATION_DATES}
+    ),
+
+    -- Pull the most recent |group_projected_full_term_release_date_max| for all person/sentence spans
+    -- that do not start in the future
+    -- For states in the |STATES_WITH_NO_INFERRED_OPEN_SPANS| list, only pull the sentence date if the
+    -- span is currently open
+    projected_completion_date_sessions AS (
         SELECT
             state_code,
             person_id,
-            start_date,
-            end_date_exclusive AS end_date,
-            MAX(sentence_projected_full_term_release_date_max) AS projected_completion_date_max
-        FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
-        UNNEST(sentence_array)
-        JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
-            USING(person_id, state_code, sentence_id)
-        JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_start_date_materialized`
-            USING(person_id, state_code, sentence_id)
-        WHERE
-            -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
-            -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 
-                effective_date < sentence_projected_full_term_release_date_max
-                AND state_code = "US_UT"
-        GROUP BY 1, 2, 3, 4
-    ),
-
-    us_tx_max_termination_dates AS (
-        {US_TX_MAX_TERMINATION_DATES}
+            group_projected_full_term_release_date_max,
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+        WHERE start_date <= CURRENT_DATE("US/Eastern")
+            -- TODO(#41395): remove this restriction once supervision_projected_completion_date_spans is deprecated
+            AND state_code NOT IN ({list_to_query_string(
+                string_list=STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
+                quoted=True,
+            )})
+            -- Only Infer the most recent sentence span is open if the state code is not in the
+            -- "no inferred open spans" config list
+            AND (
+                IF(state_code IN ({list_to_query_string(
+                        string_list=STATES_WITH_NO_INFERRED_OPEN_SPANS,
+                        quoted=True,
+                    )}),
+                    end_date_exclusive IS NULL,
+                    TRUE
+                )
+            )
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1
     ),
 
     supervision_cases AS (
@@ -108,15 +121,13 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             sessions.supervising_officer_external_id_end
           ) AS officer_id,
           COALESCE(oregon_county, sessions.supervision_district_name_end) AS district,
-          IFNULL(
-            projected_end.projected_completion_date_max,
-            COALESCE(
-                projected_end_ut.projected_completion_date_max,
-                LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
-                ca_pp.EarnedDischargeDate,
-                ca_pp.ControllingDischargeDate,
-                us_tx_max_termination_dates.tx_max_termination_Date
-            )
+          COALESCE(
+            projected_end.group_projected_full_term_release_date_max,
+            projected_end_v1.projected_completion_date_max,
+            LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
+            ca_pp.EarnedDischargeDate,
+            ca_pp.ControllingDischargeDate,
+            us_tx_max_termination_dates.tx_max_termination_Date
           ) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
@@ -125,18 +136,17 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
             AND pei.system_type = "SUPERVISION"
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
+        LEFT JOIN projected_completion_date_sessions projected_end
             ON sessions.state_code = projected_end.state_code
             AND sessions.person_id = projected_end.person_id
+        # TODO(#41395): Deprecate `supervision_projected_completion_date_spans` and pull all
+        # sentence data through the sentence v2 views
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end_v1
+            ON sessions.state_code = projected_end_v1.state_code
+            AND sessions.person_id = projected_end_v1.person_id
             AND CURRENT_DATE('US/Eastern')
-                BETWEEN projected_end.start_date
-                    AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
-        LEFT JOIN us_ut_projected_completion_dates_spans projected_end_ut
-            ON sessions.state_code = projected_end_ut.state_code
-            AND sessions.person_id = projected_end_ut.person_id
-            AND CURRENT_DATE('US/Eastern')
-                BETWEEN projected_end_ut.start_date
-                    AND {nonnull_end_date_exclusive_clause('projected_end_ut.end_date')}
+                BETWEEN projected_end_v1.start_date
+                    AND {nonnull_end_date_exclusive_clause('projected_end_v1.end_date')}
         -- Remove clients who previously had an active officer, but no longer do.
         INNER JOIN (
             SELECT DISTINCT
