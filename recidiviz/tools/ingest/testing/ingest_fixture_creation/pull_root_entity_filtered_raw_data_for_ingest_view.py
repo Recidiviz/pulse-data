@@ -30,25 +30,11 @@ Example usage:
 from collections import namedtuple
 from queue import Queue
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
-)
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    StateSchemaIngestViewManifestCompilerDelegate,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     DirectIngestViewRawFileDependency,
 )
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 # Used to keep track of JOIN clauses when we search through
 # table relationships.
@@ -94,7 +80,9 @@ def _join_table_to_external_id_table(
                 ).strip()
             table_queue.put(TableJoin(f_table, join_clause))
     raise ValueError(
-        f"Table {config.file_tag} has no primary external ID or table relationships."
+        f"Table {config.file_tag} could not be linked to {external_id_type}. "
+        "Please update the raw file config to denote an external ID column or "
+        "relevant table relationships."
     )
 
 
@@ -121,12 +109,12 @@ def _get_config_filter(
             all_dependencies,
         )
     raise ValueError(
-        f"Table {config.file_tag} has no primary external ID or table relationships."
+        f"Table {config.file_tag} could not be linked to {external_id_type}. "
+        "Please update the raw file config to denote an external ID column or "
+        "relevant table relationships."
     )
 
 
-# TODO(#39680) Update error handling so that data dependencies that do not relate
-# to a root entity ID are as helpful as possible.
 def build_root_entity_filtered_raw_data_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
@@ -148,7 +136,8 @@ def build_root_entity_filtered_raw_data_queries(
             subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
         else:
             subset_queries[file_tag] = (
-                f"SELECT * FROM {project_id}.{dataset}.{file_tag} "
+                f"SELECT {', '.join(c.name for c in raw_file_dependency.current_columns)} "
+                + f"FROM {project_id}.{dataset}.{file_tag} "
                 + _get_config_filter(
                     raw_file_dependency.raw_file_config,
                     external_id_type,
@@ -159,34 +148,3 @@ def build_root_entity_filtered_raw_data_queries(
                 )
             ).strip()
     return subset_queries
-
-
-def main(
-    state_code: StateCode,
-    ingest_view_name: str,
-    external_id_type: str,
-    external_id_value: str,
-    project_id: str = GCP_PROJECT_STAGING,
-) -> None:
-    """Builds queries to subset raw data for a given ingest view based on the given external ID."""
-    region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
-    view_collector = DirectIngestViewQueryBuilderCollector.from_state_code(state_code)
-    mapping_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-    )
-
-    view_builder = view_collector.get_query_builder_by_view_name(ingest_view_name)
-    mapping = mapping_collector.ingest_view_to_manifest[ingest_view_name]
-    if external_id_type not in mapping.root_entity_external_id_types:
-        raise ValueError(
-            f"External ID type {external_id_type} not expected for ingest view {ingest_view_name}. "
-            f"Expected external ID types: {mapping.root_entity_external_id_types}"
-        )
-    dataset = raw_tables_dataset_for_region(state_code, DirectIngestInstance.PRIMARY)
-    for file_tag, query in build_root_entity_filtered_raw_data_queries(
-        view_builder, external_id_type, external_id_value, dataset, project_id
-    ).items():
-        # TODO(#39680): Execute the query against BigQuery and download.
-        # and/or incorporate into the fixture generation script.
-        print(f"Query for {file_tag}:\n", query)

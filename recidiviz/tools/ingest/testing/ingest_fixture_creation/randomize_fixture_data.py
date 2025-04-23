@@ -17,11 +17,9 @@
 """This module has functionality to randomize fixture data."""
 
 import re
-import string
 from datetime import datetime, timedelta
 from enum import Enum
 
-import numpy
 import pandas as pd
 from faker import Faker
 from faker.providers import BaseProvider
@@ -225,38 +223,3 @@ def randomize_fixture_data(
                 f"Field type {col.field_type} is not supported for randomization."
             )
     return df
-
-
-# TODO(#39680) DEPRECATE THIS FUNCTION
-def legacy_randomize_value(
-    value: str, column_info: RawTableColumnInfo, datetime_format: str
-) -> str:
-    """For each character in a string, checks whether the character is a number or letter and replaces it with a random
-    matching type character."""
-    # TODO(#12179) Improve and unit test randomization options by specifying pii_type.
-    FAKE = Faker(locale=["en-US"])
-    FAKE.seed_instance(0)
-    randomized_value = ""
-    if column_info.is_datetime:
-        randomized_value = FAKE.date(pattern=datetime_format)
-    elif "name" in column_info.name.lower():
-        first_middle_name_strs = {"first", "f", "middle", "m"}
-        if any(x in column_info.name for x in first_middle_name_strs):
-            randomized_value = FAKE.first_name_nonbinary() + str(FAKE.random_number(2))
-        surname_strs = {"surname", "last", "l", "sur"}
-        if any(x in column_info.name for x in surname_strs):
-            randomized_value = FAKE.last_name() + str(FAKE.random_number(2))
-    else:
-        randomized_value = ""
-        for character in value:
-            if character.isnumeric():
-                randomized_value += str(numpy.random.randint(1, 9, 1)[0])
-            if character.isalpha():
-                randomized_value += numpy.random.choice(
-                    list(string.ascii_uppercase), size=1
-                )[0]
-
-    print(
-        f"Randomizing value from column '{column_info.name}': {value} -> {randomized_value}"
-    )
-    return randomized_value

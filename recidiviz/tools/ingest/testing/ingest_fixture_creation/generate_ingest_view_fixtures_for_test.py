@@ -276,7 +276,6 @@ def _validate_and_preview_queries(
     return queries
 
 
-# TODO(#39680) Have this be the only way to generate test fixtures.
 def main() -> None:
     """Generates raw data fixtures from command line arguments."""
     args = _parse_args()
