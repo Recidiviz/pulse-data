@@ -58,7 +58,7 @@ SELECT
     COMMITMENT_ID,
     SC_EPISODE_ID,
     PERSON_ID,
-    FINAL_OFFENSE_ID -- used to find the 'controlling' charge
+    COALESCE(FINAL_OFFENSE_ID_ML, FINAL_OFFENSE_ID) AS FINAL_OFFENSE_ID -- used to find the 'controlling' charge
 FROM
     {AZ_DOC_SC_OFFENSE} AS sentence
 -- Many sentences can be linked to a single commitment

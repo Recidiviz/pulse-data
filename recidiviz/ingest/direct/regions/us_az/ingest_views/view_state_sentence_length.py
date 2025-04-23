@@ -113,26 +113,12 @@ SELECT
 FROM previous_dates
 WHERE UPDT_DTM IS NOT NULL
 AND 
--- any of the dates changed
-(CommunitySupervisionBeginDate != prev_CSBD
-OR EarnedReleaseCreditDate != prev_ERCD
-OR SentenceExpirationDate != prev_SED
-OR TransitionToAbsoluteDischargeDate != prev_TRtoADD
-OR AbsoluteDischargeDate != prev_ADD)
-OR
--- any date appeared for the first time 
-((CommunitySupervisionBeginDate IS NOT NULL AND prev_CSBD IS NULL)
-OR (EarnedReleaseCreditDate IS NOT NULL AND prev_ERCD IS NULL)
-OR (SentenceExpirationDate IS NOT NULL AND prev_SED IS NULL)
-OR (TransitionToAbsoluteDischargeDate IS NOT NULL AND prev_TRtoADD IS NULL)
-OR (AbsoluteDischargeDate IS NOT NULL AND prev_ADD IS NULL))
-OR 
--- any date was cleared
-((CommunitySupervisionBeginDate IS NULL AND prev_CSBD IS NOT NULL)
-OR (EarnedReleaseCreditDate IS NULL AND prev_ERCD IS NOT NULL)
-OR (SentenceExpirationDate IS NULL AND prev_SED IS NOT NULL)
-OR (TransitionToAbsoluteDischargeDate IS NULL AND prev_TRtoADD IS NOT NULL)
-OR (AbsoluteDischargeDate IS NULL AND prev_ADD IS NOT NULL))
+-- any of the dates changed, appeared, or disappeared
+(CommunitySupervisionBeginDate IS DISTINCT FROM prev_CSBD
+OR EarnedReleaseCreditDate IS DISTINCT FROM prev_ERCD
+OR SentenceExpirationDate IS DISTINCT FROM prev_SED
+OR TransitionToAbsoluteDischargeDate IS DISTINCT FROM prev_TRtoADD
+OR AbsoluteDischargeDate IS DISTINCT FROM prev_ADD)
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",

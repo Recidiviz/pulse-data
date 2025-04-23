@@ -119,7 +119,7 @@ FROM
     }
     )
     WHERE parole_eligibility_date__sentence != parole_eligibility_date__sentence_group
-        OR projected_parole_release_date__sentence!=parole_eligibility_date__sentence_group
+        OR projected_parole_release_date__sentence!=projected_parole_release_date__sentence_group
         OR projected_full_term_release_date_min__sentence!=projected_full_term_release_date_min__sentence_group 
         OR projected_full_term_release_date_max__sentence!=projected_full_term_release_date_max__sentence_group
 """

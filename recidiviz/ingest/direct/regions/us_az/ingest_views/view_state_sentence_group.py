@@ -99,7 +99,7 @@ cleaned_AZ_DOC_SC_OFFENSE_ALL AS (
 cleaned_AZ_DOC_SC_EPISODE AS (
     SELECT DISTINCT
         SC_EPISODE_ID,
-        FINAL_OFFENSE_ID, 
+        COALESCE(FINAL_OFFENSE_ID_ML, FINAL_OFFENSE_ID) AS FINAL_OFFENSE_ID 
     FROM {{AZ_DOC_SC_EPISODE}}
 ),
 -- There are two to three values for each date provided in the raw data to account for
