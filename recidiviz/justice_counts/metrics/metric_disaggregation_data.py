@@ -723,13 +723,13 @@ class MetricAggregatedDimensionData:
                 ):
                     json["sub_dimensions"] = [
                         {
-                            "display_name": display_name.title(),
-                            "value": self.dimension_to_other_sub_dimension_to_value[
-                                dimension
-                            ].get(display_name),
+                            "display_name": sub_dimension_name.title(),
+                            "value": self.dimension_to_other_sub_dimension_to_value.get(
+                                dimension, {}
+                            ).get(sub_dimension_name, None),
                             "enabled": enabled,
                         }
-                        for display_name, enabled in self.dimension_to_other_sub_dimension_to_enabled_status[
+                        for sub_dimension_name, enabled in self.dimension_to_other_sub_dimension_to_enabled_status[
                             dimension
                         ].items()
                     ]
