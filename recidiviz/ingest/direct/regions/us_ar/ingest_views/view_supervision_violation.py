@@ -35,6 +35,7 @@ WITH offenses AS (
 ),
 sanctions AS (
   SELECT
+    DISTINCT
     sanc.OFFENDERID,
     sanc.INTERVENTIONDATE,
     sanc.INTERVENTIONTIME,
