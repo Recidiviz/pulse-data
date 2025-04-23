@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utilities for generating templates for Bulk Upload.
-"""
+"""Utilities for generating templates for Bulk Upload."""
 
 
 import datetime
@@ -336,28 +335,43 @@ def _add_rows_for_disaggregated_metric(
                 ):
                     # If a dimension is turned off, don't include it in the spreadsheet.
                     continue
+            values_to_add = [dimension.value]
 
-            if is_single_page_template is False:
-                # Columns will be `year`, `month`, `system`,
-                # `disaggregation col (i.e offense_type)`, `value`
-                new_rows.append(
-                    {
-                        **row,  # type: ignore[arg-type]
-                        metricfile.disaggregation_column_name: dimension.value,  # type: ignore
-                        "value": "",
-                    }
-                )
-            else:
-                # Columns will be `metric`, `year`, `month`, `system`
-                # `breakdown_category`, `breakdown`, `value`
-                new_rows.append(
-                    {
-                        **row,  # type: ignore[arg-type]
-                        "breakdown_category": metricfile.disaggregation_column_name,  # type: ignore
-                        "breakdown": dimension.value,
-                        "value": "",
-                    }
-                )
+            if dimension_metric_interface is not None:
+                # Add sub-dimensions
+                for (
+                    sub_dimension,
+                    enabled_status,
+                ) in dimension_metric_interface.dimension_to_other_sub_dimension_to_enabled_status.get(
+                    dimension, {}
+                ).items():
+                    if enabled_status is True:
+                        values_to_add.append(
+                            f"{dimension.value} - {sub_dimension.title()}"
+                        )
+
+            for value in values_to_add:
+                if is_single_page_template is False:
+                    # Columns will be `year`, `month`, `system`,
+                    # `disaggregation col (i.e offense_type)`, `value`
+                    new_rows.append(
+                        {
+                            **row,  # type: ignore[arg-type]
+                            metricfile.disaggregation_column_name: value,  # type: ignore
+                            "value": "",
+                        }
+                    )
+                else:
+                    # Columns will be `metric`, `year`, `month`, `system`
+                    # `breakdown_category`, `breakdown`, `value`
+                    new_rows.append(
+                        {
+                            **row,  # type: ignore[arg-type]
+                            "breakdown_category": metricfile.disaggregation_column_name,  # type: ignore
+                            "breakdown": value,
+                            "value": "",
+                        }
+                    )
 
     return new_rows
 
