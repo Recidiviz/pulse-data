@@ -3,17 +3,23 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  CaseManagerStaffId: STRING
-  CaseManagerFirstNm: STRING
-  CaseManagerLastNm: STRING
+  StaffId: STRING
+  FirstNm: STRING
+  MiddleNm: STRING
+  LastNm: STRING
+  Suffix: STRING
+  Email: STRING
 unused_columns: []
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
-          external_id: CaseManagerStaffId
+          external_id: StaffId
           id_type: $literal("US_IA_STAFFID")
     full_name:
       $person_name:
-        $given_names: CaseManagerFirstNm
-        $surname: CaseManagerLastNm
+        $given_names: FirstNm
+        $middle_names: MiddleNm
+        $surname: LastNm
+        $name_suffix: Suffix
+    email: Email

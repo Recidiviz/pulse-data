@@ -23,41 +23,20 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-  WITH 
-    -- This CTE pulls all staff data from the case managers table
-    staff_from_case_managers_data AS (
-        SELECT DISTINCT CaseManagerStaffId, CaseManagerFirstNm, CaseManagerLastNm
-        FROM {IA_DOC_CaseManagers}
-        -- in case there are mismatches in names, we take the most recently entered one.  To split ties further, sort by name
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY CaseManagerStaffId ORDER BY CAST(EnteredDt AS DATETIME) DESC, CaseManagerLastNm DESC NULLS LAST, CaseManagerFirstNm DESC NULLS LAST) = 1
-    ),
-
-    -- This CTE pulls all staff data from the intervention tables
-    staff_from_interventions_data AS (
-        SELECT DISTINCT ReferringStaffId
-        FROM {IA_DOC_Interventions}
-
-        UNION DISTINCT
-
-        SELECT DISTINCT ReferringStaffId
-        FROM {IA_DOC_InterventionPrograms} 
-    )
-
-    SELECT *
-    FROM staff_from_case_managers_data
-
-    UNION ALL 
-
-    SELECT 
-        ReferringStaffId,
-        CAST(NULL AS STRING) AS CaseManagerFirstNm,
-        CAST(NULL AS STRING) AS CaseManagerLastNm
-    FROM staff_from_interventions_data
-    LEFT JOIN staff_from_case_managers_data
-        ON ReferringStaffId = CaseManagerStaffId
-    -- only include staff information from interventions data if it doesn't already exist in the case managers data
-    WHERE CaseManagerStaffId IS NULL
-
+    SELECT
+        StaffId,
+        FirstNm,
+        MiddleNm,
+        LastNm,
+        Suffix,
+        -- As of 4/16/2025, there are 43 staff records (mostly inactive) with an invalid email
+        -- that would get NULLed out here.  We can fix with migrations on a case by case basis as needed.
+        CASE 
+            WHEN Email NOT LIKE '%@%' OR LOWER(Email) LIKE 'none@%'
+                THEN NULL 
+            ELSE REGEXP_REPLACE(Email, r'\\s+', '')
+            END AS Email
+    FROM {IA_DOC_MAINT_Staff}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

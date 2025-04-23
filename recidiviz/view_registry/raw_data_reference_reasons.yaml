@@ -257,6 +257,12 @@ US_CO:
     sessions.us_co_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_IA:
+  IA_DOC_MAINT_Regions:
+    reference_views.us_ia_location_metadata: |-
+      Used to set up location metadata
+  IA_DOC_MAINT_StaffWorkUnits:
+    reference_views.us_ia_location_metadata: |-
+      Used to set up location metadata
   IA_DOC_Specialties:
     task_eligibility_criteria_us_ia.no_sex_offender_specialty: |-
       Used to pull specialties for early discharge opportunity. TODO(#40262) to ingest as a case type instead

@@ -77,7 +77,11 @@ output:
                 $then: InterventionProgram
               - $else: Intervention
           referring_staff_external_id: ReferringStaffId
-          referring_staff_external_id_type: $literal("US_IA_STAFFID")
+          referring_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: ReferringStaffId
+                $then: $literal("US_IA_STAFFID")
           start_date: InterventionStartDt
           # InterventionEndDt is valued whenever an intervention record is "closed", even when
           # the intervention was never started.  So some people will have a valued discharge date

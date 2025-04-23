@@ -1,0 +1,151 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  StaffId: STRING
+  JobTitle: STRING
+  AuthorityType: STRING
+  SupervisorStaffId: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  seq_no: INTEGER
+unused_columns:
+  - AuthorityType # Might be able to use this for mapping role type? But not always reliable
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: StaffId
+          id_type: $literal("US_IA_STAFFID")
+    role_periods:
+      # If we have role information for this period
+      - $conditional:
+          - $if:
+              $not_null: JobTitle
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - StaffId
+                      - seq_no
+                start_date: start_date
+                end_date: end_date
+                role_type:
+                  $conditional:
+                    - $if:
+                        $in:
+                          $value: JobTitle
+                          $options:
+                            - $literal("Probation/Parole Officer Il")
+                            - $literal("Probation Parole Officer 2")
+                            - $literal("Probation/Parole Officer II (Intern)")
+                            - $literal("Probation/Parole Officer I")
+                            - $literal("Parole/Probation Officer II")
+                            - $literal("Probation/Parole Officer lI")
+                            - $literal("Probation Parole Officer II")
+                            - $literal("PPO I")
+                            - $literal("PPO III")
+                            - $literal("Probation Parole Officer 3")
+                            - $literal("Probation/Parole Officer ll")
+                            - $literal("Probation/Parole Officer II")
+                            - $literal("Probation/Parole Officer l")
+                            - $literal("PPO II")
+                            - $literal("Probation Parole Officer III")
+                            - $literal("Probation/Parole Officer IIl")
+                            - $literal("Probation/Parole Officer III")
+                            - $literal("Probation Parole Officer I")
+                            - $literal("Parole/Probation Officer II/Counselor")
+                            - $literal("Probation Parole Supervisor II")
+                            - $literal("Probation/Parole Supervisor II")
+                            - $literal("Community Corrections Supervisor")
+                            - $literal("Probation/Parole Supervisor")
+                            - $literal("District Director")
+                            - $literal("Assistant District Director")
+                      $then: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+                    - $else: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
+                role_subtype:
+                  $conditional:
+                    - $if:
+                        $in:
+                          $value: JobTitle
+                          $options:
+                            - $literal("Probation/Parole Officer Il")
+                            - $literal("Probation Parole Officer 2")
+                            - $literal("Probation/Parole Officer II (Intern)")
+                            - $literal("Probation/Parole Officer I")
+                            - $literal("Parole/Probation Officer II")
+                            - $literal("Probation/Parole Officer lI")
+                            - $literal("Probation Parole Officer II")
+                            - $literal("PPO I")
+                            - $literal("PPO III")
+                            - $literal("Probation Parole Officer 3")
+                            - $literal("Probation/Parole Officer ll")
+                            - $literal("Probation/Parole Officer II")
+                            - $literal("Probation/Parole Officer l")
+                            - $literal("PPO II")
+                            - $literal("Probation Parole Officer III")
+                            - $literal("Probation/Parole Officer IIl")
+                            - $literal("Probation/Parole Officer III")
+                            - $literal("Probation Parole Officer I")
+                            - $literal("Parole/Probation Officer II/Counselor")
+                            - $literal("Probation Parole Supervisor II")
+                            - $literal("Probation/Parole Supervisor II")
+                            - $literal("Community Corrections Supervisor")
+                            - $literal("Probation/Parole Supervisor")
+                            - $literal("District Director")
+                            - $literal("Assistant District Director")
+                            - $literal("Assistant Director")
+                            - $literal("Director")
+                            - $literal("Director, Department of Corrections")
+                      $then:
+                        $enum_mapping:
+                          $raw_text: JobTitle
+                          $mappings:
+                            StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                              - "Probation/Parole Officer Il"
+                              - "Probation Parole Officer 2"
+                              - "Probation/Parole Officer II (Intern)"
+                              - "Probation/Parole Officer I"
+                              - "Parole/Probation Officer II"
+                              - "Probation/Parole Officer lI"
+                              - "Probation Parole Officer II"
+                              - "PPO I"
+                              - "PPO III"
+                              - "Probation Parole Officer 3"
+                              - "Probation/Parole Officer ll"
+                              - "Probation/Parole Officer II"
+                              - "Probation/Parole Officer l"
+                              - "PPO II"
+                              - "Probation Parole Officer III"
+                              - "Probation/Parole Officer IIl"
+                              - "Probation/Parole Officer III"
+                              - "Probation Parole Officer I"
+                              - "Parole/Probation Officer II/Counselor"
+                            StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                              - "Probation Parole Supervisor II"
+                              - "Probation/Parole Supervisor II"
+                              - "Community Corrections Supervisor"
+                              - "Probation/Parole Supervisor"
+                            StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
+                              - "District Director"
+                              - "Assistant District Director"
+                            StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
+                              - "Assistant Director"
+                              - "Director"
+                              - "Director, Department of Corrections"
+    supervisor_periods:
+      # If we have supervisor information for this period
+      - $conditional:
+          - $if:
+              $not_null: SupervisorStaffId
+            $then:
+              StateStaffSupervisorPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - StaffId
+                      - seq_no
+                start_date: start_date
+                end_date: end_date
+                supervisor_staff_external_id: SupervisorStaffId
+                supervisor_staff_external_id_type: $literal("US_IA_STAFFID")

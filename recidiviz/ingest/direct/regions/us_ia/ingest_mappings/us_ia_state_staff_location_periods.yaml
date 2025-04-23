@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  StaffId: STRING
+  StaffWorkUnitId: STRING
+  WorkUnitId: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  seq_no: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: StaffId
+          id_type: $literal("US_IA_STAFFID")
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - StaffWorkUnitId
+                - seq_no
+          start_date: start_date
+          end_date: end_date
+          location_external_id: WorkUnitId
