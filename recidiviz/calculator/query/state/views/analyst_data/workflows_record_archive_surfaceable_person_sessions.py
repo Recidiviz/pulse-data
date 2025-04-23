@@ -21,7 +21,10 @@ according to client_record_archive or resident_record_archive.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -83,6 +86,30 @@ WITH surfaceable_archive_spans AS (
     GROUP BY 1, 2, 3, 4, 5, 6, 7
 
     UNION ALL
+    -- Add in recently-materialized resident record data that hasn't been archived yet
+    SELECT
+        resident_record.state_code,
+        resident_record.person_id,
+        opportunity_type,
+        CASE search_type.search_field
+            WHEN "officerId" THEN resident_record.officer_id
+            WHEN "facilityId" THEN resident_record.facility_id
+            WHEN "facilityUnitId" THEN resident_record.facility_unit_id
+        END AS caseload_id,
+        search_type.search_field AS caseload_search_type,
+        resident_record.facility_id AS location_id,
+        CURRENT_DATE("US/Eastern") AS start_date,
+        CAST(NULL AS DATE) AS end_date_exclusive
+    FROM
+        `{{project_id}}.workflows_views.resident_record_materialized` resident_record,
+        UNNEST(all_eligible_opportunities) opportunity_type
+    LEFT JOIN
+        `{{project_id}}.workflows_views.workflows_caseload_search_field_by_state_materialized` search_type
+    ON
+        search_type.state_code = resident_record.state_code
+        AND search_type.system_type = "INCARCERATION"
+
+    UNION ALL
     -- client record archive
     SELECT
         client_record.state_code,
@@ -118,11 +145,55 @@ WITH surfaceable_archive_spans AS (
         NULLIF(all_eligible_opportunities, "") IS NOT NULL
         AND person_id IS NOT NULL
     GROUP BY 1, 2, 3, 4, 5, 6, 7
+
+    UNION ALL
+    -- Add in recently-materialized client record data that hasn't been archived yet
+    SELECT
+        client_record.state_code,
+        ids.person_id,
+        opportunity_type,
+        CASE search_type.search_field
+            WHEN "officerId" THEN client_record.officer_id
+        END AS caseload_id,
+        "officerId" AS caseload_search_type,
+        client_record.district AS location_id,
+        CURRENT_DATE("US/Eastern") AS start_date,
+        CAST(NULL AS DATE) AS end_date_exclusive,
+    FROM
+        `{{project_id}}.workflows_views.client_record_materialized` client_record,
+        UNNEST(all_eligible_opportunities) opportunity_type
+    LEFT JOIN
+        `{{project_id}}.workflows_views.workflows_caseload_search_field_by_state_materialized` search_type
+    ON
+        search_type.state_code = client_record.state_code
+        AND search_type.system_type = "SUPERVISION"
+    LEFT JOIN `{{project_id}}.workflows_views.person_id_to_external_id_materialized` ids
+        ON client_record.state_code = ids.state_code
+        AND client_record.person_external_id = ids.person_external_id
+        AND ids.system_type = "SUPERVISION"
+),
+{create_sub_sessions_with_attributes(
+    table_name="surfaceable_archive_spans",
+    index_columns=["state_code", "person_id", "opportunity_type"],
+    end_date_field_name="end_date_exclusive",
+)}
+, sub_sessions_dedup AS (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        opportunity_type,
+        caseload_id,
+        caseload_search_type,
+        location_id,
+        start_date,
+        end_date_exclusive,
+    FROM
+        sub_sessions_with_attributes
 )
 -- For every person and opportunity, aggregate across contiguous periods of assignment
 -- to a caseload and location
 {aggregate_adjacent_spans(
-    "surfaceable_archive_spans", 
+    "sub_sessions_dedup", 
     index_columns=["state_code", "person_id", "opportunity_type"], 
     attribute=["caseload_id", "caseload_search_type", "location_id"],
     end_date_field_name="end_date_exclusive")

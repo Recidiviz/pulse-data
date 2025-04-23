@@ -18,7 +18,10 @@
 historical changes in information about tool users reflected in admin panel"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,9 +62,42 @@ WITH product_roster_archive AS (
         ON archive.state_code = future_exports.state_code
         AND archive.export_date < future_exports.future_export_date
     GROUP BY 1, 2, 3, 5, 6, 7, 8
+
+    UNION ALL
+
+    -- Add in recently-materialized data that hasn't been archived yet
+    SELECT
+        CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
+        email_address,
+        CURRENT_DATE("US/Eastern") AS start_date,
+        CAST(NULL AS DATE) AS end_date_exclusive,
+        ARRAY_TO_STRING(ARRAY(SELECT role FROM UNNEST(roles) AS role ORDER BY role), ",") AS roles_as_string,
+        district AS location_id,
+        IFNULL(routes_workflows OR routes_workflowsFacilities OR routes_workflowsSupervision, FALSE) AS has_workflows_access,
+        IFNULL(routes_insights, FALSE) AS has_insights_access,
+    FROM
+        `{{project_id}}.reference_views.product_roster_materialized`
+)
+, {create_sub_sessions_with_attributes(
+    table_name="product_roster_archive",
+    index_columns=["state_code", "email_address"],
+    end_date_field_name="end_date_exclusive",
+)}
+, sub_sessions_dedup AS (
+    SELECT DISTINCT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        roles_as_string,
+        location_id,
+        has_workflows_access,
+        has_insights_access
+    FROM
+        sub_sessions_with_attributes
 )
 {aggregate_adjacent_spans(
-    table_name='product_roster_archive',
+    table_name='sub_sessions_dedup',
     index_columns=["state_code", "email_address"],
     attribute=['roles_as_string', 'location_id', 'has_workflows_access', 'has_insights_access'],
     session_id_output_name='product_roster_session_id',
