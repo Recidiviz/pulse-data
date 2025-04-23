@@ -42,6 +42,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_arrests_in_past_2_years,
     no_supervision_sanction_within_1_year,
     no_warrant_within_2_years,
+    not_in_day_reporting_center_location,
+    not_in_programmed_supervision_unit,
     not_interstate_compact_incoming,
     not_on_community_supervision_for_life,
     not_on_suspension_of_direct_supervision,
@@ -71,6 +73,8 @@ FINES_FEES_CRITERIA_GROUP = OrTaskCriteriaGroup(
     allowed_duplicate_reasons_keys=[],
 )
 
+# TODO(#40144): Make SDS opportunity internally consistent with respect to backdating
+# (for criteria, eligibility spans, and completion event).
 # TODO(#34432): Figure out how to set up the tool for ISC-out cases, which can be
 # eligible for SDS. (This may involve updating the candidate population to include
 # `SUPERVISION_OUT_OF_STATE` clients and/or changes to criteria.)
@@ -93,6 +97,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_arrests_in_past_2_years.VIEW_BUILDER,
         no_supervision_sanction_within_1_year.VIEW_BUILDER,
         no_warrant_within_2_years.VIEW_BUILDER,
+        # TODO(#41397): Check with TN to confirm that we're correctly handling PSU & DRC
+        # clients (and time spent in those programs) when determining SDS eligibility.
+        not_in_day_reporting_center_location.VIEW_BUILDER,
+        not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_on_suspension_of_direct_supervision.VIEW_BUILDER,

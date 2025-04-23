@@ -31,6 +31,17 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
 EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
 
+# TODO(#41394): Switch over to using the separate DRC & PSU lists (below) rather than
+# the medium- and high-level lists (above).
+# These are the raw-text supervision levels that correspond with participation in Day
+# Reporting Center (DRC) programs in TN. They're often excluded from various
+# supervision-side opportunities.
+DRC_SUPERVISION_LEVELS_RAW_TEXT = ["1D1", "2D2", "3D3"]
+# These are the raw-text supervision levels that correspond with the Programmed
+# Supervision Unit (PSU) in TN. They're often excluded from various supervision-side
+# opportunities.
+PSU_SUPERVISION_LEVELS_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4"]
+
 # These are the raw-text supervision levels that correspond with Suspension of Direct
 # Supervision (SDS) in TN.
 SDS_SUPERVISION_LEVELS_RAW_TEXT = [
