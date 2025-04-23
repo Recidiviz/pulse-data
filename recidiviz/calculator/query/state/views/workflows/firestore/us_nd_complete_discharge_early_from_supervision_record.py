@@ -88,6 +88,7 @@ individual_sentence_charges AS (
   sent.person_id,
   pei.external_id AS person_external_id,
   sent.state_code,
+  sent.effective_date,
   sent.date_imposed AS prior_court_date, --need to validate
   sent.completion_date,
   DATE_DIFF(sent.projected_completion_date, sent.date_imposed, YEAR) AS sentence_years,
@@ -140,6 +141,7 @@ individual_sentence AS (
   person_id, 
   person_external_id,
   state_code,
+  effective_date,
   prior_court_date,
   completion_date,
   sentence_years,
@@ -167,7 +169,7 @@ individual_sentence AS (
                     ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_classifications,
   ARRAY_AGG(crime_name ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_names,
   FROM individual_sentence_charges
-  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 ),
 eligible_population AS (
    -- Pull the individuals that are currently eligible or almost eligible for early discharge
@@ -209,6 +211,7 @@ individual_sentence_ranks AS (
     inds.judicial_district_code,
     inds.criminal_number,
     inds.judge,
+    inds.effective_date,
     inds.prior_court_date,
     inds.sentence_months,
     inds.sentence_years,
@@ -251,6 +254,7 @@ SELECT
     person_id,
     person_external_id AS external_id,
     state_code,
+    effective_date AS form_information_probation_start_date,
     client_name AS form_information_client_name,
     conviction_county AS form_information_conviction_county,
     judicial_district_code AS form_information_judicial_district_code,
