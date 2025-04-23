@@ -144,7 +144,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         not raise an error if an entity is instantiated that is not deprecated for
         the given state."""
         sp = entities.StateSupervisionPeriod.new_with_defaults(
-            state_code="US_ZZ", external_id="sp1", start_date=datetime.date(2020, 1, 1)
+            state_code="US_WW", external_id="sp1", start_date=datetime.date(2020, 1, 1)
         )
 
         # Assert no error raised

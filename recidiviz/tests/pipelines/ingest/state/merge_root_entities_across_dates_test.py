@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the MergeRootEntitiesAcrossDates PTransform."""
-from datetime import datetime
+from datetime import date, datetime
 
 import apache_beam as beam
 import attr
@@ -113,8 +113,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
                 entities.StateIncarcerationPeriod(
                     state_code=StateCode.US_DD.value,
                     external_id="I11",
-                    admission_date=datetime(2019, 1, 1),
-                    release_date=datetime(2019, 6, 1),
+                    admission_date=date(2019, 1, 1),
+                    release_date=date(2019, 6, 1),
                 )
             ],
         )
@@ -125,7 +125,7 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
                 entities.StateSupervisionPeriod(
                     state_code=StateCode.US_DD.value,
                     external_id="S11",
-                    start_date=datetime(2019, 6, 1),
+                    start_date=date(2019, 6, 1),
                 )
             ],
         )
@@ -136,8 +136,8 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
                 entities.StateIncarcerationPeriod(
                     state_code=StateCode.US_DD.value,
                     external_id="I21",
-                    admission_date=datetime(2019, 2, 1),
-                    release_date=datetime(2019, 7, 1),
+                    admission_date=date(2019, 2, 1),
+                    release_date=date(2019, 7, 1),
                 )
             ],
         )
@@ -148,7 +148,7 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
                 entities.StateSupervisionPeriod(
                     state_code=StateCode.US_DD.value,
                     external_id="S21",
-                    start_date=datetime(2019, 7, 1),
+                    start_date=date(2019, 7, 1),
                 )
             ],
         )
