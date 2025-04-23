@@ -45,19 +45,23 @@ output:
                 StateAssessmentType.ORAS_PRISON_SCREENING:
                   - "Prison Screening Tool"
           assessment_level:
-            $enum_mapping:
-              $raw_text: RISK_LEVEL
-              $mappings:
-                StateAssessmentLevel.LOW:
-                  - "Low"
-                StateAssessmentLevel.LOW_MEDIUM:
-                  - "Low/Moderate"
-                StateAssessmentLevel.MEDIUM:
-                  - "Moderate"
-                StateAssessmentLevel.MEDIUM_HIGH:
-                  - "Moderate/High"
-                StateAssessmentLevel.HIGH:
-                  - "High"
-                StateAssessmentLevel.VERY_HIGH:
-                  - "Very High"
+            $conditional:
+              - $if:
+                  $not_null: RISK_LEVEL
+                $then:
+                  $enum_mapping:
+                    $raw_text: RISK_LEVEL
+                    $mappings:
+                      StateAssessmentLevel.LOW:
+                        - "Low"
+                      StateAssessmentLevel.LOW_MEDIUM:
+                        - "Low/Moderate"
+                      StateAssessmentLevel.MEDIUM:
+                        - "Moderate"
+                      StateAssessmentLevel.MEDIUM_HIGH:
+                        - "Moderate/High"
+                      StateAssessmentLevel.HIGH:
+                        - "High"
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "Very High"
           assessment_score: SCORE
