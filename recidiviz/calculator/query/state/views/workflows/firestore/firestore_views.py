@@ -198,6 +198,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_supervisio
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_transfer_from_parole_to_annual_reporting_status import (
     US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_transfer_from_parole_to_early_release_from_supervision import (
+    US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ut_early_termination_from_supervision_request_record import (
     US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
@@ -262,6 +265,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
     US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
     US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER,
+    US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
     US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
     US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
 ]

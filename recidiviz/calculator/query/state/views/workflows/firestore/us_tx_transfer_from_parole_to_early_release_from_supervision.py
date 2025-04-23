@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for clients eligible to transfer from parole to Annual Reporting Status in Texas"""
+"""Query for clients eligible to transfer from parole to Early Release from Supervision in Texas.
+ERS does not fully release clients from supervision, but eliminates any required contact."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
@@ -27,15 +28,15 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_NAME = (
-    "us_tx_transfer_from_parole_to_annual_reporting_status_record"
+US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_NAME = (
+    "us_tx_transfer_from_parole_to_early_release_from_supervision_record"
 )
 
-US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_DESCRIPTION = """
-    View containing clients eligible to transfer from parole to Annual Report Status in Texas
-"""
+US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_DESCRIPTION = (
+    __doc__
+)
 
-US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_QUERY_TEMPLATE = f"""
+US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
 SELECT
     tes.person_id,
     pei.external_id,
@@ -43,7 +44,7 @@ SELECT
     reasons,
     is_eligible,
     FALSE AS is_almost_eligible
-FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_from_parole_to_annual_reporting_status_materialized` tes
+FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_from_parole_to_early_release_from_supervision_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.state_code = pei.state_code 
         AND tes.person_id = pei.person_id
@@ -53,11 +54,11 @@ WHERE CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND {nonnull_end_date_ex
     AND tes.state_code = 'US_TX'
 """
 
-US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_NAME,
-    view_query_template=US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_QUERY_TEMPLATE,
-    description=US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_DESCRIPTION,
+    view_id=US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_NAME,
+    view_query_template=US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE,
+    description=US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_TX
@@ -67,4 +68,4 @@ US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER = Simp
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER.build_and_print()
+        US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER.build_and_print()

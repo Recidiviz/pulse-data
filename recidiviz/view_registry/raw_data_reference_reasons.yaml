@@ -1806,6 +1806,10 @@ US_TX:
     task_eligibility_criteria_us_tx.meets_risk_assessment_event_triggers: |-
       Used as a reference table to determine the next due assessment based event type and case type. 02/13/2025.
   SupervisionPeriod:
+    task_eligibility_criteria_us_tx.served_at_least_half_of_remaining_supervision_sentence:
+      |-
+      Used to pull in expiration dates into a criteria since we have it on the supervision period level and not the
+      sentence level so we can't ingest it at the moment. 04/18/2025. See TODO(#40740)
     task_eligibility_criteria_us_tx.supervision_within_6_months_of_release_date:
       |-
       Used to pull in expiration dates into a criteria since we have it on the supervision period level and not the

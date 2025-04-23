@@ -1,0 +1,61 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2025 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Shows the spans of time during which someone in TX, who is on parole or dual parole and
+probation, is eligible to be transferred to Early Release from Supervision. ERS does not
+fully release clients from supervision, but eliminates any required contact. This status
+only affects their parole status, not their probation status.
+"""
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.candidate_populations.general import (
+    parole_dual_active_supervision_population,
+)
+from recidiviz.task_eligibility.completion_events.general import (
+    transfer_to_unsupervised_parole,
+)
+from recidiviz.task_eligibility.criteria.general import (
+    no_supervision_sustained_violation_within_2_years,
+    on_supervision_at_least_2_years,
+    supervision_level_is_minimum_for_1_year,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
+    no_warrant_with_sustained_violation_within_2_years,
+    served_at_least_half_of_remaining_supervision_sentence,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
+    state_code=StateCode.US_TX,
+    task_name="TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION",
+    description=__doc__,
+    candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
+    criteria_spans_view_builders=[
+        supervision_level_is_minimum_for_1_year.VIEW_BUILDER,
+        on_supervision_at_least_2_years.VIEW_BUILDER,
+        served_at_least_half_of_remaining_supervision_sentence.VIEW_BUILDER,
+        no_supervision_sustained_violation_within_2_years.VIEW_BUILDER,
+        no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
+    ],
+    completion_event_builder=transfer_to_unsupervised_parole.VIEW_BUILDER,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()
