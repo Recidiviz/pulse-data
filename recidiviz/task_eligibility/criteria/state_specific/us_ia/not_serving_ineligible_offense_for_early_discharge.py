@@ -14,18 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Shows spans of time during which a client is not serving an ineligible offense for early discharge. TKTKTK once policy is finalized"""
-# TODO(#39262) - create criterion for IA ED early discharge offenses
+"""Shows spans of time during which a client is not serving an ineligible offense for early discharge.
+See CBC-FS-01 Supervision Early Discharge Appendix A for list of ineligible offenses
+and https://www.legis.iowa.gov/law/iowaCode/chapters?title=XVI&year=2025 for Iowa criminal policy"""
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.us_ia_query_fragments import (
+    is_fleeing,
+    is_other_ed_ineligible_offense,
+    is_veh_hom,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,15 +38,55 @@ _CRITERIA_NAME = "US_IA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_EARLY_DISCHARGE"
 
 _DESCRIPTION = __doc__
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = state_specific_placeholder_criteria_view_builder(
+_REASON_QUERY = f"""
+WITH clean_offenses AS (
+  SELECT *, 
+    SPLIT(REGEXP_REPLACE(statute, '[,|/(]', '#'), '#')[SAFE_OFFSET(0)] AS clean_statute, -- remove anything after parentheses/commas - for example, transform 707.3(A) -> 707.3
+    CONCAT(COALESCE(statute, ''), ' ', COALESCE(description, '')) AS offense,
+  FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+  WHERE state_code = 'US_IA'
+), preprocessed_spans as (
+  SELECT
+    span.state_code,
+    span.person_id,
+    span.start_date,
+    span.end_date,
+    LOGICAL_OR({is_veh_hom()}) as veh_homicide_indicator, 
+    LOGICAL_OR({is_fleeing()}) as fleeing_indicator, 
+    LOGICAL_OR({is_other_ed_ineligible_offense()})  AS other_ed_ineligible_offense_indicator,
+    ARRAY_AGG(DISTINCT offense ORDER BY offense) AS ineligible_offenses,
+  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
+  INNER JOIN clean_offenses
+    USING (state_code, person_id, sentences_preprocessed_id)
+  WHERE span.state_code = "US_IA"
+    AND ({is_veh_hom()} OR {is_fleeing()} OR {is_other_ed_ineligible_offense()})
+  GROUP BY 1,2,3,4
+)
+SELECT state_code,
+  person_id, 
+  start_date, 
+  end_date,
+  False AS meets_criteria,
+  ineligible_offenses,
+  TO_JSON(STRUCT(ineligible_offenses)) AS reason,
+FROM preprocessed_spans
+WHERE other_ed_ineligible_offense_indicator 
+    OR (veh_homicide_indicator AND fleeing_indicator) -- per appendix A, vehicular homicide is only ineligible if they also fled the accident
+"""
+
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     description=_DESCRIPTION,
     state_code=StateCode.US_IA,
+    criteria_spans_query_template=_REASON_QUERY,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
     reasons_fields=[
         ReasonsField(
             name="ineligible_offenses",
             type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="List of offenses that a client has committed which make them ineligible for early discharge",
+            description="List of offenses that a client is serving for which make them ineligible for early discharge",
         )
     ],
 )
