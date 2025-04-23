@@ -391,7 +391,7 @@ def get_infractions_as_case_notes() -> str:
 
 
 MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
-        SAFE_CAST(REGEXP_REPLACE(OFFENDER_BOOK_ID, r',|.00', '') AS STRING) AS external_id,
+        {reformat_ids('OFFENDER_BOOK_ID')} AS external_id,
         SAFE_CAST(REGEXP_REPLACE(ASSESSMENT_TYPE_ID, r',', '')  AS NUMERIC) AS assess_type,
         rea.DESCRIPTION AS assess_type_desc,
         CASE 
@@ -758,12 +758,17 @@ def get_warrants_and_detainers_query(
     ON peid.external_id = {reformat_ids('e.OFFENDER_BOOK_ID')}
         AND peid.state_code = 'US_ND'
         AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    -- If there was a warrant or detainer, treat it as active through the end of the 
+    -- overlapping incarceration super session, or the next super session if it doesn't overlap 
+    -- with one.
     LEFT JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
     ON peid.state_code = iss.state_code
         AND peid.person_id = iss.person_id
-        AND SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
+        AND SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) < {nonnull_end_date_exclusive_clause('iss.end_date')}
     WHERE e.ORDER_TYPE IN {tuple(order_types)}
         AND e.OFFENSE_STATUS != 'C'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE ORDER BY {nonnull_end_date_exclusive_clause('iss.end_date')} ASC) = 1
+    
 ),
 {create_sub_sessions_with_attributes(table_name='warrants_and_detainers')}
 SELECT 

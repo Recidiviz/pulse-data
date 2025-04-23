@@ -68,6 +68,8 @@ WITH discharged_and_current_programs AS (
         -- Don't surface case manager assignments
         AND NOT REGEXP_CONTAINS(spa.program_id, r'ASSIGNED CASE MANAGER')
         AND REGEXP_CONTAINS(spa.program_id, r'{TRAINING_PROGRAMMING_NOTE_TEXT_REGEX_FOR_CRITERIA}')
+        -- Clinical Assessment don't count towards the eligibility of this criteria
+        AND NOT REGEXP_CONTAINS(spa.program_id, r'^CA-')
     GROUP BY 1,2,3,4,5,6
 ),
 {create_sub_sessions_with_attributes(table_name='discharged_and_current_programs')}
