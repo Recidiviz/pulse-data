@@ -94,6 +94,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.case_manager import (
+    REENTRY_CASE_MANAGER_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -464,6 +467,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER.address: (
         "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
+    ),
+    REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
+        "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
     ),
 }
 

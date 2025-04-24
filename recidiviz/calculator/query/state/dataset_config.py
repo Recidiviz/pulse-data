@@ -113,3 +113,6 @@ TRANSITIONS_DATASET_ID = "transitions"
 
 # Views that contain aggregated metrics about tool users
 USER_METRICS_DATASET_ID = "user_metrics"
+
+# Where the Reentry tool datasets live
+REENTRY_OUTPUT_DATASET: str = "reentry"

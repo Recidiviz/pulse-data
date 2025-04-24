@@ -49,6 +49,9 @@ from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_not
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.reentry.reentry_views import (
+    REENTRY_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
 )
@@ -107,6 +110,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
             JII_TEXTING_VIEW_BUILDERS,
             USAGE_REPORTS_VIEW_BUILDERS,
+            REENTRY_VIEW_BUILDERS,
         )
     )
 )
