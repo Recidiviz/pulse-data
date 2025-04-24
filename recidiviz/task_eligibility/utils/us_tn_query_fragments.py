@@ -24,15 +24,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 
-# TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
-# These are DRC (Day Reporting Centers) and PSU (Sex Offense Unit) supervision levels that we map to Medium/High, but
-# that are usually excluded from various supervision side opportunities like compliant reporting, downgrades based on
-# risk assessments, etc
-EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
-EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
-
-# TODO(#41394): Switch over to using the separate DRC & PSU lists (below) rather than
-# the medium- and high-level lists (above).
+# TODO(#20870): Rather than having to repeatedly exclude these levels from
+# opportunities, should they be remapped differently so that they won't get grouped in
+# with the supervision levels for clients not in the PSU or DRC programs?
 # These are the raw-text supervision levels that correspond with participation in Day
 # Reporting Center (DRC) programs in TN. They're often excluded from various
 # supervision-side opportunities.

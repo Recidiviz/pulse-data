@@ -20,6 +20,7 @@ level for a sufficient amount of time for Compliant Reporting eligibility.
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -31,7 +32,8 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
 from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
-    EXCLUDED_MEDIUM_RAW_TEXT,
+    DRC_SUPERVISION_LEVELS_RAW_TEXT,
+    PSU_SUPERVISION_LEVELS_RAW_TEXT,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -54,7 +56,8 @@ _QUERY_TEMPLATE = f"""
     FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized`
     WHERE state_code = 'US_TN'
         AND supervision_level IN ('MINIMUM', 'MEDIUM')
-        AND COALESCE(supervision_level_raw_text, 'UNKNOWN') NOT IN ('{{exclude_medium}}')
+        AND COALESCE(supervision_level_raw_text, 'UNKNOWN') NOT IN ({list_to_query_string(DRC_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+        AND COALESCE(supervision_level_raw_text, 'UNKNOWN') NOT IN ({list_to_query_string(PSU_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
     )
     ,
     /*
@@ -134,7 +137,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     description=__doc__,
     meets_criteria_default=False,
     sessions_dataset=SESSIONS_DATASET,
-    exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
     reasons_fields=[
         ReasonsField(
             name="eligible_level",

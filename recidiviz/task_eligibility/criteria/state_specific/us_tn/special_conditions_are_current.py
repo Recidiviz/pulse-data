@@ -17,6 +17,7 @@
 """Describes the spans of time when a TN client's special conditions contact note is not overdue."""
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -33,7 +34,8 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
 from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
-    EXCLUDED_MEDIUM_RAW_TEXT,
+    DRC_SUPERVISION_LEVELS_RAW_TEXT,
+    PSU_SUPERVISION_LEVELS_RAW_TEXT,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -161,15 +163,29 @@ _QUERY_TEMPLATE = f"""
             contact_type,
             supervision_level,
             supervision_level_raw_text,
-            -- If contact_type = SPET then another contact is not needed so critical date is left null.
-            CASE WHEN contact_type = 'SPEC' THEN (
-                CASE
-                    WHEN supervision_level = "MINIMUM" 
-                        THEN LAST_DAY(DATE_ADD(contact_date, INTERVAL {US_TN_MINIMUM_SPE_NOTE_CONTACT_STANDARD} MONTH))
-                    WHEN supervision_level = "MEDIUM" AND supervision_level_raw_text NOT IN ('{{exclude_medium}}') 
-                        THEN LAST_DAY(DATE_ADD(contact_date, INTERVAL {US_TN_MEDIUM_SPE_NOTE_CONTACT_STANDARD} MONTH))
-                    END
-            )
+            CASE
+                /* After 'SPET' contacts, another contact is not needed, so the critical
+                date is left null. */
+                WHEN (
+                    contact_type='SPET'
+                ) THEN CAST(NULL AS DATE)
+                /* PSU & DRC clients have different supervision standards, so we can't
+                calculate critical dates similarly to what's done for the non-PSU &
+                non-DRC levels here. We leave the critical date as null for these
+                clients. */
+                WHEN (
+                    supervision_level_raw_text IN ({list_to_query_string(DRC_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+                    OR supervision_level_raw_text IN ({list_to_query_string(PSU_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+                    OR supervision_level_raw_text IS NULL
+                ) THEN CAST(NULL AS DATE)
+                WHEN contact_type = 'SPEC' THEN (
+                    CASE
+                        WHEN supervision_level = "MINIMUM" 
+                            THEN LAST_DAY(DATE_ADD(contact_date, INTERVAL {US_TN_MINIMUM_SPE_NOTE_CONTACT_STANDARD} MONTH))
+                        WHEN supervision_level = "MEDIUM"
+                            THEN LAST_DAY(DATE_ADD(contact_date, INTERVAL {US_TN_MEDIUM_SPE_NOTE_CONTACT_STANDARD} MONTH))
+                        END
+                )
                 WHEN contact_type = 'XSPE' THEN (
                     CASE
                         WHEN supervision_level = "MINIMUM" 
@@ -179,7 +195,7 @@ _QUERY_TEMPLATE = f"""
                                         INTERVAL {US_TN_MINIMUM_SPE_NOTE_CONTACT_STANDARD} MONTH
                                         )
                                     )
-                        WHEN supervision_level = "MEDIUM" AND supervision_level_raw_text NOT IN ('{{exclude_medium}}') 
+                        WHEN supervision_level = "MEDIUM"
                             THEN LAST_DAY(
                                     DATE_ADD(
                                         COALESCE(most_recent_spec_date,contact_date),
@@ -187,8 +203,9 @@ _QUERY_TEMPLATE = f"""
                                         )
                                     )
                         END
-            ) 
-            END AS critical_date,
+                )
+                END
+                AS critical_date,
         FROM
             priority_levels
     ),
@@ -200,10 +217,15 @@ _QUERY_TEMPLATE = f"""
         end_date,
         -- If critical date has passed, the SPE note is overdue. And if the note was XSPE, the criteria 
         -- is not met - not because the note is overdue but because conditions have not been verified
-        CASE WHEN supervision_level_raw_text IN ('{{exclude_medium}}') THEN FALSE
-             WHEN contact_type = 'XSPE' THEN FALSE
-             ELSE NOT critical_date_has_passed
-             END AS meets_criteria,
+        CASE
+            WHEN (
+                supervision_level_raw_text IN ({list_to_query_string(DRC_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+                OR supervision_level_raw_text IN ({list_to_query_string(PSU_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+            ) THEN FALSE
+            WHEN contact_type = 'XSPE' THEN FALSE
+            ELSE NOT critical_date_has_passed
+            END
+            AS meets_criteria,
         TO_JSON(STRUCT(
             critical_date AS spe_note_due
         )) AS reason,
@@ -224,7 +246,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
-    exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
     reasons_fields=[
         ReasonsField(
             name="spe_note_due_date",

@@ -20,6 +20,7 @@ level than the risk-assessment policy recommends.
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -30,8 +31,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
-    EXCLUDED_HIGH_RAW_TEXT,
-    EXCLUDED_MEDIUM_RAW_TEXT,
+    DRC_SUPERVISION_LEVELS_RAW_TEXT,
+    PSU_SUPERVISION_LEVELS_RAW_TEXT,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -126,18 +127,19 @@ _QUERY_TEMPLATE = f"""
         SELECT
             *,
             CASE
+                /* Clients on DRC or PSU levels are never eligible for downgrades,
+                regardless of their assessment levels. PSU designation is determined by
+                courts/judges. */
+                WHEN (
+                    supervision_level_raw_text IN ({list_to_query_string(DRC_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+                    OR supervision_level_raw_text IN ({list_to_query_string(PSU_SUPERVISION_LEVELS_RAW_TEXT, quoted=True)})
+                    OR supervision_level_raw_text IS NULL
+                ) THEN FALSE
                 WHEN assessment_level = 'LOW'
                     AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED')
-                    /* 6P3 maps to PSU (Programmed Supervision Unit, for people with sex offenses)
-                       which Recidiviz maps to MEDIUM supervision level. However, the PSU designation is
-                       determined by courts/judges and thus people in that unit are not eligible for a downgrade 
-                       regardless of their assessment score
-                    */
-                    AND supervision_level_raw_text NOT IN ('{{exclude_medium}}', '{{exclude_high}}')
                     THEN TRUE
                 WHEN assessment_level = 'MODERATE'
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED')
-                    AND supervision_level_raw_text NOT IN ('{{exclude_high}}')
                     THEN TRUE
                 ELSE FALSE
                 END AS meets_criteria,
@@ -169,8 +171,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
-        exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
-        exclude_high="', '".join(EXCLUDED_HIGH_RAW_TEXT),
         reasons_fields=[
             ReasonsField(
                 name="supervision_level",
