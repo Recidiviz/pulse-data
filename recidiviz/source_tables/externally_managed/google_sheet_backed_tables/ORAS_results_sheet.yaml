@@ -1,0 +1,213 @@
+address:
+  dataset_id: google_sheet_backed_tables
+  table_id: ORAS_results_sheet
+description: "ORAS results from AZ being pulled from a Google Sheet."
+schema:
+  - name: date
+    type: DATETIME
+    mode: NULLABLE
+    description: Date of assessment
+  - name: ADC_Number
+    type: STRING
+    mode: NULLABLE
+    description: AZDOC defined id number for inmates
+  - name: Offender_First_and_Last_Name
+    type: STRING
+    mode: NULLABLE
+    description: Full name of person assessed
+  - name: Most_Serious_Arrest_Under_Age_18
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.1. Criminal history section. Scale from 0-2, with each level being a different offense level.
+  - name: Number_of_Prior_Adult_Felony_Convictions
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.2. Criminal history section. Scale from 0-2, with each level being a different number of prior felony convictions.
+  - name: Prior_Sentence_as_an_Adult_to_a_Jail_or_Secure_Correctional_Facility
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.3. Criminal history section. Has the person been sentenced to jail or prison as an adult?
+  - name: Received_Official_Misconduct_while_Incarcerated_as_an_Adult
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.4. Criminal history section. Y/N official misconduct report in custody.
+  - name: Prior_Sentence_to_Community_Supervision_as_an_Adult
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.5. Criminal history section. Y/N previous supervision stint.
+  - name: Community_Supervision_Ever_Been_Revoked_for_Technical_Violation_as_an_Adult
+    type: STRING
+    mode: NULLABLE
+    description: Question 1.6. Criminal history section. Y/N previous technical violation.
+  - name: Highest_Education
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.1. Education, Employment, and Financial Situation Section.
+  - name: Ever_Suspended_or_Expelled_From_School
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.2. Education, Employment, and Financial Situation Section.
+  - name: Employed_at_the_Time_of_Arrest
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.3. Education, Employment, and Financial Situation Section.
+  - name: Currently_Employed_School
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.4. Education, Employment, and Financial Situation Section.
+  - name: Better_Use_of_Time
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.5. Education, Employment, and Financial Situation Section.
+  - name: Current_Financial_Situation
+    type: STRING
+    mode: NULLABLE
+    description: Question 2.6. Education, Employment, and Financial Situation Section.
+  - name: Parents_have_Criminal_Record
+    type: STRING
+    mode: NULLABLE
+    description: Question 3.1. Family and Social Support Section.
+  - name: Satisfied_with_Current_Marital_or_Equivalent_Situation
+    type: STRING
+    mode: NULLABLE
+    description: Question 3.2. Family and Social Support Section.
+  - name: Emotional_and_Personal_Support_Available_from_Family_or_Others
+    type: STRING
+    mode: NULLABLE
+    description: Question 3.3. Family and Social Support Section.
+  - name: Level_of_Satisfaction_with_Current_Level_of_Support_from_Family_or_Others
+    type: STRING
+    mode: NULLABLE
+    description: Question 3.4. Family and Social Support Section.
+  - name: Stability_of_Residence
+    type: STRING
+    mode: NULLABLE
+    description: Question 3.5. Family and Social Support Section.
+  - name: High_Crime_Area
+    type: STRING
+    mode: NULLABLE
+    description: Question 4.1. Neighborhood Problems Section.
+  - name: Drugs_Readily_Available_in_Neighborhood
+    type: STRING
+    mode: NULLABLE
+    description: Question 4.2. Neighborhood Problems Section.
+  - name: Age_First_Began_Regularly_Using_Alcohol
+    type: STRING
+    mode: NULLABLE
+    description: Question 5.1. Substance Use Section.
+  - name: Most_Recent_Period_of_Abstinence_from_Alcohol
+    type: STRING
+    mode: NULLABLE
+    description: Question 5.2. Substance Use Section.
+  - name: Ever_Used_Illegal_Drugs
+    type: STRING
+    mode: NULLABLE
+    description: Question 5.3. Substance Use Section.
+  - name: Drug_Use_Caused_Problems
+    type: STRING
+    mode: NULLABLE
+    description: Question 5.4. Substance Use Section.
+  - name: Drug_Use_Caused_Problems_with_Employment
+    type: STRING
+    mode: NULLABLE
+    description: Question 5.5. Substance Use Section.
+  - name: Criminal_Friends
+    type: STRING
+    mode: NULLABLE
+    description: Question 6.1. Peer Associations Section.
+  - name: Contact_with_Past_Criminal_Peers
+    type: STRING
+    mode: NULLABLE
+    description: Question 6.2. Peer Associations Section.
+  - name: Gang_Membership
+    type: STRING
+    mode: NULLABLE
+    description: Question 6.3. Peer Associations Section.
+  - name: Criminal_Activities
+    type: STRING
+    mode: NULLABLE
+    description: Question 6.4. Peer Associations Section.
+  - name: Criminal_Attitudes
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.1. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Expresses_Concern_about_Others
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.2. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Feels_Lack_of_Control_Over_Events
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.3. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Sees_No_Problem_in_Telling_Lies
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.4. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Engages_in_Risk_Taking_Behavior
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.5. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Walks_Away_from_a_Fight
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.6. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Believes_in_Do_Unto_Others_Before_They_Do_Unto_You
+    type: STRING
+    mode: NULLABLE
+    description: Question 7.7. Criminal Attitudes and Behavioral Patterns Section.
+  - name: Gender
+    type: STRING
+    mode: NULLABLE
+    description: Individual's gender. Different genders have different scoring brackets.
+  - name: Email_Address
+    type: STRING
+    mode: NULLABLE
+    description: Email address of the person who completed the assessment.
+  - name: CRIMINAL_HISTORY_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Criminal History section
+  - name: EDUCATION_EMPLOYMENT_AND_FINANCIAL_SITUATION_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Education, Employment, and Financial Situation section.
+  - name: FAMILY_AND_SOCIAL_SUPPORT_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Family and Social Support section.
+  - name: NEIGHBORHOOD_PROBLEMS_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Neighborhood Problems section.
+  - name: SUBSTANCE_USE_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Substance Use section.
+  - name: PEER_ASSOCIATIONS_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Peer Associations section.
+  - name: CRIMINAL_ATTITUDES_AND_BEHAVIORAL_PATTERNS_TOTAL
+    type: STRING
+    mode: NULLABLE
+    description: Total score on Criminal Attitudes and Behavioral Patterns section.
+  - name: Total
+    description: Total score overall.
+  - name: Supervision_Level
+    type: STRING
+    mode: NULLABLE
+    description: Assessed supervision level.
+  - name: Emailed
+    type: STRING
+    mode: NULLABLE
+    description: Date and time the report was emailed.
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1GG3Y1LyZl8rpbYhwQ6wbpwq5Ul81hga9QE2y7SsIf_U/edit?gid=922550469#gid=922550469
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  ignoreUnknownValues: false
+  googleSheetsOptions:
+    skipLeadingRows: "1"
+    range: "Form Responses 1"
