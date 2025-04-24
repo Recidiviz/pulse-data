@@ -160,7 +160,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
                     metadata.project_id()
                 )
             )
-            self.source_table_config = source_table_repository.build_config(
+            self.source_table_config = source_table_repository.get_config(
                 BigQueryAddress(
                     dataset_id=VIEW_UPDATE_METADATA_DATASET,
                     table_id="per_view_update_stats",

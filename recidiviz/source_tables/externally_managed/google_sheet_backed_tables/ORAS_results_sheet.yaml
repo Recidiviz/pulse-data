@@ -192,6 +192,8 @@ schema:
     mode: NULLABLE
     description: Total score on Criminal Attitudes and Behavioral Patterns section.
   - name: Total
+    type: STRING
+    mode: NULLABLE
     description: Total score overall.
   - name: Supervision_Level
     type: STRING

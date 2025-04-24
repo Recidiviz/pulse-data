@@ -54,7 +54,7 @@ class RefreshBQDatasetSuccessPersister(BigQueryRowStreamer):
         source_table_repository = build_source_table_repository_for_yaml_managed_tables(
             metadata.project_id()
         )
-        source_table_config = source_table_repository.build_config(
+        source_table_config = source_table_repository.get_config(
             REFRESH_BQ_DATASET_TRACKER_ADDRESS
         )
         super().__init__(

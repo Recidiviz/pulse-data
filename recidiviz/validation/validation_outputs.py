@@ -85,7 +85,7 @@ def store_validation_run_completion_in_big_query(
     )
 
     bq_client = BigQueryClientImpl()
-    source_table_config = source_table_repository.build_config(
+    source_table_config = source_table_repository.get_config(
         VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS
     )
     success_row_streamer = BigQueryRowStreamer(

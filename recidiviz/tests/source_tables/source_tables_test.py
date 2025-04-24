@@ -23,7 +23,9 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.source_tables.source_table_config import SourceTableCouldNotGenerateError
+from recidiviz.source_tables.source_table_config import (
+    SourceTableConfigDoesNotExistError,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
@@ -123,8 +125,8 @@ class SourceTablesTest(unittest.TestCase):
 
             for source_table_address in referenced_source_tables:
                 try:
-                    source_table_repository.build_config(source_table_address)
-                except SourceTableCouldNotGenerateError:
+                    source_table_repository.get_config(source_table_address)
+                except SourceTableConfigDoesNotExistError:
                     missing_source_table_definitions.add(source_table_address)
 
             missing_definitions = build_string_for_addresses(

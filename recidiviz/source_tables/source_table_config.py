@@ -92,6 +92,24 @@ class SourceTableConfig:
                 "for context on how to configure this."
             )
 
+        for field in self.schema_fields:
+            if not field.name:
+                raise ValueError(
+                    f"Found field in source table [{self.address.to_str()}] with an "
+                    f"empty / undefined name."
+                )
+
+            if not field.field_type:
+                raise ValueError(
+                    f"Found field [{field.name}] in source table "
+                    f"[{self.address.to_str()}] with no defined type."
+                )
+            if not field.mode:
+                raise ValueError(
+                    f"Found field [{field.name}] in source table "
+                    f"[{self.address.to_str()}] with no defined mode."
+                )
+
     def has_column(self, column: str) -> bool:
         return any(c.name == column for c in self.schema_fields + self.pseudocolumns)
 
@@ -521,5 +539,5 @@ class SourceTableCollection:
         return list(self.source_tables_by_address.values())
 
 
-class SourceTableCouldNotGenerateError(ValueError):
+class SourceTableConfigDoesNotExistError(ValueError):
     pass

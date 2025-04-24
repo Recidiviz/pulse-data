@@ -160,7 +160,7 @@ def get_large_experiment_assignments_source_table_config() -> SourceTableConfig:
         build_source_table_repository_for_externally_managed_tables(project_id=None)
     )
 
-    config = source_table_repository.build_config(table_address)
+    config = source_table_repository.get_config(table_address)
     for col in _REFERENCED_EXPERIMENT_ASSIGNMENTS_COLUMNS:
         if not config.has_column(col):
             raise ValueError(

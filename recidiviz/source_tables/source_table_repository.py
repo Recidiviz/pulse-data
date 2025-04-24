@@ -24,7 +24,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableConfig,
-    SourceTableCouldNotGenerateError,
+    SourceTableConfigDoesNotExistError,
     SourceTableLabel,
 )
 
@@ -95,8 +95,8 @@ class SourceTableRepository:
             config for collection in collections for config in collection.source_tables
         ]
 
-    def build_config(self, address: BigQueryAddress) -> SourceTableConfig:
+    def get_config(self, address: BigQueryAddress) -> SourceTableConfig:
         try:
             return self.source_tables[address]
         except KeyError as e:
-            raise SourceTableCouldNotGenerateError from e
+            raise SourceTableConfigDoesNotExistError from e

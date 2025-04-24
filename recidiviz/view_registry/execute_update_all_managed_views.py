@@ -65,7 +65,7 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
         source_table_repository = build_source_table_repository_for_yaml_managed_tables(
             metadata.project_id()
         )
-        source_table_config = source_table_repository.build_config(
+        source_table_config = source_table_repository.get_config(
             VIEW_UPDATE_TRACKER_TABLE_ADDRESS
         )
         super().__init__(
@@ -99,7 +99,7 @@ class PerViewUpdateStatsPersister(BigQueryRowStreamer):
         source_table_repository = build_source_table_repository_for_yaml_managed_tables(
             metadata.project_id()
         )
-        source_table_config = source_table_repository.build_config(
+        source_table_config = source_table_repository.get_config(
             PER_VIEW_UPDATE_STATS_TABLE_ADDRESS
         )
         super().__init__(
