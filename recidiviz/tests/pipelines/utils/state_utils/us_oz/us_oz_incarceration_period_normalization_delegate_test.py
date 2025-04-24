@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests us_oz_incarceration_period_normalization_delegate.py."""
+import datetime
 import unittest
 
 from recidiviz.common.constants.states import StateCode
@@ -40,7 +41,9 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         existing defaults.
         """
         lotr_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE, external_id="LOTR-99"
+            state_code=_STATE_CODE,
+            external_id="LOTR-99",
+            admission_date=datetime.date(2020, 1, 1),
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
@@ -57,6 +60,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         sm_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="SM-1",
+            admission_date=datetime.date(2020, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         self.assertEqual(
@@ -66,7 +70,9 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
         vfds_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE, external_id="VFDS-1"
+            state_code=_STATE_CODE,
+            external_id="VFDS-1",
+            admission_date=datetime.date(2020, 1, 1),
         )
         self.assertNotEqual(
             self.delegate.incarceration_admission_reason_override(
@@ -77,6 +83,7 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         vfds_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="VFDS-2",
+            admission_date=datetime.date(2020, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         self.assertEqual(
@@ -86,7 +93,9 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         hg_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE, external_id="HG-1"
+            state_code=_STATE_CODE,
+            external_id="HG-1",
+            admission_date=datetime.date(2020, 1, 1),
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
@@ -97,14 +106,18 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def test_incarceration_facility_override(self) -> None:
         egt_period = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE, external_id="EGT-1"
+            state_code=_STATE_CODE,
+            external_id="EGT-1",
+            admission_date=datetime.date(2020, 1, 1),
         )
         self.assertEqual(
             self.delegate.incarceration_facility_override(egt_period),
             "THE-CRIB",
         )
         hg_period = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE, external_id="HG-1"
+            state_code=_STATE_CODE,
+            external_id="HG-1",
+            admission_date=datetime.date(2020, 1, 1),
         )
         self.assertEqual(
             self.delegate.incarceration_facility_override(hg_period),

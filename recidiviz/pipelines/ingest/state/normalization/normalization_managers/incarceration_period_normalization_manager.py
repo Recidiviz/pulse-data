@@ -543,7 +543,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         updated_periods: List[StateIncarcerationPeriod] = []
 
         for index, ip in enumerate(incarceration_periods):
-            previous_ip = incarceration_periods[index - 1] if index > 0 else None
             next_ip = (
                 incarceration_periods[index + 1]
                 if index < len(incarceration_periods) - 1
@@ -551,7 +550,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             )
 
             if self.earliest_death_date:
-                if ip.admission_date and self.earliest_death_date <= ip.admission_date:
+                if self.earliest_death_date <= ip.admission_date:
                     # If a period starts after the earliest_death_date, drop the period.
                     logging.info(
                         "Dropping incarceration period with with an admission_date "
@@ -572,12 +571,8 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             if ip.release_date is None:
                 if next_ip:
                     # This is not the last incarceration period in the list. Set the
-                    # release date to the next admission or release date.
-                    ip.release_date = (
-                        next_ip.admission_date
-                        if next_ip.admission_date
-                        else next_ip.release_date
-                    )
+                    # release date to the next admission date
+                    ip.release_date = next_ip.admission_date
 
                     if ip.release_reason is None:
                         if (
@@ -605,36 +600,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 ip.release_reason = None
                 ip.release_reason_raw_text = None
 
-            if ip.admission_date is None:
-                if previous_ip:
-                    # If the admission date is not set, and this is not the first
-                    # incarceration period, then set the admission_date to be the
-                    # same as the release_date or admission_date of the preceding period
-                    ip.admission_date = (
-                        previous_ip.release_date
-                        if previous_ip.release_date
-                        else previous_ip.admission_date
-                    )
-
-                    if ip.admission_reason is None:
-                        if (
-                            previous_ip.release_reason
-                            == StateIncarcerationPeriodReleaseReason.TRANSFER
-                        ):
-                            # If they were transferred out of the previous period, infer
-                            # that this admission was a transfer
-                            ip.admission_reason = (
-                                StateIncarcerationPeriodAdmissionReason.TRANSFER
-                            )
-                else:
-                    # If the admission date is not set, and this is the
-                    # first incarceration period, then set the admission_date to be
-                    # the same as the release_date
-                    ip.admission_date = ip.release_date
-                    ip.admission_reason = (
-                        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
-                    )
-            elif ip.admission_date > current_date_us_eastern():
+            if ip.admission_date > current_date_us_eastern():
                 logging.info(
                     "Dropping incarceration period with admission_date in the future: [%s]",
                     ip,
@@ -654,7 +620,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
                 )
 
-            if ip.admission_date and ip.release_date:
+            if ip.release_date:
                 if ip.release_date < ip.admission_date:
                     logging.info(
                         "Dropping incarceration period with release before admission: [%s]",
@@ -1020,11 +986,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     "Unexpected ingest-only admission_reason ADMITTED_FROM_SUPERVISION "
                     f"on ip: {ip}. We should have handled this value by the end of "
                     "IP normalization."
-                )
-            if not ip.admission_date:
-                raise ValueError(
-                    f"Unexpected missing admission_date on ip: {ip}. All IPs should "
-                    "have set admission_dates by the end of IP normalization."
                 )
             if not ip.admission_reason:
                 raise ValueError(

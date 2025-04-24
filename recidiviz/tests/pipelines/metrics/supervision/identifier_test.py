@@ -5495,7 +5495,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         incarceration_release_date: date,
         expected_in_incarceration_population_on_date: bool,
         expected_in_supervision_population_on_date: bool,
-        incarceration_admission_date: Optional[date] = date(2018, 2, 20),
+        incarceration_admission_date: date = date(2018, 2, 20),
         incarceration_authority: Optional[StateCustodialAuthority] = None,
     ) -> None:
         """Runs a test for find_supervision_start_event where there are overlapping

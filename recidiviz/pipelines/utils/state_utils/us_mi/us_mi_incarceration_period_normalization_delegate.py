@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_MI implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+import datetime
 from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -51,6 +52,7 @@ from recidiviz.pipelines.utils.incarceration_period_utils import (
     infer_incarceration_periods_from_in_custody_sps,
     legacy_standardize_purpose_for_incarceration_values,
 )
+from recidiviz.utils.types import assert_type
 
 
 class UsMiIncarcerationNormalizationDelegate(
@@ -232,7 +234,7 @@ class UsMiIncarcerationNormalizationDelegate(
             new_incarceration_period = StateIncarcerationPeriod(
                 state_code=StateCode.US_MI.value,
                 external_id=f"{previous_ip.external_id}-TEMPORARY_RELEASE",
-                admission_date=previous_ip.release_date,
+                admission_date=assert_type(previous_ip.release_date, datetime.date),
                 release_date=next_ip.admission_date,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
                 release_reason=StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,

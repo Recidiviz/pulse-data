@@ -1285,30 +1285,6 @@ class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
         errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
-    def test_missing_date_incarceration_period(self) -> None:
-        valid_period = state_entities.StateIncarcerationPeriod(
-            state_code=self.state_code,
-            external_id="IP-EXTERNAL-1",
-            person=self.state_person,
-            admission_date=date(2020, 1, 1),
-        )
-        missing_date_period = state_entities.StateIncarcerationPeriod(
-            state_code=self.state_code,
-            external_id="IP-EXTERNAL-2",
-            person=self.state_person,
-        )
-        self.state_person.incarceration_periods = [valid_period, missing_date_period]
-        errors = validate_root_entity(self.state_person)
-        self.assertEqual(
-            errors,
-            [
-                "Found StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) having a "
-                "StateIncarcerationPeriod with a null start date."
-            ],
-        )
-
 
 class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
     """Test that root entity checks specific to supervision periods are valid."""

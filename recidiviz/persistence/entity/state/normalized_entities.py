@@ -1856,11 +1856,33 @@ class NormalizedStateIncarcerationPeriod(
 
     # Attributes
     #   - When
-    admission_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+    admission_date: date = attr.ib(
+        # TODO(#41434): Reset validator to just `attr_validators.is_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_date,
+            state_exempted_validator(
+                attr_validators.is_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#41446): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1000-01-01.
+                    StateCode.US_AR,
+                    # TODO(#41449): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0004-11-02.
+                    StateCode.US_ND,
+                },
+            ),
+        ),
     )
     release_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
     )
 
     #   - Where

@@ -211,11 +211,7 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
-    state_entities.StateIncarcerationPeriod: [
-        state_entities.StateIncarcerationPeriod(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
+    state_entities.StateIncarcerationPeriod: [],
     state_entities.StateIncarcerationSentence: [
         state_entities.StateIncarcerationSentence(
             state_code=StateCode.US_XX.value,
@@ -450,6 +446,7 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
         state_entities.StateIncarcerationPeriod(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
+            admission_date=datetime.date(2021, 1, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
         ),
     ],

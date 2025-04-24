@@ -35,6 +35,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
             state_code="US_XX",
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=datetime.date(2020, 1, 1),
         )
 
         with self.assertRaises(ValueError) as e:
@@ -85,9 +86,10 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         deprecated for the given state."""
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code="US_ZZ",
+            state_code="US_WW",
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=datetime.date(2020, 1, 1),
         )
 
         # Assert no error raised
@@ -105,6 +107,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
             state_code="US_XX",
             external_id="ip1",
             incarceration_type=None,
+            admission_date=datetime.date(2020, 1, 1),
         )
 
         # Assert no error raised
@@ -125,6 +128,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="ip1",
+            admission_date=datetime.date(2020, 1, 1),
         )
 
         with self.assertRaises(ValueError) as e:

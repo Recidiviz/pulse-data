@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the normalized_entity_conversion_utils.py file."""
-
+import datetime
 import unittest
 from typing import Set
 
@@ -112,11 +112,14 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 state_code="US_XX",
                 incarceration_period_id=111,
                 external_id="ip1",
+                admission_date=datetime.date(2020, 1, 1),
+                release_date=datetime.date(2020, 2, 1),
             ),
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=222,
                 external_id="ip2",
+                admission_date=datetime.date(2020, 2, 1),
             ),
         ]
 
@@ -143,6 +146,8 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 incarceration_period_id=111,
                 external_id="ip1",
                 sequence_num=0,
+                admission_date=datetime.date(2020, 1, 1),
+                release_date=datetime.date(2020, 2, 1),
                 purpose_for_incarceration_subtype="XYZ",
                 incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
             ),
@@ -151,6 +156,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 incarceration_period_id=222,
                 external_id="ip2",
                 sequence_num=1,
+                admission_date=datetime.date(2020, 2, 1),
                 purpose_for_incarceration_subtype="AAA",
             ),
         ]
