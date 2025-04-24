@@ -33,6 +33,7 @@ parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
+google-generativeai = "*"
 gspread = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
