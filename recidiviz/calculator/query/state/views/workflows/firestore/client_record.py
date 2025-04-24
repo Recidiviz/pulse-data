@@ -102,7 +102,7 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
         SELECT
             state_code,
             person_id,
-            external_id AS person_external_id,
+            external_id,
             "{config.opportunity_type}" AS opportunity_name,
             is_eligible,
             is_almost_eligible,
@@ -120,12 +120,15 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
     opportunities_aggregated AS (
         SELECT
             state_code,
-            person_external_id,
+            person_id,
             ARRAY_AGG(
                 DISTINCT IF(is_eligible OR is_almost_eligible, opportunity_name, NULL)
                 IGNORE NULLS
                 ORDER BY IF(is_eligible OR is_almost_eligible, opportunity_name, NULL)
-            ) AS all_eligible_opportunities
+            ) AS all_eligible_opportunities,
+            ARRAY_AGG(
+                external_id ORDER BY external_id
+            ) AS all_referenced_person_external_ids
         FROM opportunities
         GROUP BY 1, 2
     )

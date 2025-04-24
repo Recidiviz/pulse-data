@@ -39,11 +39,6 @@ class UsIxSupervisionTaskQueryConfig:
     task_details_joins: Optional[str] = attr.ib(default="")
 
 
-CLIENT_RECORD_JOIN = """
-    INNER JOIN `{project_id}.{workflows_views}.client_record_materialized` client
-    USING(person_external_id, state_code)
-"""
-
 ASSESSMENT_SCORE_JOIN = """
     LEFT JOIN `{project_id}.{sessions}.assessment_score_sessions_materialized` ss 
     USING(person_id)
@@ -125,7 +120,7 @@ def get_case_compliance_task_ctes() -> str:
             FROM case_compliance_with_next_recommended_recalculated cc
 
             INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
-            USING(person_external_id, state_code)
+            USING(person_id)
     
             {config.task_details_joins}
             
@@ -165,10 +160,8 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
             person_id,
             MAX(DATE(JSON_EXTRACT_SCALAR(reason, "$.income_verified_date"))) as most_recent_income_verification_date,
         FROM `{{project_id}}.task_eligibility_criteria_us_ix.income_verified_within_3_months_materialized`
-        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-            USING(person_id)
         INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
-            ON pei.external_id = client.person_external_id AND pei.id_type = 'US_IX_DOC' and pei.state_code = client.state_code
+            USING(person_id)
         WHERE start_date >= supervision_start_date
         group by 1
     ),

@@ -146,7 +146,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

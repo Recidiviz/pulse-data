@@ -29,7 +29,6 @@ from recidiviz.calculator.query.state.views.workflows.us_tx.shared_ctes import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -58,12 +57,8 @@ critical_date_spans AS (
             INTERVAL DIV(DATE_DIFF(term_dates.tx_max_termination_date, comp_sessions.start_date, DAY), 2) DAY
             ) AS critical_date
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` as comp_sessions
-    # TODO(#41419) Change external ID join to come from workflows_views.person_id_to_external_id_materialized
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` as ext_ids
-      ON (comp_sessions.person_id = ext_ids.person_id)
-      AND ext_ids.id_type = 'US_TX_SID'
     LEFT JOIN us_tx_max_termination_dates as term_dates
-      ON term_dates.sid_number = ext_ids.external_id
+      ON term_dates.person_id = comp_sessions.person_id
       AND term_dates.tx_max_termination_date > comp_sessions.start_date
     WHERE comp_sessions.compartment_level_1 = 'SUPERVISION'
         AND comp_sessions.state_code = 'US_TX'   
@@ -87,7 +82,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_REASON_QUERY,
     sessions_dataset=SESSIONS_DATASET,
     state_code=StateCode.US_TX,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_tx_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TX,
         instance=DirectIngestInstance.PRIMARY,

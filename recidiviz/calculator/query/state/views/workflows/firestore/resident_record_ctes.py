@@ -24,8 +24,12 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.shared_state_agnostic_ctes import (
+    CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
+from recidiviz.utils.string import StrictStringFormatter
 
 STATES_WITH_RESIDENT_METADATA = [
     StateCode.US_AR,
@@ -41,7 +45,6 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
         SELECT
             dataflow.state_code,
             dataflow.person_id,
-            person_external_id,
             sp.full_name AS person_name,
             sp.gender AS gender,
             IF( dataflow.state_code IN ({level_2_state_codes}),
@@ -202,7 +205,7 @@ _RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""
             {revert_nonnull_start_date_clause('admission_date')} AS admission_date, 
             {revert_nonnull_end_date_clause('release_date')} AS release_date
         FROM incarceration_dates
-        GROUP BY 1,2,3,4,5,6,7,8,9
+        GROUP BY 1,2,3,4,5,6,7,8
     ),
 """
 
@@ -214,10 +217,12 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
         FROM `{{project_id}}.{{us_me_raw_data_dataset}}.CIS_112_CUSTODY_LEVEL` cl
         INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_1017_CLIENT_SYS_latest` cs
             ON cl.CIS_1017_CLIENT_SYS_CD = cs.CLIENT_SYS_CD
-        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
-            ON cl.CIS_100_CLIENT_ID = pei.person_external_id
-            AND pei.state_code = "US_ME"
-            AND pei.system_type = "INCARCERATION"
+        INNER JOIN (
+            SELECT *
+            FROM `{{project_id}}.normalized_state.state_person_external_id`
+            WHERE state_code = "US_ME" AND id_type = "US_ME_DOC"
+        ) pei
+        ON cl.CIS_100_CLIENT_ID = pei.external_id
         WHERE TRUE
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
@@ -230,10 +235,12 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
             pei.person_id,
             BL_ICA AS custody_level
         FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK015_latest` tak015
-        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
-            ON BL_DOC = pei.person_external_id
-            AND pei.state_code = "US_MO"
-            AND pei.system_type = "INCARCERATION"
+        INNER JOIN (
+            SELECT *
+            FROM `{{project_id}}.normalized_state.state_person_external_id`
+            WHERE state_code = "US_MO" AND id_type = "US_MO_DOC"
+        ) pei
+        ON BL_DOC = pei.external_id
         -- We want to keep the latest Custody Assessment date. When there are two assessments on the same day,
         -- we deduplicate using CNO which is part of the primary key. Finally, there's still a very small number of
         -- duplicates where the same person has the same BL_IC and BL_CNO, but different cycle numbers, so we further
@@ -378,7 +385,6 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             ic.state_code,
             ic.person_name,
             ic.person_id,
-            ic.person_external_id,
             ic.gender,
             officer_id,
             ic.facility_id,
@@ -401,15 +407,17 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
     ),
 """
 
-_RESIDENT_RECORD_DISPLAY_ID_CTE = """
-    display_ids AS (
+_RESIDENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE = """
+    display_person_external_id_overrides AS (
+        # In most cases, the client ID we display to users is the same as the "stable"
+        # person_external_id, but some states may want to display a different ID. This 
+        # CTE defines override values for states that prefer to display a different
+        # person external_id to the user.
         SELECT
-            state_code,
+            'US_AZ' AS state_code,
             person_id,
-            external_id as display_id,
-        FROM join_residents
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
-        USING (state_code, person_id)
+            external_id as display_person_external_id_override,
+        FROM `{project_id}.{normalized_state_dataset}.state_person_external_id`
         WHERE state_code = 'US_AZ'
             AND id_type = 'US_AZ_ADC_NUMBER'
     ),
@@ -418,8 +426,13 @@ _RESIDENT_RECORD_DISPLAY_ID_CTE = """
 _RESIDENTS_CTE = """
     residents AS (
         SELECT
-            person_external_id,
-            COALESCE(display_id, person_external_id) as display_id,
+            stable_person_external_ids.person_external_id,
+            -- By default, we display the stable person_external_id value to users, but in
+            -- some states, we choose a different ID to display
+            COALESCE(
+                display_person_external_id_overrides.display_person_external_id_override,
+                stable_person_external_ids.person_external_id
+            ) AS display_id,
             state_code,
             person_name,
             person_id,
@@ -438,15 +451,21 @@ _RESIDENTS_CTE = """
             portion_needed_eligible_date AS us_me_portion_needed_eligible_date,
             GREATEST(portion_needed_eligible_date, months_remaining_eligible_date) AS sccp_eligibility_date,
         FROM join_residents
-        LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
+        LEFT JOIN stable_person_external_ids
+            USING (person_id)
+        LEFT JOIN opportunities_aggregated USING (state_code, person_id)
         LEFT JOIN portion_needed USING (state_code, person_id)
         LEFT JOIN months_remaining USING (state_code, person_id)
-        LEFT JOIN display_ids USING (state_code, person_id)
+        LEFT JOIN display_person_external_id_overrides USING (state_code, person_id)
     )
 """
 
 
 def full_resident_record() -> str:
+    stable_person_external_ids_cte = StrictStringFormatter().format(
+        CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
+        system_type="INCARCERATION",
+    )
     return f"""
     {_RESIDENT_RECORD_INCARCERATION_CTE}
     {_RESIDENT_RECORD_INCARCERATION_DATES_CTE}
@@ -458,6 +477,7 @@ def full_resident_record() -> str:
     {_RESIDENT_MONTHS_REMAINING_NEEDED_CTE}
     {generate_resident_metadata_cte(STATES_WITH_RESIDENT_METADATA)}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
-    {_RESIDENT_RECORD_DISPLAY_ID_CTE}
+    {_RESIDENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE}
+    {stable_person_external_ids_cte}
     {_RESIDENTS_CTE}
     """

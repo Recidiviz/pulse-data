@@ -239,7 +239,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER = SimpleBi
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
 )

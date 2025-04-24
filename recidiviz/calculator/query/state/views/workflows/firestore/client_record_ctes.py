@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
     STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
     STATES_WITH_NO_INFERRED_OPEN_SPANS,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.shared_state_agnostic_ctes import (
+    CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
     US_CA_MOST_RECENT_CLIENT_DATA,
 )
@@ -44,6 +47,7 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
 from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
     us_pa_supervision_super_sessions,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
 STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(
     ["US_CA", "US_OR"], quoted=True
@@ -108,7 +112,6 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         SELECT
           sessions.person_id,
           sessions.state_code,
-          pei.person_external_id,
           COALESCE(state_specific_supervision_type.supervision_type, sessions.compartment_level_2) AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
             -- to make sure we choose the officer that aligns with other compartment session attributes.
@@ -132,10 +135,6 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
             ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
-        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
-            ON sessions.person_id = pei.person_id
-            AND sessions.state_code = pei.state_code
-            AND pei.system_type = "SUPERVISION"
         LEFT JOIN projected_completion_date_sessions projected_end
             ON sessions.state_code = projected_end.state_code
             AND sessions.person_id = projected_end.person_id
@@ -159,19 +158,15 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
         LEFT JOIN us_ca_most_recent_client_data ca_pp
-            ON pei.person_external_id = ca_pp.OffenderId
-            AND sessions.state_code = "US_CA"
+            ON sessions.person_id = ca_pp.person_id
         LEFT JOIN us_or_caseloads
-            ON sessions.state_code = "US_OR"
-            AND sessions.person_id = us_or_caseloads.person_id
+            ON sessions.person_id = us_or_caseloads.person_id
         LEFT JOIN us_tx_max_termination_dates
-            ON LTRIM(pei.person_external_id, "0") = LTRIM(SID_Number, "0")
-            AND sessions.state_code = "US_TX"
+            ON sessions.person_id = us_tx_max_termination_dates.person_id
         LEFT JOIN (
             {workflows_state_specific_supervision_type()}
         ) state_specific_supervision_type
-            ON sessions.state_code = state_specific_supervision_type.state_code
-            AND sessions.person_id = state_specific_supervision_type.person_id
+            ON sessions.person_id = state_specific_supervision_type.person_id
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
@@ -179,10 +174,6 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             OR sessions.supervising_officer_external_id_end IS NOT NULL)
           AND (sessions.state_code != "US_CA" OR ca_pp.BadgeNumber IS NOT NULL)
           AND (sessions.state_code != "US_OR" OR us_or_caseloads.caseload IS NOT NULL)
-        QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY person_id
-            ORDER BY person_external_id
-        ) = 1
     ),
     """
 
@@ -279,24 +270,18 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
     ),
     """
 
-_CLIENT_RECORD_DISPLAY_IDS_CTE = """
-    display_ids AS (
-        # In most cases, the client ID we display to users is person_external_id, but some
-        # states may want to display a different ID that isn't suitable as a pei 
+_CLIENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE = """
+    display_person_external_id_overrides AS (
+        # In most cases, the client ID we display to users is the same as the "stable"
+        # person_external_id, but some states may want to display a different ID. This 
+        # CTE defines override values for states that prefer to display a different
+        # person external_id to the user.
         SELECT
-            state_code,
-            person_external_id,
-            CASE state_code
-                WHEN "US_CA" THEN ca_pp.Cdcno
-                ELSE person_external_id
-                END
-                AS display_id
-        FROM `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-        LEFT JOIN us_ca_most_recent_client_data ca_pp
-            ON person_external_id=ca_pp.OffenderId
-        WHERE
-            state_code IN ({workflows_supervision_states})
-            AND pei.system_type = "SUPERVISION"
+            "US_CA" AS state_code,
+            person_id,
+            ca_pp.Cdcno AS display_person_external_id_override,
+        FROM us_ca_most_recent_client_data ca_pp
+        WHERE state_code = "US_CA"
     ),
 """
 
@@ -305,27 +290,27 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT
             "US_ND" AS state_code,
-            pei.person_external_id, 
+            pei.person_id, 
             doc.PHONE AS phone_number
-        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` doc
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-        ON doc.SID = pei.person_external_id
-        AND pei.state_code = "US_ND"
-        AND pei.system_type = "SUPERVISION"
+        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` doc        
+        INNER JOIN (
+            SELECT *
+            FROM `{project_id}.normalized_state.state_person_external_id`
+            WHERE state_code = "US_ND" AND id_type = "US_ND_SID"
+        ) pei
+        ON doc.SID = pei.external_id
+        WHERE doc.PHONE IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY pei.person_id ORDER BY RECORDCRDATE DESC) = 1
 
         UNION ALL
 
         SELECT
             sp.state_code,
-            pei.person_external_id,
+            sp.person_id,
             REPLACE(sp.current_phone_number, '-', '') AS phone_number
         FROM `{project_id}.{normalized_state_dataset}.state_person` sp
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            USING (person_id)
-        WHERE
-            sp.state_code IN ({workflows_supervision_states})
+        WHERE sp.state_code IN ({workflows_supervision_states})
             AND sp.state_code NOT IN ("US_ND")
-            AND pei.system_type = "SUPERVISION"
     ),
 """
 
@@ -333,14 +318,11 @@ _CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
     email_addresses AS (
         SELECT
             sp.state_code,
-            pei.person_external_id,
+            sp.person_id,
             sp.current_email_address as email_address
         FROM `{project_id}.{normalized_state_dataset}.state_person` sp
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            USING (person_id)
         WHERE
             sp.state_code IN ({workflows_supervision_states})
-            AND pei.system_type = "SUPERVISION"
     ),
 """
 
@@ -352,37 +334,35 @@ _CLIENT_RECORD_LAST_PAYMENT_INFO_CTE = """
     fines_fees_payment_info AS (
         SELECT 
                pp.state_code,
-               pei.person_external_id,
+               pp.person_id,
                pp.payment_date AS last_payment_date,
                pp.payment_amount AS last_payment_amount,
         FROM `{project_id}.{analyst_dataset}.payments_preprocessed_materialized` pp
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            USING (person_id)
-        WHERE pei.system_type = "SUPERVISION"
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY payment_date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER(
+            PARTITION BY person_id 
+            -- For payments on the same date, choose the largest payment to display
+            ORDER BY payment_date DESC, payment_amount DESC
+        ) = 1
     ),
 """
 
 _CLIENT_RECORD_SPECIAL_CONDITIONS_CTE = """
     special_conditions AS (
         SELECT 
-            pei.state_code,
-            pei.person_external_id,
+            state_code,
+            person_id,
             ARRAY_AGG(conditions IGNORE NULLS ORDER BY conditions) AS special_conditions_on_current_sentences
         FROM (
-            SELECT person_id, conditions
+            SELECT state_code, person_id, conditions
             FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
             WHERE COALESCE(completion_date, projected_completion_date) >= CURRENT_DATE('US/Eastern')
             
             UNION ALL
             
-            SELECT person_id, conditions
+            SELECT state_code, person_id, conditions
             FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
             WHERE COALESCE(completion_date, projected_max_release_date) >= CURRENT_DATE('US/Eastern')
         )
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            USING (person_id)
-        WHERE pei.system_type = "SUPERVISION"
         GROUP BY
             1,2
     ),
@@ -395,20 +375,21 @@ _CLIENT_RECORD_BOARD_CONDITIONS_CTE = """
      Then we keep all relevant hearings that happen in someone's latest system session, and keep all codes since then */
         WITH latest_system_start AS (
             SELECT 
-                person_external_id,
+                ss.person_id,
                 ss.state_code,
                 start_date AS latest_system_session_start_date
             FROM `{project_id}.{sessions_dataset}.system_sessions_materialized` ss
-            INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-                USING (person_id)
             WHERE ss.state_code = 'US_TN' 
-                AND pei.system_type = "SUPERVISION"
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1
         ),
         unpivot_board_conditions AS (
-            SELECT person_external_id, hearing_date, condition, Decode AS condition_description
+            SELECT 
+                person_id,
+                hearing_date, condition, Decode AS condition_description
             FROM (
-                SELECT DISTINCT OffenderID AS person_external_id, 
+                SELECT 
+                    DISTINCT 
+                       person_id,
                        CAST(HearingDate AS DATE) AS hearing_date, 
                        ParoleCondition1, 
                        ParoleCondition2, 
@@ -416,23 +397,29 @@ _CLIENT_RECORD_BOARD_CONDITIONS_CTE = """
                        ParoleCondition4, 
                        ParoleCondition5
                 FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.BoardAction_latest`
+                JOIN (
+                    SELECT *
+                    FROM `{project_id}.normalized_state.state_person_external_id`
+                    WHERE state_code = "US_TN" AND id_type = "US_TN_DOC"
+                ) pei
+                ON pei.external_id = OffenderID
                 WHERE FinalDecision = 'Y'
             )
             UNPIVOT(condition for c in (ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5))
             LEFT JOIN (
-                SELECT *
+                SELECT Code, Decode
                 FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.CodesDescription_latest`
                 WHERE CodesTableID = 'TDPD030'
             ) codes 
                 ON condition = codes.Code
         )
         SELECT
-            bc.person_external_id,
+            ls.person_id,
             ls.state_code, 
             ARRAY_AGG(STRUCT(condition, condition_description) ORDER BY condition, condition_description) AS board_conditions
         FROM latest_system_start ls
         INNER JOIN unpivot_board_conditions bc
-            ON ls.person_external_id = bc.person_external_id
+            ON ls.person_id = bc.person_id
             AND bc.hearing_date >= COALESCE(ls.latest_system_session_start_date,'1900-01-01')
         GROUP BY 1,2
     ),
@@ -578,7 +565,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     1 AS milestone_priority,
                 FROM supervision_cases sc
                 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-                USING(state_code, person_id)
+                USING(person_id)
             )
             UNION ALL
             -- months without violation
@@ -845,10 +832,13 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
             person_id,
             state_code,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Offender_latest` tn_raw
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            ON tn_raw.OffenderID = pei.person_external_id
-            AND pei.state_code = "US_TN"
-            AND pei.system_type = "SUPERVISION"
+        INNER JOIN (
+            SELECT *
+            FROM `{project_id}.normalized_state.state_person_external_id`
+            WHERE state_code = "US_TN" AND id_type = "US_TN_DOC"
+        ) pei
+        ON tn_raw.OffenderID = pei.external_id
+
     
         UNION ALL
     
@@ -856,10 +846,12 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
             person_id,
             state_code,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_latest` mi_raw
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-            ON LPAD(mi_raw.offender_number, 7, "0") = pei.person_external_id
-            AND pei.state_code = "US_MI"
-            AND pei.system_type = "SUPERVISION"
+        INNER JOIN (
+            SELECT *
+            FROM `{project_id}.normalized_state.state_person_external_id`
+            WHERE state_code = "US_MI" AND id_type = "US_MI_DOC"
+        ) pei
+        ON LPAD(mi_raw.offender_number, 7, "0") = pei.external_id
         
         UNION ALL
         
@@ -881,8 +873,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         SELECT DISTINCT
           sc.state_code,
           sc.person_id,
-          sc.person_external_id,
-          did.display_id,
+          did.display_person_external_id_override,
           sp.full_name as person_name,
           sp.current_address as address,
           SAFE_CAST(ph.phone_number AS INT64) AS phone_number,
@@ -907,24 +898,21 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         INNER JOIN supervision_super_sessions ss USING(person_id)
         INNER JOIN include_clients USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
-        LEFT JOIN display_ids did
+        LEFT JOIN display_person_external_id_overrides did
             ON sc.state_code = did.state_code
-            AND sc.person_external_id = did.person_external_id
+            AND sc.person_id = did.person_id
         LEFT JOIN phone_numbers ph
-            -- join on state_code / person_external_id instead of person_id alone because state data
-            -- may have multiple external_ids for a given person_id, and by this point in the
-            -- query we've already decided which person_external_id we're using
             ON sc.state_code = ph.state_code
-            AND sc.person_external_id = ph.person_external_id
+            AND sc.person_id = ph.person_id
         LEFT JOIN email_addresses ea
             ON sc.state_code = ea.state_code
-            AND sc.person_external_id = ea.person_external_id
+            AND sc.person_id = ea.person_id
         LEFT JOIN fines_fees_balance_info ff
             ON sc.state_code = ff.state_code
-            AND sc.person_external_id = ff.person_external_id
+            AND sc.person_id = ff.person_id
         LEFT JOIN fines_fees_payment_info pp
             ON sc.state_code = pp.state_code
-            AND sc.person_external_id = pp.person_external_id
+            AND sc.person_id = pp.person_id
         LEFT JOIN case_type ct
             ON ct.state_code = sc.state_code
             AND ct.person_id = sc.person_id
@@ -936,8 +924,14 @@ _CLIENTS_CTE = """
     clients AS (
         # Values set to NULL are not applicable for this state
         SELECT
-            person_external_id,
-            display_id,
+            c.person_id,
+            stable_person_external_ids.person_external_id,
+            -- By default, we display the stable person_external_id value to users, but
+            --  in some states, we choose a different ID to display
+            COALESCE(
+                c.display_person_external_id_override,
+                stable_person_external_ids.person_external_id
+            ) AS display_id,
             c.state_code,
             person_name,
             officer_id,
@@ -961,17 +955,18 @@ _CLIENTS_CTE = """
             spc.special_conditions_on_current_sentences AS special_conditions,
             bc.board_conditions,
         FROM join_clients c
+        LEFT JOIN stable_person_external_ids
+            USING (person_id)
         LEFT JOIN opportunities_aggregated 
-            USING (state_code, person_external_id)
+            USING (person_id)
         LEFT JOIN special_conditions spc
-            USING (state_code, person_external_id)
+            USING (person_id)
         LEFT JOIN board_conditions bc
-            USING (state_code, person_external_id)
+            USING (person_id)
         LEFT JOIN employment_info ei 
             USING (person_id)
         LEFT JOIN milestones mi 
-            ON mi.state_code = c.state_code 
-            and mi.person_id = c.person_id
+            USING (person_id)
         # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
         WHERE person_name IS NOT NULL
     )
@@ -979,13 +974,18 @@ _CLIENTS_CTE = """
 
 
 def full_client_record() -> str:
+    stable_person_external_ids_cte = StrictStringFormatter().format(
+        CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
+        system_type="SUPERVISION",
+    )
     return f"""
     {_CLIENT_RECORD_US_OR_CASELOAD_CTE}
     {_CLIENT_RECORD_SUPERVISION_CTE}
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_CASE_TYPE_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
-    {_CLIENT_RECORD_DISPLAY_IDS_CTE}
+    {stable_person_external_ids_cte}
+    {_CLIENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
     {_CLIENT_RECORD_FINES_FEES_INFO_CTE}
     {_CLIENT_RECORD_LAST_PAYMENT_INFO_CTE}

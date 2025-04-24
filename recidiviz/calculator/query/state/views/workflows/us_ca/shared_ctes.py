@@ -19,6 +19,7 @@
 
 US_CA_MOST_RECENT_CLIENT_DATA = """
   SELECT
+    "US_CA" AS state_code,
     person_id,
     OffenderId,
     Cdcno,
@@ -43,10 +44,12 @@ US_CA_MOST_RECENT_CLIENT_DATA = """
       PARSE_DATE("%m/%d/%Y", EarnedDischargeDate) AS EarnedDischargeDate,
       PARSE_DATE("%m/%d/%Y", ControllingDischargeDate) AS ControllingDischargeDate
     FROM `{project_id}.{us_ca_raw_data_dataset}.PersonParole` a
-    LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` b
-      ON a.OffenderId = b.person_external_id
-      AND b.state_code = 'US_CA'
-      AND b.system_type = "SUPERVISION"
+    LEFT JOIN (
+        SELECT *
+        FROM `{project_id}.normalized_state.state_person_external_id`
+        WHERE state_code = "US_CA" AND id_type = "US_CA_DOC"
+    ) pei
+    ON a.OffenderId = pei.external_id
     WHERE BadgeNumber IS NOT NULL
     QUALIFY file_id = FIRST_VALUE(file_id) OVER (
       ORDER BY update_datetime DESC
