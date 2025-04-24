@@ -73,6 +73,7 @@ eligible_clients AS (
     FROM eligible_clients_with_duplicate_external_ids eligible
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
         ON eligible.external_id = pei.person_external_id
+        AND eligible.state_code = pei.state_code
     INNER JOIN `{{project_id}}.{_COLLAPSED_TES_SPANS_ADDRESS_OVERRIDE.to_str()}` tes_collapsed
         ON 
             tes_collapsed.state_code = eligible.state_code
