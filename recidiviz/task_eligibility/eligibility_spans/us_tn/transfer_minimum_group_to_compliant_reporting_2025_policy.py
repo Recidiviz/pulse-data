@@ -18,13 +18,17 @@
 eligible for Compliant Reporting under the policy implemented in 2025, for the Minimum (Low) group.
 """
 
+# TODO(#40868): Ideally, combine this logic into the eligibility spans for the pre-2025
+# version of the CR policy, such that we have a single set of spans (if possible) for
+# the old and new versions of the policy.
+
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    transfer_to_limited_supervision,
+from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
+    transfer_to_limited_supervision_2025_policy,
 )
 from recidiviz.task_eligibility.criteria.general import (
     has_permanent_fines_fees_exemption,
@@ -136,7 +140,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ],
         at_least_n_conditions_true=2,
     ),
-    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

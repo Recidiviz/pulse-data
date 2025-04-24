@@ -103,6 +103,11 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_NO_CONTACT_PAROLE = "TRANSFER_TO_NO_CONTACT_PAROLE"
     TRANSFER_TO_SUPERVISION_RUN_FACILITY = "TRANSFER_TO_SUPERVISION_RUN_FACILITY"
     TRANSFER_TO_ADMINISTRATIVE_SUPERVISION = "TRANSFER_TO_ADMINISTRATIVE_SUPERVISION"
+    # TODO(#40868): Deprecate this completion event in favor of combining all CR
+    # transfers into a single completion event in TN.
+    TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY = (
+        "TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY"
+    )
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -141,6 +146,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY,
             TaskCompletionEventType.TRANSFER_TO_UNSUPERVISED_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
@@ -219,6 +225,7 @@ class TaskCompletionEventType(Enum):
             return DecarceralImpactType.DOWNGRADE_SUPERVISION_LEVEL
         if self in [
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY,
             TaskCompletionEventType.TRANSFER_TO_UNSUPERVISED_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
@@ -267,6 +274,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY,
             TaskCompletionEventType.TRANSFER_TO_UNSUPERVISED_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
@@ -328,6 +336,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.TRANSFER_OUT_OF_ADMINISTRATIVE_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY,
             TaskCompletionEventType.TRANSFER_TO_UNSUPERVISED_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
