@@ -8,6 +8,9 @@ exclusions:
   - validation_name: sentence_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#28867) Hydrate new sentencing entities
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: person_caseload_location_sessions_location
     hard_max_allowed_error_override: 1.0

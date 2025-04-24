@@ -22,6 +22,9 @@ exclusions:
   - validation_name: person_caseload_location_sessions_location
     exclusion_type: BROKEN
     exclusion_reason: Failing at 97%, will be addressed in #TODO(#33744)
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: supervision_population_by_type_external_comparison
     hard_max_allowed_error_override: 0.12

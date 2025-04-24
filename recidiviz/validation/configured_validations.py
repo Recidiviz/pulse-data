@@ -213,6 +213,9 @@ from recidiviz.validation.views.state.sentence_sessions.overlapping_sentence_inf
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.case_insights_rates_missing_charges import (
+    SENTENCES_CASE_INSIGHTS_CHARGE_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentences.compare_v2_and_v1_sentences import (
     SENTENCE_COMPARISON_VIEW_BUILDER,
 )
@@ -521,6 +524,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCES_CASE_INSIGHTS_CHARGE_COMPARISON_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=5,
         ),
         ExistenceDataValidationCheck(
             view_builder=LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,

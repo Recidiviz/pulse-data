@@ -9,6 +9,9 @@ exclusions:
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: We don't use uniform offense labels for anything in MI
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 1.0

@@ -13,6 +13,9 @@ exclusions:
     exclusion_reason:
       We are not presently receiving new transfers from US_CO, so we want to silence all
       validations until there is a path forward #TODO(#23733)
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: state_incarceration_period_by_admission_date_stable_counts
     hard_max_allowed_error_override: 1.00

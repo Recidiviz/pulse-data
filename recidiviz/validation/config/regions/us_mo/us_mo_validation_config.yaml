@@ -2,6 +2,9 @@
 
 region_code: US_MO
 exclusions:
+  - validation_name: case_insights_rates_missing_charges
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: MO has not provided us with person-level validation data for supervision level
