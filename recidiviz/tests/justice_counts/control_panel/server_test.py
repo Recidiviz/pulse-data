@@ -1956,11 +1956,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 None,
             )
             self.assertEqual(
-                {
-                    "Dimension 1": True,
-                    "Dimension 2": False,
-                    "Dimension 3": False,
-                },
+                [
+                    {
+                        "name": "Dimension 1",
+                        "enabled": True,
+                    },
+                    {"name": "Dimension 2", "enabled": False},
+                    {
+                        "name": "Dimension 3",
+                        "enabled": False,
+                    },
+                ],
                 response_json[2]["disaggregations"][0]["dimensions"][4][
                     "sub_dimensions"
                 ],

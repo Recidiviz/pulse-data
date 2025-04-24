@@ -739,11 +739,12 @@ class MetricAggregatedDimensionData:
                     and is_v2 is False
                     and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
                 ):
-                    json["sub_dimensions"] = dict(
-                        self.dimension_to_other_sub_dimension_to_enabled_status[
+                    json["sub_dimensions"] = [
+                        {"name": sub_dimension_name, "enabled": enabled}
+                        for sub_dimension_name, enabled in self.dimension_to_other_sub_dimension_to_enabled_status[
                             dimension
                         ].items()
-                    )
+                    ]
                 if dimension_to_contexts is not None:
                     # contexts we expect for this dimension, according to its definition.
                     # For OTHER and UNKNOWN contexts, this should always be a singleton list
