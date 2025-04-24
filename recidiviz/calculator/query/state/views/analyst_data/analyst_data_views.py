@@ -120,6 +120,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_events_
 from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_timeline import (
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_resident_approved_visitors_preprocessed import (
+    US_AR_RESIDENT_APPROVED_VISITORS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
@@ -447,6 +450,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
     US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
+    US_AR_RESIDENT_APPROVED_VISITORS_PREPROCESSED_VIEW_BUILDER,
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,

@@ -1,11 +1,15 @@
 US_AR:
   ADDRESS:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
   HOUSINGAREA:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
   INMATEPROFILE:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
     task_eligibility_criteria_us_ar.class_i: |-
       Used to determine current custody class.
     workflows_views.us_ar_resident_metadata: |-
@@ -16,6 +20,9 @@ US_AR:
   ORGANIZATIONPROF:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  PERSONPROFILE:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
   PROGRAMACHIEVEMENT:
     workflows_views.us_ar_resident_metadata: |-
       Used to pull in resident metadata.
@@ -26,7 +33,12 @@ US_AR:
     task_eligibility_criteria_us_ar.sentence_statute_eligible_for_admin_transfer:
       |-
       Used to map raw statutes to statutes in the semi-official Target Offenses list.
+  RELASSOCRELATION:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
   RELATEDPARTY:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
   SUPERVISIONEVENT:
@@ -38,6 +50,9 @@ US_AR:
   SUPVINTERVENTION:
     analyst_data.us_ar_ovg_events_preprocessed: |-
       Source for preprocessed data used in us_ar_ovg_timeline.
+  VISITATIONSTATUS:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data for 309-eligible residents.
 US_AZ:
   AZ_AQ_CATEGORY:
     analyst_data.us_az_action_queue: |-
