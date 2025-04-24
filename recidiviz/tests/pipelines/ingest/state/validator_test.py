@@ -1530,7 +1530,7 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         errors = validate_root_entity(mr_lion)
 
         assert errors == [
-            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1)), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=datetime.date(2002, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=datetime.date(2002, 1, 1)), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
         ]
 
         # Mr. Lion decided he never left the wilderness.
@@ -1539,12 +1539,38 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         mr_lion.address_periods = [residence, the_wilderness]
         errors = validate_root_entity(mr_lion)
         assert errors == [
-            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1)), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=None)] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=None), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
         ]
 
         # We know he loves going into the wilderness though.
         # Fortunately we have another type to use during ingest.
         the_wilderness.address_type = StatePersonAddressType.PHYSICAL_OTHER
+        mr_lion.address_periods = [residence, the_wilderness]
+        errors = validate_root_entity(mr_lion)
+        assert not any(errors)
+
+    def test_adjacent_date_ranges_for_address_type_dont_throw(self) -> None:
+        """Ensures address types with adjacent periods are not considered overlapping."""
+        mr_lion = self._person()
+
+        residence = state_entities.StatePersonAddressPeriod(
+            state_code=self.STATE_CODE_VALUE,
+            address_line_1="14 Yellow Brick Road",
+            address_line_2="Unit 4401",
+            address_city="Emerald City",
+            address_start_date=date(2001, 1, 1),
+            address_end_date=date(2021, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        the_wilderness = state_entities.StatePersonAddressPeriod(
+            state_code=self.STATE_CODE_VALUE,
+            address_line_1="The Wilderness",
+            address_start_date=date(2021, 1, 1),
+            address_end_date=date(2022, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        # Mr. Lion's apartment is right next to the wilderness and was
+        # able to move the same day.
         mr_lion.address_periods = [residence, the_wilderness]
         errors = validate_root_entity(mr_lion)
         assert not any(errors)

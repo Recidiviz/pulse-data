@@ -37,7 +37,7 @@ from recidiviz.common.date import (
     CriticalRangesBuilder,
     DurationMixin,
     PotentiallyOpenDateRange,
-    date_ranges_overlap,
+    get_overlapping_date_ranges,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
@@ -406,10 +406,10 @@ def _person_address_period_checks(
         by_type[period.address_type].append(period.date_range)
 
     for period_type, date_ranges in by_type.items():
-        if date_ranges_overlap(date_ranges):
+        if overlapping_ranges := get_overlapping_date_ranges(date_ranges):
             yield (
                 f"Found {person.limited_pii_repr()} with address periods of type {period_type} that overlap.\n"
-                f"Date Ranges: {date_ranges} "
+                f"Date Ranges: {sorted(overlapping_ranges, key= lambda dr: dr.lower_bound_inclusive_date)} "
                 "If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
             )
 

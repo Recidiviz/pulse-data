@@ -45,6 +45,7 @@ from recidiviz.common.date import (
     first_day_of_next_month,
     first_day_of_next_year,
     first_day_of_week,
+    get_overlapping_date_ranges,
     is_date_str,
     is_datetime_in_opt_range,
     last_day_of_month,
@@ -52,6 +53,7 @@ from recidiviz.common.date import (
     munge_date_string,
     parse_datetime_maybe_add_tz,
     parse_opt_datetime_maybe_add_tz,
+    reset_to_midnight,
     safe_strptime,
     split_range_by_birthdate,
 )
@@ -1193,28 +1195,33 @@ class TestPotentiallyOpenDateTimeRange(unittest.TestCase):
                 upper_bound_exclusive=self.TIME_1,
             )
 
-    def test_range_in_other_range(self) -> None:
+    def test_contains_other_range(self) -> None:
+
+        # Neither of these spans contain the other span.
         span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
         span_2 = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_4)
         assert span_1 not in span_2
         assert span_2 not in span_1
 
+        # The first span contains the second span.
         span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_4)
         span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
         assert span_1 not in span_2
         assert span_2 in span_1
 
+        # The first span contains the second span.
         span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, None)
         span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_3)
         assert span_1 not in span_2
         assert span_2 in span_1
 
+        # The second span contains the first span.
         span_1 = PotentiallyOpenDateTimeRange(self.TIME_1, self.TIME_4)
         span_2 = PotentiallyOpenDateTimeRange(self.TIME_1, None)
         assert span_1 in span_2
         assert span_2 not in span_1
 
-    def test_datetime_in_range(self) -> None:
+    def test_contains_datetime(self) -> None:
         span = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_3)
         assert self.TIME_1 not in span
         assert self.TIME_4 not in span
@@ -1225,10 +1232,12 @@ class TestPotentiallyOpenDateTimeRange(unittest.TestCase):
         assert self.TIME_1 not in span
         assert self.TIME_4 in span
 
-    def test_date_in_range(self) -> None:
-        span = PotentiallyOpenDateTimeRange(self.TIME_2, self.TIME_3)
+    def test_contains_date(self) -> None:
+        span = PotentiallyOpenDateTimeRange(self.TIME_2, reset_to_midnight(self.TIME_3))
         assert self.TIME_1.date() not in span
         assert self.TIME_4.date() not in span
+        # test exclusive upper bound
+        assert self.TIME_3.date() not in span
 
         span = PotentiallyOpenDateTimeRange(self.TIME_2, None)
         assert self.TIME_1.date() not in span
@@ -1342,6 +1351,44 @@ class TestFirstLastDayOfHelpers(unittest.TestCase):
         self.assertEqual(datetime.date(2024, 2, 29), last_day_of_month(d))
         self.assertEqual(datetime.date(2024, 3, 1), first_day_of_next_month(d))
         self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+
+def test_get_overlapping_date_ranges() -> None:
+    j00 = datetime.date(2000, 1, 1)
+    j01 = datetime.date(2001, 1, 1)
+    j02 = datetime.date(2002, 1, 1)
+    j21 = datetime.date(2021, 1, 1)
+    dr_00_to_01 = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=j00,
+        upper_bound_exclusive_date=j01,
+    )
+    dr_01_to_02 = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=j01,
+        upper_bound_exclusive_date=j02,
+    )
+    dr_00_to_21 = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=j00,
+        upper_bound_exclusive_date=j21,
+    )
+    dr_01_to_21 = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=j01,
+        upper_bound_exclusive_date=j21,
+    )
+
+    # No overlapping periods
+    assert get_overlapping_date_ranges([dr_00_to_01, dr_01_to_02]) == set()
+
+    # Two of these three overlap, note the upperbound of the first period
+    # does not make it overlap!
+    assert get_overlapping_date_ranges([dr_00_to_01, dr_01_to_02, dr_01_to_21]) == {
+        dr_01_to_02,
+        dr_01_to_21,
+    }
+
+    # With a period spanning from 2000 to 2021, now all periods overlap!
+    assert get_overlapping_date_ranges(
+        [dr_00_to_01, dr_01_to_02, dr_01_to_21, dr_00_to_21]
+    ) == {dr_00_to_01, dr_01_to_02, dr_01_to_21, dr_00_to_21}
 
 
 def test_date_ranges_overlap() -> None:

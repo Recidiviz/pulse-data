@@ -290,10 +290,15 @@ class PotentiallyOpenDateTimeRange:
         if isinstance(value, PotentiallyOpenDateTimeRange):
             return self._contains_other_range(value)
         dt_value = as_datetime(value)
+        # If the value is before the span begins, it is NOT in the span
         if dt_value < self.lower_bound_inclusive:
             return False
+        # If the span never ends, the value is in the span
         if self.is_open:
             return True
+        # If the value is *less* than the upperbound, it is in the span.
+        # Note a value equal to upperbound is NOT in the span because it is
+        # exclusive.
         return dt_value < self.non_optional_upperbound_exclusive
 
     def _contains_other_range(self, other: "PotentiallyOpenDateTimeRange") -> bool:
@@ -888,14 +893,21 @@ def convert_critical_dates_to_time_spans(
     return time_spans
 
 
-# TODO(#37512) Generalize or allow use for other range classes in this file
 def date_ranges_overlap(date_ranges: list[PotentiallyOpenDateRange]) -> bool:
     """Returns True if any of the provided date ranges overlap."""
-    return any(
-        # Beginning within the other period makes an overlap
-        ((a.lower_bound_inclusive_date in b) or (b.lower_bound_inclusive_date in a))
-        for (a, b) in itertools.combinations(date_ranges, 2)
-    )
+    return any(get_overlapping_date_ranges(date_ranges))
+
+
+# TODO(#37512) Generalize or allow use for other range classes in this file
+def get_overlapping_date_ranges(
+    date_ranges: list[PotentiallyOpenDateRange],
+) -> set[PotentiallyOpenDateRange]:
+    overlaps = set()
+    for (a, b) in itertools.combinations(date_ranges, 2):
+        if (a.lower_bound_inclusive_date in b) or (b.lower_bound_inclusive_date in a):
+            overlaps.add(a)
+            overlaps.add(b)
+    return overlaps
 
 
 def parse_datetime_maybe_add_tz(
