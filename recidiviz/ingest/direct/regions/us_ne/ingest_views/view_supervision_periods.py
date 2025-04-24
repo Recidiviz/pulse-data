@@ -206,7 +206,7 @@ renumber_periods AS (
     endDate, 
   FROM split_periods_with_multiple_supervision_levels
 ),
--- The PIMSParolleInformation table was first implemented in 2010, but the Audit table 
+-- The PIMSParoleeInformation table was first implemented in 2010, but the Audit table 
 -- was incorporated in 2020. Any changes to prior records resulted in MODIFIED, but new 
 -- records would have CREATED. There will be people with no records in the audit table.
 clean_audit_table AS (
@@ -218,7 +218,7 @@ clean_audit_table AS (
     operation, 
     NULLIF(IF(modifiedDateTime IS NULL AND operation = "CREATED", createdDateTime, modifiedDateTime), "NULL") AS modifiedDateTime,
   FROM {PIMSParoleeInformation_Aud}
-  WHERE fk_paroleOfficerID IS NOT NULL
+  WHERE fk_paroleOfficerID IS NOT NULL 
 ),
 -- getting parole officer changes from the audit table
 audit_table_officer_changes AS (
@@ -384,7 +384,9 @@ SELECT
   LEFT JOIN supervision_conditions sc
    ON rp.inmateNumber = sc.inmateNumber
   AND (sc.beginDate BETWEEN rp.startDate AND rp.endDate OR sc.endDate = rp.endDate)
-)
+), 
+-- grouping by periodId and inmateNumber to get all special conditions for a given period
+group_conditions AS (
 SELECT 
   periodId,
   inmateNumber,
@@ -401,6 +403,36 @@ SELECT
   STRING_AGG(specialConditions, ', ' ORDER BY specialConditions) AS specialConditions
 FROM adding_conditions 
 GROUP BY periodId,inmateNumber,supervisedLevel,paroleOfficerID,countyParoledTo,inOutStateIndicator1Code, inOutStateIndicator2Code,inOutStateIndicator3Code, startReason,endReason, startDate, endDate
+),
+-- getting each person's current caseloads 
+current_caseloads AS (
+  SELECT DISTINCT inmateNumber, fk_paroleOfficerID 
+  FROM {PIMSParoleeInformation}
+  WHERE fk_paroleOfficerID IN (SELECT DISTINCT fk_paroleOfficerID FROM {PIMSParoleOfficer})
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY inmateNumber ORDER BY dateOfParole DESC) = 1
+
+)
+-- getting the final list of supervision periods with all information, 
+-- because of audit table weirdness we need to join back to the original 
+-- ParoleeInformation table to get the correct parole officer
+SELECT 
+  periodId,
+  gc.inmateNumber,
+  supervisedLevel,
+  IFNULL(gc.paroleOfficerID, fill.fk_paroleOfficerId) AS paroleOfficerID,
+  countyParoledTo,
+  gc.inOutStateIndicator1Code,
+  gc.inOutStateIndicator2Code,
+  gc.inOutStateIndicator3Code,
+  startReason,
+  endReason,
+  startDate, 
+  endDate, 
+  specialConditions
+FROM group_conditions gc
+LEFT JOIN current_caseloads fill 
+ON gc.inmateNumber = fill.inmateNumber
+AND gc.endDate IS NULL 
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
