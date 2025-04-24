@@ -22,5 +22,11 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reentry.case_manager import (
     REENTRY_CASE_MANAGER_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.client import (
+    REENTRY_CLIENT_VIEW_BUILDER,
+)
 
-REENTRY_VIEW_BUILDERS: List[BigQueryViewBuilder] = [REENTRY_CASE_MANAGER_VIEW_BUILDER]
+REENTRY_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    REENTRY_CASE_MANAGER_VIEW_BUILDER,
+    REENTRY_CLIENT_VIEW_BUILDER,
+]

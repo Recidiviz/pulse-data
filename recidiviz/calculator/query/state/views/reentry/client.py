@@ -14,35 +14,35 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""View to prepare Case Manager records for export to the frontend."""
+"""View to prepare Client records for export to the frontend."""
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.reentry.us_ix.case_manager_template import (
-    US_IX_REENTRY_CASE_MANAGER_QUERY_TEMPLATE,
+from recidiviz.calculator.query.state.views.reentry.us_ix.client_template import (
+    US_IX_REENTRY_CLIENT_QUERY_TEMPLATE,
 )
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-REENTRY_CASE_MANAGER_VIEW_NAME = "case_manager"
+REENTRY_CLIENT_VIEW_NAME = "client"
 
-REENTRY_CASE_MANAGER_DESCRIPTION = """
-    Case Manager records to be exported to frontend to power Reentry tools.
+REENTRY_CLIENT_DESCRIPTION = """
+    Client records to be exported to frontend to power Reentry tools.
     """
 
-REENTRY_CASE_MANAGER_QUERY_TEMPLATE = f"""
+REENTRY_CLIENT_QUERY_TEMPLATE = f"""
 WITH
-  ix_staff AS ({US_IX_REENTRY_CASE_MANAGER_QUERY_TEMPLATE}),
+  ix_clients AS ({US_IX_REENTRY_CLIENT_QUERY_TEMPLATE}),
   -- full_query serves as a template for when Reentry expands to other states and we union other views
   full_query AS (
   SELECT
     *
   FROM
-    ix_staff),
+    ix_clients),
   -- add pseudonymized Ids to all staff records
   full_query_with_pseudo AS (
   SELECT
@@ -58,23 +58,22 @@ FROM
   full_query_with_pseudo
 """
 
-REENTRY_CASE_MANAGER_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    view_id=REENTRY_CASE_MANAGER_VIEW_NAME,
+REENTRY_CLIENT_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
+    view_id=REENTRY_CLIENT_VIEW_NAME,
     dataset_id=dataset_config.REENTRY_OUTPUT_DATASET,
-    view_query_template=REENTRY_CASE_MANAGER_QUERY_TEMPLATE,
-    description=REENTRY_CASE_MANAGER_DESCRIPTION,
+    view_query_template=REENTRY_CLIENT_QUERY_TEMPLATE,
+    description=REENTRY_CLIENT_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
         "external_id",
         "pseudonymized_id",
-        "email",
         "full_name",
-        "client_ids",
+        "staff_id",
     ],
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        REENTRY_CASE_MANAGER_VIEW_BUILDER.build_and_print()
+        REENTRY_CLIENT_VIEW_BUILDER.build_and_print()
