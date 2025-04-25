@@ -81,16 +81,11 @@ WITH
   SELECT
     eligible_and_almost_eligible.*,
     array_case_notes_cte.case_notes,
-    (form_information_statute_14_conviction OR form_information_statute_14_unreported_disposition) AS form_information_statue_14, #TODO(#40577) to remove once front end is updated
     (form_information_statute_14_conviction OR form_information_statute_14_unreported_disposition) AS form_information_statute_14,
-    (form_information_statute_30_conviction OR form_information_statute_30_unreported_disposition) AS form_information_statue_30,  #TODO(#40577) to remove once front end is updated
     (form_information_statute_30_conviction OR form_information_statute_30_unreported_disposition) AS form_information_statute_30,
-    (form_information_statute_37_conviction OR form_information_statute_37_unreported_disposition) AS form_information_statue_37,  #TODO(#40577) to remove once front end is updated
     (form_information_statute_37_conviction OR form_information_statute_37_unreported_disposition) AS form_information_statute_37,
     (form_information_drug_conviction_initial OR form_information_statute_14_conviction OR form_information_statute_30_conviction OR form_information_statute_37_conviction)
         AS form_information_drug_conviction, -- make sure that if sub-section is checked because of a conviction, the first drug box is checked 
-    (form_information_drug_conviction_initial OR form_information_statute_14_conviction OR form_information_statute_30_conviction OR form_information_statute_37_conviction)
-        AS form_information_drug_charge, #TODO(#40577) to remove once front end is updated
     (form_information_drug_unreported_disposition_initial OR form_information_statute_14_unreported_disposition OR form_information_statute_30_unreported_disposition OR form_information_statute_37_unreported_disposition)
         AS form_information_drug_unreported_disposition, -- make sure that if sub-section is checked because of an unreported disposition, the second drug box is checked 
   FROM eligible_and_almost_eligible
