@@ -20,13 +20,13 @@ from typing import Optional
 
 import attr
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     generate_district_id_from_district_name,
     list_to_query_string,
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -276,12 +276,12 @@ WITH {summary_ctes}
 """
 
 
-VITALS_SUMMARIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=VITALS_SUMMARIES_VIEW_NAME,
     view_query_template=vitals_summaries_query(),
     description=VITALS_SUMMARIES_DESCRIPTION,
-    should_materialize=True,
+    dimensions=("entity_id", "entity_name", "parent_entity_id"),
 )
 
 if __name__ == "__main__":

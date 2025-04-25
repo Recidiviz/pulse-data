@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Time series view of vitals metrics at the state- and district-level."""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     generate_district_id_from_district_name,
     list_to_query_string,
@@ -27,6 +26,7 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_su
     VITALS_METRICS_BY_STATE,
     calculate_rate_query_fragment,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string_formatting import fix_indent
@@ -191,12 +191,12 @@ WHERE date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 180 DAY)
     return query
 
 
-VITALS_TIME_SERIES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+VITALS_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=VITALS_TIME_SERIES_VIEW_NAME,
     description=VITALS_TIME_SERIES_DESCRIPTION,
     view_query_template=vitals_time_series_query(),
-    should_materialize=True,
+    dimensions=("entity_id", "state_code"),
 )
 
 if __name__ == "__main__":
