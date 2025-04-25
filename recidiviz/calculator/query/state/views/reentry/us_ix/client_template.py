@@ -22,6 +22,8 @@ SELECT
   external_id,
   full_name,
   gender,
+  birthdate,
+  current_address,
   incarceration_staff_assignment_external_id AS staff_id,
 FROM
   `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized` ASSIGNMENT
