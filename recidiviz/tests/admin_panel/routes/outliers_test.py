@@ -73,26 +73,26 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
                 "outliers.EnabledStatesAPI",
             )
             self.configurations = flask.url_for(
-                "outliers.ConfigurationsAPI", state_code_str="US_PA"
+                "outliers.ConfigurationsAPI", state_code_str="US_XX"
             )
             self.deactivate = lambda config_id=None: flask.url_for(
                 "outliers.DeactivateConfigurationByIdAPI",
-                state_code_str="US_PA",
+                state_code_str="US_XX",
                 config_id=config_id,
             )
             self.promote_prod = lambda config_id=None: flask.url_for(
                 "outliers.PromoteToProdConfigurationsAPI",
-                state_code_str="US_PA",
+                state_code_str="US_XX",
                 config_id=config_id,
             )
             self.promoteDefault = lambda config_id=None: flask.url_for(
                 "outliers.PromoteToDefaultConfigurationsAPI",
-                state_code_str="US_PA",
+                state_code_str="US_XX",
                 config_id=config_id,
             )
             self.reactivate = lambda config_id=None: flask.url_for(
                 "outliers.ReactivateConfigurationsAPI",
-                state_code_str="US_PA",
+                state_code_str="US_XX",
                 config_id=config_id,
             )
 
@@ -132,7 +132,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
         "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
     )
     def test_get_configurations(self, mock_enabled_states: MagicMock) -> None:
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
         response = self.client.get(self.configurations, headers=self.headers)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -147,7 +147,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     )
     @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
     def test_add_configuration(self, mock_enabled_states: MagicMock) -> None:
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
 
         self.client.post(
             self.configurations,
@@ -184,7 +184,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     def test_add_configuration_bad_request(
         self, mock_enabled_states: MagicMock
     ) -> None:
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
         result = self.client.post(
             self.configurations,
             headers=self.headers,
@@ -220,7 +220,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     def test_add_configuration_with_updated_by(
         self, mock_enabled_states: MagicMock
     ) -> None:
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
 
         self.client.post(
             self.configurations,
@@ -261,7 +261,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     )
     def test_deactivate_config_not_found(self, mock_enabled_states: MagicMock) -> None:
         config_id = 6
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
         with self.app.test_request_context():
             result = self.client.put(
                 self.deactivate(config_id),
@@ -277,7 +277,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     )
     def test_deactivate_config_default(self, mock_enabled_states: MagicMock) -> None:
         config_id = 1
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
         with self.app.test_request_context():
             result = self.client.put(
                 self.deactivate(config_id),
@@ -286,7 +286,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
 
             self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
             error_message = (
-                "Cannot deactivate the only active default configuration for US_PA"
+                "Cannot deactivate the only active default configuration for US_XX"
             )
             self.assertEqual(error_message, json.loads(result.data)["message"])
 
@@ -295,7 +295,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     )
     def test_deactivate_config_success(self, mock_enabled_states: MagicMock) -> None:
         config_id = 2
-        mock_enabled_states.return_value = ["US_PA"]
+        mock_enabled_states.return_value = ["US_XX"]
         with self.app.test_request_context():
             result = self.client.put(
                 self.deactivate(config_id),
@@ -324,7 +324,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
         config_id = 1
         with self.app.test_request_context(), responses.RequestsMock() as rsps:
             rsps.post(
-                "https://admin-panel-prod.recidiviz.org/admin/outliers/US_PA/configurations",
+                "https://admin-panel-prod.recidiviz.org/admin/outliers/US_XX/configurations",
                 status=200,
                 match=[
                     responses.matchers.header_matcher(auth_headers),
@@ -388,7 +388,13 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     ########
 
     @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
-    def test_promote_default_configuration_success(self) -> None:
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_promote_default_configuration_success(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_XX"]
         config_id = 3
 
         with self.app.test_request_context():
@@ -422,7 +428,13 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     ########
 
     @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
-    def test_reactivate_configuration_success(self) -> None:
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_reactivate_configuration_success(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_XX"]
         config_id = 5
         with self.app.test_request_context():
             result = self.client.post(self.reactivate(config_id), headers=self.headers)

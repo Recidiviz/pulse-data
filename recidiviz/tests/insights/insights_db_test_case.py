@@ -17,7 +17,9 @@
 """This class implements tests for the OutliersQuerier class"""
 from typing import Optional
 from unittest import TestCase
+from unittest.mock import patch
 
+from recidiviz.outliers.types import StateCode
 from recidiviz.persistence.database.schema.insights.schema import InsightsBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -27,7 +29,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import on_disk_postgres_db_url
 
-INSIGHTS_US_PA_DB = "insights_us_pa"
+INSIGHTS_US_XX_DB = "insights_us_xx"
 
 
 class InsightsDbTestCase(TestCase):
@@ -39,16 +41,21 @@ class InsightsDbTestCase(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(
-            additional_databases_to_create=[INSIGHTS_US_PA_DB]
+            additional_databases_to_create=[INSIGHTS_US_XX_DB]
         )
 
     def setUp(self) -> None:
+        self.enabled_states_patcher = patch(
+            "recidiviz.outliers.querier.querier.get_outliers_enabled_states",
+            return_value=[StateCode.US_XX.value],
+        )
+        self.enabled_states_patcher.start()
         self.insights_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.INSIGHTS, db_name="us_pa"
+            SchemaType.INSIGHTS, db_name="us_xx"
         )
         self.insights_engine = SQLAlchemyEngineManager.init_engine_for_db_instance(
             database_key=self.insights_database_key,
-            db_url=on_disk_postgres_db_url(database=INSIGHTS_US_PA_DB),
+            db_url=on_disk_postgres_db_url(database=INSIGHTS_US_XX_DB),
         )
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.insights_database_key, engine=self.insights_engine
@@ -61,6 +68,7 @@ class InsightsDbTestCase(TestCase):
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.insights_database_key
         )
+        self.enabled_states_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

@@ -1,3 +1,3 @@
-{"state_code": "US_PA","external_id": "1001","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"1\"}","email": "manager1@recidiviz.org","supervision_district": "region 1"}
-{"state_code": "US_PA","external_id": "1002","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"2\"}","email": "manager2@recidiviz.org","supervision_district": "Region 2"}
-{"state_code": "US_PA","external_id": "1003","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"3\"}","email": "manager3@recidiviz.org","supervision_district": "region 2"}
+{"state_code": "US_XX","external_id": "1001","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"1\"}","email": "manager1@recidiviz.org","supervision_district": "region 1"}
+{"state_code": "US_XX","external_id": "1002","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"2\"}","email": "manager2@recidiviz.org","supervision_district": "Region 2"}
+{"state_code": "US_XX","external_id": "1003","full_name": "{\"given_names\":\"MANAGER\",\"surname\":\"3\"}","email": "manager3@recidiviz.org","supervision_district": "region 2"}

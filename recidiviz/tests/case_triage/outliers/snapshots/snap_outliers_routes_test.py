@@ -3,6 +3,7 @@ Snapshots for recidiviz/tests/case_triage/outliers/outliers_routes_test.py
 Update snapshots automatically by running `pytest recidiviz/tests/case_triage/outliers/outliers_routes_test.py --snapshot-update
 Remember to include a docstring like this after updating the snapshots for Pylint purposes
 """
+
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -229,7 +230,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_client_success"] = {
         "gender": "MALE",
         "pseudonymizedClientId": "clienthash1",
         "raceOrEthnicity": "WHITE",
-        "stateCode": "US_PA",
+        "stateCode": "US_XX",
     }
 }
 
@@ -243,7 +244,7 @@ snapshots[
         "gender": "MALE",
         "pseudonymizedClientId": "clienthash1",
         "raceOrEthnicity": "WHITE",
-        "stateCode": "US_PA",
+        "stateCode": "US_XX",
     }
 }
 
@@ -257,7 +258,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_no_na
             "metricId": "violations",
             "officerId": "03",
             "pseudonymizedClientId": "clienthash5",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
         },
         {
             "attributes": None,
@@ -267,7 +268,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_no_na
             "metricId": "violations",
             "officerId": None,
             "pseudonymizedClientId": "clienthash5",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
         },
     ]
 }
@@ -286,7 +287,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_succe
             "metricId": "violations",
             "officerId": "03",
             "pseudonymizedClientId": "clienthash1",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
         }
     ]
 }
@@ -307,7 +308,7 @@ snapshots[
             "metricId": "violations",
             "officerId": "03",
             "pseudonymizedClientId": "clienthash1",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
         }
     ]
 }
@@ -330,7 +331,7 @@ snapshots[
             "officerAssignmentEndDate": "2023-06-01",
             "officerId": "03",
             "pseudonymizedClientId": "clienthash2",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
             "supervisionEndDate": "2023-06-01",
             "supervisionStartDate": "2022-01-01",
             "supervisionType": "PROBATION",
@@ -356,7 +357,7 @@ snapshots[
             "officerAssignmentEndDate": "2023-06-01",
             "officerId": "03",
             "pseudonymizedClientId": "clienthash2",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
             "supervisionEndDate": "2023-06-01",
             "supervisionStartDate": "2022-01-01",
             "supervisionType": "PROBATION",
@@ -382,7 +383,7 @@ snapshots[
             "officerAssignmentEndDate": None,
             "officerId": "03",
             "pseudonymizedClientId": "clienthash4",
-            "stateCode": "US_PA",
+            "stateCode": "US_XX",
             "supervisionEndDate": None,
             "supervisionStartDate": None,
             "supervisionType": "PROBATION",
@@ -728,7 +729,7 @@ snapshots[
 ] = {
     "actionStrategy": "ACTION_STRATEGY_OUTLIER_ABSCONSION",
     "officerPseudonymizedId": "officerHash",
-    "stateCode": "US_PA",
+    "stateCode": "US_XX",
     "timestamp": "Tue, 20 Aug 2024 00:00:00 GMT",
     "userPseudonymizedId": "hashhash",
 }
