@@ -65,7 +65,7 @@ SELECT
     -- There are occasionally multiple hearings for the same incident; we store the 
     -- earliest one to be able to gauge compliance with any statutory requirements for 
     -- promptness.
-    MIN(hearing.HEARING_DTM) OVER (PARTITION BY STAFF_REVIEW_ID) AS FIRST_HEARING_DTM,
+    MIN(hearing.HEARING_DTM) OVER (PARTITION BY review.STAFF_REVIEW_ID) AS FIRST_HEARING_DTM,
     sanction.COMMENTS AS penalty_free_text_description
 FROM {AZ_DOC_DSC_STAFF_REVIEW} review
 LEFT JOIN {AZ_DOC_DSC_PENALTY} penalty
@@ -73,7 +73,7 @@ USING(STAFF_REVIEW_ID)
 LEFT JOIN {AZ_DOC_DSC_SCHED_HRNG_HIST} hearing
 USING(STAFF_REVIEW_ID)
 LEFT JOIN {AZ_DOC_DSC_SANCTION} sanction
-USING(STAFF_REVIEW_ID)
+USING(STAFF_REVIEW_ID, SANCTION_ID)
 LEFT JOIN {DOC_EPISODE} doc_ep
 USING(DOC_ID)
 LEFT JOIN traffic_preprocessed
