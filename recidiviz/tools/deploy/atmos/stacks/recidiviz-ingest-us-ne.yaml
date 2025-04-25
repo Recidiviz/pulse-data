@@ -1,4 +1,4 @@
-# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-ar project
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-ne project
 
 import:
   - ../catalogs/terraform-backend # Import Terraform backend configuration
@@ -32,3 +32,23 @@ components:
         group_name: "s-{{ .settings.context.project_id }}-owner"
         group_role: roles/owner
         auto_create_network: true
+        activate_apis:
+          - run.googleapis.com # Cloud Run
+          - secretmanager.googleapis.com
+          - storagetransfer.googleapis.com
+
+    # A Cloud Run job will push data to this bucket daily, then the replication rules defined for this bucket cause the data to be
+    # pushed to the recidiviz-staging-direct-ingest-state-us-ne and recidiviz-123-direct-ingest-state-us-ne buckets in
+    # the recidiviz-staging and recidiviz-123 projects, respectively.
+    isolated-direct-ingest-bucket-with-replication:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        state_code: "{{ .settings.context.state_code }}"
+
+    # This is the service account with permissions
+    direct-ingest-gcs-service-account:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        state_code: "{{ .settings.context.state_code }}"
+        ingest_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication recidiviz-ingest-us-ne bucket_name
