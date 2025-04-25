@@ -11,6 +11,8 @@
         "Non-Compliance with Conditions (General)",
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
+        "Incomplete Treatment/Programming",
+        "Incomplete Community Service",
         "Other"
       ],
       "Time Constraints": [
@@ -36,8 +38,6 @@
         "Deceased",
         "Medical Reasons/Hospitalization",
         "Incarcerated",
-        "Incomplete Treatment/Programming",
-        "Incomplete Community Service",
         "Other"
       ],
       "Other": [
@@ -54,6 +54,7 @@
         "Non-Compliance with Conditions (General)",
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
+        "Incomplete Community Service",
         "Other"
       ],
       "Time Constraints": [
@@ -75,8 +76,6 @@
         "Pending Information/Investigation",
         "Deceased",
         "Medical Reasons/Hospitalization",
-        "Incomplete Community Service",
-        "Severity Of Crime Type",
         "Other"
       ],
       "Other": [
@@ -94,6 +93,7 @@
         "Non-Compliance with Conditions (General)",
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
+        "Incomplete Treatment/Programming",
         "Other"
       ],
       "Time Constraints": [
@@ -113,7 +113,6 @@
       ],
       "Case-Specific Circumstances": [
         "Pending Information/Investigation",
-        "Incomplete Treatment/Programming",
         "Deceased",
         "Other"
       ],
@@ -131,6 +130,7 @@
         "Non-Compliance with Conditions (General)",
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
+        "Incomplete Treatment/Programming",
         "Other"
       ],
       "Time Constraints": [
@@ -148,7 +148,6 @@
       "Case-Specific Circumstances": [
         "Assessment/Evaluation Needed",
         "Medical Reasons/Hospitalization",
-        "Incomplete Treatment/Programming",
         "Other"
       ],
       "Other": [

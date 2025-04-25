@@ -24,7 +24,7 @@ labels each opportunity with an explanation of category (cluster) to enable stru
 Test run:
 python -m recidiviz.tools.workflows.process_denial_reasons.process_denial_reasons \
     --input input.json \
-    --output output.json \
+    --output test_output.json \
     --start_row 0 \
     --num_rows 5 \
     --project_id recidiviz-staging \
@@ -35,7 +35,7 @@ python -m recidiviz.tools.workflows.process_denial_reasons.process_denial_reason
 Full run: 
 python -m recidiviz.tools.workflows.process_denial_reasons.process_denial_reasons \
     --input input.json \
-    --output output.json \
+    --output test_output.json \
     --start_row 0 \
     --num_rows 0 \
     --project_id recidiviz-staging \
@@ -62,98 +62,22 @@ from tqdm import tqdm
 from vertexai.generative_models import GenerativeModel
 
 import recidiviz
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.tools.workflows.process_denial_reasons.prompt import (
+    possible_denial_reasons_dict,
+    prompt_template,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 
-# Define the possible denial reasons per opportunity type
-possible_denial_reasons_dict = {
-    "usMiEarlyDischarge": [
-        "CHILD ABUSE ORDER",
-        "SUSPECTED OFFENSE",
-        "FELONY/STATE PROBATION",
-        "NEEDS",
-        "NONCOMPLIANT",
-        "PROGRAMMING",
-        "PRO-SOCIAL",
-        "RESTITUTION",
-        "FINES & FEES",
-        "PENDING CHARGES",
-        "ORDERED TREATMENT",
-        "EXCLUDED OFFENSE",
-        "COURT",
-        "OTHER",
-    ],
-    "usMiClassificationReview": [
-        "VIOLATIONS",
-        "EMPLOYMENT",
-        "FINES & FEES",
-        "CASE PLAN",
-        "NONCOMPLIANT",
-        "ABSCONSION",
-        "OTHER",
-    ],
-    "usMiMinimumTelephoneReporting": [
-        "FIREARM",
-        "SPEC COURT",
-        "RPOSN",
-        "HIGH PROFILE",
-        "COURT",
-        "OTHER",
-    ],
-    "usMiSupervisionLevelDowngrade": ["OVERRIDE", "EXCLUDED CHARGE", "OTHER"],
-}
+PROCESS_DENIAL_REASONS_BUCKET = "recidiviz-staging-process-denial-reasons"
 
-# Define the prompt template
-prompt_template = """
-Someone was denied an opportunity on community supervision (like supervision level downgrade, or earned discharge, etc.).
-
-Given the following information:
-
-- Opportunity Type: "{opportunity_type}"
-- Plain text reason why the case worker denied the person this opportunity: "{free_text_reason}"
-- The case worker's selected denial reasons, from a multi-select: {selected_denial_reasons}
-
-The possible denial reasons for this opportunity are:
-{possible_denial_reasons}
-
-The clusters for this opportunity are:
-{clusters_formatted}
-
-Please perform the following tasks:
-
-1. Based on the free text response and selected denial reasons, enumerate all denial reasons for this opportunity that apply to this person.
-
-2. Based on the free text response, assign this case to one or more of the clusters listed above (however many apply), or 'Other' if none apply.
-
-3. Determine if the user's typed response is fully encapsulated by the denial reasons they selected or if it adds new reasons that weren't in the denial reasons they selected (True/False).
-
-4. Determine if the free text reason(s) are fully addressed by available denial reasons for this opportunity (ignoring the denial reason 'Other') (True/False).
-
-If the information suggests multiple reasons (e.g., they both had a recent violation and are getting discharged next week anyways) be sure to select denial reasons and clusters for each reason, even if they're 'Other' for either one. Select as many denial reasons and clusters as apply.
-
-**Instructions**:
-
-- Return your answer only in valid JSON format.
-- Do not include any explanations or additional text.
-- Use double quotes ("") for all JSON keys and string values.
-- Ensure the JSON is properly formatted.
-
-**Example Output**:
-
-```json
-{{
-  "assigned_denial_reasons": ["NONCOMPLIANT", "SUSPECTED OFFENSE", "NEEDS"],
-  "assigned_clusters": [{{"Compliance Issues": "Recent/Pending Violations"}}, {{"Compliance Issues": "New Criminal Activity/Charges"}}],
-  "is_fully_encapsulated_by_selected_denial_reasons": false,
-  "is_encapsulated_by_known_denial_reasons": true
-}}
-
-Ensure the following:
-- Clusters must be chosen from the predefined list of valid clusters. All clusters must have a top-level cluster, and a sub-cluster (even if that sub-cluster is 'Other').
-- Denial reasons must be selected from the predefined list for the opportunity type.
-
-"""
+clusters_path = os.path.join(
+    os.path.dirname(recidiviz.__file__),
+    "tools/workflows/process_denial_reasons/clusters.json",
+)
 
 SingularCluster = dict[str, str]
 Cluster = dict[str, list[str]]
@@ -221,21 +145,18 @@ def call_gemini_api(
     return None, 0
 
 
-def process_indices(output: str) -> Set[int]:
+def process_indices(output_data: list[str]) -> Set:
     """Process the existing output file to determine if prior run has already processed some rows"""
     processed_indices = set()
-
     # Check if prior run has already processed some rows
-    if os.path.exists(output):
-        with open(output, "r", encoding="utf-8") as f:
-            for line in f:
-                try:
-                    processed_row = json.loads(line)
-                    processed_indices.add(
-                        processed_row["index"]
-                    )  # Assuming the index is stored in the row
-                except json.JSONDecodeError:
-                    logging.warning("Skipping a corrupted line in the output file")
+    for line in output_data:
+        try:
+            processed_row = json.loads(line)
+            processed_indices.add(
+                processed_row["index"]
+            )  # Assuming the index is stored in the row
+        except json.JSONDecodeError:
+            logging.warning("Skipping a corrupted line in the output file")
     return processed_indices
 
 
@@ -246,7 +167,6 @@ def process_row(
     processed_indices: set,
     max_retries: int,
     model_id: str,
-    output: str,
 ) -> Tuple[Optional[Dict[Any, Any]], int]:
     """Function to process a single row"""
     if idx in processed_indices:  # Skip rows already processed
@@ -336,10 +256,6 @@ def process_row(
                 row["processed_result"] = result
                 row["index"] = idx  # Add index for tracking
 
-                # Append the result to the output file
-                with open(output, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(row) + "\n")
-
                 logging.info("Processed and saved row %i", idx)
                 return row, total_tokens_used
 
@@ -359,12 +275,6 @@ def process_row(
 
     logging.error("Skipping row %i after %i retries", idx, max_retries)
     return None, total_tokens_used
-
-
-clusters_path = os.path.join(
-    os.path.dirname(recidiviz.__file__),
-    "tools/workflows/process_denial_reasons/clusters.json",
-)
 
 
 def main(  # pylint: disable=too-many-positional-arguments
@@ -389,26 +299,33 @@ def main(  # pylint: disable=too-many-positional-arguments
         clusters_data = json.load(f)
     clusters = clusters_data["clusters"]
 
-    # Load data
-    with open(input_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    gcsfs_client = GcsfsFactory.build()
 
-    # Ensure the output file exists but don't clear it
-    if not os.path.exists(output_file):
-        with open(output_file, "w", encoding="utf-8") as f:
-            pass  # Create the file if it doesn't exist
+    intput_uri = GcsfsFilePath.from_absolute_path(
+        f"gs://{PROCESS_DENIAL_REASONS_BUCKET}/{input_file}"
+    )
+    input_data = json.loads(gcsfs_client.download_as_string(intput_uri))
+
+    output_uri = GcsfsFilePath.from_absolute_path(
+        f"gs://{PROCESS_DENIAL_REASONS_BUCKET}/{output_file}"
+    )
+    output_data = []
+    if gcsfs_client.exists(output_uri):
+        with gcsfs_client.open(output_uri) as f:
+            output_data = [line.replace("\n", "") for line in f]
+
+    # Check if prior run has already processed some rows
+    processed_indices = process_indices(output_data)
 
     # Handle full input processing based on num_rows
     if num_rows in (0, -1):  # Check for the "process all rows" condition
-        data = data[start_row:]  # Slice from start_row to the end of the file
+        input_data = input_data[
+            start_row:
+        ]  # Slice from start_row to the end of the file
     else:
-        data = data[start_row : start_row + num_rows]
-
-    # Check if prior run has already processed some rows
-    processed_indices = process_indices(output_file)
+        input_data = input_data[start_row : start_row + num_rows]
 
     # Process data in parallel
-    results: list = []
     total_tokens_used = 0
 
     with ThreadPoolExecutor(max_workers=parallel_requests) as executor:
@@ -421,9 +338,8 @@ def main(  # pylint: disable=too-many-positional-arguments
                 processed_indices,
                 max_retries,
                 model_id,
-                output_file,
             ): row
-            for idx, row in enumerate(data)
+            for idx, row in enumerate(input_data)
         }
         for future in tqdm(
             as_completed(futures), total=len(futures), desc="Processing rows"
@@ -431,7 +347,13 @@ def main(  # pylint: disable=too-many-positional-arguments
             processed_row, tokens_used = future.result()
             total_tokens_used += tokens_used
             if processed_row:
-                results.append(processed_row)
+                output_data.append(json.dumps(processed_row))
+
+    gcsfs_client.upload_from_string(
+        path=output_uri,
+        contents="\n".join(output_data),
+        content_type="application/json",
+    )
 
     # Calculate and log the cost
     total_cost = total_tokens_used * cost_per_token
@@ -442,8 +364,12 @@ def main(  # pylint: disable=too-many-positional-arguments
 def parse_arguments() -> argparse.Namespace:
     """Parses the required arguments"""
     parser = argparse.ArgumentParser(description="Process denial reasons.")
-    parser.add_argument("--input", required=True, help="Input JSON file")
-    parser.add_argument("--output", required=True, help="Output JSON file")
+    parser.add_argument(
+        "--input", required=True, help="Input JSON file located in GCS bucket"
+    )
+    parser.add_argument(
+        "--output", required=True, help="Output JSON file located in GCS bucket"
+    )
     parser.add_argument(
         "--start_row", type=int, default=0, help="Row number to start processing from"
     )
