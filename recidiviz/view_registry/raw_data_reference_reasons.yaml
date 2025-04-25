@@ -278,9 +278,6 @@ US_IA:
   IA_DOC_MAINT_StaffWorkUnits:
     reference_views.us_ia_location_metadata: |-
       Used to set up location metadata
-  IA_DOC_Specialties:
-    task_eligibility_criteria_us_ia.no_sex_offender_specialty: |-
-      Used to pull specialties for early discharge opportunity. TODO(#40262) to ingest as a case type instead
   IA_DOC_Supervision_Modifiers:
     task_eligibility_criteria_us_ia.no_open_supervision_modifiers: |-
       Used to pull open supervision modifiers for early discharge opportunity
