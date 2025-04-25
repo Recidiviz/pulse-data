@@ -62,7 +62,8 @@ unit_supervisor_attributes AS (
     ON
         a.state_code = b.state_code
         AND supervisor_staff_id = b.staff_id
-    WHERE "SUPERVISION_OFFICER" IN UNNEST(a.role_type_array)
+    WHERE
+        is_supervision_officer
 )
 ,
 overlapping_spans AS (
