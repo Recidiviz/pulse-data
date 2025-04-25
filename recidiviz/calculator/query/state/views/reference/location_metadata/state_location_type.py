@@ -68,3 +68,6 @@ class StateLocationType(Enum):
     # Used when states have location codes designating that a person is not at any
     # particular location but are instead in transit.
     IN_TRANSIT = "IN_TRANSIT"
+
+    # Used when we do not not the location type.
+    INTERNAL_UNKNOWN = "INTERNAL_UNKNOWN"
