@@ -392,7 +392,7 @@ def exclude_states_in_state_specific_views(
     version of the completion event"""
 
     if states_to_exclude:
-        state_code_query_fragment = f"\nWHERE state_code NOT IN  ('{list_to_query_string([x.name for x in states_to_exclude])}')"
+        state_code_query_fragment = f"\nWHERE state_code NOT IN  ({list_to_query_string([x.name for x in states_to_exclude], quoted=True)})"
     else:
         state_code_query_fragment = ""
     return f"""
