@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  ADC_NUMBER: STRING
+  assessment_date: STRING
+  Total: STRING
+  Supervision_Level: STRING
+  CRIMINAL_HISTORY_TOTAL: STRING
+  EDUCATION_EMPLOYMENT_AND_FINANCIAL_SITUATION_TOTAL: STRING
+  FAMILY_AND_SOCIAL_SUPPORT_TOTAL: STRING
+  NEIGHBORHOOD_PROBLEMS_TOTAL: STRING
+  SUBSTANCE_USE_TOTAL: STRING
+  PEER_ASSOCIATIONS_TOTAL: STRING
+  CRIMINAL_ATTITUDES_AND_BEHAVIORAL_PATTERNS_TOTAL: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ADC_NUMBER
+          id_type: $literal("US_AZ_ADC_NUMBER")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - ADC_NUMBER
+                - assessment_date
+                - $literal("ORAS")
+          assessment_date: assessment_date
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.ORAS_COMMUNITY_SUPERVISION)
+          assessment_score: Total
+          assessment_level:
+            $enum_mapping:
+              $raw_text: Supervision_Level
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - "Low"
+                StateAssessmentLevel.MODERATE:
+                  - "Moderate"
+                StateAssessmentLevel.HIGH:
+                  - "High"
+                StateAssessmentLevel.VERY_HIGH:
+                  - "Very High"
+                StateAssessmentLevel.LOW_MODERATE:
+                  - "Low/Moderate"
+          assessment_metadata:
+            $normalized_values_json_dict:
+              CRIMINAL_HISTORY_TOTAL: CRIMINAL_HISTORY_TOTAL
+              EDUCATION_EMPLOYMENT_AND_FINANCIAL_SITUATION_TOTAL: EDUCATION_EMPLOYMENT_AND_FINANCIAL_SITUATION_TOTAL
+              FAMILY_AND_SOCIAL_SUPPORT_TOTAL: FAMILY_AND_SOCIAL_SUPPORT_TOTAL
+              NEIGHBORHOOD_PROBLEMS_TOTAL: NEIGHBORHOOD_PROBLEMS_TOTAL
+              SUBSTANCE_USE_TOTAL: SUBSTANCE_USE_TOTAL
+              PEER_ASSOCIATIONS_TOTAL: PEER_ASSOCIATIONS_TOTAL
+              CRIMINAL_ATTITUDES_AND_BEHAVIORAL_PATTERNS_TOTAL: CRIMINAL_ATTITUDES_AND_BEHAVIORAL_PATTERNS_TOTAL
