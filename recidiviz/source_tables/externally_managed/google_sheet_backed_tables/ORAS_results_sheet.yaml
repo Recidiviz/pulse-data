@@ -206,7 +206,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - https://docs.google.com/spreadsheets/d/1GG3Y1LyZl8rpbYhwQ6wbpwq5Ul81hga9QE2y7SsIf_U/edit?gid=922550469#gid=922550469
+    - https://docs.google.com/spreadsheets/d/15y5Yv77tuSYgKvU-WN4HeIeWzA7KHqH3stc4boc-QvM
   sourceFormat: GOOGLE_SHEETS
   autodetect: false
   ignoreUnknownValues: false
