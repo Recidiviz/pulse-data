@@ -186,7 +186,7 @@ def main(head: str, pr_number: str) -> int:
     Main function to analyze code changes for PII and update the pull request with findings.
     """
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-pro-exp-03-25")
+    model = genai.GenerativeModel("gemini-2.5-pro-preview-03-25")
 
     repo = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
