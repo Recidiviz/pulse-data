@@ -69,7 +69,9 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.big_query.row_access_policy_query_builder import (
+    RowAccessPolicy,
     RowAccessPolicyQueryBuilder,
+    row_access_policy_lists_are_equivalent,
 )
 from recidiviz.cloud_resources.platform_resource_labels import (
     PlatformEnvironmentResourceLabel,
@@ -371,6 +373,12 @@ class BigQueryClient:
     @abc.abstractmethod
     def drop_row_level_permissions(self, table: bigquery.Table) -> None:
         """Removes all row access policies from the table."""
+
+    @abc.abstractmethod
+    def list_row_level_permissions(
+        self, table: bigquery.Table
+    ) -> List[RowAccessPolicy]:
+        """Lists all row access policies for the table."""
 
     @abc.abstractmethod
     def apply_row_level_permissions(self, table: bigquery.Table) -> None:
@@ -1197,16 +1205,53 @@ class BigQueryClientImpl(BigQueryClient):
         job = self.run_query_async(query_str=query, use_query_cache=False)
         job.result()
 
+    def list_row_level_permissions(
+        self, table: bigquery.Table
+    ) -> List[RowAccessPolicy]:
+        # There isn't a client method to list row access policies, so we have to use the REST API endpoint
+        url = f"https://bigquery.googleapis.com/bigquery/v2/projects/{self.project_id}/datasets/{table.dataset_id}/tables/{table.table_id}/rowAccessPolicies"
+
+        # pylint: disable=protected-access
+        headers = {"Authorization": f"Bearer {self.client._credentials.token}"}
+        response = requests.get(url, headers=headers, timeout=15)
+
+        if response.status_code == 200:
+            policies = response.json().get("rowAccessPolicies", [])
+        else:
+            raise ValueError(
+                f"Error retrieving row level permissions: {response.status_code} - {response.text}"
+            )
+
+        return [RowAccessPolicy.from_api_response(policy) for policy in policies]
+
     def apply_row_level_permissions(self, table: bigquery.Table) -> None:
-        # Checking that view_query is None to verify that it is a table. Row
-        # level permissions cannot be applied to views.
-        if table.view_query is not None:
+        # Row level permissions cannot be applied to views or tables with external data config
+        # (eg google sheet backed tables)
+        if (
+            table.view_query is not None
+            or table.external_data_configuration is not None
+        ):
             return
 
         if not (
-            policy_queries := RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
+            access_policies := RowAccessPolicyQueryBuilder.build_row_access_policies(
                 table
             )
+        ):
+            return
+
+        try:
+            existing_policies = self.list_row_level_permissions(table)
+        except Exception as e:
+            logging.warning(
+                "Failed to list row level permissions for table [%s.%s]: %s",
+                table.dataset_id,
+                table.table_id,
+                str(e),
+            )
+
+        if existing_policies and row_access_policy_lists_are_equivalent(
+            existing_policies, access_policies
         ):
             return
 
@@ -1215,9 +1260,9 @@ class BigQueryClientImpl(BigQueryClient):
             table.dataset_id,
             table.table_id,
         )
-        policy_queries = [
+        policy_queries: List[str] = [
             RowAccessPolicyQueryBuilder.build_query_to_drop_row_access_policy(table),
-            *policy_queries,
+            *[query.to_create_query() for query in access_policies],
         ]
 
         job = self.run_query_async(
@@ -1281,13 +1326,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             self.apply_row_level_permissions(created_table)
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to apply row-level permissions to table [%s]. "
                 "Table was created successfully, but row-level permissions were not applied.",
                 created_table.table_id,
             )
-            raise e
 
         return created_table
 
@@ -1376,13 +1420,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             self.apply_row_level_permissions(self.get_table(destination_address))
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to apply row-level permissions to table [%s]. "
                 "Load job was successful, but row-level permissions were not applied.",
                 destination_address.to_str(),
             )
-            raise e
 
         return load_job
 
@@ -1435,13 +1478,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             self.apply_row_level_permissions(self.get_table(destination_address))
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to apply row-level permissions to table [%s]. "
                 "Load job was successful, but row-level permissions were not applied.",
                 destination_address.to_str(),
             )
-            raise e
 
         return load_job
 
@@ -1719,13 +1761,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             self.apply_row_level_permissions(self.get_table(address))
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to apply row-level permissions to table [%s]. "
                 "Table was created successfully, but row-level permissions were not applied.",
                 address.to_str(),
             )
-            raise e
 
         return result
 
@@ -2029,13 +2070,12 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             self.apply_row_level_permissions(self.get_table(destination_address))
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to apply row-level permissions to table [%s]. "
                 "Insert query was successful, but row-level permissions were not applied.",
                 destination_address.to_str(),
             )
-            raise e
 
         return result
 

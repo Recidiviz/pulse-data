@@ -110,3 +110,9 @@ DataflowMetricPruningEntrypoint:
     limits:
       cpu: 500m
       memory: 500Mi
+
+ApplyRowLevelPermissionsEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi

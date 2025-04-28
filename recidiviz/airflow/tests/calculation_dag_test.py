@@ -687,6 +687,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
 
@@ -722,6 +723,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.*",
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
             self.assertIn(
@@ -780,6 +782,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports",
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
 
@@ -833,6 +836,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^validations.*",
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
 
@@ -884,6 +888,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataflow_pipelines_completed",
                     r"^dataflow_metric_pruning",
                     r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
 

@@ -404,7 +404,20 @@ def create_calculation_dag() -> None:
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    update_all_views >> [validations, metric_exports] >> dataset_cleanup
+    row_access_policy_task_id = "apply_row_access_policies"
+    apply_row_access_policies = build_kubernetes_pod_task(
+        task_id=row_access_policy_task_id,
+        container_name=row_access_policy_task_id,
+        arguments=["--entrypoint=ApplyRowLevelPermissionsEntrypoint"],
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    (
+        update_all_views
+        >> [validations, metric_exports]
+        >> dataset_cleanup
+        >> apply_row_access_policies
+    )
 
 
 calculation_dag = create_calculation_dag()

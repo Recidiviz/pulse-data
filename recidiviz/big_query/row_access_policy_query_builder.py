@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query builder for BigQuery row access policies."""
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import attr
 from google.cloud import bigquery
@@ -24,6 +24,12 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import table_has_field
 from recidiviz.common.constants.states import StateCode
 
+# TODO(#41565) we currently treat two policies as equivalent even if
+# they have different access groups. This is because the API does not
+# return the access group email in the listRowAccessPolicies API response.
+# If you update an access group for an existing policy, you must
+# run the recidiviz.tools.deploy.oneoffs.rollback_row_level_permissions_from_all_tables
+# script before the calc dag run
 RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
     StateCode.US_MI: "s-mi-data@recidiviz.org",
     StateCode.US_PA: "s-pa-data@recidiviz.org",
@@ -35,6 +41,67 @@ RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
 }
 
 RESTRICTED_ACCESS_FIELDS = ["state_code", "region_code"]
+
+
+@attr.define
+class RowAccessPolicy:
+    """Class representing a row access policy for a BigQuery table."""
+
+    policy_id: str
+    filter_predicate: str
+    access_group_email: str | None
+    table: bigquery.Table
+
+    def to_create_query(self) -> str:
+        return f"""CREATE OR REPLACE ROW ACCESS POLICY
+                {self.policy_id}
+                ON `{self.table.project}.{self.table.dataset_id}.{self.table.table_id}`
+                GRANT TO ("group:{self.access_group_email}")
+                FILTER USING ({self.filter_predicate});"""
+
+    @classmethod
+    def from_api_response(cls, policy: Dict[str, Any]) -> "RowAccessPolicy":
+        """Creates a RowAccessPolicy object from the API response."""
+        policy_reference = policy["rowAccessPolicyReference"]
+        return cls(
+            policy_id=policy_reference["policyId"],
+            filter_predicate=policy["filterPredicate"],
+            # TODO(#41565) Access group email is not returned in the API response
+            access_group_email=None,
+            table=bigquery.Table(
+                table_ref=f'{policy_reference["projectId"]}.{policy_reference["datasetId"]}.{policy_reference["tableId"]}'
+            ),
+        )
+
+
+def row_access_policy_lists_are_equivalent(
+    existing_policies: List[RowAccessPolicy], new_policies: List[RowAccessPolicy]
+) -> bool:
+    """Compare two lists of row access policies for a table to see if they are the same.
+
+    Args:
+        existing_policies: List of existing row access policies to compare against.
+        new_policies: List of new row access policies to compare against.
+    """
+
+    existing_policies_by_id = {p.policy_id: p for p in existing_policies}
+    new_policies_by_id = {p.policy_id: p for p in new_policies}
+
+    for policy_id in set(new_policies_by_id.keys()) | set(
+        existing_policies_by_id.keys()
+    ):
+        if policy_id not in existing_policies_by_id:
+            return False
+        if policy_id not in new_policies_by_id:
+            return False
+        existing_policy = existing_policies_by_id[policy_id]
+        new_policy = new_policies_by_id[policy_id]
+
+        # TODO(#41470) Compare access group emails as well
+        if new_policy.filter_predicate != existing_policy.filter_predicate:
+            return False
+
+    return True
 
 
 def _get_state_code_column(table: bigquery.Table) -> str | None:
@@ -52,38 +119,25 @@ class RowAccessPolicyQueryBuilder:
     for states with restricted access requirements, or for tables with multiple states'
     data, indicated by the presence of a state_code or region_code field."""
 
-    @staticmethod
-    def _build_create_row_access_policy_query(
-        policy_name: str,
-        table: bigquery.Table,
-        access_group_email: str,
-        filter_clause: str,
-    ) -> str:
-        return f"""CREATE OR REPLACE ROW ACCESS POLICY
-                {policy_name}
-                ON `{table.project}.{table.dataset_id}.{table.table_id}`
-                GRANT TO ("group:{access_group_email}")
-                FILTER USING ({filter_clause});"""
-
     @classmethod
     def _build_row_access_policy_queries_for_state_agnostic_table(
         cls, table: bigquery.Table, state_code_column: str
-    ) -> List[str]:
+    ) -> List[RowAccessPolicy]:
         """Builds row-level permissions policy for the provided table based on the state code
         in the provided |state_code_field| column.
         """
-        queries = []
+        policies: List[RowAccessPolicy] = []
         for (
             state_code,
             access_group_email,
         ) in RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP.items():
             # Create explicit row-level policies for states with rigid access control requirements.
-            queries.append(
-                cls._build_create_row_access_policy_query(
-                    policy_name=f"EXPLICIT_ACCESS_TO_{state_code.value}_{state_code_column.upper()}",
+            policies.append(
+                RowAccessPolicy(
+                    policy_id=f"EXPLICIT_ACCESS_TO_{state_code.value}_{state_code_column.upper()}",
                     table=table,
                     access_group_email=access_group_email,
-                    filter_clause=f'UPPER({state_code_column}) = "{state_code.value}"',
+                    filter_predicate=f'UPPER({state_code_column}) = "{state_code.value}"',
                 )
             )
 
@@ -95,60 +149,58 @@ class RowAccessPolicyQueryBuilder:
                 for state_code in RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP
             ]
         )
-        queries.append(
-            cls._build_create_row_access_policy_query(
-                policy_name=f"NON_RESTRICTIVE_STATE_DATA_ACCESS_{state_code_column.upper()}",
+        policies.append(
+            RowAccessPolicy(
+                policy_id=f"NON_RESTRICTIVE_STATE_DATA_ACCESS_{state_code_column.upper()}",
                 table=table,
                 access_group_email="s-default-state-data@recidiviz.org",
-                filter_clause=f"UPPER({state_code_column}) NOT IN ({filtered_states_str})",
+                filter_predicate=f"UPPER({state_code_column}) NOT IN ({filtered_states_str})",
             )
         )
 
         # Create policy to grant admins access to view, edit and copy ALL state data
-        queries.append(
-            cls._build_create_row_access_policy_query(
-                policy_name=f"ADMIN_ACCESS_TO_ALL_STATE_DATA_{state_code_column.upper()}",
+        policies.append(
+            RowAccessPolicy(
+                policy_id=f"ADMIN_ACCESS_TO_ALL_STATE_DATA_{state_code_column.upper()}",
                 table=table,
                 access_group_email="s-big-query-admins@recidiviz.org",
-                filter_clause="TRUE",
+                filter_predicate="TRUE",
             )
         )
 
-        return queries
+        return policies
 
     @classmethod
     def _build_row_access_policy_queries_for_state_specific_table(
         cls, state_code: StateCode, table: bigquery.Table
-    ) -> List[str]:
+    ) -> List[RowAccessPolicy]:
         """Builds row-level permissions policy query applying to all rows in the provided table"""
-        queries = []
+        policies: List[RowAccessPolicy] = []
         # Create policy for that allows member of the state data security group
         # to access all records
-        queries.append(
-            cls._build_create_row_access_policy_query(
-                policy_name="RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP",
+        policies.append(
+            RowAccessPolicy(
+                policy_id="RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP",
                 table=table,
                 access_group_email=RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP[
                     state_code
                 ],
-                filter_clause="TRUE",
+                filter_predicate="TRUE",
             )
         )
         # Create policy to grant admins access to view, edit and copy all rows
-        queries.append(
-            cls._build_create_row_access_policy_query(
-                policy_name="ADMIN_ACCESS_TO_ALL_ROWS",
+        policies.append(
+            RowAccessPolicy(
+                policy_id="ADMIN_ACCESS_TO_ALL_ROWS",
                 table=table,
                 access_group_email="s-big-query-admins@recidiviz.org",
-                filter_clause="TRUE",
+                filter_predicate="TRUE",
             )
         )
-        return queries
+        return policies
 
     @classmethod
-    def build_queries_to_create_row_access_policy(
-        cls, table: bigquery.Table
-    ) -> List[str]:
+    def build_row_access_policies(cls, table: bigquery.Table) -> List[RowAccessPolicy]:
         """Builds row-level permissions policy queries for the provided table.
         Row-level permissions are only necessary for tables in state-specific datasets
         for states with restricted access requirements, or for tables with multiple states'

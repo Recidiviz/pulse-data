@@ -3229,7 +3229,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.create_table.return_value = table
 
-        self.bq_client.create_table(table)
+        with patch.object(
+            self.bq_client, "list_row_level_permissions", return_value=[]
+        ):
+            self.bq_client.create_table(table)
 
         self.mock_client.query.assert_called_once()
         query = self.mock_client.query.mock_calls[0].kwargs["query"]

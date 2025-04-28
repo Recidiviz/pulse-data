@@ -43,11 +43,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
 
         self.assertEqual(
             len(RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP) + 2,
-            len(
-                RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
-                    table
-                )
-            ),
+            len(RowAccessPolicyQueryBuilder.build_row_access_policies(table)),
         )
 
     def test_build_dataset_based_row_level_policy(self) -> None:
@@ -79,9 +75,12 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
 
         self.assertListEqual(
             expected_queries,
-            RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
-                table
-            ),
+            [
+                policy.to_create_query()
+                for policy in RowAccessPolicyQueryBuilder.build_row_access_policies(
+                    table
+                )
+            ],
         )
 
     def test_non_restricted_state(self) -> None:
@@ -100,9 +99,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
 
         self.assertListEqual(
             [],
-            RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
-                table
-            ),
+            RowAccessPolicyQueryBuilder.build_row_access_policies(table),
         )
 
     def test_no_policies(self) -> None:
@@ -119,9 +116,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
 
         self.assertListEqual(
             [],
-            RowAccessPolicyQueryBuilder.build_queries_to_create_row_access_policy(
-                table
-            ),
+            RowAccessPolicyQueryBuilder.build_row_access_policies(table),
         )
 
     def test_drop_row_access_policies(self) -> None:
