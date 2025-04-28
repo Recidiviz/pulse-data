@@ -100,6 +100,9 @@ from recidiviz.calculator.query.state.views.reentry.case_manager import (
 from recidiviz.calculator.query.state.views.reentry.client import (
     REENTRY_CLIENT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -475,6 +478,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
     ),
     REENTRY_CLIENT_VIEW_BUILDER.address: (
+        "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
+    ),
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER.address: (
         "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
     ),
 }

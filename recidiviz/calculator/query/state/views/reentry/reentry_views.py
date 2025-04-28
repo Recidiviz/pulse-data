@@ -25,8 +25,12 @@ from recidiviz.calculator.query.state.views.reentry.case_manager import (
 from recidiviz.calculator.query.state.views.reentry.client import (
     REENTRY_CLIENT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
+)
 
 REENTRY_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REENTRY_CASE_MANAGER_VIEW_BUILDER,
     REENTRY_CLIENT_VIEW_BUILDER,
+    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 ]
