@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_not_past_projected_parole_release_date,
     incarceration_not_within_6_months_of_full_term_completion_date,
     not_in_treatment_in_prison,
-    not_projected_parole_release_date_within_6_months,
+    not_incarceration_within_6_months_of_upcoming_projected_parole_release_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
@@ -73,7 +73,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_sex_offender_alert.VIEW_BUILDER,
         not_serving_for_violent_offense.VIEW_BUILDER,
         incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
-        not_projected_parole_release_date_within_6_months.VIEW_BUILDER,
+        not_incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
         incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
     ],

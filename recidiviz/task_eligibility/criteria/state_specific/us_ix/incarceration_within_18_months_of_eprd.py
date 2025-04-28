@@ -64,7 +64,7 @@ WITH ped_spans AS (
         span.start_date,
         span.end_date_exclusive AS end_date,
         span.group_parole_eligibility_date AS parole_eligibility_date,
-    FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` span
+    FROM `{{project_id}}.sentence_sessions_v2_all.person_projected_date_sessions_materialized` span
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
         ON span.state_code = sess.state_code
         AND span.person_id = sess.person_id

@@ -28,7 +28,7 @@ For this to be true, the person must have one of the following three conditions:
 """
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_tpd_and_life_sentence,
-    incarceration_within_7_years_of_ftcd_or_tpd,
+    incarceration_within_7_years_of_ftcd_or_upcoming_tpd,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_7_years_of_ped_and_phd_and_20_years_of_ftcd,
@@ -55,7 +55,7 @@ For this to be true, the person must have one of the following three conditions:
 VIEW_BUILDER = OrTaskCriteriaGroup(
     criteria_name="US_IX_CRC_RESIDENT_WORKER_TIME_BASED_CRITERIA",
     sub_criteria_list=[
-        incarceration_within_7_years_of_ftcd_or_tpd.VIEW_BUILDER,
+        incarceration_within_7_years_of_ftcd_or_upcoming_tpd.VIEW_BUILDER,
         incarceration_within_7_years_of_ped_and_phd_and_20_years_of_ftcd.VIEW_BUILDER,
         incarceration_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
     ],

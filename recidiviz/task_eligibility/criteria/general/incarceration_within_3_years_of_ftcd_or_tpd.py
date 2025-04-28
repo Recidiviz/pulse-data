@@ -21,7 +21,7 @@ or projected parole release date (TPD). TPDs in the past satisfy this requiremen
 """
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_full_term_completion_date,
-    projected_parole_release_date_less_than_3_years_away,
+    incarceration_within_3_years_of_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     OrTaskCriteriaGroup,
@@ -29,17 +29,11 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 3 years of their full term completion date (FTRD)
-or projected parole release date (TPD). TPDs in the past satisfy this requirement.
-"""
-
 VIEW_BUILDER = OrTaskCriteriaGroup(
     criteria_name="INCARCERATION_WITHIN_3_YEARS_OF_FTCD_OR_TPD",
     sub_criteria_list=[
         incarceration_within_3_years_of_full_term_completion_date.VIEW_BUILDER,
-        projected_parole_release_date_less_than_3_years_away.VIEW_BUILDER,
+        incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder

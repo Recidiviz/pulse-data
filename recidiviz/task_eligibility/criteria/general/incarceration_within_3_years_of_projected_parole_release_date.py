@@ -16,28 +16,37 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is within 3 years of their tentative parole date.
+someone is within 3 years of their projected parole release date.
+Projected parole release dates in the past satisfy this requirement.
 """
-from recidiviz.task_eligibility.criteria.general import (
-    projected_parole_release_date_less_than_3_years_away,
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NOT_PROJECTED_PAROLE_RELEASE_DATE_LESS_THAN_3_YEARS_AWAY"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_3_YEARS_OF_PROJECTED_PAROLE_RELEASE_DATE"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is NOT within 3 years of their tentative parole date.
+someone is within 3 years of their projected parole release date.
+Projected parole release dates in the past satisfy this requirement.
 """
-
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=projected_parole_release_date_less_than_3_years_away.VIEW_BUILDER,
-).as_criteria_view_builder
-
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    is_past_completion_date_criteria_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=_DESCRIPTION,
+        meets_criteria_leading_window_time=3,
+        date_part="YEAR",
+        compartment_level_1_filter="INCARCERATION",
+        critical_date_name_in_reason="group_projected_parole_release_date",
+        critical_date_column="group_projected_parole_release_date",
+        sentence_sessions_dataset="sentence_sessions_v2_all",
+    )
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

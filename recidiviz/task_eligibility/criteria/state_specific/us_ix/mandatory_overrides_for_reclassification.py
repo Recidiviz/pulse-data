@@ -21,7 +21,7 @@ being reclassified to a lower custody level.
 """
 
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_3_years_of_tpd_and_not_life_sentence,
+    incarceration_not_within_3_years_of_tpd_and_not_life_sentence,
     not_incarceration_within_20_years_of_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
@@ -44,7 +44,7 @@ being reclassified to a lower custody level.
 VIEW_BUILDER = OrTaskCriteriaGroup(
     criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
     sub_criteria_list=[
-        incarceration_within_3_years_of_tpd_and_not_life_sentence.VIEW_BUILDER,
+        incarceration_not_within_3_years_of_tpd_and_not_life_sentence.VIEW_BUILDER,
         parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
         not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
         detainers_for_reclassification.VIEW_BUILDER,

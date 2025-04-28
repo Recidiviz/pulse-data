@@ -15,32 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 7 years of their full term completion date
-or tentative parole date.
+Defines a criteria span view that shows spans of time during which someone is
+1 year away from the upcoming tentative parole date (TPD) AND has a life sentence.
 """
-
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_7_years_of_full_term_completion_date,
-    projected_parole_release_date_within_7_years,
+    incarceration_within_1_year_of_upcoming_projected_parole_release_date,
+    serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 7 years of their full term completion date 
-or tentative parole date.
-"""
-
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="INCARCERATION_WITHIN_7_YEARS_OF_FTCD_OR_TPD",
+VIEW_BUILDER = AndTaskCriteriaGroup(
+    criteria_name="INCARCERATION_WITHIN_1_YEAR_OF_UPCOMING_TPD_AND_LIFE_SENTENCE",
     sub_criteria_list=[
-        incarceration_within_7_years_of_full_term_completion_date.VIEW_BUILDER,
-        projected_parole_release_date_within_7_years.VIEW_BUILDER,
+        serving_a_life_sentence.VIEW_BUILDER,
+        incarceration_within_1_year_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder

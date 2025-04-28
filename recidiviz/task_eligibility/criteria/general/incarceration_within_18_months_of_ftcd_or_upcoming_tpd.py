@@ -15,31 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is
-1 year away from the tentative parole date (TPD) AND has a life sentence.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 18 months of their full term completion date
+or upcoming projected parole release date (TPD).
 """
+
 from recidiviz.task_eligibility.criteria.general import (
-    projected_parole_release_date_within_1_year,
-    serving_a_life_sentence,
+    incarceration_within_18_months_of_full_term_completion_date,
+    incarceration_within_18_months_of_upcoming_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_1_YEAR_OF_TPD_AND_LIFE_SENTENCE"
-
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is 
-1 year away from the tentative parole date (TPD) AND has a life sentence.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 18 months of their full term completion date 
+or upcoming projected parole release date (TPD).
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="INCARCERATION_WITHIN_1_YEAR_OF_TPD_AND_LIFE_SENTENCE",
+VIEW_BUILDER = OrTaskCriteriaGroup(
+    criteria_name="INCARCERATION_WITHIN_18_MONTHS_OF_FTCD_OR_UPCOMING_TPD",
     sub_criteria_list=[
-        serving_a_life_sentence.VIEW_BUILDER,
-        projected_parole_release_date_within_1_year.VIEW_BUILDER,
+        incarceration_within_18_months_of_full_term_completion_date.VIEW_BUILDER,
+        incarceration_within_18_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder

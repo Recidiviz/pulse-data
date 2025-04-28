@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,37 +13,37 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
+# =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 18 months of their full term completion date
-or projected parole release date (TPD).
+someone is NOT within 6 months of their tentative parole date.
+Past projected parole release dates AND NULL projected parole release dates 
+will satisfy this requirement.
 """
-
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_18_months_of_full_term_completion_date,
-    projected_parole_release_date_within_18_months,
+    incarceration_within_6_months_of_upcoming_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_CRITERIA_NAME = (
+    "NOT_INCARCERATION_WITHIN_6_MONTHS_OF_UPCOMING_PROJECTED_PAROLE_RELEASE_DATE"
+)
+
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 18 months of their full term completion date 
-or projected parole release date (TPD).
+someone is NOT within 6 months of their tentative parole date.
+Past projected parole release dates AND NULL projected parole release dates 
+will satisfy this requirement.
 """
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="INCARCERATION_WITHIN_18_MONTHS_OF_FTCD_OR_TPD",
-    sub_criteria_list=[
-        incarceration_within_18_months_of_full_term_completion_date.VIEW_BUILDER,
-        projected_parole_release_date_within_18_months.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
 ).as_criteria_view_builder
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

@@ -23,6 +23,7 @@ from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
+    nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
@@ -1061,6 +1062,7 @@ def incarceration_sanctions_within_time_interval_criteria_builder(
 
 
 def is_past_completion_date_criteria_builder(
+    *,
     criteria_name: str,
     description: str,
     meets_criteria_leading_window_time: int = 0,
@@ -1070,6 +1072,9 @@ def is_past_completion_date_criteria_builder(
     critical_date_column: str = "sentence_projected_full_term_release_date_max",
     negate_critical_date_has_passed: bool = False,
     leave_last_sentence_span_open: bool = False,
+    sentence_sessions_dataset: str = "sentence_sessions",
+    allow_past_critical_date: bool = True,
+    meets_criteria_default: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query that has spans of time when the projected completion date
@@ -1097,6 +1102,14 @@ def is_past_completion_date_criteria_builder(
             sentence spans are left open in order to cover cases where an open incarceration
             or supervision session has no overlapping sentence span. The projected dates from
             the latest (non-overlapping) sentence span will be applied. Defaults to False.
+        sentence_sessions_dataset (str, optional): The dataset that contains the sentence
+            sessions. Defaults to "sentence_sessions", but can be set to "sentence_sessions_v2_all"
+            for states that want to use the new sentence sessions but have yet to fully migrate.
+        allow_past_critical_date (bool, optional): If True, the critical date can be in the past.
+            Defaults to True. If False, spans are cropped so that the end_date of a span is the
+            LEAST of the critical date and the sentence session end_date.
+        meets_criteria_default (bool, optional): Default value for the meets_criteria column.
+            Defaults to False.
     Raises:
         ValueError: if compartment_level_1_filter is different from "supervision" or
             "incarceration".
@@ -1150,9 +1163,9 @@ def is_past_completion_date_criteria_builder(
         {end_date_str},
         {critical_date_column},
         is_life,
-        FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized`,
+        FROM `{{project_id}}.{sentence_sessions_dataset}.person_projected_date_sessions_materialized`,
         UNNEST(sentence_array)
-        JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
+        JOIN `{{project_id}}.{sentence_sessions_dataset}.sentences_and_charges_materialized`
             USING(state_code, person_id, sentence_id)
         {query_where_clause_str}
     )
@@ -1174,7 +1187,7 @@ def is_past_completion_date_criteria_builder(
         state_code,
         person_id,
         start_date,
-        end_date,
+        {f"LEAST({nonnull_end_date_clause('end_date')}, critical_date)" if not allow_past_critical_date else 'end_date'} AS end_date,
         {'NOT' if negate_critical_date_has_passed else ''} critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
         critical_date AS {critical_date_name_in_reason},
@@ -1185,6 +1198,7 @@ def is_past_completion_date_criteria_builder(
         criteria_name=criteria_name,
         criteria_spans_query_template=criteria_query,
         description=description,
+        meets_criteria_default=meets_criteria_default,
         reasons_fields=[
             ReasonsField(
                 name=critical_date_name_in_reason,

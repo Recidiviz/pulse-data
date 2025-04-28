@@ -29,9 +29,9 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     incarceration_within_6_months_of_full_term_completion_date,
     incarceration_within_6_months_of_parole_eligibility_date,
+    incarceration_within_6_months_of_upcoming_projected_parole_release_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
-    projected_parole_release_date_within_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
@@ -69,7 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             sub_criteria_list=[
                 incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
                 incarceration_within_6_months_of_parole_eligibility_date.VIEW_BUILDER,
-                projected_parole_release_date_within_6_months.VIEW_BUILDER,
+                incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),

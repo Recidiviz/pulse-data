@@ -13,31 +13,38 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
+# ============================================================================
 """
-Defines a criteria span view that shows spans of time during which
-someone is NOT within 6 months of their tentative parole date.
+Defines a criteria span view that shows spans of time during which someone is serving a life sentence
+and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
+meet this requirement (TPDs in the past will not).
 """
+
 from recidiviz.task_eligibility.criteria.general import (
-    projected_parole_release_date_within_6_months,
+    not_incarceration_within_3_years_of_projected_parole_release_date,
+    serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NOT_PROJECTED_PAROLE_RELEASE_DATE_WITHIN_6_MONTHS"
-
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is NOT within 6 months of their tentative parole date.
+Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
+and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
+meet this requirement (TPDs in the past will not).
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=projected_parole_release_date_within_6_months.VIEW_BUILDER,
-).as_criteria_view_builder
 
+VIEW_BUILDER = AndTaskCriteriaGroup(
+    criteria_name="INCARCERATION_NOT_WITHIN_3_YEARS_OF_TPD_AND_NOT_LIFE_SENTENCE",
+    sub_criteria_list=[
+        serving_a_life_sentence.VIEW_BUILDER,
+        not_incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+).as_criteria_view_builder
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

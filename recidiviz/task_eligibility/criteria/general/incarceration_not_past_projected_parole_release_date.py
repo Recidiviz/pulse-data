@@ -16,19 +16,14 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone has a future projected parole release date.
+someone has a valued future projected parole release date. If someone has no projected
+parole release date, meets_criteria is set to true.
 """
-from google.cloud import bigquery
-
-from recidiviz.calculator.query.state.dataset_config import (
-    SENTENCE_SESSIONS_V2_ALL_DATASET,
-)
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -37,46 +32,20 @@ _CRITERIA_NAME = "INCARCERATION_NOT_PAST_PROJECTED_PAROLE_RELEASE_DATE"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone has a future projected parole release date.
+someone has a valued future projected parole release date. If someone has no projected
+parole release date, meets_criteria is set to true.
 """
-# TODO(#38345) replace with criteria builder once `is_past_completion_date_criteria_builder` is updated
-# note the end_date here is cropped at the critical_date
-_QUERY_TEMPLATE = f"""
-    WITH critical_date_spans AS (
-      SELECT
-        state_code,
-        person_id,
-        start_date as start_datetime,
-        end_date_exclusive as end_datetime,
-        group_projected_parole_release_date AS critical_date
-      FROM
-        `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized`
-      WHERE state_code = "US_IX"
-    ),
-      {critical_date_has_passed_spans_cte()}
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        NOT critical_date_has_passed AS meets_criteria,
-        TO_JSON(STRUCT(critical_date AS group_projected_parole_release_date)) AS reason,
-        critical_date AS group_projected_parole_release_date,
-    FROM critical_date_has_passed_spans
-"""
-
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
-    criteria_name=_CRITERIA_NAME,
-    criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
-    sentence_sessions_v2_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
-    reasons_fields=[
-        ReasonsField(
-            name="group_projected_parole_release_date",
-            type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="The date on which the individual is projected to be released on parole.",
-        ),
-    ],
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    is_past_completion_date_criteria_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=_DESCRIPTION,
+        compartment_level_1_filter="INCARCERATION",
+        critical_date_name_in_reason="group_projected_parole_release_date",
+        critical_date_column="group_projected_parole_release_date",
+        negate_critical_date_has_passed=True,
+        sentence_sessions_dataset="sentence_sessions_v2_all",
+        meets_criteria_default=True,
+    )
 )
 
 if __name__ == "__main__":

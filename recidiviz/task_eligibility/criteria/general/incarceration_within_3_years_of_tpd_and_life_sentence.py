@@ -16,11 +16,11 @@
 # ============================================================================
 """
 Defines a criteria span view that shows spans of time during which someone is
-3 years away from the tentative parole date (TPD) AND has a life sentence.
+3 years away from the projected parole release date (TPD) AND has a life sentence.
 TPDs in the past satisfy this requirement.
 """
 from recidiviz.task_eligibility.criteria.general import (
-    projected_parole_release_date_less_than_3_years_away,
+    incarceration_within_3_years_of_projected_parole_release_date,
     serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
@@ -29,17 +29,11 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is 
-3 years away from the tentative parole date (TPD) AND has a life sentence.
-TPDs in the past satisfy this requirement.
-"""
-
 VIEW_BUILDER = AndTaskCriteriaGroup(
     criteria_name="INCARCERATION_WITHIN_3_YEARS_OF_TPD_AND_LIFE_SENTENCE",
     sub_criteria_list=[
         serving_a_life_sentence.VIEW_BUILDER,
-        projected_parole_release_date_less_than_3_years_away.VIEW_BUILDER,
+        incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder
