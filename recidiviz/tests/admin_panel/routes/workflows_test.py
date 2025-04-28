@@ -384,6 +384,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self, mock_enabled_states: MagicMock, mock_querier: MagicMock
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
+        mock_querier.return_value.get_config_for_id.return_value = generate_config(
+            TEST_CONFIG_ID, datetime.datetime(2024, 5, 12), is_active=False
+        )
 
         response = self.client.get(self.single_opportunity_configuration_url)
 
@@ -425,6 +428,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self, mock_enabled_states: MagicMock, mock_querier: MagicMock
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
+        mock_querier.return_value.get_config_for_id.return_value = generate_config(
+            TEST_CONFIG_ID, datetime.datetime(2024, 5, 12), is_active=False
+        )
 
         response = self.client.post(
             self.single_opportunity_configuration_deactivate_url
@@ -472,7 +478,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self, mock_enabled_states: MagicMock, mock_querier: MagicMock
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
-
+        mock_querier.return_value.get_config_for_id.return_value = generate_config(
+            TEST_CONFIG_ID, datetime.datetime(2024, 5, 12), is_active=False
+        )
         response = self.client.post(self.single_opportunity_configuration_activate_url)
 
         self.assertEqual(HTTPStatus.OK, response.status_code)

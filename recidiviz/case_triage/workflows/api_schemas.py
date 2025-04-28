@@ -19,7 +19,6 @@ import re
 from typing import Any, Dict, List
 
 from marshmallow import Schema, ValidationError, fields, validates_schema
-from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.api_schemas_utils import (
     CamelCaseSchema,
@@ -79,7 +78,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelOrSnakeCaseSchema):
         validate=valid_us_tn_contact_note,
         required=True,
     )
-    voters_rights_code = EnumField(WorkflowsUsTnVotersRightsCode, by_value=True)
+    voters_rights_code = fields.Enum(WorkflowsUsTnVotersRightsCode, by_value=True)
     should_queue_task = fields.Boolean(load_default=True, load_only=True)
 
 

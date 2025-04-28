@@ -18,7 +18,6 @@
 import attr
 import marshmallow.fields
 from marshmallow import Schema, fields, validate
-from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
@@ -34,7 +33,7 @@ for metric_class in ALL_METRICS:
 
     schema_fields: dict[str, marshmallow.fields.Field] = {
         "filters": fields.Dict(
-            EnumField(
+            fields.Enum(
                 Dimension,
                 by_value=True,
                 validate=validate.OneOf(
@@ -51,7 +50,7 @@ for metric_class in ALL_METRICS:
         field.name == "group"
         for field in list(attr.fields(metric_class.get_params_class()))
     ):
-        schema_fields["group"] = EnumField(
+        schema_fields["group"] = fields.Enum(
             Dimension,
             by_value=True,
             required=True,

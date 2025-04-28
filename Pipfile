@@ -189,7 +189,6 @@ sendgrid = "*"
 psutil = "*"
 psycogreen = "*"
 marshmallow = "*"
-marshmallow_enum = "*"
 cattrs = "*"
 # If the dill version changes be sure to update the pinned version in dataflow_setup.py
 dill = "==0.3.1.1"

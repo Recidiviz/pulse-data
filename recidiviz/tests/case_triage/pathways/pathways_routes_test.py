@@ -214,7 +214,22 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             response.get_json(),
             (response.get_json() or {})
-            | {"description": {"group": ["Invalid enum value fake"]}},
+            | {
+                "description": {
+                    "group": [
+                        "Must be one of: admission_reason, age_group, "
+                        "facility, gender, judicial_district, legal_status, "
+                        "length_of_stay, prior_length_of_incarceration, "
+                        "race, supervising_officer, supervision_district, "
+                        "district, supervision_level, "
+                        "supervision_start_date, supervision_type, "
+                        "time_period, year_month, start_date, end_date, "
+                        "avg_daily_population, "
+                        "avg_population_limited_supervision_level, "
+                        "months_since_treatment."
+                    ]
+                }
+            },
         )
 
         # Requesting person-level metric with group
