@@ -32,6 +32,7 @@ from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.direct.gating import FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE
 from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
     COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS,
     COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS,
@@ -957,41 +958,15 @@ class DirectIngestRawFileConfig:
         )
 
     def is_exempt_from_raw_data_pruning(self) -> bool:
-        """Map tracking file tags to the reasons they are exempt from raw data pruning."""
-        exempt_files: Dict[StateCode, Dict[str, str]] = {
-            StateCode.US_OR: {
-                "RCDVZ_PRDDTA_OP013P": "We use this in views with @ALL",
-                "RCDVZ_CISPRDDTA_CMCMST": "We use this in views with @ALL",
-                "RCDVZ_PRDDTA_OP054P": "Will be used in new sentencing schema with @ALL",
-            },
-            StateCode.US_ND: {
-                # TODO(#33357): Account for these incrementals before rolling out automatic raw data pruning.
-                "docstars_offenders": "There are some incremental files included in the history of transfers of this table."
-            },
-            StateCode.US_TN: {
-                "Sentence": "We use this in views with @ALL",
-                "ISCSentence": "We use this in views with @ALL",
-                "Diversion": "We use this in views with @ALL",
-                "Staff": "We use this in views with @ALL",
-                "StaffEmailByAlias": "We use this in views with @ALL",
-                "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": "We use this in views with @ALL",
-                "Address": "We are going to use this with @ALL",
-            },
-            StateCode.US_PA: {
-                "RECIDIVIZ_REFERENCE_staff_roster": "We want to use this in views w/ @ALL"
-            },
-            StateCode.US_MI: {
-                "RECIDIVIZ_REFERENCE_leadership_roster": "We want to use this in views w/ @ALL"
-            },
-            StateCode.US_AR: {"INTERVENTSANCTION": "We use this in views with @ALL"},
-        }
+        """Returns True if this file is exempt from raw data pruning."""
 
-        if self.file_tag in exempt_files.get(self.state_code, {}):
+        if self.file_tag in FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE.get(
+            self.state_code, {}
+        ):
             return True
 
+        # We currently only conduct raw data pruning on raw files that are always historical.
         if not self.always_historical_export:
-            # We currently only conduct raw data pruning on raw files that are always
-            # historical.
             return True
 
         return self.no_valid_primary_keys

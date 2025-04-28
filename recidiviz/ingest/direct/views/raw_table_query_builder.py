@@ -27,7 +27,7 @@ from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gating import (
-    raw_data_pruning_enabled_in_state_and_instance,
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
@@ -179,7 +179,7 @@ class RawTableQueryBuilder:
             date_filter_clause = ""
 
         can_prune_historical = (
-            raw_data_pruning_enabled_in_state_and_instance(
+            automatic_raw_data_pruning_enabled_for_state_and_instance(
                 state_code=self.state_code, instance=self.raw_data_source_instance
             )
             and not raw_file_config.is_exempt_from_raw_data_pruning()

@@ -30,11 +30,11 @@ from recidiviz.tests.ingest.direct.views.raw_data_diff_query_test_case import (
 
 
 @patch(
-    "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+    "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance",
     mock.MagicMock(return_value=True),
 )
 @patch(
-    "recidiviz.ingest.direct.views.raw_data_diff_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+    "recidiviz.ingest.direct.views.raw_data_diff_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance",
     mock.MagicMock(return_value=True),
 )
 class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):

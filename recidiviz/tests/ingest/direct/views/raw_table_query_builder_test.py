@@ -462,7 +462,7 @@ FROM filtered_rows
             _ = attr.evolve(self.raw_file_config, no_valid_primary_keys=True)
 
     @patch(
-        "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance"
+        "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance"
     )
     def test_always_historical_can_prune(self, mock_is_enabled: mock.MagicMock) -> None:
         mock_is_enabled.return_value = True
@@ -519,7 +519,7 @@ FROM filtered_rows
         self.assertEqual(expected_view_query, query)
 
     @patch(
-        "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance"
+        "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance"
     )
     def test_always_historical_can_prune_with_undocumented_columns(
         self, mock_is_enabled: mock.MagicMock

@@ -507,7 +507,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
     def setUp(self) -> None:
         self.pruning_patch = patch(
-            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.raw_data_pruning_enabled_in_state_and_instance"
+            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.automatic_raw_data_pruning_enabled_for_state_and_instance"
         )
         self.pruning_mock = self.pruning_patch.start()
         self.pruning_mock.return_value = False

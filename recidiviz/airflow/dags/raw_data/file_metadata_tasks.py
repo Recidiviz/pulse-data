@@ -55,7 +55,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import (
-    raw_data_pruning_enabled_in_state_and_instance,
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -457,8 +457,10 @@ def _historical_diffs_active_for_tag(
     file_tag: str,
 ) -> bool:
     """Boolean return for if the raw file_tag will have historical diffs active"""
-    raw_data_pruning_enabled = raw_data_pruning_enabled_in_state_and_instance(
-        StateCode(raw_region_config.region_code.upper()), raw_data_instance
+    raw_data_pruning_enabled = (
+        automatic_raw_data_pruning_enabled_for_state_and_instance(
+            StateCode(raw_region_config.region_code.upper()), raw_data_instance
+        )
     )
     if not raw_data_pruning_enabled:
         return False

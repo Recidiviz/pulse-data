@@ -50,7 +50,7 @@ from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_stat
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import (
-    raw_data_pruning_enabled_in_state_and_instance,
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
@@ -189,13 +189,13 @@ class DeployedViewsTest(unittest.TestCase):
                 instance = staging_builder.raw_data_source_instance
                 with local_project_id_override(GCP_PROJECT_STAGING):
                     staging_is_pruning_enabled = (
-                        raw_data_pruning_enabled_in_state_and_instance(
+                        automatic_raw_data_pruning_enabled_for_state_and_instance(
                             state_code, instance
                         )
                     )
                 with local_project_id_override(GCP_PROJECT_PRODUCTION):
                     prod_is_pruning_enabled = (
-                        raw_data_pruning_enabled_in_state_and_instance(
+                        automatic_raw_data_pruning_enabled_for_state_and_instance(
                             state_code, instance
                         )
                     )

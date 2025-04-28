@@ -1,9 +1,11 @@
 #!/bin/bash
-#  Usage: bash recidiviz/tools/multi_state_raw_data_pruning.sh
+# TODO(#12390): Delete this script once automatic pruning is implemented.
+# Usage: bash recidiviz/tools/multi_state_raw_data_pruning.sh
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/script_base.sh"
 
+# Please keep this declaration on a single line
 declare -a states=("US_TN" "US_MI" "US_ND" "US_AR")
 
 for state in "${states[@]}"

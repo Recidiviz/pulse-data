@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.gating import (
-    raw_data_pruning_enabled_in_state_and_instance,
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
@@ -401,8 +401,10 @@ class DirectIngestRawFileLoadManager:
         """Returns whether or not we should apply historical diffs to this file during
         raw data import.
         """
-        raw_data_pruning_enabled = raw_data_pruning_enabled_in_state_and_instance(
-            self.state_code, self.raw_data_instance
+        raw_data_pruning_enabled = (
+            automatic_raw_data_pruning_enabled_for_state_and_instance(
+                self.state_code, self.raw_data_instance
+            )
         )
         if not raw_data_pruning_enabled:
             return False

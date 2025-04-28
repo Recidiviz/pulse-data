@@ -33,6 +33,9 @@ from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.gating import (
+    build_raw_data_pruning_exemption_error_message,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -82,6 +85,17 @@ class DirectIngestViewRawFileDependency:
             raise ValueError(
                 f"Cannot use undocumented raw file [{self.file_tag}] as a dependency "
                 f"in an ingest view."
+            )
+        if (
+            self.filter_type == RawFileHistoricalRowsFilterType.ALL
+            and not self.raw_file_config.is_exempt_from_raw_data_pruning()
+        ):
+            raise ValueError(
+                build_raw_data_pruning_exemption_error_message(
+                    self.filter_type.value,
+                    self.file_tag,
+                    self.raw_file_config.state_code,
+                )
             )
 
     @property

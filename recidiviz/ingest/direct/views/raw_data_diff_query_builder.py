@@ -23,7 +23,7 @@ from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.gating import (
-    raw_data_pruning_enabled_in_state_and_instance,
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
@@ -141,7 +141,7 @@ class RawDataDiffQueryBuilder:
         return f"* EXCEPT ({','.join(RawDataTableBigQuerySchemaBuilder.RECIDIVIZ_MANAGED_FIELDS)})"
 
     def build_query(self) -> str:
-        if not raw_data_pruning_enabled_in_state_and_instance(
+        if not automatic_raw_data_pruning_enabled_for_state_and_instance(
             self.state_code, self.raw_data_instance
         ):
             raise ValueError(
