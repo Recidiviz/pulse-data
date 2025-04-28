@@ -130,7 +130,9 @@ The following items may contain Personally Identifiable Information (PII). Pleas
 _This comment is automatically updated on new commits to this PR._"""
 
 
-def update_pr_comment(pr_number: str, body: str, repo: str, token: str) -> None:
+def update_pr_comment(
+    findings: bool, pr_number: str, body: str, repo: str, token: str
+) -> None:
     """
     Deletes an existing PII comment (if any) and creates a new comment on a pull request with the provided body content.
     """
@@ -152,8 +154,9 @@ def update_pr_comment(pr_number: str, body: str, repo: str, token: str) -> None:
         delete_url = f"https://api.github.com/repos/{repo}/issues/comments/{comment_id}"
         requests.delete(delete_url, headers=headers, timeout=10)
 
-    # Add a new comment
-    requests.post(comments_url, headers=headers, json={"body": body}, timeout=10)
+    # Add a new comment if there are findings
+    if findings:
+        requests.post(comments_url, headers=headers, json={"body": body}, timeout=10)
 
 
 def _get_changed_file_path_to_diff(base_ref: str, head_ref: str) -> dict[str, str]:
@@ -219,6 +222,7 @@ def main(head: str, pr_number: str) -> int:
             print("\033[32m✔ No potential PII found.")
             write_output("pii_found", "false")
             update_pr_comment(
+                False,
                 pr_number,
                 "<!-- pii-bot-comment -->🧼 No PII found in this PR.",
                 repo,
@@ -235,7 +239,7 @@ def main(head: str, pr_number: str) -> int:
         write_output("gemini_pii_findings", json.dumps(findings))
 
         markdown_body = build_markdown_comment(findings, repo, head)
-        update_pr_comment(pr_number, markdown_body, repo, token)
+        update_pr_comment(True, pr_number, markdown_body, repo, token)
 
         print(
             "::warning::Potential PII found — please review the PR comment for details."
