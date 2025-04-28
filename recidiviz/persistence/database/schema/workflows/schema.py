@@ -211,4 +211,6 @@ class OpportunityConfiguration(WorkflowsBase):
     overdue_opportunity_callout_copy = Column(String, nullable=True)
 
     # Opportunity types that should be concurrently snoozed when an opportunity is snoozed
-    snooze_companion_opportunity_types = Column(ARRAY(String), nullable=True)
+    snooze_companion_opportunity_types = Column(
+        ARRAY(String), nullable=False, server_default="{}"
+    )
