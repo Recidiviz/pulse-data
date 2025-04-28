@@ -21,12 +21,6 @@ information for the most recent complete months."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.utils.us_me_query_fragments import (
-    cis_900_employee_to_supervisor_match,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,7 +35,7 @@ generate reports that can be used by supervisors to identify officers who are
 not completing early discharges in a timely manner. These only include
 information for the most recent complete months."""
 
-EARLY_DISCHARGE_REPORTS_PER_OFFICER_QUERY_TEMPLATE = f"""
+EARLY_DISCHARGE_REPORTS_PER_OFFICER_QUERY_TEMPLATE = """
 WITH early_discharges_last_1_month_agg_metrics AS (
   SELECT 
     state_code,
@@ -51,12 +45,12 @@ WITH early_discharges_last_1_month_agg_metrics AS (
     ROUND(avg_population_task_eligible_early_discharge, 1) AS avg_population_task_eligible_early_discharge,
     task_completions_early_discharge
   FROM 
-    `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+    `{project_id}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
   WHERE period IN ('MONTH')
     AND avg_critical_caseload_size > 0
     -- Only keep metrics where end_date is the current_month
     AND end_date = DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)
-    AND state_code IN ('{{supported_states}}')
+    AND state_code IN ('{supported_states}')
 ),
 
 early_discharges_last_6_months_agg_metrics AS (
@@ -69,7 +63,7 @@ early_discharges_last_6_months_agg_metrics AS (
   FROM (
       SELECT *
       FROM 
-        `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+        `{project_id}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
       WHERE period IN ('QUARTER')
         AND avg_critical_caseload_size IS NOT NULL
         AND avg_critical_caseload_size != 0
@@ -77,7 +71,7 @@ early_discharges_last_6_months_agg_metrics AS (
         AND (end_date = DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH) 
             OR end_date = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 3 MONTH))
   )
-  WHERE state_code IN ('{{supported_states}}')
+  WHERE state_code IN ('{supported_states}')
   GROUP BY 1,2,3
 ),
 
@@ -93,12 +87,6 @@ combined_early_discharges_agg_metrics AS (
   FROM early_discharges_last_1_month_agg_metrics ed1
   FULL OUTER JOIN early_discharges_last_6_months_agg_metrics ed6
     USING (state_code, officer_id)
-),
-
-employee_to_supervisor_map AS (
-    -- Maine
-    #TODO(#39511): use ingested entity data instead of CIS_900_EMPLOYEE_latest
-    {cis_900_employee_to_supervisor_match()}
 )
 
 SELECT 
@@ -106,9 +94,9 @@ SELECT
   ed.officer_id,
   ed.officer_name,
   esm.officer_email,
-  esm2.officer_name AS supervisor_name,
-  esm2.officer_id AS supervisor_id,
-  esm2.officer_email AS supervisor_email,
+  esm.most_recent_supervisor_name AS supervisor_name,
+  esm.most_recent_supervisor_staff_external_id AS supervisor_id,
+  esm.most_recent_supervisor_email AS supervisor_email,
   ed.end_date AS report_date,
   ed.avg_population_task_eligible_early_discharge AS avg_eligible_month,
   ed.task_completions_early_discharge AS early_terminations_month,
@@ -118,23 +106,14 @@ FROM
   combined_early_discharges_agg_metrics ed
 -- Map officer to supervisor
 LEFT JOIN 
-  employee_to_supervisor_map esm
-USING (state_code, officer_id)
--- Grab supervisor name
-LEFT JOIN 
-  employee_to_supervisor_map esm2
-ON 
-  esm2.officer_id = esm.supervisor_id
-    AND esm2.state_code = ed.state_code"""
+  `{project_id}.reference_views.state_staff_and_most_recent_supervisor_with_names` esm
+ON ed.state_code = esm.state_code AND ed.officer_id = esm.officer_staff_external_id"""
 
 EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_NAME,
     description=EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_DESCRIPTION,
     view_query_template=EARLY_DISCHARGE_REPORTS_PER_OFFICER_QUERY_TEMPLATE,
-    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-    ),
     supported_states="', '".join(SUPPORTED_STATES),
     should_materialize=False,
 )

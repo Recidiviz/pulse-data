@@ -975,13 +975,6 @@ US_ME:
   CIS_580_REST_TRANSACTION:
     analyst_data.us_me_payments_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  CIS_900_EMPLOYEE:
-    analyst_data.early_discharge_reports_per_officer: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    analyst_data.early_discharge_sessions_with_officer_and_supervisor: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.incarceration_staff_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   CIS_908_CCS_LOCATION:
     reference_views.incarceration_location_ids_to_names: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

@@ -74,9 +74,6 @@ INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "pseudonymized_id",
     ],
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-    ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),

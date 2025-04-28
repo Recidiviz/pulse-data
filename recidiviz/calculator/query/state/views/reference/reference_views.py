@@ -81,6 +81,9 @@ from recidiviz.calculator.query.state.views.reference.product_roster import (
 from recidiviz.calculator.query.state.views.reference.product_staff import (
     PRODUCT_STAFF_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.state_staff_and_most_recent_supervisor_with_names import (
+    STATE_STAFF_AND_MOST_RECENT_SUPERVISOR_WITH_NAMES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.state_staff_with_names import (
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
 )
@@ -119,6 +122,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PRODUCT_ROSTER_VIEW_BUILDER,
     PRODUCT_STAFF_VIEW_BUILDER,
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
+    STATE_STAFF_AND_MOST_RECENT_SUPERVISOR_WITH_NAMES_VIEW_BUILDER,
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,

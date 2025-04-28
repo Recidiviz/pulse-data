@@ -21,12 +21,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.utils.us_me_query_fragments import (
-    cis_900_employee_to_supervisor_match,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -79,11 +73,6 @@ dv_sentences_spans AS (
          #TODO(#25238): make this condition state-agnostic
         AND REGEXP_CONTAINS(description, r'DOMESTIC') -- ME-specific
     GROUP BY 1,2,3,4
-),
-
-employee_to_supervisor_map AS (
-    -- Maine
-    {cis_900_employee_to_supervisor_match()}
 )
 
 SELECT 
@@ -93,9 +82,9 @@ SELECT
     sos.supervising_officer_external_id AS officer_id,
     esm.officer_name, 
     esm.officer_email,
-    esm.supervisor_id,
-    esm2.officer_name AS supervisor_name, 
-    esm2.officer_email AS supervisor_email,
+    esm.most_recent_supervisor_name AS supervisor_name,
+    esm.most_recent_supervisor_staff_external_id AS supervisor_id,
+    esm.most_recent_supervisor_email AS supervisor_email,
     eds.probation_start_date,
     eds.months_in_probation,
     IFNULL(dv.is_domestic_violence, False) AS is_domestic_violence,
@@ -111,15 +100,10 @@ ON
     AND sos.supervising_officer_external_id IS NOT NULL
 -- Map each officer to his/her supervisor
 LEFT JOIN 
-    employee_to_supervisor_map esm
+    `{{project_id}}.reference_views.state_staff_and_most_recent_supervisor_with_names` esm
 ON 
-    esm.officer_id = sos.supervising_officer_external_id
+    esm.officer_staff_external_id = sos.supervising_officer_external_id
     AND eds.state_code = esm.state_code
-LEFT JOIN 
-    employee_to_supervisor_map esm2
-ON 
-    esm2.officer_id = esm.supervisor_id
-    AND esm2.state_code = esm.state_code
 LEFT JOIN 
     dv_sentences_spans dv
 ON 
@@ -133,9 +117,6 @@ EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER = SimpleBigQue
     view_id=EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_NAME,
     description=EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_DESCRIPTION,
     view_query_template=EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_QUERY_TEMPLATE,
-    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-    ),
     supported_states="', '".join(SUPPORTED_STATES),
     should_materialize=False,
 )

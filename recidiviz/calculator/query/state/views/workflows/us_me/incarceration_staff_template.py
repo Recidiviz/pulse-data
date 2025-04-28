@@ -33,15 +33,16 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = f"""
             ids.id,
             ids.state_code,
             CAST(NULL AS STRING) AS district,
-            LOWER(state_table.Email_Tx) AS email,
-            UPPER(state_table.First_Name) as given_names,
-            UPPER(state_table.Last_Name) as surname,
+            state_table.email,
+            state_table.given_names,
+            state_table.surname,
             CAST(NULL AS STRING) AS role_subtype,
-            {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || id")} AS pseudonymized_id 
+            {get_pseudonymized_id_query_str("IF(ids.state_code = 'US_IX', 'US_ID', ids.state_code) || id")} AS pseudonymized_id 
         FROM caseload_staff_ids ids
         -- TODO(#31900): Pull this from sessions preprocessing, not raw data.
-        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_900_EMPLOYEE_latest` state_table
-            ON state_table.Employee_Id = ids.id
+        LEFT JOIN `{{project_id}}.reference_views.state_staff_with_names` state_table
+            ON state_table.legacy_supervising_officer_external_id = ids.id
+            AND state_table.state_code = ids.state_code
     )
     SELECT 
         {{columns}}
