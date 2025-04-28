@@ -50,7 +50,14 @@ FROM
   \`recidiviz-123.user_metrics.workflows_user_available_actions_materialized\`
 
 WHERE
-  state_code IN (${linestaffStatesForQuery})`;
+  state_code IN (${linestaffStatesForQuery})
+GROUP BY
+  state_code, 
+  officer_id, 
+  officer_name, 
+  workflows_user_email_address, 
+  location_name, 
+  total_opportunities`;
 
 function sendLinestaffEmailReminders_() {
   sendAllLoginReminders(
