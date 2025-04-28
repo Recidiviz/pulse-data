@@ -20,6 +20,30 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Type
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.constants.state.external_id_types import (
+    US_AR_PARTYID,
+    US_AZ_PERSON_ID,
+    US_CA_BADGE_NO,
+    US_IX_CIS_EMPL_CD,
+    US_IX_EMPLOYEE,
+    US_IX_STAFF_ID,
+    US_ME_EMPLOYEE,
+    US_MI_COMPAS_USER,
+    US_MI_DOC_BOOK,
+    US_MI_OMNI_USER,
+    US_ND_DOCSTARS_OFFICER,
+    US_ND_ELITE,
+    US_ND_ELITE_BOOKING,
+    US_ND_SID,
+    US_NE_ID_NBR,
+    US_PA_CONT,
+    US_PA_INMATE,
+    US_PA_PBPP,
+    US_PA_PBPP_POSNO,
+    US_TX_EMAIL,
+    US_TX_STAFF_ID,
+    US_TX_TDCJ,
+)
 from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
@@ -66,40 +90,54 @@ STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS = {
 }
 
 
-def state_allows_multiple_ids_same_type_for_state_person(state_code: str) -> bool:
-    if state_code.upper() in (
-        "US_ND",
-        "US_PA",
-        "US_MI",
-        "US_OR",
-        "US_NE",
-        "US_TX",
-    ):  # TODO(#18005): Edit to allow multiple id for OR id_number but not Record_key
-        return True
+def person_external_id_types_with_allowed_multiples_per_person(
+    state_code: StateCode,
+) -> set[str]:
+    """Returns the person external_id id_types where we expect / allow that a single
+    StatePerson has multiple StatePersonExternalId of this type.
+    """
 
-    # By default, states don't allow multiple different ids of the same type
-    return False
+    # DO NOT ADD STATE / ID TYPES TO THIS UNLESS YOU FEEL CONFIDENT THAT IT'S "EXPECTED"
+    # FOR A PERSON TO HAVE MULTIPLE IDS OF THE GIVEN TYPE (i.e. they get assigned a new
+    # id for every new interaction with the system). IF ONLY A HANDFUL OF PEOPLE HAVE
+    # DUPLICATES, IT'S LIKELY A DATA ENTRY ERROR AND YOU SHOULD FIX VIA RAW DATA
+    # MIGRATIONS OR BY FILTERING OUT THE RAW DATA.
+    allowed_types_by_state = {
+        StateCode.US_MI: {US_MI_DOC_BOOK},
+        StateCode.US_ND: {US_ND_ELITE_BOOKING, US_ND_SID, US_ND_ELITE},
+        StateCode.US_NE: {US_NE_ID_NBR},
+        StateCode.US_PA: {US_PA_INMATE, US_PA_CONT, US_PA_PBPP},
+        StateCode.US_TX: {US_TX_TDCJ},
+    }
+
+    return allowed_types_by_state.get(state_code, set())
 
 
-def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool:
+def staff_external_id_types_with_allowed_multiples_per_person(
+    state_code: StateCode,
+) -> set[str]:
+    """Returns the staff external_id id_types where we expect / allow that a single
+    StateStaff has multiple StateStaffExternalId of this type.
+    """
 
-    if state_code.upper() in (
-        "US_MI",
-        "US_IX",
-        "US_CA",
-        "US_TN",
-        "US_ND",
-        "US_ME",
-        "US_AZ",
-        "US_TX",
-        "US_AR",
-        "US_PA",
-    ):
+    # DO NOT ADD STATE / ID TYPES TO THIS UNLESS YOU FEEL CONFIDENT THAT IT'S "EXPECTED"
+    # FOR A STAFF MEMBER TO HAVE MULTIPLE IDS OF THE GIVEN TYPE (i.e. they get assigned
+    # a new id for every new stint of employment). IF ONLY A HANDFUL OF STAFF
+    # HAVE DUPLICATES, IT'S LIKELY A DATA ENTRY ERROR AND YOU SHOULD FIX VIA RAW DATA
+    # MIGRATIONS OR BY FILTERING OUT THE RAW DATA.
+    allowed_types_by_state = {
+        StateCode.US_AR: {US_AR_PARTYID},
+        StateCode.US_AZ: {US_AZ_PERSON_ID},
+        StateCode.US_CA: {US_CA_BADGE_NO},
+        StateCode.US_IX: {US_IX_CIS_EMPL_CD, US_IX_EMPLOYEE, US_IX_STAFF_ID},
+        StateCode.US_ME: {US_ME_EMPLOYEE},
+        StateCode.US_MI: {US_MI_COMPAS_USER, US_MI_OMNI_USER},
+        StateCode.US_ND: {US_ND_DOCSTARS_OFFICER},
+        StateCode.US_PA: {US_PA_PBPP_POSNO},
+        StateCode.US_TX: {US_TX_EMAIL, US_TX_STAFF_ID},
+    }
 
-        return True
-
-    # By default, states don't allow multiple different ids of the same type
-    return False
+    return allowed_types_by_state.get(state_code, set())
 
 
 def _external_id_checks(
@@ -120,28 +158,34 @@ def _external_id_checks(
         root_entity,
         (state_entities.StatePerson, normalized_entities.NormalizedStatePerson),
     ):
-        allows_multiple_ids_same_type = (
-            state_allows_multiple_ids_same_type_for_state_person(root_entity.state_code)
+        allowed_types_with_multiples = (
+            person_external_id_types_with_allowed_multiples_per_person(
+                StateCode(root_entity.state_code)
+            )
         )
     elif isinstance(
         root_entity,
         (state_entities.StateStaff, normalized_entities.NormalizedStateStaff),
     ):
-        allows_multiple_ids_same_type = (
-            state_allows_multiple_ids_same_type_for_state_staff(root_entity.state_code)
+        allowed_types_with_multiples = (
+            staff_external_id_types_with_allowed_multiples_per_person(
+                StateCode(root_entity.state_code)
+            )
         )
     else:
         raise ValueError("Found RootEntity that is not StatePerson or StateStaff")
 
-    if not allows_multiple_ids_same_type:
-        external_id_types = set()
-        for external_id in root_entity.external_ids:
-            if external_id.id_type in external_id_types:
-                yield (
-                    f"Duplicate external id types for [{type(root_entity).__name__}] with id "
-                    f"[{root_entity.get_id()}]: {external_id.id_type}"
-                )
-            external_id_types.add(external_id.id_type)
+    external_id_types = set()
+    for external_id in root_entity.external_ids:
+        if (
+            external_id.id_type in external_id_types
+            and external_id.id_type not in allowed_types_with_multiples
+        ):
+            yield (
+                f"Duplicate external id types for [{type(root_entity).__name__}] with id "
+                f"[{root_entity.get_id()}]: {external_id.id_type}"
+            )
+        external_id_types.add(external_id.id_type)
 
 
 def _unique_constraint_check(
