@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria view that shows spans of time for which supervision clients
-need a risk assessment conducted
+are exempt from TRAS because they are located in a critically understaffed location
+and are on low or low medium supervision.
 """
-
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_medium_or_minimum,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    meets_risk_assessment_applicable_conditions,
-    meets_risk_assessment_event_triggers,
-    not_critical_understaffing_tras_exempt,
-    not_supervision_within_6_months_of_release_date,
+    supervision_officer_in_critically_understaffed_location,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
@@ -30,24 +30,20 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NEEDS_RISK_ASSESSMENT"
+_CRITERIA_NAME = "US_TX_CRITICAL_UNDERSTAFFING_TRAS_EXEMPT"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
-need a risk assessment conducted.
+are exempt from TRAS because they are located in a critically understaffed location
+and are on low or low medium supervision.
 """
 
 VIEW_BUILDER = AndTaskCriteriaGroup(
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
-        meets_risk_assessment_applicable_conditions.VIEW_BUILDER,
-        meets_risk_assessment_event_triggers.VIEW_BUILDER,
-        not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
-        not_critical_understaffing_tras_exempt.VIEW_BUILDER,
+        supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+        supervision_level_is_medium_or_minimum.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=[
-        "case_type",
-        "supervision_level",
-    ],
+    allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder
 
 if __name__ == "__main__":
