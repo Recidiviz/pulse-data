@@ -52,6 +52,7 @@ _SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
     "supervision_office_name_inferred": [],
     "is_supervision_officer": [],
     "is_supervision_officer_supervisor": [],
+    "is_in_critically_understaffed_location": [],
 }
 
 _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
@@ -93,6 +94,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM
         `{{project_id}}.normalized_state.state_staff_location_period` a
     LEFT JOIN
@@ -125,6 +127,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM
         `{{project_id}}.sessions.supervision_officer_inferred_location_sessions_materialized` a
     INNER JOIN
@@ -159,6 +162,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM
         `{{project_id}}.normalized_state.state_staff_role_period`
 
@@ -187,6 +191,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM
         `{{project_id}}.normalized_state.state_staff_caseload_type_period`
 
@@ -215,6 +220,7 @@ WITH all_staff_attribute_periods AS (
         b.staff_id AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM
         `{{project_id}}.normalized_state.state_staff_supervisor_period` a
     INNER JOIN
@@ -249,6 +255,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         a.caseload_count > 0 AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM `{{project_id}}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized` a
     INNER JOIN
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
@@ -282,6 +289,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_id,
         NULL AS is_supervision_officer,
         TRUE AS is_supervision_officer_supervisor,
+        NULL AS is_in_critically_understaffed_location,
     FROM `{{project_id}}.sessions.supervisor_of_officer_sessions_materialized` a
     INNER JOIN
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
@@ -289,6 +297,35 @@ WITH all_staff_attribute_periods AS (
         #TODO(#21702): Replace join with `staff_id` once refactor is complete
         a.state_code = b.state_code
         AND a.staff_external_id = b.external_id
+
+    UNION ALL
+
+    -- critically understaffed locations
+    SELECT
+        state_code,
+        staff_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        NULL AS supervision_district_id,
+        NULL AS supervision_district_name,
+        NULL AS supervision_office_id,
+        NULL AS supervision_office_name,
+        NULL AS supervision_unit,
+        NULL AS supervision_unit_name,
+        NULL AS supervision_district_id_inferred,
+        NULL AS supervision_district_name_inferred,
+        NULL AS supervision_office_id_inferred,
+        NULL AS supervision_office_name_inferred,
+        NULL AS role_type,
+        NULL AS role_subtype,
+        NULL AS specialized_caseload_type,
+        NULL AS supervisor_staff_external_id,
+        NULL AS supervisor_staff_id,
+        NULL AS is_supervision_officer,
+        NULL AS is_supervision_officer_supervisor,
+        TRUE AS is_in_critically_understaffed_location,
+    FROM
+        `{{project_id}}.analyst_data.supervision_staff_in_critically_understaffed_location_sessions_preprocessed_materialized`
 )
 ,
 {create_sub_sessions_with_attributes(table_name="all_staff_attribute_periods",index_columns=["state_code","staff_id"])}
