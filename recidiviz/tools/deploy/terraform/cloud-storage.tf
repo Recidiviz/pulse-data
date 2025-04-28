@@ -257,6 +257,26 @@ module "practices-etl-data" {
   ]
 }
 
+module "practices-etl-data-demo" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "practices-etl-data-demo"
+  uniform_bucket_level_access = false
+  count                       = var.project_id == "recidiviz-staging" ? 1 : 0
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 7
+      }
+    }
+  ]
+}
+
 module "practices-etl-data-archive" {
   source = "./modules/cloud-storage-bucket"
 
@@ -482,6 +502,14 @@ module "insights-etl-data" {
 
   project_id  = var.project_id
   name_suffix = "insights-etl-data"
+}
+
+module "insights-etl-data-demo" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "insights-etl-data-demo"
+  count       = var.project_id == "recidiviz-staging" ? 1 : 0
 }
 
 module "insights-etl-data-archive" {
