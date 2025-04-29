@@ -234,7 +234,7 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
                     THEN NULL
                  -- when there's been an address change since the last home visit date, calculate the next recommended home visit date as either 30 days
                  -- after the address change date or the originally recommended home visit date, whichever comes earlier
-                 WHEN most_recent_address_change_date > COALESCE(most_recent_home_visit_date, DATE(1111,1,1))
+                 WHEN DATE_SUB(most_recent_address_change_date, INTERVAL 2 DAY) > COALESCE(most_recent_home_visit_date, DATE(1111,1,1))
                     THEN LEAST(next_recommended_home_visit_date, COALESCE(DATE_ADD(most_recent_address_change_date, INTERVAL 30 DAY), DATE(9999,9,9))) 
                  -- in all other scenarios, stick with the originally recommended home visit date
                  ELSE next_recommended_home_visit_date
