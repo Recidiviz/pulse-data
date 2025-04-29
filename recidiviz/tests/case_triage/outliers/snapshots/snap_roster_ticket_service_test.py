@@ -16,6 +16,7 @@ snapshots["test_request_roster_change[add_multiple_officer] 1"] = {
         "_default_description_": """Test Requester has requested that the following officer(s) be added to the caseload of Alice Supervisor:
 - Jane Officer, District A (supervised by Alice Supervisor, Bob Supervisor)
 - John Officer, District B (supervised by Bob Supervisor)
+- Sam Officer, District C (no supervisors listed)
 
 Other staff affected by this change:
 - Alice Supervisor

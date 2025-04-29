@@ -129,8 +129,16 @@ class RosterTicketService:
         }
 
         # Helper formatters
+        def format_supervised_by_text(o: SupervisionOfficer) -> str:
+            supervisors_for_officer = officer_to_supervisors[o]
+            return (
+                "no supervisors listed"
+                if not supervisors_for_officer
+                else f"supervised by {', '.join(PersonName(**s.full_name).formatted_first_last for s in supervisors_for_officer)}"
+            )
+
         def format_officer_into_bullet_point(o: SupervisionOfficer) -> str:
-            return f"- {PersonName(**o.full_name).formatted_first_last}, {o.supervision_district} (supervised by {', '.join(PersonName(**s.full_name).formatted_first_last for s in officer_to_supervisors[o])})\n"
+            return f"- {PersonName(**o.full_name).formatted_first_last}, {o.supervision_district} ({format_supervised_by_text(o)})\n"
 
         def format_supervisor_into_bullet_point(s: SupervisionOfficerSupervisor) -> str:
             return f"- {PersonName(**s.full_name).formatted_first_last}\n"

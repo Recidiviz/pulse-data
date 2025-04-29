@@ -61,6 +61,12 @@ def mock_entities_fixture() -> MockEntities:
             supervision_district="District B",
             supervisor_external_ids=["sup2"],
         ),
+        SupervisionOfficer(
+            external_id="off3",
+            full_name={"given_names": "Sam", "surname": "Officer"},
+            supervision_district="District C",
+            supervisor_external_ids=[],
+        ),
     ]
 
     # Load supervisors
@@ -239,7 +245,7 @@ def test_create_ticket_fails(
             RosterChangeType.ADD,
             "Add these officers to the caseload."
             + "It's imperative that they're added.\nPlease speak with admin about this.",
-            2,
+            3,
             False,
         ),
         (
