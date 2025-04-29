@@ -33,7 +33,7 @@ possible_denial_reasons_dict = {
         "PENDING CHARGES",
         "ORDERED TREATMENT",
         "EXCLUDED OFFENSE",
-        "COURT",
+        "JUDGE",
         "OTHER",
     ],
     "usMiClassificationReview": [
@@ -50,7 +50,7 @@ possible_denial_reasons_dict = {
         "SPEC COURT",
         "RPOSN",
         "HIGH PROFILE",
-        "COURT",
+        "JUDGE",
         "OTHER",
     ],
     "usMiSupervisionLevelDowngrade": ["OVERRIDE", "EXCLUDED CHARGE", "OTHER"],
@@ -74,7 +74,7 @@ The clusters for this opportunity are:
 
 Please perform the following tasks:
 
-1. Based on the free text response and selected denial reasons, enumerate all denial reasons for this opportunity that apply to this person.
+1. Based on the free text response and selected denial reasons, enumerate all denial reasons from the possible denial reasons for this opportunity that apply to this person.
 
 2. Based on the free text response, assign this case to one or more of the clusters listed above (however many apply), or 'Other' if none apply.
 
@@ -83,6 +83,8 @@ Please perform the following tasks:
 4. Determine if the free text reason(s) are fully addressed by available denial reasons for this opportunity (ignoring the denial reason 'Other') (True/False).
 
 If the information suggests multiple reasons (e.g., they both had a recent violation and are getting discharged next week anyways) be sure to select denial reasons and clusters for each reason, even if they're 'Other' for either one. Select as many denial reasons and clusters as apply.
+
+5. Assign a confidence score for each output on a scale of 1 - 10, with 1 being not confident at all and 10 being extremely confident that the output is correct
 
 **Instructions**:
 
@@ -96,13 +98,90 @@ If the information suggests multiple reasons (e.g., they both had a recent viola
 ```json
 {{
   "assigned_denial_reasons": ["NONCOMPLIANT", "SUSPECTED OFFENSE", "NEEDS"],
+  "assigned_denial_reasons_confidence_score": 7
   "assigned_clusters": [{{"Compliance Issues": "Recent/Pending Violations"}}, {{"Compliance Issues": "New Criminal Activity/Charges"}}],
+  "assigned_clusters_confidence_score": 6
   "is_fully_encapsulated_by_selected_denial_reasons": false,
+  "is_fully_encapsulated_by_selected_denial_reasons_confidence_score": 8,
   "is_encapsulated_by_known_denial_reasons": true
+  "is_encapsulated_by_known_denial_reasons_confidence_score": 9
 }}
+```
 
 Ensure the following:
 - Clusters must be chosen from the predefined list of valid clusters. All clusters must have a top-level cluster, and a sub-cluster (even if that sub-cluster is 'Other').
 - Denial reasons must be selected from the predefined list for the opportunity type.
+- Any reference to "county" or "courts" in the free text should result in assigning the "JUDGE" denial reason, and always use one of the Judge/Court Decisions clusters.
+
+Terminology clarification:
+- When assigning denial reasons and clusters, references to violations mean the person is not in compliance with the conditions of their supervision. New criminal activity, new charges, or new offenses all count as a violation, but a violation is not always a new crime or offense and should not be assumed as such.
+- If an offense occurred prior to the supervision period, it is not considered a violation. This offense may make a person noncompliant because it is an excluded crime/offense type.
+- VOP is violation of parole
+- SCRAM is often a requirement for programming/treatment
+
+Example input/output pairs (partial objects):
+- Input 1:
+```json
+{{
+"opportunity_type": "usMiMinimumTelephoneReporting",
+"free_text_reason": "Bay County case, Bay County forbids telephone reporting",
+"selected_denial_reasons": ["Other"],
+}}
+```
+Output 1: 
+```json
+{{
+"assigned_denial_reasons": ["JUDGE","OTHER"],
+"assigned_clusters": [{{"Judge/Court Decisions":"Judge's Decision/Policy"}}],
+}}
+```
+
+- Input 2:
+```json
+{{
+"opportunity_type": "usMiSupervisionLevelDowngrade",
+"free_text_reason": "Parolee had a case where violence and shooting victims were involved.",
+"selected_denial_reasons": ["Other"],
+}}
+```
+Output 2: 
+```json
+{{
+"assigned_denial_reasons": ["OTHER", "EXCLUDED CHARGE"],
+"assigned_clusters": [{{"Compliance Issues":"Excluded Crime/Offense Type"}}],
+}}
+```
+
+- Input 3:
+```json
+{{
+"opportunity_type": "usMiEarlyDischarge",
+"free_text_reason": "Parolee on SCRAM for drinking violations ",
+"selected_denial_reasons": ["Other"],
+}}
+```
+Output 3: 
+```json
+{{
+"assigned_denial_reasons": ["OTHER", "NONCOMPLIANT", "ORDERED TREATMENT"],
+"assigned_clusters": [{{"Compliance Issues":"Recent/Pending Violations"}}, {{"Compliance Issues": "Incomplete Treatment/Programming"}}],
+}}
+```
+
+- Input 4:
+```json
+{{
+"opportunity_type": "usMiClassificationReview",
+"free_text_reason": "reduced to minimum",
+"selected_denial_reasons": ["Other"],
+}}
+```
+Output 4: 
+```json
+{{
+"assigned_denial_reasons": ["OTHER"],
+"assigned_clusters": [{{"Time Constraints":"Classification Review Date Set/Near Review Date/Already Done"}}],
+}}
+```
 
 """

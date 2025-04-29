@@ -105,8 +105,12 @@ def validate_denial_reasons(
     assigned_reasons: List[str], possible_reasons: List[str]
 ) -> Tuple[List[str], List[str]]:
     """Function to validate denial reasons"""
-    valid = [reason for reason in assigned_reasons if reason in possible_reasons]
-    invalid = [reason for reason in assigned_reasons if reason not in possible_reasons]
+    valid = [
+        reason for reason in assigned_reasons if reason.upper() in possible_reasons
+    ]
+    invalid = [
+        reason for reason in assigned_reasons if reason.upper() not in possible_reasons
+    ]
     return valid, invalid
 
 
@@ -228,6 +232,15 @@ def process_row(
 
             try:
                 result = json.loads(json_str)
+                # Copy original denial reasons into the result in case LLM did not follow those instructions
+                result["assigned_denial_reasons"] = list(
+                    set(
+                        reason.upper()
+                        for reason in result.get("assigned_denial_reasons")
+                        + row.get("Ineligibility Reasons")
+                    )
+                )
+
                 # Validate clusters and denial reasons
                 valid_clusters, invalid_clusters = validate_clusters(
                     result.get("assigned_clusters", []), opportunity_clusters

@@ -13,6 +13,8 @@
         "New Criminal Activity/Charges",
         "Incomplete Treatment/Programming",
         "Incomplete Community Service",
+        "Excluded Crime/Offense Type",
+        "Court/County Program Requirements",
         "Other"
       ],
       "Time Constraints": [
@@ -23,13 +25,11 @@
       ],
       "Judge/Court Decisions": [
         "Judge's Decision/Policy",
-        "Court Program Requirements",
         "HYTA Status",
         "Delayed Sentence",
         "Other"
       ],
       "Other Actor Requests/Requirements": [
-        "Sentencing County Requirements/Disagreements",
         "Other"
       ],
       "Case-Specific Circumstances": [
@@ -54,17 +54,21 @@
         "Non-Compliance with Conditions (General)",
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
+        "Incomplete Treatment/Programming",
         "Incomplete Community Service",
+        "Excluded Crime/Offense Type",
+        "Court Program Requirements",
         "Other"
       ],
       "Time Constraints": [
         "Too Early in Supervision",
         "Specific Discharge Date Set/Near Discharge",
         "Waiting Period After Event",
+        "Classification Review Date Set/Near Review Date/Already Done",
         "Other"
       ],
       "Judge/Court Decisions": [
-        "Court Program Requirements",
+        "Judge's Decision/Policy",
         "Other"
       ],
       "Other Actor Requests/Requirements": [
@@ -94,6 +98,9 @@
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
         "Incomplete Treatment/Programming",
+        "Incomplete Community Service",
+        "Excluded Crime/Offense Type",
+        "Court Program Requirements",
         "Other"
       ],
       "Time Constraints": [
@@ -102,7 +109,6 @@
       ],
       "Judge/Court Decisions": [
         "Judge's Decision/Policy",
-        "Court Program Requirements",
         "Delayed Sentence",
         "Other"
       ],
@@ -131,6 +137,9 @@
         "Absconding/Warrant Status",
         "New Criminal Activity/Charges",
         "Incomplete Treatment/Programming",
+        "Incomplete Community Service",
+        "Excluded Crime/Offense Type",
+        "Court Program Requirements",
         "Other"
       ],
       "Time Constraints": [
@@ -138,7 +147,7 @@
         "Other"
       ],
       "Judge/Court Decisions": [
-        "Court Program Requirements",
+        "Judge's Decision/Policy",
         "Other"
       ],
       "Other Actor Requests/Requirements": [
@@ -148,6 +157,7 @@
       "Case-Specific Circumstances": [
         "Assessment/Evaluation Needed",
         "Medical Reasons/Hospitalization",
+        "Override Based On Supervisor Permission/Approval",
         "Other"
       ],
       "Other": [
