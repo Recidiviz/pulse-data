@@ -34,6 +34,7 @@ from google.api_core.exceptions import GoogleAPICallError, from_http_response
 from google.cloud import bigquery
 from more_itertools import one
 from pandas._testing import assert_frame_equal
+from pandas_gbq import read_gbq as og_read_gbq
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -138,12 +139,24 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self.bq_client.apply_row_level_permissions = Mock(  # type: ignore
             return_value="Row-level permissions not supported in BQ Emulator"
         )
+        self.read_gbq_patcher = patch(
+            "pandas_gbq.read_gbq",
+            self._read_gbq_with_emulator,
+        )
+        self.read_gbq_patcher.start()
+        self.to_gbq_patcher = patch(
+            "pandas_gbq.to_gbq",
+            self._fail_to_gbq_call,
+        )
+        self.to_gbq_patcher.start()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         if self.wipe_emulator_data_on_teardown:
             self._wipe_emulator_data()
         self.bq_error_handling_patcher.stop()
+        self.read_gbq_patcher.stop()
+        self.to_gbq_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -158,6 +171,23 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         return self.bq_client.run_query_async(
             query_str=query, use_query_cache=True
         ).to_dataframe()
+
+    def _read_gbq_with_emulator(self, *args, **kwargs):  # type: ignore
+        return og_read_gbq(
+            *args,
+            **kwargs,
+            bigquery_client=self.bq_client.client,
+        )
+
+    # Ran into some issues following the same pattern for reading with pandas.
+    # I think this is because writing to BigQuery potentially needs access to other
+    # resources like GCS buckets (depending on how the data is written).
+    # It's really easy to just write to *actual* BigQuery on accident though,
+    # so raising an error will help prevent that.
+    def _fail_to_gbq_call(self, *args, **kwargs):  # type: ignore
+        raise RuntimeError(
+            "Writing to the emulator from pandas is not currently supported."
+        )
 
     def _clear_emulator_table_data(self) -> None:
         """Clears the data out of emulator tables but does not delete any tables."""

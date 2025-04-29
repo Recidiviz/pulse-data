@@ -18,6 +18,7 @@
 import datetime
 from datetime import date
 
+import pandas as pd
 from google.api_core.exceptions import InternalServerError
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
@@ -786,3 +787,65 @@ FROM UNNEST([
             example_view.schema,
             [SchemaField("string_field", "STRING", "NULLABLE")],
         )
+
+    def test_query_from_pandas_call(self) -> None:
+
+        # Query against the emulator, (no tables)
+        df = pd.read_gbq("SELECT 1 AS one", project_id=self.project_id)
+        assert df.shape == (1, 1)
+        assert df.one.iloc[0] == 1
+
+        address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        self.create_mock_table(
+            address,
+            schema=[
+                bigquery.SchemaField(
+                    "a",
+                    field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
+                    mode="REQUIRED",
+                ),
+                bigquery.SchemaField(
+                    "b",
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                    mode="NULLABLE",
+                ),
+            ],
+        )
+
+        # Query against empty table
+        df = pd.read_gbq(
+            f"SELECT a, b FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`;"
+        )
+        assert df.empty
+
+        # Load data to table and query
+        self.load_rows_into_table(
+            address,
+            data=[{"a": 1, "b": "foo"}, {"a": 3, "b": None}],
+        )
+        df = pd.read_gbq(
+            f"SELECT a, b FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`;"
+        )
+        assert df.a.to_list() == [1, 3]
+        assert df.b.to_list() == ["foo", None]
+
+        # Gut check with emulator client
+        self.run_query_test(
+            f"SELECT a, b FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`;",
+            expected_result=[{"a": 1, "b": "foo"}, {"a": 3, "b": None}],
+        )
+
+        # A similar mocking approach didn't quite work. More work to be done.
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "Writing to the emulator from pandas is not currently supported.",
+        ):
+            more_data = pd.DataFrame(
+                [{"a": 42, "b": "bar"}, {"a": 43, "b": "baz"}],
+                columns=["a", "b"],
+            )
+            more_data.to_gbq(
+                f"{address.dataset_id}.{address.table_id}",
+                project_id=self.project_id,
+                if_exists="append",
+            )
