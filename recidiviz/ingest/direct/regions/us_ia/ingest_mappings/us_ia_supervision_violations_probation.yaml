@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+
+input_columns:
+  OffenderCd: STRING
+  FieldRuleViolationIncidentId: STRING
+  ProbationReportOfViolationId: STRING
+  IncidentDt: DATETIME
+  ReportDt: DATETIME
+
+  CaseManagerStaffId: STRING
+  WarrantRequested: STRING
+  Decision: STRING
+  ProbationROVHearingResponseDecisionId: STRING
+
+  RecommendationToCourt: STRING
+  Comments: STRING
+
+unused_columns: [WarrantRequested] #If we want we can also use this column, though warrants are sometimes noted as "Decision"
+
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - $literal("Probation_")
+                - FieldRuleViolationIncidentId
+                - ProbationReportOfViolationId
+                - ProbationROVHearingResponseDecisionId
+          violation_date: IncidentDt
+          violation_metadata:
+            $json_dict:
+              RecommendationToCourt: RecommendationToCourt
+              Comments: Comments
+
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("Probation_")
+                      - FieldRuleViolationIncidentId
+                      - ProbationReportOfViolationId
+                      - ProbationROVHearingResponseDecisionId
+                response_date:
+                  $conditional:
+                    - $if:
+                        $not_null: ReportDt
+                      $then: ReportDt
+                    - $else: IncidentDt
+                response_type:
+                  $conditional:
+                    - $if:
+                        $not_null: Decision
+                      $then: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                    - $else: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $conditional:
+                          - $if:
+                              $not_null: Decision #There is a seperate column for if a warrant was issued regardless of the decision.
+                            $then:
+                              $enum_mapping:
+                                $raw_text: Decision
+                                $mappings:
+                                  StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                    - "Community Service"
+                                  StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                    - "Continued Supervision"
+                                    - "Discharged/Terminated"
+                                  StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                    - "Delay Action"
+                                    - "Schedule Hearing (Pretrial Only)"
+                                  StateSupervisionViolationResponseDecision.EXTENSION:
+                                    - "Time Loss"
+                                  StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                    - "Day Reporting"
+                                    - "Electronic Monitoring"
+                                    - "Violator Program Placement"
+                                    - "Fine"
+                                    - "Contempt - Fine"
+                                  StateSupervisionViolationResponseDecision.REVOCATION:
+                                    - "Revoked Parole to Work Release"
+                                    - "Revoked to Jail"
+                                    - "Revoked to OWI Facility"
+                                    - "Revoked to Prison"
+                                    - "Revoked-Voluntary Return to Jail/Prison"
+                                    - "Re-Sentenced"
+                                    - "Residential Placement"
+                                    - "Contempt - Jail Imposed"
+                                    - "Deferred Revoked"
+                                  StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                    - "OWI Pre-Placement Supervision Terminated"
+                                  StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                    - "Shock Sentence"
+                                    - "WR/OWI 21 Day Shock"
+                                  StateSupervisionViolationResponseDecision.SPECIALIZED_COURT:
+                                    - "Mental Health Court"
+                                    - "Drug Court Placement"
+                                  StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                    - "Treatment"
+                                  StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                    - "Issue Warrant (Pretrial Only)"
+                                  StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
+                                    - "Dismissed"
+                                    - "No Hearing Held"
+                                    - "No Recommendation"
+                                    - "Not Filed with the Court"
+                                  StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                    - "Contempt - Jail Suspended"
+                                    - "Continuum Placement"
+                                    - "WR/OWI Zero Tolerance"
+                          - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)
+                deciding_staff_external_id: CaseManagerStaffId
+                deciding_staff_external_id_type: $literal("US_IA_STAFFID")

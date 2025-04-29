@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+
+input_columns:
+  OffenderCd: STRING
+  FieldRuleViolationIncidentId: STRING
+  ParoleViolationReviewReportId: STRING
+  IncidentDt: DATETIME
+  ReportDt: DATETIME
+
+  ReportType: STRING
+  ParoleViolationReviewRecommendation: STRING
+  CompletedByStaffId: STRING
+  HearingCompleted: STRING
+  ReviewCompleted: STRING
+
+  CustodyLocation: STRING
+  ApprovedByStaffId: STRING
+
+unused_columns: []
+
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - $literal("Parole_")
+                - ParoleViolationReviewReportId
+                - FieldRuleViolationIncidentId
+          violation_date: IncidentDt
+          violation_metadata:
+            $json_dict:
+              ApprovedByStaffId: ApprovedByStaffId
+              CustodyLocation: CustodyLocation
+
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse: #A single incident can be tied to multiple reports.
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("Parole_")
+                      - ParoleViolationReviewReportId
+                      - FieldRuleViolationIncidentId
+                response_date:
+                  $conditional:
+                    - $if:
+                        $not_null: ReportDt
+                      $then: ReportDt
+                    - $else: IncidentDt
+                response_type:
+                  $conditional:
+                    - $if:
+                        $not_null: ReportType
+                      $then:
+                        $enum_mapping:
+                          $raw_text: ReportType
+                          $mappings:
+                            StateSupervisionViolationResponseType.CITATION:
+                              - "Information"
+                            StateSupervisionViolationResponseType.VIOLATION_REPORT:
+                              - "Violation"
+                    - $else: $literal_enum(StateSupervisionViolationResponseType.INTERNAL_UNKNOWN)
+                is_draft:
+                  $conditional:
+                    - $if:
+                        $and:
+                          - $equal:
+                              - HearingCompleted
+                              - $literal("Yes")
+                          - $equal:
+                              - ReviewCompleted
+                              - $literal("1")
+                      $then: $literal_bool(False)
+                    - $else: $literal_bool(True)
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $conditional:
+                          - $if:
+                              $not_null: ParoleViolationReviewRecommendation
+                            $then:
+                              $enum_mapping:
+                                $raw_text: ParoleViolationReviewRecommendation
+                                $mappings:
+                                  StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                    - "Continue Disposition"
+                                    - "Continue Disposition - Day Reporter"
+                                    - "No Further Action"
+                                    - "Reinstate"
+                                  StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                    - "Delay Action"
+                                  StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                    - "ICON Migration"
+                                  StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                    - "Add Residential Condition - Continue on
+                                      Parole"
+                                  StateSupervisionViolationResponseDecision.REVOCATION:
+                                    - "Automatic Revocation - 903B (2Y)"
+                                    - "Automatic Revocation - 903B (5Y)"
+                                    - "Automatic Revocation - Aggravated/Felony"
+                                    - "Automatic Revocation - Federal/Out of
+                                      State"
+                                    - "Revoke and Discharge"
+                                    - "Revoke and Discharge - Day Reporter"
+                                    - "Revoke to Prison"
+                                    - "Revoke to Prison - 903B (2Y)"
+                                    - "Revoke to Prison - 903B (5Y)"
+                                    - "Revoke to Prison - Day Reporter"
+                                    - "Revoke to Work Release"
+                                    - "Revoke to Work Release - 903B (2Y)"
+                                    - "Revoke to Work Release - 903B (5Y)"
+                                    - "Revoke to Work Release - Day Reporter"
+                                    - "Voluntary Termination"
+                                  StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                    - "Return to Sending State"
+                          - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)
+                deciding_staff_external_id: CompletedByStaffId
+                deciding_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $not_null: CompletedByStaffId
+                      $then: $literal("US_IA_STAFFID")

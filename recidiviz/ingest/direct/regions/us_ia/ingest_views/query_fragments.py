@@ -51,3 +51,28 @@ PENALTIES_TO_KEEP = f"""
         -- and there are only four sentences that fall in this category so let's just drop
         AND sentence.SentenceDt IS NOT NULL AND DATE(sentence.SentenceDt) >= DATE(1900,1,2)
 )"""
+
+
+# Supervision Violations Parole/Probation CTE
+
+FEILD_RULE_VIOLATIONS_CTE = """
+-- Part One: Field Rule Violations and Instances, including parole and probation.
+FRV_I as
+ (
+    select
+        FRVI.active as FRVI_active
+
+
+        , OffenderCd
+        , (case when cast(FRVI.IncidentDt as datetime)<CAST('1900-01-02' as datetime) or CURRENT_DATE < cast(FRVI.IncidentDt as datetime) then null else cast(IncidentDt as datetime) end) as IncidentDt
+
+        -- ID's
+        , FRVI.FieldRuleViolationIncidentId
+
+        -- Extra for JSON
+        , FRVI.IncidentSource
+    from
+        {IA_DOC_FieldRuleViolationIncidents} as FRVI
+    -- We want to keep all incidents regardless of active status because active just connotes if a decision has been finalized.
+ )
+"""
