@@ -49,7 +49,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> (
+    AggregatedMetricsCollection
+):
 
     current_date = current_date_us_eastern()
 
@@ -122,7 +124,9 @@ def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> Aggr
     )
 
 
-def _build_insights_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+def _build_insights_user_metrics_aggregated_metrics_collection_config() -> (
+    AggregatedMetricsCollection
+):
 
     current_date = current_date_us_eastern()
 

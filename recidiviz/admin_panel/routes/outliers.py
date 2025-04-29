@@ -78,7 +78,7 @@ class ConfigurationsAPI(MethodView):
             )
 
         state_code = StateCode(state_code_str.upper())
-        configurations = OutliersQuerier(state_code).get_configurations()
+        configurations = OutliersQuerier(state_code, []).get_configurations()
         return configurations
 
     @outliers_blueprint.arguments(
@@ -107,7 +107,7 @@ class ConfigurationsAPI(MethodView):
             request_dict["status"] = ConfigurationStatus.ACTIVE.value
 
             state_code = StateCode(state_code_str.upper())
-            querier = OutliersQuerier(state_code)
+            querier = OutliersQuerier(state_code, [])
             config = querier.add_configuration(request_dict)
         except IntegrityError as e:
             logging.error("Error adding configuration: %s", e)
@@ -127,7 +127,7 @@ class DeactivateConfigurationByIdAPI(MethodView):
 
         try:
             state_code = StateCode(state_code_str.upper())
-            OutliersQuerier(state_code).deactivate_configuration(config_id)
+            OutliersQuerier(state_code, []).deactivate_configuration(config_id)
         except NoResultFound:
             abort(
                 HTTPStatus.BAD_REQUEST,
@@ -161,7 +161,7 @@ class PromoteToProdConfigurationsAPI(MethodView):
             )
 
         state_code = StateCode(state_code_str.upper())
-        querier = OutliersQuerier(state_code)
+        querier = OutliersQuerier(state_code, [])
         config = querier.get_configuration(config_id)
         config_dict = config.to_dict()
 
@@ -242,7 +242,7 @@ class PromoteToDefaultConfigurationsAPI(MethodView):
         by adding a new DB entity for an active configuration with `feature_variant=None`
         """
         state_code = StateCode(state_code_str.upper())
-        querier = OutliersQuerier(state_code)
+        querier = OutliersQuerier(state_code, [])
         config = querier.get_configuration(config_id)
 
         if config.feature_variant is None:
@@ -274,7 +274,7 @@ class ReactivateConfigurationsAPI(MethodView):
         Reactivates an inactive configuration
         """
         state_code = StateCode(state_code_str.upper())
-        querier = OutliersQuerier(state_code)
+        querier = OutliersQuerier(state_code, [])
         config = querier.get_configuration(config_id)
 
         if config.status == ConfigurationStatus.ACTIVE.value:

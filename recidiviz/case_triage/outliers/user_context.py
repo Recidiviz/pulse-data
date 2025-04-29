@@ -31,4 +31,4 @@ class UserContext:
     pseudonymized_id: Optional[str]
     can_access_all_supervisors: bool
     can_access_supervision_workflows: bool
-    feature_variants: dict
+    feature_variants: list[str]

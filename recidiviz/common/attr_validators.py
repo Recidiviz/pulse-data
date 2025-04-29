@@ -420,6 +420,21 @@ def _assert_value_falls_in_bounds(
         )
 
 
+class IsNotSetAlongWithValidator:
+    def __init__(self, other_attribute: str) -> None:
+        self._other_attribute = other_attribute
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if value and getattr(instance, self._other_attribute):
+            raise TypeError(
+                f"{attribute.name} and {self._other_attribute} cannot both be set on class [{type(instance).__name__}]"
+            )
+
+
+def is_not_set_along_with(other_attribute: str) -> IsNotSetAlongWithValidator:
+    return IsNotSetAlongWithValidator(other_attribute)
+
+
 class IsReasonableDateValidator:
     """Validator class for checking if a date field is within a reasonable set of
     bounds.

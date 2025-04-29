@@ -78,8 +78,8 @@ def on_successful_authorization(
         or routes.get("insights_supervision_supervisors-list", False),
         can_access_supervision_workflows=is_recidiviz_or_csg
         or routes.get("workflowsSupervision", False),
-        feature_variants=get_active_feature_variants(
-            feature_variants, user_pseudonymized_id
+        feature_variants=list(
+            get_active_feature_variants(feature_variants, user_pseudonymized_id).keys()
         ),
     )
 

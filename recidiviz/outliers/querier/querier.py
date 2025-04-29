@@ -84,6 +84,7 @@ class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
     state_code: StateCode = attr.ib()
+    feature_variants: list[str] = attr.ib()
 
     insights_database_manager: StateSegmentedDatabaseManager = attr.ib(
         factory=lambda: StateSegmentedDatabaseManager(
@@ -170,7 +171,7 @@ class OutliersQuerier:
                     prev_end_date,
                     state_config.primary_category_type,
                 )
-                for metric in state_config.metrics
+                for metric in self.get_outcomes_metrics()
             }
 
             officer_supervisor_id_to_data = {}
@@ -412,8 +413,23 @@ class OutliersQuerier:
     def get_outliers_backend_config(self) -> OutliersBackendConfig:
         return get_outliers_backend_config(self.state_code.value)
 
+    def get_outcomes_metrics(
+        self,
+    ) -> List[OutliersMetricConfig]:
+        return [
+            m
+            for m in self.get_outliers_backend_config().metrics
+            if (m.feature_variant and m.feature_variant in self.feature_variants)
+            or (
+                m.inverse_feature_variant
+                and m.inverse_feature_variant not in self.feature_variants
+            )
+            or (m.feature_variant is None and m.inverse_feature_variant is None)
+        ]
+
     def get_supervision_officer_supervisor_entities(
-        self, pseudonymized_id: Optional[str] = None
+        self,
+        pseudonymized_id: Optional[str] = None,
     ) -> List[SupervisionOfficerSupervisorEntity]:
         """
         Returns a list of SupervisionOfficerSupervisorEntity objects that indicate whether supervisors are supervising
@@ -449,6 +465,9 @@ class OutliersQuerier:
                         SupervisionOfficerOutlierStatus.end_date == end_date,
                         # TODO(#24998): Account for comparing benchmarks by caseload type
                         SupervisionOfficerOutlierStatus.caseload_category == "ALL",
+                        SupervisionOfficerOutlierStatus.metric_id.in_(
+                            [m.name for m in self.get_outcomes_metrics()]
+                        ),
                     ),
                     # We shouldn't exclude supervisors who don't have outcomes officers
                     isouter=True,
@@ -645,6 +664,9 @@ class OutliersQuerier:
                     # Get the benchmarks for all periods between requested or latest end_date and earliest end date
                     MetricBenchmark.end_date.between(earliest_end_date, end_date),
                     MetricBenchmark.category_type == category_type_to_compare.value,
+                    MetricBenchmark.metric_id.in_(
+                        [m.name for m in self.get_outcomes_metrics()]
+                    ),
                 )
                 .group_by(
                     MetricBenchmark.metric_id,
@@ -1477,6 +1499,9 @@ class OutliersQuerier:
                     ),
                     SupervisionOfficerOutlierStatus.category_type
                     == category_type_to_compare.value,
+                    SupervisionOfficerOutlierStatus.metric_id.in_(
+                        [m.name for m in self.get_outcomes_metrics()]
+                    ),
                 )
                 .group_by(
                     SupervisionOfficer.external_id,
@@ -1714,7 +1739,7 @@ class OutliersQuerier:
         """
         with self.insights_database_session() as session:
             user_feature_variants = (
-                list(user_context.feature_variants.keys()) if user_context else []
+                user_context.feature_variants if user_context else []
             )
 
             # Get all active configurations
@@ -1855,7 +1880,10 @@ class OutliersQuerier:
         """
         config_dict = {}
 
-        backend_config = self.get_outliers_backend_config().to_json()
+        backend_config_obj = self.get_outliers_backend_config()
+        # Filter out metrics that the user doesn't have access to based on feature variants
+        backend_config_obj.metrics = self.get_outcomes_metrics()
+        backend_config = backend_config_obj.to_json()
         # Include the deprecated metrics in the product configuration so that the
         # frontend will handle displaying the correct metrics based on the responses
         # from other endpoints.

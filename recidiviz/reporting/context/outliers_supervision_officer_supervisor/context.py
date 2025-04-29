@@ -188,9 +188,11 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             "body_display_name": metric_info.metric.body_display_name,
             "legend_zero": metric_info.target_status_strategy
             == TargetStatusStrategy.ZERO_RATE,
-            "far_direction": "above"
-            if metric_info.metric.outcome_type == MetricOutcome.ADVERSE
-            else "below",
+            "far_direction": (
+                "above"
+                if metric_info.metric.outcome_type == MetricOutcome.ADVERSE
+                else "below"
+            ),
             "event_name": metric_info.metric.event_name,
             "chart": {
                 "url": self._request_chart(metric_info).url,
@@ -288,18 +290,20 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         # convert each group into a Detail
         details: List[List[MetricHighlightDetail]] = [
             [
-                MetricHighlightDetail(
-                    condition="is far from the state average on",
-                    metrics=join_with_conjunction(
-                        [metric.metric.body_display_name for metric in metrics]
-                    ),
-                )
-                if strategy == TargetStatusStrategy.IQR_THRESHOLD
-                else MetricHighlightDetail(
-                    condition="has zero",
-                    metrics=join_with_conjunction(
-                        [metric.metric.event_name for metric in metrics]
-                    ),
+                (
+                    MetricHighlightDetail(
+                        condition="is far from the state average on",
+                        metrics=join_with_conjunction(
+                            [metric.metric.body_display_name for metric in metrics]
+                        ),
+                    )
+                    if strategy == TargetStatusStrategy.IQR_THRESHOLD
+                    else MetricHighlightDetail(
+                        condition="has zero",
+                        metrics=join_with_conjunction(
+                            [metric.metric.event_name for metric in metrics]
+                        ),
+                    )
                 )
                 for strategy, metrics in group
             ]
@@ -408,7 +412,12 @@ if __name__ == "__main__":
         database_key = database_manager.database_key_for_state(test_state_code.value)
         outliers_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)
 
-        test_config = OutliersQuerier(test_state_code).get_product_configuration()
+        test_config = OutliersQuerier(
+            test_state_code,
+            # This querier is only used for emails, so there are no user feature variants to check.
+            # Limit our metrics to ones that a user with default FV values would see.
+            [],
+        ).get_product_configuration()
 
     else:
         raise NotImplementedError()

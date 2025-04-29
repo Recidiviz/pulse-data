@@ -224,6 +224,17 @@ class OutliersMetricConfig:
     # Outcomes metric rate denominator
     rate_denominator: str = attr.ib(default="avg_daily_population")
 
+    # Only show this metric if the feature variant is enabled for this user
+    feature_variant: str | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_not_set_along_with("inverse_feature_variant"),
+    )
+
+    # Only show this metric if the feature variant is disabled for this user
+    inverse_feature_variant: str | None = attr.ib(
+        default=None, validator=attr_validators.is_not_set_along_with("feature_variant")
+    )
+
     @classmethod
     def build_from_metric(
         cls,
@@ -241,6 +252,8 @@ class OutliersMetricConfig:
         is_absconsion_metric: bool = False,
         list_table_text: str | None = None,
         rate_denominator: str = "avg_daily_population",
+        feature_variant: str | None = None,
+        inverse_feature_variant: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
             state_code=state_code,
@@ -258,6 +271,8 @@ class OutliersMetricConfig:
             is_absconsion_metric=is_absconsion_metric,
             list_table_text=list_table_text,
             rate_denominator=rate_denominator,
+            feature_variant=feature_variant,
+            inverse_feature_variant=inverse_feature_variant,
         )
 
 
@@ -329,6 +344,8 @@ class OutliersBackendConfig:
             event_observation_type=override(omit=True),
             state_code=override(omit=True),
             rate_denominator=override(omit=True),
+            feature_variant=override(omit=True),
+            inverse_feature_variant=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
@@ -655,7 +672,7 @@ class OutliersProductConfiguration:
 
     # The available specialized caseload categories for this state, plus the display name for each
     # category, broken down by category type.
-    caseload_categories: list[CaseloadCategory] = attr.ib(default={})
+    caseload_categories: list[CaseloadCategory] = attr.ib(default=[])
 
     # The string that is in the "Outliers" hover tooltip explaining what an outlier is
     outliers_hover: str = attr.ib(
@@ -687,6 +704,8 @@ class OutliersProductConfiguration:
             event_observation_type=override(omit=True),
             state_code=override(omit=True),
             rate_denominator=override(omit=True),
+            feature_variant=override(omit=True),
+            inverse_feature_variant=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 

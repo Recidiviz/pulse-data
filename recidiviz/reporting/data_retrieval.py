@@ -57,12 +57,16 @@ def filter_recipients(
         for recipient in recipients
         if all(
             [
-                recipient.district == REGION_CODES[region_code]
-                if region_code is not None
-                else True,
-                recipient.email_address in email_allowlist
-                if email_allowlist is not None
-                else True,
+                (
+                    recipient.district == REGION_CODES[region_code]
+                    if region_code is not None
+                    else True
+                ),
+                (
+                    recipient.email_address in email_allowlist
+                    if email_allowlist is not None
+                    else True
+                ),
             ]
         )
     ]
@@ -184,7 +188,12 @@ def retrieve_data(
         Provides logging for debug purposes whenever possible.
     """
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
-        outliers_config = OutliersQuerier(batch.state_code).get_product_configuration()
+        outliers_config = OutliersQuerier(
+            batch.state_code,
+            # This querier is only used for emails, so there are no user feature variants to check.
+            # Limit our metrics to ones that a user with default FV values would see.
+            feature_variants=[],
+        ).get_product_configuration()
         # Get data from querier
         results_by_supervisor = (
             retrieve_data_for_outliers_supervision_officer_supervisor(batch)

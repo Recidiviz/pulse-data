@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements routes for the Outliers Flask blueprint. """
+"""Implements routes for the Outliers Flask blueprint."""
 import logging
 import re
 from datetime import datetime
@@ -110,7 +110,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     def state_configuration(state: str) -> Response:
         state_code = StateCode(state.upper())
         user_context: UserContext = g.user_context
-        config = OutliersQuerier(state_code).get_product_configuration(user_context)
+        config = OutliersQuerier(
+            state_code, user_context.feature_variants
+        ).get_product_configuration(user_context)
 
         config_json = convert_nested_dictionary_keys(
             config.to_json(),
@@ -128,7 +130,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         if user_context.can_access_all_supervisors:
             supervisor_entities = OutliersQuerier(
-                state_code
+                state_code, user_context.feature_variants
             ).get_supervision_officer_supervisor_entities()
 
             return jsonify(
@@ -177,7 +179,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        querier = OutliersQuerier(state_code)
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
         supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
         )
@@ -242,7 +244,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        querier = OutliersQuerier(state_code)
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
         supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
         )
@@ -294,9 +296,9 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         category_type_to_compare = querier.get_product_configuration(
             user_context
         ).primary_category_type
@@ -369,14 +371,17 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
-        querier = OutliersQuerier(state_code)
+        user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
 
         primary_category_type = querier.get_product_configuration(
-            g.user_context
+            user_context
         ).primary_category_type
 
         benchmarks = querier.get_benchmarks(
-            primary_category_type, num_lookback_periods, period_end_date
+            primary_category_type,
+            num_lookback_periods,
+            period_end_date,
         )
 
         result = [
@@ -406,7 +411,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
-        querier = OutliersQuerier(state_code)
+        user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
 
         state_config = querier.get_outliers_backend_config()
         state_metrics = [metric.name for metric in state_config.get_all_metrics()]
@@ -434,7 +440,6 @@ def create_outliers_api_blueprint() -> Blueprint:
         else:
             allowed_metric_ids = state_metrics
 
-        user_context: UserContext = g.user_context
         category_type_to_compare = querier.get_product_configuration(
             user_context
         ).primary_category_type
@@ -566,9 +571,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     def officers(state: str) -> Response:
 
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id: str = user_context.user_external_id
 
         if (
@@ -613,9 +618,9 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         category_type_to_compare = querier.get_product_configuration(
             user_context
         ).primary_category_type
@@ -658,9 +663,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/user-info/<pseudonymized_id>")
     def user_info(state: str, pseudonymized_id: str) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -685,9 +690,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.patch("/<state>/user-info/<pseudonymized_id>")
     def patch_user_info(state: str, pseudonymized_id: str) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -749,7 +754,8 @@ def create_outliers_api_blueprint() -> Blueprint:
         if period_end_date is None:
             return jsonify_response("Must provide an end date", HTTPStatus.BAD_REQUEST)
 
-        querier = OutliersQuerier(state_code)
+        user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
 
         state_config = querier.get_outliers_backend_config()
         state_client_events = [event.name for event in state_config.client_events]
@@ -773,7 +779,6 @@ def create_outliers_api_blueprint() -> Blueprint:
         else:
             event_metric_ids = state_client_events
 
-        user_context: UserContext = g.user_context
         try:
             grant_endpoint_access(querier, user_context)
         except FlaskException as e:
@@ -816,9 +821,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/client/<pseudonymized_client_id>")
     def client(state: str, pseudonymized_client_id: str) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         try:
             grant_endpoint_access(querier, user_context)
         except FlaskException as e:
@@ -858,9 +863,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     def action_strategies(state: str, supervisor_pseudonymized_id: str) -> Response:
         state_code = StateCode(state.upper())
 
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -944,9 +949,9 @@ def create_outliers_api_blueprint() -> Blueprint:
         state: str, supervisor_pseudonymized_id: str
     ) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -983,9 +988,11 @@ def create_outliers_api_blueprint() -> Blueprint:
         event = ActionStrategySurfacedEvent(
             state_code=state_code.value,
             user_pseudonymized_id=request_json["user_pseudonymized_id"],
-            officer_pseudonymized_id=request_json["officer_pseudonymized_id"]
-            if "officer_pseudonymized_id" in request_json
-            else None,
+            officer_pseudonymized_id=(
+                request_json["officer_pseudonymized_id"]
+                if "officer_pseudonymized_id" in request_json
+                else None
+            ),
             action_strategy=request_json["action_strategy"],
             timestamp=datetime.now(),
         )
@@ -1005,9 +1012,9 @@ def create_outliers_api_blueprint() -> Blueprint:
         state: str, supervisor_pseudonymized_id: str
     ) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -1026,7 +1033,8 @@ def create_outliers_api_blueprint() -> Blueprint:
         vitals_metrics: List[
             VitalsMetric
         ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
-            supervisor_pseudonymized_id, user_context.can_access_all_supervisors
+            supervisor_pseudonymized_id,
+            user_context.can_access_all_supervisors,
         )
         return jsonify(
             [
@@ -1040,9 +1048,9 @@ def create_outliers_api_blueprint() -> Blueprint:
         state: str, pseudonymized_officer_id: str
     ) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
@@ -1084,10 +1092,9 @@ def create_outliers_api_blueprint() -> Blueprint:
         state: str, supervisor_pseudonymized_id: str
     ) -> Response:
         state_code = StateCode(state.upper())
-        querier = OutliersQuerier(state_code)
-        roster_ticket_service = RosterTicketService(querier=querier)
-
         user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+        roster_ticket_service = RosterTicketService(querier=querier)
 
         user_external_id = user_context.user_external_id
         email_address = user_context.email_address

@@ -31,6 +31,9 @@ def retrieve_data_for_outliers_supervision_officer_supervisor(
     Excludes any reports where there are no metrics that have outliers to highlight."""
     batch_date = utils.get_date_from_batch_id(batch)
     all_report_data = OutliersQuerier(
-        batch.state_code
+        batch.state_code,
+        # This querier is only used for emails, so there are no user feature variants to check.
+        # Limit our metrics to ones that a user with default FV values would see.
+        [],
     ).get_officer_level_report_data_for_all_officer_supervisors(end_date=batch_date)
     return {key: report for key, report in all_report_data.items() if report.metrics}

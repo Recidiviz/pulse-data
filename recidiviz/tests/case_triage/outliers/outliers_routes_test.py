@@ -71,9 +71,11 @@ from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
 from recidiviz.tests.insights.utils import load_model_from_json_fixture
 from recidiviz.tests.outliers.querier_test import (
     TEST_CLIENT_EVENT_1,
+    TEST_FEATURE_VARIANT,
     build_test_metric_1,
     build_test_metric_2,
     build_test_metric_3,
+    build_test_metric_4,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -109,6 +111,7 @@ class OutliersBlueprintTestCase(InsightsDbTestCase):
                     build_test_metric_1(StateCode.US_XX),
                     build_test_metric_2(StateCode.US_XX),
                     build_test_metric_3(StateCode.US_XX),
+                    build_test_metric_4(StateCode.US_XX),
                 ],
             ),
         )
@@ -136,6 +139,7 @@ class OutliersBlueprintTestCase(InsightsDbTestCase):
         can_access_supervision_workflows: Optional[bool] = False,
         pseudonymized_id: Optional[str] = None,
         email_address: str = "test_user@somestate.gov",
+        feature_variants: Optional[list[str]] = None,
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
@@ -152,6 +156,7 @@ class OutliersBlueprintTestCase(InsightsDbTestCase):
                         "workflowsSupervision": can_access_supervision_workflows,
                     },
                     "pseudonymizedId": pseudonymized_id,
+                    "featureVariants": {fv: {} for fv in feature_variants or []},
                 },
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
             }
@@ -166,7 +171,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         super().setUp()
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="recidiviz", allowed_states=["US_ID", "US_XX"]
+            state_code="recidiviz",
+            allowed_states=["US_ID", "US_XX"],
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
@@ -685,7 +692,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_outcomes: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx",
+            feature_variants=[TEST_FEATURE_VARIANT],
+        )
         mock_enabled_states.return_value = ["US_XX"]
         with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
@@ -755,7 +765,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", external_id="101", can_access_all_supervisors=True
+            "us_xx",
+            external_id="101",
+            can_access_all_supervisors=True,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -848,7 +861,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_benchmarks: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx",
+            feature_variants=[TEST_FEATURE_VARIANT],
+        )
         mock_enabled_states.return_value = ["US_XX"]
 
         mock_get_benchmarks.return_value = [
@@ -902,6 +918,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1011,6 +1028,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1104,6 +1122,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1220,6 +1239,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="102",
             pseudonymized_id=pseudo_id,
             can_access_all_supervisors=True,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1323,6 +1343,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="102",
             pseudonymized_id="leadershipHash",
             can_access_all_supervisors=True,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1365,6 +1386,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1490,6 +1512,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1676,6 +1699,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -1899,6 +1923,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -2084,6 +2109,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 
@@ -2274,6 +2300,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_xx",
             external_id="102",
             pseudonymized_id=pseudo_id,
+            feature_variants=[TEST_FEATURE_VARIANT],
         )
         mock_enabled_states.return_value = ["US_XX"]
 

@@ -25,7 +25,11 @@ import freezegun
 import pytz
 
 from recidiviz.common import attr_validators
-from recidiviz.common.attr_validators import is_list_of, is_set_of
+from recidiviz.common.attr_validators import (
+    is_list_of,
+    is_not_set_along_with,
+    is_set_of,
+)
 
 
 class AttrValidatorsTest(unittest.TestCase):
@@ -979,3 +983,28 @@ class TestIsReasonableDateValidator(unittest.TestCase):
             my_optional_past_date=reasonable_past_date,
             my_optional_past_datetime=reasonable_past_datetime,
         )
+
+
+class TestIsNotSetAlongWithValidator(unittest.TestCase):
+    """Tests for the is_not_set_along_with() validator."""
+
+    @attr.define
+    class _TestClass:
+        first_field: str | None = attr.ib(
+            default=None, validator=is_not_set_along_with("second_field")
+        )
+        second_field: str | None = attr.ib(default=None)
+
+    def test_is_not_set_along_with_validator_correct_values(self) -> None:
+        _ = self._TestClass(first_field="anything")
+        _ = self._TestClass(second_field="anything")
+
+    def test_is_not_set_along_with_validator_both_none(self) -> None:
+        _ = self._TestClass(first_field=None, second_field=None)
+
+    def test_is_not_set_along_with_validator_both_set(self) -> None:
+        with self.assertRaisesRegex(
+            TypeError,
+            r"first_field and second_field cannot both be set on class \[_TestClass\]",
+        ):
+            _ = self._TestClass(first_field="value 1", second_field="value 2")
