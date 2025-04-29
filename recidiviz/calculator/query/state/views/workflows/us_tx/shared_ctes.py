@@ -20,6 +20,8 @@ from recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragmen
     PERIOD_EXCLUSIONS_FRAGMENT,
 )
 
+TX_MAGIC_END_DATE = "DATE(9999,9,9)"
+
 US_TX_MAX_TERMINATION_DATES = f"""
     WITH 
     tx_most_recent_max_dates_by_supervision_period AS (
@@ -29,7 +31,7 @@ US_TX_MAX_TERMINATION_DATES = f"""
                 SID_Number,
                 Period_ID_Number,
                 CAST(RMF_TIMESTAMP AS DATETIME) as update_datetime,
-                COALESCE(DATE(Max_termination_Date), DATE(9999,9,9)) AS Max_termination_Date
+                COALESCE(DATE(Max_termination_Date), {TX_MAGIC_END_DATE}) AS Max_termination_Date
             FROM `{{project_id}}.{{us_tx_raw_data_up_to_date_dataset}}.SupervisionPeriod_latest`
             WHERE DATE(RMF_TIMESTAMP) IS NOT NULL -- only 172 cases where this is null and in those cases there's no start or end dates for the supervision periods so we'll exclude
                 AND (
@@ -42,7 +44,7 @@ US_TX_MAX_TERMINATION_DATES = f"""
     tx_max_date_by_person AS (
         SELECT 
             SID_Number, 
-            MAX(Max_termination_Date) AS tx_max_termination_Date
+            IF(MAX(Max_termination_Date) = {TX_MAGIC_END_DATE}, NULL, MAX(Max_termination_Date)) AS tx_max_termination_Date
         FROM tx_most_recent_max_dates_by_supervision_period
         GROUP BY SID_Number
     )
