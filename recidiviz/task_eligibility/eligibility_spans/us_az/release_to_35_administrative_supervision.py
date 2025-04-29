@@ -25,6 +25,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.general import not_serving_for_sexual_offense
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    community_general_risk_level_4_or_below,
+    community_violence_risk_level_6_or_below,
     mental_health_score_3_or_below,
     not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
     not_eligible_or_almost_eligible_for_overdue_for_acis_tpr,
@@ -37,7 +39,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
-    task_name="TRANSFER_TO_35_ADMINISTRATIVE_SUPERVISION",
+    task_name="RELEASE_TO_35_ADMINISTRATIVE_SUPERVISION",
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
@@ -52,7 +54,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_sexual_offense.VIEW_BUILDER,
         # TODO(#38157): Make sure F/N codes are included in the criteria
         # 22.19.1.1.4 NO Maximum, Intensive Supervision Levels, Institution G/V scores of 5 or higher
-        # TODO(#38158): Add criteria
+        community_general_risk_level_4_or_below.VIEW_BUILDER,
+        community_violence_risk_level_6_or_below.VIEW_BUILDER,
         # 22.19.1.1.5 NO SMI (Seriously Mentally Ill designation) or current high need General Mental Illness
         mental_health_score_3_or_below.VIEW_BUILDER,
         # TODO(#38159): Make sure we're including all of the relevant cases

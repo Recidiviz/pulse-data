@@ -69,7 +69,7 @@ WITH state_assessment AS (
             OR (
                 state_code != "US_MI"
                 AND (
-                    assessment_type IN ("LSIR", "STRONG_R", "STRONG_R2", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT", "LS_RNR", "CCRRA")
+                    assessment_type IN ("LSIR", "STRONG_R", "STRONG_R2", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT", "LS_RNR", "CCRRA", "AZ_GEN_RISK_LVL", "AZ_VLNC_RISK_LVL")
                     OR assessment_type LIKE "ORAS%"
                 )
             )
