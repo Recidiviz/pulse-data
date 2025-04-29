@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_IA implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
-from recidiviz.common.constants.state.external_id_types import US_IA_IGOV_DEIDENTIFIED
+from recidiviz.common.constants.state.external_id_types import US_IA_OFFENDERCD
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
@@ -27,4 +27,4 @@ class UsIaSupervisionMetricsProducerDelegate(
     """US_IA implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> str:
-        return US_IA_IGOV_DEIDENTIFIED
+        return US_IA_OFFENDERCD
