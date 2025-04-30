@@ -97,7 +97,7 @@ commmitte_plus_6mo_plus_no_infraction AS (
                                   object_type='STRING',
                                   json_column='ni.reason')} AS most_recent_infraction_date,
     FROM commmitte_plus_6mo cp6
-    LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_us_nd}}.no_level_2_or_3_infractions_for_6_months_materialized` ni
+    LEFT JOIN `{{project_id}}.task_eligibility_criteria_general.no_highest_or_second_highest_severity_incarceration_incidents_within_6_months_materialized` ni
         ON cp6.person_id = ni.person_id
             AND cp6.state_code = ni.state_code
             AND cp6.start_date < {nonnull_end_date_clause('ni.end_date')}

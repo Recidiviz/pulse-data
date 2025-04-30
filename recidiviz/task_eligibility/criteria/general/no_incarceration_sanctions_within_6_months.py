@@ -17,7 +17,7 @@
 """Spans of time when someone hasn't had an incarceration sanction in the past 6 months
 """
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    incarceration_sanctions_within_time_interval_criteria_builder,
+    incarceration_sanctions_or_incidents_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -26,11 +26,13 @@ _CRITERIA_NAME = "NO_INCARCERATION_SANCTIONS_WITHIN_6_MONTHS"
 
 _DESCRIPTION = """Spans of time when someone hasn't had an incarceration sanction in the past 6 months"""
 
-VIEW_BUILDER = incarceration_sanctions_within_time_interval_criteria_builder(
-    criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
-    date_interval=6,
-    date_part="MONTH",
+VIEW_BUILDER = (
+    incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=_DESCRIPTION,
+        date_interval=6,
+        date_part="MONTH",
+    )
 )
 
 if __name__ == "__main__":

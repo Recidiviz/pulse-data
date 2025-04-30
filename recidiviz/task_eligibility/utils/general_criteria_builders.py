@@ -966,13 +966,14 @@ def incarceration_incidents_within_time_interval_criteria_builder(
     )
 
 
-def incarceration_sanctions_within_time_interval_criteria_builder(
+def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
     criteria_name: str,
     description: str,
     date_interval: int,
     date_part: str,
     additional_excluded_outcome_types: Optional[Union[str, List[str]]] = None,
     incident_severity: Optional[Union[str, List[str]]] = None,
+    event_column: str = "outcome.date_effective",
 ) -> TaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query with spans of time when someone has not recently had an
@@ -989,6 +990,9 @@ def incarceration_sanctions_within_time_interval_criteria_builder(
             to the default list of excluded types: ["DISMISSED", "NOT_GUILTY"].
         incident_severity (str or List[str], optional): Specifies the incident severity types that should be
             counted.
+        event_column (str, optional): Specifies which field defines the event date—typically outcome.date_effective
+            (when the sanction was assigned) or incident.incident_date (when the incident occurred). Defaults to
+            outcome.date_effective.
     Returns:
         TaskCriteriaBigQueryViewBuilder: View builder for spans of time when someone has
             not recently had an incarceration sanction.
@@ -1019,7 +1023,7 @@ def incarceration_sanctions_within_time_interval_criteria_builder(
             SELECT
                 outcome.person_id,
                 outcome.state_code,
-                outcome.date_effective AS event_date
+                {event_column} as event_date,
             FROM
                 `{{project_id}}.normalized_state.state_incarceration_incident_outcome` outcome
             LEFT JOIN `{{project_id}}.normalized_state.state_incarceration_incident` incident

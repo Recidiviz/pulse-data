@@ -32,13 +32,13 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_past_half_full_term_release_date,
     incarceration_within_30_months_of_full_term_completion_date,
     no_absconsion_within_1_year,
+    no_highest_or_second_highest_severity_incarceration_incidents_within_90_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_past_85_percent_of_sentence,
     incarceration_past_parole_review_date_plus_one_month,
     incarceration_within_5_or_more_months_of_parole_review_date,
     no_escape_offense_within_1_year,
-    no_level_2_or_3_infractions_for_90_days,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -63,7 +63,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 3. 30 months before full term completion date
         incarceration_within_30_months_of_full_term_completion_date.VIEW_BUILDER,
         # 4. No Level II or III infractions in the past 90 days
-        no_level_2_or_3_infractions_for_90_days.VIEW_BUILDER,
+        no_highest_or_second_highest_severity_incarceration_incidents_within_90_days.VIEW_BUILDER,
         # 5. Reached their 85% release date (for applicable offenses)
         incarceration_past_85_percent_of_sentence.VIEW_BUILDER,
         # 6. No history of escape of absconsion in the past year

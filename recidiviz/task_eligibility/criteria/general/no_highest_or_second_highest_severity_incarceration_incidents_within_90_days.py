@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,30 +13,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
-
-"""Defines a criteria view that shows spans of time for
-which residents are within 6 months or more of having received a level 2 or 3 
-infraction.
+# ============================================================================
+"""Spans of time when someone hasn't had a second or third highest-severity incarceration sanction in the past 90 days
 """
-
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    get_infractions_criteria_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    incarceration_sanctions_or_incidents_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_NO_LEVEL_2_OR_3_INFRACTIONS_FOR_90_DAYS"
+_CRITERIA_NAME = (
+    "NO_HIGHEST_OR_SECOND_HIGHEST_SEVERITY_INCARCERATION_INCIDENTS_WITHIN_90_DAYS"
+)
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    get_infractions_criteria_builder(
-        description=__doc__,
+VIEW_BUILDER = (
+    incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        date_part="DAY",
+        description=__doc__,
         date_interval=90,
+        date_part="DAY",
+        incident_severity=["SECOND_HIGHEST", "HIGHEST"],
+        event_column="incident.incident_date",
     )
 )
 

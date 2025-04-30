@@ -340,54 +340,34 @@ def get_program_assignments_as_case_notes(
     return base_query
 
 
-def get_infractions_query(
-    date_interval: int, date_part: str, additional_columns: str = ""
-) -> str:
-    """
-    Returns a SQL query that retrieves infractions for North Dakota.
-    """
-    # TODO(#33675): Update to use ingested data
-
-    return f"""
-    SELECT 
-        peid.state_code,
-        peid.person_id,
-        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
-        DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL {date_interval} {date_part}) AS end_date,
-        FALSE AS meets_criteria,
-        RESULT_OIC_OFFENCE_CATEGORY AS infraction_category,
-        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date_infraction,
-        {additional_columns}
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        ON peid.external_id = e.ROOT_OFFENDER_ID 
-        AND peid.id_type = 'US_ND_ELITE'
-    WHERE FINDING_DESCRIPTION = 'GUILTY'
-        AND RESULT_OIC_OFFENCE_CATEGORY IN ('LVL2', 'LVL3', 'LVL2E', 'LVL3R')"""
-
-
 def get_infractions_as_case_notes() -> str:
     """
     Returns a SQL query that retrieves infractions in the past 6 months as side panel.
     """
+    # TODO(#41410): Update to use ingested data
 
     return f"""
     WITH infractions AS (
-        {get_infractions_query(
-            date_interval = 6,
-            date_part = 'MONTH',
-            additional_columns = "e.INCIDENT_DETAILS, e.OIC_HEARING_TYPE_DESC, e.FINDING_DESCRIPTION, e.INCIDENT_TYPE_DESC, peid.external_id")}
-    )
-    SELECT 
-        external_id,
+    SELECT
+        peid.external_id,
         "Infractions (in the past 6 months)" AS criteria,
-        CONCAT(OIC_HEARING_TYPE_DESC, ' - ', INCIDENT_TYPE_DESC) AS note_title,
-        CONCAT(FINDING_DESCRIPTION, ' - ', INCIDENT_DETAILS) AS note_body,
-        start_date_infraction AS event_date
-    FROM infractions i
+        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
+        DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL 6 MONTH) AS end_date,
+        CONCAT(e.OIC_HEARING_TYPE_DESC, ' - ', e.INCIDENT_TYPE_DESC) AS note_title,
+        CONCAT(e.FINDING_DESCRIPTION, ' - ', e.INCIDENT_DETAILS) AS note_body,
+        SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON peid.external_id = e.ROOT_OFFENDER_ID
+        AND peid.id_type = 'US_ND_ELITE'
+    WHERE FINDING_DESCRIPTION = 'GUILTY'
+        AND RESULT_OIC_OFFENCE_CATEGORY IN ('LVL2', 'LVL3', 'LVL2E', 'LVL3R')
+    )
+    SELECT * EXCEPT(start_date, end_date)
+    FROM infractions
     WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
-            start_date_column="i.start_date",
-            end_date_column="i.end_date")}"""
+            start_date_column="start_date",
+            end_date_column="end_date")}"""
 
 
 MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
@@ -683,54 +663,6 @@ def eligible_and_almost_eligible_minus_referrals() -> str:
             AND eae.state_code = nrr.state_code
             AND CURRENT_DATE("US/Pacific") BETWEEN nrr.start_date AND {nonnull_end_date_exclusive_clause('nrr.end_date')}
     WHERE IFNULL(nrr.meets_criteria, True)"""
-
-
-def get_infractions_criteria_builder(
-    date_interval: int, date_part: str, criteria_name: str, description: str
-) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
-    criteria_query = f"""WITH infractions AS (
-    {get_infractions_query(date_interval = date_interval, 
-                           date_part = date_part,)}
-                           ),
-    {create_sub_sessions_with_attributes(table_name='infractions')}
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        meets_criteria,
-        TO_JSON(STRUCT(
-            STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
-            MAX(start_date_infraction) AS most_recent_infraction_date
-        )) AS reason,
-        STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
-        MAX(start_date_infraction) AS most_recent_infraction_date,
-    FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4,5"""
-
-    return StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        description=description,
-        state_code=StateCode.US_ND,
-        criteria_spans_query_template=criteria_query,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="infraction_categories",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Categories of the infractions that led to the level 2 or 3 infraction.",
-            ),
-            ReasonsField(
-                name="most_recent_infraction_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of the most recent level 2 or 3 infraction.",
-            ),
-        ],
-    )
 
 
 def get_warrants_and_detainers_query(
