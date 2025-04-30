@@ -70,8 +70,8 @@ snapshots["test_request_roster_change[remove_multiple_officers] 1"] = {
     "contacts": [{"email": "requester@example.com"}],
     "ticket_attributes": {
         "_default_description_": """Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
-- Jane Officer <jane@testdomain.com>, District A (supervised by Alice Supervisor, Bob Supervisor)
-- John Officer <email not found>, District B (supervised by Bob Supervisor)
+- Jane Officer <jane@testdomain.com>, District A
+- John Officer <email not found>, District B
 
 Other staff affected by this change:
 - Alice Supervisor <alice@testdomain.com>
@@ -89,8 +89,8 @@ snapshots["test_request_roster_change[remove_multiple_officers_test] 1"] = {
     "ticket_attributes": {
         "_default_description_": """PLEASE DISREGARD. THIS IS A TEST REQUEST.
 Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
-- Jane Officer <jane@testdomain.com>, District A (supervised by Alice Supervisor, Bob Supervisor)
-- John Officer <email not found>, District B (supervised by Bob Supervisor)
+- Jane Officer <jane@testdomain.com>, District A
+- John Officer <email not found>, District B
 
 Other staff affected by this change:
 - Alice Supervisor <alice@testdomain.com>
@@ -107,7 +107,7 @@ snapshots["test_request_roster_change[remove_single_officer] 1"] = {
     "contacts": [{"email": "requester@example.com"}],
     "ticket_attributes": {
         "_default_description_": """Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
-- Jane Officer <jane@testdomain.com>, District A (supervised by Alice Supervisor, Bob Supervisor)
+- Jane Officer <jane@testdomain.com>, District A
 
 Other staff affected by this change:
 - Alice Supervisor <alice@testdomain.com>

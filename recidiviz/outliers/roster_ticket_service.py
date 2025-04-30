@@ -147,7 +147,7 @@ class RosterTicketService:
             )
 
         officer_section = "".join(
-            f"- {generate_entity_display_name(o)}, {o.supervision_district} ({generate_officer_supervised_by_text(o)})\n"
+            f"- {generate_entity_display_name(o)}, {o.supervision_district}{f' ({generate_officer_supervised_by_text(o)})' if change_type == RosterChangeType.ADD else ''}\n"
             for o in officers
         )
         supervisor_section = "".join(
