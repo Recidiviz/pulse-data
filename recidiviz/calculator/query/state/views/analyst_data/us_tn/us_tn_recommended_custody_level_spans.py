@@ -64,6 +64,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` asmt
         WHERE
             assessment_type = 'CAF'
+            AND state_code = 'US_TN'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) = 1
             
     ), union_caf_scores AS (

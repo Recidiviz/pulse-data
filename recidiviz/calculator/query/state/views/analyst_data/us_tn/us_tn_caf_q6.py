@@ -77,6 +77,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
         FROM
             `{{project_id}}.sessions.custodial_authority_sessions_materialized`
         WHERE custodial_authority = "STATE_PRISON"
+            AND state_code = "US_TN"
     ),
     /* Each critical date can be relevant 6, 12, and 18 months after the date, since those are the boundaries when
     someone's score can change. This CTE joins an array of those months as well as computing the next critical date.
