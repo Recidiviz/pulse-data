@@ -141,10 +141,7 @@ def check_source_table_schemas(
     for address, dry_run_result in changes.items():
         update_config = address_to_update_config[address]
 
-        if all(
-            update_type.is_allowed_update_for_config(update_config)
-            for update_type in dry_run_result.all_update_types
-        ):
+        if dry_run_result.are_changes_safe_to_apply_to_collection(update_config):
             safe_changes[address] = dry_run_result
         elif update_config.attempt_to_manage:
             unsafe_managed_table_changes[address] = dry_run_result

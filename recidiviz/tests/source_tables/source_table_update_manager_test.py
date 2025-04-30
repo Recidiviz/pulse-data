@@ -60,6 +60,14 @@ class TestSourceTableUpdateType(unittest.TestCase):
         for t in SourceTableUpdateType:
             self.assertIsInstance(t.is_single_existing_field_update_type, bool)
 
+    def test_can_be_applied_to_existing_tables(self) -> None:
+        for t in SourceTableUpdateType:
+            if t is SourceTableUpdateType.CREATE_TABLE:
+                # Skip - can_be_applied_to_existing_tables can only be called for
+                # existing tables.
+                continue
+            self.assertIsInstance(t.can_be_applied_to_existing_tables, bool)
+
     def test_is_allowed_update_for_config(self) -> None:
         possible_update_configs = [
             SourceTableCollectionUpdateConfig.regenerable(),
@@ -69,7 +77,10 @@ class TestSourceTableUpdateType(unittest.TestCase):
 
         for update_type in SourceTableUpdateType:
             for update_config in possible_update_configs:
-                update_type.is_allowed_update_for_config(update_config)
+                table_exists = update_type != SourceTableUpdateType.CREATE_TABLE
+                update_type.is_allowed_update_for_config(
+                    update_config, table_exists=table_exists
+                )
 
 
 class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
@@ -121,6 +132,21 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
 
         self.assertFalse(update_info.has_updates_to_make)
         self.assertEqual(update_info.all_update_types, set())
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
 
     def test_mismatch_clustering_fields(self) -> None:
         address = BigQueryAddress.from_str("dataset.table")
@@ -154,6 +180,21 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             update_info.all_update_types,
             {SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS},
         )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
 
     def test_create_table(self) -> None:
         new_schema = [self._make_schema_field("id")]
@@ -177,8 +218,23 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         self.assertEqual(
             update_info.all_update_types, {SourceTableUpdateType.CREATE_TABLE}
         )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
 
-    def test_add_fields_exact_output(self) -> None:
+    def test_add_fields(self) -> None:
         address = BigQueryAddress.from_str("dataset.table")
         deployed_schema = [self._make_schema_field("id")]
         new_schema = [
@@ -212,8 +268,23 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             update_info.all_update_types,
             {SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS},
         )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
 
-    def test_delete_fields_exact_output(self) -> None:
+    def test_delete_fields(self) -> None:
         address = BigQueryAddress.from_str("dataset.table")
 
         deployed_schema = [
@@ -247,6 +318,21 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         self.assertEqual(
             update_info.all_update_types,
             {SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS},
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
         )
 
     def test_field_type_and_mode_changes(self) -> None:
@@ -291,6 +377,21 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
                 SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
             },
         )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
 
     def test_documentation_change(self) -> None:
         address = BigQueryAddress.from_str("dataset.table")
@@ -321,6 +422,22 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
             update_info.all_update_types, {SourceTableUpdateType.DOCUMENTATION_CHANGE}
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
         )
 
     def test_combined_addition_and_field_change(self) -> None:
@@ -365,6 +482,22 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
                 SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
             },
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
         )
 
 
@@ -486,7 +619,9 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         self.source_table_update_manager.update(source_table_collection=with_clustering)
 
         with self.assertRaisesRegex(
-            SourceTableFailedToUpdateError, "has clustering fields.+that do not match"
+            SourceTableFailedToUpdateError,
+            r"Cannot apply changes of type\(s\) \['MISMATCH_CLUSTERING_FIELDS'\] to "
+            r"table \[test_dataset.test_table\].",
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(
@@ -689,7 +824,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
                 update_config=SourceTableCollectionUpdateConfig(
                     attempt_to_manage=True,
                     recreate_on_update_error=True,
-                    allow_field_deletions=False,
+                    allow_field_deletions=True,
                 ),
                 source_tables_by_address={
                     self.table_address: self.updated_table_config

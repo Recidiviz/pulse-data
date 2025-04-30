@@ -395,6 +395,14 @@ class SourceTableCollectionUpdateConfig:
     # clustering field mismatch)
     recreate_on_update_error: bool
 
+    def __attrs_post_init__(self) -> None:
+        if self.recreate_on_update_error and not self.allow_field_deletions:
+            raise ValueError(
+                "Cannot set recreate_on_update_error=True with "
+                "allow_field_deletions=False. If we can't delete columns, we can't "
+                "delete and recreate the table."
+            )
+
     @classmethod
     def externally_managed(cls) -> "SourceTableCollectionUpdateConfig":
         """Externally managed tables are used in our view graph, but whose creation /

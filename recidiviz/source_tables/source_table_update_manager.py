@@ -61,39 +61,85 @@ class SourceTableUpdateType(enum.StrEnum):
     UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
     UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
 
+    @property
+    def can_be_applied_to_existing_tables(self) -> bool:
+        """If True, updates of this type CAN be applied to an existing table (i.e. will
+        BQ allow us to make this change), regardless of whether the updates. If False,
+        this table must be deleted and re-generated to apply this update.
+        """
+
+        if self is SourceTableUpdateType.CREATE_TABLE:
+            raise ValueError(f"Unexpected change type for existing table: {self}")
+
+        if self in (
+            # Partitions and clustering fields are immutable after table creation.
+            SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+            SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+        ):
+            return False
+
+        if self in (
+            SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+            SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
+            SourceTableUpdateType.DOCUMENTATION_CHANGE,
+            # TODO(#39040): Differentiate between NULLABLE -> REQUIRED (may crash on
+            #  non-empty tables) and REQUIRED -> NULLABLE (always allowed).
+            SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+            # Some type changes cannot be applied (i.e. if all values can't be cast to
+            # INT64), but it's possible that the change will be applied successfully,
+            # so we allow it by default.
+            SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+        ):
+            return True
+
+        raise ValueError(f"Unhandled type [{self}]")
+
     def is_allowed_update_for_config(
-        self, update_config: SourceTableCollectionUpdateConfig
+        self, update_config: SourceTableCollectionUpdateConfig, table_exists: bool
     ) -> bool:
         """Returns True if this update type is allowed for a source table with the given
         |update_config|, False otherwise.
         """
-        if self in (SourceTableUpdateType.DOCUMENTATION_CHANGE):
+        if update_config == SourceTableCollectionUpdateConfig.externally_managed():
+            # We don't make any updates for ANY externally-managed tables.
+            return False
+
+        if self is SourceTableUpdateType.DOCUMENTATION_CHANGE:
             return True
 
         if update_config == SourceTableCollectionUpdateConfig.regenerable():
+            # Any change type is allowed - if BQ yells / crashes when applying this
+            # change (e.g. changing mode from NULLABLE -> REQUIRED), we'll just delete
+            # the table and recreate it.
             return True
 
-        if update_config == SourceTableCollectionUpdateConfig.externally_managed():
+        if not table_exists and self is SourceTableUpdateType.CREATE_TABLE:
+            return True
+
+        if update_config != SourceTableCollectionUpdateConfig.protected():
+            raise ValueError(f"Unexpected update_config: {update_config}")
+
+        if not table_exists:
+            raise ValueError("Expected table_exists=True at this point.")
+
+        if not self.can_be_applied_to_existing_tables:
             return False
 
-        if update_config == SourceTableCollectionUpdateConfig.protected():
-            if self in {
-                SourceTableUpdateType.CREATE_TABLE,
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
-            }:
-                return True
+        if self in {
+            SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+        }:
+            return True
 
-            if self in {
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
-                SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
-                SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
-                SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
-                SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
-            }:
-                return False
-            raise ValueError(f"Unexpected SourceTableUpdateType: {self}")
+        # These are all potentially possible to apply but could crash / result in
+        # data loss, so we disallow these.
+        if self in {
+            SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
+            SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+            SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+        }:
+            return False
 
-        raise ValueError(f"Unexpected update_config: {update_config}")
+        raise ValueError(f"Unexpected SourceTableUpdateType: {self}")
 
     @property
     def is_single_existing_field_update_type(self) -> bool:
@@ -265,6 +311,20 @@ class SourceTableWithRequiredUpdateTypes:
     @property
     def address(self) -> BigQueryAddress:
         return self.source_table_config.address
+
+    def are_changes_safe_to_apply_to_collection(
+        self, collection_update_config: SourceTableCollectionUpdateConfig
+    ) -> bool:
+        """Returns True if the required changes for this table can be applied safely
+        given the update config for this table's SourceTableCollection.
+        """
+        table_exists = self.deployed_table is not None
+        return all(
+            update_type.is_allowed_update_for_config(
+                collection_update_config, table_exists=table_exists
+            )
+            for update_type in self.all_update_types
+        )
 
     def build_updates_message(self) -> str:
         """Builds a string that tells us all the updates that should / will be applied
@@ -520,62 +580,46 @@ class SourceTableUpdateManager:
             if source_table_required_updates.has_updates_to_make
         }
 
-    # TODO(#41360): Use new _get_required_update_types_for_table() to query for all
-    #  tables that need updating, then pass SourceTableWithRequiredUpdateTypes to this
-    #  function and perform update based on that info.
     def _update_table_work_fn(
         self,
-        source_table_collection_and_address: tuple[
-            SourceTableCollection, BigQueryAddress
+        source_table_collection_and_required_updates: tuple[
+            SourceTableCollection, SourceTableWithRequiredUpdateTypes
         ],
     ) -> None:
         (
             source_table_collection,
-            source_table_address,
-        ) = source_table_collection_and_address
-        self._update_table(source_table_collection, source_table_address)
+            source_table_required_updates,
+        ) = source_table_collection_and_required_updates
+        self._update_table(source_table_collection, source_table_required_updates)
 
     def _update_table(
         self,
         source_table_collection: SourceTableCollection,
-        source_table_address: BigQueryAddress,
+        source_table_required_updates: SourceTableWithRequiredUpdateTypes,
     ) -> None:
         """Updates a single source table's schema"""
-        source_table_config = source_table_collection.source_tables_by_address[
-            source_table_address
-        ]
+        source_table_address = source_table_required_updates.address
+        source_table_config = source_table_required_updates.source_table_config
         update_config = source_table_collection.update_config
 
-        if not update_config.attempt_to_manage:
-            raise ValueError(
-                f"Attempted to update unmanaged table {source_table_address.to_str()}"
+        if not source_table_required_updates.are_changes_safe_to_apply_to_collection(
+            update_config
+        ):
+            update_type_names = sorted(
+                t.name for t in source_table_required_updates.all_update_types
+            )
+            unmanaged_str = (
+                "EXTERNALLY MANAGED " if not update_config.attempt_to_manage else ""
+            )
+            raise SourceTableFailedToUpdateError(
+                f"Cannot apply changes of type(s) {update_type_names} to "
+                f"{unmanaged_str}table [{source_table_address.to_str()}]."
             )
 
         try:
-            if self.client.table_exists(source_table_config.address):
-                # Compare schema derived from metric class to existing dataflow views and
-                # update if necessary.
-                current_table = self.client.get_table(source_table_config.address)
+            current_table = source_table_required_updates.deployed_table
+            if current_table:
                 try:
-                    if not _validate_partitioning_fields_match(
-                        current_table, source_table_config
-                    ):
-                        raise ValueError(
-                            f"Existing table: {source_table_config.address} "
-                            f"has time partitioning config [{current_table.time_partitioning}] "
-                            f" and require_partition_filter [{current_table.require_partition_filter}] that does "
-                            f"not match [{source_table_config.time_partitioning}] and [{source_table_config.require_partition_filter}]"
-                        )
-
-                    if not _validate_clustering_fields_match(
-                        current_table, source_table_config
-                    ):
-                        raise ValueError(
-                            f"Existing table: {source_table_config.address} "
-                            f"has clustering fields {current_table.clustering_fields} that do "
-                            f"not match {source_table_config.clustering_fields}"
-                        )
-
                     self.client.update_schema(
                         address=source_table_config.address,
                         desired_schema_fields=source_table_config.schema_fields,
@@ -633,7 +677,10 @@ class SourceTableUpdateManager:
         )
 
         for source_table_config in source_table_collection.source_tables:
-            self._update_table(source_table_collection, source_table_config.address)
+            updates = self._get_required_update_types_for_table(
+                source_table_collection, source_table_config.address
+            )
+            self._update_table(source_table_collection, updates)
 
     # TODO(#33293): Delete tables that don't exist in code anymore (if regenerable()
     #  collection - enforce that all collections in the same dataset have the same
@@ -648,6 +695,10 @@ class SourceTableUpdateManager:
         as tables complete"""
         logging.info("Logs can be found at %s", log_file)
         with redirect_logging_to_file(log_file):
+            updates_to_make = self.get_changes_to_apply_to_source_tables(
+                source_table_collections, log_file
+            )
+
             datasets_to_create = {
                 source_table_collection.dataset_id: source_table_collection
                 for source_table_collection in source_table_collections
@@ -673,27 +724,40 @@ class SourceTableUpdateManager:
                     ],
                 )
 
-            update_tables_result = map_fn_with_progress_bar_results(
-                work_fn=self._update_table_work_fn,
-                work_items=[
-                    (source_table_collection, source_table_config.address)
-                    for source_table_collection in source_table_collections
-                    for source_table_config in source_table_collection.source_tables
-                ],
-                max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-                overall_timeout_sec=60 * 10,  # 10 minutes
-                single_work_item_timeout_sec=60 * 10,  # 10 minutes
-                progress_bar_message="Updating table schemas...",
-            )
-
-            if update_tables_result.exceptions:
-                raise ExceptionGroup(
-                    "Failed to update table schemas, encountered the following exceptions",
-                    [
-                        exception
-                        for (_task_kwargs, exception) in update_tables_result.exceptions
-                    ],
+            if updates_to_make:
+                logging.info(
+                    "Found [%s] tables with updates to apply", len(updates_to_make)
                 )
+                update_tables_result = map_fn_with_progress_bar_results(
+                    work_fn=self._update_table_work_fn,
+                    work_items=[
+                        (
+                            source_table_collection,
+                            updates_to_make[source_table_config.address],
+                        )
+                        for source_table_collection in source_table_collections
+                        for source_table_config in source_table_collection.source_tables
+                        if source_table_config.address in updates_to_make
+                    ],
+                    max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
+                    overall_timeout_sec=60 * 10,  # 10 minutes
+                    single_work_item_timeout_sec=60 * 10,  # 10 minutes
+                    progress_bar_message="Updating table schemas...",
+                )
+
+                if update_tables_result.exceptions:
+                    raise ExceptionGroup(
+                        "Failed to update table schemas, encountered the following exceptions",
+                        [
+                            exception
+                            for (
+                                _task_kwargs,
+                                exception,
+                            ) in update_tables_result.exceptions
+                        ],
+                    )
+            else:
+                logging.info("Found no table updates to apply")
 
         if log_output:
             with open(log_file, "r", encoding="utf-8") as file:
