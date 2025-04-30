@@ -22,6 +22,7 @@ input_columns:
   InjuryLevel: STRING
   SentId: INTEGER
   InfractionType: STRING
+  ViolenceLevel: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -320,6 +321,7 @@ output:
               Disposition: Disposition
               InjuryLevel: InjuryLevel
               InfractionType: InfractionType
+              ViolenceLevel: ViolenceLevel
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
                 external_id:

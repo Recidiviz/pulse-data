@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing incarceration incident information extracted from the output of the `Disciplinary`,
- `DisciplinarySentence`, and `Incident` tables.
+`DisciplinarySentence`, and `Incident` tables.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -32,6 +32,16 @@ disciplinary_base AS (
     OffenderID,
     IncidentID,
     DisciplinaryClass,
+    CASE 
+      WHEN ViolenceLevel = '1' THEN '1: Deadly Weapon Used'
+      WHEN ViolenceLevel = '2' THEN '2: Object Used as Weapon'
+      WHEN ViolenceLevel = '3' THEN '3: Physical, No Weapons'
+      WHEN ViolenceLevel = '4' THEN '4: Verbal'
+      WHEN ViolenceLevel = '5' THEN '5: No Violence'
+      WHEN ViolenceLevel = '6' THEN '6: Sexual'
+      WHEN ViolenceLevel = '7' THEN '7: Throwing liquids/blood/waste/chemicals/urine'
+      ELSE ViolenceLevel
+    END AS ViolenceLevel,
     REGEXP_REPLACE(OffenderAccount, '                                      ', ' ') AS OffenderAccount, 
     Disposition,
     DispositionDate, 
@@ -95,7 +105,8 @@ full_inc_and_out AS (
     SentenceDate,
     InjuryLevel,
     ROW_NUMBER() OVER (PARTITION BY db.OffenderID, db.IncidentId ORDER BY IncidentDate, DispositionDate, SentenceDate, IncidentType, DisciplinaryClass, SentenceType, SentenceDays, OffenderAccount, Location) AS SentId,
-    InfractionType
+    InfractionType,
+    ViolenceLevel
   FROM disciplinary_base db
   LEFT JOIN inc_base
   USING (IncidentID)
