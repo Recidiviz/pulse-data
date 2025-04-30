@@ -43,7 +43,13 @@ WITH current_opportunity_eligibility AS (
     tes_task_query_view='complete_transfer_to_limited_supervision_jii_form_materialized',
     id_type="'US_IX_DOC'",
     eligible_and_almost_eligible_only=True,
+    additional_columns="tes.start_date"
   )}
+)
+, eligible_for_last_7_days AS (
+  SELECT *
+  FROM current_opportunity_eligibility
+  WHERE DATE_DIFF(CURRENT_DATE('US/Pacific'), start_date, DAY) >= 7
 )
 , recent_denials AS (
     SELECT 
@@ -116,7 +122,7 @@ WITH current_opportunity_eligibility AS (
     CONCAT(sr.given_names, ' ', sr.surname) AS po_name,
     cr.district,
     IFNULL(rd.fines_and_fees_denials, False) as denied_for_fines_and_fees,
-  FROM current_opportunity_eligibility opp
+  FROM eligible_for_last_7_days opp
   INNER JOIN  `{{project_id}}.{{workflows_views_dataset}}.client_record_materialized` cr
     ON cr.person_external_id = opp.external_id
       AND cr.state_code = opp.state_code
