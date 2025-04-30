@@ -180,8 +180,8 @@ def process_row(
     retries = 0
     total_tokens_used = 0
     while retries < max_retries:
-        free_text_reason = row.get("Free Text", "")
-        selected_denial_reasons = row.get("Ineligibility Reasons", [])
+        free_text_reason = row.get("free_text", "")
+        selected_denial_reasons = row.get("ineligibility_reasons", [])
         opportunity_type = row.get("opportunity_type", "")
 
         # Ensure selected_denial_reasons is a list
@@ -237,7 +237,7 @@ def process_row(
                     set(
                         reason.upper()
                         for reason in result.get("assigned_denial_reasons")
-                        + row.get("Ineligibility Reasons")
+                        + row.get("ineligibility_reasons")
                     )
                 )
 
@@ -314,10 +314,11 @@ def main(  # pylint: disable=too-many-positional-arguments
 
     gcsfs_client = GcsfsFactory.build()
 
-    intput_uri = GcsfsFilePath.from_absolute_path(
+    input_uri = GcsfsFilePath.from_absolute_path(
         f"gs://{PROCESS_DENIAL_REASONS_BUCKET}/{input_file}"
     )
-    input_data = json.loads(gcsfs_client.download_as_string(intput_uri))
+    with gcsfs_client.open(input_uri) as f:
+        input_data = [json.loads(line) for line in f]
 
     output_uri = GcsfsFilePath.from_absolute_path(
         f"gs://{PROCESS_DENIAL_REASONS_BUCKET}/{output_file}"
