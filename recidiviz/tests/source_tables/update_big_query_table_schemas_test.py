@@ -1382,6 +1382,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ne_ingest_view_results.sentence_status_snapshot",
     "us_ne_ingest_view_results.sentences_and_charges",
     "us_ne_ingest_view_results.state_person",
+    "us_ne_ingest_view_results.supervision_contacts",
     "us_ne_ingest_view_results.supervision_periods",
     "us_ne_normalized_state.state_assessment",
     "us_ne_normalized_state.state_charge",

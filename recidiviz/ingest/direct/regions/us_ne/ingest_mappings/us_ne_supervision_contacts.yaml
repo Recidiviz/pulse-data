@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  contactDashboardId: STRING
+  dateOfContact: DATE
+  paroleOfficerId: STRING
+  contactType: STRING
+  contactLocation: STRING
+  status: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - contactDashboardId
+          contacting_staff_external_id: paroleOfficerId
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: paroleOfficerId
+                $then: $literal("US_NE_PAROLE_STAFF_ID")
+          contact_date: dateOfContact
+          contact_type:
+            $enum_mapping:
+              $raw_text: contactType
+              $mappings:
+                StateSupervisionContactType.DIRECT:
+                  - Personal
+                StateSupervisionContactType.COLLATERAL:
+                  - Collateral
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
+                  - Personal/Collateral
+                StateSupervisionContactType.INTERNAL_UNKNOWN:
+                  - Administrative/Other
+                  - LE/NCJIS Check
+          contact_method:
+            $enum_mapping:
+              $raw_text: contactLocation
+              $mappings:
+                StateSupervisionContactMethod.TELEPHONE:
+                  - Phone
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - E-Mail
+                  - US Mail
+                  - Fax
+                StateSupervisionContactMethod.IN_PERSON:
+                  - Field
+                  - Employment
+                  - Office
+                  - Residence
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - Unknown
+          status:
+            $enum_mapping:
+              $raw_text: status
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - COMPLETE
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - INCOMPLETE
+          location:
+            $enum_mapping:
+              $raw_text: contactLocation
+              $mappings:
+                StateSupervisionContactLocation.FIELD:
+                  - Field
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - Office
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - Employment
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - Phone
+                  - E-Mail
+                  - US Mail
+                  - Fax
+                StateSupervisionContactLocation.RESIDENCE:
+                  - Residence
