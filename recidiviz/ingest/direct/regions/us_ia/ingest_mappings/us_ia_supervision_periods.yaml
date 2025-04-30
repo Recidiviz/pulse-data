@@ -178,49 +178,14 @@ output:
                   $in:
                     $value: Specialty
                     $options:
-                      - $literal("Intensive Supervision - Low Functioning Offenders")
-                      - $literal("Diversion Program")
-                      - $literal("Radio Frequency")
-                      - $literal("Global Positioning Satellite - Cellular")
-                      - $literal("Electronic Monitoring - Radio Frequency")
-                      - $literal("Electronic Monitoring - MEMS")
-                      - $literal("Electronic Monitoring - Global")
-                      - $literal("Global Positioning - Satellite")
-                      - $literal("Intensive Supervision")
-                      - $literal("Intensive Supervision - Team")
-                      - $literal("Intensive Supervision - Pretrial Release")
                       - $literal("Jail (Designated Site)")
-                      - $literal("Low Risk Probation")
-                      - $literal("Minimum Risk Program")
-                      - $literal("Day Reporting - Residential")
-                      - $literal("Day Reporting Supervision")
                       - $literal("Warrant")
                 $then:
                   $enum_mapping:
                     $raw_text: Specialty
                     $mappings:
-                      StateSupervisionLevel.HIGH:
-                        - Intensive Supervision - Low Functioning Offenders
-                        - Intensive Supervision
-                        - Intensive Supervision - Team
-                        - Intensive Supervision - Pretrial Release
-                      StateSupervisionLevel.DIVERSION:
-                        - Diversion Program
-                      StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
-                        - Radio Frequency
-                        - Global Positioning Satellite - Cellular
-                        - Electronic Monitoring - Radio Frequency
-                        - Electronic Monitoring - MEMS
-                        - Electronic Monitoring - Global
-                        - Global Positioning - Satellite
                       StateSupervisionLevel.IN_CUSTODY:
                         - Jail (Designated Site)
-                      StateSupervisionLevel.LIMITED:
-                        - Low Risk Probation
-                        - Minimum Risk Program
-                      StateSupervisionLevel.RESIDENTIAL_PROGRAM:
-                        - Day Reporting - Residential
-                        - Day Reporting Supervision
                       StateSupervisionLevel.WARRANT:
                         - Warrant
               - $else:
@@ -663,3 +628,6 @@ output:
                   - "Work Unit - Case Manager to Case Manager"
                   - "Work Unit - Residential to Prison"
                   - "Transferred to Release on Recognizance (Pretrial)"
+          supervision_period_metadata:
+            $normalized_values_json_dict:
+              specialty: Specialty
