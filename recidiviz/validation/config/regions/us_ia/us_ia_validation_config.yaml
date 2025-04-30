@@ -7,7 +7,7 @@ exclusions:
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
   - validation_name: overlapping_supervision_periods
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: In PA, we ingest SPs on the term level and not the person level, so someone serving concurrent sentences would have overlapping periods.
+    exclusion_reason: In IA, we ingest SPs on the term level and not the person level, so someone serving concurrent sentences would have overlapping periods.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: in_custody_sps_have_associated_ip

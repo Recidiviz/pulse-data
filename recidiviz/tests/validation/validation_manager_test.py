@@ -815,6 +815,7 @@ class TestFetchValidations(TestCase):
                 "US_AZ",
                 "US_CA",
                 "US_CO",
+                "US_IA",
                 "US_IX",
                 "US_ME",
                 "US_MI",
