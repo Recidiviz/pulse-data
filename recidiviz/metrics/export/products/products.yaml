@@ -171,4 +171,4 @@ products:
       - JII_TEXTING
     states:
       - state_code: US_IX
-        environment: staging
+        environment: production
