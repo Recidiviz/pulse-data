@@ -30,6 +30,9 @@ from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
     build_collapsed_tes_spans_view_materialized_address,
 )
+from recidiviz.task_eligibility.criteria.general.no_top_three_severity_level_supervision_violation_within_6_months import (
+    VIEW_BUILDER as VIOLATIONS_CRITERION_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -139,6 +142,18 @@ special_conditions AS (
     WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date_exclusive')}
     GROUP BY 1,2
 )
+,
+latest_high_severity_violation AS (
+    SELECT
+        state_code,
+        person_id,
+        DATE(JSON_EXTRACT_STRING_ARRAY(reason, '$.latest_violations')[OFFSET(0)]) AS latest_high_severity_violation_date,
+    FROM `{{project_id}}.task_eligibility_criteria_general.{VIOLATIONS_CRITERION_VIEW_BUILDER.view_id}_materialized`
+    -- Identify the latest high-severity violation criterion row for each person, which has the 
+    -- latest violation date (i.e., if a row exists at all, it will include a violation date, by construction
+    -- of the criterion.)
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1
+)
 SELECT
     person_id,
     external_id,
@@ -152,12 +167,13 @@ SELECT
     last_four_oras_scores.latest_assessment_date AS metadata_latest_assessment_date, -- Form + Metadata
     last_four_oras_scores.next_assessment_date AS metadata_next_assessment_date, -- Form + Metadata
     IFNULL(special_conditions.special_conditions, TO_JSON([])) AS metadata_special_conditions, -- Form + Metadata
-    -- TODO(#40171): Add latest disqualifying violation date to the view once we have a criterion
-    -- built specifically for disqualifying (more severe) violations
+    latest_high_severity_violation.latest_high_severity_violation_date AS metadata_latest_high_severity_violation_date,
 FROM eligible_clients
 LEFT JOIN last_four_oras_scores
     USING(state_code, person_id)
 LEFT JOIN special_conditions
+    USING(state_code, person_id)
+LEFT JOIN latest_high_severity_violation
     USING(state_code, person_id)
 LEFT JOIN last_case_plan_check_in_as_case_notes
     USING(external_id)

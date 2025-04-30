@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    no_supervision_violation_within_6_months,
+    no_top_three_severity_level_supervision_violation_within_6_months,
     on_parole_at_least_one_year,
     supervision_level_is_minimum,
 )
@@ -46,9 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         compliant_with_special_conditions.VIEW_BUILDER,
-        # TODO(#40171): Refine this criterion once we have more information on which
-        # violations to include/exclude.
-        no_supervision_violation_within_6_months.VIEW_BUILDER,
+        no_top_three_severity_level_supervision_violation_within_6_months.VIEW_BUILDER,
         on_parole_at_least_one_year.VIEW_BUILDER,
         # In NE, this includes 'LOW', 'DV: LOW', and 'SO: LOW'
         # TODO(#40214): Clarify whether this should use raw ORAS score instead of
