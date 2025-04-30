@@ -51,6 +51,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
+import pandas_gbq
 import seaborn as sns
 from IPython import get_ipython
 from IPython.display import HTML, display
