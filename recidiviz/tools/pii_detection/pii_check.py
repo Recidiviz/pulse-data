@@ -29,6 +29,8 @@ Use context clues to ignore obviously fake/test data:
 
 We really want to avoid false positives. Please carefully consider whether the data is indeed likely to be PII (could you use it in a sentence or to perform a search on somebody with that data)? The bar should be more likely than not before you report it back. Specifically for ID numbers, prioritize identification of formats that are widely recognized and standardized (e.g., Social Security Numbers). Be cautious about flagging simple numerical strings that could be database IDs or other non-sensitive identifiers unless there is strong contextual evidence suggesting they are PII.
 
+Also, we frequently have files that reference data fields names and descriptions, and files that describe data schemas but do not actually contain PII. Please do not report on these metadata findings but only files whose content themselves constitute PII.
+
 Return your findings as a JSON array where each object has the following keys:
 - "content": The potential PII content.
 - "type": The type of PII detected.
