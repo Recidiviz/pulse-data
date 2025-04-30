@@ -25,9 +25,6 @@ import os
 import textwrap
 from enum import Enum
 
-from google.cloud import bigquery
-from more_itertools import one
-
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.source_tables.source_table_config import (
@@ -35,12 +32,11 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import (
-    SourceTableUpdateDryRunResult,
     SourceTableUpdateManager,
-    SourceTableUpdateType,
+    SourceTableWithRequiredUpdateTypes,
 )
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
-from recidiviz.utils.types import assert_type
+from recidiviz.utils.string_formatting import fix_indent
 
 
 class SourceTableCheckType(Enum):
@@ -78,7 +74,7 @@ class SourceTableCheckType(Enum):
 
 
 def _build_table_update_results_str(
-    results: dict[BigQueryAddress, SourceTableUpdateDryRunResult],
+    results: dict[BigQueryAddress, SourceTableWithRequiredUpdateTypes],
 ) -> str:
     """Builds a helpful printout enumerating the differences found in this set of dry
     run results.
@@ -86,63 +82,10 @@ def _build_table_update_results_str(
     table_strs = []
     for address in sorted(results.keys(), key=lambda a: a.to_str()):
         result = results[address]
-        if result.update_type == SourceTableUpdateType.NO_CHANGES:
-            raise ValueError("Did not expect to find NO_CHANGES type results")
-
-        table_str = f"  * {address.to_str()} ({result.update_type.name})"
-        if result.update_type in {
-            SourceTableUpdateType.CREATE_TABLE,
-            SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
-        }:
-            table_strs.append(table_str)
+        if not result.has_updates_to_make:
             continue
 
-        deployed_schema = assert_type(result.deployed_table, bigquery.Table).schema
-        deployed_schema_fields = {f.name for f in deployed_schema}
-        new_schema = result.source_table_config.schema_fields
-        new_schema_schema_fields = {f.name for f in new_schema}
-
-        if deleted_fields := deployed_schema_fields - new_schema_schema_fields:
-            table_str += "\n    Deleted fields:"
-            for f in sorted(deleted_fields):
-                table_str += f"\n      - {f}"
-        if added_fields := new_schema_schema_fields - deployed_schema_fields:
-            table_str += "\n    Added fields:"
-            for f in sorted(added_fields):
-                table_str += f"\n      - {f}"
-
-        changes = []
-        for field_name in deployed_schema_fields.intersection(new_schema_schema_fields):
-            deployed_field = one(f for f in deployed_schema if f.name == field_name)
-            new_field = one(f for f in new_schema if f.name == field_name)
-            if deployed_field == new_field:
-                continue
-            if deployed_field.field_type != new_field.field_type:
-                changes.append(
-                    f"\n      - '{deployed_field.name}' changed TYPE from {deployed_field.field_type} --> {new_field.field_type}"
-                )
-            if deployed_field.mode != new_field.mode:
-                changes.append(
-                    f"\n      - '{deployed_field.name}' changed MODE from {deployed_field.mode} --> {new_field.mode}"
-                )
-            if deployed_field.description != new_field.description:
-                changes.append(
-                    f"\n      - '{deployed_field.name}' updated its DESCRIPTION to {new_field.description}"
-                )
-            if (
-                (deployed_field.field_type == new_field.field_type)
-                and (deployed_field.mode == new_field.mode)
-                and (deployed_field.description == new_field.description)
-            ):
-                changes.append(
-                    f"\n      - '{deployed_field.name}' has a change that is not TYPE, MODE, or DESCRIPTION."
-                )
-        if changes:
-            table_str += "\n    Changed fields:"
-            table_str += "".join(changes)
-
-        table_strs.append(table_str)
-
+        table_strs.append(fix_indent(result.build_updates_message(), indent_level=2))
     return "\n" + "\n".join(table_strs) + "\n"
 
 
@@ -180,7 +123,7 @@ def check_source_table_schemas(
         get_deploy_logs_dir(),
         f"check_source_table_schemas_{source_table_check_type.value}.log",
     )
-    changes = update_manager.dry_run(
+    changes = update_manager.get_changes_to_apply_to_source_tables(
         source_table_collections=source_table_collections, log_file=log_file
     )
     if not changes:
@@ -188,18 +131,20 @@ def check_source_table_schemas(
         return
 
     unsafe_managed_table_changes: dict[
-        BigQueryAddress, SourceTableUpdateDryRunResult
+        BigQueryAddress, SourceTableWithRequiredUpdateTypes
     ] = {}
     unsafe_unmanaged_table_changes: dict[
-        BigQueryAddress, SourceTableUpdateDryRunResult
+        BigQueryAddress, SourceTableWithRequiredUpdateTypes
     ] = {}
-    safe_changes: dict[BigQueryAddress, SourceTableUpdateDryRunResult] = {}
+    safe_changes: dict[BigQueryAddress, SourceTableWithRequiredUpdateTypes] = {}
 
     for address, dry_run_result in changes.items():
-        update_type = dry_run_result.update_type
         update_config = address_to_update_config[address]
 
-        if update_type.is_allowed_update_for_config(update_config):
+        if all(
+            update_type.is_allowed_update_for_config(update_config)
+            for update_type in dry_run_result.all_update_types
+        ):
             safe_changes[address] = dry_run_result
         elif update_config.attempt_to_manage:
             unsafe_managed_table_changes[address] = dry_run_result

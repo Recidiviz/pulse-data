@@ -17,11 +17,11 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
-from typing import Iterable
 
 import attr
 import google
 from google.cloud import bigquery
+from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -49,15 +49,17 @@ class SourceTableUpdateType(enum.StrEnum):
     """
 
     CREATE_TABLE = "create_table"
-    DOCUMENTATION_CHANGE = "documentation_change"
+
+    # Existing table table-level changes
     MISMATCH_CLUSTERING_FIELDS = "mismatch_clustering_fields"
     MISMATCH_PARTITIONING_FIELDS = "mismatch_partitioning_fields"
-    NO_CHANGES = "no_changes"
-    UPDATE_SCHEMA_WITH_CHANGES = "update_schema_with_changes"
-    UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
-    UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
     UPDATE_SCHEMA_WITH_ADDITIONS = "update_schema_with_additions"
     UPDATE_SCHEMA_WITH_DELETIONS = "update_schema_with_deletions"
+
+    # Existing table field-level changes
+    DOCUMENTATION_CHANGE = "documentation_change"
+    UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
+    UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
 
     def is_allowed_update_for_config(
         self, update_config: SourceTableCollectionUpdateConfig
@@ -65,10 +67,7 @@ class SourceTableUpdateType(enum.StrEnum):
         """Returns True if this update type is allowed for a source table with the given
         |update_config|, False otherwise.
         """
-        if self in (
-            SourceTableUpdateType.NO_CHANGES,
-            SourceTableUpdateType.DOCUMENTATION_CHANGE,
-        ):
+        if self in (SourceTableUpdateType.DOCUMENTATION_CHANGE):
             return True
 
         if update_config == SourceTableCollectionUpdateConfig.regenerable():
@@ -85,7 +84,6 @@ class SourceTableUpdateType(enum.StrEnum):
                 return True
 
             if self in {
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES,
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
                 SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
                 SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
@@ -96,6 +94,30 @@ class SourceTableUpdateType(enum.StrEnum):
             raise ValueError(f"Unexpected SourceTableUpdateType: {self}")
 
         raise ValueError(f"Unexpected update_config: {update_config}")
+
+    @property
+    def is_single_existing_field_update_type(self) -> bool:
+        """Returns True if this is an update type that pertains to modifying a single,
+        existing field without deleting it.
+        """
+        match self:
+            case (
+                self.UPDATE_SCHEMA_MODE_CHANGES
+                | self.UPDATE_SCHEMA_TYPE_CHANGES
+                | self.DOCUMENTATION_CHANGE
+            ):
+                return True
+
+            case (
+                self.CREATE_TABLE
+                | self.MISMATCH_CLUSTERING_FIELDS
+                | self.MISMATCH_PARTITIONING_FIELDS
+                | self.UPDATE_SCHEMA_WITH_ADDITIONS
+                | self.UPDATE_SCHEMA_WITH_DELETIONS
+            ):
+                return False
+
+        raise ValueError(f"Unhandled type [{self}]")
 
 
 def _validate_clustering_fields_match(
@@ -108,6 +130,21 @@ def _validate_clustering_fields_match(
         return True
 
     return current_table.clustering_fields == source_table_config.clustering_fields
+
+
+def _validate_external_data_configuration_match(
+    current_table: bigquery.Table, source_table_config: SourceTableConfig
+) -> bool:
+    if (
+        not current_table.external_data_configuration
+        and not source_table_config.external_data_configuration
+    ):
+        return True
+
+    return (
+        current_table.external_data_configuration
+        == source_table_config.external_data_configuration
+    )
 
 
 def _validate_partitioning_fields_match(
@@ -132,39 +169,210 @@ def _validate_partitioning_fields_match(
     )
 
 
-def validate_table_schema_fields(
-    table_schema_fields: dict[str, bigquery.SchemaField],
-    desired_schema_fields: dict[str, bigquery.SchemaField],
-    field_names: Iterable[str],
-) -> SourceTableUpdateType | None:
-    changes: set[SourceTableUpdateType] = set()
-    for name in field_names:
-        old_schema_field = table_schema_fields[name]
-        new_schema_field = desired_schema_fields[name]
+def get_table_field_level_required_updates(
+    *,
+    existing_table_schema_fields: dict[str, bigquery.SchemaField],
+    desired_table_schema_fields: dict[str, bigquery.SchemaField],
+    field_names_to_compare: set[str],
+) -> dict[str, set[SourceTableUpdateType]]:
+    """Given an existing table schema and desired table schema, returns a map of field
+    name to a set of all the updates we would need to make to the table schema match the
+    desired schema. The |field_names_to_compare| must be a subset of both provided
+    schemas.
+    """
+
+    if missing_in_existing := field_names_to_compare - set(
+        existing_table_schema_fields
+    ):
+        raise ValueError(
+            f"The field_names_to_compare must be a subset of "
+            f"existing_table_schema_fields. Missing fields: {missing_in_existing}"
+        )
+    if missing_in_desired := field_names_to_compare - set(desired_table_schema_fields):
+        raise ValueError(
+            f"The field_names_to_compare must be a subset of "
+            f"desired_table_schema_fields. Missing fields: {missing_in_desired}"
+        )
+
+    changes = {}
+    for field_name in field_names_to_compare:
+        old_schema_field = existing_table_schema_fields[field_name]
+        new_schema_field = desired_table_schema_fields[field_name]
+
+        field_changes = set()
 
         if old_schema_field.field_type != new_schema_field.field_type:
-            changes.add(SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES)
+            field_changes.add(SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES)
 
         if old_schema_field.mode != new_schema_field.mode:
-            changes.add(SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES)
+            field_changes.add(SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES)
 
         if old_schema_field.description != new_schema_field.description:
-            changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
+            field_changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
 
-    if len(changes) == 1:
-        return changes.pop()
+        if not field_changes:
+            if old_schema_field != new_schema_field:
+                raise ValueError(
+                    f"Field [{field_name}] has changes of an unknown type. "
+                    f"Old field: {old_schema_field}. Desired field: {new_schema_field}"
+                )
+        changes[field_name] = field_changes
+    return changes
 
-    if len(changes) > 1:
-        return SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
 
-    return None
+@attr.define(kw_only=True)
+class SourceTableWithRequiredUpdateTypes:
+    """Represents the changes we need to apply to an existing table (or table that
+    should exist) in order for it to match the provided |source_table_config|.
+    """
 
-
-@attr.define
-class SourceTableUpdateDryRunResult:
-    source_table_config: SourceTableConfig
-    update_type: SourceTableUpdateType
     deployed_table: bigquery.Table | None
+    source_table_config: SourceTableConfig
+
+    table_level_update_types: set[SourceTableUpdateType]
+    existing_field_update_types: dict[str, set[SourceTableUpdateType]]
+
+    def __attrs_post_init__(self) -> None:
+        for update_type in self.table_level_update_types:
+            if update_type.is_single_existing_field_update_type:
+                raise ValueError(
+                    f"Found single field update type [{update_type}] in "
+                    f"table_level_update_types. Updates of this type should be added "
+                    f"to existing_field_update_types."
+                )
+
+        for update_types in self.existing_field_update_types.values():
+            for update_type in update_types:
+                if not update_type.is_single_existing_field_update_type:
+                    raise ValueError(
+                        f"Found [{update_type}] in existing_field_update_types that is "
+                        f"not a single field update type. Updates of this type should "
+                        f"be added to table_level_update_types."
+                    )
+
+    @property
+    def has_updates_to_make(self) -> bool:
+        return bool(self.table_level_update_types) or bool(
+            self.existing_field_update_types
+        )
+
+    @property
+    def all_update_types(self) -> set[SourceTableUpdateType]:
+        return self.table_level_update_types | {
+            t for types in self.existing_field_update_types.values() for t in types
+        }
+
+    @property
+    def address(self) -> BigQueryAddress:
+        return self.source_table_config.address
+
+    def build_updates_message(self) -> str:
+        """Builds a string that tells us all the updates that should / will be applied
+        to a table as part of a source table update.
+        """
+        if not self.all_update_types:
+            raise ValueError(
+                f"Did not expect to build results without any update_types. Found no "
+                f"update types for {self.address.to_str()}"
+            )
+
+        sorted_update_types = sorted(self.all_update_types, key=lambda t: t.name)
+        update_types_str = ", ".join(t.name for t in sorted_update_types)
+        table_str = f"* {self.address.to_str()} ({update_types_str})"
+        if not self.deployed_table:
+            return table_str
+
+        deployed_schema = self.deployed_table.schema
+        deployed_schema_fields = {f.name for f in deployed_schema}
+        new_schema = self.source_table_config.schema_fields
+        new_schema_schema_fields = {f.name for f in new_schema}
+
+        for update_type in self.table_level_update_types:
+            if update_type is SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS:
+                if not (
+                    deleted_fields := deployed_schema_fields - new_schema_schema_fields
+                ):
+                    raise ValueError(
+                        f"Expected to find fields to delete, but all existing fields "
+                        f"({sorted(deployed_schema_fields)}) are present in the new "
+                        f"schema."
+                    )
+                table_str += "\n  Deleted fields:"
+                for f in sorted(deleted_fields):
+                    table_str += f"\n    - {f}"
+            elif update_type is SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS:
+                if not (
+                    added_fields := new_schema_schema_fields - deployed_schema_fields
+                ):
+                    raise ValueError(
+                        f"Expected to find fields to add, but all fields in the new "
+                        f"schema ({sorted(new_schema_schema_fields)}) are present in "
+                        f"the deployed table."
+                    )
+
+                table_str += "\n  Added fields:"
+                for f in sorted(added_fields):
+                    table_str += f"\n    - {f}"
+
+            elif update_type in (
+                SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+                SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+            ):
+                # We don't print any extra info when partitioning / clustering fields
+                # change.
+                pass
+
+            else:
+                raise ValueError(f"Unexpected source table update type [{update_type}]")
+
+        changes = []
+        for field_name, update_types in self.existing_field_update_types.items():
+            deployed_field = one(f for f in deployed_schema if f.name == field_name)
+            new_field = one(f for f in new_schema if f.name == field_name)
+
+            for update_type in sorted(update_types, key=lambda t: t.name):
+                if update_type is SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES:
+                    if deployed_field.field_type == new_field.field_type:
+                        raise ValueError(
+                            f"Expected field_type change for field [{field_name}] in "
+                            f"table [{self.address.to_str()}] but found both with "
+                            f"field_type [{deployed_field.field_type}]."
+                        )
+                    changes.append(
+                        f"\n    - '{deployed_field.name}' changed TYPE from "
+                        f"{deployed_field.field_type} --> {new_field.field_type}"
+                    )
+
+                elif update_type is SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES:
+                    if deployed_field.mode == new_field.mode:
+                        raise ValueError(
+                            f"Expected mode change for field [{field_name}] in "
+                            f"table [{self.address.to_str()}] but found both with "
+                            f"mode [{deployed_field.mode}]."
+                        )
+                    changes.append(
+                        f"\n    - '{deployed_field.name}' changed MODE from "
+                        f"{deployed_field.mode} --> {new_field.mode}"
+                    )
+
+                elif update_type is SourceTableUpdateType.DOCUMENTATION_CHANGE:
+                    if deployed_field.description == new_field.description:
+                        raise ValueError(
+                            f"Expected description change for field [{field_name}] in "
+                            f"table [{self.address.to_str()}] but found both with "
+                            f"description [{deployed_field.description}]."
+                        )
+                    changes.append(
+                        f"\n    - '{deployed_field.name}' updated its DESCRIPTION to {new_field.description}"
+                    )
+                else:
+                    raise ValueError(f"Unexpected update_type [{update_type}]")
+
+        if changes:
+            table_str += "\n  Changed fields:"
+            table_str += "".join(changes)
+
+        return table_str
 
 
 class SourceTableUpdateManager:
@@ -173,24 +381,26 @@ class SourceTableUpdateManager:
     def __init__(self, client: BigQueryClient | None = None) -> None:
         self.client = client or BigQueryClientImpl()
 
-    def _dry_run_table_work_fn(
+    def _get_required_update_types_for_table_work_fn(
         self,
         source_table_collection_and_address: tuple[
             SourceTableCollection, BigQueryAddress
         ],
-    ) -> tuple[BigQueryAddress, SourceTableUpdateDryRunResult]:
+    ) -> tuple[BigQueryAddress, SourceTableWithRequiredUpdateTypes]:
         (
             source_table_collection,
             source_table_address,
         ) = source_table_collection_and_address
-        return self._dry_run_table(source_table_collection, source_table_address)
+        return source_table_address, self._get_required_update_types_for_table(
+            source_table_collection, source_table_address
+        )
 
-    def _dry_run_table(
+    def _get_required_update_types_for_table(
         self,
         source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
-    ) -> tuple[BigQueryAddress, SourceTableUpdateDryRunResult]:
-        """Performs a dry run of a table update for a given config"""
+    ) -> SourceTableWithRequiredUpdateTypes:
+        """Gets the updates we want to apply to the source table with the given config."""
         source_table_config = source_table_collection.source_tables_by_address[
             source_table_address
         ]
@@ -198,91 +408,90 @@ class SourceTableUpdateManager:
         try:
             current_table = self.client.get_table(source_table_config.address)
         except google.cloud.exceptions.NotFound:
-            return source_table_config.address, SourceTableUpdateDryRunResult(
+            return SourceTableWithRequiredUpdateTypes(
                 source_table_config=source_table_config,
-                update_type=SourceTableUpdateType.CREATE_TABLE,
+                table_level_update_types={SourceTableUpdateType.CREATE_TABLE},
+                existing_field_update_types={},
                 deployed_table=None,
             )
 
+        # If the table exists, collect all the ways the table needs to be updated
+        table_level_update_types = set()
         if not _validate_partitioning_fields_match(current_table, source_table_config):
-            return source_table_config.address, SourceTableUpdateDryRunResult(
-                source_table_config=source_table_config,
-                update_type=SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
-                deployed_table=current_table,
+            table_level_update_types.add(
+                SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS
             )
 
         if not _validate_clustering_fields_match(current_table, source_table_config):
-            return source_table_config.address, SourceTableUpdateDryRunResult(
-                source_table_config=source_table_config,
-                update_type=SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
-                deployed_table=current_table,
+            table_level_update_types.add(
+                SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS
             )
 
-        table_schema_fields = {field.name: field for field in current_table.schema}
-        table_schema_field_names = set(table_schema_fields.keys())
-        desired_schema_fields = {
-            field.name: field for field in source_table_config.schema_fields
-        }
-        desired_schema_field_names = set(desired_schema_fields.keys())
+        # TODO(#41360): Add check for external data config changes. How can I tell in
+        #  advance if the updates result in a schema update?
 
-        if (
+        only_check_required_columns = (
             source_table_collection.validation_config
             and source_table_collection.validation_config.only_check_required_columns
-        ):
-            if desired_schema_field_names.issubset(table_schema_field_names):
-                found_update_type = SourceTableUpdateType.NO_CHANGES
+        )
 
-                if field_changes := validate_table_schema_fields(
-                    table_schema_fields,
-                    desired_schema_fields,
-                    desired_schema_field_names,
-                ):
-                    found_update_type = field_changes
-            else:
-                found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
+        existing_table_schema_fields = {
+            field.name: field for field in current_table.schema
+        }
+        existing_table_schema_field_names = set(existing_table_schema_fields.keys())
+        desired_table_schema_fields = {
+            field.name: field for field in source_table_config.schema_fields
+        }
+        desired_table_schema_field_names = set(desired_table_schema_fields.keys())
 
-            result = SourceTableUpdateDryRunResult(
-                source_table_config=source_table_config,
-                update_type=found_update_type,
-                deployed_table=current_table,
+        to_add = desired_table_schema_field_names - existing_table_schema_field_names
+        to_remove = existing_table_schema_field_names - desired_table_schema_field_names
+
+        if to_add:
+            table_level_update_types.add(
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
             )
-            return source_table_config.address, result
 
-        to_add = desired_schema_field_names - table_schema_field_names
-        to_remove = table_schema_field_names - desired_schema_field_names
+        if to_remove and not only_check_required_columns:
+            table_level_update_types.add(
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
+            )
 
-        if table_schema_field_names == desired_schema_field_names:
-            found_update_type = SourceTableUpdateType.NO_CHANGES
-            if field_changes := validate_table_schema_fields(
-                table_schema_fields, desired_schema_fields, table_schema_field_names
-            ):
-                found_update_type = field_changes
-        elif to_add and to_remove:
-            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
-        elif to_add:
-            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
-        else:
-            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
+        field_names_to_compare = desired_table_schema_field_names.intersection(
+            existing_table_schema_field_names
+        )
+        field_update_types = get_table_field_level_required_updates(
+            existing_table_schema_fields=existing_table_schema_fields,
+            desired_table_schema_fields=desired_table_schema_fields,
+            field_names_to_compare=field_names_to_compare,
+        )
 
-        result = SourceTableUpdateDryRunResult(
+        return SourceTableWithRequiredUpdateTypes(
             source_table_config=source_table_config,
-            update_type=found_update_type,
+            table_level_update_types=table_level_update_types,
+            existing_field_update_types={
+                field_name: update_types
+                for field_name, update_types in field_update_types.items()
+                if update_types
+            },
             deployed_table=current_table,
         )
-        return source_table_config.address, result
 
     # TODO(#33293): Check for deleted tables that aren't tracked in code anymore.
-    def dry_run(
+    def get_changes_to_apply_to_source_tables(
         self, source_table_collections: list[SourceTableCollection], log_file: str
-    ) -> dict[BigQueryAddress, SourceTableUpdateDryRunResult]:
-        """Performs a dry run update of the schemas of all tables specified by the provided list of collections,
-        printing a progress bar as tables complete"""
+    ) -> dict[BigQueryAddress, SourceTableWithRequiredUpdateTypes]:
+        """Checks for changes that should be applied to the source tables specified by
+        the provided list of collections, printing a progress bar as tables complete.
+        """
 
-        result_by_address: dict[BigQueryAddress, SourceTableUpdateDryRunResult] = {}
+        result_by_address: dict[
+            BigQueryAddress, SourceTableWithRequiredUpdateTypes
+        ] = {}
 
         with redirect_logging_to_file(log_file):
-            dry_run_result = map_fn_with_progress_bar_results(
-                work_fn=self._dry_run_table_work_fn,
+            get_changes_result = map_fn_with_progress_bar_results(
+                work_fn=self._get_required_update_types_for_table_work_fn,
                 work_items=[
                     (source_table_collection, source_table_config.address)
                     for source_table_collection in source_table_collections
@@ -291,26 +500,29 @@ class SourceTableUpdateManager:
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
                 overall_timeout_sec=60 * 10,
                 single_work_item_timeout_sec=60 * 10,
-                progress_bar_message="Performing source table dry run...",
+                progress_bar_message="Fetching source table changes...",
             )
 
-            if dry_run_result.exceptions:
-                for exception in dry_run_result.exceptions:
+            if get_changes_result.exceptions:
+                for exception in get_changes_result.exceptions:
                     logging.exception(exception)
                 raise ValueError(
-                    "Found exceptions doing a source table update dry run - check logs!"
+                    "Found exceptions while fetching source table changes - check logs!"
                 )
 
-            for _, result in dry_run_result.successes:
-                address, dry_run_result_value = result
-                result_by_address[address] = dry_run_result_value
+            for _, result in get_changes_result.successes:
+                address, source_table_required_updates = result
+                result_by_address[address] = source_table_required_updates
 
         return {
-            address: result
-            for address, result in result_by_address.items()
-            if result.update_type != SourceTableUpdateType.NO_CHANGES
+            address: source_table_required_updates
+            for address, source_table_required_updates in result_by_address.items()
+            if source_table_required_updates.has_updates_to_make
         }
 
+    # TODO(#41360): Use new _get_required_update_types_for_table() to query for all
+    #  tables that need updating, then pass SourceTableWithRequiredUpdateTypes to this
+    #  function and perform update based on that info.
     def _update_table_work_fn(
         self,
         source_table_collection_and_address: tuple[

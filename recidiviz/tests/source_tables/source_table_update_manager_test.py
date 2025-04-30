@@ -41,9 +41,9 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_update_manager import (
     SourceTableFailedToUpdateError,
-    SourceTableUpdateDryRunResult,
     SourceTableUpdateManager,
     SourceTableUpdateType,
+    SourceTableWithRequiredUpdateTypes,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -56,6 +56,10 @@ _TABLE_1 = "table_1"
 class TestSourceTableUpdateType(unittest.TestCase):
     """Tests for SourceTableUpdateType"""
 
+    def test_is_single_existing_field_update_type(self) -> None:
+        for t in SourceTableUpdateType:
+            self.assertIsInstance(t.is_single_existing_field_update_type, bool)
+
     def test_is_allowed_update_for_config(self) -> None:
         possible_update_configs = [
             SourceTableCollectionUpdateConfig.regenerable(),
@@ -66,6 +70,302 @@ class TestSourceTableUpdateType(unittest.TestCase):
         for update_type in SourceTableUpdateType:
             for update_config in possible_update_configs:
                 update_type.is_allowed_update_for_config(update_config)
+
+
+class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
+    """Tests for SourceTableWithRequiredUpdateTypes"""
+
+    def _make_schema_field(
+        self,
+        name: str,
+        field_type: str = "STRING",
+        mode: str = "NULLABLE",
+        description: str | None = None,
+    ) -> bigquery.SchemaField:
+        if description is not None:
+            return bigquery.SchemaField(
+                name=name, field_type=field_type, mode=mode, description=description
+            )
+        return bigquery.SchemaField(name=name, field_type=field_type, mode=mode)
+
+    def _make_table(
+        self, address: BigQueryAddress, schema: list[bigquery.SchemaField]
+    ) -> bigquery.Table:
+        table = bigquery.Table(
+            address.to_project_specific_address(project_id="recidiviz-456").to_str()
+        )
+        table.schema = schema
+        return table
+
+    def test_no_updates(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [self._make_schema_field("id")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=BigQueryAddress.from_str("dataset.table"),
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Did not expect to build results without any update_types"
+        ):
+            update_info.build_updates_message()
+
+        self.assertFalse(update_info.has_updates_to_make)
+        self.assertEqual(update_info.all_update_types, set())
+
+    def test_mismatch_clustering_fields(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("category"),
+        ]
+        new_schema = deployed_schema
+
+        deployed_table = self._make_table(address, deployed_schema)
+        deployed_table.clustering_fields = ["id"]
+        new_clustering_fields = ["category"]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=deployed_table,
+            table_level_update_types={SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS},
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=BigQueryAddress.from_str("dataset.table"),
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=new_clustering_fields,
+            ),
+        )
+
+        expected_message = "* dataset.table (MISMATCH_CLUSTERING_FIELDS)"
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS},
+        )
+
+    def test_create_table(self) -> None:
+        new_schema = [self._make_schema_field("id")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=None,
+            table_level_update_types={SourceTableUpdateType.CREATE_TABLE},
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=BigQueryAddress.from_str("dataset.new_table"),
+                description="A new table",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = "* dataset.new_table (CREATE_TABLE)"
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types, {SourceTableUpdateType.CREATE_TABLE}
+        )
+
+    def test_add_fields_exact_output(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("new_field"),
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types={
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+            },
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_SCHEMA_WITH_ADDITIONS)\n"
+            "  Added fields:\n"
+            "    - new_field"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS},
+        )
+
+    def test_delete_fields_exact_output(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+
+        deployed_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("old_field"),
+        ]
+        new_schema = [self._make_schema_field("id")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types={
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
+            },
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_SCHEMA_WITH_DELETIONS)\n"
+            "  Deleted fields:\n"
+            "    - old_field"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS},
+        )
+
+    def test_field_type_and_mode_changes(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [
+            self._make_schema_field("id", field_type="STRING", mode="REQUIRED"),
+        ]
+        new_schema = [
+            self._make_schema_field("id", field_type="INTEGER", mode="NULLABLE"),
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {
+                    SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+                    SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+                }
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_SCHEMA_MODE_CHANGES, UPDATE_SCHEMA_TYPE_CHANGES)\n"
+            "  Changed fields:\n"
+            "    - 'id' changed MODE from REQUIRED --> NULLABLE\n"
+            "    - 'id' changed TYPE from STRING --> INTEGER"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {
+                SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+                SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+            },
+        )
+
+    def test_documentation_change(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id", description="Old desc")]
+        new_schema = [self._make_schema_field("id", description="New desc")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.DOCUMENTATION_CHANGE}
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (DOCUMENTATION_CHANGE)\n"
+            "  Changed fields:\n"
+            "    - 'id' updated its DESCRIPTION to New desc"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types, {SourceTableUpdateType.DOCUMENTATION_CHANGE}
+        )
+
+    def test_combined_addition_and_field_change(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [
+            self._make_schema_field("id", field_type="STRING"),
+        ]
+        new_schema = [
+            self._make_schema_field("id", field_type="INTEGER"),
+            self._make_schema_field("new_field"),
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types={
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+            },
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES}
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_SCHEMA_TYPE_CHANGES, UPDATE_SCHEMA_WITH_ADDITIONS)\n"
+            "  Added fields:\n"
+            "    - new_field\n"
+            "  Changed fields:\n"
+            "    - 'id' changed TYPE from STRING --> INTEGER"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+                SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+            },
+        )
 
 
 class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
@@ -406,6 +706,8 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
 class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
     """Tests basic functionality of the SourceTableUpdateManager.dry_run function"""
 
+    wipe_emulator_data_on_teardown = False
+
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         collection = SourceTableCollection(
@@ -448,17 +750,20 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         update_manager = SourceTableUpdateManager(client=self.bq_client)
 
         with tempfile.NamedTemporaryFile() as file:
-            changes = update_manager.dry_run(
+            changes = update_manager.get_changes_to_apply_to_source_tables(
                 source_table_collections=[collection],
                 log_file=file.name,
             )
 
         self.assertEqual(
-            dict(changes),
+            changes,
             {
-                modified_table_address: SourceTableUpdateDryRunResult(
+                modified_table_address: SourceTableWithRequiredUpdateTypes(
                     source_table_config=modified_table_config,
-                    update_type=SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+                    table_level_update_types={
+                        SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+                    },
+                    existing_field_update_types={},
                     deployed_table=bigquery.Table(
                         table_ref=bigquery.TableReference(
                             bigquery.DatasetReference(
@@ -469,6 +774,14 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                     ),
                 )
             },
+        )
+
+        address = one(changes.keys())
+        expected_update_message = """* test_dataset.test_table_modified (UPDATE_SCHEMA_WITH_ADDITIONS)
+  Added fields:
+    - new_field"""
+        self.assertEqual(
+            expected_update_message, changes[address].build_updates_message()
         )
 
     def test_table_minimum_required_columns(self) -> None:
@@ -508,16 +821,19 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         update_manager = SourceTableUpdateManager(client=self.bq_client)
 
         with tempfile.NamedTemporaryFile() as file:
-            changes = update_manager.dry_run(
+            changes = update_manager.get_changes_to_apply_to_source_tables(
                 source_table_collections=[collection],
                 log_file=file.name,
             )
 
             self.assertEqual(
                 {
-                    unmodified_table_address: SourceTableUpdateDryRunResult(
+                    unmodified_table_address: SourceTableWithRequiredUpdateTypes(
                         source_table_config=modified_table_config,
-                        update_type=SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES,
+                        table_level_update_types={
+                            SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+                        },
+                        existing_field_update_types={},
                         deployed_table=bigquery.Table(
                             bigquery.TableReference(
                                 bigquery.DatasetReference(
@@ -529,5 +845,13 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                     )
                     # test_table_unmodified had no changes as all required columns existed
                 },
-                dict(changes),
+                changes,
+            )
+            address = one(changes.keys())
+
+            expected_update_message = """* test_dataset.test_table_modified (UPDATE_SCHEMA_WITH_ADDITIONS)
+  Added fields:
+    - new_field"""
+            self.assertEqual(
+                expected_update_message, changes[address].build_updates_message()
             )
