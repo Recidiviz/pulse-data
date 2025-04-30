@@ -225,7 +225,6 @@ FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
     StateCode.US_OR: {"RCDVZ_CISPRDDTA_MTRULE"},
     # TODO(#39251): Add file-level documentation for these files and remove this exemption for US_TN
     StateCode.US_TN: {
-        "JOSentence",
         "OffenderAccounts",
         "OffenderExemptions",
         "OffenderInvoices",
@@ -1443,9 +1442,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "DecisionReason3",
                 "DecisionReason4",
             ],
-        },
-        "JOIllegalReasons": {
-            "NOT FOUND IN SOURCE DOCUMENT": ["CaseYear", "CaseNumber"]
         },
         "OffenderMovement": {
             "This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.": [

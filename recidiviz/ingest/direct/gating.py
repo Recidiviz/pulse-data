@@ -73,13 +73,14 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
         "docstars_offenders": RawDataPruningExemptionReason.MIXED_INCREMENTAL_AND_HISTORICAL,
     },
     StateCode.US_TN: {
-        "Sentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
-        "ISCSentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "Address": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "Diversion": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "ISCSentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "JOCharge": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "Sentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "Staff": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "StaffEmailByAlias": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
-        "RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
-        "Address": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_PA: {
         "RECIDIVIZ_REFERENCE_staff_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,

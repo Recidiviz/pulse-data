@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  # Form the unique ID for charges and sentences.
+  OffenderID: STRING
+  ConvictionCounty: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+
+  # StateSentence information
+  SentenceImposedDate: DATE
+  SuspendedToProbation: STRING
+  LifeDeathHabitual: STRING
+  ConditionsText: STRING
+  earliest_known_sentence_status: STRING
+  earliest_known_sentenced_to: STRING
+  ConsecutiveConvictionCounty: STRING
+  ConsecutiveCaseYear: STRING
+  ConsecutiveCaseNumber: STRING
+  ConsecutiveCountNumber: STRING
+
+  # StateChargeV2 information
+  OffenseDate: DATE
+  ConvictionOffense: STRING
+  CrimeType: STRING
+  ConvictionClass: STRING
+  AssaultiveOffenseFlag: STRING
+  SexOffenderFlag: STRING
+  OffenseDescription: STRING
+
+# TODO(#41686) Understand why some consecutive sentences do not exist.
+unused_columns:
+  - ConsecutiveConvictionCounty
+  - ConsecutiveCaseYear
+  - ConsecutiveCaseNumber
+  - ConsecutiveCountNumber
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - ConvictionCounty
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - earliest_known_sentence_status
+                    - earliest_known_sentenced_to
+                    - SuspendedToProbation
+              $custom_parser: us_tn_sentencing_helpers.infer_imposed_sentence_type_from_raw_text
+          imposed_date: SentenceImposedDate
+          county_code: ConvictionCounty
+          sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
+          conditions: ConditionsText
+          is_life:
+            $in:
+              $value: LifeDeathHabitual
+              $options:
+                - $literal("L") # Life
+                - $literal("H") # Habitual, an old value equivalent to life
+                - $literal("W") # Life without parole
+          is_capital_punishment:
+            $equal:
+              - LifeDeathHabitual
+              - $literal("D")
+          # TODO(#41686) Understand why some consecutive sentences do not exist.
+          # Uncomment this to include them when we do!
+          # parent_sentence_external_id_array:
+          # # $conditional:
+          # #   - $if:
+          # #       $not_null: ConsecutiveCaseNumber
+          # #     $then:
+          # #       $concat:
+          # #         $separator: "@@"
+          # #         $values:
+          # #           - OffenderID
+          # #           - ConsecutiveConvictionCounty
+          # #           - ConsecutiveCaseYear
+          # #           - ConsecutiveCaseNumber
+          # #           - ConsecutiveCountNumber
+          charges:
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                offense_date: OffenseDate
+                county_code: ConvictionCounty
+                statute: ConvictionOffense
+                description: OffenseDescription
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: CrimeType
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - F
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - M
+                classification_subtype: ConvictionClass
+                is_violent:
+                  $equal:
+                    - AssaultiveOffenseFlag
+                    - $literal("Y")
+                is_sex_offense:
+                  $equal:
+                    - SexOffenderFlag
+                    - $literal("Y")
