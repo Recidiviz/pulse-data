@@ -51,6 +51,7 @@ def mock_entities_fixture() -> MockEntities:
     officers = [
         SupervisionOfficer(
             external_id="off1",
+            email="jane@testdomain.com",
             full_name={"given_names": "Jane", "surname": "Officer"},
             supervision_district="District A",
             supervisor_external_ids=["sup1", "sup2"],
@@ -63,6 +64,7 @@ def mock_entities_fixture() -> MockEntities:
         ),
         SupervisionOfficer(
             external_id="off3",
+            email="sam@testdomain.com",
             full_name={"given_names": "Sam", "surname": "Officer"},
             supervision_district="District C",
             supervisor_external_ids=[],
@@ -73,6 +75,7 @@ def mock_entities_fixture() -> MockEntities:
     supervisors = [
         SupervisionOfficerSupervisor(
             external_id="sup1",
+            email="alice@testdomain.com",
             full_name={"given_names": "Alice", "surname": "Supervisor"},
         ),
         SupervisionOfficerSupervisor(

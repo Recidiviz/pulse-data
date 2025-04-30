@@ -17,7 +17,7 @@
 """Roster Ticket Service that handles ticket requests between Insights and Intercom"""
 
 from functools import cached_property
-from typing import Callable, Iterable, List, TypeVar
+from typing import Callable, Iterable, List, TypeVar, Union
 
 import attrs
 import requests
@@ -117,7 +117,6 @@ class RosterTicketService:
     ) -> str:
         """Constructs a formatted ticket description."""
 
-        # Prepare mappings
         supervisor_map = {s.external_id: s for s in supervisors}
         officer_to_supervisors = {
             o: [
@@ -128,32 +127,35 @@ class RosterTicketService:
             for o in officers
         }
 
-        # Helper formatters
-        def format_supervised_by_text(o: SupervisionOfficer) -> str:
-            supervisors_for_officer = officer_to_supervisors[o]
+        def generate_entity_display_name(
+            entity: Union[SupervisionOfficer, SupervisionOfficerSupervisor],
+            include_email: bool = True,
+        ) -> str:
+            name = PersonName(**entity.full_name).formatted_first_last
             return (
-                "no supervisors listed"
-                if not supervisors_for_officer
-                else f"supervised by {', '.join(PersonName(**s.full_name).formatted_first_last for s in supervisors_for_officer)}"
+                f"{name} <{entity.email or 'email not found'}>"
+                if include_email
+                else name
             )
 
-        def format_officer_into_bullet_point(o: SupervisionOfficer) -> str:
-            return f"- {PersonName(**o.full_name).formatted_first_last}, {o.supervision_district} ({format_supervised_by_text(o)})\n"
+        def generate_officer_supervised_by_text(o: SupervisionOfficer) -> str:
+            supervisors = officer_to_supervisors.get(o, [])
+            return (
+                "no supervisors listed"
+                if not supervisors
+                else f"supervised by {', '.join(generate_entity_display_name(s, include_email=False) for s in supervisors)}"
+            )
 
-        def format_supervisor_into_bullet_point(s: SupervisionOfficerSupervisor) -> str:
-            return f"- {PersonName(**s.full_name).formatted_first_last}\n"
-
-        # Contextual values
+        officer_section = "".join(
+            f"- {generate_entity_display_name(o)}, {o.supervision_district} ({generate_officer_supervised_by_text(o)})\n"
+            for o in officers
+        )
+        supervisor_section = "".join(
+            f"- {generate_entity_display_name(s)}\n" for s in supervisors
+        )
         action = "added to" if change_type == RosterChangeType.ADD else "removed from"
         officer_label = self._get_querier_product_config.supervision_officer_label
 
-        # Build sections
-        officer_section = "".join(map(format_officer_into_bullet_point, officers))
-        supervisor_section = "".join(
-            map(format_supervisor_into_bullet_point, supervisors)
-        )
-
-        # Final message
         return (
             f"{requester_name} has requested that the following {officer_label}(s) "
             f"be {action} the caseload of {target_name}:\n"
