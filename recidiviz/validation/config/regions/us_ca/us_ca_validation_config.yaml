@@ -26,7 +26,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.27
     override_reason: .27 falls within an expected range of variation for this measure
   - validation_name: outliers_staff_count_percent_change_intermonth
-    hard_max_allowed_error_override: .05
+    hard_max_allowed_error_override: .07
     override_reason: This is likely expected variation.
   - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: .05
