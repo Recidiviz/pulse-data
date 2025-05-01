@@ -2348,6 +2348,9 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         table.external_data_configuration = external_data_config
+        # Make sure the schema on the table and schema in the config match, in case the
+        # schema on the deployed table has been changed out of band.
+        table.schema = external_data_config.schema
         return self.client.update_table(table, ["external_data_configuration"])
 
     def set_table_expiration(
