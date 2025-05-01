@@ -16,40 +16,32 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which a client
-requires a scheduled home contact, taking into account both standard and
-critical understaffing policies.
+requires a scheduled home contact and is NOT associated with the critical
+understaffing policy, which has separate requirements for quarterly home visits.
 """
 
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    needs_scheduled_home_contact_not_quarterly_critical_understaffing,
-    needs_scheduled_home_contact_quarterly_critical_understaffing,
+    needs_scheduled_home_contact_standard_policy,
+    not_quarterly_home_contact_required_and_supervision_officer_in_critically_understaffed_location,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_HOME_CONTACT"
+_CRITERIA_NAME = (
+    "US_TX_NEEDS_SCHEDULED_HOME_CONTACT_NOT_QUARTERLY_CRITICAL_UNDERSTAFFING"
+)
 
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
+VIEW_BUILDER = AndTaskCriteriaGroup(
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
-        needs_scheduled_home_contact_not_quarterly_critical_understaffing.VIEW_BUILDER,
-        needs_scheduled_home_contact_quarterly_critical_understaffing.VIEW_BUILDER,
+        needs_scheduled_home_contact_standard_policy.VIEW_BUILDER,
+        not_quarterly_home_contact_required_and_supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=[
-        "frequency",
-        "type_of_contact",
-        "contact_count",
-        "contact_due_date",
-        "last_contact_date",
-        "contact_type",
-        "officer_in_critically_understaffed_location",
-        "overdue_flag",
-        "period_type",
-    ],
+    allowed_duplicate_reasons_keys=["frequency", "type_of_contact"],
 ).as_criteria_view_builder
 
 if __name__ == "__main__":
