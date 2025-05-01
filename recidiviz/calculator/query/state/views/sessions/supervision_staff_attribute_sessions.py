@@ -237,7 +237,7 @@ WITH all_staff_attribute_periods AS (
         a.state_code,
         b.staff_id,
         a.start_date,
-        a.end_date,
+        a.end_date_exclusive AS end_date,
         NULL AS supervision_district_id,
         NULL AS supervision_district_name,
         NULL AS supervision_office_id,
@@ -253,10 +253,10 @@ WITH all_staff_attribute_periods AS (
         NULL AS specialized_caseload_type,
         NULL AS supervisor_staff_external_id,
         NULL AS supervisor_staff_id,
-        a.caseload_count > 0 AS is_supervision_officer,
+        a.total_caseload_count > 0 AS is_supervision_officer,
         NULL AS is_supervision_officer_supervisor,
         NULL AS is_in_critically_understaffed_location,
-    FROM `{{project_id}}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized` a
+    FROM `{{project_id}}.sessions.supervision_officer_caseload_count_spans_materialized` a
     INNER JOIN
         `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
     ON

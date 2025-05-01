@@ -29,18 +29,15 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
 )
 from recidiviz.aggregated_metrics.configuration import collections as collections_module
-from recidiviz.aggregated_metrics.supervision_officer_caseload_count_spans import (
-    SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
-)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.utils.immutable_key_dict import ImmutableKeyDict
 
 
-def collect_aggregated_metrics_collection_configs() -> list[
-    AggregatedMetricsCollection
-]:
+def collect_aggregated_metrics_collection_configs() -> (
+    list[AggregatedMetricsCollection]
+):
     collections = ModuleCollectorMixin.collect_top_level_attributes_in_module(
         attribute_type=AggregatedMetricsCollection,
         dir_module=collections_module,
@@ -92,7 +89,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     """
     all_collections = collect_aggregated_metrics_collection_configs()
     return [
-        SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         *collect_assignment_sessions_view_builders(),
         *collect_assignments_by_time_period_builders_for_collections(all_collections),
         *get_all_aggregated_metrics_collections_view_builders(all_collections),

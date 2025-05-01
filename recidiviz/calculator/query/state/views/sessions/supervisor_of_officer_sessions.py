@@ -32,9 +32,9 @@ SUPERVISOR_OF_OFFICER_SESSIONS_DESCRIPTION = """View containing periods of time 
 
 SUPERVISOR_OF_OFFICER_SESSIONS_QUERY_TEMPLATE = f"""
     WITH officers_with_caseload_spans AS (
-        SELECT state_code, officer_id, start_date, end_date
-        FROM `{{project_id}}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized`
-        WHERE caseload_count > 0
+        SELECT state_code, officer_id, start_date, end_date_exclusive
+        FROM `{{project_id}}.sessions.supervision_officer_caseload_count_spans_materialized`
+        WHERE total_caseload_count > 0
     )
     , supervisor_spans AS (
         SELECT s.state_code, supervisor_staff_external_id, id.external_id AS officer_id, start_date, end_date, TRUE AS is_supervision_officer_supervisor
@@ -48,7 +48,7 @@ SUPERVISOR_OF_OFFICER_SESSIONS_QUERY_TEMPLATE = f"""
             table_2_name="supervisor_spans",
             index_columns=["state_code", "officer_id"],
             table_2_columns=["supervisor_staff_external_id", "is_supervision_officer_supervisor"],
-            table_1_end_date_field_name="end_date",
+            table_1_end_date_field_name="end_date_exclusive",
             table_2_end_date_field_name="end_date"
         )}
     )

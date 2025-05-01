@@ -130,7 +130,7 @@ SELECT *, TRUE AS in_signed_state FROM `{project_id}.sessions.system_sessions_ma
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """
-SELECT *, end_date AS end_date_exclusive FROM `{project_id}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized`
+SELECT * FROM `{project_id}.sessions.supervision_officer_caseload_count_spans_materialized`
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,

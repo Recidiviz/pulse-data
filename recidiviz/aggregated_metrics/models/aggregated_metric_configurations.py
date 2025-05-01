@@ -159,9 +159,11 @@ AVG_CRITICAL_CASELOAD_SIZE = DailyAvgSpanValueMetric(
     "officer has critical caseload size",
     span_selector=SpanSelector(
         span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
-        span_conditions_dict={"caseload_count_above_critical_threshold": ["true"]},
+        span_conditions_dict={
+            "active_caseload_count_above_critical_threshold": ["true"]
+        },
     ),
-    span_value_numeric="caseload_count",
+    span_value_numeric="active_caseload_count",
 )
 
 AVG_DAILY_CASELOAD_OFFICER = DailyAvgSpanValueMetric(
@@ -172,7 +174,7 @@ AVG_DAILY_CASELOAD_OFFICER = DailyAvgSpanValueMetric(
         span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
         span_conditions_dict={},
     ),
-    span_value_numeric="caseload_count",
+    span_value_numeric="active_caseload_count",
 )
 
 AVG_DAILY_POPULATION = DailyAvgSpanCountMetric(
@@ -1880,7 +1882,9 @@ PROP_PERIOD_WITH_CRITICAL_CASELOAD = DailyAvgSpanCountMetric(
     "caseload size",
     span_selector=SpanSelector(
         span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
-        span_conditions_dict={"caseload_count_above_critical_threshold": ["true"]},
+        span_conditions_dict={
+            "active_caseload_count_above_critical_threshold": ["true"]
+        },
     ),
 )
 

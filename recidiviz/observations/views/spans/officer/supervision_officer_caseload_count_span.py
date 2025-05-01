@@ -31,19 +31,24 @@ SELECT
     state_code,
     officer_id,
     start_date,
-    end_date,
-    caseload_count,
-    caseload_count >= 10 AS caseload_count_above_critical_threshold,
-FROM `{project_id}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized`
+    end_date_exclusive,
+    active_caseload_count,
+    active_caseload_count >= 10 AS active_caseload_count_above_critical_threshold,
+    total_caseload_count
+FROM `{project_id}.sessions.supervision_officer_caseload_count_spans_materialized`
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
     span_type=SpanType.SUPERVISION_OFFICER_CASELOAD_COUNT_SPAN,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["caseload_count", "caseload_count_above_critical_threshold"],
+    attribute_cols=[
+        "active_caseload_count",
+        "active_caseload_count_above_critical_threshold",
+        "total_caseload_count",
+    ],
     span_start_date_col="start_date",
-    span_end_date_col="end_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":
