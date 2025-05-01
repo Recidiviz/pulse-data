@@ -30,6 +30,7 @@ const sidebarComponentNames = [
   "UsMoRestrictiveHousing",
   "UsTnCommonlyUsedOverrideCodes",
   "UsMiRestrictiveHousing",
+  "UsNeORASScores",
 
   // Resident-related components
   "Incarceration",
@@ -49,6 +50,7 @@ const sidebarComponentNames = [
   "ClientEmployer",
   "Milestones",
   "ClientProfileDetails",
+  "ActiveSentences",
   "UsUtDates",
 ];
 
