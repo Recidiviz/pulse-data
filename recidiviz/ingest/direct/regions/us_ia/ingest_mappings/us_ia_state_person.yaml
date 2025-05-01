@@ -11,6 +11,7 @@ input_columns:
   Race: STRING
   EthnicOrigin: STRING
   BirthDt: DATE
+  PhoneNo: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -51,3 +52,4 @@ output:
                 StateEthnicity.HISPANIC: Hispanic
                 StateEthnicity.EXTERNAL_UNKNOWN: Unknown
                 StateEthnicity.NOT_HISPANIC: Non-Hispanic
+    current_phone_number: PhoneNo

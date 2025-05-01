@@ -23,16 +23,28 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- This CTE gets the phone numbers associated with the most recent address for each JII
+most_recent_phone_number AS (
+    SELECT
+        OffenderCd,
+        CellPhoneNo,
+        ResidencePhoneNo
+    FROM {IA_DOC_Addresses}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY OffenderCd ORDER BY COALESCE(CAST(AddressEndDt AS DATETIME), DATE(9999,9,9)) DESC, CAST(AddressStartDt AS DATETIME) DESC, CAST(EnteredDt AS DATETIME) DESC) = 1
+)
 SELECT 
     OffenderCd,
     OffenderFirstNm,
     OffenderMiddleNm,
     OffenderLastNm,
-    NULLIF(Sex,"NULL") AS Sex,
-    NULLIF(Race, "NULL") AS Race,
-    NULLIF(EthnicOrigin, "NULL") AS EthnicOrigin,
-    DATE(NULLIF(BirthDt, "NULL")) AS BirthDt
+    Sex,
+    Race,
+    EthnicOrigin,
+    DATE(BirthDt) AS BirthDt,
+    COALESCE(CellPhoneNo, ResidencePhoneNo) AS PhoneNo
 FROM {IA_DOC_Offender_Details}
+LEFT JOIN most_recent_phone_number USING(OffenderCd)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
