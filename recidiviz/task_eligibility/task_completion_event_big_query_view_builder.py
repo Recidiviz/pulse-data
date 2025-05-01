@@ -108,6 +108,10 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY = (
         "TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY"
     )
+    OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION = (
+        "OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION"
+    )
+    OVERRIDE_TO_LOW_SUPERVISION = "OVERRIDE_TO_LOW_SUPERVISION"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -142,6 +146,8 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.EARLY_DISCHARGE,
             TaskCompletionEventType.FULL_TERM_DISCHARGE,
             TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION,
+            TaskCompletionEventType.OVERRIDE_TO_LOW_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
@@ -218,12 +224,14 @@ class TaskCompletionEventType(Enum):
             return DecarceralImpactType.RELEASE_TO_LIBERTY_FROM_SUPERVISION
         if self in [
             TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.OVERRIDE_TO_LOW_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
         ]:
             return DecarceralImpactType.DOWNGRADE_SUPERVISION_LEVEL
         if self in [
+            TaskCompletionEventType.OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION_2025_POLICY,
             TaskCompletionEventType.TRANSFER_TO_UNSUPERVISED_PAROLE,
@@ -265,6 +273,8 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_FURLOUGH,
             TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
+            TaskCompletionEventType.OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION,
+            TaskCompletionEventType.OVERRIDE_TO_LOW_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
@@ -329,6 +339,8 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
             TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION,
+            TaskCompletionEventType.OVERRIDE_TO_LOW_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
