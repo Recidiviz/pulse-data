@@ -36,6 +36,7 @@
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragments import (
     PERIOD_EXCLUSIONS_FRAGMENT,
+    PHASES_FRAGMENT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -372,7 +373,7 @@ combined as (
     LEFT JOIN cleaned_assessment_cte a
         ON a.Period_ID_Number = ep.Period_ID_Number
         AND a.update_date = ep.start_date
-    WHERE ep.start_date is not null
+    WHERE ep.start_date IS NOT NULL
 ),
 -- Uses the LAST_VALUE function to fill in the gaps between period characterisitc 
 -- changes.
@@ -418,18 +419,42 @@ fix_end_date AS
         case_type,
         assessment_level,
     FROM lookback_cte
-    WHERE start_date != "0001-01-01"
+),
+{PHASES_FRAGMENT},
+-- Assigns the most recent phase to Subtance abuse open periods. There is a ticket
+-- #TODO(#41754) to eventually refactor the Phases logic to have it be historically 
+-- accurate as well.
+periods_with_phases AS (
+    SELECT
+        SID_Number,
+        Period_ID_Number,
+        start_date,
+        end_date,
+        status,
+        in_custody_flag,
+        supervision_officer,
+        assessment_level,
+        CASE 
+            WHEN case_type = "Substance abuse" AND end_date IS NULL 
+                THEN CONCAT(case_type, " - ", phase)
+            ELSE case_type
+        END AS case_type
+    FROM fix_end_date
+    LEFT JOIN client_phases
+        USING (SID_Number)
 ),
 -- Aggregate above periods by period attributes
 period_info_agg AS (
     {aggregate_adjacent_spans(
-        table_name='fix_end_date',
+        table_name='periods_with_phases',
         attribute=['assessment_level','case_type','Supervision_Officer','status', 'in_custody_flag'],
         session_id_output_name='period_info_agg',
         end_date_field_name='end_date',
         index_columns=['Period_ID_Number','SID_Number']
     )}
-)
+),
+-- Assign a row number to each period and exclude certain statuses
+final_periods AS (
     SELECT
         SID_Number,
         Period_ID_Number,
@@ -444,7 +469,10 @@ period_info_agg AS (
     FROM period_info_agg
     WHERE 
         status IS NULL
-        OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
+        OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT})
+SELECT
+    *
+FROM final_periods
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tx",

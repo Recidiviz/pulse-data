@@ -124,6 +124,11 @@ output:
                         - Sex offender
                       StateSupervisionCaseType.DRUG_COURT:
                         - Substance abuse
+                        - Substance abuse - PHASE 1
+                        - Substance abuse - PHASE 2
+                        - Substance abuse - PHASE 3
+                        - Substance aubse - PHASE 1B
+                        - Substance abuse - COMPLETED
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
                         - Administrative
                         - Annual
