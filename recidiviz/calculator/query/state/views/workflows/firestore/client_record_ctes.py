@@ -464,6 +464,31 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
     ),
 """
 
+_CLIENT_RECORD_ACTIVE_SENTENCES_CTE = f"""
+    active_sentences AS (
+        SELECT
+            sentence_period.state_code,
+            sentence_period.person_id,
+            TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(
+                        sentence_period.sentence_id,
+                        sentence.date_imposed,
+                        sentence.county_code,
+                        sentence.offense_type,
+                        sentence.is_sex_offense
+                    ) ORDER BY sentence.date_imposed ASC, sentence_period.sentence_id ASC
+                )
+            ) AS active_sentences,
+        FROM `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` sentence_period
+        LEFT JOIN `{{project_id}}.sessions.sentences_preprocessed_materialized` sentence
+        USING(state_code, person_id, sentence_id)
+        WHERE 
+            {today_between_start_date_and_nullable_end_date_clause('sentence_period.start_date', 'sentence_period.end_date_exclusive')}
+        GROUP BY 1,2
+    ),
+"""
+
 
 def years_and_months_template(column_name: str) -> str:
     return f"""
@@ -954,6 +979,7 @@ _CLIENTS_CTE = """
             last_payment_amount,
             spc.special_conditions_on_current_sentences AS special_conditions,
             bc.board_conditions,
+            active_sentences.active_sentences,
         FROM join_clients c
         LEFT JOIN stable_person_external_ids
             USING (person_id)
@@ -964,6 +990,8 @@ _CLIENTS_CTE = """
         LEFT JOIN board_conditions bc
             USING (person_id)
         LEFT JOIN employment_info ei 
+            USING (person_id)
+        LEFT JOIN active_sentences
             USING (person_id)
         LEFT JOIN milestones mi 
             USING (person_id)
@@ -993,6 +1021,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_BOARD_CONDITIONS_CTE}
     {_CLIENT_RECORD_EMAIL_ADDRESSES_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
+    {_CLIENT_RECORD_ACTIVE_SENTENCES_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
     {_CLIENT_RECORD_INCLUDE_CLIENTS_CTE}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
