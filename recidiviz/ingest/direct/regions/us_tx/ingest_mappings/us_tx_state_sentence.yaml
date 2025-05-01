@@ -58,3 +58,5 @@ output:
                 counts: $literal("1")
                 #All charges we recieve are convicted charges
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
+                # This is the sentenced date rather than the charged date but close enough for use in criteria
+                date_charged: OFF_SENT_DATE
