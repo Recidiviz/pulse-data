@@ -30,3 +30,9 @@ schema:
     type: DATE
     mode: NULLABLE
 clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-snooze-status-archive/*.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

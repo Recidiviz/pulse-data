@@ -48,6 +48,7 @@ from google.api_core.client_options import ClientOptions
 from google.api_core.future.polling import PollingFuture
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import bigquery, exceptions
+from google.cloud.bigquery import ExternalConfig
 from google.cloud.bigquery_datatransfer import (
     CheckValidCredsRequest,
     DataTransferServiceClient,
@@ -338,16 +339,17 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_table(
-        self, table: bigquery.Table, *, overwrite: bool = False
+        self, table: bigquery.Table, *, exists_ok: bool = False
     ) -> bigquery.Table:
-        """Creates a new table in big query. If |overwrite| is False and the table
+        """Creates a new table in big query. If |exists_ok| is False and the table
         already exists, raises an AlreadyExists error. Once the table is created, applies row-level permissions
         to the table if applicable.
 
         Args:
             table: The Table to create.
-            overwrite: Whether to overwrite a table if one already exists where the
-                table is to be created.
+            exists_ok: Whether we can overwrite a table if one already exists where the
+                table is to be created. If a table exists and exists_ok=False, we will
+                throw.
 
         Returns:
             The Table that was just created.
@@ -867,6 +869,45 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def create_external_table(
+        self,
+        *,
+        address: BigQueryAddress,
+        external_data_config: ExternalConfig,
+        allow_auto_detect_schema: bool,
+    ) -> bigquery.Table:
+        """Creates an external table with the given external configuration. For more
+        info about external tables, see:
+        https://cloud.google.com/bigquery/docs/external-tables.
+
+        Args:
+            address: The address of the table to be created.
+            external_data_config: The configuration for the new external table.
+            allow_auto_detect_schema: If False, this function throws if
+                external_data_config.autodetect is True or external_data_config.schema
+                is empty.
+        """
+
+    @abc.abstractmethod
+    def update_external_table(
+        self,
+        *,
+        address: BigQueryAddress,
+        external_data_config: ExternalConfig,
+        allow_auto_detect_schema: bool,
+    ) -> bigquery.Table:
+        """Updates the configuration of an external table. For more info about external
+        tables, see: https://cloud.google.com/bigquery/docs/external-tables.
+
+        Args:
+            address: The address of the table to be updated.
+            external_data_config: The configuration to update to.
+            allow_auto_detect_schema: If False, this function throws if
+                external_data_config.autodetect is True or external_data_config.schema
+                is empty.
+        """
+
+    @abc.abstractmethod
     def update_schema(
         self,
         *,
@@ -1320,9 +1361,9 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.get_table(table_ref)
 
     def create_table(
-        self, table: bigquery.Table, *, overwrite: bool = False
+        self, table: bigquery.Table, *, exists_ok: bool = False
     ) -> bigquery.Table:
-        created_table = self.client.create_table(table, exists_ok=overwrite)
+        created_table = self.client.create_table(table, exists_ok=exists_ok)
 
         try:
             self.apply_row_level_permissions(created_table)
@@ -2256,6 +2297,59 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Creating table %s", address.to_str())
         return self.create_table(table)
 
+    def create_external_table(
+        self,
+        *,
+        address: BigQueryAddress,
+        external_data_config: ExternalConfig,
+        allow_auto_detect_schema: bool,
+    ) -> bigquery.Table:
+        if not allow_auto_detect_schema:
+            if external_data_config.autodetect:
+                raise ValueError(
+                    f"Cannot set autodetect=True for external table "
+                    f"[{address.to_str()}] when allow_auto_detect_schema=False."
+                )
+            if not external_data_config.schema:
+                raise ValueError(
+                    f"Must provide a non-empty schema for [{address.to_str()}] when "
+                    f"allow_auto_detect_schema=False."
+                )
+
+        table_ref = self._table_ref_for_address(address)
+        table = bigquery.Table(table_ref)
+        table.external_data_configuration = external_data_config
+        return self.create_table(table, exists_ok=False)
+
+    def update_external_table(
+        self,
+        *,
+        address: BigQueryAddress,
+        external_data_config: ExternalConfig,
+        allow_auto_detect_schema: bool,
+    ) -> bigquery.Table:
+        if not allow_auto_detect_schema:
+            if external_data_config.autodetect:
+                raise ValueError(
+                    f"Cannot set autodetect=True for external table "
+                    f"[{address.to_str()}] when allow_auto_detect_schema=False."
+                )
+            if not external_data_config.schema:
+                raise ValueError(
+                    f"Must provide a non-empty schema for [{address.to_str()}] when "
+                    f"allow_auto_detect_schema=False."
+                )
+
+        table = self.get_table(address)
+        if not table.external_data_configuration:
+            raise ValueError(
+                f"Cannot convert a normal table [{address.to_str()}] to an external "
+                f"table."
+            )
+
+        table.external_data_configuration = external_data_config
+        return self.client.update_table(table, ["external_data_configuration"])
+
     def set_table_expiration(
         self, address: BigQueryAddress, expiration: datetime.datetime
     ) -> None:
@@ -2505,7 +2599,7 @@ class BigQueryClientImpl(BigQueryClient):
 
             self.create_table(
                 dest_table,
-                overwrite=overwrite,
+                exists_ok=overwrite,
             )
         else:
             job_config = bigquery.CopyJobConfig(

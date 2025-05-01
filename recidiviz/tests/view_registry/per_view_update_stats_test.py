@@ -22,6 +22,7 @@ from unittest.mock import create_autospec, patch
 
 import pytz
 from google.cloud import bigquery
+from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
@@ -326,7 +327,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             source_tables_by_address={
                 table_address: SourceTableConfig(
                     address=table_address,
-                    schema_fields=[],
+                    schema_fields=[SchemaField("col", "STRING", "NULLABLE")],
                     description=f"Description for {table_address.to_str()}",
                 )
             },

@@ -23,7 +23,7 @@ from unittest.mock import patch
 import attr
 import pytest
 from google.cloud import bigquery
-from google.cloud.bigquery import SchemaField
+from google.cloud.bigquery import ExternalConfig, SchemaField
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -100,12 +100,18 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         return bigquery.SchemaField(name=name, field_type=field_type, mode=mode)
 
     def _make_table(
-        self, address: BigQueryAddress, schema: list[bigquery.SchemaField]
+        self,
+        address: BigQueryAddress,
+        schema: list[bigquery.SchemaField],
+        external_data_configuration: ExternalConfig | None = None,
     ) -> bigquery.Table:
         table = bigquery.Table(
             address.to_project_specific_address(project_id="recidiviz-456").to_str()
         )
         table.schema = schema
+        if external_data_configuration:
+            external_data_configuration.schema = schema
+            table.external_data_configuration = external_data_configuration
         return table
 
     def test_no_updates(self) -> None:
@@ -481,6 +487,70 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             {
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
                 SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+            },
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
+
+    def test_update_external_data_config_google_sheets(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+
+        external_config = ExternalConfig("GOOGLE_SHEETS")
+        external_config.ignore_unknown_values = True
+
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("new_field"),
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema, external_config),
+            table_level_update_types={
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+            },
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+                external_data_configuration=external_config,
+            ),
+        )
+        # Validate that
+        update_info.source_table_config.validate_source_table_external_data_configuration(
+            update_config=SourceTableCollectionUpdateConfig.regenerable()
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_EXTERNAL_DATA_CONFIGURATION, UPDATE_SCHEMA_WITH_ADDITIONS)\n"
+            "  Added fields:\n"
+            "    - new_field"
+        )
+        self.assertEqual(update_info.build_updates_message(), expected_message)
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             },
         )
 

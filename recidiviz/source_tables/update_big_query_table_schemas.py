@@ -33,6 +33,7 @@ from recidiviz.source_tables.source_table_config import (
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import (
     SourceTableUpdateManager,
+    SourceTableUpdateType,
     SourceTableWithRequiredUpdateTypes,
 )
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
@@ -147,6 +148,16 @@ def check_source_table_schemas(
             unsafe_managed_table_changes[address] = dry_run_result
         else:
             unsafe_unmanaged_table_changes[address] = dry_run_result
+
+    # TODO(#41360): Remove this check once all external table have been migrated to
+    #  yaml_managed. For now, we allow disagreement between deployed external data
+    #  config and the config in YAML.
+    unsafe_unmanaged_table_changes = {
+        address: result
+        for address, result in unsafe_unmanaged_table_changes.items()
+        if result.all_update_types
+        != {SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION}
+    }
 
     messages = []
     if unsafe_unmanaged_table_changes:

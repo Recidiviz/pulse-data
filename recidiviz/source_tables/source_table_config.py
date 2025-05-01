@@ -23,6 +23,7 @@ import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import (
     ExternalConfig,
+    ExternalSourceFormat,
     SchemaField,
     Table,
     TimePartitioning,
@@ -43,6 +44,7 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Split up word to avoid lint checks
@@ -69,6 +71,11 @@ class SourceTableConfig:
     is_sandbox_table: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
+        if not self.schema_fields:
+            raise ValueError(
+                f"Source table {self.address.to_str()} must have non-empty schema."
+            )
+
         # we use .to_api_repr().get() here as doing time_partitioning.require_partition_filter
         # raises a deprecation warning; however, it can be set from `from_api_repr` w/o
         # the same warning so we still need to check it
@@ -109,6 +116,75 @@ class SourceTableConfig:
                     f"Found field [{field.name}] in source table "
                     f"[{self.address.to_str()}] with no defined mode."
                 )
+
+        # For external tables, we store the schema on the external_data_configuration
+        if self.external_data_configuration:
+            self.external_data_configuration.schema = self.schema_fields
+            # TODO(#41360): Enforce that source URIs have project id arg (for GCS URIS)
+            #  and format with project_id.
+
+    def validate_source_table_external_data_configuration(
+        self, update_config: "SourceTableCollectionUpdateConfig"
+    ) -> None:
+        """Enforces that that this source table's external_data_configuration is valid."""
+        if not self.external_data_configuration:
+            return
+
+        if not self.external_data_configuration.schema:
+            raise ValueError(
+                f"Found empty external table schema for {self.address.to_str()}."
+            )
+
+        # TODO(#41360): Once all external tables have been migrated to yaml_managed,
+        #  throw if we see externally_managed tables with external data configs. We want
+        #  all of these tables to be eventually managed by our standard process.
+        if update_config == update_config.externally_managed():
+            return
+
+        if update_config != update_config.regenerable():
+            raise ValueError(
+                f"Found managed source table [{self.address.to_str()}] which is not "
+                f"designated as regenerable(). All external tables are fundamentally "
+                f"regenerable - they can be deleted and recreated with the new config "
+                f"without losing data."
+            )
+
+        if self.external_data_configuration.ignore_unknown_values is None:
+            raise ValueError(
+                f"Must explicitly set ignoreUnknownValues for external table "
+                f"{self.address.to_str()}."
+            )
+
+        ignore_unknown_values = assert_type(
+            self.external_data_configuration.ignore_unknown_values, bool
+        )
+        source_format = self.external_data_configuration.source_format
+        if source_format == ExternalSourceFormat.GOOGLE_SHEETS:
+            if not ignore_unknown_values:
+                raise ValueError(
+                    f"Must explicitly set ignoreUnknownValues: true for "
+                    f"{source_format} external table {self.address.to_str()}. "
+                    f"{source_format} tables do not respect ignoreUnknownValues: false."
+                )
+            return
+
+        # TODO(#41360): Reenable this when we have support for CSV / NEWLINE_DELIMITED_JSON
+        #  source tables (we properly validate / format URIs for those tables).
+        # if source_format in (
+        #     ExternalSourceFormat.NEWLINE_DELIMITED_JSON,
+        #     ExternalSourceFormat.CSV,
+        # ):
+        #     if ignore_unknown_values:
+        #         raise ValueError(
+        #             f"Must explicitly set ignoreUnknownValues: false for "
+        #             f"{source_format} external table {self.address.to_str()}. "
+        #         )
+        #     return
+
+        raise ValueError(
+            f"Unsupported external table source format [{source_format}]. Discuss with "
+            f"#platform-team if you have a compelling use case for this format."
+        )
 
     def has_column(self, column: str) -> bool:
         return any(c.name == column for c in self.schema_fields + self.pseudocolumns)

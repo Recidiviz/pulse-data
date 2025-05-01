@@ -242,45 +242,10 @@ resource "google_bigquery_table" "workflows_launch_metadata" {
   }
 }
 
-
-resource "google_bigquery_table" "ingest_timeline_tracker" {
-  dataset_id          = module.google_sheet_backed_tables.dataset_id
-  table_id            = "ingest_timeline_tracker"
-  description         = "This table contains key dates related to ingest in our states."
-  deletion_protection = false
-  external_data_configuration {
-    autodetect    = false
-    source_format = "GOOGLE_SHEETS"
-    google_sheets_options {
-      range             = "ingest-timeline-tracker"
-      skip_leading_rows = 1
-    }
-    source_uris = yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ingest_timeline_tracker.yaml"))["external_data_configuration"]["sourceUris"]
-    schema      = jsonencode(yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ingest_timeline_tracker.yaml"))["schema"])
-  }
-}
-
 resource "google_bigquery_table" "jii_texting_incoming_messages" {
   dataset_id          = module.twilio_webhook_requests_dataset.dataset_id
   table_id            = "jii_texting_incoming_messages"
   description         = "This table contains information from Twilio's requests to our webhook that handles incoming text messages to our JII Texting Twilio phone numbers"
   deletion_protection = false
   schema              = jsonencode(yamldecode(file("${local.source_tables}/${module.twilio_webhook_requests_dataset.dataset_id}/jii_texting_incoming_messages.yaml"))["schema"])
-}
-
-resource "google_bigquery_table" "ORAS_results_sheet" {
-  dataset_id          = module.google_sheet_backed_tables.dataset_id
-  table_id            = "ORAS_results_sheet"
-  description         = "This table contains ORAS assessment results from Arizona."
-  deletion_protection = false
-  external_data_configuration {
-    autodetect    = false
-    source_format = "GOOGLE_SHEETS"
-    google_sheets_options {
-      range             = "Form Responses 1"
-      skip_leading_rows = 1
-    }
-    source_uris = yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ORAS_results_sheet.yaml"))["external_data_configuration"]["sourceUris"]
-    schema      = jsonencode(yamldecode(file("${local.source_tables}/${module.google_sheet_backed_tables.dataset_id}/ORAS_results_sheet.yaml"))["schema"])
-  }
 }

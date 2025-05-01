@@ -32,8 +32,15 @@ AIRFLOW_OPERATIONS: str = "airflow_operations"
 # Archival views that track hydration of various parts of our platform overtime
 HYDRATION_ARCHIVE: str = "hydration_archive"
 
+# Views backed by Google Sheets
+GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
 
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
+    AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
+    GOOGLE_SHEET_BACKED_TABLES_DATASET: (
+        "Stores views that are backed by Google Sheets."
+    ),
+    HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."
     ),
@@ -44,6 +51,4 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     VIEW_UPDATE_METADATA_DATASET: (
         "Stores metadata about the performance of our view update process"
     ),
-    AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
-    HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
 }

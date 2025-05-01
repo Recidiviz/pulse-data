@@ -32,9 +32,6 @@ from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,
 )
 
-# Views backed by Google Sheets
-GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
-
 # Views that are updated manually
 MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"
 
@@ -81,9 +78,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores data gathered from external sources. CSV versions of tables are "
         "committed to our codebase, and updates to tables are fully managed by "
         "Terraform."
-    ),
-    GOOGLE_SHEET_BACKED_TABLES_DATASET: (
-        "Stores views that are backed by Google Sheets."
     ),
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
         "Stores source tables that are updated manually."

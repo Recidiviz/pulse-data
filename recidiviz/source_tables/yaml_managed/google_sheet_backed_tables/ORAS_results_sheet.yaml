@@ -209,7 +209,8 @@ external_data_configuration:
     - https://docs.google.com/spreadsheets/d/15y5Yv77tuSYgKvU-WN4HeIeWzA7KHqH3stc4boc-QvM
   sourceFormat: GOOGLE_SHEETS
   autodetect: false
-  ignoreUnknownValues: false
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
   googleSheetsOptions:
     skipLeadingRows: "1"
     range: "Form Responses 1"

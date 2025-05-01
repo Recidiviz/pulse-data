@@ -34,6 +34,20 @@ from recidiviz.utils.metadata import local_project_id_override
 class CollectAllSourceTableConfigsTest(unittest.TestCase):
     """Test for built source table collections"""
 
+    def test_valid_external_data_configurations(self) -> None:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                source_table_repository = (
+                    build_source_table_repository_for_collected_schemata(
+                        project_id=project_id
+                    )
+                )
+                for collection in source_table_repository.source_table_collections:
+                    for source_table_config in collection.source_tables:
+                        source_table_config.validate_source_table_external_data_configuration(
+                            collection.update_config
+                        )
+
     def test_state_schema_tables_have_state_code(self) -> None:
         for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):

@@ -35,7 +35,8 @@ external_data_configuration:
     - https://docs.google.com/spreadsheets/d/1eDvMcwW7hI7AXUZQvIHvJodajeKKPKftvMgNx_FrLBk/edit?gid=0#gid=0
   sourceFormat: GOOGLE_SHEETS
   autodetect: false
-  ignoreUnknownValues: false
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
   googleSheetsOptions:
     skipLeadingRows: "1"
     range: Assignments

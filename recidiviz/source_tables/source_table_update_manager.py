@@ -55,6 +55,9 @@ class SourceTableUpdateType(enum.StrEnum):
     MISMATCH_PARTITIONING_FIELDS = "mismatch_partitioning_fields"
     UPDATE_SCHEMA_WITH_ADDITIONS = "update_schema_with_additions"
     UPDATE_SCHEMA_WITH_DELETIONS = "update_schema_with_deletions"
+    ADD_EXTERNAL_DATA_CONFIGURATION = "add_external_data_configuration"
+    REMOVE_EXTERNAL_DATA_CONFIGURATION = "remove_external_data_configuration"
+    UPDATE_EXTERNAL_DATA_CONFIGURATION = "update_external_data_configuration"
 
     # Existing table field-level changes
     DOCUMENTATION_CHANGE = "documentation_change"
@@ -75,6 +78,10 @@ class SourceTableUpdateType(enum.StrEnum):
             # Partitions and clustering fields are immutable after table creation.
             SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
             SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+            # A normal table cannot become an external table after creation or vice
+            # versa.
+            SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION,
+            SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION,
         ):
             return False
 
@@ -89,6 +96,10 @@ class SourceTableUpdateType(enum.StrEnum):
             # INT64), but it's possible that the change will be applied successfully,
             # so we allow it by default.
             SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+            # Most external data config changes are ok to apply and we enforce that
+            # external data tables are regenerable, so we will just delete and recreate
+            # the table if we can't apply changes.
+            SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
         ):
             return True
 
@@ -136,6 +147,7 @@ class SourceTableUpdateType(enum.StrEnum):
             SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
             SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
             SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+            SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
         }:
             return False
 
@@ -160,6 +172,9 @@ class SourceTableUpdateType(enum.StrEnum):
                 | self.MISMATCH_PARTITIONING_FIELDS
                 | self.UPDATE_SCHEMA_WITH_ADDITIONS
                 | self.UPDATE_SCHEMA_WITH_DELETIONS
+                | self.ADD_EXTERNAL_DATA_CONFIGURATION
+                | self.REMOVE_EXTERNAL_DATA_CONFIGURATION
+                | self.UPDATE_EXTERNAL_DATA_CONFIGURATION
             ):
                 return False
 
@@ -377,9 +392,12 @@ class SourceTableWithRequiredUpdateTypes:
             elif update_type in (
                 SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
                 SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+                SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
             ):
                 # We don't print any extra info when partitioning / clustering fields
-                # change.
+                # or external data configs change.
                 pass
 
             else:
@@ -487,8 +505,27 @@ class SourceTableUpdateManager:
                 SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS
             )
 
-        # TODO(#41360): Add check for external data config changes. How can I tell in
-        #  advance if the updates result in a schema update?
+        if (
+            current_table.external_data_configuration is None
+            and source_table_config.external_data_configuration is not None
+        ):
+            table_level_update_types.add(
+                SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION
+            )
+        elif (
+            current_table.external_data_configuration is not None
+            and source_table_config.external_data_configuration is None
+        ):
+            table_level_update_types.add(
+                SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION
+            )
+        elif (
+            current_table.external_data_configuration
+            != source_table_config.external_data_configuration
+        ):
+            table_level_update_types.add(
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION
+            )
 
         only_check_required_columns = (
             source_table_collection.validation_config
@@ -592,6 +629,40 @@ class SourceTableUpdateManager:
         ) = source_table_collection_and_required_updates
         self._update_table(source_table_collection, source_table_required_updates)
 
+    def _create_table_with_config(self, source_table_config: SourceTableConfig) -> None:
+        if source_table_config.external_data_configuration is None:
+            self.client.create_table_with_schema(
+                address=source_table_config.address,
+                schema_fields=source_table_config.schema_fields,
+                clustering_fields=source_table_config.clustering_fields,
+                time_partitioning=source_table_config.time_partitioning,
+                require_partition_filter=source_table_config.require_partition_filter,
+            )
+        else:
+            self.client.create_external_table(
+                address=source_table_config.address,
+                external_data_config=source_table_config.external_data_configuration,
+                allow_auto_detect_schema=False,
+            )
+
+    def _update_existing_table_with_config(
+        self,
+        source_table_config: SourceTableConfig,
+        update_config: SourceTableCollectionUpdateConfig,
+    ) -> None:
+        if source_table_config.external_data_configuration is None:
+            self.client.update_schema(
+                address=source_table_config.address,
+                desired_schema_fields=source_table_config.schema_fields,
+                allow_field_deletions=update_config.allow_field_deletions,
+            )
+        else:
+            self.client.update_external_table(
+                address=source_table_config.address,
+                external_data_config=source_table_config.external_data_configuration,
+                allow_auto_detect_schema=False,
+            )
+
     def _update_table(
         self,
         source_table_collection: SourceTableCollection,
@@ -620,10 +691,8 @@ class SourceTableUpdateManager:
             current_table = source_table_required_updates.deployed_table
             if current_table:
                 try:
-                    self.client.update_schema(
-                        address=source_table_config.address,
-                        desired_schema_fields=source_table_config.schema_fields,
-                        allow_field_deletions=update_config.allow_field_deletions,
+                    self._update_existing_table_with_config(
+                        source_table_config, update_config
                     )
                 except ValueError as e:
                     if not update_config.recreate_on_update_error:
@@ -637,21 +706,9 @@ class SourceTableUpdateManager:
 
                     # We are okay deleting and recreating the table as its contents are deleted / recreated
                     self.client.delete_table(address=source_table_config.address)
-                    self.client.create_table_with_schema(
-                        address=source_table_config.address,
-                        schema_fields=source_table_config.schema_fields,
-                        clustering_fields=source_table_config.clustering_fields,
-                        time_partitioning=source_table_config.time_partitioning,
-                        require_partition_filter=source_table_config.require_partition_filter,
-                    )
+                    self._create_table_with_config(source_table_config)
             else:
-                self.client.create_table_with_schema(
-                    address=source_table_config.address,
-                    schema_fields=source_table_config.schema_fields,
-                    clustering_fields=source_table_config.clustering_fields,
-                    time_partitioning=source_table_config.time_partitioning,
-                    require_partition_filter=source_table_config.require_partition_filter,
-                )
+                self._create_table_with_config(source_table_config)
         except Exception as e:
             logging.exception(
                 "Failed to update schema for `%s`",

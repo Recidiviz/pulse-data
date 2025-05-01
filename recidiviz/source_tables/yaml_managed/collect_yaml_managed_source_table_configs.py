@@ -50,21 +50,48 @@ def collect_yaml_managed_source_table_collections(
         yamls_root_path=os.path.dirname(__file__)
     )
 
-    return [
-        SourceTableCollection(
-            dataset_id=dataset_id,
-            update_config=SourceTableCollectionUpdateConfig.protected(),
-            source_tables_by_address={
-                source_table.address: source_table
-                for source_table in source_tables
-                # Filter project-specific source tables
-                if (not project_id or not source_table.deployed_projects)
-                or (project_id in source_table.deployed_projects)
-            },
-            description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+    collections = []
+    for dataset_id, source_tables in source_tables_by_dataset.items():
+        project_filtered_tables_by_address = {
+            source_table.address: source_table
+            for source_table in source_tables
+            # Filter project-specific source tables
+            if (not project_id or not source_table.deployed_projects)
+            or (project_id in source_table.deployed_projects)
+        }
+
+        external_data_source_tables = {
+            address: source_table
+            for address, source_table in project_filtered_tables_by_address.items()
+            if source_table.external_data_configuration
+        }
+        collections.append(
+            SourceTableCollection(
+                dataset_id=dataset_id,
+                # All external data tables are fundamentally regenerable - we load data
+                # from
+                update_config=SourceTableCollectionUpdateConfig.regenerable(),
+                source_tables_by_address=external_data_source_tables,
+                description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+            )
         )
-        for dataset_id, source_tables in source_tables_by_dataset.items()
-    ]
+        native_source_tables = {
+            address: source_table
+            for address, source_table in project_filtered_tables_by_address.items()
+            if not source_table.external_data_configuration
+        }
+        collections.append(
+            SourceTableCollection(
+                dataset_id=dataset_id,
+                # The remainder of tables are protected - the data is potentially loaded
+                # in some manual / un-repeatable process.
+                update_config=SourceTableCollectionUpdateConfig.protected(),
+                source_tables_by_address=native_source_tables,
+                description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+            )
+        )
+
+    return collections
 
 
 @cache
