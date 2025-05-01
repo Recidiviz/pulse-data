@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ne import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     no_top_three_severity_level_supervision_violation_within_6_months,
+    not_supervision_within_1_month_of_projected_completion_date_min_external,
     on_parole_at_least_one_year,
     supervision_level_is_minimum,
 )
@@ -39,9 +40,12 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# Shared list of criteria across NE supervision level overrides opportunities
 US_NE_GENERAL_SUPERVISION_LEVEL_OVERRIDE_CRITERIA = [
     compliant_with_special_conditions,
     no_top_three_severity_level_supervision_violation_within_6_months,
+    # More than 1 month until Earned Discharge Date
+    not_supervision_within_1_month_of_projected_completion_date_min_external,
     on_parole_at_least_one_year,
 ]
 
