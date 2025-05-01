@@ -70,6 +70,8 @@ REENTRY_CLIENT_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "external_id",
         "pseudonymized_id",
         "full_name",
+        "birthdate",
+        "current_address",
         "staff_id",
     ],
 )
