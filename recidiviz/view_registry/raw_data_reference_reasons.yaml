@@ -1785,23 +1785,8 @@ US_TX:
     reference_views.us_tx_location_metadata: |-
       Used to pull in location reference data.
   RECIDIVIZ_REFERENCE_ContactCadence:
-    task_eligibility_criteria_us_tx.meets_scheduled_collateral_contact_standards:
-      |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_scheduled_electronic_contact_standards:
-      |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_scheduled_field_contact_standards: |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_scheduled_home_contact_standards: |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_scheduled_office_contact_standards: |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_unscheduled_field_contact_standards:
-      |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
-    task_eligibility_criteria_us_tx.meets_unscheduled_home_contact_standards: |-
-      Used as a reference table to indicate contact cadences. 12/30/2024.
+    analyst_data.us_tx_contact_cadence_spans: |-
+      Used as a reference table to indicate contact cadences. 04/29/2025.
   RECIDIVIZ_REFERENCE_ContactCadenceAgnostic:
     task_eligibility_criteria_us_tx.meets_type_agnostic_contact_standards: |-
       Used as a reference table to indicate agnostic contact type cadences. 12/30/2024.

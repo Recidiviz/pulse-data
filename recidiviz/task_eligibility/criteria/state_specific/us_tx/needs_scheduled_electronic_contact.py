@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Defines a criteria view that shows spans of time for which supervision clients
-are compliant with scheduled electronic contacts
+are not compliant with scheduled electronic contacts
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -27,10 +27,10 @@ from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_MEETS_SCHEDULED_ELECTRONIC_CONTACT_STANDARDS"
+_CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_ELECTRONIC_CONTACT"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
-meet standards for scheduled electronic contacts based on their supervision level and case type.
+do not meet standards for scheduled electronic contacts based on their supervision level and case type.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = contact_compliance_builder(

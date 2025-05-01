@@ -52,28 +52,33 @@ TASK_CONFIGS: List[TaskConfig] = [
     },
     {
         "type": "usTxFieldContactScheduled",
-        "table": "meets_scheduled_field_contact_standards_materialized",
+        "table": "needs_scheduled_field_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxFieldContactUnscheduled",
-        "table": "meets_unscheduled_field_contact_standards_materialized",
+        "table": "needs_unscheduled_field_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxHomeContactScheduled",
-        "table": "meets_scheduled_home_contact_standards_materialized",
+        "table": "needs_scheduled_home_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxHomeContactUnscheduled",
-        "table": "meets_unscheduled_home_contact_standards_materialized",
+        "table": "needs_unscheduled_home_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxElectronicContactScheduled",
-        "table": "meets_scheduled_electronic_contact_standards_materialized",
+        "table": "needs_scheduled_electronic_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxHomeContactEdgeCase",
@@ -82,13 +87,15 @@ TASK_CONFIGS: List[TaskConfig] = [
     },
     {
         "type": "usTxCollateralContactScheduled",
-        "table": "meets_scheduled_collateral_contact_standards_materialized",
+        "table": "needs_scheduled_collateral_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxOfficeContactScheduled",
-        "table": "meets_scheduled_office_contact_standards_materialized",
+        "table": "needs_scheduled_office_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxTypeAgnosticContact",

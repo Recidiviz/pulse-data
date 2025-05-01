@@ -321,6 +321,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_supervision
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tx.us_tx_contact_cadence_spans import (
+    US_TX_CONTACT_CADENCE_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tx.us_tx_supervision_staff_in_critically_understaffed_location_sessions_preprocessed import (
     US_TX_SUPERVISION_STAFF_IN_CRITICALLY_UNDERSTAFFED_LOCATION_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -480,4 +483,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_INFERRED_VIEW_BUILDER,
     US_TX_SUPERVISION_STAFF_IN_CRITICALLY_UNDERSTAFFED_LOCATION_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     SUPERVISION_STAFF_IN_CRITICALLY_UNDERSTAFFED_LOCATION_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+    US_TX_CONTACT_CADENCE_SPANS_VIEW_BUILDER,
 ]

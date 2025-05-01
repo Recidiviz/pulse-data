@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Defines a criteria view that shows spans of time for which supervision clients
-are compliant with office contacts
+are not compliant with scheduled office contacts
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -27,16 +27,16 @@ from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_MEETS_UNSCHEDULED_FIELD_CONTACT_STANDARDS"
+_CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_OFFICE_CONTACT"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
-meet standards for unscheduled field contacts based on their supervision level and case type.
+do not meet standards for scheduled office contacts based on their supervision level and case type.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = contact_compliance_builder(
     criteria_name=_CRITERIA_NAME,
     description=_DESCRIPTION,
-    contact_type="UNSCHEDULED FIELD",
+    contact_type="SCHEDULED OFFICE",
 )
 
 if __name__ == "__main__":

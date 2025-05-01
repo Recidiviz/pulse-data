@@ -18,12 +18,11 @@
 Helper SQL queries for Texas
 """
 
+from typing import Optional
+
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -31,45 +30,30 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 
 
 def contact_compliance_builder(
-    criteria_name: str, description: str, contact_type: str
+    criteria_name: str,
+    description: str,
+    contact_type: str,
+    custom_contact_cadence_spans: Optional[str] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state-specific criteria view builder indicating the spans of time when
-    a person has on supervision has met the contact compliance cadence for a given
+    a person has on supervision has not met the contact compliance cadence for a given
     contact type.
 
     Args:
         criteria_name (str): The name of the criteria
         description (str): The description of the criteria
         contact_type (int): The type of contact
+        custom_contact_cadence_spans (str): The custom contact cadence spans query.
+            Must contain date fields for `month_start` and `month_end`, indicating
+            the start and end of the period of time over which a contact standard
+            is applicable to the person. If not provided, the default query will
+            pull from the `contact_cadence_spans_materialized` table.
     """
+    if not custom_contact_cadence_spans:
+        custom_contact_cadence_spans = "SELECT * FROM `{project_id}.analyst_data.us_tx_contact_cadence_spans_materialized`"
 
     criteria_query = f"""
 WITH
--- Create periods of case type and supervision level information
-person_info AS (
-   SELECT 
-      sp.person_id,
-      start_date,
-      termination_date AS end_date,
-      supervision_level,
-      case_type,
-      case_type_raw_text,
-      sp.state_code,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
-      USING(supervision_period_id)
-    WHERE sp.state_code = "US_TX"
-        AND supervision_level IS DISTINCT FROM 'IN_CUSTODY'
-),
--- Aggregate above periods by supervision_level and case_type
-person_info_agg AS (
-    {aggregate_adjacent_spans(
-        table_name='person_info',
-        attribute=['supervision_level','case_type','case_type_raw_text'],
-        session_id_output_name='person_info_agg',
-        end_date_field_name='end_date'
-    )}
-),
 -- Create contacts table by adding scheduled/unscheduled prefix
 contact_info AS (
     SELECT 
@@ -96,68 +80,10 @@ contact_info AS (
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
     WHERE state_code = "US_TX" AND status = "COMPLETED"
 ),
--- Create a table where each contact is associated with the appropriate cadence and we 
--- begin to count the months the client has been on supervision and the number of 
--- periods they'll have given the contact frequency
-contacts_compliance AS (
-        SELECT DISTINCT
-        p.person_id,
-        p.start_date,
-        p.end_date,
-        ca.contact_type,
-        p.supervision_level,
-        DATE_TRUNC(start_date, MONTH) AS month_start,
-        p.case_type, 
-        CAST(ca.frequency_in_months AS INT64) AS frequency_in_months,
-        CAST(ca.quantity AS INT64) AS quantity,
-        DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
-        FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(ca.frequency_in_months AS INT64)) as num_periods 
-    FROM person_info_agg p
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadence_latest` ca
-        ON "{contact_type}" = ca.contact_type
-        AND p.case_type = ca.case_type
-        AND p.supervision_level = ca.supervision_level
-    -- Remove rows with no contact requirements
-    WHERE ca.contact_type IS NOT NULL
-),
--- There are times where a client has two supervision levels or case types within 
--- a single month. In order to not have multiple contact cadences, we choose the contact
--- cadence that is associated with the most recent supervision level / case type in a 
--- month. 
-single_contacts_compliance AS (
-    SELECT
-        *
-    FROM contacts_compliance
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, month_start ORDER BY start_date DESC) = 1
-),
--- Creates sets of empty periods that are the duration of the contact frequency
-empty_periods AS (
-    SELECT 
-        person_id,
-        contact_type,
-        supervision_level,
-        case_type,
-        quantity,
-        start_date,
-        end_date,
-        frequency_in_months,
-        -- For each span, calculate the starting month and ending month
-        month_start + INTERVAL x * frequency_in_months MONTH AS month_start,
-        -- Calculate the end of the span (last day of the month)
-        LAST_DAY(month_start + INTERVAL (x + 1) * frequency_in_months - 1 MONTH) AS month_end
-    FROM single_contacts_compliance,
-    UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS x
-),
--- There are times where periods are created in advance for a former contact cadence
--- we want to remove these periods so that only periods with the appropriate cadence
--- are kept in a given time. 
-clean_empty_periods AS 
-(
-    SELECT
-        *
-    FROM empty_periods
-    WHERE end_date IS NULL OR month_end < end_date
-),
+contact_cadence_spans AS (
+    {custom_contact_cadence_spans}
+)
+,
 -- Looks back to connect contacts to a given contact period they were completed in
 lookback_cte AS
 (
@@ -171,11 +97,12 @@ lookback_cte AS
         month_start,
         month_end,
         quantity,
-    FROM clean_empty_periods p
+    FROM contact_cadence_spans p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
         AND ci.contact_type = p.contact_type
         AND ci.contact_date BETWEEN p.month_start and p.month_end 
+    WHERE p.contact_type = "{contact_type}"
 ),
 -- Union all critical dates (start date, end date, contact dates)
 critical_dates as (
@@ -219,7 +146,7 @@ divided_periods as (
         quantity,
         frequency_in_months,
         critical_date as period_start,
-        LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
+        LEAD (critical_date) OVER (PARTITION BY month_start, person_id ORDER BY critical_date) AS period_end,
     FROM critical_dates
 ),
 divided_periods_with_contacts as (
@@ -261,7 +188,7 @@ periods AS (
         lc.person_id,
         "US_TX" as state_code,
         lc.contact_type as type_of_contact,
-        contact_count >= quantity AS meets_criteria,
+        contact_count < quantity AS meets_criteria,
         contact_count < quantity AND CURRENT_DATE > month_end AS overdue_flag,
         CASE
             WHEN period_start = month_start
@@ -275,7 +202,6 @@ periods AS (
         period_start as start_date,
         period_end as end_date,
         max(contact_date) as last_contact_date,
-        TO_JSON(STRUCT(contact_count >= quantity AS compliance)) AS reason,
         CASE 
             WHEN frequency_in_months = 1 
                 THEN "1 MONTH"
@@ -287,10 +213,19 @@ periods AS (
         ON lc.person_id = ci.person_id
         AND ci.contact_type = lc.contact_type
         AND ci.contact_date < period_end
-    GROUP BY person_id,month_start,month_end,lc.contact_type,contact_count,quantity, period_start, period_end, frequency_in_months
+    GROUP BY person_id, month_start, month_end, lc.contact_type, contact_count, quantity, period_start, period_end, frequency_in_months
 )
 SELECT 
-  *
+  *,
+  TO_JSON(STRUCT(
+    last_contact_date,
+    contact_due_date,
+    type_of_contact,
+    overdue_flag,
+    contact_count,
+    period_type,
+    frequency
+  )) AS reason,
 FROM periods
 """
 
@@ -299,9 +234,6 @@ FROM periods
         description=description,
         state_code=StateCode.US_TX,
         criteria_spans_query_template=criteria_query,
-        raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
-        ),
         normalized_state_dataset="us_tx_normalized_state",
         reasons_fields=[
             ReasonsField(
