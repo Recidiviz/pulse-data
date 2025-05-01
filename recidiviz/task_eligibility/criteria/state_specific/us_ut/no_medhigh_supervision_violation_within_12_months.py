@@ -29,14 +29,14 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_UT_NO_MEDHIGH_SUPERVISION_VIOLATION_WITHIN_3_MONTHS"
+_CRITERIA_NAME = "US_UT_NO_MEDHIGH_SUPERVISION_VIOLATION_WITHIN_12_MONTHS"
 
 query_dict = cast(
     dict,
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        date_interval=3,
+        date_interval=12,
         date_part="MONTH",
         where_clause_addition="AND JSON_VALUE(violation_metadata, '$.sanction_level') IN ('3', '2')",
         return_view_builder=False,

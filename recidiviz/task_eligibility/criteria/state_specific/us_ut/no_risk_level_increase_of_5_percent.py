@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Spans of time where a person's risk level has not increased by 15% or more between their 
+Spans of time where a person's risk level has not increased by 5% or more between their 
 current assessment and the lowest assessment in the past year.
 """
 from google.cloud import bigquery
@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_UT_NO_RISK_LEVEL_INCREASE_OF_15_PERCENT"
+_CRITERIA_NAME = "US_UT_NO_RISK_LEVEL_INCREASE_OF_5_PERCENT"
 
 _ASSESSMENT_TYPE = "LS_RNR"
 _QUERY_TEMPLATE = f"""WITH min_assessment_during_supervision AS (
@@ -73,7 +73,7 @@ _QUERY_TEMPLATE = f"""WITH min_assessment_during_supervision AS (
         person_id,
         start_date,
         end_date,
-        (IFNULL(assessment_score_percent_reduction, 0)>=-15) AS meets_criteria,
+        (IFNULL(assessment_score_percent_reduction, 0)>=-5) AS meets_criteria,
         TO_JSON(STRUCT(
             assessment_score_percent_reduction AS assessment_score_percent_reduction,
             assessment_score AS assessment_score,
