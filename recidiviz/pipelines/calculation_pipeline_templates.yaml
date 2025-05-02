@@ -5,25 +5,40 @@
 
 # When adding a new template, visit go/dataflow-region-cpu-usage-metrics and go/dataflow-region-quotas
 # to determine which region has the most capacity for a new pipeline.
+# When choosing a machine type, note that c4a machines tend to be higher performance than c4d, but
+# currently have limited zonal resourcing availability in us-central1
+# For pipelines that require less processing power, e.g. supplemental or population_span metrics, choose c4d
 
 # NOTE: Machine Type zonal availability can vary, and there is no guarantee that a machine is available across
 # all zones within a region depending on Google Cloud's rollout
 
-# NOTE: us-east7 does not seem to be a zone that we can use, yet
+# NOTE: us-east7 and us-west8 are not zones that we can use, yet
 
 # To find what regions have availability, run:
 # $ gcloud compute machine-types list --filter="name=c4a-highcpu-32" | grep "us-"
-# c4a-highcpu-32  us-central1-a      32    64.00
-# c4a-highcpu-32  us-central1-b      32    64.00
-# c4a-highcpu-32  us-central1-c      32    64.00
-# c4a-highcpu-32  us-west1-a         32    64.00
-# c4a-highcpu-32  us-east1-b         32    64.00
-# c4a-highcpu-32  us-east1-c         32    64.00
-# c4a-highcpu-32  us-east1-d         32    64.00
-# c4a-highcpu-32  us-east4-a         32    64.00
-# c4a-highcpu-32  us-east4-b         32    64.00
-# c4a-highcpu-32  us-east4-c         32    64.00
-# c4a-highcpu-32  us-east7-a         32    64.00
+# c4a-highcpu-32  us-central1-a           32    64.00
+# c4a-highcpu-32  us-central1-b           32    64.00
+# c4a-highcpu-32  us-central1-c           32    64.00
+# c4a-highcpu-32  us-west1-a              32    64.00
+# c4a-highcpu-32  us-west1-c              32    64.00
+# c4a-highcpu-32  us-east1-b              32    64.00
+# c4a-highcpu-32  us-east1-c              32    64.00
+# c4a-highcpu-32  us-east1-d              32    64.00
+# c4a-highcpu-32  us-east4-a              32    64.00
+# c4a-highcpu-32  us-east4-b              32    64.00
+# c4a-highcpu-32  us-east4-c              32    64.00
+# c4a-highcpu-32  us-east7-a              32    64.00
+# c4a-highcpu-32  us-west8-c              32    64.00
+
+# gcloud compute machine-types list --filter="name=c4d-highcpu-32" | grep "us-"
+# c4d-highcpu-32  us-central1-a      32    60.00
+# c4d-highcpu-32  us-central1-b      32    60.00
+# c4d-highcpu-32  us-east1-b         32    60.00
+# c4d-highcpu-32  us-east1-c         32    60.00
+# c4d-highcpu-32  us-east4-a         32    60.00
+# c4d-highcpu-32  us-east4-b         32    60.00
+# c4d-highcpu-32  us-east4-c         32    60.00
+# c4d-highcpu-32  us-east7-c         32    60.00
 
 # List of pipelines with their necessary details
 metric_pipelines:
@@ -32,190 +47,232 @@ metric_pipelines:
     state_code: US_AR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east1
+    machine_type: c4a-highcpu-32
   - pipeline: population_span_metrics
     state_code: US_AR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: incarceration_metrics
     state_code: US_AR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
     state_code: US_ND
     metric_types: REINCARCERATION_RATE
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: population_span_metrics
     state_code: US_ND
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_ND
     metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
     region: us-central1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_ND
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: program_metrics
     state_code: US_ND
     metric_types: PROGRAM_PARTICIPATION
-    region: us-west1
+    region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: violation_metrics
     state_code: US_ND
     metric_types: VIOLATION
-    region: us-west1
+    region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Full US_CO calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_CO
     metric_types: INCARCERATION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: incarceration_metrics
     state_code: US_CO
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Full US_MO calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_MO
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_MO
     metric_types: SUPERVISION_TERMINATION
     region: us-west1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_MO
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: violation_metrics
     state_code: US_MO
     metric_types: VIOLATION
     region: us-central1
+    machine_type: c4d-highcpu-16
 
   # Full US_IX calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_IX
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_IX
     metric_types: SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START
-    region: us-central1
+    region: us-west1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_IX
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: violation_metrics
     state_code: US_IX
     metric_types: VIOLATION
     region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: program_metrics
     state_code: US_IX
     metric_types: PROGRAM_PARTICIPATION
     region: us-east4
+    machine_type: c4d-highcpu-16
 
   # Full US_PA calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_PA
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_PA
     metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_START
-    region: us-west1
+    region: us-east4
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_PA
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: violation_metrics
     state_code: US_PA
     metric_types: VIOLATION
     region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Full US_TN calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_TN
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_TN
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_TN
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: violation_metrics
     state_code: US_TN
     metric_types: VIOLATION
     region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Full US_ME calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_ME
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: incarceration_metrics
     state_code: US_ME
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_ME
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east4
+    machine_type: c4a-highcpu-32
   - pipeline: violation_metrics
     state_code: US_ME
     metric_types: VIOLATION
     region: us-east4
+    machine_type: c4d-highcpu-16
 
   # Full US_MI calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_MI
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: incarceration_metrics
     state_code: US_MI
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_MI
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east4
+    machine_type: c4a-highcpu-32
   - pipeline: violation_metrics
     state_code: US_MI
     metric_types: VIOLATION
     region: us-east4
+    machine_type: c4d-highcpu-16
 
     # Full US_NE calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_NE
     metric_types: SUPERVISION_POPULATION_SPAN
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_NE
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east4
+    machine_type: c4a-highcpu-32
   - pipeline: violation_metrics
     state_code: US_NE
     metric_types: VIOLATION
     region: us-east4
+    machine_type: c4d-highcpu-16
 
   # Full US_CA calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_CA
     metric_types: SUPERVISION_POPULATION_SPAN
     region: us-east1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_CA
     metric_types: SUPERVISION_START
     region: us-central1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_CA
     metric_types: INCARCERATION_POPULATION_SPAN INCARCERATION_RELEASE INCARCERATION_ADMISSION
     region: us-east1
+    machine_type: c4d-highcpu-16
 
   # Daily US_MO calculations -- Lantern v1
   - pipeline: supervision_metrics
@@ -223,6 +280,7 @@ metric_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION
     region: us-east4
+    machine_type: c4a-highcpu-32
 
   # Daily US_PA calculations -- Lantern v1
   - pipeline: supervision_metrics
@@ -230,53 +288,63 @@ metric_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west1
+    machine_type: c4a-highcpu-32
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east4
+    machine_type: c4d-highcpu-16
     staging_only: True
 
   # Full US_AZ calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_AZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_AZ
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_AZ
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
 
   # Full US_TX calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_TX
     metric_types: SUPERVISION_POPULATION_SPAN
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_TX
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-central1
+    region: us-west1
+    machine_type: c4a-highcpu-32
 
   # Full US_IA calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_IA
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
+    machine_type: c4d-highcpu-16
     staging_only: True
   - pipeline: supervision_metrics
     state_code: US_IA
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-central1
+    machine_type: c4a-highcpu-32
     staging_only: True
   - pipeline: incarceration_metrics
     state_code: US_IA
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west1
+    region: us-east4
+    machine_type: c4d-highcpu-16
     staging_only: True
 
   # Full US_UT supervision calculations with no time limit
@@ -284,14 +352,17 @@ metric_pipelines:
     state_code: US_UT
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
+    machine_type: c4d-highcpu-16
   - pipeline: supervision_metrics
     state_code: US_UT
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east1
+    machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_UT
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
+    machine_type: c4d-highcpu-16
 
 supplemental_dataset_pipelines:
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the

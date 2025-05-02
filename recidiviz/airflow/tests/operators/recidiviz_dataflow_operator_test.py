@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for RecidivizDataflowFlexTemplateOperator."""
 from datetime import datetime
-from unittest.mock import create_autospec, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 from airflow import DAG
 from airflow.providers.google.cloud.hooks.dataflow import (
@@ -103,4 +103,29 @@ class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
             'resource.labels.job_id="2023-09-18_07_09_47-16912541725945987225"\n'
             'timestamp >= "2023-09-18T14:09:47.864426Z"\n'
             '(severity >= ERROR OR "Error:")\n',
+        )
+
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    def test_execute_retry(self, _sleep_patch: MagicMock) -> None:
+        self.mock_hook.is_job_dataflow_running.return_value = False
+        self.mock_hook.start_flex_template.side_effect = Exception("Job has failed!")
+        self.mock_get_job.return_value = {
+            "currentState": DataflowJobStatus.JOB_STATE_FAILED,
+            "id": "2023-09-18_07_09_47-16912541725945987225",
+            "createTime": "2023-09-18T14:09:47.864426Z",
+        }
+
+        self.mock_logs_client.list_entries.return_value = [
+            MagicMock(payload="ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS")
+        ]
+
+        with self.assertLogs() as logs, self.assertRaises(Exception):
+            _ = execute_task(self.dag, self.dataflow_task)
+
+        self.assertIn(
+            "Retrying once more in 5 minutes due to zonal resource exhaustion",
+            "\n".join(logs.output),
         )

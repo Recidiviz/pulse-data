@@ -19,6 +19,7 @@ A subclass of DataflowTemplateOperator to ensure that the operator does not add 
 unique id to the task_id name on Dataflow
 """
 import logging
+import time
 from typing import Any, Dict
 
 from airflow.providers.google.cloud.hooks.dataflow import (
@@ -42,6 +43,25 @@ resource.labels.job_id="{job_id}"
 timestamp >= "{job_creation_time}"
 (severity >= ERROR OR "Error:")
 """
+
+ZONAL_RESOURCES_EXHAUSTED = "ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS"
+
+
+def _collect_log_messages(
+    project_id: str, job_id: str, job_creation_time: str
+) -> list[str]:
+    client = LoggingClient(project=project_id)
+    return [
+        entry.payload
+        for entry in client.list_entries(
+            resource_names=[f"projects/{project_id}"],
+            filter_=StrictStringFormatter().format(
+                DATAFLOW_ERROR_LOGS_QUERY,
+                job_id=job_id,
+                job_creation_time=job_creation_time,
+            ),
+        )
+    ]
 
 
 class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
@@ -81,6 +101,14 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
         )
+
+        # This adds a button in the Airflow UI that links directly to the Dataflow job.
+        def set_current_job(current_job: Dict[Any, Any]) -> None:
+            self.job = current_job
+            DataflowJobLink.persist(
+                self, context, self.project_id, self.location, self.job.get("id")
+            )
+
         try:
             # If the operator is on a retry loop, we ignore the start operation by checking
             # if the job is running.
@@ -94,13 +122,6 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
                 )
                 return self.get_job()
 
-            # This adds a button in the Airflow UI that links directly to the Dataflow job.
-            def set_current_job(current_job: Dict[Any, Any]) -> None:
-                self.job = current_job
-                DataflowJobLink.persist(
-                    self, context, self.project_id, self.location, self.job.get("id")
-                )
-
             return hook.start_flex_template(
                 location=self.location,
                 project_id=self.project_id,
@@ -113,16 +134,31 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
 
             if job["currentState"] == DataflowJobStatus.JOB_STATE_FAILED:
                 logging.info("Fetching logs for failed job...")
-                client = LoggingClient(project=self.project_id)
+                log_messages = _collect_log_messages(
+                    project_id=self.project_id,
+                    job_id=job["id"],
+                    job_creation_time=job["createTime"],
+                )
 
-                for entry in client.list_entries(
-                    resource_names=[f"projects/{self.project_id}"],
-                    filter_=StrictStringFormatter().format(
-                        DATAFLOW_ERROR_LOGS_QUERY,
-                        job_id=job["id"],
-                        job_creation_time=job["createTime"],
-                    ),
+                for message in log_messages:
+                    logging.info(message)
+
+                if any(
+                    ZONAL_RESOURCES_EXHAUSTED in message for message in log_messages
                 ):
-                    logging.info(entry.payload)
+                    logging.info(
+                        "Retrying once more in 5 minutes due to zonal resource exhaustion"
+                    )
+
+                    # Sleep in a loop to allow interrupts
+                    for _ in range(300):
+                        time.sleep(1)
+
+                    return hook.start_flex_template(
+                        location=self.location,
+                        project_id=self.project_id,
+                        body=self.body,
+                        on_new_job_callback=set_current_job,
+                    )
 
             raise e

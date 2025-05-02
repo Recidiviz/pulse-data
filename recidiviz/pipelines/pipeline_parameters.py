@@ -70,7 +70,12 @@ ARCHITECTURE_LIMITED_AVAILABILITY_REGIONS = {
         "us-west1": ["a", "c"],
         "us-east1": ["b", "c", "d"],
         "us-east4": ["a", "b", "c"],
-    }
+    },
+    "c4d": {
+        "us-central1": ["a", "b"],
+        "us-east1": ["b", "c"],
+        "us-east4": ["a", "b", "c"],
+    },
 }
 
 
