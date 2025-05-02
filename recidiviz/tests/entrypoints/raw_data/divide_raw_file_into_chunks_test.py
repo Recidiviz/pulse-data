@@ -159,7 +159,7 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
             "errors": [],
         }
 
-        RawDataFileChunkingEntrypoint.run_entrypoint(args)
+        RawDataFileChunkingEntrypoint.run_entrypoint(args=args)
 
         mock_extract_file_chunks_concurrently.assert_called_once_with(
             self.mock_fs, ["serialized_file1", "serialized_file2"], self.state_code

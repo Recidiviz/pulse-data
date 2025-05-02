@@ -51,7 +51,7 @@ class DataflowMetricPruningEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         prune_old_dataflow_metrics(dry_run=args.dry_run)
 
 

@@ -251,6 +251,6 @@ def fake_k8s_operator_for_entrypoint(
             entrypoint_parser = entrypoint_cls.get_parser()
             entrypoint_args = entrypoint_parser.parse_args(unknown_args)
 
-            entrypoint_cls.run_entrypoint(entrypoint_args)
+            entrypoint_cls.run_entrypoint(args=entrypoint_args)
 
     return FakeK8sEntrypointOperator

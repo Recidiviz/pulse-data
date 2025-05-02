@@ -173,7 +173,7 @@ class DataflowMetricPruningEntrypointTest(BigQueryEmulatorTestCase):
 
         # Act
         args = DataflowMetricPruningEntrypoint.get_parser().parse_args([])
-        DataflowMetricPruningEntrypoint.run_entrypoint(args)
+        DataflowMetricPruningEntrypoint.run_entrypoint(args=args)
 
         for table in dataflow_collection.source_tables:
             # The main table contains rows for the latest two runs

@@ -42,7 +42,7 @@ class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         repository = build_source_table_repository_for_collected_schemata(
             project_id=metadata.project_id(),
         )

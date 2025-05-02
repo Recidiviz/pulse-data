@@ -149,7 +149,7 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         write_case_insights_data_to_bq(project_id=args.project_id)
 
 

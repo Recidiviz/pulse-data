@@ -50,7 +50,7 @@ class MetricViewExportEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         execute_metric_view_data_export(
             state_code=args.state_code,
             export_job_name=args.export_job_name,

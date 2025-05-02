@@ -62,7 +62,7 @@ class DatasetCleanupEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         _delete_empty_or_temp_datasets(dry_run=args.dry_run)
 
 

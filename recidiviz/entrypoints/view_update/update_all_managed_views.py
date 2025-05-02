@@ -41,5 +41,5 @@ class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         execute_update_all_managed_views(sandbox_prefix=args.sandbox_prefix)

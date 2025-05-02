@@ -56,7 +56,7 @@ class BigQueryRefreshEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         execute_cloud_sql_to_bq_refresh(
             schema_type=args.schema_type,
             ingest_instance=args.ingest_instance,

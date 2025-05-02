@@ -164,7 +164,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             "errors": [],
         }
 
-        RawDataChunkNormalizationEntrypoint.run_entrypoint(args)
+        RawDataChunkNormalizationEntrypoint.run_entrypoint(args=args)
 
         mock_normalize_raw_file_chunks.assert_called_once_with(
             self.mock_fs, ["serialized_chunk1", "serialized_chunk2"], self.state_code

@@ -57,7 +57,7 @@ class IngestCheckRawDataFlashingEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         """Runs the raw data flashing check."""
         state_code = args.state_code
 

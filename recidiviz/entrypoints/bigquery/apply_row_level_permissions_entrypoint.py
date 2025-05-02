@@ -47,7 +47,7 @@ class ApplyRowLevelPermissionsEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(_args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         _apply_row_level_permissions_to_all_tables()
 
 

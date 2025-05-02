@@ -105,7 +105,7 @@ class RawDataChunkNormalizationEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         chunks = args.file_chunks
         state_code = args.state_code
 

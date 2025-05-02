@@ -176,7 +176,7 @@ class RawDataFileChunkingEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         file_paths = args.requires_normalization_files
         state_code = args.state_code
 

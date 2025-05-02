@@ -31,5 +31,5 @@ class EntrypointInterface(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         ...

@@ -173,7 +173,7 @@ class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
         ) == sorted(all_datasets)
 
         args = DatasetCleanupEntrypoint.get_parser().parse_args([])
-        DatasetCleanupEntrypoint.run_entrypoint(args)
+        DatasetCleanupEntrypoint.run_entrypoint(args=args)
 
         assert sorted(
             [dataset.dataset_id for dataset in self.bq_client.list_datasets()]

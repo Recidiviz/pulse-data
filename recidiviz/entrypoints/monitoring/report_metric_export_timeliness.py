@@ -33,5 +33,5 @@ class MetricExportTimelinessEntrypoint(EntrypointInterface):
         return EntrypointInterface.get_parser()
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         report_export_timeliness_metrics()

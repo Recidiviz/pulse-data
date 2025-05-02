@@ -35,5 +35,5 @@ class ReportAirflowEnvironmentAgeEntrypoint(EntrypointInterface):
         return EntrypointInterface.get_parser()
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
+    def run_entrypoint(*, args: argparse.Namespace) -> None:
         report_airflow_environment_age_metrics()
