@@ -31,9 +31,6 @@ from collections import namedtuple
 from queue import Queue
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    RAW_DATA_METADATA_COLUMNS,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     DirectIngestViewRawFileDependency,
@@ -42,6 +39,16 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 # Used to keep track of JOIN clauses when we search through
 # table relationships.
 TableJoin = namedtuple("TableJoin", ["config", "previous_join"])
+
+
+def throw_cant_find_id_msg(file_tag: str, external_id_type: str) -> str:
+    return (
+        f"The raw data file |{file_tag}| could not be linked to any external IDs of type {external_id_type}!\n"
+        "You will need to update the raw file configs associated with your ingest view to proceed:\n"
+        f"  - If |{file_tag}| is a code file, make sure is_code_file is set to True.\n"
+        f"  - If |{file_tag}| has a root entity identifier, make sure external_id_type is set to the correct value.\n"
+        f"  - If |{file_tag}| does not have a root entity identifier, make sure the table relationships are set up correctly.\n"
+    )
 
 
 # TODO(#40036): Consider generalizing relationship traversal.
@@ -82,11 +89,7 @@ def _join_table_to_external_id_table(
                     join_clause + f" WHERE {id_col.name} = '{external_id_value}'"
                 ).strip()
             table_queue.put(TableJoin(f_table, join_clause))
-    raise ValueError(
-        f"Table {config.file_tag} could not be linked to {external_id_type}. "
-        "Please update the raw file config to denote an external ID column or "
-        "relevant table relationships."
-    )
+    raise ValueError(throw_cant_find_id_msg(config.file_tag, external_id_type))
 
 
 def _get_config_filter(
@@ -111,11 +114,7 @@ def _get_config_filter(
             project_id,
             all_dependencies,
         )
-    raise ValueError(
-        f"Table {config.file_tag} could not be linked to {external_id_type}. "
-        "Please update the raw file config to denote an external ID column or "
-        "relevant table relationships."
-    )
+    raise ValueError(throw_cant_find_id_msg(config.file_tag, external_id_type))
 
 
 def build_root_entity_filtered_raw_data_queries(
@@ -138,12 +137,9 @@ def build_root_entity_filtered_raw_data_queries(
         if file_tags_to_skip_with_reason and file_tag in file_tags_to_skip_with_reason:
             subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
         else:
-            cols = [c.name for c in raw_file_dependency.current_columns] + list(
-                sorted(RAW_DATA_METADATA_COLUMNS)
-            )
             subset_queries[file_tag] = (
-                f"SELECT {', '.join(cols)} "
-                + f"FROM {project_id}.{dataset}.{file_tag} "
+                f"SELECT DISTINCT {file_tag}.* "
+                + f"FROM {project_id}.{dataset}.{file_tag} AS {file_tag} "
                 + _get_config_filter(
                     raw_file_dependency.raw_file_config,
                     external_id_type,
