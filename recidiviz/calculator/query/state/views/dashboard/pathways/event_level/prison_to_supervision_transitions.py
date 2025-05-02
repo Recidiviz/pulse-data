@@ -165,6 +165,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
             "facility",
             "full_name",
             "time_period",
+            # This is a person_external_id
             "state_id",
         ],
     ),

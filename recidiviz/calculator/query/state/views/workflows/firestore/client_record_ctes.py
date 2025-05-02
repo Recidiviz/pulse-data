@@ -274,21 +274,6 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
     ),
     """
 
-_CLIENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE = """
-    display_person_external_id_overrides AS (
-        # In most cases, the client ID we display to users is the same as the "stable"
-        # person_external_id, but some states may want to display a different ID. This 
-        # CTE defines override values for states that prefer to display a different
-        # person external_id to the user.
-        SELECT
-            "US_CA" AS state_code,
-            person_id,
-            ca_pp.Cdcno AS display_person_external_id_override,
-        FROM us_ca_most_recent_client_data ca_pp
-        WHERE state_code = "US_CA"
-    ),
-"""
-
 _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
     phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
@@ -902,7 +887,8 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         SELECT DISTINCT
           sc.state_code,
           sc.person_id,
-          did.display_person_external_id_override,
+          did.display_person_external_id,
+          did.display_person_external_id_type,
           sp.full_name as person_name,
           sp.current_address as address,
           SAFE_CAST(ph.phone_number AS INT64) AS phone_number,
@@ -927,7 +913,11 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         INNER JOIN supervision_super_sessions ss USING(person_id)
         INNER JOIN include_clients USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
-        LEFT JOIN display_person_external_id_overrides did
+        LEFT JOIN (
+            SELECT state_code, person_id, display_person_external_id, display_person_external_id_type
+            FROM `{project_id}.reference_views.product_display_person_external_ids_materialized`
+            WHERE system_type = "SUPERVISION"
+        ) did
             ON sc.state_code = did.state_code
             AND sc.person_id = did.person_id
         LEFT JOIN phone_numbers ph
@@ -955,12 +945,11 @@ _CLIENTS_CTE = """
         SELECT
             c.person_id,
             stable_person_external_ids.person_external_id,
-            -- By default, we display the stable person_external_id value to users, but
-            --  in some states, we choose a different ID to display
-            COALESCE(
-                c.display_person_external_id_override,
-                stable_person_external_ids.person_external_id
-            ) AS display_id,
+            # TODO(#41556): Update frontend to reference display_person_external_id column
+            #  and delete the ambiguously-named display_id column.
+            c.display_person_external_id AS display_id,
+            c.display_person_external_id,
+            c.display_person_external_id_type,
             c.state_code,
             person_name,
             officer_id,
@@ -1017,7 +1006,6 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_CASE_TYPE_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {stable_person_external_ids_cte}
-    {_CLIENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
     {_CLIENT_RECORD_FINES_FEES_INFO_CTE}
     {_CLIENT_RECORD_LAST_PAYMENT_INFO_CTE}

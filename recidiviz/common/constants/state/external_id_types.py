@@ -134,6 +134,10 @@ US_MI_OMNI_USER = "US_MI_OMNI_USER"
 
 # CA Offender Number
 US_CA_DOC = "US_CA_DOC"
+
+# CA CDC Number
+US_CA_CDCNO = "US_CA_CDCNO"
+
 # CA Staff Badge Number
 US_CA_BADGE_NO = "US_CA_BADGE_NO"
 # CA Staff Email

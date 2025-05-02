@@ -72,6 +72,9 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_tx_lo
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_ut_location_metadata import (
     US_UT_LOCATION_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_display_person_external_ids import (
+    PRODUCT_DISPLAY_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
 )
@@ -118,6 +121,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CURRENT_STAFF_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+    PRODUCT_DISPLAY_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
     PRODUCT_STAFF_VIEW_BUILDER,

@@ -227,6 +227,8 @@ def state_specific_facility_exclusion(optional_prefix: Optional[str] = None) -> 
       ({prefix}state_code != 'US_ND' OR {prefix}facility not in ('OOS', 'CPP'))"""
 
 
+# TODO(#41554): Delete all usages of this in favor of joining with a view that
+#  references get_product_stable_person_external_id_types_by_state(StateSystemType.SUPERVISION)
 def state_specific_supervision_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE 
@@ -266,6 +268,8 @@ def state_specific_supervision_external_id_type(state_code_table_prefix: str) ->
     """
 
 
+# TODO(#41554): Delete all usages of this in favor of joining with a view that
+#  references get_product_stable_person_external_id_types_by_state(StateSystemType.INCARCERATION)
 def state_specific_incarceration_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE

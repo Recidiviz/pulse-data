@@ -44,6 +44,10 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             most_severe_violation_type_subtype,
             response_count,
             person_id,
+            -- TODO(#41554): Replace secondary_person_external_id with the 
+            -- display_person_external_id from reference_views.product_display_person_external_ids
+            -- for system_type = "SUPERVISION" - this should allow us to deprecate the
+            -- secondary_person_external_id pipeline output entirely.
             secondary_person_external_id AS person_external_id,
             gender,
             /* TODO(#39399): Confirm what types/classes of assessments are included here

@@ -28,6 +28,9 @@ class StateSpecificIncarcerationMetricsProducerDelegate(
     """Interface for state-specific decisions involved in generating metrics regarding
     incarceration."""
 
+    # TODO(#41554): Delete this delegate method and associated person_external_id column
+    #  from metric output in favor of joining with a view that gives us "stable"
+    #  incarceration person external_ids for each person_id.
     def primary_person_external_id_to_include(self) -> str:
         """Determines the primary person_external_id type to include."""
         raise NotImplementedError(

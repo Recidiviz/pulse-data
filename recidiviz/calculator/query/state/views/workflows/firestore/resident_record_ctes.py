@@ -407,32 +407,15 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
     ),
 """
 
-_RESIDENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE = """
-    display_person_external_id_overrides AS (
-        # In most cases, the client ID we display to users is the same as the "stable"
-        # person_external_id, but some states may want to display a different ID. This 
-        # CTE defines override values for states that prefer to display a different
-        # person external_id to the user.
-        SELECT
-            'US_AZ' AS state_code,
-            person_id,
-            external_id as display_person_external_id_override,
-        FROM `{project_id}.{normalized_state_dataset}.state_person_external_id`
-        WHERE state_code = 'US_AZ'
-            AND id_type = 'US_AZ_ADC_NUMBER'
-    ),
-"""
-
 _RESIDENTS_CTE = """
     residents AS (
         SELECT
             stable_person_external_ids.person_external_id,
-            -- By default, we display the stable person_external_id value to users, but in
-            -- some states, we choose a different ID to display
-            COALESCE(
-                display_person_external_id_overrides.display_person_external_id_override,
-                stable_person_external_ids.person_external_id
-            ) AS display_id,
+            # TODO(#41556): Update frontend to reference display_person_external_id column
+            #  and delete the ambiguously-named display_id column.
+            display_person_external_ids.display_person_external_id AS display_id,
+            display_person_external_ids.display_person_external_id,
+            display_person_external_ids.display_person_external_id_type,
             state_code,
             person_name,
             person_id,
@@ -456,7 +439,12 @@ _RESIDENTS_CTE = """
         LEFT JOIN opportunities_aggregated USING (state_code, person_id)
         LEFT JOIN portion_needed USING (state_code, person_id)
         LEFT JOIN months_remaining USING (state_code, person_id)
-        LEFT JOIN display_person_external_id_overrides USING (state_code, person_id)
+        LEFT JOIN (
+            SELECT state_code, person_id, display_person_external_id, display_person_external_id_type
+            FROM `{project_id}.reference_views.product_display_person_external_ids_materialized`
+            WHERE system_type = "INCARCERATION"
+        ) display_person_external_ids        
+            USING (state_code, person_id)
     )
 """
 
@@ -477,7 +465,6 @@ def full_resident_record() -> str:
     {_RESIDENT_MONTHS_REMAINING_NEEDED_CTE}
     {generate_resident_metadata_cte(STATES_WITH_RESIDENT_METADATA)}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
-    {_RESIDENT_RECORD_DISPLAY_PERSON_EXTERNAL_ID_OVERRIDES_CTE}
     {stable_person_external_ids_cte}
     {_RESIDENTS_CTE}
     """

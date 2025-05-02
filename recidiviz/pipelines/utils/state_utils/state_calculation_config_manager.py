@@ -948,7 +948,7 @@ def get_required_state_specific_metrics_producer_delegates(
         if required_delegate is StateSpecificIncarcerationMetricsProducerDelegate:
             required_metric_delegates[
                 required_delegate.__name__
-            ] = _get_state_specific_incarceration_metrics_producer_delegate(state_code)
+            ] = get_state_specific_incarceration_metrics_producer_delegate(state_code)
         if required_delegate is StateSpecificRecidivismMetricsProducerDelegate:
             required_metric_delegates[
                 required_delegate.__name__
@@ -956,7 +956,7 @@ def get_required_state_specific_metrics_producer_delegates(
         if required_delegate is StateSpecificSupervisionMetricsProducerDelegate:
             required_metric_delegates[
                 required_delegate.__name__
-            ] = _get_state_specific_supervision_metrics_producer_delegate(state_code)
+            ] = get_state_specific_supervision_metrics_producer_delegate(state_code)
 
     return required_metric_delegates
 
@@ -1584,7 +1584,7 @@ def get_state_specific_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_incarceration_metrics_producer_delegate(
+def get_state_specific_incarceration_metrics_producer_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationMetricsProducerDelegate:
     """Returns the type of StateSpecificIncarcerationMetricsProducerDelegate that should be used
@@ -1633,7 +1633,7 @@ def _get_state_specific_incarceration_metrics_producer_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_supervision_metrics_producer_delegate(
+def get_state_specific_supervision_metrics_producer_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionMetricsProducerDelegate:
     """Returns the type of StateSpecificSupervisionMetricsProducerDelegate that should be used

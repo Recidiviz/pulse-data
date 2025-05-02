@@ -255,6 +255,8 @@ US_CA:
     analyst_data.us_ca_sustainable_housing_status_periods: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   PersonParole:
+    reference_views.product_display_person_external_ids: |-
+      CA has not yet ingested Cdcno ids. TODO(#41541): Remove this raw data reference when those IDs are ingested.
     reference_views.us_ca_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
@@ -1430,6 +1432,10 @@ US_NE:
   CodeValue:
     sessions.us_ne_special_condition_compliance_sessions: |-
       Get the descriptions of special conditions.
+  InmatePreviousId:
+    reference_views.product_display_person_external_ids: |-
+      Used to properly pick the most recent inmate number to display in our products. TODO(#41840): Migrate to use the 
+      new is_current_display_id_for_type field on state_person_external_id instead.
   PIMSCasePlan:
     sessions.us_ne_special_condition_compliance_sessions: |-
       Identify case plans (check-ins) for special conditions.
