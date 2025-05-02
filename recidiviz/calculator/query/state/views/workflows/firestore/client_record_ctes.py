@@ -124,14 +124,18 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             sessions.supervising_officer_external_id_end
           ) AS officer_id,
           COALESCE(oregon_county, sessions.supervision_district_name_end) AS district,
-          COALESCE(
-            projected_end.group_projected_full_term_release_date_max,
-            projected_end_v1.projected_completion_date_max,
-            LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
-            ca_pp.EarnedDischargeDate,
-            ca_pp.ControllingDischargeDate,
-            us_tx_max_termination_dates.tx_max_termination_Date
-          ) AS expiration_date
+          -- Supervision expiration dates in UT should display as one day prior to the date in our data
+          (CASE
+            WHEN sessions.state_code = "US_UT" THEN DATE_SUB(projected_end.group_projected_full_term_release_date_max, INTERVAL 1 DAY)
+            ELSE COALESCE(
+                    projected_end.group_projected_full_term_release_date_max,
+                    projected_end_v1.projected_completion_date_max,
+                    LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
+                    ca_pp.EarnedDischargeDate,
+                    ca_pp.ControllingDischargeDate,
+                    us_tx_max_termination_dates.tx_max_termination_Date
+                )
+          END) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
             ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
