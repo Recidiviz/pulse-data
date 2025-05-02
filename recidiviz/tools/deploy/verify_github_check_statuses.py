@@ -20,13 +20,13 @@ user confirms that it's ok to proceed.
 
 Usage:
 python -m recidiviz.tools.deploy.verify_github_check_statuses \
-  --projectid [project-id] \
+  --project_id [project-id] \
   --commit_ref COMMIT_REF \
   --prompt
 
   
 python -m recidiviz.tools.deploy.verify_github_check_statuses \
-  --project-id recidiviz-staging\
+  --project_id recidiviz-staging \
   --commit_ref 455d3130d2f9627786bfdc64ee0273d5b2c11518 \
   --prompt
 
@@ -188,7 +188,7 @@ def verify_github_check_statuses(
 def main(args: argparse.Namespace) -> None:
     with local_project_id_override(args.project_id):
         while True:
-            required_checks_passed, all_checks_passed = verify_github_check_statuses(
+            _, all_checks_passed = verify_github_check_statuses(
                 project_id=args.project_id,
                 commit_ref=args.commit_ref,
                 success_states={"success", "skipped"},
@@ -196,7 +196,7 @@ def main(args: argparse.Namespace) -> None:
             if all_checks_passed:
                 return
 
-            if not required_checks_passed or not args.prompt:
+            if not args.prompt:
                 sys.exit(1)
 
             if prompt_for_step_or_skip(
