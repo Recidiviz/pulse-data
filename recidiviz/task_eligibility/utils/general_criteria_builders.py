@@ -1157,6 +1157,27 @@ def is_past_completion_date_criteria_builder(
     else:
         end_date_str = "end_date_exclusive"
 
+    # TODO(#41848): move this to a separate helper and/or refactor the critical date helper
+    if allow_past_critical_date:
+        final_end_date_condition = "end_date"
+    else:
+        # If past critical dates are not allowed and the span started before
+        # the critical date, then crop the criteria span end on the critical date
+        final_end_date_condition = f"""
+            CASE WHEN start_date <= {nonnull_end_date_clause('critical_date')}
+                THEN LEAST({nonnull_end_date_clause('end_date')}, {nonnull_end_date_clause('critical_date')})
+                ELSE end_date
+            END"""
+
+    meets_criteria_condition = "critical_date_has_passed"
+    if negate_critical_date_has_passed:
+        meets_criteria_condition = "NOT " + meets_criteria_condition
+    if not allow_past_critical_date:
+        meets_criteria_condition = (
+            meets_criteria_condition
+            + f" AND start_date < {nonnull_end_date_clause('critical_date')}"
+        )
+
     criteria_query = f"""
     WITH sentences AS
     (
@@ -1181,7 +1202,7 @@ def is_past_completion_date_criteria_builder(
         person_id,
         start_date AS start_datetime,
         end_date_exclusive AS end_datetime,
-        {revert_nonnull_end_date_clause(f"MAX(IF(is_life, {nonnull_end_date_exclusive_clause(f'{critical_date_column}')}, {critical_date_column}))")} AS critical_date,
+        {revert_nonnull_end_date_clause(f"MAX(IF(is_life, {nonnull_end_date_clause(critical_date_column)}, {critical_date_column}))")} AS critical_date,
         FROM sentences
         GROUP BY 1,2,3,4
     ),
@@ -1191,11 +1212,13 @@ def is_past_completion_date_criteria_builder(
         state_code,
         person_id,
         start_date,
-        {f"LEAST({nonnull_end_date_clause('end_date')}, critical_date)" if not allow_past_critical_date else 'end_date'} AS end_date,
-        {'NOT' if negate_critical_date_has_passed else ''} critical_date_has_passed AS meets_criteria,
+        {final_end_date_condition} AS end_date,
+        {meets_criteria_condition} AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
         critical_date AS {critical_date_name_in_reason},
     FROM critical_date_has_passed_spans
+    -- Drop zero day spans
+    WHERE start_date != {nonnull_end_date_clause(final_end_date_condition)}
     """
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
