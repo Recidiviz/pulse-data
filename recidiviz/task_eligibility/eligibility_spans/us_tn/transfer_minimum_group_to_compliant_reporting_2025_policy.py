@@ -41,7 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     most_recent_fee_code_is_feep_in_last_90_days,
     no_arrests_in_past_6_months,
     no_supervision_sanction_within_3_months,
-    not_in_day_reporting_center_location,
+    not_in_day_reporting_center,
     not_on_community_supervision_for_life,
     not_serving_ineligible_cr_offense_policy_b,
 )
@@ -85,7 +85,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
         not_serving_ineligible_cr_offense_policy_b.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
-        not_in_day_reporting_center_location.VIEW_BUILDER,
+        not_in_day_reporting_center.VIEW_BUILDER,
         no_supervision_sanction_within_3_months.VIEW_BUILDER,
         no_arrests_in_past_6_months.VIEW_BUILDER,
         no_supervision_violation_report_within_6_months.VIEW_BUILDER,

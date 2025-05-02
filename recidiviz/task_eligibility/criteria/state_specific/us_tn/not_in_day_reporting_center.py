@@ -33,9 +33,7 @@ from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#41411): Rename this criterion to reflect that it's not based purely on location
-# data any more.
-_CRITERIA_NAME = "US_TN_NOT_IN_DAY_REPORTING_CENTER_LOCATION"
+_CRITERIA_NAME = "US_TN_NOT_IN_DAY_REPORTING_CENTER"
 
 _QUERY_TEMPLATE = f"""
 WITH drc_sessions AS (

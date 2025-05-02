@@ -41,7 +41,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     home_visit_since_unassigned_supervision_level,
     no_supervision_sanction_since_unassigned_supervision_level,
-    not_in_day_reporting_center_location,
+    not_in_day_reporting_center,
     not_on_community_supervision_for_life,
     not_serving_ineligible_cr_offense_policy_b,
     three_face_to_face_contacts_within_60_days_of_unassigned_supervision_start,
@@ -89,7 +89,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         three_face_to_face_contacts_within_60_days_of_unassigned_supervision_start.VIEW_BUILDER,
         not_serving_ineligible_cr_offense_policy_b.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
-        not_in_day_reporting_center_location.VIEW_BUILDER,
+        not_in_day_reporting_center.VIEW_BUILDER,
         _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
     ],
     # Clients are almost eligible if they are:

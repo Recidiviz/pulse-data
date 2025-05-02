@@ -42,7 +42,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_arrests_in_past_2_years,
     no_supervision_sanction_within_1_year,
     no_warrant_within_2_years,
-    not_in_day_reporting_center_location,
+    not_in_day_reporting_center,
     not_in_programmed_supervision_unit,
     not_interstate_compact_incoming,
     not_on_community_supervision_for_life,
@@ -99,7 +99,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_warrant_within_2_years.VIEW_BUILDER,
         # TODO(#41397): Check with TN to confirm that we're correctly handling PSU & DRC
         # clients (and time spent in those programs) when determining SDS eligibility.
-        not_in_day_reporting_center_location.VIEW_BUILDER,
+        not_in_day_reporting_center.VIEW_BUILDER,
         not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
