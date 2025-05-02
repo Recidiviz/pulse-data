@@ -38,6 +38,9 @@ split_path AS (
         end_date,
         metric_rate, 
         NULL AS category_type,
+        -- The old archive was before we started having multiple possible category types, so we can
+        -- just say that any surfaced officer was being surfaced as the primary category type
+        TRUE AS is_surfaced_category_type,
         caseload_type,
         target,
         threshold,
@@ -63,6 +66,7 @@ split_path AS (
         end_date,
         metric_rate, 
         category_type,
+        is_surfaced_category_type,
         caseload_type,
         target,
         threshold,
@@ -79,11 +83,26 @@ split_path AS (
     -- exclude temp files we may have inadvertently archived
     WHERE _FILE_NAME NOT LIKE "%/staging/%"
 )
-
-SELECT DISTINCT
-    split_path.* EXCEPT (path_parts),
-    DATE(path_parts[SAFE_OFFSET(1)]) AS export_date
-FROM split_path
+, archives_with_date AS (
+    SELECT DISTINCT
+        split_path.* EXCEPT (path_parts),
+        DATE(path_parts[SAFE_OFFSET(1)]) AS export_date
+    FROM split_path
+)
+SELECT * EXCEPT (is_surfaced_category_type),
+CASE
+    WHEN is_surfaced_category_type IS NOT NULL THEN is_surfaced_category_type
+    -- These are the dates of the full state launch of the opportunities module, which uses the
+    -- supervisorHomepageWorkflows feature variant. This FV also gates specialized caseload
+    -- disaggregation because we wanted to launch them together. The dates here aren't perfect
+    -- because many supervisors got the feature variant ahead of the full state launch, but it's
+    -- close enough and much easier to hardcode them than to join with roster archives to
+    -- determine exactly when each supervisor got the FV.
+    WHEN state_code = "US_IX" AND export_date >= "2024-11-20" THEN IFNULL(category_type, "ALL") = "SEX_OFFENSE_BINARY"
+    WHEN state_code = "US_TN" AND export_date >= "2024-12-13" THEN IFNULL(category_type, "ALL") = "SEX_OFFENSE_BINARY"
+    ELSE IFNULL(category_type, "ALL") = "ALL"
+END AS is_surfaced_category_type
+FROM archives_with_date
 """
 
 SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
