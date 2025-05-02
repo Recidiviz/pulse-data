@@ -265,23 +265,32 @@ reasons_for_eligibility AS (
             object_type="STRING",
         )} = "{criteria_name}"
 ),
--- TODO(#28298) replace with source tables when we receive data
--- Since we don't have the raw source tables yet, let's pull from our external validation datasets for this information for now
-temp_opt_stg_information AS (
+SMI AS (
+  select OffenderCode, MMD
+  from `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Mental_Health_Problems_latest`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderCode ORDER BY CAST(StatusDate AS DATETIME) DESC) = 1
+),
+OPT AS (
+  select OffenderCode, OPTLevelOfCare
+  from `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Level_Of_Care_latest`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderCode ORDER BY CAST(AdmissionDate AS DATETIME) DESC) = 1
+),
+stg_information AS (
     SELECT 
-        person_external_id AS external_id,
-        (MH_Treatment = 'Outpatient') as OPT_flag,
-        STG,
-        Management_Level_Assessment_Result as Management_Level,
-        Confinement_Level_Assessment_Result as Confinement_Level,
-        Actual_Placement_Level_Assessment_Result as Actual_Sec_Level
-    FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized` orc
-    INNER JOIN (
-            SELECT MAX(date_of_stay) AS date_of_stay FROM `{{project_id}}.us_mi_validation.incarceration_population_person_level_materialized`
-        ) USING(date_of_stay)     
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest` coms ON orc.person_external_id = coms.Offender_Number 
-    -- this should always be true
-    WHERE external_id_type = 'US_MI_DOC'
+        offender_number,
+        STG_Level
+    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Threat_Group_Involvement_latest`
+    -- there are a small number of times where a single person appears wih two distinct STG levels in the table
+    -- in those cases, let's pick the STG level that was most recently entered
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY offender_number ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
+),
+assessment_information AS (
+    SELECT 
+        offender_number,
+        Management_Level_Assessment_Result,
+        Confinement_Level_Assessment_Result,
+        Actual_Placement_Level_Assessment_Result,
+    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest`
 ),
 case_notes_cte AS (
     SELECT
@@ -323,9 +332,11 @@ SELECT
     DATE(pmi_sgt_min_date) AS form_information_min_release_date,
     si.facility AS form_information_facility,
     si.housing_unit AS form_information_lock,
-    #TODO(#28298) replace with source tables when we receive data
-    temp.OPT_flag AS form_information_OPT,
-    temp.STG AS form_information_STG,
+    (SMI.MMD = "Yes") AS form_information_OPT,
+    CASE WHEN stg.STG_Level = 'I' THEN "1"
+         WHEN stg.STG_Level = 'II' THEN "2"
+         ELSE stg.STG_Level 
+      END AS form_information_STG,
     h.housing_unit_type AS form_information_segregation_type,
     h.start_date AS form_information_segregation_classification_date,
     m.bondable_offenses_within_6_months AS form_information_bondable_offenses_within_6_months,
@@ -342,16 +353,16 @@ SELECT
     DATE_DIFF(DATE(pmi_sgt_min_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), h.start_date, DAY) AS metadata_days_in_solitary_session,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), hc.start_date, DAY) AS metadata_days_in_collapsed_solitary_session,
-    temp.OPT_flag AS metadata_OPT,
+    (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
     rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
     p.ad_seg_stays_and_reasons_within_3_yrs AS metadata_ad_seg_stays_and_reasons_within_3_yrs,
     #TODO(#28298) add in missing info when we receive data
     NULL AS metadata_needed_programming,
     NULL AS metadata_completed_programming,
-    temp.Management_Level AS metadata_management_security_level,
-    temp.Confinement_Level AS metadata_confinement_security_level,
-    temp.Actual_Sec_Level AS metadata_actual_security_level,
+    assessment.Management_Level_Assessment_Result AS metadata_management_security_level,
+    assessment.Confinement_Level_Assessment_Result AS metadata_confinement_security_level,
+    assessment.Actual_Placement_Level_Assessment_Result AS metadata_actual_security_level,
     a.case_notes 
 FROM eligible_and_almost_eligible tes
 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
@@ -377,8 +388,14 @@ LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_
     AND CURRENT_DATE('US/Eastern') BETWEEN hc.start_date AND {nonnull_end_date_exclusive_clause('hc.end_date_exclusive')}
 LEFT JOIN reasons_for_eligibility e
     ON tes.person_id = e.person_id
-LEFT JOIN temp_opt_stg_information temp
-    ON tes.external_id = temp.external_id
+LEFT JOIN assessment_information assessment
+    ON tes.external_id = assessment.offender_number
+LEFT JOIN OPT opt
+    ON tes.external_id = OPT.OffenderCode
+LEFT JOIN SMI smi
+    ON tes.external_id = smi.OffenderCode
+LEFT JOIN stg_information stg
+    ON tes.external_id = stg.offender_number
 LEFT JOIN array_case_notes_cte a 
     ON a.external_id = tes.external_id
 
