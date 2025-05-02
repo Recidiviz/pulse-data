@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Aggregated metrics collection definition for aggregated metrics for user reports"""
+"""Aggregated metrics collection definition for aggregated metrics, separated by 
+supervision linestaff, facilities linestaff, and supervision supervisors. These metrics 
+are used for user reports and information about users' eligible clients for email 
+reminders"""
+
 import datetime
 
 from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
@@ -49,9 +53,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def _build_workflows_user_metrics_aggregated_metrics_collection_config() -> (
-    AggregatedMetricsCollection
-):
+def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
 
     current_date = current_date_us_eastern()
 
@@ -166,10 +168,50 @@ def _build_insights_user_metrics_aggregated_metrics_collection_config() -> (
     )
 
 
+def _build_workflows_facilities_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+
+    current_date = current_date_us_eastern()
+
+    return AggregatedMetricsCollection(
+        collection_tag="workflows",
+        output_dataset_id=USER_METRICS_DATASET_ID,
+        population_configs={
+            MetricPopulationType.INCARCERATION: AggregatedMetricsCollectionPopulationConfig(
+                output_dataset_id=USER_METRICS_DATASET_ID,
+                population_type=MetricPopulationType.INCARCERATION,
+                units_of_analysis={
+                    MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+                },
+                metrics=[
+                    WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
+                    WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+                ],
+            ),
+        },
+        time_periods=[
+            # Current day metrics
+            MetricTimePeriodConfig(
+                interval_unit=MetricTimePeriod.DAY,
+                interval_length=1,
+                # Set the end date to tomorrow since periods are end-date exclusive
+                min_period_end_date=current_date + datetime.timedelta(days=1),
+                max_period_end_date=current_date + datetime.timedelta(days=1),
+                rolling_period_unit=None,
+                rolling_period_length=None,
+                description="Single day metric periods for the current day",
+                config_name="day_current_date",
+                period_name="CURRENT_DAY",
+            ),
+        ],
+        disaggregate_by_observation_attributes=None,
+    )
+
+
 def get_aggregated_metrics_collections() -> list[AggregatedMetricsCollection]:
     return [
-        _build_workflows_user_metrics_aggregated_metrics_collection_config(),
+        _build_workflows_supervision_user_metrics_aggregated_metrics_collection_config(),
         _build_insights_user_metrics_aggregated_metrics_collection_config(),
+        _build_workflows_facilities_user_metrics_aggregated_metrics_collection_config(),
     ]
 
 

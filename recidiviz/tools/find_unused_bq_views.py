@@ -23,7 +23,10 @@ Usage:
 
 from typing import Dict, Optional, Set
 
-from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.dataset_config import (
+    AGGREGATED_METRICS_DATASET_ID,
+    UNIT_OF_ANALYSIS_ASSIGNMENTS_BY_TIME_PERIOD_DATASET_ID,
+)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
@@ -42,6 +45,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
+    USER_METRICS_DATASET_ID,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
@@ -482,6 +486,34 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER.address: (
         "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id=UNIT_OF_ANALYSIS_ASSIGNMENTS_BY_TIME_PERIOD_DATASET_ID,
+        table_id="incarceration__person_to_facility_counselor__by_intersection__day_current_date",
+    ): (
+        "# TODO(#41002) Will be used for facilities line staff aggregated metrics"
+        "(Alyssa Zhou 05/02/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id=USER_METRICS_DATASET_ID,
+        table_id="workflows__incarceration_facility_counselor_aggregated_metrics",
+    ): (
+        "# TODO(#41002) Will be used for facilities line staff aggregated metrics"
+        "(Alyssa Zhou 05/02/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id=USER_METRICS_DATASET_ID,
+        table_id="workflows__incarceration_facility_counselor_period_span_aggregated_metrics",
+    ): (
+        "# TODO(#41002) Will be used for facilities line staff aggregated metrics"
+        "(Alyssa Zhou 05/02/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id=USER_METRICS_DATASET_ID,
+        table_id="workflows__incarceration_facility_counselor_period_span_aggregated_metrics__day_current_date",
+    ): (
+        "# TODO(#41002) Will be used for facilities line staff aggregated metrics"
+        "(Alyssa Zhou 05/02/2025)"
     ),
 }
 
