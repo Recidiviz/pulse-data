@@ -24,12 +24,13 @@ that their internal logic relies on the results of assessments from both tables.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    UPDATE_DATETIME_PARAM_NAME,
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH non_lsi_assessments AS (
     SELECT
         soa.Sex_Offender_Assess_Id as Assessment_Id,
@@ -42,8 +43,8 @@ WITH non_lsi_assessments AS (
         CAST(null as STRING) as Lsi_Rating_Approved_Cd,
         soa.Cis_1161_Lsi_Rating_Over_Cd as Lsi_Rating_Override_Cd,
         soa.Cis_1161_Lsi_Rating_Cd as Lsi_Rating_Cd
-    FROM {CIS_215_SEX_OFFENDER_ASSESS} soa
-    JOIN {CIS_2150_SEX_OFF_ASSESS_TYPE} type ON soa.Cis_2150_Assess_Type_Cd = type.Sex_Off_Assess_Type_Cd
+    FROM {{CIS_215_SEX_OFFENDER_ASSESS}} soa
+    JOIN {{CIS_2150_SEX_OFF_ASSESS_TYPE}} type ON soa.Cis_2150_Assess_Type_Cd = type.Sex_Off_Assess_Type_Cd
 ),
 lsi_assessments AS (
     SELECT
@@ -57,14 +58,14 @@ lsi_assessments AS (
         lsi.Cis_1161_Comm_Lsi_Apprv_Rating_Cd as Lsi_Rating_Approved_Cd,
         lsi.Cis_1161_Comm_Lsi_Or_Rating_Cd as Lsi_Rating_Override_Cd,
         lsi.Cis_1161_Comm_Lsi_Rating_Cd as Lsi_Rating_Cd,
-    FROM {CIS_116_LSI_HISTORY} lsi
-    JOIN {CIS_1009_LSI_TYPE} type ON lsi.Cis_1009_Lsi_Type_Cd = type.Lsi_Type_Cd
+    FROM {{CIS_116_LSI_HISTORY}} lsi
+    JOIN {{CIS_1009_LSI_TYPE}} type ON lsi.Cis_1009_Lsi_Type_Cd = type.Lsi_Type_Cd
 ),
 lsi_ratings AS (
     SELECT
         E_Lsi_Rating_Desc,
         Lsi_Rating_Cd,
-    FROM {CIS_1161_LSI_RATING}
+    FROM {{CIS_1161_LSI_RATING}}
 ),
 all_assessments AS (
     SELECT * FROM non_lsi_assessments UNION ALL SELECT * FROM lsi_assessments
@@ -86,7 +87,10 @@ FROM all_assessments aa
 LEFT JOIN lsi_ratings lra on aa.Lsi_Rating_Approved_Cd = lra.Lsi_Rating_Cd
 LEFT JOIN lsi_ratings lro on aa.Lsi_Rating_Override_Cd = lro.Lsi_Rating_Cd
 LEFT JOIN lsi_ratings lr on aa.Lsi_Rating_Cd = lr.Lsi_Rating_Cd
-LEFT JOIN {CIS_900_EMPLOYEE} emp on aa.Conductor_Id = emp.Employee_Id
+LEFT JOIN {{CIS_900_EMPLOYEE}} emp on aa.Conductor_Id = emp.Employee_Id
+
+-- At time of change, filters out only 1 row.
+WHERE DATE(LEFT(Assessment_Date, 10)) <= @{UPDATE_DATETIME_PARAM_NAME}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
