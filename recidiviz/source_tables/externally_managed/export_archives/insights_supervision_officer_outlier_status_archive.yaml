@@ -50,6 +50,12 @@ schema:
   - name: is_top_x_pct
     type: BOOLEAN
     mode: NULLABLE
+  - name: feature_variant
+    type: STRING
+    mode: NULLABLE
+  - name: inverse_feature_variant
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 external_data_configuration:
   sourceUris:

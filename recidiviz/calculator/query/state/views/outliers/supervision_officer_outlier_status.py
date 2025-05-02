@@ -51,10 +51,30 @@ def get_primary_caseload_category_types_by_state() -> str:
     )
 
 
+def get_feature_variants_by_metric() -> str:
+    query_parts = []
+    for state_code in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state_code)
+        for metric in config.metrics:
+            query_parts.append(
+                f"""
+SELECT
+  "{state_code}" AS state_code,
+  "{metric.name}" AS metric_id,
+  {f'"{metric.feature_variant}"' if metric.feature_variant else "NULL"} AS feature_variant,
+  {f'"{metric.inverse_feature_variant}"' if metric.inverse_feature_variant else "NULL"} AS inverse_feature_variant,
+"""
+            )
+    return "\nUNION ALL\n".join(query_parts)
+
+
 _QUERY_TEMPLATE = f"""
 WITH
 primary_caseload_category_types_by_state AS (
   {get_primary_caseload_category_types_by_state()}
+)
+, feature_variants_by_metric AS (
+  {get_feature_variants_by_metric()}
 )
 , officer_metrics_with_caseload_type AS (
   SELECT 
@@ -68,10 +88,14 @@ primary_caseload_category_types_by_state AS (
     caseload_category,
     category_type = c.primary_category_type AS is_surfaced_category_type,
     -- TODO(#31634): Remove caseload_type
-    caseload_category AS caseload_type
+    caseload_category AS caseload_type,
+    feature_variant,
+    inverse_feature_variant
   FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m
   INNER JOIN primary_caseload_category_types_by_state c
     USING(state_code)
+  INNER JOIN feature_variants_by_metric
+    USING(state_code, metric_id)
   WHERE
     m.value_type = 'RATE'
 )
@@ -145,6 +169,8 @@ SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBui
         "top_x_pct",
         "top_x_pct_percentile_value",
         "is_top_x_pct",
+        "feature_variant",
+        "inverse_feature_variant",
     ],
     outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
 )
