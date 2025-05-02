@@ -36,13 +36,14 @@ current_ids as (
 address_info AS (
   SELECT 
     ci.inmateNumber, 
+    residenceContactId,
     addressLine1, 
     addressLine2, 
     UPPER(city) AS city, 
     codevalue AS state, 
     zipCode, 
     DATE(startDate) AS startDate,
-    DATE(endDate) AS endDate,
+    IF(DATE(endDate) < DATE(startDate), DATE(startDate), DATE(endDate)) AS endDate,
     residencePhoneNumber,
     alternatePhoneNumber,
     emailAddress
@@ -64,14 +65,19 @@ clean_periods AS (
     state, 
     zipCode, 
     startDate,
-    IF(endDate > LEAD(startDate) OVER (PARTITION BY inmateNumber ORDER BY startDate), LEAD(startDate) OVER (PARTITION BY inmateNumber ORDER BY startDate), endDate) AS endDate, 
+    IF(endDate > LEAD(startDate) OVER (PARTITION BY inmateNumber ORDER BY startDate, residenceContactId)
+      OR endDate IS NULL AND LEAD(startDate) OVER (PARTITION BY inmateNumber ORDER BY startDate, residenceContactId) IS NOT NULL, 
+      LEAD(startDate) OVER (PARTITION BY inmateNumber ORDER BY startDate, residenceContactId), 
+    endDate) AS endDate, 
     residencePhoneNumber,
     alternatePhoneNumber,
     emailAddress
   FROM address_info
 )
 SELECT * FROM clean_periods
-WHERE startDate <= @update_timestamp AND (endDate <= @update_timestamp OR endDate IS NULL)
+WHERE startDate <= @update_timestamp 
+  AND (endDate <= @update_timestamp OR endDate IS NULL)
+  AND (startDate != endDate OR endDate IS NULL)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
