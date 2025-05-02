@@ -18,7 +18,8 @@ on a schedule or by some action, such as submission of a connected Google Form
 For communication about the Leadership Reports project, join the
 #leadership-reports-eng and #leadership-reports-xfn Slack channels.
 
-For communication about Login Email Reminders, join the #email-reminders-eng Slack channel.
+For communication about Login Email Reminders, join the #email-reminders-eng
+Slack channel.
 
 1. Download and install the
    [clasp library](https://github.com/google/clasp?tab=readme-ov-file#install).
@@ -86,7 +87,8 @@ environment". These test projects have no relationship to Apps Script's concepts
 of "versions" or "deployments"; they are completely separate copies of the main
 Apps Script project for development/testing purposes.
 
-To create a dev version of a project:
+To create a dev version of a project that's connected to the same Google Drive
+artifact (Docs, Spreadsheet, Forms, etc):
 
 - Navigate to the Project Overview within the Apps Script UI (the (i) icon).
   Click the "Make a copy" button in the upper right.
@@ -95,6 +97,20 @@ To create a dev version of a project:
   Drive artifact, like a sheet or form. However, any Triggers in the original
   project are not copied over, so you may also have to set up Triggers manually
   in your new project.
+
+To create a dev version of a project that is NOT connected to the same Google
+Drive artifact:
+
+- Create a new Google Drive artifact (Docs, Spreadsheet, Forms, etc).
+- On the artifact's toolbar, click "Extensions".
+- Under "Extensions", click "Apps Script". This will create a new Apps Script
+  project that is linked to your new artifact.
+- Go to your IDE and open your project's `.clasp.json` file.
+- In the `.clasp.json` file, make sure the Script ID is your production ID.
+- Use `clasp pull` to pull your production project's code to your local IDE.
+- In the `.clasp.json` file, change the Script ID to your dev version's ID. You
+  can find the Script ID in the "Project Settings" tab of Apps Script UI.
+- Use `clasp push` to push code from production project to your new dev project.
 
 To develop on a dev version of a project:
 

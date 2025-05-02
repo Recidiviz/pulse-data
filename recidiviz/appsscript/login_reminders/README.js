@@ -37,7 +37,7 @@ Script IDs
 The script ids associated with each duplicated project. Replace the `scriptId` in the `.clasp.json` file with the AppScript project you'd like to point to when using clasp commands. `clasp pull` from the PRODUCTION environment before you begin.
 
 - PRODUCTION: 1m983Lc4jmUj35Is6ggepLwL4AJqqhjKlqA1wne0ggGZU_H5g5L5pRGZl
-- [TEST_ABC]: 13mNJdx0BlvO6XT9meQ68sank6KL9FAJSpSc2gK_Hof14NJtR-17cofCE
-- [TEST_XYZ]: 1tlwG_FHvGGJzW-9KlhFKlvLeN04PmYyrLFwkkQ8oUYjPaBgC8QvAP236
+- [TEST_ABC]: 16MduJA3AvGgqg-bGXvbLbh1ZX52DwbJxMS6ImdfmKoiv3vOPJZUyGuOa
+- [TEST_XYZ]: 10CuD4El4KRTRTLFWtNVz5h_OrN2cB1N6ocu7govktfBws6BFROYoYO8J
 
 */
