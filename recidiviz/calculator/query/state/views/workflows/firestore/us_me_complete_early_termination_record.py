@@ -31,8 +31,14 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_me.early_termination_from_probation_request import (
+    VIEW_BUILDER as TES_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     cis_204_notes_cte,
@@ -110,6 +116,9 @@ _STANDARD_PAROLE_CONDITIONS = ", ".join(
     ]
 )
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    TES_VIEW_BUILDER
+)
 
 US_ME_COMPLETE_EARLY_TERMINATION_FORM_RECORD_VIEW_NAME = (
     "us_me_complete_early_termination_record"
@@ -128,6 +137,7 @@ WITH current_supervision_pop_cte AS (
     tes_task_query_view = 'early_termination_from_probation_request_materialized',
     id_type = "'US_ME_DOC'",
     eligible_and_almost_eligible_only=True,
+    tes_collapsed_view_for_eligible_date=_COLLAPSED_TES_SPANS_ADDRESS
 )}
 ),
 
@@ -261,7 +271,8 @@ add_snooze_info AS (
 {opportunity_query_final_select_with_case_notes(
     from_cte="current_supervision_pop_cte", 
     left_join_cte="add_snooze_info", 
-    additional_columns="metadata_denial"
+    additional_columns="metadata_denial",
+    include_eligible_date=True,
 )}
 """
 

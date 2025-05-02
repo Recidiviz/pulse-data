@@ -16,6 +16,9 @@
 #  =============================================================================
 " Helper SQL fragments that can be re-used for several opportunity queries."
 
+from typing import Optional
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
@@ -30,6 +33,7 @@ def join_current_task_eligibility_spans_with_external_id(
     eligible_only: bool = False,
     eligible_and_almost_eligible_only: bool = False,
     almost_eligible_only: bool = False,
+    tes_collapsed_view_for_eligible_date: Optional[BigQueryAddress] = None,
 ) -> str:
     """
     It joins a task eligibility span view with the state_person_external_id to retrieve external ids.
@@ -43,6 +47,9 @@ def join_current_task_eligibility_spans_with_external_id(
         state_code (str): State code. The final statement will filter out all other states.
         tes_task_query_view (str): The task query view that we're interested in querying.
             E.g. 'work_release_materialized'.
+        tes_collapsed_view_for_eligible_date: If present, adds a column eligible_date
+            containing the start_date from the given collapsed TES span, representing the
+            day this person became eligible.
     """
     if (
         sum([eligible_only, eligible_and_almost_eligible_only, almost_eligible_only])
@@ -67,13 +74,17 @@ def join_current_task_eligibility_spans_with_external_id(
         tes.ineligible_criteria,
         tes.is_eligible,
         tes.is_almost_eligible,
+        {"tes_collapsed.start_date AS eligible_date," if tes_collapsed_view_for_eligible_date else ""}
         {additional_columns}
     FROM `{{project_id}}.{{task_eligibility_dataset}}.{tes_task_query_view}` tes
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         USING(person_id)
+{f"LEFT JOIN `{{project_id}}.{tes_collapsed_view_for_eligible_date.to_str()}` tes_collapsed USING(person_id)" if tes_collapsed_view_for_eligible_date else ""}
     WHERE 
       CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND 
                                          {nonnull_end_date_exclusive_clause('tes.end_date')}
+{f"AND CURRENT_DATE('US/Pacific') BETWEEN tes_collapsed.start_date AND {nonnull_end_date_exclusive_clause('tes_collapsed.end_date')}"
+                                         if tes_collapsed_view_for_eligible_date else ""}
       AND tes.state_code = {state_code}
       AND pei.id_type = {id_type}
       {eligible_condition}
@@ -129,6 +140,7 @@ def opportunity_query_final_select_with_case_notes(
     from_cte: str = "eligible_and_almost_eligible",
     left_join_cte: str = "array_case_notes_cte",
     additional_columns: str = "",
+    include_eligible_date: bool = False,
 ) -> str:
     """The final CTE usually found in opportunity/form queries.
 
@@ -137,6 +149,9 @@ def opportunity_query_final_select_with_case_notes(
             eligible client list. Defaults to "eligible_and_almost_eligible".
         left_join_cte (str, optional): Usually the CTE containing all the case notes aggregated
             in a JSON. Defaults to "array_case_notes_cte".
+        include_eligible_date (bool, optional): If true, adds a column eligible_date with the start
+            date of the current collapsed TES span, representing the day this person became eligible.
+            Defaults to False.
     """
     return f"""    SELECT
         {from_cte}.person_id,
@@ -146,7 +161,7 @@ def opportunity_query_final_select_with_case_notes(
         is_eligible,
         is_almost_eligible,
         ineligible_criteria,
-        case_notes, {additional_columns}
+        case_notes, {"eligible_date, " if include_eligible_date else ""}{additional_columns}
     FROM {from_cte}
     LEFT JOIN {left_join_cte}
         USING(external_id)

@@ -30,9 +30,15 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     completion_event_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_me.custody_reclassification_review_form import (
+    VIEW_BUILDER as TES_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     FURLOUGH_NOTE_TX_REGEX,
@@ -55,6 +61,10 @@ US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_DESCRIPTION = """
     Queries information needed to fill out reclassification form in ME
     """
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    TES_VIEW_BUILDER
+)
+
 US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_QUERY_TEMPLATE = f"""
 WITH eligible_and_almost_eligible_clients AS (
 {join_current_task_eligibility_spans_with_external_id(
@@ -62,6 +72,7 @@ WITH eligible_and_almost_eligible_clients AS (
     tes_task_query_view = 'custody_reclassification_review_form_materialized',
     id_type = "'US_ME_DOC'",
     eligible_and_almost_eligible_only=True,
+    tes_collapsed_view_for_eligible_date=_COLLAPSED_TES_SPANS_ADDRESS
 )}
 ),
 # Arrival at the Current Facility

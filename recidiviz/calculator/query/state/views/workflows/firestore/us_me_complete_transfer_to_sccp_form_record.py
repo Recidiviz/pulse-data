@@ -29,8 +29,14 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_me.transfer_to_sccp_form import (
+    VIEW_BUILDER as TES_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
@@ -58,6 +64,10 @@ _DROP_REPEATED_SCCP_NOTES = """(SELECT *
                                      ORDER BY IF(criteria = "SCCP notes", 0, 1), 
                                             criteria DESC) = 1)"""
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    TES_VIEW_BUILDER
+)
+
 US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
 
 WITH all_current_spans AS (
@@ -65,6 +75,7 @@ WITH all_current_spans AS (
     state_code= "'US_ME'",
     tes_task_query_view = 'transfer_to_sccp_form_materialized',
     id_type = "'US_ME_DOC'",
+    tes_collapsed_view_for_eligible_date=_COLLAPSED_TES_SPANS_ADDRESS
 )}
 ),
 
@@ -152,7 +163,8 @@ add_snooze_info AS (
 {opportunity_query_final_select_with_case_notes(
     from_cte="all_current_spans", 
     left_join_cte="add_snooze_info", 
-    additional_columns="metadata_denial"
+    additional_columns="metadata_denial",
+    include_eligible_date=True,
 )}
 """
 

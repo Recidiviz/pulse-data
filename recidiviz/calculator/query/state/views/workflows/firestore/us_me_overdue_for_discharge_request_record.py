@@ -26,8 +26,14 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_me.overdue_for_discharge_request import (
+    VIEW_BUILDER as TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,6 +44,10 @@ US_ME_OVERDUE_FOR_DISCHARGE_DESCRIPTION = """
     Query for individuals eligible for discharge from supervision in Maine
     """
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    TES_VIEW_BUILDER
+)
+
 US_ME_OVERDUE_FOR_DISCHARGE_QUERY_TEMPLATE = f"""
 
 WITH all_current_spans AS (
@@ -45,6 +55,7 @@ WITH all_current_spans AS (
     state_code= "'US_ME'",
     tes_task_query_view = 'overdue_for_discharge_request_materialized',
     id_type = "'US_ME_DOC'",
+    tes_collapsed_view_for_eligible_date=_COLLAPSED_TES_SPANS_ADDRESS
 )}
 ),
 
@@ -67,7 +78,8 @@ add_snooze_info AS (
 {opportunity_query_final_select_with_case_notes(
     from_cte="all_current_spans", 
     left_join_cte="add_snooze_info", 
-    additional_columns="metadata_denial"
+    additional_columns="metadata_denial",
+    include_eligible_date=True,
 )}
 """
 
