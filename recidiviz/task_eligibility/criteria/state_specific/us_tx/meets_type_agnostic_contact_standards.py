@@ -187,38 +187,32 @@ critical_dates as (
         contact_types_accepted,
         month_start,
         month_end,
-        null as contact_type,
         month_start as critical_date,
         case_type,
         frequency_in_months,
         supervision_level,
-        "START" as period_type,
     FROM lookback_cte
-    UNION ALL 
+    UNION DISTINCT 
     SELECT 
         person_id,
         contact_types_accepted,
         month_start,
         month_end,
-        null as contact_type,
         month_end as critical_date,
         case_type,
         frequency_in_months,
         supervision_level,
-        "END" as period_type,
     FROM lookback_cte
-    UNION ALL
+    UNION DISTINCT
     SELECT 
         person_id,
         contact_types_accepted,
         month_start,
         month_end,
-        contact_type,
         contact_date as critical_date,
         case_type,
         frequency_in_months,
         supervision_level,
-        "CONTACT" as period_type,
     FROM lookback_cte
     WHERE contact_date IS NOT NULL
 ), 
@@ -228,34 +222,31 @@ divided_periods AS (
         month_start,
         month_end,
         person_id,
-        contact_type,
         contact_types_accepted,
         critical_date as period_start,
         LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date) AS period_end,
         case_type,
         frequency_in_months,
         supervision_level,
-        period_type,
-    FROM (SELECT DISTINCT * FROM critical_dates)
+    FROM critical_dates
 ),
 -- Divided periods with the associated contacts connected
 divided_periods_with_contacts as (
-    SELECT
+    SELECT DISTINCT
         p.person_id,
         period_start,
         period_end,
         month_start,
-        p.contact_type,
+        ci.contact_type,
         month_end,
         case_type,
         frequency_in_months,
         supervision_level,
         contact_types_accepted,
-        period_type,
     FROM divided_periods p
     LEFT JOIN contact_info ci
         ON p.person_id = ci.person_id
-        AND ci.contact_date BETWEEN p.month_start and p.period_end 
+        AND ci.contact_date BETWEEN p.month_start and DATE_SUB(p.period_end, INTERVAL 1 DAY)
         AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
     WHERE period_end IS NOT NULL
 ),
@@ -307,7 +298,14 @@ compliance_check AS (
         )) AS types_and_amounts_done,
         types_and_amounts_due,
         contact_required.contact_types_accepted,
-        period_type,
+        CASE 
+            WHEN period_start = month_start
+                THEN "START"
+            WHEN period_end =  month_end
+                THEN "END"
+            ELSE
+             "CONTACT"
+        END AS period_type,
         CASE 
             WHEN cc.frequency_in_months = 1 
                 THEN "1 MONTH"
@@ -333,7 +331,7 @@ finalized_periods AS (
         types_and_amounts_due,
         RTRIM(contact_types_accepted,",") as contact_types_accepted,
         period_type,
-        MAX(contact_date) OVER (PARTITION BY cc.person_id, contact_types_accepted) as last_contact_date,
+        ci.contact_date AS last_contact_date,
         CASE WHEN
             meets_criteria IS FALSE AND CURRENT_DATE > end_date
             THEN TRUE
@@ -346,7 +344,8 @@ finalized_periods AS (
     LEFT JOIN contact_info ci
       ON cc.person_id = ci.person_id
         AND ci.contact_type IN UNNEST(SPLIT(contact_types_accepted, ','))
-        AND ci.contact_date < end_date
+        AND ci.contact_date < start_date
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, contact_types_accepted, start_date ORDER BY contact_date DESC) = 1
 )
 SELECT 
   *
