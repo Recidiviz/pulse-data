@@ -580,6 +580,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 FROM supervision_cases sc
                 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
                 USING(person_id)
+                WHERE sc.state_code NOT IN ('US_UT')
             )
             UNION ALL
             -- months without violation
@@ -607,6 +608,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 "MONTHS_ON_SUPERVISION" as milestone_type,
                 3 AS milestone_priority
             FROM time_on_supervision
+            WHERE state_code NOT IN ('US_UT')
             
             UNION ALL
             -- months with the same employer
@@ -740,6 +742,20 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
+
+            UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for US_UT_EMPLOYED_6_MONTHS
+                SELECT
+                state_code,
+                person_id,
+                emp.start_date as milestone_date,
+                "Employed, studying, or with another source of income for 6+ months" as milestone_text,
+                "US_UT_EMPLOYED_6_MONTHS" as milestone_type,
+                32 AS milestone_priority
+                FROM `{{project_id}}.{{task_eligibility_criteria_general}}.supervision_continuous_employment_for_6_months_materialized` emp
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND emp.meets_criteria
 
             UNION ALL
                 -- milestone_date is the earliest date in which the individual was eligible for EMPLOYED_12_MONTHS

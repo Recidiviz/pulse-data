@@ -40,6 +40,7 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
+    TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -88,7 +89,7 @@ WORKFLOWS_SUPERVISION_STATES = sorted(
 ) + ["US_TX"]
 # Note: TX currently only supports tasks and not any opportunities
 
-WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA"]
+WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA", "US_UT"]
 
 HASH_VALUE_QUERY_STR = (
     "IF(state_code='US_IX', 'US_ID', state_code) || person_external_id"
@@ -159,6 +160,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_ca_task_eligibility_spans_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_CA
     ),
+    task_eligibility_criteria_general=TASK_ELIGIBILITY_CRITERIA_GENERAL,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
