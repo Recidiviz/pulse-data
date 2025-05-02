@@ -307,20 +307,18 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
     sorted_incarceration_periods = standard_date_sort_for_incarceration_periods(
         incarceration_periods
     )
-    # Get all the non-zero-day periods that don't have a "-T" flag in their admission reason.
-    non_temporary_movement_or_zero_day_periods = [
+    # Get all the periods that don't have a "-T" flag in their admission reason.
+    non_temporary_movement_periods = [
         ip
         for ip in sorted_incarceration_periods
         if ip.admission_reason_raw_text
         and not ip.admission_reason_raw_text.endswith("-T")
         and ip.admission_date
         and ip.release_date
-        # Don't include zero-day periods
-        and ip.admission_date != ip.release_date
     ]
     updated_incarceration_periods: List[StateIncarcerationPeriod] = []
 
-    if len(non_temporary_movement_or_zero_day_periods) > 0:
+    if len(non_temporary_movement_periods) > 0:
         for ip in sorted_incarceration_periods:
             # Store the period's original custodial authority to use as a default value
             new_custodial_authority = ip.custodial_authority
@@ -329,21 +327,39 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
                 and ip.admission_date
                 and ip.admission_reason_raw_text.endswith("-T")
             ):
-                # If the period has a "-T" flag, retrieve the periods from non_temporary_movement_or_zero_day_periods
+                # If the period has a "-T" flag, retrieve the periods from non_temporary_movement_periods
                 # that start before the "T" period.
-                prior_non_temporary_movement_or_zero_day_periods = [
+                prior_non_temporary_movement_periods = [
                     past_ip
-                    for past_ip in non_temporary_movement_or_zero_day_periods
+                    for past_ip in non_temporary_movement_periods
                     if past_ip.custodial_authority
                     and past_ip.admission_reason_raw_text
                     and past_ip.admission_date
                     and past_ip.admission_date < ip.admission_date
                 ]
-                # Get the subset of prior_non_temporary_movement_or_zero_day_periods that
+
+                # prior_non_temporary_movement_periods is sorted with a custom function that
+                # orders the periods by admission date, then by period length (descending).
+                # This keeps the selection of the most recent period deterministic. Periods
+                # should only share an admission date with one another if one of them is
+                # a zero-day period, so this sorting ensures that if we're ever picking
+                # between two periods with the same admission date, we use the non-zero-day one.
+                # Note that this means that zero-day periods CAN be used to get the custodial
+                # authority override, if they have a more recent admission date than any of
+                # the non-zero-day "P" periods.
+                prior_non_temporary_movement_periods.sort(
+                    key=lambda x: (
+                        x.admission_date,
+                        x.release_date is None,
+                        x.release_date,
+                    ),
+                    reverse=True,
+                )
+                # Get the subset of prior_non_temporary_movement_periods that
                 # have "-P" flags.
                 prior_permanent_movement_periods = [
                     pmp
-                    for pmp in prior_non_temporary_movement_or_zero_day_periods
+                    for pmp in prior_non_temporary_movement_periods
                     if pmp.admission_reason_raw_text
                     and pmp.admission_reason_raw_text.endswith("-P")
                 ]
@@ -353,16 +369,14 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
                     # custodial authority than the "T" period.
                     if (
                         ip.custodial_authority
-                        != prior_non_temporary_movement_or_zero_day_periods[
-                            -1
-                        ].custodial_authority
+                        != prior_non_temporary_movement_periods[0].custodial_authority
                     ):
                         # If the custodial authority has changed since the most recent "P"
                         # or unflagged period, then get the custodial authority from the most
                         # recent "P" period to use as an override for the "T" period's custodial
                         # authority.
                         new_custodial_authority = prior_permanent_movement_periods[
-                            -1
+                            0
                         ].custodial_authority
             # This new period will be the same as the original unless the custodial authority
             # override occurred.
@@ -372,7 +386,7 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
             updated_incarceration_periods.append(updated_ip)
         return updated_incarceration_periods
 
-    # If non_temporary_movement_or_zero_day_periods is empty, then this function will just
+    # If non_temporary_movement_periods is empty, then this function will just
     # use the input as output.
     return sorted_incarceration_periods
 

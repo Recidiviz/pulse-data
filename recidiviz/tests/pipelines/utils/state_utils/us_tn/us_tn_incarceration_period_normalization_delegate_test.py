@@ -1060,6 +1060,38 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             normalized_periods_permanent_period_overlapping_with_zero_day_period,
         )
 
+        # Edge case 4: Same zero-day period as above, but this time there isn't a non-zero
+        # day "P" period preceding the "T" period. When deciding which preceding period to
+        # use for the override, we prioritize non-zero day periods if multiple periods share
+        # an admission date, but if the only option is a zero-day period we'll use it nonetheless.
+        normalized_periods_non_overlapping_zero_day_period = (
+            self.delegate.infer_additional_periods(
+                person_id=self.person_id,
+                incarceration_periods=deepcopy(
+                    [
+                        ip1_zero_day,
+                        incarceration_period_2,
+                        ip3_changed_custodial_authority,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[]
+                ),
+            )
+        )
+        expected_periods_non_overlapping_zero_day_period = [
+            deepcopy(ip1_zero_day),
+            deepcopy(incarceration_period_2),
+            deep_entity_update(
+                deepcopy(ip3_changed_custodial_authority),
+                custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            ),
+        ]
+        self.assertEqual(
+            expected_periods_non_overlapping_zero_day_period,
+            normalized_periods_non_overlapping_zero_day_period,
+        )
+
     def test_infer_period_between_temporary_transfer(
         self,
     ) -> None:
