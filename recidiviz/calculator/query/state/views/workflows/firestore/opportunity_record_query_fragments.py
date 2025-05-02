@@ -83,6 +83,7 @@ def join_current_task_eligibility_spans_with_external_id(
 def array_agg_case_notes_by_external_id(
     from_cte: str = "eligible_and_almost_eligible",
     left_join_cte: str = "case_notes_cte",
+    title_for_null_notes: str = "",
 ) -> str:
     """
     Aggregates all case notes into one array within a JSON by external_id.
@@ -97,13 +98,24 @@ def array_agg_case_notes_by_external_id(
                 - event_date
                 - criteria
             Defaults to "case_notes_cte".
+        title_for_null_notes (str, optional): Copy with which to fill `note_title` when
+            that field is null. This could be used, for instance, to ensure that we show
+            some text (e.g., something like "no relevant notes found") within a
+            `criteria` section even if there are no non-null notes in that section. NB:
+            this text, if provided, will be used when `note_title` is null (even if the
+            other fields are non-null).
     """
+
+    if title_for_null_notes != "":
+        note_title = f"IF(note_title IS NULL, '{title_for_null_notes}', note_title) AS note_title"
+    else:
+        note_title = "note_title"
 
     return f"""    SELECT
             external_id,
             -- Group all notes into an array within a JSON
             TO_JSON(ARRAY_AGG(
-                STRUCT(note_title, note_body, event_date, criteria)
+                STRUCT({note_title}, note_body, event_date, criteria)
                 ORDER BY event_date, note_title, note_body, criteria
             )) AS case_notes,
         FROM {from_cte}
