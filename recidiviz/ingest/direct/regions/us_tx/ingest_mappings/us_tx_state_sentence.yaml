@@ -13,6 +13,7 @@ input_columns:
   OFF_STAT_CITATION: STRING
   is_violent_bool: BOOLEAN
   is_sex_offense_bool: BOOLEAN
+  OFF_F_M_CODE: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -60,3 +61,13 @@ output:
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
                 # This is the sentenced date rather than the charged date but close enough for use in criteria
                 date_charged: OFF_SENT_DATE
+                classification_type:
+                  $conditional:
+                    - $if:
+                        $not_null: OFF_F_M_CODE
+                      $then:
+                        $enum_mapping:
+                          $raw_text: OFF_F_M_CODE
+                          $mappings:
+                            StateChargeV2ClassificationType.FELONY:
+                              - F

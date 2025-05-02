@@ -60,7 +60,8 @@ VIEW_QUERY_TEMPLATE = """
             (OFF_SEX_OFF_REG = "Y") AS is_sex_offense_bool,
             COALESCE(OFF_COUNT, "ZZ") AS OFF_COUNT,
             OFF_CAUSE_CNTY_NO,
-            CAST(OFF_UPDATE_DATE AS DATETIME) AS OFF_UPDATE_DATE
+            CAST(OFF_UPDATE_DATE AS DATETIME) AS OFF_UPDATE_DATE,
+            OFF_F_M_CODE,
         FROM {Charges} c
         WHERE REPLACE(OFF_CAUSE_NO, ' ', '') IS NOT NULL
         -- We can't ingest any sentences where OFF_SENT_DATE (aka date imposed) is null (currently there are no cases where
