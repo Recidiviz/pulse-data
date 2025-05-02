@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with risk assessments"""
+"""Risk-score assessments."""
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -23,8 +24,8 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Risk assessments"
-
+# TODO(#39399): Explicitly handle the fact that a person could have multiple 'RISK'
+# assessments on the same day. How do we want to order/deduplicate those?
 _SOURCE_DATA_QUERY_TEMPLATE = f"""
 SELECT
     state_code,
@@ -39,13 +40,13 @@ FROM (
     SELECT
         a.state_code,
         a.person_id,
-        assessment_type,
-        assessment_date,
-        assessment_score,
-        # assessment score change within the same SSS
-        assessment_score - LAG(assessment_score) OVER (PARTITION BY
-            a.state_code, a.person_id, assessment_type, sss.start_date
-            ORDER BY assessment_date
+        a.assessment_type,
+        a.assessment_date,
+        a.assessment_score,
+        -- assessment score change within the same SSS
+        a.assessment_score - LAG(a.assessment_score) OVER (PARTITION BY
+            a.state_code, a.person_id, a.assessment_type, sss.start_date
+            ORDER BY a.assessment_date
         ) AS assessment_score_change,
     FROM
         `{{project_id}}.sessions.assessment_score_sessions_materialized` a
@@ -56,14 +57,15 @@ FROM (
         AND a.person_id = sss.person_id
         AND a.assessment_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause("sss.end_date_exclusive")}
     WHERE
-        assessment_score IS NOT NULL
-        AND assessment_type IS NOT NULL
+        a.assessment_class = 'RISK'
+        AND a.assessment_type IS NOT NULL
+        AND a.assessment_score IS NOT NULL
 )
 """
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
     event_type=EventType.RISK_SCORE_ASSESSMENT,
-    description=_VIEW_DESCRIPTION,
+    description=__doc__,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[
         "assessment_type",

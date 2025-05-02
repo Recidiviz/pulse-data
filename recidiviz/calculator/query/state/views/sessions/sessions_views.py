@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_se
 from recidiviz.calculator.query.state.views.sessions.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_level_dedup_priority import (
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -158,6 +161,9 @@ from recidiviz.calculator.query.state.views.sessions.release_termination_reason_
 )
 from recidiviz.calculator.query.state.views.sessions.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.risk_assessment_score_sessions import (
+    RISK_ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
@@ -343,6 +349,7 @@ from recidiviz.calculator.query.state.views.sessions.work_release_sessions impor
 SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
@@ -388,6 +395,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
+    RISK_ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,

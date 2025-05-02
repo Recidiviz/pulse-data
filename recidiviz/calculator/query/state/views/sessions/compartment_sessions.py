@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,6 +96,8 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	prioritized_race_or_ethnicity	|	Person's race or ethnicity. In cases where multiple race / ethnicities are listed, the least represented one for that state is chosen	|
 |	assessment_score_start	|	Assessment score at start of session	|
 |	assessment_score_end	|	Assessment score at end of session	|
+|	risk_assessment_score_start	|	Risk-assessment score at start of session	|
+|	risk_assessment_score_end	|	Risk-assessment score at end of session	|
 |	supervising_officer_external_id_start	|	Supervision officer at start of session (only populated for supervision sessions)	|
 |	supervising_officer_external_id_end	|	Supervision officer at end of session (only populated for supervision sessions)	|
 |	age_bucket_start	|	Age bucket at start of session	|
@@ -138,6 +140,10 @@ At a high-level, the following steps are taken to generate `compartment_sessions
     1. Lastly, the re-aggregated compartment sessions are joined back to other views to add additional session characteristics
 """
 
+# TODO(#39399): Deprecate `assessment_score_start` and `assessment_score_end` fields
+# once they're no longer used anywhere.
+# TODO(#39399): Do we want score buckets for `risk_assessment_score_start` and
+# `risk_assessment_score_end` too?
 COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     WITH sessions_aggregated AS
     /*
@@ -216,6 +222,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         -- TODO(#17265): Consider removing this logic following investigation of unknown assessment scores
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_start,
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_end,
+        NULLIF(ARRAY_AGG(risk_assessment_score IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)], -999) AS risk_assessment_score_start,
+        NULLIF(ARRAY_AGG(risk_assessment_score IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)], -999) AS risk_assessment_score_end,
         SUM(CASE WHEN metric_source = 'INFERRED'
             THEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive,INTERVAL 1 DAY), last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
         SUM(DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1) AS session_length_days,
@@ -260,6 +268,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         prioritized_race_or_ethnicity,
         assessment_score_start,
         assessment_score_end,
+        risk_assessment_score_start,
+        risk_assessment_score_end,
         supervising_officer_external_id_start,
         supervising_officer_external_id_end,
         compartment_location_start,
@@ -336,6 +346,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             OR COALESCE(inferred_end.original_end_reason,'NONE') = COALESCE(sessions.end_reason,'NONE'))
     WHERE NOT (sessions.compartment_level_1 = 'DEATH' AND end_date_exclusive IS NULL)
 """
+
 COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=COMPARTMENT_SESSIONS_VIEW_NAME,

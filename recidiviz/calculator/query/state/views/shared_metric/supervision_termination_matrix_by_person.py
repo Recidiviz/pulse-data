@@ -66,6 +66,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             person_id,
             person_external_id,
             gender,
+            /* TODO(#39399): Confirm what types/classes of assessments are included here
+            (and update logic, if needed, to only pull relevant ones). */
             assessment_score_bucket,
             age_bucket,
             prioritized_race_or_ethnicity,

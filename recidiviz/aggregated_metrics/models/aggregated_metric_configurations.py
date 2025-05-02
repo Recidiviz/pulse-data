@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -304,6 +304,10 @@ AVG_DAILY_POPULATION_GENERAL_INCARCERATION = DailyAvgSpanCountMetric(
     ),
 )
 
+# TODO(#39399): This metric assumes that someone would only have one 'RISK' assessment
+# span at once, but it's possible for someone to have multiple 'RISK' spans in the
+# `ASSESSMENT_SCORE_SESSION` span type (if the assessments are of different types). We
+# should properly aggregate/deduplicate as needed for this metric.
 AVG_DAILY_POPULATION_HIGH_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_high_risk_level",
     display_name="Average Population: High Risk Level",
@@ -311,7 +315,8 @@ AVG_DAILY_POPULATION_HIGH_RISK_LEVEL = DailyAvgSpanCountMetric(
     span_selector=SpanSelector(
         span_type=SpanType.ASSESSMENT_SCORE_SESSION,
         span_conditions_dict={
-            "assessment_level": ["HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"]
+            "assessment_class": ["RISK"],
+            "assessment_level": ["HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"],
         },
     ),
 )
@@ -329,13 +334,20 @@ AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetri
     ),
 )
 
+# TODO(#39399): This metric assumes that someone would only have one 'RISK' assessment
+# span at once, but it's possible for someone to have multiple 'RISK' spans in the
+# `ASSESSMENT_SCORE_SESSION` span type (if the assessments are of different types). We
+# should properly aggregate/deduplicate as needed for this metric.
 AVG_DAILY_POPULATION_LOW_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_low_risk_level",
     display_name="Average Population: Low Risk Level",
     description="Average daily count of clients with a low assessed risk level",
     span_selector=SpanSelector(
         span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-        span_conditions_dict={"assessment_level": ["LOW", "LOW_MEDIUM", "MINIMUM"]},
+        span_conditions_dict={
+            "assessment_class": ["RISK"],
+            "assessment_level": ["LOW", "LOW_MEDIUM", "MINIMUM"],
+        },
     ),
 )
 

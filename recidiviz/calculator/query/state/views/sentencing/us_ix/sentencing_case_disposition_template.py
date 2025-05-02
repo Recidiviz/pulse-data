@@ -16,6 +16,9 @@
 # =============================================================================
 """View logic that associates cases with the PSI staff and the eventual sentencing disposition"""
 
+# TODO(#39399): Switch over to risk-specific assessment scores in this view (since
+# `assessment_score`, `assessment_score_start`, `assessment_score_end`, and related
+# fields aren't generally specific to assessments in the 'RISK' class).
 US_IX_SENTENCING_CASE_DISPOSITION_TEMPLATE = """
 WITH cs_sentences AS (
 SELECT

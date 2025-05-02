@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -146,8 +146,12 @@ day_zero_reports AS (
             WHERE
                 supervision_level IS NOT NULL
         ) compliance_metrics
+        /* TODO(#39399): Determine whether/how we want to deduplicate/aggregate when
+        there might be multiple relevant assessments with open spans coming out of the
+        sessionized assessments view. */
         LEFT JOIN
             `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` assessment_score_sessions
+        -- TODO(#39399): Should we filter to 'RISK' assessments only here?
         ON
             compliance_metrics.person_id = assessment_score_sessions.person_id
             AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date 

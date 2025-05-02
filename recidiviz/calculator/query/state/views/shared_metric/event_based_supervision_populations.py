@@ -45,6 +45,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
         `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
     ON
         pop.supervising_officer_staff_id = staff.staff_id
+    -- TODO(#39399): Should we filter to 'RISK' assessments only here?
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
     ON a.state_code = pop.state_code AND
     a.person_id = pop.person_id AND

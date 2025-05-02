@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,6 +94,9 @@ LEFT JOIN
 ON
     a.person_id = ss.person_id
     AND a.session_id BETWEEN ss.session_id_start AND ss.session_id_end
+/* TODO(#39399): Determine whether/how we want to deduplicate/aggregate when there might
+be multiple 'RISK' assessments with open spans coming out of the sessionized assessments
+view. */
 LEFT JOIN 
     `{{project_id}}.sessions.assessment_score_sessions_materialized` asmt
 ON
@@ -104,6 +107,8 @@ ON
     AND asmt.assessment_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date_exclusive")}
     -- Filter out incarceration-only assessments
     AND NOT asmt.is_incarceration_only_assessment_type
+    -- Restrict to risk assessments
+    AND asmt.assessment_class = 'RISK'
 WHERE
     a.compartment_level_1 = "SUPERVISION"
     AND a.end_reason IN ("ADMITTED_TO_INCARCERATION", "REVOCATION")

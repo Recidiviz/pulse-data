@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ pre-processed sub-sessions view and does the following:
 2. Create compartment session ids
 """
 
+# TODO(#39399): Deprecate `assessment_score` field once it's no longer used anywhere.
 COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
     WITH session_union_with_other_atts AS
     /*
@@ -74,6 +75,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         end_reason,
         CAST(NULL AS INT64) AS age,
         CAST(NULL AS INT64) AS assessment_score,
+        CAST(NULL AS INT64) AS risk_assessment_score,
         metric_source,
         last_day_of_data,
         earliest_start_date,
@@ -117,6 +119,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS end_reason,
         age,
         CAST(NULL AS INT64) AS assessment_score,
+        CAST(NULL AS INT64) AS risk_assessment_score,
         CAST(NULL AS STRING) AS metric_source,
         CAST(NULL AS DATE) AS last_day_of_data,
         CAST(NULL AS DATE) AS earliest_start_date,
@@ -158,10 +161,52 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS INT64) AS age,
         -- TODO(#17265): Consider removing this logic following investigation of unknown assessment scores
         COALESCE(assessment_score, -999) AS assessment_score,
+        CAST(NULL AS INT64) AS risk_assessment_score,
         CAST(NULL AS STRING) AS metric_source,
         CAST(NULL AS DATE) AS last_day_of_data,
         CAST(NULL AS DATE) AS earliest_start_date,
     FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
+    UNION ALL
+    SELECT
+        person_id,
+        state_code,
+        assessment_date AS start_date,
+        score_end_date_exclusive AS end_date_exclusive,
+        CAST(NULL AS INT64) AS dataflow_session_id,
+        CAST(NULL AS STRING) AS compartment_level_1,
+        CAST(NULL AS STRING) AS compartment_level_2,
+        CAST(NULL AS STRING) AS supervising_officer_external_id,
+        CAST(NULL AS STRING) AS compartment_location,
+        CAST(NULL AS STRING) AS facility,
+        CAST(NULL AS STRING) AS facility_name,
+        CAST(NULL AS STRING) AS supervision_office,
+        CAST(NULL AS STRING) AS supervision_office_name,
+        CAST(NULL AS STRING) AS supervision_district,
+        CAST(NULL AS STRING) AS supervision_district_name,
+        CAST(NULL AS STRING) AS supervision_region_name,
+        CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS correctional_level_raw_text,
+        CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
+        CAST(NULL AS STRING) AS housing_unit_type,
+        CAST(NULL AS STRING) AS housing_unit_type_raw_text,
+        CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS STRING) AS case_type_raw_text,
+        CAST(NULL AS STRING) AS open_supervision_cl1,
+        CAST(NULL AS STRING) AS open_supervision_cl2,
+        CAST(NULL AS STRING) AS gender,
+        CAST(NULL AS STRING) AS custodial_authority,
+        CAST(NULL AS STRING) AS prioritized_race_or_ethnicity,
+        CAST(NULL AS STRING) AS start_reason,
+        CAST(NULL AS STRING) AS start_sub_reason,
+        CAST(NULL AS STRING) AS end_reason,
+        CAST(NULL AS INT64) AS age,
+        CAST(NULL AS INT64) AS assessment_score,
+        assessment_score AS risk_assessment_score,
+        CAST(NULL AS STRING) AS metric_source,
+        CAST(NULL AS DATE) AS last_day_of_data,
+        CAST(NULL AS DATE) AS earliest_start_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.risk_assessment_score_sessions_materialized`
     )
     ,
     {create_sub_sessions_with_attributes(table_name='session_union_with_other_atts', use_magic_date_end_dates=True, end_date_field_name='end_date_exclusive')}
@@ -203,6 +248,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         custodial_authority,
         age,
         assessment_score,
+        risk_assessment_score,
         start_date,
         CASE WHEN DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) < last_day_of_data THEN end_date_exclusive END AS end_date_exclusive,
         last_day_of_data,
@@ -267,6 +313,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         custodial_authority,
         age,
         assessment_score,
+        risk_assessment_score,
         start_reason,
         start_sub_reason,
         end_reason,
@@ -287,6 +334,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         )
     WINDOW w AS (PARTITION BY person_id ORDER BY start_date ASC)
 """
+
 COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=COMPARTMENT_SUB_SESSIONS_VIEW_NAME,

@@ -255,6 +255,9 @@ INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person` person
    ON person.person_id = imposed_group.person_id
 """
 
+# TODO(#39399): Switch over to risk-specific assessment scores in this view (since
+# `assessment_score`, `assessment_score_start`, `assessment_score_end`, and related
+# fields aren't generally specific to assessments in the 'RISK' class).
 ALL_COHORTS_CTE = f"""
 WITH admission_session AS (
   SELECT

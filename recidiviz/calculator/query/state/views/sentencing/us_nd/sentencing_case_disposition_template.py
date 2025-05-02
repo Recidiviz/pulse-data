@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@ from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_sentence
     US_ND_SENTENCE_IMPOSED_GROUP_SUMMARY,
 )
 
+# TODO(#39399): Switch over to risk-specific assessment scores in this view (since
+# `assessment_score`, `assessment_score_start`, `assessment_score_end`, and related
+# fields aren't generally specific to assessments in the 'RISK' class).
 US_ND_SENTENCING_SENTENCE_COHORT_TEMPLATE = f"""
 SELECT
   all_cohorts.state_code, 

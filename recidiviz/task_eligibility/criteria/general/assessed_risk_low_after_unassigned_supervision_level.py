@@ -35,6 +35,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "ASSESSED_RISK_LOW_AFTER_UNASSIGNED_SUPERVISION_LEVEL"
 
+# TODO(#34709): Consider pulling the risk-assessment logic here out into a shared view
+# or query fragment (or use `sessions.risk_assessment_score_sessions` if possible).
 # TODO(#34751): Decide how to handle assessments with null `assessment_level` values.
 _QUERY_TEMPLATE = f"""
     WITH risk_assessments_prioritized AS (

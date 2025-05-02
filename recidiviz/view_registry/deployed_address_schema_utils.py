@@ -78,6 +78,9 @@ from recidiviz.calculator.query.state.views.reference.completion_event_type_meta
 from recidiviz.calculator.query.state.views.sessions.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_level_dedup_priority import (
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
 )
@@ -150,6 +153,7 @@ STATE_CODE_COLUMN_NAME = "state_code"
 #  column.
 STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS = {
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER.address,
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address,
     CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER.address,
     COHORT_MONTH_INDEX_VIEW_BUILDER.address,

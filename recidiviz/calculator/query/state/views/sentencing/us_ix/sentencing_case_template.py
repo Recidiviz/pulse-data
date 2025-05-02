@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 # =============================================================================
 """View logic to prepare US_IX Sentencing case data for PSI tools"""
 
+# TODO(#39399): Explicitly filter to LSIR assessments when pulling in assessment data.
 US_IX_SENTENCING_CASE_TEMPLATE = """
 WITH
   -- this CTE gathers all the basic info on a PSI case

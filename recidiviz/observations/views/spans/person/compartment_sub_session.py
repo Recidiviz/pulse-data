@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBu
         "gender",
         "age",
         "assessment_score",
+        "risk_assessment_score",
     ],
     span_start_date_col="start_date",
     span_end_date_col="end_date_exclusive",
