@@ -33,6 +33,8 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     no_warrant_with_sustained_violation_within_2_years,
+    not_convicted_of_ineligible_offense_for_ers,
+    not_supervision_within_6_months_of_release_date,
     served_at_least_half_of_remaining_supervision_sentence,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -52,6 +54,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         served_at_least_half_of_remaining_supervision_sentence.VIEW_BUILDER,
         no_supervision_sustained_violation_within_2_years.VIEW_BUILDER,
         no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
+        not_convicted_of_ineligible_offense_for_ers.VIEW_BUILDER,
+        not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_unsupervised_parole.VIEW_BUILDER,
 )
