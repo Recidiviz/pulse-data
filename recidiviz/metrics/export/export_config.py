@@ -247,6 +247,7 @@ VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadat
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
 INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-insights-etl-data"
+INSIGHTS_VIEWS_DEMO_OUTPUT_DIRECTORY_URI = "gs://{project_id}-insights-etl-data-demo"
 PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-product-failed-logins-monthly"
 )

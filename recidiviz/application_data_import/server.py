@@ -24,6 +24,7 @@ from typing import Tuple
 import google.cloud.pubsub_v1 as pubsub
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
+from google.cloud import datastore
 from sqlalchemy import delete
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
@@ -62,6 +63,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 )
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+    INSIGHTS_VIEWS_DEMO_OUTPUT_DIRECTORY_URI,
     INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
@@ -136,9 +138,14 @@ def _dashboard_event_level_bucket() -> str:
     )
 
 
-def _insights_bucket() -> str:
+def _insights_bucket(demo: bool = False) -> str:
+    output_dir = (
+        INSIGHTS_VIEWS_DEMO_OUTPUT_DIRECTORY_URI
+        if demo is True
+        else INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI
+    )
     return StrictStringFormatter().format(
-        INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
+        output_dir,
         project_id=metadata.project_id(),
     )
 
@@ -241,6 +248,15 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+def _should_load_demo_data_into_insights() -> bool:
+    """Queries the Datastore Entity to determine if we should load Insights data into demo (versus staging)"""
+    datastore_client = datastore.Client(project=metadata.project_id())
+    entities = list(datastore_client.query(kind="ProductConfiguration").fetch())
+    entity = entities[0]
+    load_demo_data_into_insights = entity["loadDemoDataIntoInsights"]
+    return load_demo_data_into_insights
+
+
 @app.route("/import/trigger_insights", methods=["POST"])
 def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports for insights."""
@@ -250,11 +266,27 @@ def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
     except Exception as e:
         return str(e), HTTPStatus.BAD_REQUEST
 
+    if not message.attributes:
+        error_str = "Invalid Pub/Sub message"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    actual_bucket_id = message.attributes[BUCKET_ID]
+    load_demo_data_into_insights = _should_load_demo_data_into_insights()
+    expected_insights_bucket = _insights_bucket(demo=load_demo_data_into_insights)
+
+    # If loadDemoDataIntoInsights is True and triggering notification is from regular bucket: exit early
+    # If loadDemoDataIntoInsights is False and triggering notification is from demo bucket: exit early
+    if expected_insights_bucket != f"gs://{actual_bucket_id}":
+        error_str = f"loadDemoDataIntoInsights is {load_demo_data_into_insights} but triggering notification is from bucket {actual_bucket_id}"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
     try:
         create_import_task_helper(
             request_path=request.path,
             message=message,
-            gcs_bucket=_insights_bucket(),
+            gcs_bucket=expected_insights_bucket,
             import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
             task_prefix="import-insights",
             task_url="/import/insights",
@@ -291,6 +323,7 @@ def create_import_task_helper(
 
     bucket_id = attributes[BUCKET_ID]
     object_id = attributes[OBJECT_ID]
+
     if "gs://" + bucket_id != gcs_bucket:
         logging.error(
             "%s is only configured for the %s bucket, saw %s",
@@ -375,9 +408,14 @@ def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
 
+    # If loadDemoDataIntoInsights is True and triggering notification is from demo bucket: read data from demo bucket
+    # If loadDemoDataIntoInsights is False and triggering notification is from regular bucket: read data from regular bucket
+    load_demo_data_into_insights = _should_load_demo_data_into_insights()
+    insights_bucket = _insights_bucket(demo=load_demo_data_into_insights)
+
     json_path = GcsfsFilePath.from_absolute_path(
         os.path.join(
-            _insights_bucket(),
+            insights_bucket,
             state_code + "/" + filename,
         )
     )

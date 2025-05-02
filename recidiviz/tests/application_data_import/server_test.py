@@ -360,6 +360,10 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@patch(
+    "recidiviz.application_data_import.server._should_load_demo_data_into_insights",
+    MagicMock(return_value=False),
+)
 @pytest.mark.uses_db
 class TestApplicationDataImportInsightsRoutes(TestCase):
     """Implements tests for the Insights routes in the Application Data Import Flask server."""
@@ -428,6 +432,34 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
                 task_id=f"import-insights-{self.state_code}-test-file-json",
             )
 
+    @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
+    def test_import_trigger_insights_demo(self, mock_task_manager: MagicMock) -> None:
+        with self.app.test_request_context(), patch(
+            "recidiviz.application_data_import.server._should_load_demo_data_into_insights"
+        ) as mock:
+            mock.return_value = True
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "data": base64.b64encode(b"anything").decode(),
+                        "attributes": {
+                            "bucketId": "test-project-insights-etl-data-demo",
+                            "objectId": f"{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_called_with(
+                absolute_uri=f"http://localhost:5000/import/insights/{self.state_code}/test-file.json",
+                service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
+                task_id=f"import-insights-{self.state_code}-test-file-json",
+            )
+
     def test_import_trigger_insights_bad_message(self) -> None:
         with self.app.test_request_context():
             response = self.client.post(
@@ -453,7 +485,50 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
                 },
             )
             self.assertEqual(
-                b"/import/trigger_insights is only configured for the gs://test-project-insights-etl-data bucket, saw invalid-bucket",
+                b"loadDemoDataIntoInsights is False but triggering notification is from bucket invalid-bucket",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_insights_demo_mismatch(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": "test-project-insights-etl-data-demo",
+                            "objectId": f"staging/{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    },
+                },
+            )
+            self.assertEqual(
+                b"loadDemoDataIntoInsights is False but triggering notification is from bucket test-project-insights-etl-data-demo",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_insights_staging_mismatch(self) -> None:
+        with self.app.test_request_context(), patch(
+            "recidiviz.application_data_import.server._should_load_demo_data_into_insights"
+        ) as mock:
+            mock.return_value = True
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": "test-project-insights-etl-data",
+                            "objectId": f"staging/{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    },
+                },
+            )
+            self.assertEqual(
+                b"loadDemoDataIntoInsights is True but triggering notification is from bucket test-project-insights-etl-data",
                 response.data,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
