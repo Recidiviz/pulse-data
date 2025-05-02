@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,35 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence
-and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
-meet this requirement (TPDs in the past will not).
+Defines a criteria span view that shows spans of time during which
+someone does NOT have a mandatory override or is not already in MEDIUM or MINIMUM custody.
 """
 
-from recidiviz.task_eligibility.criteria.general import (
-    not_incarceration_within_3_years_of_projected_parole_release_date,
-    serving_a_life_sentence,
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    already_on_lowest_eligible_custody_level,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
-and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
-meet this requirement (TPDs in the past will not).
-"""
-
-
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="INCARCERATION_NOT_WITHIN_3_YEARS_OF_TPD_AND_NOT_LIFE_SENTENCE",
-    sub_criteria_list=[
-        serving_a_life_sentence.VIEW_BUILDER,
-        not_incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=already_on_lowest_eligible_custody_level.VIEW_BUILDER
 ).as_criteria_view_builder
 
 if __name__ == "__main__":

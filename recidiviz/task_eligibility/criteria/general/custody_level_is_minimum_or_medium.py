@@ -32,7 +32,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "CUSTODY_LEVEL_IS_MINIMUM_OR_MEDIUM"
 
 _DESCRIPTION = """This criteria view builder defines spans of time where residents are
-MINIMUM or MEDIUMcustody level as tracked by our `sessions` dataset.
+MINIMUM or MEDIUM custody level as tracked by our `sessions` dataset.
 """
 
 _REASONS_COLUMNS = (

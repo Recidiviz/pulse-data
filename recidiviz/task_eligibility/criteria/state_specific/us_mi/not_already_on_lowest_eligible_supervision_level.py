@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone is not
-eligible for classification review because they are already on the lowest eligible level for their case
-"""
+eligible for classification review because they are already on the lowest eligible level for their case"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (

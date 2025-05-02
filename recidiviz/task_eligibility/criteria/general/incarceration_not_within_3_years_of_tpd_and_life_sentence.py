@@ -15,42 +15,35 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which
-someone does not have a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+Defines a criteria span view that shows spans of time during which someone is serving a life sentence
+and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
+meet this requirement (TPDs in the past will not).
 """
 
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_not_within_3_years_of_tpd_and_life_sentence,
-    not_incarceration_within_20_years_of_full_term_completion_date,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    detainers_for_reclassification,
-    parole_hearing_date_greater_than_5_years_away,
+    not_incarceration_within_3_years_of_projected_parole_release_date,
+    serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone has a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
+and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
+meet this requirement (TPDs in the past will not).
 """
 
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
+VIEW_BUILDER = AndTaskCriteriaGroup(
+    criteria_name="INCARCERATION_NOT_WITHIN_3_YEARS_OF_TPD_AND_LIFE_SENTENCE",
     sub_criteria_list=[
-        incarceration_not_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
-        parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
-        not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
-        detainers_for_reclassification.VIEW_BUILDER,
+        serving_a_life_sentence.VIEW_BUILDER,
+        not_incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-    reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
 ).as_criteria_view_builder
 
 if __name__ == "__main__":

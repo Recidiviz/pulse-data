@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,41 +16,32 @@
 # ============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone does not have a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+someone has a mandatory override and is already in MEDIUM or MINIMUM custody.
 """
-
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_not_within_3_years_of_tpd_and_life_sentence,
-    not_incarceration_within_20_years_of_full_term_completion_date,
+    custody_level_is_minimum_or_medium,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    detainers_for_reclassification,
-    parole_hearing_date_greater_than_5_years_away,
+    mandatory_overrides_for_reclassification,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
+DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone has a mandatory override that would prevent them from
-being reclassified to a lower custody level.
+someone has a mandatory override and is already in MEDIUM or MINIMUM custody.
 """
 
-
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
+VIEW_BUILDER = AndTaskCriteriaGroup(
+    criteria_name="US_IX_ALREADY_ON_LOWEST_ELIGIBLE_CUSTODY_LEVEL",
     sub_criteria_list=[
-        incarceration_not_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
-        parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
-        not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
-        detainers_for_reclassification.VIEW_BUILDER,
+        mandatory_overrides_for_reclassification.VIEW_BUILDER,
+        custody_level_is_minimum_or_medium.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-    reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
 ).as_criteria_view_builder
 
 if __name__ == "__main__":
