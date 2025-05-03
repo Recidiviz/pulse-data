@@ -3132,6 +3132,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS = DailyAvgSpanCountMetri
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
         },
     ),
 )
@@ -3150,6 +3151,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION = [
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
+                "task_type_is_fully_launched": ["true"],
             },
         ),
     )
@@ -3171,6 +3173,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION = 
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
+                "task_type_is_fully_launched": ["true"],
             },
         ),
     )

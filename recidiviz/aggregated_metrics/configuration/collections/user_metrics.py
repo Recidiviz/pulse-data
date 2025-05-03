@@ -33,6 +33,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
     DISTINCT_OUTLIER_OFFICERS,
     DISTINCT_PROVISIONED_INSIGHTS_USERS,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
@@ -77,6 +78,7 @@ def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_conf
                     WORKFLOWS_PRIMARY_USER_LOGINS,
                     WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE,
                     WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+                    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
                     # Used for supervisors who supervise clients to distinguish
                     # the users who do not have access to Insights yet
                     DISTINCT_PROVISIONED_INSIGHTS_USERS,
