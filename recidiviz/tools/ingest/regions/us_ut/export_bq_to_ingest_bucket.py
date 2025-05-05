@@ -331,8 +331,8 @@ if __name__ == "__main__":
             destination_raw_data_instance=args.destination_raw_data_instance,
             update_datetime=(
                 datetime.datetime.now(tz=datetime.UTC)
-                if args.update_datetime_str is None
-                else datetime.datetime.fromisoformat(args.update_datetime_str)
+                if args.update_datetime is None
+                else datetime.datetime.fromisoformat(args.update_datetime)
             ),
             dry_run=args.dry_run,
         )

@@ -135,6 +135,8 @@ output:
                   - NOT SUPVSD AFTER APPEAL
                   - EXPIRATION TO HOLD
                   - FACILITY NAME CHANGE
+                  - PLEA IN ABEYANCE RESTARTED
+                  - PLEA IN ABEYANCE EXTENDED
                 StateSupervisionPeriodAdmissionReason.INVESTIGATION:
                   - INVESTIGATION NOT COMPLETED
                   - JAIL ENTRY
@@ -272,6 +274,8 @@ output:
                   - INMATE COURTESY HOLD
                   - APPEAL AFFIRMED
                   - PLEA IN ABEYANCE START
+                  - PLEA IN ABEYANCE RESTARTED
+                  - PLEA IN ABEYANCE EXTENDED
                   - PROBATION RESTARTED
                   - COLLECTION ONLY START
                   - CCC RELEASE

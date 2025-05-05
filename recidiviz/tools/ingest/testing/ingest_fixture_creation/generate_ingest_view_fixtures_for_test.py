@@ -25,13 +25,26 @@ python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest
     --external_id_type US_MO_DOC \
     --external_id_value 12345 \
     --ingest_view_name sentence \
-    --test_characteristic revocation
+    --test_characteristic revocation \
     [--files_to_make_empty <file tags to skip>]
 
 files_to_make_empty should be a last resort when an existing ingest view
 needs new test cases, but the logic connecting raw dependencies isn't
 clean enough to connect your specific test case. Please try updating
 the ingest view and raw data dependencies first!
+
+If you are adding an ingest view test to a ingest view with existing code files and want
+to skip re-generating those code files, pass the skip_code_files flag like
+
+python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest_view_fixtures_for_test \
+    --state_code US_MO \
+    --external_id_type US_MO_DOC \
+    --external_id_value 12345 \
+    --ingest_view_name sentence \
+    --test_characteristic revocation \
+    --skip_code_files
+
+
 """
 import argparse
 import os

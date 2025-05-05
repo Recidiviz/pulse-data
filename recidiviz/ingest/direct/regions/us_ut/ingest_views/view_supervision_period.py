@@ -52,6 +52,7 @@ legal_status_periods AS (
                 ORDER BY stat_beg_datetime
             ) AS end_date,
             lgl_stat_desc,
+            lgl_stat_cd,
             lgl_stat_chg_desc AS legal_status_start_reason,
             LEAD(lgl_stat_chg_desc) OVER (
                 PARTITION BY ofndr_num
@@ -59,7 +60,16 @@ legal_status_periods AS (
             ) AS legal_status_end_reason,
         FROM legal_status
     )
-    WHERE lgl_stat_desc LIKE '%PAROLE%' OR lgl_stat_desc LIKE '%PROBATION%'
+    WHERE lgl_stat_cd IN (
+        'A', --  CLASS A PROBATION   
+        'F', --  FELONY PROBATION    
+        'M', --  CLASS B/C PROBATION 
+        'N', --  PLEA IN ABEYANCE    
+        'P', --  PAROLE              
+        'W', --  COMPACT IN PROBATION
+        'X', --  COMPACT IN PAROLE
+        'O' --  PRE-CONVICT DIVERSN   
+    )
 ),
 -- Collect all location updates and the dates they were made.
 location AS (
@@ -90,6 +100,7 @@ location_periods AS (
             ORDER BY assgn_datetime
         ) , end_dt) AS end_date,
         body_loc_desc,
+        loc_typ_cd,
         assgn_rsn_desc AS location_start_reason,
         LEAD(assgn_rsn_desc) OVER (
               PARTITION BY ofndr_num
@@ -271,6 +282,7 @@ periods_with_attributes AS (
         IF(p.end_date = ls.end_date, ls.legal_status_end_reason, NULL) AS legal_status_end_reason,
 
         ls.lgl_stat_desc,
+        ls.lgl_stat_cd,
 
         -- Only populate location change reasons if this period matches the location change date
         -- This prevents us from improperly setting the admission reason for subsequent
@@ -279,6 +291,7 @@ periods_with_attributes AS (
         IF(p.end_date = loc.end_date, loc.location_end_reason, NULL) AS location_end_reason,
 
         loc.body_loc_desc,
+        loc.loc_typ_cd,
 
         -- Only populate supervision level change reasons if this period matches the 
         -- supervision level change date
@@ -343,7 +356,16 @@ supervision_periods AS (
         OR location_start_reason = lgl_stat_chg_desc)
     -- Do not allow period start reasons to be types of exit from supervision.
     WHERE start_reason.sprvsn_exit_typ_id IS NULL 
-    AND (lgl_stat_desc LIKE '%PAROLE%' OR lgl_stat_desc LIKE '%PROBATION%')
+    AND lgl_stat_cd IN (
+        'A', --  CLASS A PROBATION   
+        'F', --  FELONY PROBATION    
+        'M', --  CLASS B/C PROBATION 
+        'N', --  PLEA IN ABEYANCE    
+        'P', --  PAROLE              
+        'W', --  COMPACT IN PROBATION
+        'X', --  COMPACT IN PAROLE
+        'O' --  PRE-CONVICT DIVERSN   
+    )
 )
 SELECT *, 
 ROW_NUMBER() OVER (
