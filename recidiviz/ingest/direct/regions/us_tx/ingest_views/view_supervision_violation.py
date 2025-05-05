@@ -51,7 +51,7 @@ violation_cte AS
 ),
 -- Combines the violation with the associated violation response
 violation_responses AS (
-    SELECT
+    SELECT DISTINCT
         v.SID_Number,
         v.VIOLATION_ID,
         v.VIOLATION_STATUS,    
@@ -70,9 +70,7 @@ SELECT
     VIOLATION_ID,
     VIOLATION_DATE,
     VIOLATION_STATUS,
-     CASE
-        WHEN COUNTIF(HEARING_PERIOD_ID IS NOT NULL) = 0 THEN NULL
-        ELSE TO_JSON_STRING(
+    TO_JSON_STRING(
              ARRAY_AGG(
                STRUCT<
                  RESPONSE_DATE DATE, 
@@ -82,11 +80,15 @@ SELECT
                >(
                  RESPONSE_DATE, 
                  HEARING_PERIOD_ID,
-                 CONCAT(COALESCE(VIOLATION_DECISION, ''), '|', COALESCE(VIOLATION_RESULT, '')), 
+                 NULLIF(
+                    CONCAT(COALESCE(VIOLATION_DECISION, ''), 
+                    '|', 
+                    COALESCE(VIOLATION_RESULT, '')),
+                '|'), 
                  VIOLATION_ID
                ) 
              )
-    ) END AS response_list
+    ) AS response_list
 FROM violation_responses
 GROUP BY SID_Number,VIOLATION_ID,VIOLATION_DATE,VIOLATION_STATUS
 """
