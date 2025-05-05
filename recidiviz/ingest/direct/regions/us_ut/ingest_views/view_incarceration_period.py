@@ -51,6 +51,7 @@ legal_status_periods AS (
                 PARTITION BY ofndr_num
                 ORDER BY stat_beg_datetime
             ) AS end_date,
+            lgl_stat_cd,
             lgl_stat_desc,
             lgl_stat_chg_desc AS legal_status_start_reason,
             LEAD(lgl_stat_chg_desc) OVER (
@@ -88,6 +89,7 @@ location_periods AS (
             PARTITION BY ofndr_num
             ORDER BY assgn_datetime
         ) , end_dt) AS end_date,
+        loc_typ_cd,
         body_loc_desc,
         assgn_rsn_desc AS location_start_reason,
         LEAD(assgn_rsn_desc) OVER (
@@ -150,6 +152,7 @@ periods_with_attributes AS (
         IF(p.start_date = ls.start_date, ls.legal_status_start_reason, NULL) AS legal_status_start_reason,
         IF(p.end_date = ls.end_date, ls.legal_status_end_reason, NULL) AS legal_status_end_reason,
 
+        ls.lgl_stat_cd,
         ls.lgl_stat_desc,
 
         -- Only populate location change reasons if this period matches the location change date
@@ -158,6 +161,7 @@ periods_with_attributes AS (
         IF(p.start_date = loc.start_date, loc.location_start_reason, NULL) AS location_start_reason,
         IF(p.end_date = loc.end_date, loc.location_end_reason, NULL) AS location_end_reason,
 
+        loc.loc_typ_cd,
         loc.body_loc_desc,
 
     FROM periods_cte p
@@ -178,23 +182,32 @@ periods_with_attributes AS (
 -- This maximizes information in these fields that is most useful for our mappings.
 incarceration_periods AS (
   SELECT * FROM (
-    SELECT DISTINCT
-    ofndr_num,
-    start_date,
-    end_date,
-    -- When there are both legal status changes and location changes on the same date, the reasons are most often identical.
-    -- When they are not, the location start reason is more descriptive. 
-    COALESCE(location_start_reason, legal_status_start_reason) AS start_reason,
-    COALESCE(location_end_reason, legal_status_end_reason) AS end_reason,
-    lgl_stat_desc,
-    body_loc_desc,
-    FROM periods_with_attributes
-    LEFT JOIN lgl_stat_chg_cd_generated_view start_reason
-        ON (legal_status_start_reason = lgl_stat_chg_desc
-        OR location_start_reason = lgl_stat_chg_desc)
-
-    WHERE( lgl_stat_desc LIKE '%INMATE%'
-    OR body_loc_desc LIKE "%CO JAIL%"))
+        SELECT DISTINCT
+            ofndr_num,
+            start_date,
+            end_date,
+            -- When there are both legal status changes and location changes on the same date, the reasons are most often identical.
+            -- When they are not, the location start reason is more descriptive. 
+            COALESCE(location_start_reason, legal_status_start_reason) AS start_reason,
+            COALESCE(location_end_reason, legal_status_end_reason) AS end_reason,
+            lgl_stat_desc,
+            body_loc_desc,
+        FROM periods_with_attributes
+        LEFT JOIN lgl_stat_chg_cd_generated_view start_reason
+            ON (legal_status_start_reason = lgl_stat_chg_desc
+            OR location_start_reason = lgl_stat_chg_desc)
+        WHERE (
+            lgl_stat_cd in (
+                'I',  -- INMATE
+                'Y',  -- COMPACT IN INMATE
+                'V'   -- PAROLE VIOLATION
+            )
+            OR loc_typ_cd in (
+                'U',  -- UTAH JAIL
+                'I'   -- INSTITUTIONAL OPS
+            )
+        )
+    )
     -- Do not allow period start reasons to be types of exit from incarceration.
     WHERE START_REASON NOT LIKE "%DISCHARGED%"
     AND START_REASON NOT LIKE "%DIED%" 
