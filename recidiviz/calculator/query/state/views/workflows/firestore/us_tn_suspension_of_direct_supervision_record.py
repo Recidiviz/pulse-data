@@ -122,9 +122,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "Latest NCIC Check (BBNN or BBNP)" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "LATEST NCIC CHECK" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -132,7 +131,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=True,
                 )}
             )
-                USING (person_id)
             UNION ALL
             -- contact notes related to arrests
             SELECT
@@ -140,9 +138,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "All ARRP Contacts" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "ARRESTS" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -150,7 +147,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=False,
                 )}
             )
-                USING (person_id)
             UNION ALL
             -- contact notes related to substance use
             SELECT
@@ -158,9 +154,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "All DRUP or FSW-Related Contacts" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "SUBSTANCE USE HISTORY" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -168,7 +163,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=False,
                 )}
             )
-                USING (person_id)
             UNION ALL
             -- contact notes related to negative drug tests
             SELECT
@@ -176,9 +170,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "All DRUN, DRUM, and DRUX Contacts" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "SUBSTANCE USE HISTORY - NEGATIVE SCREENS" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -186,7 +179,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=False,
                 )}
             )
-                USING (person_id)
             UNION ALL
             -- latest contact note related to special conditions
             SELECT
@@ -194,9 +186,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "Latest SPEC, SPET, or XSPE Contact" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "LATEST SPECIAL CONDITIONS" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -204,7 +195,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=True,
                 )}
             )
-                USING (person_id)
             UNION ALL
             -- latest contact note related to employment
             SELECT
@@ -212,9 +202,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "Latest Employment-Related Contact" AS criteria,
-            FROM base
-            LEFT JOIN (
+                "LATEST EMPLOYMENT" AS criteria,
+            FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
                     comments_cte="comments_clean",
@@ -222,21 +211,16 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                     keep_last=True,
                 )}
             )
-                USING (person_id)
         ) case_notes_by_person_id
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON case_notes_by_person_id.person_id=pei.person_id
             AND pei.state_code='US_TN'
             AND pei.id_type='US_TN_DOC'
     ),
-    /* TODO(#41863): Once better infra exists for ensuring that we still show all case-
-    note sections for each client, even when there are no relevant notes to surface, we
-    can refactor how we do that here to leverage that new & improved infra. */
     case_notes_aggregated AS (
         {array_agg_case_notes_by_external_id(
             from_cte="base",
             left_join_cte="case_notes",
-            title_for_null_notes="No relevant contact notes found.",
         )}
     )
     SELECT
