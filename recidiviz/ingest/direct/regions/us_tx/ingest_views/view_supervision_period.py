@@ -257,7 +257,7 @@ case_type_cte AS (
     Case_Type,
     p.start_date,
     date(CTH_Creation_DATE) as CTH_Creation_DATE,
-    LAG(Case_type)OVER(PARTITION BY Period_ID_Number ORDER BY CTH_Creation_DATE DESC) AS prev_Case_type
+    LAG(Case_type)OVER(PARTITION BY Period_ID_Number ORDER BY CTH_Creation_DATE ASC) AS prev_Case_type
   FROM ranked_case_type_changes sp
   LEFT JOIN periods p 
     USING (Period_ID_Number)
