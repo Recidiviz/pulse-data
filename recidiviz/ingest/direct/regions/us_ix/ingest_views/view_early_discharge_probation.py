@@ -28,12 +28,19 @@ VIEW_QUERY_TEMPLATE = """
 SELECT
   OffenderId, 
   InvestigationId,
-  (DATE(CompletionDate)) as CompletionDate,
   Accepted,
   Cancelled,
-  (DATE(RequestDate)) as RequestDate
-from {com_Investigation}
-where InvestigationTypeId = '1000' -- Request for Early Discharge - Probation
+  (DATE(RequestDate)) as RequestDate,
+  -- Enforce that CompletionDate is not in the future
+  CASE 
+    WHEN (DATE(CompletionDate)) >= CURRENT_DATETIME
+        THEN NULL
+    ELSE 
+        DATE(CompletionDate)
+  END AS CompletionDate,
+
+FROM {com_Investigation}
+WHERE InvestigationTypeId = '1000' -- Request for Early Discharge - Probation
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
