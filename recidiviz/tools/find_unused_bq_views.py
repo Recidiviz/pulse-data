@@ -92,6 +92,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervi
 from recidiviz.calculator.query.state.views.outliers.supervision_officers_archive import (
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
+    SUPERVISION_STATE_METRICS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
@@ -514,6 +517,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "# TODO(#41002) Will be used for facilities line staff aggregated metrics"
         "(Alyssa Zhou 05/02/2025)"
+    ),
+    SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
+        "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
     ),
 }
 
