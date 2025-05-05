@@ -20,7 +20,10 @@ formed from sub-sessionizing the sentence serving periods for all overlapping se
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -45,8 +48,9 @@ serving_periods AS (
     LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sentences
         USING (state_code, person_id, sentence_id)
     WHERE
+        --TODO(#41864): Remove this exclusion based on imposed date 
         -- Drop any status sessions that end before the sentence imposed date
-        imposed_date <= {nonnull_end_date_clause("statuses.end_date_exclusive")}
+        {nonnull_start_date_clause("imposed_date")} <= {nonnull_end_date_clause("statuses.end_date_exclusive")}
 ),
 {create_sub_sessions_with_attributes(
     table_name="serving_periods",
