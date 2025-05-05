@@ -232,16 +232,3 @@ module "state_resident_populations_table" {
 
   table_name = "state_resident_populations"
 }
-
-
-module "offense_description_to_labels_table" {
-  source = "./modules/reference-table"
-
-  project_id      = var.project_id
-  bucket_name     = module.external_reference_tables_bucket.name
-  dataset_id      = module.external_reference_dataset.dataset_id
-  recidiviz_root  = local.recidiviz_root
-  read_from_local = false
-
-  table_name = "offense_description_to_labels"
-}

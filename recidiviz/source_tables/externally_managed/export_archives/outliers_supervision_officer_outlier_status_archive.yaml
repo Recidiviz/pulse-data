@@ -38,7 +38,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-outliers-etl-data-archive/*/supervision_officer_outlier_status.csv
+    - gs://{project_id}-outliers-etl-data-archive/*/supervision_officer_outlier_status.csv
   sourceFormat: CSV
   ignoreUnknownValues: true
   compression: NONE

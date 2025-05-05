@@ -39,7 +39,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-external-reference-data/state_resident_populations.csv
+    - gs://{project_id}-external-reference-data/state_resident_populations.csv
   sourceFormat: CSV
   compression: NONE
   csvOptions:

@@ -17,7 +17,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-external-reference-data/us_co_incarceration_facility_map.csv
+    - gs://{project_id}-external-reference-data/us_co_incarceration_facility_map.csv
   sourceFormat: CSV
   compression: NONE
   csvOptions:

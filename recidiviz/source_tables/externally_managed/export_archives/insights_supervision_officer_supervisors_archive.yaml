@@ -29,7 +29,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-insights-etl-data-archive/*/supervision_officer_supervisors.json
+    - gs://{project_id}-insights-etl-data-archive/*/supervision_officer_supervisors.json
   sourceFormat: NEWLINE_DELIMITED_JSON
   ignoreUnknownValues: true
   compression: NONE

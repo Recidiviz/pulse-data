@@ -44,6 +44,8 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils import metadata
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -55,7 +57,7 @@ DEFAULT_SOURCE_TABLE_DESCRIPTION = (
 )
 
 
-@attr.s(auto_attribs=True)
+@attr.define(kw_only=True)
 class SourceTableConfig:
     """Object representing a BigQuery table"""
 
@@ -65,10 +67,19 @@ class SourceTableConfig:
     clustering_fields: list[str] | None = attr.ib(factory=list)
     time_partitioning: TimePartitioning | None = attr.ib(default=None)
     require_partition_filter: bool | None = attr.ib(default=None)
-    external_data_configuration: ExternalConfig | None = attr.ib(default=None)
     yaml_definition_path: str | None = attr.ib(default=None)
     deployed_projects: list[str] = attr.ib(factory=list)
     is_sandbox_table: bool = attr.ib(default=False)
+
+    # Set via the external_data_configuration keyword argument, but private
+    _external_data_configuration: ExternalConfig | None = attr.ib(default=None)
+
+    # Lazily set when the external_data_configuration is accessed. This
+    # external config has a matching schema and URIs formatted to match the
+    # project if necessary.
+    _formatted_external_data_configuration: ExternalConfig | None = attr.ib(
+        default=None, init=False
+    )
 
     def __attrs_post_init__(self) -> None:
         if not self.schema_fields:
@@ -117,11 +128,84 @@ class SourceTableConfig:
                     f"[{self.address.to_str()}] with no defined mode."
                 )
 
-        # For external tables, we store the schema on the external_data_configuration
-        if self.external_data_configuration:
-            self.external_data_configuration.schema = self.schema_fields
-            # TODO(#41360): Enforce that source URIs have project id arg (for GCS URIS)
-            #  and format with project_id.
+    @property
+    def is_external_table(self) -> bool:
+        """Returns true if this table reads from external data (i.e. has an
+        external_data_configuration).
+        """
+        return self._external_data_configuration is not None
+
+    @property
+    def external_data_configuration(self) -> ExternalConfig | None:
+        """Returns this table's external data configuration, formatted for the current
+        project.
+        """
+        if not self._external_data_configuration:
+            return None
+
+        if not self._formatted_external_data_configuration:
+            self._formatted_external_data_configuration = ExternalConfig.from_api_repr(
+                self._external_data_configuration.to_api_repr()
+            )
+            # For external tables, we store the schema on the external_data_configuration
+            self._formatted_external_data_configuration.schema = self.schema_fields
+            self._format_source_uris_for_project(
+                self.address, self._formatted_external_data_configuration
+            )
+        return self._formatted_external_data_configuration
+
+    @staticmethod
+    def _format_source_uris_for_project(
+        address: BigQueryAddress,
+        external_data_configuration: ExternalConfig,
+    ) -> None:
+        """Formats any source_uris in the provided |external_data_configuration|
+        so that they point to the appropriate bucket in the current project, if
+        the URIs are GCS URIs.
+
+        Throws if a URI cannot be formatted.
+        """
+        project_id = metadata.project_id()
+        if not external_data_configuration.source_uris:
+            raise ValueError(
+                f"Cannot set external_data_configuration without any defined "
+                f"sourceUris. Found no sourceUris for table [{address.to_str()}]."
+            )
+
+        source_format = external_data_configuration.source_format
+        if source_format == ExternalSourceFormat.GOOGLE_SHEETS:
+            # No need to reformat Google Sheets links
+            return
+
+        if source_format in (
+            ExternalSourceFormat.CSV,
+            ExternalSourceFormat.NEWLINE_DELIMITED_JSON,
+        ):
+            formatted_source_uris = []
+            for source_uri in external_data_configuration.source_uris:
+                try:
+                    formatted_source_uris.append(
+                        StrictStringFormatter().format(
+                            source_uri, project_id=project_id
+                        )
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Could not format source URI {source_uri}. All {source_format} "
+                        f"source URIs must have a project_id format argument. For "
+                        f"example 'gs://{{project_id}}-my-bucket/source_data.csv"
+                    ) from e
+
+            formatted_source_uris = [
+                StrictStringFormatter().format(
+                    source_uri, project_id=metadata.project_id()
+                )
+                for source_uri in external_data_configuration.source_uris
+            ]
+            external_data_configuration.source_uris = formatted_source_uris
+            return
+
+        raise ValueError(f"Unsupported source_format {source_format}")
 
     def validate_source_table_external_data_configuration(
         self, update_config: "SourceTableCollectionUpdateConfig"
@@ -168,18 +252,16 @@ class SourceTableConfig:
                 )
             return
 
-        # TODO(#41360): Reenable this when we have support for CSV / NEWLINE_DELIMITED_JSON
-        #  source tables (we properly validate / format URIs for those tables).
-        # if source_format in (
-        #     ExternalSourceFormat.NEWLINE_DELIMITED_JSON,
-        #     ExternalSourceFormat.CSV,
-        # ):
-        #     if ignore_unknown_values:
-        #         raise ValueError(
-        #             f"Must explicitly set ignoreUnknownValues: false for "
-        #             f"{source_format} external table {self.address.to_str()}. "
-        #         )
-        #     return
+        if source_format in (
+            ExternalSourceFormat.NEWLINE_DELIMITED_JSON,
+            ExternalSourceFormat.CSV,
+        ):
+            if ignore_unknown_values:
+                raise ValueError(
+                    f"Must explicitly set ignoreUnknownValues: false for "
+                    f"{source_format} external table {self.address.to_str()}. "
+                )
+            return
 
         raise ValueError(
             f"Unsupported external table source format [{source_format}]. Discuss with "
@@ -234,8 +316,8 @@ class SourceTableConfig:
         # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column;
         # however, some external tables do not (such as google sheets)
         if (
-            self.external_data_configuration
-            and self.external_data_configuration.source_format
+            self._external_data_configuration
+            and self._external_data_configuration.source_format
             not in EXTERNAL_DATA_SOURCE_FORMATS_WITHOUT_FILE_NAME_PSUEDOCOLUMN
         ):
             psuedocolumns.append(
@@ -284,10 +366,10 @@ class SourceTableConfig:
             "clustering_fields": self.clustering_fields,
         }
 
-        if self.external_data_configuration:
+        if self._external_data_configuration:
             representation[
                 "external_data_configuration"
-            ] = self.external_data_configuration.to_api_repr()
+            ] = self._external_data_configuration.to_api_repr()
 
         if self.time_partitioning:
             representation["time_partitioning"] = self.time_partitioning.to_api_repr()

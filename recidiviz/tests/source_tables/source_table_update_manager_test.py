@@ -640,6 +640,82 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             )
         )
 
+    def test_update_external_data_config_csv(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+
+        external_config = ExternalConfig("CSV")
+        external_config.ignore_unknown_values = False
+        external_config.source_uris = ["gs://recidiviz-456-my-bucket/file.csv"]
+
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("new_field"),
+        ]
+
+        updated_external_config = ExternalConfig.from_api_repr(
+            external_config.to_api_repr()
+        )
+        updated_external_config.source_uris = [
+            "gs://{project_id}-my-bucket/file_updated.csv"
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema, external_config),
+            table_level_update_types={
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+            },
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+                external_data_configuration=updated_external_config,
+            ),
+        )
+        # Validate that
+        update_info.source_table_config.validate_source_table_external_data_configuration(
+            update_config=SourceTableCollectionUpdateConfig.regenerable()
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_EXTERNAL_DATA_CONFIGURATION, UPDATE_SCHEMA_WITH_ADDITIONS)\n"
+            "  Changed external_data_configuration fields:\n"
+            "    sourceUris:\n"
+            "      - old: ['gs://recidiviz-456-my-bucket/file.csv']\n"
+            "      - new: ['gs://recidiviz-456-my-bucket/file_updated.csv']\n"
+            "  Added fields:\n"
+            "    - new_field"
+        )
+        self.assertEqual(expected_message, update_info.build_updates_message())
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {
+                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+            },
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
+
 
 class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
     """Tests the SourceTableUpdateManager using raw data tables as fixtures."""

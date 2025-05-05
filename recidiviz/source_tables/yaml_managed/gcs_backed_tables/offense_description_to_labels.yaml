@@ -1,4 +1,5 @@
 address:
+  # TODO(#41360): Migrate this dataset to gcs_backed_tables
   dataset_id: external_reference
   table_id: offense_description_to_labels
 description:
@@ -59,9 +60,10 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-external-reference-data/offense_description_to_labels.csv
+    - gs://{project_id}-external-reference-data/offense_description_to_labels.csv
   sourceFormat: CSV
   compression: NONE
+  ignoreUnknownValues: false
   csvOptions:
     fieldDelimiter: ","
     skipLeadingRows: "1"

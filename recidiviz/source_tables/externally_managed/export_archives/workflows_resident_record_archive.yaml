@@ -29,7 +29,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://recidiviz-123-practices-etl-data-archive/*/resident_record.json
+    - gs://{project_id}-practices-etl-data-archive/*/resident_record.json
   sourceFormat: NEWLINE_DELIMITED_JSON
   ignoreUnknownValues: true
   compression: NONE

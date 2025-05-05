@@ -63,7 +63,7 @@ def collect_yaml_managed_source_table_collections(
         external_data_source_tables = {
             address: source_table
             for address, source_table in project_filtered_tables_by_address.items()
-            if source_table.external_data_configuration
+            if source_table.is_external_table
         }
         collections.append(
             SourceTableCollection(
@@ -78,7 +78,7 @@ def collect_yaml_managed_source_table_collections(
         native_source_tables = {
             address: source_table
             for address, source_table in project_filtered_tables_by_address.items()
-            if not source_table.external_data_configuration
+            if not source_table.is_external_table
         }
         collections.append(
             SourceTableCollection(
