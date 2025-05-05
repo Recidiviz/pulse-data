@@ -122,7 +122,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "LATEST NCIC CHECK" AS criteria,
+                "Latest NCIC Check (BBNN or BBNP)" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -138,7 +138,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "ARRESTS" AS criteria,
+                "All ARRP Contacts" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -154,7 +154,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "SUBSTANCE USE HISTORY" AS criteria,
+                "All DRUP and FSW-Related Contacts" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -170,7 +170,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "SUBSTANCE USE HISTORY - NEGATIVE SCREENS" AS criteria,
+                "All DRUN, DRUM, and DRUX Contacts" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -186,7 +186,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "LATEST SPECIAL CONDITIONS" AS criteria,
+                "Latest SPEC, SPET, or XSPE Contact" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
@@ -202,7 +202,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
                 contact_type AS note_title,
                 contact_date AS event_date,
                 contact_comment AS note_body,
-                "LATEST EMPLOYMENT" AS criteria,
+                "Latest Employment-Related Contact" AS criteria,
             FROM (
                 {keep_contact_codes(
                     codes_cte="relevant_codes",
