@@ -38,13 +38,148 @@ from recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragmen
     PERIOD_EXCLUSIONS_FRAGMENT,
     PHASES_FRAGMENT,
 )
+from recidiviz.ingest.direct.regions.us_tx.ingest_views.view_staff_location_period import (
+    VIEW_QUERY_TEMPLATE as STAFF_LOCATION_PERIOD_VIEW_QUERY_TEMPLATE,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = f"""WITH
+# NOTE: This is defined here instead of the fragments file because we
+# pull in a full ingest view query (which could eventually cause a circular import)
+#
+# We use the office location of the supervision officer as the supervision site,
+# and do not use custodial authority.
+SUPERVISON_OFFICER_AND_SITE_SUBQUERY = f"""
+WITH 
+-- Gets contiguous spans of time for each staff member
+staff_location_periods AS (
+    {STAFF_LOCATION_PERIOD_VIEW_QUERY_TEMPLATE}
+),
+-- This CTE creates a view of distinct supervision officer update datetimes
+-- for each individual and supervision period. To avoid zero day periods 
+-- where multiple changes were done on a single day, we select for the most
+-- recent staff update on any given date for each individual and supervision period.
+-- Records must be active with staff update datetimes before the termination of a period.
+distinct_supervision_officer_update_dates AS (
+    SELECT DISTINCT
+        SID_number,
+        Period_ID_number,
+        Supervision_Officer AS Staff_ID_Number,
+        DATE(WTSK_UPDATE_DATE) as WTSK_UPDATE_DATE,
+    FROM 
+        `{{SupervisionPeriod@ALL}}`
+    WHERE 
+        WTSK_UPDATE_DATE IS NOT NULL 
+    AND 
+        Deleted_Flag = "ACTIVE"
+    AND
+        -- Using CAST AS DATETIME instead of just DATETIME for the emulator
+        CAST(WTSK_UPDATE_DATE AS DATETIME) < IFNULL(DATE_SUB(DATE(Max_Termination_Date), INTERVAL 1 DAY), "9999-12-31")
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY SID_number, Period_ID_number, DATE(WTSK_UPDATE_DATE)
+        ORDER BY CAST(WTSK_UPDATE_DATE AS DATETIME) DESC
+    ) = 1
+),
+-- This CTE combines distinct critical dates of officer supervision and all known location
+-- starts for those officers.
+-- We end up with two sets of date/location pairs in each row. 
+-- WTSK_UPDATE_DATE and location_for_wtsk give us the date and location of the officer for the
+-- update provided from supervision periods.
+-- floored_location_period_start and staff_location_period_location give us the date and location of the officer
+-- for all updates from staff location periods. Because we are flooring the date with the SP start date,
+-- None of these updates will create periods before the original supervision period.
+-- It also then captures subsequent changes over time (across rows), which will be deduplicated if neccessary
+-- in the next CTE.
+all_supervision_officer_movements_per_location_period AS (
+SELECT 
+  distinct_supervision_officer_update_dates.SID_number, 
+  distinct_supervision_officer_update_dates.Period_id_number, 
+  distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE, 
+  staff_location_periods.Staff_ID_number, 
+  -- We hold on to this value to determine the most relevant LP if there are multiple
+  -- location changes before the supervision officer starts supervising the client
+  staff_location_periods.start_date AS original_location_period_date,
+  staff_location_periods.Agency_of_employment AS staff_location_period_location,
+  -- If the officer starts at a location while already supervising this client, then we want to have a new period with that location. 
+  -- Otherwise the officer was already at this location when they began supervision this client. 
+  GREATEST(start_date, distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE) AS floored_location_period_start,
+  CASE WHEN 
+        start_date > distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE 
+        THEN NULL ELSE Agency_of_employment 
+  END AS location_for_wtsk
+FROM 
+    distinct_supervision_officer_update_dates
+LEFT JOIN 
+    staff_location_periods 
+USING
+    (Staff_ID_Number)
+),
+-- This takes the two separate categories of critical dates and locations from the previous CTE and 
+-- stacks their DISTINCT union, forming unique date/location pairs for each officer and supervision period
+-- for all supervision officer movements.
+all_supervision_officer_and_site_critical_dates AS (
+  SELECT 
+    *, 
+    ROW_NUMBER() OVER(PARTITION BY SID_Number, Period_id_number ORDER BY critical_date) AS site_rn 
+  FROM (
+
+    -- Update and location for original SP updates.
+    SELECT DISTINCT
+        SID_Number,
+        Period_id_number,
+        Staff_ID_number,
+        WTSK_UPDATE_DATE AS critical_date,
+        location_for_wtsk AS supervision_site
+    FROM 
+        all_supervision_officer_movements_per_location_period
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_number, Period_id_number, WTSK_UPDATE_DATE ORDER BY original_location_period_date DESC) = 1
+
+    UNION DISTINCT 
+
+    -- Update and location for staff location period rows (floored to the start date of the SP)
+    SELECT
+        SID_Number,
+        Period_id_number,
+        staff_id_number,
+        floored_location_period_start AS critical_date,
+        staff_location_period_location AS supervision_site
+    FROM 
+        all_supervision_officer_movements_per_location_period
+    QUALIFY row_number() over (partition by SID_number, Period_id_number, WTSK_UPDATE_DATE order by original_location_period_date desc) = 1
+  )
+)
+-- This CTE takes all supervision officer and site critical dates and finally turns them into periods to be used
+-- with all other subperiods in this view.
+SELECT 
+  officer_and_site_start.SID_Number,
+  officer_and_site_start.Period_id_number,
+  officer_and_site_start.staff_id_number,
+  officer_and_site_start.supervision_site,
+  officer_and_site_start.critical_date AS start_date,
+  officer_and_site_end.critical_date AS end_date
+FROM 
+    all_supervision_officer_and_site_critical_dates AS officer_and_site_start
+LEFT JOIN
+    all_supervision_officer_and_site_critical_dates AS officer_and_site_end 
+ON
+    officer_and_site_start.SID_Number = officer_and_site_end.SID_Number
+AND 
+    officer_and_site_start.SID_Number = officer_and_site_end.SID_Number
+AND 
+    officer_and_site_start.site_rn = officer_and_site_end.site_rn - 1
+"""
+
+
+VIEW_QUERY_TEMPLATE = f"""
+WITH
+-- Gets every supervising officer and their location changes within supervision periods.
+-- Returns SID_Number, Period_ID_Number, Staff_ID_number, supervision_site, start_date, and end_date
+supervision_officer_and_site_periods AS (
+    {SUPERVISON_OFFICER_AND_SITE_SUBQUERY}
+),
 -- Grabs all unique combinations of Period_ID_Number,start_date, and RMF_TIMESTAMP (the update datetime stamp)
 start_date_cte AS (
   SELECT 
@@ -193,56 +328,6 @@ status_changes_cte AS (
     -- date, choose the latest one. 
     QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number, update_date ORDER BY OSTS_UPDATE_DATE DESC) = 1
 ),
--- Before we look at the supervision officer changes, select the latest change on a given date.
--- This is to avoid zero day periods where multiple changes were done on a single day.
--- Also removes records without an appropriate update date or filters to active records.
-ranked_supervision_officer_changes AS 
-(
-    SELECT
-        SID_number,
-        Period_ID_number,
-        Supervision_Officer,
-        DATE(WTSK_UPDATE_DATE) as WTSK_UPDATE_DATE,
-        RANK() OVER (PARTITION BY Period_ID_Number, DATE(WTSK_UPDATE_DATE) ORDER BY WTSK_UPDATE_DATE DESC) AS rnk
-    FROM `{{SupervisionPeriod@ALL}}`
-    WHERE WTSK_UPDATE_DATE IS NOT NULL AND Deleted_Flag = "ACTIVE"
-),
--- Grabs all supervision officer records and their update time, ignores changes that happened after
--- Max termination end date
-supervision_officer_cte AS (
-  SELECT 
-    p.SID_Number,
-    p.Period_ID_Number,
-    Supervision_Officer,
-    p.start_date,
-    WTSK_UPDATE_DATE,
-    LAG(Supervision_Officer)OVER(PARTITION BY Period_ID_Number ORDER BY WTSK_UPDATE_DATE asc) AS prev_Supervision_Officer
-  FROM ranked_supervision_officer_changes sp
-  LEFT JOIN `{{Staff}}` s
-    ON sp.Supervision_Officer = s.Staff_ID_Number
-  LEFT JOIN periods p 
-    USING (Period_ID_Number)
-  WHERE DATE(WTSK_UPDATE_DATE) < p.Max_Termination_Date
-  AND (Staff_ID_Number IS NOT NULL or Supervision_Officer IS NULL) AND rnk = 1
-),
--- Selects only the records that have a different supervision officer than before
-supervision_officer_changes_cte AS (
-    SELECT
-        SID_Number,
-        Period_ID_Number,
-        Supervision_Officer,
-        CASE 
-        WHEN DATE(WTSK_UPDATE_DATE) < DATE(start_date)
-            THEN DATE(start_date)
-        ELSE 
-            DATE(WTSK_UPDATE_DATE)
-        END AS update_date
-    FROM Supervision_Officer_cte
-    WHERE prev_Supervision_Officer IS DISTINCT FROM Supervision_Officer
-    -- In cases where there are multiple officer entries entered before the start
-    -- date, choose the latest one. 
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number, Period_ID_Number, update_date ORDER BY WTSK_UPDATE_DATE DESC) = 1
-),
 -- Gathers assessment data
 assessment_cte AS (
     SELECT
@@ -296,8 +381,8 @@ union_all_critical_dates AS
     SELECT
         SID_Number,
         Period_ID_Number,
-        DATE(update_date) AS critical_date
-    FROM supervision_officer_changes_cte
+        DATE(start_date) AS critical_date
+    FROM supervision_officer_and_site_periods 
 
     UNION DISTINCT
 
@@ -357,16 +442,17 @@ combined as (
         ep.start_date,
         ep.end_date,
         s.status,
-        so.supervision_officer,
+        officer_and_site.Staff_ID_Number AS supervision_officer,
+        officer_and_site.supervision_site,
         ct.case_type,
         a.assessment_level,
     FROM empty_periods ep
     LEFT JOIN status_changes_cte s
         ON s.Period_ID_Number = ep.Period_ID_Number
         AND s.update_date = ep.start_date
-    LEFT JOIN supervision_officer_changes_cte so
-        ON so.Period_ID_Number = ep.Period_ID_Number
-        AND so.update_date = ep.start_date
+    LEFT JOIN supervision_officer_and_site_periods AS officer_and_site
+        ON officer_and_site.Period_ID_Number = ep.Period_ID_Number
+        AND officer_and_site.start_date = ep.start_date
     LEFT JOIN case_type_changes_cte ct
         ON ct.Period_ID_Number = ep.Period_ID_Number
         AND ct.update_date = ep.start_date
@@ -375,8 +461,7 @@ combined as (
         AND a.update_date = ep.start_date
     WHERE ep.start_date IS NOT NULL
 ),
--- Uses the LAST_VALUE function to fill in the gaps between period characterisitc 
--- changes.
+-- Uses the LAST_VALUE function to fill in the gaps between period characterisitc changes.
 lookback_cte AS (
     SELECT
         SID_Number,
@@ -385,6 +470,7 @@ lookback_cte AS (
         end_date,
         LAST_VALUE(status IGNORE NULLS) OVER w AS status,
         LAST_VALUE(supervision_officer IGNORE NULLS) OVER w AS supervision_officer,
+        LAST_VALUE(supervision_site IGNORE NULLS) OVER w AS supervision_site,
         LAST_VALUE(case_type IGNORE NULLS) OVER w AS case_type,
         LAST_VALUE(assessment_level IGNORE NULLS) OVER w AS assessment_level,
     FROM combined
@@ -416,6 +502,7 @@ fix_end_date AS
             AND UPPER(status) NOT LIKE "%NOT IN CUSTODY%"
         AS in_custody_flag,
         supervision_officer,
+        supervision_site,
         case_type,
         assessment_level,
     FROM lookback_cte
@@ -433,6 +520,7 @@ periods_with_phases AS (
         status,
         in_custody_flag,
         supervision_officer,
+        supervision_site,
         assessment_level,
         CASE 
             WHEN case_type = "Substance abuse" AND end_date IS NULL 
@@ -447,32 +535,28 @@ periods_with_phases AS (
 period_info_agg AS (
     {aggregate_adjacent_spans(
         table_name='periods_with_phases',
-        attribute=['assessment_level','case_type','Supervision_Officer','status', 'in_custody_flag'],
+        attribute=['assessment_level','case_type','supervision_officer', 'supervision_site', 'status', 'in_custody_flag'],
         session_id_output_name='period_info_agg',
         end_date_field_name='end_date',
         index_columns=['Period_ID_Number','SID_Number']
     )}
-),
--- Assign a row number to each period and exclude certain statuses
-final_periods AS (
-    SELECT
-        SID_Number,
-        Period_ID_Number,
-        start_date,
-        end_date,
-        status,
-        supervision_officer,
-        case_type,
-        assessment_level,
-        ROW_NUMBER()OVER(PARTITION BY Period_ID_Number ORDER BY start_date ASC) AS rn,
-        in_custody_flag,
-    FROM period_info_agg
-    WHERE 
-        status IS NULL
-        OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT})
+)
 SELECT
-    *
-FROM final_periods
+    SID_Number,
+    Period_ID_Number,
+    start_date,
+    end_date,
+    status,
+    supervision_officer,
+    supervision_site,
+    case_type,
+    assessment_level,
+    ROW_NUMBER() OVER (PARTITION BY Period_ID_Number ORDER BY start_date ASC) AS rn,
+    in_custody_flag
+FROM 
+    period_info_agg
+WHERE 
+    status IS NULL OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tx",

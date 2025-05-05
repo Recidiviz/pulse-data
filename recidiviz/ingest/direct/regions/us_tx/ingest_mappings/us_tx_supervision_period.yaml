@@ -6,6 +6,7 @@ input_columns:
   SID_Number: STRING
   Period_ID_Number: STRING
   supervision_officer: STRING
+  supervision_site: STRING
   status: STRING
   case_type: STRING
   start_date: DATE
@@ -33,6 +34,7 @@ output:
           supervision_period_metadata:
             $normalized_values_json_dict:
               status: status
+          supervision_site: supervision_site
           supervising_officer_staff_external_id: supervision_officer
           supervising_officer_staff_external_id_type:
             $conditional:

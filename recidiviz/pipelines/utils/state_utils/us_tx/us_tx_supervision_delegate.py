@@ -40,3 +40,27 @@ class UsTxSupervisionDelegate(StateSpecificSupervisionDelegate):
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             ]
         return None
+
+    # TODO(#19343) When level 1 and 2 locations are deprecated and/or moved into the schema,
+    # ensure the downstream uses of TX data are accounted for.
+    def supervision_location_from_supervision_site(
+        self,
+        supervision_site: Optional[str],
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        This method takes in the supervision_site for a supervision period and returns
+        the "location level 1" and "location level 2" for that location.
+
+        Location level 1 is the "supervision office" in sessions, which is the given
+        location external ID.
+
+        Location level 2 is the "supervision district", which is the REGION of the
+        office in TX raw data. Since the location external ID is REGION-DISTRICT,
+        this is just the first half of the ID.
+        """
+        # Turns an empty string to None, because we should not have empty strings.
+        if not supervision_site:
+            return None, None
+        # TX Regions is our state-agnostic "district" level.
+        region, _district = supervision_site.split("-")
+        return supervision_site, region
