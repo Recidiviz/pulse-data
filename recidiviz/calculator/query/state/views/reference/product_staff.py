@@ -95,7 +95,8 @@ PRODUCT_STAFF_QUERY_TEMPLATE = f"""
         {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || attrs.officer_id")} AS pseudonymized_id,
         attrs.specialized_caseload_type_primary,
         attrs.start_date,
-        attrs.end_date_exclusive
+        attrs.end_date_exclusive,
+        attrs.is_in_critically_understaffed_location
     FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
     INNER JOIN `{{project_id}}.normalized_state.state_staff` ss
         USING (staff_id)

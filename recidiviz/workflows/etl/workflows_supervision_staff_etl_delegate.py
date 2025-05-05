@@ -18,7 +18,8 @@
 import json
 from typing import List, Tuple
 
-from recidiviz.common.str_field_utils import person_name_case
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 
@@ -33,19 +34,12 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)
 
-        if email := data.get("email"):
-            email = email.lower()
+        # Convert all keys to camelcase
+        new_document = convert_nested_dictionary_keys(data, snake_to_camel)
 
-        new_document = {
-            "id": data["id"],
-            "stateCode": data["state_code"],
-            "email": email,
-            "district": data.get("district"),
-            "givenNames": person_name_case(data.get("given_names", "")),
-            "surname": person_name_case(data.get("surname", "")),
-            "roleSubtype": data.get("role_subtype"),
-            "supervisorExternalId": data.get("supervisor_external_id"),
-            "pseudonymizedId": data.get("pseudonymized_id"),
-        }
+        new_document["givenNames"] = person_name_case(data.get("given_names", ""))
+        new_document["surname"] = person_name_case(data.get("surname", ""))
+        if new_document.get("email"):
+            new_document["email"] = data.get("email").lower()
 
         return data["id"], new_document

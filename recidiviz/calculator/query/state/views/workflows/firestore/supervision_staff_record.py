@@ -36,6 +36,17 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = """
                 officer_id AS external_id,
             FROM `{project_id}.workflows_views.client_record_materialized` client
         )
+        , state_specific_data AS (
+            SELECT
+                state_code,
+                external_id,
+                STRUCT(
+                    state_code AS state_code,
+                    COALESCE(is_in_critically_understaffed_location, false) AS is_in_understaffed_office
+                ) AS state_specific_data
+            FROM `{project_id}.reference_views.current_staff_materialized`
+            WHERE state_code = "US_TX"
+        )
         , staff_query AS (
             SELECT
                 external_id AS id,
@@ -47,9 +58,12 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = """
                 IF(state_code = "US_CA", role_subtype_primary, CAST(NULL AS STRING)) AS role_subtype,
                 supervisor_external_id,
                 supervisor_external_ids,
-                pseudonymized_id
+                pseudonymized_id,
+                ssd.state_specific_data
             FROM `{project_id}.reference_views.current_staff_materialized` current_staff
             INNER JOIN caseload_staff_external_ids ids
+                USING (state_code, external_id)
+            INNER JOIN state_specific_data ssd
                 USING (state_code, external_id)
         )
 
@@ -73,6 +87,7 @@ SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "supervisor_external_id",
         "supervisor_external_ids",
         "pseudonymized_id",
+        "state_specific_data",
     ],
     should_materialize=True,
 )

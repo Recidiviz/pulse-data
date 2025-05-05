@@ -96,7 +96,6 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                     "givenNames": "Sally S.",
                     "surname": "Slithers",
                     "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
-                    "supervisorExternalId": None,
                     "pseudonymizedId": "p101",
                 },
             )
@@ -110,11 +109,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "102",
                     "stateCode": "US_XX",
-                    "email": None,
                     "district": "District 3",
                     "givenNames": "Foghorn",
                     "surname": "Leghorn",
-                    "roleSubtype": None,
                     "supervisorExternalId": "13857943",
                     "pseudonymizedId": "p102",
                 },
@@ -129,12 +126,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "103",
                     "stateCode": "US_XX",
-                    "email": None,
                     "district": "District 4",
                     "givenNames": "",
                     "surname": "",
-                    "roleSubtype": None,
-                    "supervisorExternalId": None,
                     "pseudonymizedId": "p103",
                 },
             )
