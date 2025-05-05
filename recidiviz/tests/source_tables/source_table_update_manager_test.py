@@ -18,7 +18,7 @@
 import tempfile
 import unittest
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import attr
 import pytest
@@ -83,6 +83,7 @@ class TestSourceTableUpdateType(unittest.TestCase):
                 )
 
 
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456"))
 class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
     """Tests for SourceTableWithRequiredUpdateTypes"""
 
@@ -179,7 +180,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         )
 
         expected_message = "* dataset.table (MISMATCH_CLUSTERING_FIELDS)"
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -218,7 +219,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         )
 
         expected_message = "* dataset.new_table (CREATE_TABLE)"
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -267,7 +268,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             "  Added fields:\n"
             "    - new_field"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -318,7 +319,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             "  Deleted fields:\n"
             "    - old_field"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -373,7 +374,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             "    - 'id' changed MODE from REQUIRED --> NULLABLE\n"
             "    - 'id' changed TYPE from STRING --> INTEGER"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -423,7 +424,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             "  Changed fields:\n"
             "    - 'id' updated its DESCRIPTION to New desc"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -479,7 +480,7 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             "  Changed fields:\n"
             "    - 'id' changed TYPE from STRING --> INTEGER"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
@@ -506,11 +507,14 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             )
         )
 
-    def test_update_external_data_config_google_sheets(self) -> None:
+    def test_update_external_data_config_google_sheets_schema_update(self) -> None:
         address = BigQueryAddress.from_str("dataset.table")
 
         external_config = ExternalConfig("GOOGLE_SHEETS")
         external_config.ignore_unknown_values = True
+        external_config.source_uris = [
+            "https://docs.google.com/spreadsheets/d/AbCdEf12345/"
+        ]
 
         deployed_schema = [self._make_schema_field("id")]
         new_schema = [
@@ -521,7 +525,6 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         update_info = SourceTableWithRequiredUpdateTypes(
             deployed_table=self._make_table(address, deployed_schema, external_config),
             table_level_update_types={
-                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
                 SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             },
             existing_field_update_types={},
@@ -539,19 +542,86 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
         )
 
         expected_message = (
-            "* dataset.table (UPDATE_EXTERNAL_DATA_CONFIGURATION, UPDATE_SCHEMA_WITH_ADDITIONS)\n"
+            "* dataset.table (UPDATE_SCHEMA_WITH_ADDITIONS)\n"
             "  Added fields:\n"
             "    - new_field"
         )
-        self.assertEqual(update_info.build_updates_message(), expected_message)
+        self.assertEqual(expected_message, update_info.build_updates_message())
 
         self.assertTrue(update_info.has_updates_to_make)
         self.assertEqual(
             update_info.all_update_types,
-            {
+            {SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS},
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
+
+    def test_update_external_data_config_google_sheets_url_update(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+
+        external_config = ExternalConfig("GOOGLE_SHEETS")
+        external_config.ignore_unknown_values = True
+        external_config.source_uris = [
+            "https://docs.google.com/spreadsheets/d/AbCdEf12345/"
+        ]
+
+        deployed_schema = [
+            self._make_schema_field("id", field_type="STRING"),
+        ]
+
+        updated_external_config = ExternalConfig.from_api_repr(
+            external_config.to_api_repr()
+        )
+        updated_external_config.source_uris = [
+            "https://docs.google.com/spreadsheets/d/dEf123456789/"
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema, external_config),
+            table_level_update_types={
                 SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             },
+            existing_field_update_types={},
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=deployed_schema,
+                clustering_fields=None,
+                external_data_configuration=updated_external_config,
+            ),
+        )
+        # Validate that
+        update_info.source_table_config.validate_source_table_external_data_configuration(
+            update_config=SourceTableCollectionUpdateConfig.regenerable()
+        )
+
+        expected_message = (
+            "* dataset.table (UPDATE_EXTERNAL_DATA_CONFIGURATION)\n"
+            "  Changed external_data_configuration fields:\n"
+            "    sourceUris:\n"
+            "      - old: ['https://docs.google.com/spreadsheets/d/AbCdEf12345/']\n"
+            "      - new: ['https://docs.google.com/spreadsheets/d/dEf123456789/']"
+        )
+        self.assertEqual(expected_message, update_info.build_updates_message())
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION},
         )
 
         self.assertTrue(

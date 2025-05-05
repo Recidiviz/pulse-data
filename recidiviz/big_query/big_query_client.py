@@ -2348,10 +2348,22 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         table.external_data_configuration = external_data_config
-        # Make sure the schema on the table and schema in the config match, in case the
-        # schema on the deployed table has been changed out of band.
-        table.schema = external_data_config.schema
-        return self.client.update_table(table, ["external_data_configuration"])
+        if external_data_config.schema:
+            # The schema on the ExternalConfig is only really used at table creation
+            # time, but the schema is stored in the Table schema field and subsequent
+            # updates will require that the schema is set on the table.
+            table.schema = external_data_config.schema
+
+        updated_table = self.client.update_table(
+            table,
+            [
+                # Applies all non-schema updates to the external table config
+                "external_data_configuration",
+                # Applies schema updates
+                "schema",
+            ],
+        )
+        return updated_table
 
     def set_table_expiration(
         self, address: BigQueryAddress, expiration: datetime.datetime

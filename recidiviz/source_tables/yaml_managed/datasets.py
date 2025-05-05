@@ -32,13 +32,13 @@ AIRFLOW_OPERATIONS: str = "airflow_operations"
 # Archival views that track hydration of various parts of our platform overtime
 HYDRATION_ARCHIVE: str = "hydration_archive"
 
-# Views backed by Google Sheets
+# External tables backed by Google Sheets
 GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
 
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
     GOOGLE_SHEET_BACKED_TABLES_DATASET: (
-        "Stores views that are backed by Google Sheets."
+        "Stores tables that are backed by Google Sheets."
     ),
     HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
     POPULATION_PROJECTION_OUTPUT_DATASET: (

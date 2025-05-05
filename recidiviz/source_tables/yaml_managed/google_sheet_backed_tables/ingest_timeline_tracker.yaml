@@ -16,7 +16,7 @@ schema:
   - name: contract_signed_date
     type: DATE
     mode: NULLABLE
-    description:
+    description: The date we first signed a contract with this state.
   - name: data_received_date
     type: DATE
     mode: NULLABLE

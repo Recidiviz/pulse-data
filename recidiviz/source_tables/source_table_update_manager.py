@@ -21,6 +21,7 @@ import logging
 import attr
 import google
 from google.cloud import bigquery
+from google.cloud.bigquery import ExternalConfig
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -29,6 +30,10 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClient,
     BigQueryClientImpl,
 )
+from recidiviz.big_query.big_query_external_table_utils import (
+    external_config_has_non_schema_updates,
+    get_external_config_non_schema_updates,
+)
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
@@ -36,6 +41,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.tools.deploy.logging import redirect_logging_to_file
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
+from recidiviz.utils.types import assert_type
 
 
 class SourceTableFailedToUpdateError(ValueError):
@@ -57,6 +63,9 @@ class SourceTableUpdateType(enum.StrEnum):
     UPDATE_SCHEMA_WITH_DELETIONS = "update_schema_with_deletions"
     ADD_EXTERNAL_DATA_CONFIGURATION = "add_external_data_configuration"
     REMOVE_EXTERNAL_DATA_CONFIGURATION = "remove_external_data_configuration"
+
+    # Describes any update to a table's external data configuration outside of a schema
+    # change. Schema changes will be captured by the field-level update types below.
     UPDATE_EXTERNAL_DATA_CONFIGURATION = "update_external_data_configuration"
 
     # Existing table field-level changes
@@ -193,19 +202,32 @@ def _validate_clustering_fields_match(
     return current_table.clustering_fields == source_table_config.clustering_fields
 
 
-def _validate_external_data_configuration_match(
+def _get_external_data_configuration_non_schema_update_type(
     current_table: bigquery.Table, source_table_config: SourceTableConfig
-) -> bool:
+) -> SourceTableUpdateType | None:
     if (
-        not current_table.external_data_configuration
-        and not source_table_config.external_data_configuration
+        current_table.external_data_configuration is None
+        and source_table_config.external_data_configuration is not None
     ):
-        return True
+        return SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION
 
-    return (
-        current_table.external_data_configuration
-        == source_table_config.external_data_configuration
-    )
+    if (
+        current_table.external_data_configuration is not None
+        and source_table_config.external_data_configuration is None
+    ):
+        return SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION
+
+    if (
+        current_table.external_data_configuration is not None
+        and source_table_config.external_data_configuration is not None
+    ):
+        if external_config_has_non_schema_updates(
+            current_table_external_config=current_table.external_data_configuration,
+            desired_external_config=source_table_config.external_data_configuration,
+        ):
+
+            return SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION
+    return None
 
 
 def _validate_partitioning_fields_match(
@@ -362,7 +384,7 @@ class SourceTableWithRequiredUpdateTypes:
         new_schema = self.source_table_config.schema_fields
         new_schema_schema_fields = {f.name for f in new_schema}
 
-        for update_type in self.table_level_update_types:
+        for update_type in sorted(self.table_level_update_types, key=lambda t: t.name):
             if update_type is SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS:
                 if not (
                     deleted_fields := deployed_schema_fields - new_schema_schema_fields
@@ -389,12 +411,35 @@ class SourceTableWithRequiredUpdateTypes:
                 for f in sorted(added_fields):
                     table_str += f"\n    - {f}"
 
+            elif (
+                update_type is SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION
+            ):
+                # Schema changes will be captured in the "Changed fields" section, so
+                # we strip the schemas out of the configs here (the BQ API doesn't
+                # return the schema on the external config for the deployed table).
+                updates = get_external_config_non_schema_updates(
+                    current_table_external_config=self.deployed_table.external_data_configuration,
+                    desired_external_config=assert_type(
+                        self.source_table_config.external_data_configuration,
+                        ExternalConfig,
+                    ),
+                )
+                if not updates:
+                    raise ValueError(
+                        f"Found no external config updates for {self.address.to_str()} "
+                        f"even though we registered a {update_type.name} update type."
+                    )
+                update_lines = ["\n  Changed external_data_configuration fields:"]
+                for field, (old_val, new_val) in updates.items():
+                    update_lines.append(f"    {field}:")
+                    update_lines.append(f"      - old: {old_val}")
+                    update_lines.append(f"      - new: {new_val}")
+                table_str += "\n".join(update_lines)
             elif update_type in (
                 SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
                 SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
                 SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION,
                 SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION,
-                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION,
             ):
                 # We don't print any extra info when partitioning / clustering fields
                 # or external data configs change.
@@ -404,7 +449,8 @@ class SourceTableWithRequiredUpdateTypes:
                 raise ValueError(f"Unexpected source table update type [{update_type}]")
 
         changes = []
-        for field_name, update_types in self.existing_field_update_types.items():
+        for field_name in sorted(self.existing_field_update_types):
+            update_types = self.existing_field_update_types[field_name]
             deployed_field = one(f for f in deployed_schema if f.name == field_name)
             new_field = one(f for f in new_schema if f.name == field_name)
 
@@ -505,27 +551,10 @@ class SourceTableUpdateManager:
                 SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS
             )
 
-        if (
-            current_table.external_data_configuration is None
-            and source_table_config.external_data_configuration is not None
+        if external_config_update_type := _get_external_data_configuration_non_schema_update_type(
+            current_table, source_table_config
         ):
-            table_level_update_types.add(
-                SourceTableUpdateType.ADD_EXTERNAL_DATA_CONFIGURATION
-            )
-        elif (
-            current_table.external_data_configuration is not None
-            and source_table_config.external_data_configuration is None
-        ):
-            table_level_update_types.add(
-                SourceTableUpdateType.REMOVE_EXTERNAL_DATA_CONFIGURATION
-            )
-        elif (
-            current_table.external_data_configuration
-            != source_table_config.external_data_configuration
-        ):
-            table_level_update_types.add(
-                SourceTableUpdateType.UPDATE_EXTERNAL_DATA_CONFIGURATION
-            )
+            table_level_update_types.add(external_config_update_type)
 
         only_check_required_columns = (
             source_table_collection.validation_config
@@ -604,7 +633,8 @@ class SourceTableUpdateManager:
                 for exception in get_changes_result.exceptions:
                     logging.exception(exception)
                 raise ValueError(
-                    "Found exceptions while fetching source table changes - check logs!"
+                    f"Found exceptions while fetching source table changes - check "
+                    f"logs: {log_file}"
                 )
 
             for _, result in get_changes_result.successes:
@@ -694,7 +724,7 @@ class SourceTableUpdateManager:
                     self._update_existing_table_with_config(
                         source_table_config, update_config
                     )
-                except ValueError as e:
+                except Exception as e:
                     if not update_config.recreate_on_update_error:
                         raise e
 
