@@ -158,12 +158,16 @@ function pre_deploy_configure_infrastructure {
       --apply
 
     verify_hash "$COMMIT_HASH"
-    echo "Running migrations using Cloud Build"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-      --project-id "${PROJECT}" \
-      --version-tag "${GIT_VERSION_TAG}" \
-      --commit-ref "${COMMIT_HASH}" \
-      --stage "RunMigrations"
+    if ! git diff "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}" --quiet recidiviz/persistence/database/migrations; then
+      echo "Running migrations using Cloud Build"
+      run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+        --project-id "${PROJECT}" \
+        --version-tag "${GIT_VERSION_TAG}" \
+        --commit-ref "${COMMIT_HASH}" \
+        --stage "RunMigrations"
+    else
+      echo "No changes to migrations -- skipping"
+    fi
 }
 
 function copy_docker_image_to_repository {

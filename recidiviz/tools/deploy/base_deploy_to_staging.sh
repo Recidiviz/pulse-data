@@ -90,6 +90,14 @@ fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
+
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_version_tag recidiviz-staging) || exit_on_fail
+if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${GIT_VERSION_TAG}"; then
+    echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
+    run_cmd exit 1
+fi
+
+
 # app engine deploy paths
 APP_ENGINE_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/appengine/default
 APP_ENGINE_IMAGE_URL=$APP_ENGINE_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
