@@ -29,7 +29,7 @@
       // Note: this verison number should be kept in sync with the ones in Dockerfile,
       // .github/workflows/ci.yml, recidiviz/tools/deploy/terraform/terraform.tf, and
       // recidiviz/tools/deploy/deploy_helpers.sh
-      "version": "1.7.0",
+      "version": "1.11.4",
       "tflint": "latest",
       "terragrunt": "latest",
       "_comment": "Terraform is needed if we want to run deployments from within VS Code Containers"

@@ -18,7 +18,7 @@
 
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import ImageKind
 
-TERRAFORM_VERSION = "1.7.0"
+TERRAFORM_VERSION = "1.11.4"
 TERRAFORM_WORKDIR = "/workspace/recidiviz/tools/deploy/terraform/"
 
 # Builder images

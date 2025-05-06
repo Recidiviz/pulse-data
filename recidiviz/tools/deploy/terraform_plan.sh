@@ -64,9 +64,6 @@ terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH plan \
   -var="git_hash=${GIT_HASH}" \
   -var="pagerduty_token=${PAGERDUTY_TOKEN}" \
   -var="docker_image_tag=${DOCKER_IMAGE_TAG}" \
-  -parallelism=8 || exit_on_fail
+  -parallelism=64 || exit_on_fail
 
 echo "##### Done with plan ########"
-
-
-rm ./recidiviz/tools/deploy/terraform/airflow_source_files.json

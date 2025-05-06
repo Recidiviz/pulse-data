@@ -19,5 +19,5 @@ terraform {
   # Note: this verison number should be kept in sync with the ones in Dockerfile,
   # .devcontainer/devcontainer.json, .github/workflows/ci.yml, and
   # recidiviz/tools/deploy/deploy_helpers.sh
-  required_version = "~> 1.7.0"
+  required_version = "~> 1.11.4"
 }

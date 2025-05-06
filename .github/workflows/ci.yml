@@ -75,7 +75,7 @@ jobs:
           # Note: this version number should be kept in sync with the ones in Dockerfile,
           # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
           # recidiviz/tools/deploy/deploy_helpers.sh
-          terraform_version: ~1.7.0
+          terraform_version: ~1.11.4
       - name: Validate terraform
         run: |
           terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
