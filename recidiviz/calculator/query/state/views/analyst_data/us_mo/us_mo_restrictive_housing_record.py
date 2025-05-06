@@ -49,35 +49,29 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
         -- Populate for all people incarcerated in MO, since some of these fields may be
         -- used in the resident record.
         FROM `{{project_id}}.sessions.compartment_sessions_materialized` cs
-        LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        LEFT JOIN `{{project_id}}.us_mo_normalized_state.state_person_external_id` pei
             ON
                 cs.person_id = pei.person_id
-                AND cs.state_code = pei.state_code
                 AND pei.id_type = "US_MO_DOC"
         WHERE 
+            cs.state_code = 'US_MO' AND
             {today_between_start_date_and_nullable_end_date_exclusive_clause(
                 start_date_column="cs.start_date",
                 end_date_column="cs.end_date_exclusive"
             )}
             AND cs.compartment_level_1 = 'INCARCERATION'
-            AND cs.state_code = "US_MO"
     )
     ,
     current_confinement_stay AS (
         SELECT DISTINCT
             person_id,
-            state_code,
             FIRST_VALUE(start_date) OVER w AS start_date,
         FROM `{{project_id}}.sessions.us_mo_confinement_type_sessions_materialized`
-        WINDOW w AS (
-            PARTITION BY person_id, state_code
-            ORDER BY confinement_type_session_id DESC
-        )
+        WINDOW w AS (PARTITION BY person_id ORDER BY confinement_type_session_id DESC)
     )
     ,
     most_recent_hearings AS (
         SELECT DISTINCT
-            h.state_code,
             h.person_id,
             FIRST_VALUE(h.hearing_id) OVER person_window AS most_recent_hearing_id,
             FIRST_VALUE(h.hearing_date) OVER person_window AS most_recent_hearing_date,
@@ -86,14 +80,14 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             FIRST_VALUE(h.hearing_comments) OVER person_window AS most_recent_hearing_comments,
         FROM `{{project_id}}.analyst_data.us_mo_classification_hearings_preprocessed_materialized` h 
         LEFT JOIN current_confinement_stay c
-        USING(state_code, person_id)
+        USING(person_id)
         WHERE 
             -- Omit most recent hearing if it occurred before the current stay in solitary
             -- confinement, *and* no review was scheduled later than when the stay began.
             {nonnull_start_date_clause('h.next_review_date')} >= c.start_date
             OR h.hearing_date >= c.start_date
         WINDOW person_window AS (
-            PARTITION by h.person_id, h.state_code
+            PARTITION by h.person_id
             ORDER BY h.hearing_date DESC
         )
     )
@@ -101,13 +95,9 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
     current_housing_stay AS (
         SELECT DISTINCT
             person_id,
-            state_code,
             FIRST_VALUE(facility_code) OVER w AS facility_code,
         FROM `{{project_id}}.sessions.us_mo_housing_stay_sessions_materialized`
-        WINDOW w AS (
-            PARTITION BY person_id, state_code
-            ORDER BY housing_stay_session_id DESC
-        )
+        WINDOW w AS (PARTITION BY person_id ORDER BY housing_stay_session_id DESC)
     )
     ,
     {current_bed_stay_cte()}
@@ -144,10 +134,9 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             date_effective AS sanction_start_date,
             projected_end_date AS sanction_expiration_date,
             outcome_type_raw_text AS sanction_code
-        FROM `{{project_id}}.normalized_state.state_incarceration_incident_outcome`
+        FROM `{{project_id}}.us_mo_normalized_state.state_incarceration_incident_outcome`
         WHERE 
-            state_code = 'US_MO'
-            AND outcome_type_raw_text = 'D1'
+            outcome_type_raw_text = 'D1'
             AND date_effective >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 1 YEAR)
     )
     ,
@@ -161,7 +150,7 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
                     sanction_start_date,
                     sanction_expiration_date,
                     sanction_code
-                ) ORDER BY sanction_start_date DESC
+                ) ORDER BY sanction_start_date DESC, sanction_id
             ) AS sanctions,
         FROM d1_sanctions
         GROUP BY 1
@@ -199,16 +188,15 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             -- occur either before or after the hearing, since hearings are likely to be
             -- scheduled further in advance than on the same day AS the violation.
             cdv.incident_date > h.most_recent_hearing_date AS occurred_since_last_hearing,
-        FROM `{{project_id}}.normalized_state.state_incarceration_incident` cdv
+        FROM `{{project_id}}.us_mo_normalized_state.state_incarceration_incident` cdv
         LEFT JOIN most_recent_hearings h
         USING(person_id)
-        WHERE cdv.state_code = 'US_MO'
     )
     ,
     cdv_majors_recent AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC, cdv_rule) AS cdvs
         FROM cdv_all
         WHERE
             cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH)
@@ -247,10 +235,7 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             FIRST_VALUE(assessment_score) OVER person_scores AS mental_health_assessment_score,
         FROM `{{project_id}}.analyst_data.us_mo_screeners_preprocessed_materialized` 
         WHERE assessment_type = 'mental_health'
-        WINDOW person_scores AS (
-            PARTITION BY person_id, state_code
-            ORDER BY assessment_date DESC
-        )
+        WINDOW person_scores AS (PARTITION BY person_id ORDER BY assessment_date DESC)
     )
     ,
     {classes_cte()}
@@ -281,7 +266,7 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
                     class_title, 
                     class_exit_reason
                 ) 
-                ORDER BY start_date DESC
+                ORDER BY start_date DESC, class_title
                 LIMIT {US_MO_NUM_CLASSES_TO_DISPLAY}
             ) AS classes
         FROM classes_with_date
@@ -321,15 +306,13 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
           bed_enemy.facility AS enemy_facility,
         FROM `{{project_id}}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK033_latest` enemy
         -- Join on CD_ENY to get person in Restrictive Housing's enemies' bed stays
-        LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei_enemy
+        LEFT JOIN `{{project_id}}.us_mo_normalized_state.state_person_external_id` pei_enemy
         ON
             enemy.CD_ENY = pei_enemy.external_id
-            AND pei_enemy.state_code = 'US_MO'
         -- Join on CD_DOC to get person in Restrictive Housing's facility
-        LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei_self
+        LEFT JOIN `{{project_id}}.us_mo_normalized_state.state_person_external_id` pei_self
         ON
             enemy.CD_DOC = pei_self.external_id
-            AND pei_self.state_code = 'US_MO'
         LEFT JOIN current_bed_stay bed_enemy
         ON pei_enemy.person_id = bed_enemy.person_id
         LEFT JOIN current_bed_stay bed_self
@@ -379,14 +362,10 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             ) OVER person_window AS next_review_date,
             FIRST_VALUE(tak295.JV_FTX) OVER person_window AS comments,
         FROM `{{project_id}}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK295_latest` tak295
-        LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        LEFT JOIN `{{project_id}}.us_mo_normalized_state.state_person_external_id` pei
         ON
             tak295.JV_DOC = pei.external_id
-            AND pei.state_code = 'US_MO'
-        WINDOW person_window AS (
-            PARTITION by pei.person_id, pei.state_code
-            ORDER BY tak295.JV_BA DESC
-        )
+        WINDOW person_window AS (PARTITION by pei.person_id ORDER BY tak295.JV_BA DESC)
     )
     ,
     itsc_entries_during_rh_placement AS (
@@ -402,73 +381,69 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             -- Omit most recent hearing if it occurred before the current stay
             {nonnull_start_date_clause('i.hearing_date')} >= c.start_date
     )
-    ,
-    final AS (
-        SELECT
-            base.external_id,
-            base.person_id,
-            base.state_code,
-            hearings.most_recent_hearing_date AS metadata_most_recent_hearing_date,
-            hearings.most_recent_hearing_type AS metadata_most_recent_hearing_type,
-            hearings.most_recent_hearing_facility AS metadata_most_recent_hearing_facility,
-            hearings.most_recent_hearing_comments AS metadata_most_recent_hearing_comments,
-            housing.facility_code AS metadata_current_facility,
-            confinement.start_date AS metadata_restrictive_housing_start_date,
-            bed.bed_number AS metadata_bed_number,
-            bed.room_number AS metadata_room_number,
-            bed.complex_number AS metadata_complex_number,
-            bed.building_number AS metadata_building_number,
-            bed.housing_use_code AS metadata_housing_use_code,
-            TO_JSON(IFNULL(cdv_majors_recent.cdvs, [])) AS metadata_major_cdvs,
-            TO_JSON(IFNULL(cdv_minors_since_hearing.cdvs, [])) AS metadata_cdvs_since_last_hearing,
-            IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing,
-            mental_health_latest.mental_health_assessment_score AS metadata_mental_health_assessment_score,
-            TO_JSON(IFNULL(classes_by_person_recent.classes, [])) AS metadata_classes_recent,
-            aic_scores_latest.aic_score AS metadata_aic_score,
-            TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
-            TO_JSON(IFNULL(cdv_d1_sanctions_by_person.sanctions, [])) AS metadata_all_sanctions,
-            IFNULL(cdv_d1_sanctions_by_person.num_d1_sanctions_past_year, 0) AS metadata_num_d1_sanctions_past_year,
-            TO_JSON(IFNULL(solitary_assignments_by_person.solitary_assignment_dates, [])) AS metadata_solitary_assignment_info_past_year,
-            IFNULL(solitary_assignments_by_person.num_solitary_assignments_past_year, 0) AS metadata_num_solitary_assignments_past_year,
-            active_d1_sanctions.sanction_start_date AS metadata_active_d1_sanction_start_date,
-            active_d1_sanctions.sanction_expiration_date AS metadata_active_d1_sanction_expiration_date,
-            active_d1_sanctions.sanction_length AS metadata_active_d1_sanction_length,
-            itsc_entries_during_rh_placement.hearing_date AS metadata_itsc_hearing_date,
-            itsc_entries_during_rh_placement.next_review_date AS metadata_itsc_next_review_date,
-            itsc_entries_during_rh_placement.comments AS metadata_itsc_comments,
-        FROM base_query base
-        LEFT JOIN most_recent_hearings hearings
-        USING (person_id)
-        LEFT JOIN current_housing_stay housing
-        USING (person_id)
-        LEFT JOIN current_confinement_stay confinement
-        USING (person_id)
-        LEFT JOIN current_bed_stay bed
-        USING (person_id)
-        LEFT JOIN cdv_majors_recent
-        USING (person_id)
-        LEFT JOIN cdv_minors_since_hearing
-        USING (person_id)
-        LEFT JOIN cdv_minors_recent
-        USING (person_id)
-        LEFT JOIN mental_health_latest
-        USING (person_id)
-        LEFT JOIN classes_by_person_recent
-        USING (external_id)
-        LEFT JOIN aic_scores_latest
-        USING (external_id)
-        LEFT JOIN unwaived_enemies_by_person
-        USING (external_id)
-        LEFT JOIN cdv_d1_sanctions_by_person
-        USING (person_id)
-        LEFT JOIN solitary_assignments_by_person
-        USING (person_id)
-        LEFT JOIN active_d1_sanctions
-        USING (person_id)
-        LEFT JOIN itsc_entries_during_rh_placement
-        USING (person_id)
-    )
-    SELECT * FROM final
+SELECT
+    base.external_id,
+    base.person_id,
+    base.state_code,
+    hearings.most_recent_hearing_date AS metadata_most_recent_hearing_date,
+    hearings.most_recent_hearing_type AS metadata_most_recent_hearing_type,
+    hearings.most_recent_hearing_facility AS metadata_most_recent_hearing_facility,
+    hearings.most_recent_hearing_comments AS metadata_most_recent_hearing_comments,
+    housing.facility_code AS metadata_current_facility,
+    confinement.start_date AS metadata_restrictive_housing_start_date,
+    bed.bed_number AS metadata_bed_number,
+    bed.room_number AS metadata_room_number,
+    bed.complex_number AS metadata_complex_number,
+    bed.building_number AS metadata_building_number,
+    bed.housing_use_code AS metadata_housing_use_code,
+    TO_JSON(IFNULL(cdv_majors_recent.cdvs, [])) AS metadata_major_cdvs,
+    TO_JSON(IFNULL(cdv_minors_since_hearing.cdvs, [])) AS metadata_cdvs_since_last_hearing,
+    IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing,
+    mental_health_latest.mental_health_assessment_score AS metadata_mental_health_assessment_score,
+    TO_JSON(IFNULL(classes_by_person_recent.classes, [])) AS metadata_classes_recent,
+    aic_scores_latest.aic_score AS metadata_aic_score,
+    TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
+    TO_JSON(IFNULL(cdv_d1_sanctions_by_person.sanctions, [])) AS metadata_all_sanctions,
+    IFNULL(cdv_d1_sanctions_by_person.num_d1_sanctions_past_year, 0) AS metadata_num_d1_sanctions_past_year,
+    TO_JSON(IFNULL(solitary_assignments_by_person.solitary_assignment_dates, [])) AS metadata_solitary_assignment_info_past_year,
+    IFNULL(solitary_assignments_by_person.num_solitary_assignments_past_year, 0) AS metadata_num_solitary_assignments_past_year,
+    active_d1_sanctions.sanction_start_date AS metadata_active_d1_sanction_start_date,
+    active_d1_sanctions.sanction_expiration_date AS metadata_active_d1_sanction_expiration_date,
+    active_d1_sanctions.sanction_length AS metadata_active_d1_sanction_length,
+    itsc_entries_during_rh_placement.hearing_date AS metadata_itsc_hearing_date,
+    itsc_entries_during_rh_placement.next_review_date AS metadata_itsc_next_review_date,
+    itsc_entries_during_rh_placement.comments AS metadata_itsc_comments,
+FROM base_query base
+LEFT JOIN most_recent_hearings hearings
+USING (person_id)
+LEFT JOIN current_housing_stay housing
+USING (person_id)
+LEFT JOIN current_confinement_stay confinement
+USING (person_id)
+LEFT JOIN current_bed_stay bed
+USING (person_id)
+LEFT JOIN cdv_majors_recent
+USING (person_id)
+LEFT JOIN cdv_minors_since_hearing
+USING (person_id)
+LEFT JOIN cdv_minors_recent
+USING (person_id)
+LEFT JOIN mental_health_latest
+USING (person_id)
+LEFT JOIN classes_by_person_recent
+USING (external_id)
+LEFT JOIN aic_scores_latest
+USING (external_id)
+LEFT JOIN unwaived_enemies_by_person
+USING (external_id)
+LEFT JOIN cdv_d1_sanctions_by_person
+USING (person_id)
+LEFT JOIN solitary_assignments_by_person
+USING (person_id)
+LEFT JOIN active_d1_sanctions
+USING (person_id)
+LEFT JOIN itsc_entries_during_rh_placement
+USING (person_id)
 """
 
 US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
