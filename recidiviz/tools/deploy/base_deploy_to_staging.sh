@@ -92,8 +92,8 @@ update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMI
 
 
 LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_version_tag recidiviz-staging) || exit_on_fail
-if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${GIT_VERSION_TAG}"; then
-    echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
+if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${VERSION_TAG}"; then
+    echo_error "Deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
 fi
 
