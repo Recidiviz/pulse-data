@@ -63,7 +63,7 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = """
             FROM `{project_id}.reference_views.current_staff_materialized` current_staff
             INNER JOIN caseload_staff_external_ids ids
                 USING (state_code, external_id)
-            INNER JOIN state_specific_data ssd
+            LEFT JOIN state_specific_data ssd
                 USING (state_code, external_id)
         )
 
