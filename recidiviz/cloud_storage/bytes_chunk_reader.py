@@ -58,7 +58,7 @@ class BytesChunkReader(io.BufferedIOBase, BinaryIO):
         """Wrapper around a read() call to make sure that we don't ever read before the
         read_start_inclusive or after the read_end_exclusive. Assumes that the this
         class is the only one manipulating the underlying seekable stream (i.e.
-        _seekable_io.tell() remains stable bewteen calls to this function).
+        _seekable_io.tell() remains stable between calls to this function).
         """
         # we have read to the limit; let's return an empty byte (python sign that we at eof)
         if self._end_of_chunk:
