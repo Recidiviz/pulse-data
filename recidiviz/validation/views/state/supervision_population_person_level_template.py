@@ -98,14 +98,16 @@ sanitized_internal_metrics AS (
         WHEN dataflow.state_code IN ('US_AZ') THEN CAST(staff.staff_id AS STRING)
         ELSE staff.external_id
       END AS supervising_officer_external_id,
-      CASE
+      CASE  
         WHEN dataflow.state_code = 'US_IX' and (supervision_level_raw_text like 'LOW SUPERVISION UNIT%' or supervision_level_raw_text like 'LOW SUPERVSN UNIT%') THEN 'LIMITED SUPERVISION'
         -- There is no supervision_level_raw_text in AZ, so use the supervision level enum value instead. 
         WHEN dataflow.state_code = 'US_AZ' THEN supervision_level
+        -- In utah, the raw text is concatenated like externallevel-additionaldetail so we want the first.
+        WHEN dataflow.state_code = 'US_UT' THEN SPLIT(supervision_level_raw_text, '-')[safe_ordinal(1)]
         ELSE supervision_level_raw_text
       END AS supervision_level_raw_text,
       CASE
-        WHEN dataflow.state_code IN ('US_MO','US_TN')
+        WHEN dataflow.state_code IN ('US_MO','US_TN', 'US_UT')
           THEN level_1_supervision_location_external_id
         WHEN dataflow.state_code = 'US_AZ' THEN UPPER(level_2_supervision_location_external_id)
         ELSE level_2_supervision_location_external_id

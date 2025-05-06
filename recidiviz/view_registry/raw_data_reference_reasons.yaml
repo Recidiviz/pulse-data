@@ -1890,6 +1890,12 @@ US_UT:
   tst_qstn_rspns:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
       Used to display latest assessment information in side-panel notes.
+  validation_app_hrchy_listing:
+    us_ut_validation.supervision_population_person_level: |-
+      Imported external validation data, used in external validation views
+  validation_dpo_listing:
+    us_ut_validation.incarceration_population_person_level: |-
+      Imported external validation data, used in external validation views
   wf_rpt:
     analyst_data.us_ut_early_discharge_sessions_preprocessing: |-
       Used to infer early discharges in UT.
