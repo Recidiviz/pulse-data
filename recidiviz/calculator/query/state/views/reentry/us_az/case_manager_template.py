@@ -33,6 +33,7 @@ WITH
   WHERE
     asa.state_code = "US_AZ"
     AND end_date_exclusive IS NULL
+    AND person_ext.id_type = 'US_AZ_PERSON_ID'
   GROUP BY
     incarceration_staff_assignment_id)
 SELECT

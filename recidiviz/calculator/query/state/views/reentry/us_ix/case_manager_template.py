@@ -33,6 +33,7 @@ WITH
   WHERE
     asa.state_code = "US_IX"
     AND end_date_exclusive IS NULL
+    AND person_ext.id_type = 'US_IX_DOC'
   GROUP BY
     incarceration_staff_assignment_id)
 SELECT

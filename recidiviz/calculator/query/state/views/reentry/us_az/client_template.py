@@ -17,6 +17,32 @@
 """Template for listing out Arizona clients (Incarcerated and Supervised JII)."""
 
 US_AZ_REENTRY_CLIENT_QUERY_TEMPLATE = """
+WITH
+  all_staff_assignments AS (
+  SELECT
+    *
+  FROM (
+      -- UNION incarceration assignments and supervision assignments
+      (
+      SELECT
+        incarceration_staff_assignment_external_id AS staff_id,
+        person_id
+      FROM
+        `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
+      WHERE
+        state_code = "US_AZ"
+        AND end_date_exclusive IS NULL
+        AND relationship_priority = 1 )
+    UNION ALL (
+      SELECT
+        supervising_officer_staff_external_id AS staff_id,
+        person_id,
+      FROM
+        `{project_id}.{normalized_state_dataset}.state_supervision_period`
+      WHERE
+        state_code = "US_AZ"
+        AND termination_date IS NULL
+        AND supervising_officer_staff_external_id IS NOT NULL )))
 SELECT
   "US_AZ" AS state_code,
   external_id,
@@ -24,19 +50,16 @@ SELECT
   gender,
   birthdate,
   current_address,
-  incarceration_staff_assignment_external_id AS staff_id,
+  staff_id,
 FROM
-  `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized` assignment
+  all_staff_assignments
 LEFT JOIN
   `{project_id}.{normalized_state_dataset}.state_person` person
 ON
-  assignment.person_id = person.person_id
+  all_staff_assignments.person_id = person.person_id
 LEFT JOIN
   `{project_id}.{normalized_state_dataset}.state_person_external_id` person_ext
 ON
   person.person_id = person_ext.person_id
-WHERE
-  assignment.state_code = "US_AZ"
-  AND end_date_exclusive IS NULL
-  AND relationship_priority = 1
+  AND person_ext.id_type = 'US_AZ_PERSON_ID'
 """
