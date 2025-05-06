@@ -47,9 +47,11 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             dataflow.person_id,
             sp.full_name AS person_name,
             sp.gender AS gender,
-            IF( dataflow.state_code IN ({level_2_state_codes}),
-                COALESCE(locations.level_2_incarceration_location_external_id, dataflow.facility),
-                dataflow.facility) AS facility_id,
+            CASE
+                WHEN dataflow.state_code IN ({level_2_state_codes}) THEN COALESCE(locations.level_2_incarceration_location_external_id, dataflow.facility)
+                WHEN dataflow.state_code = "US_AR" THEN COALESCE(locations.level_1_incarceration_location_name, dataflow.facility)
+                ELSE dataflow.facility
+            END AS facility_id,
             sessions.start_date as admission_date
         FROM `{project_id}.{dataflow_dataset}.most_recent_incarceration_population_span_metrics_materialized` dataflow
         INNER JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sessions

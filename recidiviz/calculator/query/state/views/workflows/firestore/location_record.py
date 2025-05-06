@@ -45,6 +45,8 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
                 CASE
                     WHEN rr.state_code = "US_TN"
                         THEN UPPER(locations.level_2_incarceration_location_name)
+                    WHEN rr.state_code = "US_AR"
+                        THEN rr.facility_id
                     WHEN rr.state_code IN ({level_1_state_codes})
                         THEN locations.level_1_incarceration_location_name
                     WHEN rr.state_code IN ({level_2_state_codes})
