@@ -23,6 +23,7 @@ from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_6_months,
     supervision_case_type_is_not_sex_offense,
+    supervision_past_full_term_completion_date_or_upcoming_30_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     no_open_supervision_modifiers,
@@ -32,6 +33,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -51,6 +55,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
         supervision_fees_paid.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
+        InvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=supervision_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER,
+        ),
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
