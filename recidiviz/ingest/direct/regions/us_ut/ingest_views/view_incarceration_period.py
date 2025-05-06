@@ -16,13 +16,18 @@
 # =============================================================================
 """Query that collects information about incarceration periods UT."""
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants import (
+    INCARCERATION_LEGAL_STATUS_CODES,
+    INCARCERATION_LOCATION_TYPE_CODES,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH
 -- Collect all legal status updates and the dates they were made.
 legal_status AS (
@@ -33,10 +38,10 @@ legal_status AS (
         CAST((LEFT(stat_beg_dt, 10) || ' ' || stat_beg_tm) AS DATETIME) AS stat_beg_datetime,
         lgl_stat_chg_cd,
         lgl_stat_chg_desc,
-    FROM {ofndr_lgl_stat}
-    LEFT JOIN {lgl_stat_cd}
+    FROM {{ofndr_lgl_stat}}
+    LEFT JOIN {{lgl_stat_cd}}
         USING (lgl_stat_cd)
-    LEFT JOIN {lgl_stat_chg_cd}
+    LEFT JOIN {{lgl_stat_chg_cd}}
         USING (lgl_stat_chg_cd)
 ),
 -- Create legal status periods using all legal status updates. A status is assumed to 
@@ -72,10 +77,10 @@ location AS (
         assgn_rsn_cd,
         assgn_rsn_desc,
         CAST(end_dt AS DATETIME) AS end_dt,
-    FROM {ofndr_loc_hist}
-    LEFT JOIN {body_loc_cd}
+    FROM {{ofndr_loc_hist}}
+    LEFT JOIN {{body_loc_cd}}
         USING (body_loc_cd)
-    LEFT JOIN {assgn_rsn_cd}
+    LEFT JOIN {{assgn_rsn_cd}}
         USING (assgn_rsn_cd)
 ),
 -- Create location periods using all location updates. A location is assumed to 
@@ -191,21 +196,15 @@ incarceration_periods AS (
             COALESCE(location_start_reason, legal_status_start_reason) AS start_reason,
             COALESCE(location_end_reason, legal_status_end_reason) AS end_reason,
             lgl_stat_desc,
+            lgl_stat_cd,
             body_loc_desc,
         FROM periods_with_attributes
         LEFT JOIN lgl_stat_chg_cd_generated_view start_reason
             ON (legal_status_start_reason = lgl_stat_chg_desc
             OR location_start_reason = lgl_stat_chg_desc)
         WHERE (
-            lgl_stat_cd in (
-                'I',  -- INMATE
-                'Y',  -- COMPACT IN INMATE
-                'V'   -- PAROLE VIOLATION
-            )
-            OR loc_typ_cd in (
-                'U',  -- UTAH JAIL
-                'I'   -- INSTITUTIONAL OPS
-            )
+            lgl_stat_cd in ({list_to_query_string(INCARCERATION_LEGAL_STATUS_CODES, quoted=True)})
+            OR loc_typ_cd in ({list_to_query_string(INCARCERATION_LOCATION_TYPE_CODES, quoted=True)})
         )
     )
     -- Do not allow period start reasons to be types of exit from incarceration.

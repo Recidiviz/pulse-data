@@ -16,13 +16,17 @@
 # =============================================================================
 """Query that generates supervision periods in Utah."""
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants import (
+    SUPERVISION_LEGAL_STATUS_CODES,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH
 -- Collect all legal status updates and the dates they were made.
 legal_status AS (
@@ -33,10 +37,10 @@ legal_status AS (
         CAST((LEFT(stat_beg_dt, 10) || ' ' || stat_beg_tm) AS DATETIME) AS stat_beg_datetime,
         lgl_stat_chg_cd,
         lgl_stat_chg_desc,
-    FROM {ofndr_lgl_stat}
-    LEFT JOIN {lgl_stat_cd}
+    FROM {{ofndr_lgl_stat}}
+    LEFT JOIN {{lgl_stat_cd}}
         USING (lgl_stat_cd)
-    LEFT JOIN {lgl_stat_chg_cd}
+    LEFT JOIN {{lgl_stat_chg_cd}}
         USING (lgl_stat_chg_cd)
 ),
 -- Create legal status periods using all legal status updates. A status is assumed to 
@@ -60,16 +64,7 @@ legal_status_periods AS (
             ) AS legal_status_end_reason,
         FROM legal_status
     )
-    WHERE lgl_stat_cd IN (
-        'A', --  CLASS A PROBATION   
-        'F', --  FELONY PROBATION    
-        'M', --  CLASS B/C PROBATION 
-        'N', --  PLEA IN ABEYANCE    
-        'P', --  PAROLE              
-        'W', --  COMPACT IN PROBATION
-        'X', --  COMPACT IN PAROLE
-        'O' --  PRE-CONVICT DIVERSN   
-    )
+    WHERE lgl_stat_cd IN ({list_to_query_string(SUPERVISION_LEGAL_STATUS_CODES, quoted=True)})
 ),
 -- Collect all location updates and the dates they were made.
 location AS (
@@ -82,10 +77,10 @@ location AS (
         assgn_rsn_cd,
         assgn_rsn_desc,
         CAST(end_dt AS DATETIME) AS end_dt,
-    FROM {ofndr_loc_hist}
-    LEFT JOIN {body_loc_cd}
+    FROM {{ofndr_loc_hist}}
+    LEFT JOIN {{body_loc_cd}}
         USING (body_loc_cd)
-    LEFT JOIN {assgn_rsn_cd}
+    LEFT JOIN {{assgn_rsn_cd}}
         USING (assgn_rsn_cd)
 ),
 -- Create location periods using all location updates. A location is assumed to 
@@ -116,8 +111,8 @@ supervision_level AS (
         'Supervision Level Change' as reason,
         CAST(strt_dt AS DATETIME) AS start_date,
         CAST(IF(end_dt = '(null)', NULL, end_dt) AS DATETIME) AS end_date,
-    FROM {ofndr_sprvsn}
-    LEFT JOIN {sprvsn_lvl_cd} cd
+    FROM {{ofndr_sprvsn}}
+    LEFT JOIN {{sprvsn_lvl_cd}} cd
     USING(sprvsn_lvl_cd)
 ),
 -- Create supervision level periods using all supervision level updates.
@@ -172,7 +167,7 @@ ofndr_agnt AS (
             CAST(agnt_strt_dt AS DATETIME) AS start_date,
             CAST(IF(end_dt = '(null)', NULL, end_dt) AS DATETIME) AS end_date,
             'Supervisor Change' AS reason,
-        FROM {ofndr_agnt}
+        FROM {{ofndr_agnt}}
         -- TODO(#37223): Refine logic used to deduplicate
         WHERE usr_typ_cd IN ("A") -- Most common type, maybe active?
             AND UPPER(agnt_id) != 'NONE' -- Eliminates some duplicates, doesn't seem like useful information
@@ -351,21 +346,12 @@ supervision_periods AS (
     sprvsn_lvl_desc,
     agnt_id,
     FROM periods_with_attributes
-    LEFT JOIN {lgl_stat_chg_cd} start_reason
+    LEFT JOIN {{lgl_stat_chg_cd}} start_reason
         ON (legal_status_start_reason = lgl_stat_chg_desc
         OR location_start_reason = lgl_stat_chg_desc)
     -- Do not allow period start reasons to be types of exit from supervision.
     WHERE start_reason.sprvsn_exit_typ_id IS NULL 
-    AND lgl_stat_cd IN (
-        'A', --  CLASS A PROBATION   
-        'F', --  FELONY PROBATION    
-        'M', --  CLASS B/C PROBATION 
-        'N', --  PLEA IN ABEYANCE    
-        'P', --  PAROLE              
-        'W', --  COMPACT IN PROBATION
-        'X', --  COMPACT IN PAROLE
-        'O' --  PRE-CONVICT DIVERSN   
-    )
+    AND lgl_stat_cd IN ({list_to_query_string(SUPERVISION_LEGAL_STATUS_CODES, quoted=True)})
 )
 SELECT *, 
 ROW_NUMBER() OVER (

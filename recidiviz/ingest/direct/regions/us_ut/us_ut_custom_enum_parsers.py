@@ -39,6 +39,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants import (
+    SUPERVISION_LEGAL_STATUS_CODES_SET,
+)
 
 
 def parse_employment_status(
@@ -127,7 +130,10 @@ def parse_incarceration_type(raw_text: str) -> StateIncarcerationType:
 
 def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
     if raw_text:
-        if "CO JAIL" in raw_text:
+        location_description, legal_status_code = raw_text.split("@@")
+        if legal_status_code in SUPERVISION_LEGAL_STATUS_CODES_SET:
+            return StateCustodialAuthority.SUPERVISION_AUTHORITY
+        if "CO JAIL" in location_description:
             return StateCustodialAuthority.COUNTY
         return StateCustodialAuthority.STATE_PRISON
     return StateCustodialAuthority.INTERNAL_UNKNOWN
