@@ -244,7 +244,7 @@ def raise_error_if_invalid_compartment_level_1_filter(
 
 def get_ineligible_offense_type_criteria(
     criteria_name: str,
-    compartment_level_1: str,
+    compartment_level_1: Union[str, List[str]],
     description: str,
     where_clause: str = "",
     additional_json_fields: Optional[List[str]] = None,

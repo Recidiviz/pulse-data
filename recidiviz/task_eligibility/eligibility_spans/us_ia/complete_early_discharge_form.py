@@ -22,6 +22,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_6_months,
+    not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
     supervision_case_type_is_not_sex_offense,
     supervision_past_full_term_completion_date_or_upcoming_30_days,
 )
@@ -58,6 +59,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         InvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=supervision_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER,
         ),
+        not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

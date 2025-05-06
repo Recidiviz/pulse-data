@@ -45,4 +45,5 @@ def is_other_ed_ineligible_offense() -> str:
       OR statute LIKE '%726.6(5)%' -- child endangerment resulting in death
       OR (clean_statute = '726.6' AND description LIKE '%DEATH%') -- i think some of these 726.6(5) cases are mislabeled as 726.6(4). to cover all bases, including all child endangerment cases that refer to death 
       OR clean_statute = '902.12' OR clean_statute = '902.14' -- felony guidelines for the above crimes, sometimes used as a statute code
+      OR classification_subtype = 'A FELONY' -- per section 902.1, all class A felonies should result in lifetime supervision and thus be excluded from this early discharge policy. this clause handles any edge cases where a client has a class A felony and is not caught by the not_serving_life_sentence criterion
     )"""
