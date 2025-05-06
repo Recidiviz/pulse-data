@@ -302,6 +302,17 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
     return event_df
 
 
+def get_charge_df(project_id: str) -> pd.DataFrame:
+    charge_query = f"""
+    SELECT *
+    FROM `{project_id}.sentencing_views.sentencing_charge_record_materialized`
+    WHERE state_code IN ({SUPPORTED_STATES_STR})
+    """
+    charge_df = pd.read_gbq(charge_query, project_id=project_id)
+
+    return charge_df
+
+
 def get_disposition_df(cohort_df: pd.DataFrame, state_code: str) -> pd.DataFrame:
     """
     Returns: DataFrame with columns 'state_code', 'gender', 'assessment_score_bucket_start',
@@ -346,7 +357,7 @@ def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
         ["INTERNAL_UNKNOWN"],
         [-1],
         ["PROBATION"],
-        [pd.to_datetime("1970-01-01")],
+        [pd.to_datetime("1970-01-01").date()],
         ["[PLACEHOLDER] NCIC CATEGORY"],
         [True, False],
         [True, False],
@@ -371,6 +382,57 @@ def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
         axis=1,
     )
     return pd.concat([cohort_df, placeholder_rows]).reset_index(drop=True)
+
+
+def add_missing_offenses(
+    cohort_df: pd.DataFrame, charge_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Add rows to the cohort DataFrame for offenses that aren't in cohort_df.
+
+    There are offenses that exist in state_charge that aren't in cohort_df for various reasons (e.g. they were never the
+    most severe offense or weren't part of an initial sentence). This adds a single row in the underlying data for each
+    such offense so that the eventual case insights table will have them. The rows added have gender INTERNAL_UNKNOWN
+    and assessment_score -1 so that they don't actually correspond to any real case or insight.
+    """
+    missing_offenses_df = charge_df[
+        ~charge_df.charge.isin(cohort_df.most_severe_description.unique())
+    ].copy()
+
+    cols = [
+        "state_code",
+        "person_id",
+        "gender",
+        "assessment_score",
+        "cohort_group",
+        "cohort_start_date",
+        "most_severe_description",
+        # TODO(#41614): consolidate where these attributes are pulled from
+        "most_severe_ncic_category_uniform",
+        "any_is_violent",
+        "any_is_drug",
+        "any_is_sex_offense",
+    ]
+    missing_offenses_df.loc[:, "gender"] = "INTERNAL_UNKNOWN"
+    missing_offenses_df.loc[:, "assessment_score"] = -1
+    missing_offenses_df.loc[:, "cohort_group"] = "PROBATION"
+    missing_offenses_df.loc[:, "cohort_start_date"] = pd.to_datetime(
+        "1970-01-01"
+    ).date()
+    column_remapping = {
+        "charge": "most_severe_description",
+        "ncic_category_uniform": "most_severe_ncic_category_uniform",
+        "is_violent": "any_is_violent",
+        "is_drug": "any_is_drug",
+        "is_sex_offense": "any_is_sex_offense",
+    }
+    missing_offenses_df = missing_offenses_df.rename(columns=column_remapping)
+
+    # person_id must be unique per row, and it's set to be negative numbers starting with -10001
+    missing_offenses_df["person_id"] = range(
+        -10001, -1 * (missing_offenses_df.shape[0] + 10001), -1
+    )
+
+    return pd.concat([cohort_df, missing_offenses_df[cols]]).reset_index(drop=True)
 
 
 def add_all_combinations(disposition_df: pd.DataFrame, state_code: str) -> pd.DataFrame:
@@ -911,18 +973,23 @@ def add_consolidated_columns(
 
 
 def create_table_for_state(
-    state_code: str, cohort_df: pd.DataFrame, event_df: pd.DataFrame
+    state_code: str,
+    cohort_df: pd.DataFrame,
+    event_df: pd.DataFrame,
+    charge_df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Create the case insights table for a given state."""
 
     cohort_df_for_state = cohort_df[cohort_df.state_code == state_code]
     event_df_for_state = event_df[event_df.state_code == state_code]
+    charge_df_for_state = charge_df[charge_df.state_code == state_code]
 
     # Trim out any cohort start dates in the future, which can apparently happen
     # TODO(#41003): Filter these out in sentence_cohort instead
     cohort_df_for_state = cohort_df_for_state[
-        cohort_df_for_state.cohort_start_date < datetime.datetime.now()
+        cohort_df_for_state.cohort_start_date <= datetime.date.today()
     ]
+    cohort_df_for_state = add_missing_offenses(cohort_df_for_state, charge_df_for_state)
     cohort_df_for_state = add_offense_attributes(cohort_df_for_state)
 
     disposition_df_for_state = get_disposition_df(cohort_df_for_state, state_code)
@@ -979,6 +1046,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     cohort_df = get_cohort_df(project_id)
     cohort_df = add_placeholder_cohort_rows(cohort_df)
     event_df = get_recidivism_event_df(project_id)
+    charge_df = get_charge_df(project_id)
 
     final_table = None
     recidivism_df = None
@@ -988,7 +1056,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
             final_table_for_state,
             recidivism_df_for_state,
             disposition_df_for_state,
-        ) = create_table_for_state(state_code, cohort_df, event_df)
+        ) = create_table_for_state(state_code, cohort_df, event_df, charge_df)
         if final_table is None:
             final_table = final_table_for_state
             recidivism_df = recidivism_df_for_state
@@ -1001,7 +1069,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     if final_table is None:
         return
 
-    # Temporary stop-gap until we deprecate these columns
+    # TODO(#40788): Temporary stop-gap until we deprecate these columns
     if "disposition_probation_pc" in final_table.columns:
         final_table.disposition_probation_pc = (
             final_table.disposition_probation_pc.fillna(0.0)

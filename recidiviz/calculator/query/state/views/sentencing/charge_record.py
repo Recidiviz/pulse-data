@@ -69,6 +69,8 @@ SENTENCING_CHARGE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "charge",
         "is_sex_offense",
         "is_violent",
+        "is_drug",
+        "ncic_category_uniform",
         "frequency",
         "mandatory_minimums",
     ],

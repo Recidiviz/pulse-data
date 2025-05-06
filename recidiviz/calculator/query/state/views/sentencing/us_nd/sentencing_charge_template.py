@@ -19,33 +19,54 @@
 This view is identical to that used in IX."""
 
 US_ND_SENTENCING_CHARGE_TEMPLATE = """
+WITH charges AS (
+    SELECT
+      description,
+      -- Only count the number of times a charge appears in the past two years to determine frequency
+      SUM(
+      IF
+        (DATE_DIFF(CURRENT_DATE("US/Eastern"), offense_date, YEAR) <= 2, 1, 0)) AS frequency,
+    IF
+      -- Determine if a charge is violent based what percentage of the time it is tagged as such, rounded down or up
+      (ROUND(SUM(
+          IF
+            (is_violent, 1, 0)) / COUNT(*)) = 1,
+        TRUE,
+        FALSE) AS is_violent,
+    IF
+      -- Determine if a charge is a sex offense based what percentage of the time it is tagged as such, rounded down or up
+      (ROUND(SUM(
+          IF
+            (is_sex_offense, 1, 0)) / COUNT(*)) = 1,
+        TRUE,
+        FALSE) AS is_sex_offense,
+    IF
+      -- Determine if a charge is a drug offense based what percentage of the time it is tagged as such, rounded down or up
+      (ROUND(SUM(
+          IF
+            (is_drug, 1, 0)) / COUNT(*)) = 1,
+        TRUE,
+        FALSE) AS is_drug,
+      CAST(NULL AS ARRAY<JSON>) AS mandatory_minimums,
+    FROM
+      `{project_id}.normalized_state.state_charge_v2` charge
+    WHERE
+      state_code = "US_ND"
+      AND description IS NOT NULL
+    GROUP BY
+      description
+)
 SELECT
   "US_ND" AS state_code,
   description AS charge,
-  -- Only count the number of times a charge appears in the past two years to determine frequency
-  SUM(
-  IF
-    (DATE_DIFF(CURRENT_DATE("US/Eastern"), offense_date, YEAR) <= 2, 1, 0)) AS frequency,
-IF
-  -- Determine if a charge is violent based what percentage of the time it is tagged as such, rounded down or up
-  (ROUND(SUM(
-      IF
-        (is_violent, 1, 0)) / COUNT(*)) = 1,
-    TRUE,
-    FALSE) AS is_violent,
-IF
-  -- Determine if a charge is a sex offense based what percentage of the time it is tagged as such, rounded down or up
-  (ROUND(SUM(
-      IF
-        (is_sex_offense, 1, 0)) / COUNT(*)) = 1,
-    TRUE,
-    FALSE) AS is_sex_offense,
-  CAST(NULL AS ARRAY<JSON>) AS mandatory_minimums
-FROM
-  `{project_id}.normalized_state.state_charge_v2`
-WHERE
-  state_code = "US_ND"
-  AND description IS NOT NULL
-GROUP BY
-  description
+  frequency,
+  is_violent,
+  is_sex_offense,
+  is_drug,
+  clean_offense.ncic_category_uniform,
+  mandatory_minimums
+FROM charges
+LEFT JOIN
+  `{project_id}.reference_views.cleaned_offense_description_to_labels` clean_offense
+  ON charges.description = clean_offense.offense_description
 """

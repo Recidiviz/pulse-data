@@ -41,6 +41,13 @@ WITH
           (is_sex_offense, 1, 0)) / COUNT(*)) = 1,
       TRUE,
       FALSE) AS is_sex_offense,
+  IF
+    -- Determine if a charge is a drug offense based what percentage of the time it is tagged as such, rounded down or up
+    (ROUND(SUM(
+        IF
+          (is_drug, 1, 0)) / COUNT(*)) = 1,
+      TRUE,
+      FALSE) AS is_drug,
   FROM
     `{project_id}.normalized_state.state_charge`
   WHERE
@@ -53,7 +60,8 @@ WITH
     DISTINCT OffenseTypeDesc AS description,
     0 AS frequency,
     FALSE AS is_violent,
-    FALSE AS is_sex_offense
+    FALSE AS is_sex_offense,
+    FALSE AS is_drug,
   FROM
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_OffenseType_latest`
   WHERE
@@ -86,6 +94,8 @@ SELECT
   frequency,
   is_violent,
   is_sex_offense,
+  is_drug,
+  clean_offense.ncic_category_uniform,
   mandatory_minimums
 FROM (
   SELECT
@@ -97,6 +107,9 @@ FROM (
     *
   FROM
     non_sentenced_charges)
+LEFT JOIN
+  `{project_id}.reference_views.cleaned_offense_description_to_labels` clean_offense
+  ON description = clean_offense.offense_description
 LEFT JOIN
   mms
 ON

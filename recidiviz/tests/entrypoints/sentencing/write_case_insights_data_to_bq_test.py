@@ -589,7 +589,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "gender": ["FEMALE"],
                 "assessment_score": [5],
                 "cohort_group": ["TERM"],
-                "cohort_start_date": pd.to_datetime("2024-01-01"),
+                "cohort_start_date": pd.to_datetime("2024-01-01").date(),
                 "most_severe_description": ["ASSAULT OR BATTERY"],
                 "most_severe_ncic_category_uniform": ["Assault"],
                 "any_is_violent": [True],
@@ -650,7 +650,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "1970-01-01",
                         "1970-01-01",
                     ]
-                ),
+                ).date,
                 "most_severe_description": [
                     "ASSAULT OR BATTERY",
                     "[PLACEHOLDER] True, True, True",
@@ -720,9 +720,9 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "assessment_score": [5, 6, 7],
                 "cohort_group": ["TERM", "RIDER", "TERM"],
                 "cohort_start_date": [
-                    pd.to_datetime("2024-01-01"),
-                    pd.to_datetime("2024-01-02"),
-                    pd.to_datetime("2024-01-03"),
+                    pd.to_datetime("2024-01-01").date(),
+                    pd.to_datetime("2024-01-02").date(),
+                    pd.to_datetime("2024-01-03").date(),
                 ],
                 "most_severe_description": [
                     "ASSAULT OR BATTERY",
@@ -872,7 +872,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "1970-01-01",
                         "1970-01-01",
                     ]
-                ),
+                ).date,
                 "most_severe_description": [
                     "ASSAULT OR BATTERY",
                     "SEXUAL ASSAULT",
@@ -977,6 +977,94 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     False,
                     True,
                     False,
+                ],
+            }
+        )
+
+        pd.testing.assert_frame_equal(expected_cohort_df, cohort_df)
+
+    def test_add_missing_offenses(self) -> None:
+        cohort_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX"],
+                "person_id": [1],
+                "gender": ["FEMALE"],
+                "assessment_score": [5],
+                "cohort_group": ["TERM"],
+                "cohort_start_date": pd.to_datetime("2024-01-01").date(),
+                "most_severe_description": ["ASSAULT OR BATTERY"],
+                "most_severe_ncic_category_uniform": ["Assault"],
+                "any_is_violent": [True],
+                "any_is_drug": [False],
+                "any_is_sex_offense": [False],
+            }
+        )
+        charge_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX", "US_IX"],
+                "charge": ["NEW_CHARGE1", "NEW_CHARGE2"],
+                "is_violent": [False, False],
+                "is_drug": [True, False],
+                "is_sex_offense": [False, True],
+                "ncic_category_uniform": ["CATEGORY1", "CATEGORY2"],
+                "frequency": [3, 4],
+                "mandatory_minimums": [None, None],
+            }
+        )
+        cohort_df = write_case_insights_data_to_bq.add_missing_offenses(
+            cohort_df, charge_df
+        )
+
+        expected_cohort_df = pd.DataFrame(
+            {
+                "state_code": [
+                    "US_IX",
+                    "US_IX",
+                    "US_IX",
+                ],
+                "person_id": [1, -10001, -10002],
+                "gender": [
+                    "FEMALE",
+                    "INTERNAL_UNKNOWN",
+                    "INTERNAL_UNKNOWN",
+                ],
+                "assessment_score": [5, -1, -1],
+                "cohort_group": [
+                    "TERM",
+                    "PROBATION",
+                    "PROBATION",
+                ],
+                "cohort_start_date": pd.to_datetime(
+                    [
+                        "2024-01-01",
+                        "1970-01-01",
+                        "1970-01-01",
+                    ]
+                ).date,
+                "most_severe_description": [
+                    "ASSAULT OR BATTERY",
+                    "NEW_CHARGE1",
+                    "NEW_CHARGE2",
+                ],
+                "most_severe_ncic_category_uniform": [
+                    "Assault",
+                    "CATEGORY1",
+                    "CATEGORY2",
+                ],
+                "any_is_violent": [
+                    True,
+                    False,
+                    False,
+                ],
+                "any_is_drug": [
+                    False,
+                    True,
+                    False,
+                ],
+                "any_is_sex_offense": [
+                    False,
+                    False,
+                    True,
                 ],
             }
         )
