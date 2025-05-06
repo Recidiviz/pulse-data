@@ -154,6 +154,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             external_id="SID1341",
             id_type="US_MO_DOC",
             state_code="US_MO",
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime(2020, 1, 1),
+            id_active_to_datetime=None,
         )
 
         person.external_ids = [person_external_id]
@@ -184,6 +187,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_XX_SID",
             state_code="US_XX",
             person_external_id_id=12345,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime(2020, 1, 1),
+            id_active_to_datetime=None,
         )
 
         person.external_ids = [person_external_id]
@@ -207,6 +213,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_ND_SID",
             state_code="US_ND",
             person_external_id_id=12345,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=None,
+            id_active_to_datetime=None,
         )
 
         person_external_id_2 = NormalizedStatePersonExternalId(
@@ -214,6 +223,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_MO_DOC",
             state_code="US_MO",
             person_external_id_id=12345,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=None,
+            id_active_to_datetime=None,
         )
 
         person.external_ids = [person_external_id_1, person_external_id_2]
@@ -239,6 +251,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_PA_PBPP",
             state_code="US_PA",
             person_external_id_id=12345,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime(2020, 1, 1),
+            id_active_to_datetime=None,
         )
 
         # Lowest value of the two 'US_PA_CONT' ids - pick this one
@@ -247,6 +262,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_PA_CONT",
             state_code="US_PA",
             person_external_id_id=12345,
+            is_current_display_id_for_type=False,
+            id_active_from_datetime=datetime(2020, 1, 1),
+            id_active_to_datetime=datetime(2021, 1, 1),
         )
 
         # Other 'US_PA_CONT' should be picked
@@ -255,6 +273,9 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_PA_CONT",
             state_code="US_PA",
             person_external_id_id=12345,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime(2021, 1, 1),
+            id_active_to_datetime=None,
         )
 
         person.external_ids = [
@@ -352,12 +373,18 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     id_type="US_XX_DOC",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
                 NormalizedStatePersonExternalId(
                     external_id="SID9889",
                     id_type="US_XX_SID",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
         )
@@ -393,12 +420,18 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     id_type="US_XX_DOC",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
                 NormalizedStatePersonExternalId(
                     external_id="SID9889",
                     id_type="US_XX_SID",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
         )

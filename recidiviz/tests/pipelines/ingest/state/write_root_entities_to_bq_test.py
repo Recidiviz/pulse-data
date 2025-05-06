@@ -173,7 +173,10 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                     [
                         {
                             "external_id": "ID_123",
+                            "id_active_from_datetime": None,
+                            "id_active_to_datetime": None,
                             "id_type": "US_DD_ID_TYPE",
+                            "is_current_display_id_for_type": None,
                             "person_external_id_id": 456,
                             "person_id": 123,
                             "state_code": "US_DD",

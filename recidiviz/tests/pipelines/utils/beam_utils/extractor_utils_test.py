@@ -1310,6 +1310,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             state_code="US_XX",
             id_type="US_XX_TYPE",
             person_id=person_id,
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime.datetime(2020, 1, 1),
+            id_active_to_datetime=datetime.datetime(2021, 1, 1),
         )
 
         external_ids_data = [normalized_database_base_dict(schema_external_id)]
@@ -1382,6 +1385,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             external_id="888",
             state_code="US_XX",
             id_type="US_XX_TYPE",
+            is_current_display_id_for_type=True,
+            id_active_from_datetime=datetime.datetime(2020, 1, 1),
+            id_active_to_datetime=datetime.datetime(2021, 1, 1),
         )
         expected_entity_races = [
             NormalizedStatePersonRace(

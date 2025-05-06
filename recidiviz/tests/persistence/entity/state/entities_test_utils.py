@@ -1517,6 +1517,9 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
                 state_code="US_XX",
                 external_id="ELITE_ID_123",
                 id_type=US_ND_ELITE,
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                id_active_to_datetime=None,
             )
         ],
         aliases=[

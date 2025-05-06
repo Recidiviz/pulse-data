@@ -87,6 +87,9 @@ class TestNormalizeStatePerson(unittest.TestCase):
                     state_code=StateCode.US_XX.value,
                     external_id="ELITE_ID_123",
                     id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=None,
+                    id_active_from_datetime=None,
+                    id_active_to_datetime=None,
                 )
             ],
             supervision_contacts=[
@@ -124,6 +127,9 @@ class TestNormalizeStatePerson(unittest.TestCase):
                     state_code=StateCode.US_XX.value,
                     external_id="ELITE_ID_123",
                     id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=None,
+                    id_active_to_datetime=None,
                 )
             ],
             supervision_contacts=[

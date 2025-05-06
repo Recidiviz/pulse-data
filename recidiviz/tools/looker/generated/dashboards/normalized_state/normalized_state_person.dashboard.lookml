@@ -546,10 +546,13 @@
     type: looker_grid
     fields: [normalized_state_person_external_id.external_id,
       normalized_state_person_external_id.external_id_with_type,
+      normalized_state_person_external_id.id_active_from_datetime_date,
+      normalized_state_person_external_id.id_active_to_datetime_date,
       normalized_state_person_external_id.id_type,
+      normalized_state_person_external_id.is_current_display_id_for_type,
       normalized_state_person_external_id.person_external_id_id,
       normalized_state_person_external_id.state_code]
-    sorts: []
+    sorts: [normalized_state_person_external_id.id_active_from_datetime_date desc, normalized_state_person_external_id.id_active_to_datetime_date desc]
     listen: 
       Person Id: normalized_state_person.person_id
       State Code: normalized_state_person.state_code

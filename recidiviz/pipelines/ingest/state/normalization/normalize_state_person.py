@@ -28,6 +28,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
+    NormalizedStatePersonExternalId,
     NormalizedStatePersonStaffRelationshipPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -94,6 +95,26 @@ def build_normalized_state_person(
     """Normalizes the given StatePerson root entity into a NormalizedStatePerson."""
     person_id = assert_type(person.person_id, int)
     state_code = StateCode(person.state_code)
+
+    normalized_person_external_ids = [
+        NormalizedStatePersonExternalId(
+            person_external_id_id=assert_type(pei.person_external_id_id, int),
+            state_code=pei.state_code,
+            external_id=pei.external_id,
+            id_type=pei.id_type,
+            # TODO(#41557): Actually build normalization logic that picks exactly one
+            #  is_current_display_id_for_type=True
+            is_current_display_id_for_type=(
+                pei.is_current_display_id_for_type
+                if pei.is_current_display_id_for_type is not None
+                else True
+            ),
+            id_active_from_datetime=pei.id_active_from_datetime,
+            id_active_to_datetime=pei.id_active_from_datetime,
+        )
+        for pei in person.external_ids
+    ]
+
     normalized_violations = ViolationResponseNormalizationManager(
         person_id=person_id,
         delegate=get_state_specific_violation_response_normalization_delegate(
@@ -197,6 +218,7 @@ def build_normalized_state_person(
 
     person_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "assessments": normalized_assessments,
+        "external_ids": normalized_person_external_ids,
         "incarceration_periods": normalized_incarceration_periods,
         "incarceration_sentences": normalized_incarceration_sentences,
         "program_assignments": normalized_program_assignments,

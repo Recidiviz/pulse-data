@@ -18,6 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for recidivism/metric_producer.py."""
+import datetime
 import unittest
 from datetime import date
 from typing import Dict, List
@@ -1314,6 +1315,9 @@ class TestProduceMetrics(unittest.TestCase):
                     person_external_id_id=12345,
                     external_id="ABC",
                     id_type=US_ND_ELITE,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 )
             ],
         )

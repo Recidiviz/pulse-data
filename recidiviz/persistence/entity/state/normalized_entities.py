@@ -314,10 +314,30 @@ class NormalizedStatePersonExternalId(NormalizedStateEntity, ExternalIdEntity):
     # Primary key
     person_external_id_id: int = attr.ib(validator=attr_validators.is_int)
 
+    is_current_display_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
+    id_active_from_datetime: datetime | None = attr.ib(
+        validator=attr_validators.is_opt_reasonable_past_datetime(
+            STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
+    id_active_to_datetime: datetime | None = attr.ib(
+        validator=attr_validators.is_opt_reasonable_past_datetime(
+            STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
+
     # Cross-entity relationships
     person: Optional["NormalizedStatePerson"] = attr.ib(
         default=None, validator=IsNormalizedPersonBackedgeValidator()
     )
+
+    def __attrs_post_init__(self) -> None:
+        self.assert_datetime_less_than_or_equal(
+            self.id_active_from_datetime,
+            self.id_active_to_datetime,
+            before_description="id active from datetime",
+            after_description="id active to datetime",
+        )
 
     @classmethod
     def global_unique_constraints(cls) -> list[UniqueConstraint]:

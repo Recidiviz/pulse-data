@@ -14,9 +14,46 @@ view: normalized_state_person_external_id {
     sql: CONCAT(${external_id}, " (", ${id_type}, ")") ;;
   }
 
+  dimension_group: id_active_from_datetime {
+    type: time
+    timeframes: [
+      raw,
+      time,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    convert_tz: no
+    datatype: datetime
+    sql: ${TABLE}.id_active_from_datetime ;;
+  }
+
+  dimension_group: id_active_to_datetime {
+    type: time
+    timeframes: [
+      raw,
+      time,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    convert_tz: no
+    datatype: datetime
+    sql: ${TABLE}.id_active_to_datetime ;;
+  }
+
   dimension: id_type {
     type: string
     sql: ${TABLE}.id_type ;;
+  }
+
+  dimension: is_current_display_id_for_type {
+    type: yesno
+    sql: ${TABLE}.is_current_display_id_for_type ;;
   }
 
   dimension: person_external_id_id {

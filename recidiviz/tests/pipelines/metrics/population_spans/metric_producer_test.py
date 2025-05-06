@@ -96,12 +96,18 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     id_type="US_XX_DOC",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
                 NormalizedStatePersonExternalId(
                     external_id="SID9889",
                     id_type="US_XX_SID",
                     state_code="US_XX",
                     person_external_id_id=12345,
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
             ethnicities=[

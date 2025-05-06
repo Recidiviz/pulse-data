@@ -1465,6 +1465,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                             state_code="US_DD",
                             external_id="12345",
                             id_type="US_DD_TYPE",
+                            is_current_display_id_for_type=True,
+                            id_active_from_datetime=datetime(2020, 1, 1),
+                            id_active_to_datetime=None,
                         )
                     ],
                 )
@@ -1496,6 +1499,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
             ),
@@ -1538,12 +1544,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2021, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
             ),
@@ -1581,6 +1593,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 task_deadlines=[
@@ -1603,6 +1618,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="45678",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 task_deadlines=[
@@ -1691,6 +1709,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
             ),
@@ -1733,12 +1754,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
             ),
@@ -1781,6 +1808,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
             ),
@@ -1823,12 +1853,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
             ),
@@ -1870,6 +1906,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 supervision_periods=[
@@ -1942,12 +1981,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
             ),
@@ -1982,6 +2027,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 supervision_periods=[
@@ -2070,12 +2118,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=1112,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
             ),
@@ -2121,6 +2175,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 supervision_periods=[
@@ -2193,12 +2250,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=111223,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
                 supervision_periods=[
@@ -2250,6 +2313,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="12345",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     )
                 ],
                 supervision_periods=[
@@ -2322,12 +2388,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4000",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_DD",
                         external_id="5000",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
                 supervision_periods=[
@@ -2348,12 +2420,18 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="4001",
                         id_type="US_DD_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11115,
                         state_code="US_DD",
                         external_id="5001",
                         id_type="US_YY_TYPE",
+                        is_current_display_id_for_type=True,
+                        id_active_from_datetime=datetime(2020, 1, 1),
+                        id_active_to_datetime=None,
                     ),
                 ],
                 supervision_periods=[
@@ -2407,6 +2485,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="12345",
                 id_type="US_DD_TYPE",
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime(2020, 1, 1),
+                id_active_to_datetime=None,
                 person=person1,
             ),
         )
@@ -2422,6 +2503,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="12345",
                 id_type="US_DD_TYPE",
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime(2020, 1, 1),
+                id_active_to_datetime=None,
                 person=person2,
             )
         )
@@ -2461,6 +2545,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="12345",
                 id_type="US_DD_TYPE",
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime(2020, 1, 1),
+                id_active_to_datetime=None,
                 person=person1,
             )
         )
@@ -2536,6 +2623,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="4000",
                 id_type="US_DD_TYPE",
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime(2020, 1, 1),
+                id_active_to_datetime=None,
                 person=person2,
             )
         )
@@ -2546,6 +2636,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="5000",
                 id_type="US_YY_TYPE",
+                is_current_display_id_for_type=True,
+                id_active_from_datetime=datetime(2020, 1, 1),
+                id_active_to_datetime=None,
                 person=person2,
             )
         )
@@ -2610,6 +2703,9 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                     state_code="US_DD",
                     external_id="4001",
                     id_type="US_DD_TYPE",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
         )

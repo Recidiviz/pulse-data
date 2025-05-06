@@ -324,6 +324,17 @@ state_person_external_id:
       The type of id provided by the system. For example, in a state with multiple
       data systems that we ingest, this may be the name of the system from the id
       emanates.
+    is_current_display_id_for_type: >-
+      Denotes that this id is the version for the id for this id_type that should be used for display purposes in 
+      products that display ids of this id_type.
+    id_active_from_datetime: >-
+      Optional field that specifies when this id was issued / became valid for this person. This can be hydrated if it 
+      is useful to know this information when hydrating is_current_display_id_for_type at normalization time.
+    id_active_to_datetime: >-
+      Optional field that specifies when this id was decommissioned / became invalid for this person. This can be 
+      hydrated if it is useful to know this information when hydrating is_current_display_id_for_type at normalization 
+      time. It is still possible for an external_id to be marked as is_current_display_id_for_type=True even if the id
+      is no longer active (e.g. if this is the only external_id of this type).
 
 state_person_housing_status_period:
   fields:

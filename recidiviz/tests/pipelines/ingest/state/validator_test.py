@@ -505,6 +505,9 @@ class TestEntityValidations(unittest.TestCase):
                     person_external_id_id=1,
                     external_id="EXTERNAL_ID_1",
                     id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 )
             ],
         )
@@ -549,6 +552,9 @@ class TestEntityValidations(unittest.TestCase):
                     person_external_id_id=1,
                     external_id="EXTERNAL_ID_1",
                     id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 )
             ],
             incarceration_sentences=[incarceration_sentence],
@@ -1347,6 +1353,9 @@ class TestNormalizedEarlyDischargeChecks(unittest.TestCase):
                     external_id="1",
                     state_code="US_XX",
                     id_type="US_XX_TEST_PERSON",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
         )
@@ -1576,6 +1585,9 @@ class TestNormalizedStatePersonStaffRelationshipPeriodChecks(unittest.TestCase):
                     external_id="EXTERNAL_ID_A",
                     state_code=self.STATE_CODE_VALUE,
                     id_type="US_XX_STAFF_ID",
+                    is_current_display_id_for_type=True,
+                    id_active_from_datetime=datetime(2020, 1, 1),
+                    id_active_to_datetime=None,
                 ),
             ],
         )
