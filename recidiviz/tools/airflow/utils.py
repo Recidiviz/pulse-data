@@ -43,7 +43,10 @@ def await_environment_state(
                 f"Environment entered ERROR [{environment.state}] state - aborting."
             )
         if environment.state in retry_states:
-            logging.info("Environment is in state %s. Sleeping...", environment.state)
+            logging.info(
+                "Environment is in state %s. Sleeping...",
+                repr(types.Environment.State(environment.state)),
+            )
             time.sleep(30)
         elif environment.state == target_state:
             logging.info("Environment is running and ready!")

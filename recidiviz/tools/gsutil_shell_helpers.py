@@ -161,6 +161,33 @@ def gcloud_storage_rm(
             raise e
 
 
+def gcloud_storage_rsync_command(
+    directory: str, gcs_uri: str, *, dry_run: bool = False
+) -> list[str]:
+    args = ["gcloud", "storage", "rsync", directory, gcs_uri]
+
+    if dry_run:
+        args.append("--dry-run")
+
+    return args
+
+
+def gcloud_storage_rsync_airflow_command(
+    directory: str, gcs_uri: str, *, dry_run: bool = False
+) -> list[str]:
+    """Returns the options for rsyncing a composer environment"""
+    base_command = gcloud_storage_rsync_command(directory, gcs_uri, dry_run=dry_run)
+    additional_options = [
+        # Sync subdirectories
+        "--recursive",
+        # Delete files that are no longer in the source manifest
+        "--delete-unmatched-destination-objects",
+        # airflow_monitoring.py is managed by Cloud Composer, do not delete it
+        "--exclude=airflow_monitoring\\.py",
+    ]
+    return base_command + additional_options
+
+
 def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     """Returns the date in ISO format corresponding to the storage subdir path."""
     parts = date_subdir_path.rstrip("/").split("/")

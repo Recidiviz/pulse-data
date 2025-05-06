@@ -120,8 +120,3 @@ locals {
   is_production  = var.project_id == "recidiviz-123"
   recidiviz_root = "${path.root}/../../.."
 }
-
-variable "airflow_source_files_json_path" {
-  type        = string
-  description = "Output of the recidiviz.tools.airflow.get_airflow_source_files script"
-}

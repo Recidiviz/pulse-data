@@ -37,6 +37,7 @@ from google.cloud.devtools.cloudbuild_v1 import (
     Volume,
 )
 
+from recidiviz.tools.airflow.utils import get_environment_by_name
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
     ArtifactRegistryDockerImageRepository,
     ImageKind,
@@ -48,6 +49,7 @@ from recidiviz.tools.deploy.cloud_build.build_configuration import (
     secret_substitution_name,
 )
 from recidiviz.tools.deploy.cloud_build.constants import (
+    BUILDER_GCLOUD,
     BUILDER_GIT,
     BUILDER_TERRAFORM,
     TERRAFORM_WORKDIR,
@@ -55,12 +57,13 @@ from recidiviz.tools.deploy.cloud_build.constants import (
 from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
     DeploymentStageInterface,
 )
+from recidiviz.tools.gsutil_shell_helpers import gcloud_storage_rsync_airflow_command
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
 GCLOUD_IMAGE = "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
 
-AIRFLOW_SOURCE_FILES_JSON_PATH = "/workspace/airflow_source_files.json"
+AIRFLOW_SOURCE_FILES_DIR = "/workspace/airflow_source_files"
 
 PAGERDUTY_SECRET_NAME = "pagerduty_terraform_key"  # nosec
 
@@ -85,7 +88,6 @@ def get_terraform_plan_step(
         "docker_image_tag": deployment_context.version_tag,
         "git_hash": deployment_context.commit_ref,
         "pagerduty_token": get_secret(PAGERDUTY_SECRET_NAME),
-        "airflow_source_files_json_path": AIRFLOW_SOURCE_FILES_JSON_PATH,
     }
     plan_args = [
         "plan",
@@ -106,6 +108,40 @@ def get_terraform_plan_step(
         wait_for=wait_for,
         timeout="900s",  # 15 min timeout
     )
+
+
+def _get_airflow_file_sync_steps(app_engine_image: str) -> list[BuildStep]:
+    """Returns build steps for updating the Airflow source files"""
+    create_airflow_source_manifest = build_step_for_shell_command(
+        id_="Create Airflow source manifest",
+        name=app_engine_image,
+        dir_="/app/",
+        command=(
+            "pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files "
+            f"--output-path {AIRFLOW_SOURCE_FILES_DIR} "
+            "--dry-run False"
+        ),
+        volumes=[RECIDIVIZ_SOURCE_VOLUME],
+        env=["HOME=/home/recidiviz"],
+        timeout_seconds=(1 * 60),  # 15 min timeout
+    )
+
+    orchestration = get_environment_by_name("orchestration-v2")
+
+    copy_airflow_source_files = build_step_for_shell_command(
+        command=" ".join(
+            gcloud_storage_rsync_airflow_command(
+                AIRFLOW_SOURCE_FILES_DIR, orchestration.config.dag_gcs_prefix
+            )
+        ),
+        id_="Sync Airflow source files to GCS",
+        name=BUILDER_GCLOUD,
+        volumes=[RECIDIVIZ_SOURCE_VOLUME],
+        wait_for=[create_airflow_source_manifest.id],
+        timeout_seconds=(1 * 60),  # 1 min timeout
+    )
+
+    return [create_airflow_source_manifest, copy_airflow_source_files]
 
 
 class CreateTerraformPlan(DeploymentStageInterface):
@@ -158,21 +194,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
             timeout_seconds=(15 * 60),  # 15 min timeout
         )
 
-        create_airflow_source_manifest = build_step_for_shell_command(
-            id_="Create Airflow source manifest",
-            name=app_engine_image,
-            dir_="/app/",
-            command=(
-                "pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files "
-                f"--output-path {AIRFLOW_SOURCE_FILES_JSON_PATH} "
-                "--dry-run False"
-            ),
-            volumes=[RECIDIVIZ_SOURCE_VOLUME],
-            env=["HOME=/home/recidiviz"],
-            wait_for=[copy_git_source_to_volume.id],
-            timeout_seconds=(15 * 60),  # 15 min timeout
-        )
-
         terraform_init = BuildStep(
             id="Initialize Terraform backend",
             name=BUILDER_TERRAFORM,
@@ -190,7 +211,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
         terraform_plan = get_terraform_plan_step(
             deployment_context=deployment_context,
             output_path=plan_path,
-            wait_for=[create_airflow_source_manifest.id, terraform_init.id],
+            wait_for=[terraform_init.id],
         )
 
         build_steps = [
@@ -200,24 +221,26 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 command='echo "Downloaded latest image!"',
             ),
             copy_git_source_to_volume,
-            create_airflow_source_manifest,
             terraform_init,
             terraform_plan,
         ]
 
         if args.apply:
-            build_steps.append(
-                BuildStep(
-                    id="Apply Terraform plan",
-                    name=BUILDER_TERRAFORM,
-                    dir_=TERRAFORM_WORKDIR,
-                    args=["apply", "-parallelism=32", plan_path],
-                    env=[TERRAFORM_CLI_ARGS_ENV],
-                    secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
-                    wait_for=[terraform_plan.id],
-                    # No timeout for this step - this could take a long time for certain
-                    # upgrades, e.g. upgrades to Cloud Composer versions.
-                )
+            build_steps.extend(
+                [
+                    *_get_airflow_file_sync_steps(app_engine_image=app_engine_image),
+                    BuildStep(
+                        id="Apply Terraform plan",
+                        name=BUILDER_TERRAFORM,
+                        dir_=TERRAFORM_WORKDIR,
+                        args=["apply", "-parallelism=32", plan_path],
+                        env=[TERRAFORM_CLI_ARGS_ENV],
+                        secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
+                        wait_for=[terraform_plan.id],
+                        # No timeout for this step - this could take a long time for certain
+                        # upgrades, e.g. upgrades to Cloud Composer versions.
+                    ),
+                ]
             )
 
         if args.for_pull_requests:

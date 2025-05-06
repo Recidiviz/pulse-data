@@ -34,7 +34,6 @@
 import argparse
 import logging
 import webbrowser
-from typing import Optional
 
 import google.cloud.orchestration.airflow.service_v1beta1 as service
 from google.cloud.orchestration.airflow.service_v1beta1 import types
@@ -233,11 +232,11 @@ def action_update_image() -> None:
     )
 
 
-def action_update_files(files: Optional[list[str]] = None) -> None:
+def action_update_files(dry_run: bool = False) -> None:
     """Copies source files to the experiment gcs bucket"""
     environment = get_user_experiment_environment()
     copy_source_files_to_experiment(
-        gcs_uri=environment.config.dag_gcs_prefix, dry_run=False, file_filter=files
+        gcs_uri=environment.config.dag_gcs_prefix, dry_run=dry_run
     )
 
 
@@ -266,7 +265,7 @@ if __name__ == "__main__":
     subparsers_by_name = {action: subparsers.add_parser(action) for action in actions}
 
     update_files_parser = subparsers_by_name["update_files"]
-    update_files_parser.add_argument("--files", nargs="+")
+    update_files_parser.add_argument("--dry-run", action="store_true")
 
     parsed_args = parser.parse_args()
     kwargs = vars(parsed_args).copy()

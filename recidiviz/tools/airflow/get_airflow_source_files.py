@@ -16,15 +16,65 @@
 # =============================================================================
 """Returns a comma separated list of Airflow source files in a json object."""
 import argparse
-import json
 import logging
 import os.path
+import shutil
+from glob import glob
+
+import yaml
 
 import recidiviz
-from recidiviz.tools.airflow.copy_source_files_to_experiment_composer import (
-    get_airflow_source_file_paths,
+from recidiviz.tools.file_dependencies import (
+    EntrypointDependencies,
+    convert_path_to_recidiviz_module,
 )
 from recidiviz.utils.params import str_to_bool
+
+DAGS_FOLDER = "dags"
+ROOT = os.path.dirname(recidiviz.__file__)
+
+SOURCE_FILE_YAML_PATH = os.path.join(
+    ROOT,
+    "tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml",
+)
+
+
+def _get_paths_list_from_file_pattern(file_pattern: tuple[str, str]) -> list[str]:
+    path, pattern = file_pattern
+    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True)
+
+
+def get_airflow_source_file_paths() -> list[str]:
+    """Lists all paths that are airflow source files."""
+    # copy all dag dependency files
+    dag_files: list[str] = _get_paths_list_from_file_pattern(
+        ("recidiviz/airflow/dags", "*dag*.py")
+    )
+    explicitly_listed_dependency_files: list[str] = []
+
+    with open(SOURCE_FILE_YAML_PATH, encoding="utf-8") as f:
+        file_patterns = yaml.safe_load(f)
+        for file_pattern in file_patterns:
+            explicitly_listed_dependency_files.extend(
+                _get_paths_list_from_file_pattern(file_pattern)
+            )
+
+    dependencies = EntrypointDependencies()
+    for dag_file in dag_files:
+        dependencies.add_dependencies_for_entrypoint(
+            convert_path_to_recidiviz_module(dag_file)
+        )
+
+    for explicitly_listed_dependency_file in explicitly_listed_dependency_files:
+        if explicitly_listed_dependency_file.endswith(".py"):
+            dependencies.add_dependencies_for_entrypoint(
+                convert_path_to_recidiviz_module(explicitly_listed_dependency_file)
+            )
+
+    return (
+        list(dependencies.all_module_dependency_source_files)
+        + explicitly_listed_dependency_files
+    )
 
 
 def main(dry_run: bool, output_path: str) -> None:
@@ -42,12 +92,10 @@ def main(dry_run: bool, output_path: str) -> None:
         for file in source_files
     }
     if not dry_run:
-        json_str = json.dumps(source_files_to_destination)
-        if output_path:
-            with open(output_path, mode="w", encoding="utf-8") as output_file:
-                output_file.write(json_str)
-        else:
-            print(json_str)
+        for source, destination in source_files_to_destination.items():
+            output_file = f"{output_path}/{destination}"
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            shutil.copy2(source, output_file)
     else:
         logging.info("Dry run mode, listing source files.")
         for source, destination in source_files_to_destination.items():
