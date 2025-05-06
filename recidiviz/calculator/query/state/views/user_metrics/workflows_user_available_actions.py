@@ -34,38 +34,67 @@ tasks = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
+tasks = [
+    b.task_type_name
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
 
-def generate_unpivoted_subquery(metric_column_prefix: str, final_metric: str) -> str:
-    metric_mappings = ",\n                ".join(
-        f"{metric_column_prefix}_{task_type.lower()} AS '{task_type}'"
-        for task_type in tasks
+
+def generate_task_sum_columns(metric_column_prefixes: list[str]) -> str:
+    return ",\n        ".join(
+        f"({ ' + '.join(f'IFNULL({prefix}_{task.lower()}, 0)' for prefix in metric_column_prefixes) }) AS combined_{task.lower()}"
+        for task in tasks
+    )
+
+
+def generate_unpivoted_subquery(
+    metric_column_prefixes: list[str], final_metric: str
+) -> str:
+    sum_columns = generate_task_sum_columns(metric_column_prefixes)
+    unpivot_mappings = ",\n                ".join(
+        f"combined_{task.lower()} AS '{task}'" for task in tasks
     )
     return f"""
     SELECT *
-    FROM selected_users
+    FROM (
+        SELECT
+            state_code,
+            workflows_user_email_address,
+            {sum_columns}
+        FROM selected_users
+    )
     UNPIVOT (
         {final_metric} FOR task_completion_event IN (
-            {metric_mappings}
+            {unpivot_mappings}
         )
     )
     """
 
 
-def generate_unpivoted_cte_snippet(metric_column_prefix: str, client_type: str) -> str:
+def generate_aggregated_cte_snippet(
+    client_type: str, metric_column_prefixes: list[str]
+) -> str:
     return f"""
     {client_type}_clients AS (
         SELECT
-            {client_type}_tasks.state_code,
-            officer_id,
-            officer_name,
             workflows_user_email_address,
-            location_name,
-            total_opportunities,
             {client_type}_tasks.task_completion_event as opportunity_name,
             CAST({client_type}_tasks.num_{client_type}_clients AS INT64) AS num_{client_type}_clients
         FROM (
-            {generate_unpivoted_subquery(metric_column_prefix, f'num_{client_type}_clients')}
+            {generate_unpivoted_subquery(metric_column_prefixes, f'num_{client_type}_clients')}
         ) AS {client_type}_tasks
+    ),
+    aggregated_{client_type}_clients AS (
+        SELECT
+            workflows_user_email_address,
+            ARRAY_AGG(STRUCT(opportunity_name, num_{client_type}_clients)
+                ORDER BY opportunity_name
+            ) AS {client_type}_clients_by_opportunity,
+        FROM
+            {client_type}_clients
+        GROUP BY
+            workflows_user_email_address
     )
     """
 
@@ -73,13 +102,13 @@ def generate_unpivoted_cte_snippet(metric_column_prefix: str, client_type: str) 
 WORKFLOWS_USER_AVAILABLE_ACTIONS_QUERY_TEMPLATE = f"""
 WITH selected_users AS (
     SELECT
-        metrics.*,
         users.workflows_user_email_address,
         IFNULL(users.location_name, users.location_id) AS location_name,
         (
             IFNULL(metrics.workflows_distinct_people_eligible_and_actionable, 0)
             + IFNULL(metrics.workflows_distinct_people_almost_eligible_and_actionable, 0)
-        ) AS total_opportunities
+        ) AS total_opportunities,
+        metrics.*
     FROM
         `{{project_id}}.user_metrics.workflows__supervision_officer_aggregated_metrics_materialized` metrics
     INNER JOIN
@@ -102,21 +131,38 @@ WITH selected_users AS (
         # since the Insights users are included in a different view
         AND IFNULL(metrics.distinct_provisioned_insights_users, 0) != 1
 ),
-{generate_unpivoted_cte_snippet('avg_daily_population_task_eligible_and_unviewed_30_days', 'urgent')}
+{
+    generate_aggregated_cte_snippet(
+        client_type='total', 
+        metric_column_prefixes=[
+            'workflows_distinct_people_eligible_and_actionable', 
+            'workflows_distinct_people_almost_eligible_and_actionable'
+        ]
+    )
+},
+{
+    generate_aggregated_cte_snippet(
+        client_type='urgent', 
+        metric_column_prefixes=['avg_daily_population_task_eligible_and_unviewed_30_days']
+    )
+}
 SELECT
-    state_code,
-    officer_id,
-    officer_name,
-    workflows_user_email_address,
-    location_name,
-    total_opportunities,
-    ARRAY_AGG(STRUCT(opportunity_name, num_urgent_clients)
-        ORDER BY opportunity_name
-    ) AS urgent_clients_by_opportunity
+    su.state_code,
+    su.officer_id,
+    su.officer_name,
+    su.workflows_user_email_address,
+    su.location_name,
+    su.total_opportunities,
+    tc.total_clients_by_opportunity,
+    uc.urgent_clients_by_opportunity
 FROM
-    urgent_clients
-GROUP BY
-    state_code, officer_id, officer_name, workflows_user_email_address, location_name, total_opportunities
+    selected_users su
+INNER JOIN
+    aggregated_total_clients tc
+USING(workflows_user_email_address)
+INNER JOIN
+    aggregated_urgent_clients uc
+USING(workflows_user_email_address)
 """
 
 WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
