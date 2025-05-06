@@ -1241,6 +1241,7 @@ def no_absconsion_within_time_interval_criteria_builder(
     description: str,
     date_interval: int,
     date_part: str,
+    compartment_level_1_filter: str = "",
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query builder that has spans of time when someone has not absconded
@@ -1252,9 +1253,11 @@ def no_absconsion_within_time_interval_criteria_builder(
             valid.
         date_part (str): Supports any of the BigQuery date_part values:
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
+        compartment_level_1_filter (str): The compartment level 1 filter to apply to the
+            absconsion sessions. Defaults to "".
     """
-
-    # TODO(#36981): This could be generalized further so it works with any CL2 or CL1
+    if compartment_level_1_filter != "":
+        raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
 
     criteria_query = f"""WITH absconded_sessions AS (
     SELECT 
@@ -1266,6 +1269,7 @@ def no_absconsion_within_time_interval_criteria_builder(
         start_date AS absconded_date,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
     WHERE compartment_level_2 = 'ABSCONSION'
+        {"AND compartment_level_1 = '" + compartment_level_1_filter + "'" if compartment_level_1_filter else ""}
     ),
 
     {create_sub_sessions_with_attributes('absconded_sessions')}
