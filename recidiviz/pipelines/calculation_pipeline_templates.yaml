@@ -333,19 +333,16 @@ metric_pipelines:
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
     machine_type: c4d-highcpu-16
-    staging_only: True
   - pipeline: supervision_metrics
     state_code: US_IA
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-central1
     machine_type: c4a-highcpu-32
-    staging_only: True
   - pipeline: incarceration_metrics
     state_code: US_IA
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east4
     machine_type: c4d-highcpu-16
-    staging_only: True
 
   # Full US_UT supervision calculations with no time limit
   - pipeline: population_span_metrics
