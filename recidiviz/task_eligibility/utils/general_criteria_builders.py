@@ -1337,7 +1337,11 @@ def employed_for_at_least_x_time_criteria_builder(
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="{project_id}.normalized_state.state_employment_period",
-        additional_where_clause=f"""AND employment_status IN {custom_tuple(employment_status_values)}""",
+        # TODO(#38963): Remove the end_date < '3000-01-01' once we are enforcing that
+        #  employment period end dates are reasonable and all exemptions have been
+        #  resolved. This filter was added to avoid date overflow when adding time to
+        #  dates close to the max date 9999-12-31.
+        additional_where_clause=f"""AND employment_status IN {custom_tuple(employment_status_values)} AND end_date < '3000-01-01'""",
         date_interval=date_interval,
         date_part=date_part,
         start_date="start_date",
