@@ -41,7 +41,7 @@ WITH flags_per_event_type AS (
     FROM
         `{project_id}.reference_views.workflows_opportunity_configs_materialized` workflows
     FULL OUTER JOIN
-        `{project_id}.static_reference_tables.workflows_launch_metadata_materialized` launches
+        `{project_id}.google_sheet_backed_tables.workflows_launch_metadata` launches
     USING
         (state_code, completion_event_type)
     -- Left join TES to Workflows since we are not concerned with experimental

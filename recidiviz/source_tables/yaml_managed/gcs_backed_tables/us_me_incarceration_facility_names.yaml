@@ -1,6 +1,6 @@
 address:
   dataset_id: external_reference
-  table_id: us_mi_incarceration_facility_names
+  table_id: us_me_incarceration_facility_names
 description:
   "TODO(#29155): Add a description as to what this is used for and why
   it isn't managed in code"
@@ -14,9 +14,10 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-external-reference-data/us_mi_incarceration_facility_names.csv
+    - gs://{project_id}-external-reference-data/us_me_incarceration_facility_names.csv
   sourceFormat: CSV
   compression: NONE
+  ignoreUnknownValues: false
   csvOptions:
     fieldDelimiter: ","
     skipLeadingRows: "1"

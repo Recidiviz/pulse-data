@@ -55,7 +55,7 @@ SELECT
 FROM
     all_live_workflows a
 LEFT JOIN
-    `{project_id}.static_reference_tables.workflows_launch_metadata_materialized` b
+    `{project_id}.google_sheet_backed_tables.workflows_launch_metadata` b
 USING
     (state_code, completion_event_type)
 """

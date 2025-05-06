@@ -674,7 +674,6 @@ def main() -> int:
                 "recidiviz.cloud_resources",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
-                "recidiviz.datasets.static_data",
                 "recidiviz.firestore",
                 "recidiviz.ingest",
                 "recidiviz.metrics",

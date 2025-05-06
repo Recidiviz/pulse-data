@@ -27,7 +27,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,
 )
@@ -73,11 +72,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AUTH0_PROD_ACTION_LOGS: "Stores events logged from Auth0 actions via Segment",
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."
-    ),
-    EXTERNAL_REFERENCE_DATASET: (
-        "Stores data gathered from external sources. CSV versions of tables are "
-        "committed to our codebase, and updates to tables are fully managed by "
-        "Terraform."
     ),
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
         "Stores source tables that are updated manually."

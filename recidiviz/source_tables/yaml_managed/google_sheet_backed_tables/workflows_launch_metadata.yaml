@@ -1,6 +1,6 @@
 address:
-  dataset_id: static_reference_tables
-  table_id: workflows_launch_metadata_materialized
+  dataset_id: google_sheet_backed_tables
+  table_id: workflows_launch_metadata
 description:
   "This table contains information about each fully launched Workflows
   opportunity in our states"
@@ -24,3 +24,13 @@ schema:
     type: DATE
     mode: NULLABLE
 clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  compression: NONE
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
+  googleSheetsOptions:
+    skipLeadingRows: "3"

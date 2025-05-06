@@ -1,22 +1,29 @@
 address:
   dataset_id: external_reference
-  table_id: us_tn_incarceration_facility_names
+  table_id: county_fips
 description:
   "TODO(#29155): Add a description as to what this is used for and why
   it isn't managed in code"
 schema:
-  - name: facility_code
+  - name: fips
     type: STRING
-    mode: REQUIRED
-  - name: facility_name
+    mode: NULLABLE
+  - name: state_code
     type: STRING
-    mode: REQUIRED
+    mode: NULLABLE
+  - name: county_code
+    type: STRING
+    mode: NULLABLE
+  - name: county_name
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-external-reference-data/us_tn_incarceration_facility_names.csv
+    - gs://{project_id}-external-reference-data/county_fips.csv
   sourceFormat: CSV
   compression: NONE
+  ignoreUnknownValues: false
   csvOptions:
     fieldDelimiter: ","
     skipLeadingRows: "1"

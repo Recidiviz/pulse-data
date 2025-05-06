@@ -45,7 +45,7 @@ workflows_assignments AS (
         experiment_id,
         launch_date,
     FROM
-        `{project_id}.static_reference_tables.workflows_launch_metadata_materialized` launch
+        `{project_id}.google_sheet_backed_tables.workflows_launch_metadata` launch
     LEFT JOIN 
         `{project_id}.reference_views.workflows_opportunity_configs_materialized` config
     USING

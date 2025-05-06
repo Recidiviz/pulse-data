@@ -1,22 +1,23 @@
 address:
   dataset_id: external_reference
-  table_id: us_tn_incarceration_facility_map
+  table_id: us_nd_incarceration_facility_names
 description:
   "TODO(#29155): Add a description as to what this is used for and why
   it isn't managed in code"
 schema:
-  - name: level_1_incarceration_location_external_id
+  - name: facility_code
     type: STRING
     mode: REQUIRED
-  - name: level_2_incarceration_location_external_id
+  - name: facility_name
     type: STRING
     mode: REQUIRED
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-external-reference-data/us_tn_incarceration_facility_map.csv
+    - gs://{project_id}-external-reference-data/us_nd_incarceration_facility_names.csv
   sourceFormat: CSV
   compression: NONE
+  ignoreUnknownValues: false
   csvOptions:
     fieldDelimiter: ","
     skipLeadingRows: "1"

@@ -19,6 +19,7 @@ managed by our standard source table update process, with schemas defined in a Y
 in this directory.
 """
 from recidiviz.calculator.query.state.dataset_config import (
+    EXPORT_ARCHIVES_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SPARK_OUTPUT_DATASET,
 )
@@ -41,6 +42,9 @@ GCS_BACKED_TABLES_DATASET: str = "gcs_backed_tables"
 
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
+    EXPORT_ARCHIVES_DATASET: (
+        "Contains tables that archive the contents of daily exports."
+    ),
     # TODO(#41360): Migrate all YAML-managed external data tables in this dataset to
     #  GCS_BACKED_TABLES_DATASET and remove this dataset option from this map.
     EXTERNAL_REFERENCE_DATASET: (

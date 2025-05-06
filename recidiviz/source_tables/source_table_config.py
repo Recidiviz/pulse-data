@@ -219,12 +219,6 @@ class SourceTableConfig:
                 f"Found empty external table schema for {self.address.to_str()}."
             )
 
-        # TODO(#41360): Once all external tables have been migrated to yaml_managed,
-        #  throw if we see externally_managed tables with external data configs. We want
-        #  all of these tables to be eventually managed by our standard process.
-        if update_config == update_config.externally_managed():
-            return
-
         if update_config != update_config.regenerable():
             raise ValueError(
                 f"Found managed source table [{self.address.to_str()}] which is not "
@@ -256,11 +250,6 @@ class SourceTableConfig:
             ExternalSourceFormat.NEWLINE_DELIMITED_JSON,
             ExternalSourceFormat.CSV,
         ):
-            if ignore_unknown_values:
-                raise ValueError(
-                    f"Must explicitly set ignoreUnknownValues: false for "
-                    f"{source_format} external table {self.address.to_str()}. "
-                )
             return
 
         raise ValueError(
