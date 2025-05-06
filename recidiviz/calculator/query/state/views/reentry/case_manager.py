@@ -21,6 +21,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 )
 from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.reentry.us_az.case_manager_template import (
+    US_AZ_REENTRY_CASE_MANAGER_QUERY_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.reentry.us_ix.case_manager_template import (
     US_IX_REENTRY_CASE_MANAGER_QUERY_TEMPLATE,
 )
@@ -37,12 +40,18 @@ REENTRY_CASE_MANAGER_DESCRIPTION = """
 REENTRY_CASE_MANAGER_QUERY_TEMPLATE = f"""
 WITH
   ix_staff AS ({US_IX_REENTRY_CASE_MANAGER_QUERY_TEMPLATE}),
+  az_staff AS ({US_AZ_REENTRY_CASE_MANAGER_QUERY_TEMPLATE}),
   -- full_query serves as a template for when Reentry expands to other states and we union other views
   full_query AS (
   SELECT
     *
   FROM
-    ix_staff),
+    ix_staff
+  UNION ALL
+  SELECT
+    *
+  FROM
+    az_staff ),
   -- add pseudonymized Ids to all staff records
   full_query_with_pseudo AS (
   SELECT

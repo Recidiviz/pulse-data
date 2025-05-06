@@ -14,11 +14,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Template for listing out Idaho clients (Incarcerated and Supervised JII)."""
+"""Template for listing out Arizona clients (Incarcerated and Supervised JII)."""
 
-US_IX_REENTRY_CLIENT_QUERY_TEMPLATE = """
+US_AZ_REENTRY_CLIENT_QUERY_TEMPLATE = """
 SELECT
-  "US_IX" AS state_code,
+  "US_AZ" AS state_code,
   external_id,
   full_name,
   gender,
@@ -36,7 +36,7 @@ LEFT JOIN
 ON
   person.person_id = person_ext.person_id
 WHERE
-  assignment.state_code = "US_IX"
+  assignment.state_code = "US_AZ"
   AND end_date_exclusive IS NULL
   AND relationship_priority = 1
 """
