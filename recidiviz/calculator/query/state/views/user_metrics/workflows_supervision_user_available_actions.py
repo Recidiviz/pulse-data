@@ -26,7 +26,9 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.types import WorkflowsSystemType
 
-WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_NAME = "workflows_user_available_actions"
+WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_NAME = (
+    "workflows_supervision_user_available_actions"
+)
 
 tasks = [
     b.task_type_name
@@ -99,7 +101,7 @@ def generate_aggregated_cte_snippet(
     """
 
 
-WORKFLOWS_USER_AVAILABLE_ACTIONS_QUERY_TEMPLATE = f"""
+WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_QUERY_TEMPLATE = f"""
 WITH selected_users AS (
     SELECT
         users.workflows_user_email_address,
@@ -165,10 +167,10 @@ INNER JOIN
 USING(workflows_user_email_address)
 """
 
-WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.USER_METRICS_DATASET_ID,
-    view_id=WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_NAME,
-    view_query_template=WORKFLOWS_USER_AVAILABLE_ACTIONS_QUERY_TEMPLATE,
+    view_id=WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_NAME,
+    view_query_template=WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_QUERY_TEMPLATE,
     description=__doc__,
     clustering_fields=["state_code"],
     should_materialize=True,
@@ -176,4 +178,4 @@ WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_PRODUCTION):
-        WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.build_and_print()
+        WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.build_and_print()

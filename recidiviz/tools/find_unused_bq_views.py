@@ -191,8 +191,8 @@ from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_e
 from recidiviz.calculator.query.state.views.user_metrics.us_nd_transfer_to_min_eligible_without_referral import (
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.user_metrics.workflows_user_available_actions import (
-    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.user_metrics.workflows_supervision_user_available_actions import (
+    WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
@@ -466,7 +466,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
     ),
-    WORKFLOWS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
+    WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"
     ),
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER.address: (

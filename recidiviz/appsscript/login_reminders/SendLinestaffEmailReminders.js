@@ -47,7 +47,7 @@ const LINESTAFF_QUERY = `SELECT
   total_opportunities,
 
 FROM
-  \`recidiviz-123.user_metrics.workflows_user_available_actions_materialized\`
+  \`recidiviz-123.user_metrics.workflows_supervision_user_available_actions_materialized\`
 
 WHERE
   state_code IN (${linestaffStatesForQuery})
