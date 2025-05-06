@@ -22,12 +22,6 @@ module "external_reference_tables_bucket" {
   name_suffix = "external-reference-data"
 }
 
-module "external_reference_dataset" {
-  source      = "./modules/big_query_dataset"
-  dataset_id  = "external_reference"
-  description = "Contains reference tables from external sources that are synced from our repository."
-}
-
 module "county_resident_adult_populations_table" {
   source = "./modules/local-csv-backed-gcs-file"
 

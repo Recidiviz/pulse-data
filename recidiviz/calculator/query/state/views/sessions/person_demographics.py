@@ -17,10 +17,7 @@
 """Person level demographics - age, race, gender, birthdate"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    EXTERNAL_REFERENCE_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -66,7 +63,7 @@ WITH race_or_ethnicity_cte AS  (
     FROM
         race_or_ethnicity_cte
     LEFT JOIN
-        `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity_priority`
+        `{project_id}.reference_views.state_resident_population_combined_race_ethnicity_priority`
     USING
         (state_code, race_or_ethnicity)
     )
@@ -94,7 +91,6 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSON_DEMOGRAPHICS_QUERY_TEMPLATE,
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    external_reference_views_dataset=EXTERNAL_REFERENCE_VIEWS_DATASET,
     clustering_fields=["state_code"],
     should_materialize=True,
 )

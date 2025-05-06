@@ -32,7 +32,7 @@ SELECT
     gender,
     SUM(population) AS population_count,
     SUM(SUM(population)) OVER (PARTITION BY state_code) AS total_state_population_count
-FROM `{project_id}.{external_reference_views_dataset}.state_resident_population`
+FROM `{project_id}.reference_views.state_resident_population`
 GROUP BY 1, 2
 """
 
@@ -42,7 +42,6 @@ STATE_GENDER_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "gender"),
     description=STATE_GENDER_POPULATION_VIEW_DESCRIPTION,
-    external_reference_views_dataset=dataset_config.EXTERNAL_REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

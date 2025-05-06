@@ -20,7 +20,6 @@ description.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -50,7 +49,7 @@ CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_QUERY_TEMPLATE = f"""
 WITH offense_desc_labels_dedup AS (
     SELECT * EXCEPT(ncic_code), 
         LPAD(CAST(ncic_code AS STRING), 4,'0') AS ncic_code
-    FROM `{{project_id}}.{{external_reference_dataset}}.offense_description_to_labels`
+    FROM `{{project_id}}.gcs_backed_tables.offense_description_to_labels`
     QUALIFY ROW_NUMBER() OVER(PARTITION BY offense_description ORDER BY probability DESC) = 1
 )
 SELECT
@@ -101,7 +100,6 @@ CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
     view_query_template=CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_QUERY_TEMPLATE,
     description=CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_DESCRIPTION,
-    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
 )
 
 if __name__ == "__main__":

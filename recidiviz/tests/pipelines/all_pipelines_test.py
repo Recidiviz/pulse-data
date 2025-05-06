@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.datasets.static_data.config import GCS_BACKED_TABLES_DATASET
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -93,7 +93,7 @@ class TestReferenceViews(unittest.TestCase):
                 )
                 for state_code in get_existing_direct_ingest_states()
             },
-            EXTERNAL_REFERENCE_DATASET,
+            GCS_BACKED_TABLES_DATASET,
             STATIC_REFERENCE_TABLES_DATASET,
         }
 

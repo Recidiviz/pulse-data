@@ -19,7 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -92,9 +91,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_2_supervision_location_name,
                 level_1_supervision_location_external_id,
                 INITCAP(level_1_supervision_location_external_id) AS level_1_supervision_location_name,
-        FROM `{project_id}.{external_reference_dataset}.us_id_supervision_unit_to_district_map`
+        FROM `{project_id}.gcs_backed_tables.us_id_supervision_unit_to_district_map`
         LEFT OUTER JOIN
-            `{project_id}.{external_reference_dataset}.us_id_supervision_district_names`
+            `{project_id}.gcs_backed_tables.us_id_supervision_district_names`
         USING (level_2_supervision_location_external_id)
     ),
     ix_location_names AS (
@@ -162,7 +161,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
-    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY

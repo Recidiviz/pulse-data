@@ -20,7 +20,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -66,7 +65,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             END AS level_1_incarceration_location_name,
             facility_code AS level_1_incarceration_location_alias
         FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_908_CCS_LOCATION_latest` raw
-        LEFT JOIN `{project_id}.{external_reference_dataset}.us_me_incarceration_facility_names` map
+        LEFT JOIN `{project_id}.gcs_backed_tables.us_me_incarceration_facility_names` map
             ON raw.Location_Name = map.facility_name
         -- Filter to adult facilities and re-entry centers
         WHERE Cis_9080_Ccs_Location_Type_Cd IN (
@@ -86,9 +85,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_1_incarceration_location_external_id,
                 INITCAP(level_1_incarceration_location_external_id) AS level_1_incarceration_location_name,
                 level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_id_incarceration_facility_map`
+        FROM `{project_id}.gcs_backed_tables.us_id_incarceration_facility_map`
         LEFT OUTER JOIN
-            `{project_id}.{external_reference_dataset}.us_id_incarceration_facility_names`
+            `{project_id}.gcs_backed_tables.us_id_incarceration_facility_names`
         ON level_2_incarceration_location_external_id = facility_code
     ),
     ix_location_names AS (
@@ -115,14 +114,14 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 facility_code AS level_1_incarceration_location_external_id,
                 facility_name AS level_1_incarceration_location_name,
                 facility_code AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_mi_incarceration_facility_names`
+        FROM `{project_id}.gcs_backed_tables.us_mi_incarceration_facility_names`
     ),
     co_location_names AS (
         WITH level_2_names AS (
             SELECT
                 facility_code as level_2_id,
                 facility_name as level_2_name
-            FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            FROM `{project_id}.gcs_backed_tables.us_co_incarceration_facility_names`
             -- Exclude the Pueblo YOS level 1 facility to remove duplicates
             WHERE facility_name != "Youthful Offender System-Pueblo"
         ),
@@ -130,7 +129,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             SELECT
                 facility_code as level_3_id,
                 facility_name as level_3_name
-            FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            FROM `{project_id}.gcs_backed_tables.us_co_incarceration_facility_names`
         )
         SELECT
             DISTINCT
@@ -142,9 +141,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 facility_code AS level_1_incarceration_location_external_id,
                 facility_name AS level_1_incarceration_location_name,
                 facility_code AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_map`
+        FROM `{project_id}.gcs_backed_tables.us_co_incarceration_facility_map`
         LEFT JOIN
-            `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            `{project_id}.gcs_backed_tables.us_co_incarceration_facility_names`
         ON level_1_incarceration_location_external_id = facility_code
         LEFT JOIN level_2_names
         ON level_2_incarceration_location_external_id = level_2_id
@@ -164,7 +163,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 incarceration_location_level_1_external_id AS level_1_incarceration_location_external_id,
                 incarceration_location_level_1_name AS level_1_incarceration_location_name,
                 incarceration_location_level_1_external_id AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_mo_incarceration_facility_names`
+        FROM `{project_id}.gcs_backed_tables.us_mo_incarceration_facility_names`
     )
     # TODO(#19319): Delete this clause / logic when ME incarceration locations added to location_metadata
     SELECT * FROM me_location_names
@@ -218,7 +217,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
-    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY

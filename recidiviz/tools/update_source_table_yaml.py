@@ -19,15 +19,15 @@ This script writes BigQuery table schemas to YAML files in our recidiviz/source_
 
 Example usage (run from `pipenv shell`):
 
-# Update the YAML definitions for referenced tables in the `external_reference` dataset
+# Update the YAML definitions for referenced tables in the `static_reference_tables` dataset
 python -m recidiviz.tools.update_source_table_yaml \
-    --dataset-id external_reference \
+    --dataset-id static_reference_tables \
     --project-id [project id]
 
-# Update the YAML definitions for 2 tables in the `external_reference` dataset
+# Update the YAML definitions for 2 tables in the `static_reference_tables` dataset
 python -m recidiviz.tools.update_source_table_yaml \
-    --dataset-id external_reference \
-    --table-ids county_resident_populations,county_resident_adult_populations \
+    --dataset-id static_reference_tables \
+    --table-ids state_ids,state_county_codes \
     --project-id [project id]
 """
 import argparse

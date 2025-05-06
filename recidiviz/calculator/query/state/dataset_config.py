@@ -90,9 +90,6 @@ EXPORT_ARCHIVES_DATASET = "export_archives"
 
 PULSE_DASHBOARD_SEGMENT_DATASET = "pulse_dashboard_segment_metrics"
 
-# Views that are based on the static data in the `external_reference` dataset.
-EXTERNAL_REFERENCE_VIEWS_DATASET = "external_reference_views"
-
 # Views that power outliers
 OUTLIERS_VIEWS_DATASET: str = "outliers_views"
 

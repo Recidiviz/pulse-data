@@ -39,7 +39,7 @@ SELECT
     {state_specific_race_or_ethnicity_groupings},
     SUM(population) as population_count,
     SUM(SUM(population)) OVER (PARTITION BY state_code) as total_state_population_count
-FROM `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity`
+FROM `{project_id}.reference_views.state_resident_population_combined_race_ethnicity`
 GROUP BY state_code, race_or_ethnicity
 """
 
@@ -49,7 +49,6 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "race_or_ethnicity"),
     description=STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION,
-    external_reference_views_dataset=dataset_config.EXTERNAL_REFERENCE_VIEWS_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         supported_race_overrides={StateCode.US_PA: US_PA_SUPPORTED_RACE_VALUES}
     ),

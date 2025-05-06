@@ -29,7 +29,7 @@ NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_NAME = (
 NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_DESCRIPTION = """
 Normalized state charge rows found without any uniform/state-agnostic offense
 information. This occurs when the state charge description string is not located in
-the `external_reference_dataset.offense_description_to_labels` mapping table.
+the `gcs_backed_tables.offense_description_to_labels` mapping table.
 This can be caused because the CJARS script needs to be rerun with the latest state
 charge descriptions:
 https://docs.google.com/document/d/1f1QDDAwSST82io1dFxaRZHZLcnawfzQLQlqyodAYCnk/edit

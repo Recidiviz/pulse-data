@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
     LocationMetadataKey,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -71,7 +70,7 @@ SELECT
         facility_code AS {LocationMetadataKey.LOCATION_ACRONYM.value}
       )
     ) AS location_metadata,
-FROM `{{project_id}}.{{external_reference_dataset}}.us_nd_incarceration_facility_names`
+FROM `{{project_id}}.gcs_backed_tables.us_nd_incarceration_facility_names`
 
 UNION ALL
 
@@ -93,7 +92,6 @@ US_ND_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
-    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     should_materialize=True,
 )
 

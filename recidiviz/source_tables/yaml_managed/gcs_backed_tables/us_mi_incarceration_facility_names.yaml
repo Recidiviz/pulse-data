@@ -1,5 +1,5 @@
 address:
-  dataset_id: external_reference
+  dataset_id: gcs_backed_tables
   table_id: us_mi_incarceration_facility_names
 description:
   "TODO(#29155): Add a description as to what this is used for and why

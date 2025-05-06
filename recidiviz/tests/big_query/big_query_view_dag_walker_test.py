@@ -1223,7 +1223,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 table_id="charge_class_severity_ranks",
             ),
             BigQueryAddress(
-                dataset_id="external_reference_views",
+                dataset_id="reference_views",
                 table_id="state_info",
             ),
             BigQueryAddress(

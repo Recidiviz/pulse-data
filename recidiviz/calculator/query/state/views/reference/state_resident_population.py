@@ -17,17 +17,14 @@
 """Converts the state, race, and ethnicity values into our enum values."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    EXTERNAL_REFERENCE_VIEWS_DATASET,
-)
-from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
 def _error(column: str) -> str:
     msg = (
-        f"View {EXTERNAL_REFERENCE_VIEWS_DATASET}.state_resident_populations "
+        f"View {REFERENCE_VIEWS_DATASET}.state_resident_populations "
         f"has a new value not covered by CASE WHEN statement in the |{column}| column. "
         "Value: "
     )
@@ -60,20 +57,18 @@ SELECT
     ELSE {_error('gender')}
   END as gender,
   population
-FROM `{{project_id}}.{{external_reference_dataset}}.state_resident_populations`
-LEFT JOIN `{{project_id}}.{{external_reference_views_dataset}}.state_info` state_info
+FROM `{{project_id}}.gcs_backed_tables.state_resident_populations`
+LEFT JOIN `{{project_id}}.reference_views.state_info` state_info
   -- TODO(#10703): Remove this US_IX condition once Atlas is merged into US_ID
   ON state = IF(state_info.state_code = 'US_IX', 'Idaho', state_info.name)
 """
 
 STATE_RESIDENT_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=EXTERNAL_REFERENCE_VIEWS_DATASET,
+    dataset_id=REFERENCE_VIEWS_DATASET,
     view_id="state_resident_population",
     description="View over the state resident population data that converts state, "
     "race, and ethnicity values into our enum values.",
     view_query_template=STATE_RESIDENT_POPULATION_QUERY_TEMPLATE,
-    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
-    external_reference_views_dataset=EXTERNAL_REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

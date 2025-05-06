@@ -17,18 +17,16 @@
 """Calculates representation priority for races and ethnicities in each state."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    EXTERNAL_REFERENCE_VIEWS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 
 STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_QUERY_TEMPLATE = """
 WITH sub_population_totals AS (
     SELECT state_code, race AS race_or_ethnicity, SUM(population) AS population
-    FROM `{project_id}.{external_reference_views_dataset}.state_resident_population`
+    FROM `{project_id}.reference_views.state_resident_population`
     GROUP BY 1, 2
     UNION ALL
     SELECT state_code, ethnicity AS race_or_ethnicity, SUM(population) AS population
-    FROM `{project_id}.{external_reference_views_dataset}.state_resident_population`
+    FROM `{project_id}.reference_views.state_resident_population`
     WHERE ethnicity != 'NOT_HISPANIC'
     GROUP BY 1, 2
 )
@@ -44,10 +42,9 @@ FROM sub_population_totals
 """
 
 STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=EXTERNAL_REFERENCE_VIEWS_DATASET,
+    dataset_id=REFERENCE_VIEWS_DATASET,
     view_id="state_resident_population_combined_race_ethnicity_priority",
     description="View over the state resident population data that calculates "
     "representation priority for combined race and ethnicity.",
     view_query_template=STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_QUERY_TEMPLATE,
-    external_reference_views_dataset=EXTERNAL_REFERENCE_VIEWS_DATASET,
 )

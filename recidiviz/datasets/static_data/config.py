@@ -16,4 +16,7 @@
 # =============================================================================
 """Dataset constants for static data"""
 
-EXTERNAL_REFERENCE_DATASET = "external_reference"
+# External tables backed by GCS files (CSV or JSON).
+# The CSV files in this module are loaded to GCS and then referenced by external tables
+# in this dataset.
+GCS_BACKED_TABLES_DATASET: str = "gcs_backed_tables"
