@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  FieldRuleViolationIncidentId: STRING
+  IncidentDt: DATETIME
+  EnteredDt: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - $literal("INCIDENT-ONLY")
+                - FieldRuleViolationIncidentId
+          violation_date: IncidentDt
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("INCIDENT-ONLY")
+                      - FieldRuleViolationIncidentId
+                response_date: EnteredDt
+                response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)

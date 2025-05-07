@@ -17,7 +17,7 @@
 """Query containing State Supervision Violations from DOC for IA for parole."""
 
 from recidiviz.ingest.direct.regions.us_ia.ingest_views.query_fragments import (
-    FEILD_RULE_VIOLATIONS_CTE,
+    FIELD_RULE_VIOLATIONS_CTE,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -26,7 +26,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = (
-    f"WITH {FEILD_RULE_VIOLATIONS_CTE},"
+    f"WITH {FIELD_RULE_VIOLATIONS_CTE},"
     + """
 
 -- Part Two: Get the relevant Paroles.
@@ -70,9 +70,15 @@ Parole as
      , RR.CountyOfStaff
      , RR.CompletedByStaffId
      , RR.ApprovedByStaffId
+
+    , RH.HearingDecision
+    , RH.BopRevocationHearingId
+    , CAST(RH.HearingDt AS DATETIME) AS HearingDt
    from {IA_DOC_PVRReports} as RR
    left join {IA_DOC_ParoleVR} as PVR using (ParoleViolationReviewId, OffenderCd)
    left join {IA_DOC_PVR_FRVI} as PFRVI using (ParoleViolationReviewId, OffenderCd)
+   left join {IA_DOC_BOPRevocationHearings} as RH using (ParoleViolationReviewId, OffenderCd)
+   WHERE RH.rescinded IS DISTINCT FROM "Yes"
  )
 
 
@@ -87,19 +93,19 @@ select
 
   -- violation_date
   , IncidentDt
+  , EnteredDt
   -- response_date
   , cast(ReportDt as DATETIME) as ReportDt
 
   -- Other columns for mapping
-  , ReportType
-  , ParoleViolationReviewRecommendation
   , CompletedByStaffId
   , HearingCompleted
   , ReviewCompleted
 
-  -- Extra For The JSON
-  , CustodyLocation
-  , ApprovedByStaffId
+  -- Hearing Decision
+  , HearingDecision
+  , BopRevocationHearingId
+  , HearingDt
   
 from Parole
 left join FRV_I using (FieldRuleViolationIncidentId, OffenderCd)

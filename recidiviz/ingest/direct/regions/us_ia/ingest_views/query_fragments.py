@@ -55,7 +55,7 @@ PENALTIES_TO_KEEP = f"""
 
 # Supervision Violations Parole/Probation CTE
 
-FEILD_RULE_VIOLATIONS_CTE = """
+FIELD_RULE_VIOLATIONS_CTE = """
 -- Part One: Field Rule Violations and Instances, including parole and probation.
 FRV_I as
  (
@@ -69,8 +69,8 @@ FRV_I as
         -- ID's
         , FRVI.FieldRuleViolationIncidentId
 
-        -- Extra for JSON
-        , FRVI.IncidentSource
+        -- To use for response date
+        , CAST(FRVI.EnteredDt AS DATETIME) as EnteredDt
     from
         {IA_DOC_FieldRuleViolationIncidents} as FRVI
     -- We want to keep all incidents regardless of active status because active just connotes if a decision has been finalized.

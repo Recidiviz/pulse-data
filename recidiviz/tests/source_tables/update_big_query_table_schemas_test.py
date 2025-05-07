@@ -463,6 +463,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ia_ingest_view_results.state_staff_location_periods",
     "us_ia_ingest_view_results.state_staff_role_supervisor_periods",
     "us_ia_ingest_view_results.supervision_periods",
+    "us_ia_ingest_view_results.supervision_violation_incidents",
     "us_ia_ingest_view_results.supervision_violations_parole",
     "us_ia_ingest_view_results.supervision_violations_probation",
     "us_ia_normalized_state.state_assessment",

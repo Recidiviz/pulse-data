@@ -8,16 +8,16 @@ input_columns:
   FieldRuleViolationIncidentId: STRING
   ParoleViolationReviewReportId: STRING
   IncidentDt: DATETIME
+  EnteredDt: DATETIME
   ReportDt: DATETIME
 
-  ReportType: STRING
-  ParoleViolationReviewRecommendation: STRING
   CompletedByStaffId: STRING
   HearingCompleted: STRING
   ReviewCompleted: STRING
 
-  CustodyLocation: STRING
-  ApprovedByStaffId: STRING
+  HearingDecision: STRING
+  BopRevocationHearingId: STRING
+  HearingDt: DATETIME
 
 unused_columns: []
 
@@ -30,44 +30,49 @@ output:
     supervision_violations:
       - StateSupervisionViolation:
           external_id:
-            $concat:
-              $values:
-                - $literal("Parole_")
-                - ParoleViolationReviewReportId
-                - FieldRuleViolationIncidentId
-          violation_date: IncidentDt
-          violation_metadata:
-            $json_dict:
-              ApprovedByStaffId: ApprovedByStaffId
-              CustodyLocation: CustodyLocation
-
+            $conditional:
+              - $if:
+                  $not_null: FieldRuleViolationIncidentId
+                $then:
+                  $concat:
+                    $values:
+                      - $literal("Parole")
+                      - FieldRuleViolationIncidentId
+                      - ParoleViolationReviewReportId
+              - $else:
+                  $concat:
+                    $values:
+                      - $literal("Parole-ROV-ONLY")
+                      - ParoleViolationReviewReportId
+          violation_date:
+            $conditional:
+              - $if:
+                  $not_null: IncidentDt
+                $then: IncidentDt
+              - $else: ReportDt
           supervision_violation_responses:
+            - $conditional:
+                - $if:
+                    $not_null: FieldRuleViolationIncidentId
+                  $then:
+                    StateSupervisionViolationResponse:
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("Parole-Incident")
+                            - FieldRuleViolationIncidentId
+                            - ParoleViolationReviewReportId
+                      response_date: EnteredDt
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)
             - StateSupervisionViolationResponse: #A single incident can be tied to multiple reports.
                 external_id:
                   $concat:
                     $values:
-                      - $literal("Parole_")
+                      - $literal("Parole-ROV")
+                      - FieldRuleViolationIncidentId # Could be NONE if it's only a report and no incident
                       - ParoleViolationReviewReportId
-                      - FieldRuleViolationIncidentId
-                response_date:
-                  $conditional:
-                    - $if:
-                        $not_null: ReportDt
-                      $then: ReportDt
-                    - $else: IncidentDt
-                response_type:
-                  $conditional:
-                    - $if:
-                        $not_null: ReportType
-                      $then:
-                        $enum_mapping:
-                          $raw_text: ReportType
-                          $mappings:
-                            StateSupervisionViolationResponseType.CITATION:
-                              - "Information"
-                            StateSupervisionViolationResponseType.VIOLATION_REPORT:
-                              - "Violation"
-                    - $else: $literal_enum(StateSupervisionViolationResponseType.INTERNAL_UNKNOWN)
+                response_date: ReportDt
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
                 is_draft:
                   $conditional:
                     - $if:
@@ -80,51 +85,72 @@ output:
                               - $literal("1")
                       $then: $literal_bool(False)
                     - $else: $literal_bool(True)
-                supervision_violation_response_decisions:
-                  - StateSupervisionViolationResponseDecisionEntry:
-                      decision:
-                        $conditional:
-                          - $if:
-                              $not_null: ParoleViolationReviewRecommendation
-                            $then:
-                              $enum_mapping:
-                                $raw_text: ParoleViolationReviewRecommendation
-                                $mappings:
-                                  StateSupervisionViolationResponseDecision.CONTINUANCE:
-                                    - "Continue Disposition"
-                                    - "Continue Disposition - Day Reporter"
-                                    - "No Further Action"
-                                    - "Reinstate"
-                                  StateSupervisionViolationResponseDecision.DELAYED_ACTION:
-                                    - "Delay Action"
-                                  StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
-                                    - "ICON Migration"
-                                  StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
-                                    - "Add Residential Condition - Continue on
-                                      Parole"
-                                  StateSupervisionViolationResponseDecision.REVOCATION:
-                                    - "Automatic Revocation - 903B (2Y)"
-                                    - "Automatic Revocation - 903B (5Y)"
-                                    - "Automatic Revocation - Aggravated/Felony"
-                                    - "Automatic Revocation - Federal/Out of
-                                      State"
-                                    - "Revoke and Discharge"
-                                    - "Revoke and Discharge - Day Reporter"
-                                    - "Revoke to Prison"
-                                    - "Revoke to Prison - 903B (2Y)"
-                                    - "Revoke to Prison - 903B (5Y)"
-                                    - "Revoke to Prison - Day Reporter"
-                                    - "Revoke to Work Release"
-                                    - "Revoke to Work Release - 903B (2Y)"
-                                    - "Revoke to Work Release - 903B (5Y)"
-                                    - "Revoke to Work Release - Day Reporter"
-                                    - "Voluntary Termination"
-                                  StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
-                                    - "Return to Sending State"
-                          - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)
                 deciding_staff_external_id: CompletedByStaffId
                 deciding_staff_external_id_type:
                   $conditional:
                     - $if:
                         $not_null: CompletedByStaffId
                       $then: $literal("US_IA_STAFFID")
+            - $conditional:
+                - $if:
+                    $not_null: HearingDt
+                  $then:
+                    StateSupervisionViolationResponse: # A single incident can be tied to multiple hearings.
+                      external_id:
+                        $concat:
+                          $values:
+                            - $literal("Parole-Decision")
+                            - FieldRuleViolationIncidentId # Could be NONE if it's only a report/hearing and no incident
+                            - ParoleViolationReviewReportId
+                            - BopRevocationHearingId
+                      response_date: HearingDt
+                      response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                      supervision_violation_response_decisions:
+                        - StateSupervisionViolationResponseDecisionEntry:
+                            decision:
+                              $conditional:
+                                - $if:
+                                    $not_null: HearingDecision
+                                  $then:
+                                    $enum_mapping:
+                                      $raw_text: HearingDecision
+                                      $mappings:
+                                        StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                          - "Reinstate - No New Conditions"
+                                        StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                          - "Continue Disposition"
+                                          - "Continue Disposition - Day Reporter"
+                                          - "Continue Disposition - No Disp"
+                                          - "Continue Hearing"
+                                          - "Residential Condition Denied - Schedule Hearing"
+                                        StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                          - "Reinstate - New Conditions"
+                                          - "Residential Condition Added - Continue on Parole"
+                                        StateSupervisionViolationResponseDecision.REVOCATION:
+                                          - "Automatic Revocation"
+                                          - "Automatic Revocation (2Y)"
+                                          - "Automatic Revocation - 903B (2Y)"
+                                          - "Automatic Revocation - 903B (5Y)"
+                                          - "Automatic Revocation - Federal/Out of State"
+                                          - "Automatic Revocation - Federal/Out of State (2Y)"
+                                          - "Automatic Revocation - Federal/Out of State (5Y)"
+                                          - "Revoke to Prison"
+                                          - "Revoke to Prison - 903B (2Y)"
+                                          - "Revoke to Prison - 903B (5Y)"
+                                          - "Revoke to Prison - Day Reporter"
+                                          - "Revoke to Work Release"
+                                          - "Revoke to Work Release - 903B (2Y)"
+                                          - "Revoke to Work Release - 903B (5Y)"
+                                          - "Revoke to Work Release - Day Reporter"
+                                          - "Revoke and Discharge"
+                                          - "Revoke and Discharge - Day Reporter"
+                                        StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
+                                          - "Probable Cause Found"
+                                          - "Probable Cause Not Found"
+                                          - "Reinstate - Insufficient Evidence"
+                                          - "Reinstate - Insufficient Evidence, Day Reporter"
+                                        StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                          - "Community Success Program"
+                                          - "Nunc Pro Tunc"
+                                          - "Voluntary Termination"
+                                - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)

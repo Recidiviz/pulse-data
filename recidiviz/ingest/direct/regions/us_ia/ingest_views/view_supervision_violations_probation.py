@@ -17,7 +17,7 @@
 """Query containing State Supervision Violations from DOC for IA for probations."""
 
 from recidiviz.ingest.direct.regions.us_ia.ingest_views.query_fragments import (
-    FEILD_RULE_VIOLATIONS_CTE,
+    FIELD_RULE_VIOLATIONS_CTE,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -26,7 +26,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = (
-    f"WITH {FEILD_RULE_VIOLATIONS_CTE},"
+    f"WITH {FIELD_RULE_VIOLATIONS_CTE},"
     + """
 
 
@@ -44,6 +44,7 @@ Probation as
        , ROV.CaseManagerStaffId
        , ROVD.Decision
        , ROVD.ProbationROVHearingResponseDecisionId
+       , CAST(ROVD.EnteredDt AS DATETIME) as decision_EnteredDt
 
 
        -- Dates
@@ -95,6 +96,7 @@ select
 
   -- violation_date
   , IncidentDt
+  , EnteredDt
   -- response_date
   , cast(ReportDt as DATETIME) as ReportDt
 
@@ -104,12 +106,7 @@ select
   , WarrantRequested
   , Decision
   , ProbationROVHearingResponseDecisionId
-
-
-
-  -- JSON Extras
-  , RecommendationToCourt
-  , Comments
+  , decision_EnteredDt
 
 
 from probation
