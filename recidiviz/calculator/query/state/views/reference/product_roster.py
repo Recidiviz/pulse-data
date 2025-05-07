@@ -133,6 +133,7 @@ ROUTES = [
     "insights_supervision_supervisors-list",
     "psi",
     "lantern",
+    "tasks",
 ]
 
 PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
