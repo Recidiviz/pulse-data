@@ -84,7 +84,7 @@ probation_sessions_ed AS (
   FROM early_terminations_me et
   INNER JOIN probation_sessions_me ses
     ON ses.external_id = et.Cis_400_Cis_100_Client_Id
-    AND ed_date BETWEEN start_date AND {nonnull_end_date_clause('ses.end_date_exclusive')}
+    AND DATE_SUB(ed_date, INTERVAL 1 DAY) BETWEEN start_date AND {nonnull_end_date_clause('ses.end_date')}
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ses.person_id, ses.session_id, ses.state_code
     ORDER BY et.ed_date DESC) = 1
 )
