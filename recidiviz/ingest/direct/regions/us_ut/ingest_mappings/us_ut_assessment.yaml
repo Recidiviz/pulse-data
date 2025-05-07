@@ -10,6 +10,30 @@ input_columns:
   tot_score: STRING
   eval_desc: STRING
   assess_cat_desc: STRING
+  LSRNR_Q28: STRING
+  LSRNR_Q29: STRING
+  LSRNR_Q30: STRING
+  LSRNR_Q31: STRING
+  LSRNR_Q32: STRING
+  LSRNR_Q33: STRING
+  LSRNR_Q34: STRING
+  LSRNR_Q35: STRING
+  LSRNR_Q28_ANSWER: STRING
+  LSRNR_Q29_ANSWER: STRING
+  LSRNR_Q30_ANSWER: STRING
+  LSRNR_Q31_ANSWER: STRING
+  LSRNR_Q32_ANSWER: STRING
+  LSRNR_Q33_ANSWER: STRING
+  LSRNR_Q34_ANSWER: STRING
+  LSRNR_Q35_ANSWER: STRING
+  LSRNR_Q28_CMT: STRING
+  LSRNR_Q29_CMT: STRING
+  LSRNR_Q30_CMT: STRING
+  LSRNR_Q31_CMT: STRING
+  LSRNR_Q32_CMT: STRING
+  LSRNR_Q33_CMT: STRING
+  LSRNR_Q34_CMT: STRING
+  LSRNR_Q35_CMT: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -241,3 +265,30 @@ output:
                         - "REFERRAL RECOMMENDED"
                         - "ACE SCORE"
                         - "FULLMER"
+          # These are only populated for LS/RNR assessments.
+          assessment_metadata:
+            $normalized_values_json_dict:
+              LSRNR_Q28: LSRNR_Q28
+              LSRNR_Q29: LSRNR_Q29
+              LSRNR_Q30: LSRNR_Q30
+              LSRNR_Q31: LSRNR_Q31
+              LSRNR_Q32: LSRNR_Q32
+              LSRNR_Q33: LSRNR_Q33
+              LSRNR_Q34: LSRNR_Q34
+              LSRNR_Q35: LSRNR_Q35
+              LSRNR_Q28_ANSWER: LSRNR_Q28_ANSWER
+              LSRNR_Q29_ANSWER: LSRNR_Q29_ANSWER
+              LSRNR_Q30_ANSWER: LSRNR_Q30_ANSWER
+              LSRNR_Q31_ANSWER: LSRNR_Q31_ANSWER
+              LSRNR_Q32_ANSWER: LSRNR_Q32_ANSWER
+              LSRNR_Q33_ANSWER: LSRNR_Q33_ANSWER
+              LSRNR_Q34_ANSWER: LSRNR_Q34_ANSWER
+              LSRNR_Q35_ANSWER: LSRNR_Q35_ANSWER
+              LSRNR_Q28_CMT: LSRNR_Q28_CMT
+              LSRNR_Q29_CMT: LSRNR_Q29_CMT
+              LSRNR_Q30_CMT: LSRNR_Q30_CMT
+              LSRNR_Q31_CMT: LSRNR_Q31_CMT
+              LSRNR_Q32_CMT: LSRNR_Q32_CMT
+              LSRNR_Q33_CMT: LSRNR_Q33_CMT
+              LSRNR_Q34_CMT: LSRNR_Q34_CMT
+              LSRNR_Q35_CMT: LSRNR_Q35_CMT
