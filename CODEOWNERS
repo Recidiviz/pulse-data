@@ -1,5 +1,5 @@
 # Review changes to Github workflows
-.github/workflows/* @Recidiviz/infra-review
+.github/workflows/** @Recidiviz/infra-review
 
 # DADS-owned code
 recidiviz/research/ @Recidiviz/dads
@@ -8,16 +8,16 @@ recidiviz/research/ @Recidiviz/dads
 #  For Doppler-owned files, files with a high volume of edits are assigned to the @Recidiviz/doppler-codeowners group,
 #  which assigns a single reviewer via round robin. For more critical files with a lower volume of edits, we assign the
 #  @Recidiviz/doppler group which is configured so all team members are added to each review.
-recidiviz/airflow/* @Recidiviz/doppler
-recidiviz/big_query/* @Recidiviz/doppler
+recidiviz/airflow/** @Recidiviz/doppler
+recidiviz/big_query/** @Recidiviz/doppler
 recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler
 recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler
-recidiviz/persistence/* @Recidiviz/doppler
-recidiviz/pipelines/* @Recidiviz/doppler
+recidiviz/persistence/** @Recidiviz/doppler
+recidiviz/pipelines/** @Recidiviz/doppler
 recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler
 recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
-recidiviz/tools/looker/generated/* @Recidiviz/doppler-codeowners
+recidiviz/tools/looker/generated/** @Recidiviz/doppler-codeowners
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
 
