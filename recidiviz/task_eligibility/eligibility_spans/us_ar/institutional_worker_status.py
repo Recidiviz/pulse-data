@@ -20,7 +20,7 @@ for the [Act] "309" program for institutional worker status in city and county j
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population,
+    incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ar import (
     granted_institutional_worker_status,
@@ -50,7 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
     task_name="institutional_worker_status",
     description=__doc__,
-    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#34322): Clarify Class I eligibility criteria
         OrTaskCriteriaGroup(
