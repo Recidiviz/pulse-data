@@ -30,7 +30,10 @@ SELECT
     Assessment_Class,
     ASSESSMENT_DATE
 FROM {Assessment}
-WHERE UPPER(Deleted_Flag) = "ACTIVE"
+LEFT JOIN {TROAStatusDescription} 
+    ON ASSESSMENT_STATUS = TROA_STATUS
+WHERE TROA_STATUS_DESC = "COMPLETE"
+AND Assessment_Type IN ("CST", "CSST", "SRT", "RT")
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

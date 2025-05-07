@@ -339,6 +339,10 @@ assessment_cte AS (
     LEFT JOIN `{{Assessment}}` a
         ON p.SID_Number = a.SID_Number
         AND DATE(ASSESSMENT_DATE) BETWEEN DATE(p.start_date) and p.Max_termination_Date
+    LEFT JOIN `{{TROAStatusDescription}}`
+        ON ASSESSMENT_STATUS = TROA_STATUS
+    WHERE TROA_STATUS_DESC = "COMPLETE"
+    AND Assessment_Type IN ("CST", "CSST", "SRT", "RT")
     UNION ALL
 
     -- Grab latest assessment before the current SP start
@@ -350,7 +354,11 @@ assessment_cte AS (
     FROM periods p
     LEFT JOIN `{{Assessment}}` a
         ON p.SID_Number = a.SID_Number
-    WHERE DATE(ASSESSMENT_DATE) < DATE(p.start_date)
+    LEFT JOIN `{{TROAStatusDescription}}`
+        ON ASSESSMENT_STATUS = TROA_STATUS
+    WHERE TROA_STATUS_DESC = "COMPLETE"
+    AND Assessment_Type IN ("CST", "CSST", "SRT", "RT")
+    AND DATE(ASSESSMENT_DATE) < DATE(p.start_date)
     QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY ASSESSMENT_DATE DESC) = 1
 ),
 -- In the rare case where two seperate assessments were done in the same day, 
