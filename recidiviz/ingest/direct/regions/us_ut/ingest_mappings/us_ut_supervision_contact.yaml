@@ -1,0 +1,287 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  sprvsn_cntc_id: STRING
+  ofndr_num: STRING
+  cntc_loc_desc: STRING
+  cntc_rslt_desc: STRING
+  cntc_typ_desc: STRING
+  cntc_dt: DATETIME
+  udc_agnt1_id: STRING
+  udc_agnt2_id: STRING
+  contact_address: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    supervision_contacts:
+      - StateSupervisionContact:
+          contacting_staff_external_id: udc_agnt1_id
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: udc_agnt1_id
+                $then: $literal("US_UT_USR_ID")
+          external_id: sprvsn_cntc_id
+          contact_date: cntc_dt
+          contact_method:
+            $enum_mapping:
+              $raw_text: cntc_typ_desc
+              $mappings:
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "TELEPHONE"
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - "MAIL/EMAIL"
+                StateSupervisionContactMethod.VIRTUAL:
+                  - "GPS/ELECTRONIC MONIT"
+                  - "LOW ELECTRONIC CHECK"
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "ADDRESS VERIFICATION"
+                  - "OFFICE REPORT"
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - "DIAGNOSTIC"
+                  - "ORIENTATION"
+                  - "ORIENTATION W/FAM"
+                  - "ORIENTATION W/O FAM"
+                  - "WOCMM INITIAL"
+                  - "OPENING SUMMARY"
+                  - "SUPPORT STAFF"
+                  - "STAFF TO OFFENDER"
+                  - "CASE UPDATE"
+                  - "COLLATERAL"
+                  - "COURT/BOARD DOC"
+                  - "AGENT CASE UPDATE"
+                  - "EMPLOYMENT"
+                  - "MOD STAFF TO OFNDR"
+                  - "TX NOTE-GRAMA PROTEC"
+                  - "TX/RESOURCE CENTER"
+                  - "PRE-SUPERVISION NOTE"
+                  - "CLOSING SUMMARY"
+                  - "CCC CLOSING SUMMARY"
+                  - "TRANSFER SUMMARY"
+                  - "FILE"
+                  - "COMPACT STATE"
+                  - "CAP REVIEW"
+                  - "FINANCIAL"
+                  - "REENTRY/TRANSITION"
+                  - "OMR"
+                  - "SEX OFFENDER REGISTR"
+                  - "ASSESSMENT"
+                  - "TRANSITION INITIATIV"
+                  - "FUGITIVE UPDATE"
+                  - "PROGRESS NOTE PD"
+                  - "IPO/TRANSTN SUMMARY"
+                  - "AUDIT"
+                  - "SPECIAL REQUEST"
+                  - "SUPERVISION REVIEW"
+                  - "NOTARY"
+                  - "BCI"
+                  - "EMPLOY APPLICATION"
+                  - "DNA NOTES"
+                  - "CCC REFERRAL"
+                  - "UCI/REENTRY"
+                  - "DATA CLEANUP"
+                  - "VICTIM"
+                  - "LEAVE"
+                  - "PVRM REWARD"
+                  - "WOCMM INDIVIDUAL"
+                  - "VIVITROL SCREEN ACCE"
+                  - "CACHE EVAL SCHEDULED"
+                  - "PATR SCREEN ACCEPT"
+                  - "PATR SCREEN DENY"
+                  - "DORA 1-SCREEN ACCEPT"
+                  - "DORA 1-SCREEN DENIED"
+                  - "DORA 5-TX REVIEW"
+                  - "DORA 2-ASSESS NO TX"
+                  - "DORA 2-ASSESS & TX"
+                  - "DORA 4-HANDOFF"
+                  - "DORA 3-REASSESSMENT"
+                  - "DORA 6-TERMINATION"
+                  - "DORA 7-NO FUNDING"
+                  - "DORA 7-DATA AUDIT"
+                  - "DORA-8-TX FUND ENDED"
+                  - "WOCMM TEAM"
+                  - "WOCMM- SCREEN DENIED"
+                  - "WOCMM ASSESSMENT"
+                  - "WOCMM SCREEN ACCEPT"
+                  - "CACHE EVAL COMPLETED"
+                  - "REACH-SCREEN ACCEPT"
+                  - "REACH-SCREEN DENIED"
+                  - "RIM INCENTIVE LVL 1"
+                  - "RIM INCENTIVE LVL 2"
+                  - "RIM INCENTIVE LVL 3"
+                  - "RIM INCENTIVE LVL 4"
+                  - "RIM INCENTIVE LVL 5"
+                  - "WOMEN'S TRC"
+                  - "WTRC TX REVIEW"
+                  - "WTRC CASE UPDATE"
+                  - "WTRC ENROLLMENT"
+                  - "WTRC EMPLOYMENT"
+                  - "WTRC CLOSING SUMMARY"
+                  - "TRC CASE UPDATE"
+                  - "TRC CLOSING SUMMARY"
+                  - "TRC ENROLLMENT"
+                  - "TRC INTAKE"
+                  - "TRC EMPLOYMENT"
+                  - "TRC CLASS REMOVAL"
+                  - "TRC TREATMENT REVIEW"
+          location:
+            $enum_mapping:
+              $raw_text: cntc_loc_desc
+              $mappings:
+                StateSupervisionContactLocation.COURT:
+                  - COURT
+                StateSupervisionContactLocation.FIELD:
+                  - FIELD
+                  - COMMUNITY SERVICE SITE
+                  - HOMELESS/OTHER SERVICES
+                  - CRIME SCENE
+                StateSupervisionContactLocation.JAIL:
+                  - PRISON
+                  - JAIL
+                  - COMMUNITY CORRECTION CENTER
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - EMPLOYMENT
+                StateSupervisionContactLocation.RESIDENCE:
+                  - RESIDENCE
+                  - OTHER RESIDENCE
+                  - FAMILY
+                  - VICTIM
+                  - ASSOCIATE
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - OFFICE
+                  - COMPACT STATE
+                StateSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - TX/RESOURCE CENTER
+                  - TREATMENT PROVIDER
+                  - WOMEN'S TRC
+                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - LAW ENFORCEMENT AGENCY
+                StateSupervisionContactLocation.PAROLE_COMMISSION:
+                  - BOARD OF PARDONS/PAROLE
+                StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT:
+                  - EMPLOYMENT COORDINATOR
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - OTHER
+                  - OTHER AGENCY
+                  - NOT APPLICABLE
+                  - UDOCA # Document verification system
+                  - DIAGNOSTIC
+          contact_reason:
+            $enum_mapping:
+              $raw_text: cntc_typ_desc
+              $mappings:
+                StateSupervisionContactReason.INITIAL_CONTACT:
+                  - "DIAGNOSTIC"
+                  - "ADDRESS VERIFICATION"
+                  - "ORIENTATION"
+                  - "ORIENTATION W/FAM"
+                  - "ORIENTATION W/O FAM"
+                  - "WOCMM INITIAL"
+                  - "OPENING SUMMARY"
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "OFFICE REPORT"
+                  - "SUPPORT STAFF"
+                  - "STAFF TO OFFENDER"
+                  - "CASE UPDATE"
+                  - "TELEPHONE"
+                  - "COLLATERAL"
+                  - "MAIL/EMAIL"
+                  - "COURT/BOARD DOC"
+                  - "AGENT CASE UPDATE"
+                  - "EMPLOYMENT"
+                  - "MOD STAFF TO OFNDR"
+                  - "TX NOTE-GRAMA PROTEC"
+                  - "TX/RESOURCE CENTER"
+                  - "PRE-SUPERVISION NOTE"
+                  - "CLOSING SUMMARY"
+                  - "CCC CLOSING SUMMARY"
+                  - "TRANSFER SUMMARY"
+                  - "FILE"
+                  - "COMPACT STATE"
+                  - "CAP REVIEW"
+                  - "FINANCIAL"
+                  - "REENTRY/TRANSITION"
+                  - "OMR"
+                  - "SEX OFFENDER REGISTR"
+                  - "ASSESSMENT"
+                  - "TRANSITION INITIATIV"
+                  - "FUGITIVE UPDATE"
+                  - "PROGRESS NOTE PD"
+                  - "IPO/TRANSTN SUMMARY"
+                  - "AUDIT"
+                  - "SPECIAL REQUEST"
+                  - "GPS/ELECTRONIC MONIT"
+                  - "LOW ELECTRONIC CHECK"
+                  - "SUPERVISION REVIEW"
+                  - "NOTARY"
+                  - "BCI"
+                  - "EMPLOY APPLICATION"
+                  - "DNA NOTES"
+                  - "CCC REFERRAL"
+                  - "UCI/REENTRY"
+                  - "DATA CLEANUP"
+                  - "VICTIM"
+                  - "LEAVE"
+                  - "PVRM REWARD"
+                  - "WOCMM INDIVIDUAL"
+                  - "VIVITROL SCREEN ACCE"
+                  - "CACHE EVAL SCHEDULED"
+                  - "PATR SCREEN ACCEPT"
+                  - "PATR SCREEN DENY"
+                  - "DORA 1-SCREEN ACCEPT"
+                  - "DORA 1-SCREEN DENIED"
+                  - "DORA 5-TX REVIEW"
+                  - "DORA 2-ASSESS NO TX"
+                  - "DORA 2-ASSESS & TX"
+                  - "DORA 4-HANDOFF"
+                  - "DORA 3-REASSESSMENT"
+                  - "DORA 6-TERMINATION"
+                  - "DORA 7-NO FUNDING"
+                  - "DORA 7-DATA AUDIT"
+                  - "DORA-8-TX FUND ENDED"
+                  - "WOCMM TEAM"
+                  - "WOCMM- SCREEN DENIED"
+                  - "WOCMM ASSESSMENT"
+                  - "WOCMM SCREEN ACCEPT"
+                  - "CACHE EVAL COMPLETED"
+                  - "REACH-SCREEN ACCEPT"
+                  - "REACH-SCREEN DENIED"
+                  - "RIM INCENTIVE LVL 1"
+                  - "RIM INCENTIVE LVL 2"
+                  - "RIM INCENTIVE LVL 3"
+                  - "RIM INCENTIVE LVL 4"
+                  - "RIM INCENTIVE LVL 5"
+                  - "WOMEN'S TRC"
+                  - "WTRC TX REVIEW"
+                  - "WTRC CASE UPDATE"
+                  - "WTRC ENROLLMENT"
+                  - "WTRC EMPLOYMENT"
+                  - "WTRC CLOSING SUMMARY"
+                  - "TRC CASE UPDATE"
+                  - "TRC CLOSING SUMMARY"
+                  - "TRC ENROLLMENT"
+                  - "TRC INTAKE"
+                  - "TRC EMPLOYMENT"
+                  - "TRC CLASS REMOVAL"
+                  - "TRC TREATMENT REVIEW"
+          status:
+            $enum_mapping:
+              $raw_text: cntc_rslt_desc
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - "SUCCESSFUL"
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - "ATTEMPTED"
+                StateSupervisionContactStatus.INTERNAL_UNKNOWN:
+                  - "FACE TO FACE CONTACT" # Not used since 2003
+                  - "COLLATERAL" # Not used since 1998
+                  - "INQUIRY" # Not used since 2003
+                  - "INFORMATION"
+          supervision_contact_metadata:
+            $normalized_values_json_dict:
+              ADDRESS: contact_address
+              SECONDARY_OFFICER: udc_agnt2_id
