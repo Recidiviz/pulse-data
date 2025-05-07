@@ -7,14 +7,27 @@ The account and its IAM policies are managed in Terraform.
 EOT
 }
 
+resource "google_project_iam_custom_role" "airflow_executor" {
+  role_id     = "composer.executor"
+  title       = "Cloud Composer Airflow Executor"
+  description = "Custom role for Airflow executor to trigger DAGs"
+  permissions = [
+    "composer.environments.get",
+    "composer.environments.executeAirflowCommand",
+  ]
+  project = var.project_id
+}
+
 resource "google_project_iam_member" "trigger_dag_iam" {
   for_each = toset([
-    "roles/composer.user",
+    "projects/${var.project_id}/roles/composer.executor",
     "roles/run.invoker"
   ])
-  project  = var.project_id
-  role     = each.key
-  member   = "serviceAccount:${google_service_account.trigger_dag_cloud_run.email}"
+  project = var.project_id
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.trigger_dag_cloud_run.email}"
+  depends_on = [
+  google_project_iam_custom_role.airflow_executor]
 }
 
 resource "google_cloud_scheduler_job" "trigger_dag" {
@@ -64,7 +77,7 @@ locals {
 
 resource "google_cloud_run_v2_job" "trigger_dag" {
   for_each = var.dags
-  name     = "trigger_${each.key}}_dag"
+  name     = replace("trigger-${each.key}", "_", "-")
   location = var.composer.location
 
   template {
@@ -89,8 +102,8 @@ resource "google_cloud_run_v2_job" "trigger_dag" {
         ]
         resources {
           limits = {
-            cpu    = "250m"
-            memory = "256Mi"
+            cpu    = "1000m"
+            memory = "512Mi"
           }
         }
 

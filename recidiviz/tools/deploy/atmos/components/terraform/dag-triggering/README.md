@@ -9,7 +9,8 @@ Deploys Google Cloud Run Jobs configured to invoke specific Airflow DAGs via the
 3. **Cloud Scheduler Jobs**:
 Configures Google Cloud Scheduler jobs to execute the Cloud Run jobs based on the defined schedule for each Airflow DAG.
 4. **IAM Roles and Permissions**:
-Assigns the appropriate IAM role (`roles/run.invoker`) to the service account for secure invocation of jobs.
+Assigns the IAM role (`roles/run.invoker`) for secure invocation of jobs.
+Creates a custom `composer.executor` role for access to composer environments and running Airflow commands.
 5. **Parameterized DAG Configuration**:
 Enables passing custom configurations (in JSON) for DAGs when they are triggered.
 
@@ -62,7 +63,7 @@ Ensure that the Composer environment specified in the `composer` variable has th
 - **Cloud Scheduler Quotas**:
 Be mindful of GCP's quotas for creating Cloud Scheduler jobs, as each DAG schedule generates a separate Scheduler job.
 - **IAM Policies**:
-The module automatically assigns the `roles/run.invoker` and `roles/composer.user` IAM roles to the service account for secure invocation of Cloud Run jobs. Ensure no conflicting policies exist.
+The module automatically assigns the `roles/run.invoker` and `projects/project_id/roles/composer.executor` IAM roles to the service account for secure invocation of Cloud Run jobs. Ensure no conflicting policies exist.
 - **CRON Expression Validation**:
 Test your CRON expressions to ensure that they work as expected and follow GCP's Scheduler syntax.
 
