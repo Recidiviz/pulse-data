@@ -46,10 +46,11 @@ repos:
         language: system
         entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
       - id: ensure_jupyter_notebook_is_exported
-        name: ensure_jupyter_notebook_is_exported
+        name: Export Jupyter Notebooks to nbautoexport-scripts directory
         entry: pipenv run python -m
           recidiviz.research.export_notebooks_pre_commit
         language: system
+        always_run: true
         files: ^recidiviz/research/.*notebooks/.*\.ipynb$
         require_serial: true
       - id: validate_scripts_and_notebooks_are_changed_together
