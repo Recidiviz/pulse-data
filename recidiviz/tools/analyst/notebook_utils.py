@@ -157,3 +157,21 @@ def convert_df_types(
         elif df[c].dtype == "dbdate":
             df[c] = pd.to_datetime(df[c])
     return df
+
+
+# When running a local runtime, we can't import `from google.colab import syntax`. This
+# means we can't do syntax.sql('''select * from something''') and expect it to be
+# correctly highlighted. However, Colab seems to simply look for syntax.sql() to be
+# called, and it applies the syntax highlighting appropriately. So if we create a dummy
+# syntax with a dummy sql() method, we can get syntax highlighting even when running a
+# local runtime!
+# Example:
+# query = syntax.sql('''
+#   SELECT * FROM SOMETHING -- will be highlighted properly in colab
+# ''')
+class DummySyntax:
+    def sql(self, query_string: str) -> str:
+        return query_string
+
+
+syntax = DummySyntax()
