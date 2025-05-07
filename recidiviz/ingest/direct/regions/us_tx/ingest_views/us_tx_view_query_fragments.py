@@ -146,7 +146,9 @@ latest_ttm AS (
     PTMT_PREF_ID
   FROM `{ProgramPhaseTransitions}`
   WHERE
-    PTMT_PHASE_TRANS IS NOT NULL OR PTMT_CRNT_SUB_PHSE IS NOT NULL
+  -- Ignore 0's since those are NULLs and ignore whenever the phase is changed to 1
+  -- since we will know based on in patient facility data.
+    COALESCE(NULLIF(PTMT_PHASE_TRANS, "0"), PTMT_CRNT_SUB_PHSE) NOT IN ("0","1")
   QUALIFY ROW_NUMBER() OVER (PARTITION BY PTMT_SID_NO ORDER BY PTMT_UPDATE_DATE DESC) = 1
 
 ),

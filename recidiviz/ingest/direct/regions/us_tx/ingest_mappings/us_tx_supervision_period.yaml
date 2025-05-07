@@ -67,6 +67,36 @@ output:
               - $else_if:
                   $equal:
                     - case_type
+                    - $literal("Substance abuse - PHASE 1")
+                $then:
+                  $enum_mapping:
+                    $raw_text: case_type
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - Substance abuse - PHASE 1
+              - $else_if:
+                  $equal:
+                    - case_type
+                    - $literal("Substance abuse - PHASE 2")
+                $then:
+                  $enum_mapping:
+                    $raw_text: case_type
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - Substance abuse - PHASE 2
+              - $else_if:
+                  $equal:
+                    - case_type
+                    - $literal("Substance abuse - PHASE 1B")
+                $then:
+                  $enum_mapping:
+                    $raw_text: case_type
+                    $mappings:
+                      StateSupervisionLevel.MAXIMUM:
+                        - Substance abuse - PHASE 1B
+              - $else_if:
+                  $equal:
+                    - case_type
                     - $literal("Electronic monitoring")
                 $then:
                   $enum_mapping:
@@ -122,15 +152,17 @@ output:
                     $mappings:
                       StateSupervisionCaseType.GENERAL:
                         - Regular
+                        # If TC program is completed then treat as regular case type
+                        - Substance abuse - COMPLETED
                       StateSupervisionCaseType.SEX_OFFENSE:
                         - Sex offender
                       StateSupervisionCaseType.DRUG_COURT:
-                        - Substance abuse
                         - Substance abuse - PHASE 1
                         - Substance abuse - PHASE 2
                         - Substance abuse - PHASE 3
                         - Substance abuse - PHASE 1B
-                        - Substance abuse - COMPLETED
+                        #TODO(#41754) Refactor the Phases logic to have it be historically acurate
+                        - Substance abuse
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
                         - Administrative
                         - Annual

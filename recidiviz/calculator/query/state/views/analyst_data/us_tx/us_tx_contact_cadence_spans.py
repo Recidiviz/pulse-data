@@ -29,16 +29,20 @@ from recidiviz.utils.metadata import local_project_id_override
 _VIEW_NAME = "us_tx_contact_cadence_spans"
 
 _QUERY_TEMPLATE = f"""WITH
--- Create periods of case type and supervision level information
+-- Create periods of case type and supervision level information. Whenever the client
+-- has a TC phase, assign the raw text as the case type.
 person_info AS (
    SELECT 
       sp.person_id,
       start_date,
       termination_date AS end_date,
       supervision_level,
-      case_type,
-      case_type_raw_text,
       sp.state_code,
+      CASE
+        WHEN case_type = "DRUG_COURT"
+            THEN case_type_raw_text
+        ELSE case_type
+      END AS case_type,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
       USING(supervision_period_id)
@@ -50,7 +54,7 @@ person_info_agg AS (
     {aggregate_adjacent_spans(
         table_name='person_info',
         index_columns=["person_id", "state_code"],
-        attribute=['supervision_level', 'case_type', 'case_type_raw_text'],
+        attribute=['supervision_level', 'case_type'],
         session_id_output_name='person_info_agg',
         end_date_field_name='end_date'
     )}
