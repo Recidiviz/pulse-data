@@ -1767,7 +1767,9 @@ US_TN:
     reference_views.us_tn_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_tn_suspension_of_direct_supervision_record: |-
-      Used to get supervision-office cities for SDS form.
+      Used to get supervision-office cities for SDS form. TODO(#42128): Shift to using
+      `location_metadata` for the SDS opportunity record if we can get city information
+      in `location_metadata` eventually.
   SupervisionPlan:
     analyst_data.us_tn_supervision_level_raw_text_sessions_inferred: |-
       Used to infer more accurate start and end dates for supervision-level sessions by

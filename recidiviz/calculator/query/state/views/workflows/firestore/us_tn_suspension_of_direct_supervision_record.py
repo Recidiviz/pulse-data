@@ -54,10 +54,6 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_FINES_FEES_CRITERION_NAME = (
     FINES_FEES_CRITERIA_GROUP.criteria_name
 )
 
-# TODO(#38270): Finish adding necessary information to opportunity record in accordance
-# with feedback from TTs.
-# TODO(#38270): Use ingested data for `form_information_supervision_office_location`
-# (from `location_metadata`, ideally).
 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
     WITH base AS (
         {join_current_task_eligibility_spans_with_external_id(
@@ -264,6 +260,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             'Life',
             CAST(DATE_DIFF(current_sentences.sentence_end_date_latest, pss.start_date, YEAR) AS STRING)
         ) AS form_information_supervision_duration,
+        /* TODO(#42128): Use ingested data for the office location (from
+        `location_metadata`, ideally). */
         site.AddressCity AS form_information_supervision_office_location,
     FROM base
     LEFT JOIN contact_latest_negative_arrest_check
