@@ -39,6 +39,13 @@ from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.utils.types import T
 
+# Modules with these suffixes are synced to Airflow as part of the deploy
+# recidiviz/tools/deploy/terraform/config/cloud_composer_source_files_to_copy
+ALLOWED_CUSTOM_PARSERS_MODULE_SUFFIXES = [
+    "_custom_parsers",
+    "_custom_enum_parsers",
+]
+
 
 @attr.s(kw_only=True)
 class CustomFunctionRegistry(ModuleCollectorMixin):
@@ -66,6 +73,20 @@ class CustomFunctionRegistry(ModuleCollectorMixin):
             expected_return_type: Expected return type for the specified function. If
                 the function return type does not match, this will throw.
         """
+
+        relative_module, function_name = function_reference.split(".", 1)
+
+        if not any(
+            relative_module.endswith(suffix)
+            for suffix in ALLOWED_CUSTOM_PARSERS_MODULE_SUFFIXES
+        ):
+            raise ValueError(
+                f"Cannot use function `{function_name}` from `{relative_module}`. All "
+                f"custom functions referenced in mappings via $custom or "
+                f"$custom_parser must live in a file suffixed with one of the "
+                f"following suffixes: {ALLOWED_CUSTOM_PARSERS_MODULE_SUFFIXES}"
+            )
+
         function = self.function_from_reference(function_reference)
         function_signature = inspect.signature(function)
 

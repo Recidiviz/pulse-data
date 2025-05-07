@@ -10,7 +10,7 @@ output:
       $conditional:
         - $if:
             $custom:
-              $function: fake_custom_conditionals.should_include_ssn
+              $function: fake_custom_parsers.should_include_ssn
               $args:
                 ssn: SSN
           $then: SSN

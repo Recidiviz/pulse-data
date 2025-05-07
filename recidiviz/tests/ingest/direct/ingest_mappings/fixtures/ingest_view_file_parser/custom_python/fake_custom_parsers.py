@@ -30,3 +30,7 @@ def normalize_address_roads(full_address: str, is_valid_address: bool) -> str:
     parts = full_address.split(", ")
     parts[0] = parts[0].replace("Street", "St").replace("Road", "Rd")
     return ", ".join(parts)
+
+
+def should_include_ssn(ssn: str) -> bool:
+    return ssn.startswith("123") or ssn.startswith("987")
