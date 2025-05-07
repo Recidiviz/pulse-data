@@ -46,9 +46,7 @@ _CRITERIA_NAME = "ASSESSED_RISK_LOW_WHILE_ON_SUPERVISION_AT_LEAST_2_YEARS"
 
 # TODO(#34709): Generalize this criterion. We might consider moving this criterion logic
 # into a criterion builder in the `general_criteria_builders.py` file, where it can be
-# generalized/parameterized. We also might want to pull out the risk-assessment logic
-# into a shared view or query fragment (or use `sessions.risk_assessment_score_sessions`
-# if possible).
+# generalized/parameterized.
 # TODO(#34751): Decide how to handle assessments with null `assessment_level` values.
 _QUERY_TEMPLATE = f"""
     WITH prioritized_supervision_sessions AS (
@@ -77,50 +75,15 @@ _QUERY_TEMPLATE = f"""
             )}
         )
     ),
-    risk_assessments_prioritized AS (
-        /* Though `assessment_score_sessions_materialized` is already sessionized, there
-        can be overlapping sessions there if multiple assessment types have been used to
-        assess risk in a state. To work around this, we'll take the assessment data from
-        that view but end up constructing criterion-specific spans later in this query,
-        since we want to avoid having overlapping spans. */
-        SELECT
-            state_code,
-            person_id,
-            assessment_level,
-            assessment_date,
-        FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
-        WHERE assessment_class='RISK'
-        /* If someone has an assessment with a null `assessment_level` or a non-'LOW'
-        `assessment_level` on a given day, prioritize that assessment over any 'LOW'
-        assessment on the same day. Because we're just checking for 'LOW' vs. non-'LOW'
-        in this criterion, it doesn't matter which of the non-'LOW' assessments we
-        choose in case there are multiple. We just need to know whether it was 'LOW' or
-        not. */
-        QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY state_code, person_id, assessment_date
-            ORDER BY 
-                CASE
-                    WHEN COALESCE(assessment_level, 'UNKNOWN')!='LOW' THEN 1
-                    ELSE 2
-                    END
-        ) = 1
-    ),
     risk_level_spans AS (
-        /* Create risk-assessment spans. We create non-overlapping spans such that if a
-        person has a previous risk assessment of one type, that span will end when a
-        subsequent risk assessment is completed, even if the subsequent assessment is of
-        a different type (as long as it's still a risk assessment). */
         SELECT
             state_code,
             person_id,
             assessment_level,
             assessment_date,
             assessment_date AS start_date,
-            LEAD(assessment_date) OVER (
-                PARTITION BY state_code, person_id
-                ORDER BY assessment_date
-            ) AS end_date_exclusive,
-        FROM risk_assessments_prioritized
+            score_end_date_exclusive AS end_date_exclusive,
+        FROM `{{project_id}}.{{sessions_dataset}}.risk_assessment_score_sessions_materialized`
     ),
     assessed_risk_levels_during_supervision AS (
         SELECT
