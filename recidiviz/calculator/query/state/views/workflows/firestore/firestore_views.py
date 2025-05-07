@@ -150,6 +150,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_re
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_supervision_tasks_record import (
+    US_ND_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_atp_form_record import (
     US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER,
 )
@@ -233,6 +236,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
     US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
     US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER,
+    US_ND_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
     US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
     US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER,
