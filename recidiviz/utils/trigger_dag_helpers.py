@@ -19,12 +19,36 @@ import json
 import logging
 from typing import Optional
 
+from google.cloud.orchestration.airflow.service_v1 import (
+    EnvironmentsClient,
+    ExecuteAirflowCommandRequest,
+)
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import pubsub_helper
+from recidiviz.utils.metadata import project_id
 
 
-def trigger_calculation_dag_pubsub(
+def trigger_dag_run(dag_id: str, conf: dict) -> None:
+    client = EnvironmentsClient()
+    response = client.execute_airflow_command(
+        ExecuteAirflowCommandRequest(
+            environment=client.environment_path(
+                project=project_id(),
+                location="us-central1",
+                environment="orchestration-v2",
+            ),
+            command="dags",
+            subcommand="trigger",
+            parameters=[dag_id, "--conf", json.dumps(conf)],
+        )
+    )
+
+    if response.error:
+        raise ValueError(f"Failed to trigger DAG {dag_id}: {response.error}")
+
+
+def trigger_calculation_dag(
     ingest_instance: DirectIngestInstance,
     state_code_filter: Optional[StateCode],
     sandbox_prefix: Optional[str] = None,
@@ -51,21 +75,19 @@ def trigger_calculation_dag_pubsub(
         )
         state_code_filter = None
 
-    pubsub_helper.publish_message_to_topic(
-        topic="v1.calculator.trigger_calculation_pipelines",
-        message=json.dumps(
-            {
-                "state_code_filter": (
-                    state_code_filter.value if state_code_filter else None
-                ),
-                "ingest_instance": ingest_instance.value,
-                "sandbox_prefix": sandbox_prefix,
-            }
-        ),
+    trigger_dag_run(
+        f"{project_id()}_calculation_dag",
+        conf={
+            "state_code_filter": (
+                state_code_filter.value if state_code_filter else None
+            ),
+            "ingest_instance": ingest_instance.value,
+            "sandbox_prefix": sandbox_prefix,
+        },
     )
 
 
-def trigger_raw_data_import_dag_pubsub(
+def trigger_raw_data_import_dag(
     *,
     raw_data_instance: DirectIngestInstance,
     state_code_filter: Optional[StateCode],
@@ -83,14 +105,12 @@ def trigger_raw_data_import_dag_pubsub(
             "Cannot trigger a state-agnostic SECONDARY dag run; please provide a state_code_filter if you want to trigger a raw data import DAG run in SECONDARY"
         )
 
-    pubsub_helper.publish_message_to_topic(
-        topic="v1.ingest.trigger_raw_data_import_dag",
-        message=json.dumps(
-            {
-                "state_code_filter": (
-                    state_code_filter.value if state_code_filter else None
-                ),
-                "ingest_instance": raw_data_instance.value,
-            }
-        ),
+    trigger_dag_run(
+        f"{project_id()}_raw_data_import_dag",
+        conf={
+            "state_code_filter": (
+                state_code_filter.value if state_code_filter else None
+            ),
+            "ingest_instance": raw_data_instance.value,
+        },
     )

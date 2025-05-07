@@ -120,12 +120,6 @@ locals {
   }
 }
 
-import {
-  for_each = local.jii_jobs
-  to       = google_cloud_run_v2_job.jii_jobs[each.key]
-  id       = each.value.id
-}
-
 resource "google_cloud_run_v2_job" "jii_jobs" {
   for_each = local.jii_jobs
   name     = each.key

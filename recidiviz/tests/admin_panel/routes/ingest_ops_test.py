@@ -581,7 +581,7 @@ class IngestOpsEndpointTests(TestCase):
         file_manager_mock().transfer_metadata_to_new_instance.assert_called_once()
         import_manager_mock().transfer_metadata_to_new_instance.assert_called_once()
 
-    @patch("recidiviz.admin_panel.routes.ingest_ops.trigger_raw_data_import_dag_pubsub")
+    @patch("recidiviz.admin_panel.routes.ingest_ops.trigger_raw_data_import_dag")
     def test_trigger_raw_data_dag(
         self,
         pubsub_mock: mock.MagicMock,

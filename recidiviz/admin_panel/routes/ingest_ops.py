@@ -70,8 +70,8 @@ from recidiviz.pipelines.ingest.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.utils.trigger_dag_helpers import (
-    trigger_calculation_dag_pubsub,
-    trigger_raw_data_import_dag_pubsub,
+    trigger_calculation_dag,
+    trigger_raw_data_import_dag,
 )
 from recidiviz.utils.types import assert_type
 
@@ -443,7 +443,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            trigger_calculation_dag_pubsub(DirectIngestInstance.PRIMARY, state_code)
+            trigger_calculation_dag(DirectIngestInstance.PRIMARY, state_code)
             return (
                 "",
                 HTTPStatus.OK,
@@ -547,7 +547,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            trigger_raw_data_import_dag_pubsub(
+            trigger_raw_data_import_dag(
                 raw_data_instance=raw_data_instance, state_code_filter=state_code
             )
             return (

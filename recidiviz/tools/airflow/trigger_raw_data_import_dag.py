@@ -30,7 +30,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.trigger_dag_helpers import trigger_raw_data_import_dag_pubsub
+from recidiviz.utils.trigger_dag_helpers import trigger_raw_data_import_dag
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -72,7 +72,7 @@ def trigger_state_specific_raw_data_import_dag(
     prompt_for_confirmation(
         f"Trigger dag in [{project_id}] for [{raw_data_instance.value}] for [{state_code_filter.value if state_code_filter else 'all states'}]"
     )
-    trigger_raw_data_import_dag_pubsub(
+    trigger_raw_data_import_dag(
         raw_data_instance=raw_data_instance, state_code_filter=state_code_filter
     )
 

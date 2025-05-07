@@ -1,0 +1,53 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-123
+
+import:
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+settings:
+  context:
+    project_id: recidiviz-123
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+
+components:
+  terraform:
+    dag-triggering:
+      vars:
+        composer:
+          location: us-central1
+          environment: orchestration-v2
+
+        dags:
+          hourly_monitoring_dag:
+            schedule:
+              - 0 * * * *
+
+          # On weekdays, we want to run the calc DAG twice: once at 6am EST to have data fresh for
+          # the start of the east coast work day (9 am EST) and once at 7 am PST for the start of
+          # the west coast work day (10 am PST, to account for when files actually arrive)
+          calculation_dag:
+            schedule:
+              - 0 3,7 * * 1-5
+              # On weekends, run it once at 6am EST
+              - 0 3 * * 6,7
+            config:
+              INGEST_INSTANCE: PRIMARY
+
+          # SFTP runs every hour at the 45th minute
+          sftp_dag:
+            schedule:
+              - 45 * * * *
+
+          # On weekdays, we want to run the raw data import DAG twice: once at 5 am EST to have data
+          # fresh for the start of the "east coast work day" calc DAG (6 am EST) and once at
+          # 6 am PST to have data fresh for the "west coast work day" calc DAG" (7 am PST)
+          raw_data_import_dag:
+            schedule:
+              - 0 2,6 * * 1-5
+              # On weekends run it once at 5am EST
+              - 0 2 * * 6,7
+            config:
+              INGEST_INSTANCE: PRIMARY

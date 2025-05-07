@@ -24,7 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
+from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -53,6 +53,6 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        trigger_calculation_dag_pubsub(
+        trigger_calculation_dag(
             DirectIngestInstance.PRIMARY, known_args.state_code_filter
         )
