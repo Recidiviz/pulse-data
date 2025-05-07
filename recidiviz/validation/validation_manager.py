@@ -20,8 +20,9 @@ import datetime
 import logging
 import re
 import uuid
+from collections import defaultdict
 from concurrent import futures
-from itertools import groupby
+from itertools import chain, groupby
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
@@ -36,20 +37,15 @@ from recidiviz.monitoring import trace
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.utils import metadata, structured_logging
-from recidiviz.utils.environment import (
-    gcp_only,
-    get_admin_panel_base_url,
-    get_environment_for_project,
-)
-from recidiviz.utils.github import (
-    RECIDIVIZ_DATA_REPO,
-    format_region_specific_ticket_title,
-    github_helperbot_client,
-)
+from recidiviz.utils.environment import gcp_only, get_environment_for_project
+from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
     get_all_deployed_validations,
     get_validation_global_config,
     get_validation_region_configs,
+)
+from recidiviz.validation.validation_github_ticket_manager import (
+    ValidationGithubTicketRegionManager,
 )
 from recidiviz.validation.validation_models import (
     DataValidationJob,
@@ -163,8 +159,9 @@ def execute_validation(
 
     # Perform all validations and track failures
     failed_to_run_validations: List[DataValidationJob] = []
-    failed_soft_validations: List[DataValidationJobResult] = []
-    failed_hard_validations: List[DataValidationJobResult] = []
+    validation_results: dict[
+        ValidationResultStatus, list[DataValidationJobResult]
+    ] = defaultdict(list)
     results_to_store: List[ValidationResultForStorage] = []
     with futures.ThreadPoolExecutor(
         # Conservatively allow only half as many workers as allowed connections.
@@ -193,10 +190,7 @@ def execute_validation(
                         runtime_seconds=runtime_seconds,
                     )
                 )
-                if result.validation_result_status == ValidationResultStatus.FAIL_HARD:
-                    failed_hard_validations.append(result)
-                if result.validation_result_status == ValidationResultStatus.FAIL_SOFT:
-                    failed_soft_validations.append(result)
+                validation_results[result.validation_result_status].append(result)
                 logging.info(
                     "Finished job [%s] for region [%s] in %.2f seconds",
                     job.validation.validation_name,
@@ -221,27 +215,28 @@ def execute_validation(
 
     store_validation_results_in_big_query(results_to_store)
 
-    capture_metrics(failed_to_run_validations, failed_hard_validations)
+    capture_metrics(
+        failed_to_run_validations, validation_results[ValidationResultStatus.FAIL_HARD]
+    )
 
     # Log results to console
     _log_results(
         failed_to_run_validations=failed_to_run_validations,
-        failed_soft_validations=failed_soft_validations,
-        failed_hard_validations=failed_hard_validations,
+        failed_soft_validations=validation_results[ValidationResultStatus.FAIL_SOFT],
+        failed_hard_validations=validation_results[ValidationResultStatus.FAIL_HARD],
     )
     logging.info(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
-    # Only create GitHub tickets for hard failures on primary ingest instance
     if (
-        failed_hard_validations
-        and ingest_instance == DirectIngestInstance.PRIMARY
+        ingest_instance == DirectIngestInstance.PRIMARY
         and file_tickets_on_failure
+        and validation_results
     ):
         # Put GitHub filing in a try/except so we don't fail the endpoint completely if we can't
         # talk to GitHub for whatever reason.
         try:
-            _file_tickets_for_failing_validations(failed_hard_validations)
+            _handle_tickets_for_validations(validation_results)
         except Exception as e:
             logging.error("Error filing github tickets: %s", e)
     return run_id, len(validation_jobs)
@@ -354,41 +349,27 @@ def _fetch_validation_jobs_to_perform(
     return validation_jobs
 
 
-def _file_tickets_for_failing_validations(
-    failed_validations: List[DataValidationJobResult],
+def _handle_tickets_for_validations(
+    validation_results: dict[ValidationResultStatus, list[DataValidationJobResult]]
 ) -> None:
-    """Files GitHub tickets for failed validations that do not already have an associated ticket."""
+    """Files GitHub tickets for failed validations that do not already have an associated
+    ticket, and closes GitHub tickets for validations that have an open ticket but are
+    no longer in a failing status.
+    """
+
     logging.info("Filing GitHub tickets for failed validations")
     env = get_environment_for_project(project=metadata.project_id()).value
-    github_client = github_helperbot_client()
+    github_client = github_helperbot_client().get_repo(RECIDIVIZ_DATA_REPO)
 
     for region, validations in groupby(
-        sorted(failed_validations, key=lambda v: v.validation_job.region_code),
+        sorted(
+            chain.from_iterable(validation_results.values()),
+            key=lambda v: v.validation_job.region_code,
+        ),
         lambda v: v.validation_job.region_code,
     ):
-        issue_labels = ["Validation", f"Region: {region}", "Team: State Pod"]
-        existing_issues = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_issues(
-            state="open", labels=issue_labels
-        )
-        for validation in validations:
-            name = validation.validation_job.validation.validation_name
-            name_str = f"`{name}`"
-            title_str = format_region_specific_ticket_title(
-                region_code=region,
-                environment=env,
-                title=name_str,
-            )
-            ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
-Admin Panel link: {get_admin_panel_base_url()}/admin/validation_metadata/status/details/{name}?stateCode={region}
-Failure details: {validation.result_details.failure_description()}
-Description: {validation.validation_job.validation.view_builder.description}
-"""
-            if not any(title_str == issue.title for issue in existing_issues):
-                logging.info(
-                    "Filing ticket in region %s for validation %s", region, name_str
-                )
-                github_client.get_repo(RECIDIVIZ_DATA_REPO).create_issue(
-                    title=title_str,
-                    body=ticket_body,
-                    labels=issue_labels,
-                )
+        ValidationGithubTicketRegionManager(
+            client=github_client,
+            state_code=StateCode(region.upper()),
+            env=env,
+        ).handle_results(results=validations)

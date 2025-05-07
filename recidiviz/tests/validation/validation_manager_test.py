@@ -19,12 +19,11 @@
 import logging
 from typing import List, Optional, Set
 from unittest import TestCase
-from unittest.mock import call
+from unittest.mock import MagicMock, call, create_autospec, patch
 
 import attr
 import mock
 from github.Issue import Issue
-from mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -228,9 +227,7 @@ class TestExecuteValidationRequest(TestCase):
         self.trace_patcher.stop()
         self.otl_mock.tear_down()
 
-    @patch(
-        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
-    )
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -247,8 +244,19 @@ class TestExecuteValidationRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_capture_metrics: MagicMock,
-        mock_file_tickets_for_failing_validations: MagicMock,
+        mock_github_client: MagicMock,
     ) -> None:
+        mock_github_repo = MagicMock()
+        mock_github_repo.get_issues.return_value = [
+            Issue(
+                requester=MagicMock(),
+                headers=MagicMock(),
+                attributes={"title": "[staging][US_XX] `test_3`"},
+                completed=MagicMock(),
+            )
+        ]
+        mock_github_client.return_value.get_repo.return_value = mock_github_repo
+
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0],
@@ -267,7 +275,8 @@ class TestExecuteValidationRequest(TestCase):
             mock_run_job.assert_any_call(job)
 
         mock_capture_metrics.assert_called_with([], [])
-        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_github_repo.create_issue.assert_not_called()
+        mock_github_repo.get_issues.assert_called_once()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
@@ -281,9 +290,7 @@ class TestExecuteValidationRequest(TestCase):
             sandbox_dataset_prefix=None,
         )
 
-    @patch(
-        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
-    )
+    @patch("recidiviz.validation.validation_manager._handle_tickets_for_validations")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -300,7 +307,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_capture_metrics: MagicMock,
-        mock_file_tickets_for_failing_validations: MagicMock,
+        mock_handle_tickets_for_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
@@ -321,7 +328,7 @@ class TestExecuteValidationRequest(TestCase):
             mock_run_job.assert_any_call(job)
 
         mock_capture_metrics.assert_called_with([], [])
-        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_handle_tickets_for_validations.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
@@ -368,13 +375,17 @@ class TestExecuteValidationRequest(TestCase):
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_github_repo = MagicMock()
+        mock_issue = create_autospec(Issue)
+        mock_issue.title = "[staging][US_XX] `test_5`"
+
         mock_github_repo.get_issues.return_value = [
             Issue(
                 requester=MagicMock(),
                 headers=MagicMock(),
                 attributes={"title": "[staging][US_XX] `test_3`"},
                 completed=MagicMock(),
-            )
+            ),
+            mock_issue,
         ]
         mock_github_client.return_value.get_repo.return_value = mock_github_repo
         first_failure = DataValidationJobResult(
@@ -402,6 +413,12 @@ class TestExecuteValidationRequest(TestCase):
                     validation_status=ValidationResultStatus.SUCCESS
                 ),
             ),
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[4],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
             first_failure,
             second_failure,
             third_failure,
@@ -415,10 +432,12 @@ class TestExecuteValidationRequest(TestCase):
         )
 
         self.assertEqual(len(self._TEST_VALIDATIONS), mock_run_job.call_count)
+
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
+
         mock_capture_metrics.assert_called_with(
-            UnorderedCollection([self._TEST_VALIDATIONS[4]]),
+            [],
             UnorderedCollection([first_failure, second_failure, third_failure]),
         )
         mock_store_validation_results.assert_called_once()
@@ -434,7 +453,7 @@ class TestExecuteValidationRequest(TestCase):
             sandbox_dataset_prefix=None,
         )
 
-        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_labels = ["Validation", "Team: State Pod", "Region: US_XX"]
         expected_calls = [
             call(
                 title="[staging][US_XX] `test_2`",
@@ -450,6 +469,9 @@ class TestExecuteValidationRequest(TestCase):
         self.assertCountEqual(
             mock_github_repo.create_issue.call_args_list, expected_calls
         )
+
+        mock_issue.create_comment.assert_called_once()
+        mock_issue.edit.assert_called_with(state="closed", state_reason="completed")
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
@@ -544,7 +566,7 @@ class TestExecuteValidationRequest(TestCase):
             sandbox_dataset_prefix=None,
         )
 
-        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_labels = ["Validation", "Team: State Pod", "Region: US_XX"]
         expected_calls = [
             call(
                 title="[staging][US_XX] `test_2`",
@@ -600,9 +622,7 @@ class TestExecuteValidationRequest(TestCase):
             sandbox_dataset_prefix=None,
         )
 
-    @patch(
-        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
-    )
+    @patch("recidiviz.validation.validation_manager._handle_tickets_for_validations")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -619,7 +639,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         _mock_capture_metrics: MagicMock,
-        mock_file_tickets_for_failing_validations: MagicMock,
+        mock_handle_tickets_for_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
@@ -656,11 +676,9 @@ class TestExecuteValidationRequest(TestCase):
             region_code=StateCode.US_XX.value,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
-        mock_file_tickets_for_failing_validations.assert_called()
+        mock_handle_tickets_for_validations.assert_called()
 
-    @patch(
-        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
-    )
+    @patch("recidiviz.validation.validation_manager._handle_tickets_for_validations")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -677,7 +695,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         _mock_capture_metrics: MagicMock,
-        mock_file_tickets_for_failing_validations: MagicMock,
+        mock_handle_tickets_for_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
@@ -715,7 +733,7 @@ class TestExecuteValidationRequest(TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             file_tickets_on_failure=False,
         )
-        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_handle_tickets_for_validations.assert_not_called()
 
 
 class TestFetchValidations(TestCase):

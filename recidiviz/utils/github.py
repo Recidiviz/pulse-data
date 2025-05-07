@@ -68,5 +68,8 @@ def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -
 def format_region_specific_ticket_title(
     *, region_code: str, environment: str, title: str
 ) -> str:
-    """Fomatting utility for a region-specifc Github issue title."""
+    """Formatting utility for a region-specific Github issue title. Please change this
+    function with CAUTION as it will cause duplicate GitHub issues for airflow and
+    validation failures.
+    """
     return f"[{environment}][{region_code.upper()}] {title}"
