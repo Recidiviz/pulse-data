@@ -34,7 +34,7 @@ schema:
     mode: NULLABLE
     description: Twilio Messaging service that the message is associated with
   - name: time_received
-    type: DATETIME
+    type: TIMESTAMP
     mode: NULLABLE
     description: Time that Twilio made the request to the Webhook URL
   - name: state_code
