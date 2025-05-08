@@ -2242,7 +2242,14 @@ class BigQueryClientImpl(BigQueryClient):
         create_job.result()
 
         table = self.get_table(destination_address)
-        self.apply_row_level_permissions(table)
+        try:
+            self.apply_row_level_permissions(table)
+        except Exception:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "The view creation query was successful, but row-level permissions were not applied.",
+                view.materialized_address.to_str(),
+            )
 
         description = view.materialized_table_bq_description
         if description == table.description:
