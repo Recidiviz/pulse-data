@@ -18,6 +18,7 @@
 import unittest
 from datetime import date, datetime
 from typing import Dict, List, Type
+from unittest.mock import patch
 
 import sqlalchemy
 from more_itertools import one
@@ -39,6 +40,7 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
@@ -54,6 +56,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateTaskDeadline,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonExternalId,
     NormalizedStatePersonStaffRelationshipPeriod,
 )
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
@@ -1776,4 +1780,222 @@ class TestNormalizedStatePersonStaffRelationshipPeriodChecks(unittest.TestCase):
                 "be able to prioritize that relationship."
             ],
             errors,
+        )
+
+
+class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
+    """Test that root entity checks specific to NormalizedStatePersonExternalId are
+    valid.
+    """
+
+    def setUp(self) -> None:
+        self.allowed_multiple_ids_patcher = patch(
+            "recidiviz.pipelines.ingest.state.validator.person_external_id_types_with_allowed_multiples_per_person"
+        )
+        self.allowed_multiple_ids_patcher.start().return_value = [
+            "US_XX_ID_TYPE",
+            "US_XX_ID_TYPE_2",
+        ]
+
+    def tearDown(self) -> None:
+        self.allowed_multiple_ids_patcher.stop()
+
+    def _make_normalized_external_id(
+        self,
+        *,
+        index: int,
+        external_id: str,
+        is_current_display_id_for_type: bool,
+        id_type: str = "US_XX_ID_TYPE",
+    ) -> NormalizedStatePersonExternalId:
+        return NormalizedStatePersonExternalId(
+            person_external_id_id=index,
+            state_code=StateCode.US_XX.value,
+            external_id=external_id,
+            id_type=id_type,
+            is_current_display_id_for_type=is_current_display_id_for_type,
+            id_active_from_datetime=None,
+            id_active_to_datetime=None,
+        )
+
+    def make_person(
+        self,
+        *,
+        external_ids: list[NormalizedStatePersonExternalId],
+    ) -> NormalizedStatePerson:
+        """Helper to create a NormalizedStatePerson with given external IDs.
+
+        external_ids: list of tuples (external_id, is_current_display_id_for_type)
+        """
+        person = NormalizedStatePerson(
+            state_code=StateCode.US_XX.value,
+            person_id=1,
+            external_ids=external_ids,
+        )
+        for pei in person.external_ids:
+            pei.person = person
+        return person
+
+    def test_valid_exactly_one_display_id(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1, external_id="ID1", is_current_display_id_for_type=False
+                ),
+                self._make_normalized_external_id(
+                    index=2, external_id="ID2", is_current_display_id_for_type=True
+                ),
+                self._make_normalized_external_id(
+                    index=3, external_id="ID3", is_current_display_id_for_type=False
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(errors, [])
+
+    def test_error_multiple_ids_of_type_with_multiples_disallowed(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_NO_MULTIPLES_ALLOWED",
+                    is_current_display_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    id_type="US_XX_NO_MULTIPLES_ALLOWED",
+                    is_current_display_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(
+            [
+                "Duplicate external id types for [NormalizedStatePerson] with id [1]: "
+                "US_XX_NO_MULTIPLES_ALLOWED"
+            ],
+            errors,
+        )
+
+    def test_error_no_display_id_set(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1, external_id="ID1", is_current_display_id_for_type=False
+                ),
+                self._make_normalized_external_id(
+                    index=2, external_id="ID2", is_current_display_id_for_type=False
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found no NormalizedStatePersonExternalId.*with type \[US_XX_ID_TYPE\].*"
+            r"exactly one must be set",
+        )
+
+    def test_error_multiple_display_ids_set(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1, external_id="ID1", is_current_display_id_for_type=True
+                ),
+                self._make_normalized_external_id(
+                    index=2, external_id="ID2", is_current_display_id_for_type=True
+                ),
+                self._make_normalized_external_id(
+                    index=3, external_id="ID3", is_current_display_id_for_type=False
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found multiple \(2\) NormalizedStatePersonExternalId.*with type "
+            r"\[US_XX_ID_TYPE\].*exactly one must be set",
+        )
+
+    def test_valid_multiple_types_with_one_display_each(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ABC123",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=True,
+                ),
+            ]
+        )
+
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(errors, [])
+
+    def test_multiple_errors_for_multiple_types(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                # Type US_XX_ID_TYPE has no display ID
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=False,
+                ),
+                # Type US_XX_ID_TYPE_2 has two display IDs
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ABC123",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="DEF456",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=True,
+                ),
+            ]
+        )
+
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(
+            [
+                (
+                    "Found multiple (2) NormalizedStatePersonExternalId on person "
+                    "[NormalizedStatePerson(person_id=1, "
+                    "external_ids=[NormalizedStatePersonExternalId(external_id='ID1', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "person_external_id_id=1),NormalizedStatePersonExternalId(external_id='ABC123', "
+                    "id_type='US_XX_ID_TYPE_2', "
+                    "person_external_id_id=2),NormalizedStatePersonExternalId(external_id='DEF456', "
+                    "id_type='US_XX_ID_TYPE_2', person_external_id_id=3)])] with type "
+                    "[US_XX_ID_TYPE_2] that are designated as "
+                    "is_current_display_id_for_type=True. If a person has any ids of a given "
+                    "id_type, exactly one must be set as the display id."
+                ),
+                (
+                    "Found no NormalizedStatePersonExternalId on person "
+                    "[NormalizedStatePerson(person_id=1, "
+                    "external_ids=[NormalizedStatePersonExternalId(external_id='ID1', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "person_external_id_id=1),NormalizedStatePersonExternalId(external_id='ABC123', "
+                    "id_type='US_XX_ID_TYPE_2', "
+                    "person_external_id_id=2),NormalizedStatePersonExternalId(external_id='DEF456', "
+                    "id_type='US_XX_ID_TYPE_2', person_external_id_id=3)])] with type "
+                    "[US_XX_ID_TYPE] that are designated as is_current_display_id_for_type=True. "
+                    "If a person has any ids of a given id_type, exactly one must be set as the "
+                    "display id."
+                ),
+            ],
+            sorted(errors),
         )

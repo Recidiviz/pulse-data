@@ -28,7 +28,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonExternalId,
     NormalizedStatePersonStaffRelationshipPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -62,6 +61,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.super
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalize_person_external_ids import (
+    get_normalized_person_external_ids,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_person_staff_relationship_periods import (
     get_normalized_person_staff_relationship_periods,
 )
@@ -80,6 +82,7 @@ from recidiviz.pipelines.utils.period_utils import (
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_assessment_normalization_delegate,
     get_state_specific_incarceration_period_normalization_delegate,
+    get_state_specific_normalization_delegate,
     get_state_specific_sentence_normalization_delegate,
     get_state_specific_supervision_period_normalization_delegate,
     get_state_specific_violation_response_normalization_delegate,
@@ -96,24 +99,12 @@ def build_normalized_state_person(
     person_id = assert_type(person.person_id, int)
     state_code = StateCode(person.state_code)
 
-    normalized_person_external_ids = [
-        NormalizedStatePersonExternalId(
-            person_external_id_id=assert_type(pei.person_external_id_id, int),
-            state_code=pei.state_code,
-            external_id=pei.external_id,
-            id_type=pei.id_type,
-            # TODO(#41557): Actually build normalization logic that picks exactly one
-            #  is_current_display_id_for_type=True
-            is_current_display_id_for_type=(
-                pei.is_current_display_id_for_type
-                if pei.is_current_display_id_for_type is not None
-                else True
-            ),
-            id_active_from_datetime=pei.id_active_from_datetime,
-            id_active_to_datetime=pei.id_active_from_datetime,
-        )
-        for pei in person.external_ids
-    ]
+    normalized_person_external_ids = get_normalized_person_external_ids(
+        state_code=state_code,
+        person_id=person_id,
+        external_ids=person.external_ids,
+        delegate=get_state_specific_normalization_delegate(state_code.value),
+    )
 
     normalized_violations = ViolationResponseNormalizationManager(
         person_id=person_id,

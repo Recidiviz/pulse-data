@@ -15,6 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_NE implementation of the StateSpecificNormalizationDelegate."""
+from recidiviz.common.constants.state.external_id_types import US_NE_ID_NBR
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StatePersonExternalId
+from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_alphabetically_highest_person_external_id,
+)
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
@@ -22,3 +28,23 @@ from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization
 
 class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
     """US_NE implementation of the StateSpecificNormalizationDelegate."""
+
+    def select_display_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        id_type: str,
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        # TODO(#41840): Translate logic that is currently in the
+        #  product_display_person_external_ids view here and then remove this block - we
+        #  should not need to do any normalization to choose the correct ID.
+        if id_type == US_NE_ID_NBR:
+            return select_alphabetically_highest_person_external_id(
+                person_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per person and no "
+            f"is_current_display_id_for_type set at ingest time: "
+            f"{person_external_ids_of_type}"
+        )

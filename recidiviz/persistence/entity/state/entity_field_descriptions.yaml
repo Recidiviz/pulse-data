@@ -325,8 +325,11 @@ state_person_external_id:
       data systems that we ingest, this may be the name of the system from the id
       emanates.
     is_current_display_id_for_type: >-
-      Denotes that this id is the version for the id for this id_type that should be used for display purposes in 
-      products that display ids of this id_type.
+      When True, denotes that this id is the version for the id for this id_type that should be used for display 
+      purposes in products that display ids of this id_type. If this is not hydrated at ingest time, it must be hydrated
+      at normalization time. For id types where a person can have multiple external ids of that type, delegate logic 
+      must be added to the appropriate StateSpecificNormalizationDelegate subclass to choose the proper display id (i.e.
+      the most current / active id) when there are multiple.
     id_active_from_datetime: >-
       Optional field that specifies when this id was issued / became valid for this person. This can be hydrated if it 
       is useful to know this information when hydrating is_current_display_id_for_type at normalization time.

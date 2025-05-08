@@ -18,9 +18,14 @@
 """
 import abc
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
+)
+from recidiviz.pipelines.ingest.state.validator import (
+    person_external_id_types_with_allowed_multiples_per_person,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -31,6 +36,41 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions about running normalization logic in
     ingest.
     """
+
+    def select_display_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        id_type: str,
+        # pylint: disable=unused-argument
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        """Given a list of external_ids of the given |id_type|, returns the one that
+        should be used as the "display" external id in products that display person
+        external_ids of this type.
+
+        States with id types that have multiple of that type per person will need to
+        provide a state-specific implementation of this delegate method.
+        """
+        if id_type not in person_external_id_types_with_allowed_multiples_per_person(
+            state_code
+        ):
+            raise ValueError(
+                f"Person external_id type [{id_type}] should never have multiple ids "
+                f"of a given type. We should have never called "
+                f"select_display_id_for_person_external_ids_of_type(). If you expect "
+                f"that a single person can have multiple {id_type} ids, update the "
+                f"exemptions list in "
+                f"person_external_id_types_with_allowed_multiples_per_person()."
+            )
+
+        raise NotImplementedError(
+            f"No implementation of "
+            f"select_display_id_for_person_external_ids_of_type(), but called for "
+            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
+            f"allow multiple per person, this function must be implemented in the "
+            f"appropriate state-specific subclass of "
+            f"StateSpecificNormalizationDelegate."
+        )
 
     def extra_entities_generated_via_normalization(
         self,

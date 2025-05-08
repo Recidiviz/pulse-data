@@ -20,30 +20,6 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Type
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
-from recidiviz.common.constants.state.external_id_types import (
-    US_AR_PARTYID,
-    US_AZ_PERSON_ID,
-    US_CA_BADGE_NO,
-    US_IX_CIS_EMPL_CD,
-    US_IX_EMPLOYEE,
-    US_IX_STAFF_ID,
-    US_ME_EMPLOYEE,
-    US_MI_COMPAS_USER,
-    US_MI_DOC_BOOK,
-    US_MI_OMNI_USER,
-    US_ND_DOCSTARS_OFFICER,
-    US_ND_ELITE,
-    US_ND_ELITE_BOOKING,
-    US_ND_SID,
-    US_NE_ID_NBR,
-    US_PA_CONT,
-    US_PA_INMATE,
-    US_PA_PBPP,
-    US_PA_PBPP_POSNO,
-    US_TX_EMAIL,
-    US_TX_STAFF_ID,
-    US_TX_TDCJ,
-)
 from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
@@ -80,6 +56,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
+from recidiviz.pipelines.ingest.state.multiple_external_id_helpers import (
+    person_external_id_types_with_allowed_multiples_per_person,
+    staff_external_id_types_with_allowed_multiples_per_person,
+)
 from recidiviz.utils.types import assert_type
 
 STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS = {
@@ -88,56 +68,6 @@ STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS = {
     # TODO(#37679): Remove overlapping periods
     StateCode.US_ND.value,
 }
-
-
-def person_external_id_types_with_allowed_multiples_per_person(
-    state_code: StateCode,
-) -> set[str]:
-    """Returns the person external_id id_types where we expect / allow that a single
-    StatePerson has multiple StatePersonExternalId of this type.
-    """
-
-    # DO NOT ADD STATE / ID TYPES TO THIS UNLESS YOU FEEL CONFIDENT THAT IT'S "EXPECTED"
-    # FOR A PERSON TO HAVE MULTIPLE IDS OF THE GIVEN TYPE (i.e. they get assigned a new
-    # id for every new interaction with the system). IF ONLY A HANDFUL OF PEOPLE HAVE
-    # DUPLICATES, IT'S LIKELY A DATA ENTRY ERROR AND YOU SHOULD FIX VIA RAW DATA
-    # MIGRATIONS OR BY FILTERING OUT THE RAW DATA.
-    allowed_types_by_state = {
-        StateCode.US_MI: {US_MI_DOC_BOOK},
-        StateCode.US_ND: {US_ND_ELITE_BOOKING, US_ND_SID, US_ND_ELITE},
-        StateCode.US_NE: {US_NE_ID_NBR},
-        StateCode.US_PA: {US_PA_INMATE, US_PA_CONT, US_PA_PBPP},
-        StateCode.US_TX: {US_TX_TDCJ},
-    }
-
-    return allowed_types_by_state.get(state_code, set())
-
-
-def staff_external_id_types_with_allowed_multiples_per_person(
-    state_code: StateCode,
-) -> set[str]:
-    """Returns the staff external_id id_types where we expect / allow that a single
-    StateStaff has multiple StateStaffExternalId of this type.
-    """
-
-    # DO NOT ADD STATE / ID TYPES TO THIS UNLESS YOU FEEL CONFIDENT THAT IT'S "EXPECTED"
-    # FOR A STAFF MEMBER TO HAVE MULTIPLE IDS OF THE GIVEN TYPE (i.e. they get assigned
-    # a new id for every new stint of employment). IF ONLY A HANDFUL OF STAFF
-    # HAVE DUPLICATES, IT'S LIKELY A DATA ENTRY ERROR AND YOU SHOULD FIX VIA RAW DATA
-    # MIGRATIONS OR BY FILTERING OUT THE RAW DATA.
-    allowed_types_by_state = {
-        StateCode.US_AR: {US_AR_PARTYID},
-        StateCode.US_AZ: {US_AZ_PERSON_ID},
-        StateCode.US_CA: {US_CA_BADGE_NO},
-        StateCode.US_IX: {US_IX_CIS_EMPL_CD, US_IX_EMPLOYEE, US_IX_STAFF_ID},
-        StateCode.US_ME: {US_ME_EMPLOYEE},
-        StateCode.US_MI: {US_MI_COMPAS_USER, US_MI_OMNI_USER},
-        StateCode.US_ND: {US_ND_DOCSTARS_OFFICER},
-        StateCode.US_PA: {US_PA_PBPP_POSNO},
-        StateCode.US_TX: {US_TX_EMAIL, US_TX_STAFF_ID},
-    }
-
-    return allowed_types_by_state.get(state_code, set())
 
 
 def _external_id_checks(
@@ -544,6 +474,42 @@ def _normalized_person_staff_relationship_period_checks(
             )
 
 
+def _normalized_person_external_id_checks(
+    person: normalized_entities.NormalizedStatePerson,
+) -> Iterable[Error]:
+    """This function checks that:
+    - For each group of NormalizedStatePersonExternalId with the same id_type,
+    exactly one has is_current_display_id_for_type=True.
+    """
+    ids_by_type: dict[
+        str, list[normalized_entities.NormalizedStatePersonExternalId]
+    ] = defaultdict(list)
+    for pei in person.external_ids:
+        ids_by_type[pei.id_type].append(pei)
+
+    for id_type, external_ids_of_type in ids_by_type.items():
+        display_external_ids = [
+            pei for pei in external_ids_of_type if pei.is_current_display_id_for_type
+        ]
+        if len(display_external_ids) == 0:
+            yield (
+                f"Found no NormalizedStatePersonExternalId on person "
+                f"[{person.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_current_display_id_for_type=True. If a person has "
+                f"any ids of a given id_type, exactly one must be set as the display "
+                f"id."
+            )
+        if len(display_external_ids) > 1:
+            yield (
+                f"Found multiple ({len(display_external_ids)}) "
+                f"NormalizedStatePersonExternalId on person "
+                f"[{person.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_current_display_id_for_type=True. If a person has "
+                f"any ids of a given id_type, exactly one must be set as the display "
+                f"id."
+            )
+
+
 def validate_root_entity(
     root_entity: RootEntityT | NormalizedRootEntityT,
 ) -> List[Error]:
@@ -661,6 +627,7 @@ def _get_normalized_state_person_specific_errors(
 ) -> List[str]:
     assert_type(root_entity, normalized_entities.NormalizedStatePerson)
     error_messages: list[str] = []
+    error_messages.extend(_normalized_person_external_id_checks(root_entity))
     error_messages.extend(_legacy_sentencing_entities_checks(root_entity))
     error_messages.extend(
         _normalized_person_staff_relationship_period_checks(root_entity)

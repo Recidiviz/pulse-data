@@ -15,6 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_ND implementation of the StateSpecificNormalizationDelegate."""
+from recidiviz.common.constants.state.external_id_types import (
+    US_ND_ELITE,
+    US_ND_ELITE_BOOKING,
+    US_ND_SID,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StatePersonExternalId
+from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_alphabetically_highest_person_external_id,
+)
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
@@ -22,3 +32,20 @@ from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization
 
 class UsNdNormalizationDelegate(StateSpecificNormalizationDelegate):
     """US_ND implementation of the StateSpecificNormalizationDelegate."""
+
+    def select_display_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        id_type: str,
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        if id_type in (US_ND_ELITE_BOOKING, US_ND_SID, US_ND_ELITE):
+            return select_alphabetically_highest_person_external_id(
+                person_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per person and no "
+            f"is_current_display_id_for_type set at ingest time: "
+            f"{person_external_ids_of_type}"
+        )
