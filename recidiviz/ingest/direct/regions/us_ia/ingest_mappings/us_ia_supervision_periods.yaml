@@ -85,6 +85,9 @@ output:
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - CCUSO Release with Supervision 229A.9A
                         - Community Supervision 902.3A
+                      StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                        - Pretrial Release Without Supervision
+                        - Pretrial Release With Supervision
           custodial_authority:
             $conditional:
               - $if:
@@ -256,7 +259,12 @@ output:
                   - "Release to Shock Probation"
                   - "Release to Non-Shock Probation"
                 StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                  # for supervision status "Pretrial Release Without Supervision"
                   - "Pretrial Release Granted"
+                  - "Release to Iowa Pretrial Release Without Supervision"
+                  # for supervision status "Pretrial Release With Supervision"
+                  - "Adjudicated (Pretrial Only)"
+                  - "Release to Iowa Pretrial Release With Supervision"
                 StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - "Supervised in Other State Ended"
                   - "Paroled from Prison to another State Ended"
@@ -368,7 +376,8 @@ output:
                   - "Shock probation Revocation for technical violation"
                   - "Other Temporary Release"
                   - "Temporary Release for Furlough"
-                  - "Shock Probation Return with New Sentence (probation not revoked on original sentence)"
+                  - "Shock Probation Return with New Sentence (probation not
+                    revoked on original sentence)"
                   - "Parole Return - Medical/Non-Punitive"
                   - "Discharged - Early (partial completion)"
                   - "Work Release Revocation, Technical Violation"
@@ -468,6 +477,14 @@ output:
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - "Discharged - Expiration of Sentence"
                   - "Discharge, End of Sentence"
+                StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                  #Pretrial Release Without Supervision
+                  - "Pretrial Release Granted"
+                  - "Release to Iowa Pretrial Release Without Supervision"
+                  #Pretrial Release With Supervision
+                  - "Release to Iowa Pretrial Release With Supervision"
+                  #Pretrial Release Without/With Supervision
+                  - "Transfer to Release with Services (Pretrial Only)"
                 StateSupervisionPeriodTerminationReason.VACATED:
                   - "Acquitted/Dismissed"
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
@@ -555,7 +572,8 @@ output:
                   - "Escapee Returned"
                   - "Shock probation Revocation for additional sentence"
                   - "Shock probation Revocation for technical violation"
-                  - "Shock Probation Return with New Sentence (probation not revoked on original sentence)"
+                  - "Shock Probation Return with New Sentence (probation not
+                    revoked on original sentence)"
                   - "Shock Probation Revocation"
                   - "Work Release Revocation, Technical Violation"
                   - "Return for Corrective Action"
@@ -572,6 +590,11 @@ output:
                   - "Parole returned pending sentence on new charge"
                   - "Escapee Returned , new Charges, Pending Adjudication"
                   - "Work Release Return With Additional Sentence"
+                  # Pretrial Release With Supervision
+                  - "Revoked - New Arrest Non-Violent (Pretrial Only)"
+                  - "Revoked - New Arrest Violent (Pretrial Only)"
+                  - "Revoked - Technical (Pretrial Only)"
+                  - "Revoked - Failure to Appear (Pretrial Only)"
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
                   - "ICBC"
                   - "ICON Programming Issue"

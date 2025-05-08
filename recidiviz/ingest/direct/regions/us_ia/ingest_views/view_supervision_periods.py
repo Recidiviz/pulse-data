@@ -54,13 +54,15 @@ WITH
       "Interstate Compact Parole",
       "Interstate Compact Probation",
       "Special Sentence",
-      "Community Supervision 902.3A"
+      "Community Supervision 902.3A",
+      "Pretrial Release Without Supervision",
+      "Pretrial Release With Supervision"
     )
   ),
 
   -- This CTE returns spans of time for each supervision level
   -- Notes:
-  --   - Supervision levels are not expected to be overlapping
+  --   - Supervision levels are not expected to be overlapping. Except they are and sometimes the overlapping SupervisionStatusInformationId have conflicting SupervisionLevel.
   --   - Supervision levels are at the OffenderCd level, but since we are creating periods at the OffenderCd-SupervisionStatusInformationId level, 
   --     we'll merge on all distinct SupervisionStatusInformationIds per OffenderCd in this CTE, and then rely on the date merging later to only apply
   --     each supervision level span to the relevant time periodså
@@ -78,7 +80,8 @@ WITH
 
   -- This CTE returns spans of time for each supervision modifier
   -- Notes:
-  --   - Supervision modifiers are only overlapping in old data (pre 2003, ICON migration)
+  --   - Supervision modifiers are only overlapping in old data (pre 2003, ICON migration).
+  --      - However 2024-5 each have 100's of unique supervisions with overlapping modifiers on the same day.
   --   - There is additional information in the IA_DOC_Supervision_Modifiers table for confinment reason, confinement dates, hold dates, mittimus dates, etc.
   supervision_modifier_spans AS (
     SELECT DISTINCT
@@ -94,7 +97,8 @@ WITH
 
   -- This CTE returns spans of time for each supervision officer assignment
   -- Notes:
-  --   - Supervision officer assignments are only overlapping in old data (pre 2003, ICON migration)
+  --   - Supervision officer assignments are only overlapping in old data (pre 2003, ICON migration). Confirmed on initial ingest.
+  --   - Double checked and can verify at time of ingest.
   supervision_officer_spans AS (
     SELECT DISTINCT
       OffenderCd,
@@ -108,7 +112,7 @@ WITH
 
   -- This CTE returns spans of time for each supervision location
   -- Notes:
-  --   - Supervision locations are only overlapping in old data (pre 2003, ICON migration)
+  --   - Supervision locations are only overlapping in old data (pre 2003, ICON migration). Confirmed on initial ingest.
   --   - Other fields like WorkUnitRegionId, WorkUnitRegionNm, WorkUnitNm are also available, so we could use this probably use this for location metadata
   supervision_location_spans AS (
     SELECT DISTINCT
@@ -162,6 +166,34 @@ WITH
         NULL AS MovementId
       FROM supervision_status_spans
       WHERE SupervisionStatus = 'Parole'
+
+      UNION ALL
+      
+      -- Include "Pretrial Release Without Supervision" supervision statuses starts as their own movement since they are entered as a null movement at the start.
+      SELECT DISTINCT
+        OffenderCd,
+        "Release to Iowa Pretrial Release Without Supervision" AS movement,
+        start_date AS movement_date,
+        update_datetime,
+        SupervisionStatusInformationId,
+        1 AS movement_rank,
+        NULL AS MovementId
+      FROM supervision_status_spans
+      WHERE SupervisionStatus = 'Pretrial Release Without Supervision'
+
+      UNION ALL
+
+      -- Include "Pretrial Release With Supervision" supervision statuses starts as their own movement since they are otherwise otherwise null in the movements table.
+      SELECT DISTINCT
+        OffenderCd,
+        "Release to Iowa Pretrial Release With Supervision" AS movement,
+        start_date AS movement_date,
+        update_datetime,
+        SupervisionStatusInformationId,
+        1 AS movement_rank,
+        NULL AS MovementId
+      FROM supervision_status_spans
+      WHERE SupervisionStatus = 'Pretrial Release With Supervision'
 
       UNION ALL
 
@@ -370,6 +402,7 @@ WITH
         AND COALESCE(ts.end_date, DATE(9999,9,9)) <= COALESCE(modifier.end_date, DATE(9999,9,9))
         AND modifier.end_date IS DISTINCT FROM ts.start_date
       WHERE SupervisionStatus IS NOT NULL
+      QUALIFY RANK() OVER(PARTITION BY OffenderCd, SupervisionStatusInformationId, start_date, end_date ORDER BY level.update_datetime desc) = 1 #Narrowing to one unique supervision level span (SupervisionStatusInformationId) per tiny span
   ),
   
   -- This CTE cleans up the final results
