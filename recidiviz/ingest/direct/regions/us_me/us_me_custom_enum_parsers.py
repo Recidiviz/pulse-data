@@ -46,7 +46,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.task_eligibility.utils.us_me_query_fragments import ZERO_TIME_STRING
+
+# TODO(#38957) Unify this with the one defined in TES
+ZERO_TIME_STRING = "0 YRS 0 MTHS 0 DAYS"
 
 # Movement and Transfer type and reasons
 FURLOUGH_MOVEMENT_TYPES = ["FURLOUGH", "FURLOUGH HOSPITAL"]
