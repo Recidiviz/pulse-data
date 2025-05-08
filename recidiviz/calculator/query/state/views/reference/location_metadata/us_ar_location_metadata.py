@@ -91,7 +91,10 @@ SELECT
         WHEN op.ORGANIZATIONTYPE IN (
             'B1', -- State Prison Unit
             'AX' -- ADC Canteen
-        ) THEN 'STATE_PRISON'
+        ) OR 
+        -- McPherson Unit (PARTYID '1600081') is a women's prison, but appears to
+        -- erroneously have an ORGANIZATIONTYPE of 'BF' ('Reception Center').
+        op.PARTYID = '1600081' THEN 'STATE_PRISON'
         WHEN op.ORGANIZATIONTYPE = 'U5' THEN 'FEDERAL_PRISON' -- Federal Prison
         /* 
         Parole violator facilities are hardcoded using PARTYID, as they look like 
