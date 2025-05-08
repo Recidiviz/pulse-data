@@ -310,7 +310,7 @@ def revert_nonnull_end_date_clause(column_name: str) -> str:
 
 
 def nonnull_start_date_clause(column_name: str) -> str:
-    """Convert NULL start dates to dates far in the future to help with the date logic"""
+    """Convert NULL start dates to dates far in the past to help with the date logic"""
     return f'COALESCE({column_name}, "{MAGIC_START_DATE}")'
 
 

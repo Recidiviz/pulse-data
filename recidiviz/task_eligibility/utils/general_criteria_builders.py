@@ -1345,7 +1345,10 @@ def employed_for_at_least_x_time_criteria_builder(
         #  employment period end dates are reasonable and all exemptions have been
         #  resolved. This filter was added to avoid date overflow when adding time to
         #  dates close to the max date 9999-12-31.
-        additional_where_clause=f"""AND employment_status IN {custom_tuple(employment_status_values)} AND end_date < '3000-01-01'""",
+        additional_where_clause=f"""
+            AND employment_status IN {custom_tuple(employment_status_values)} 
+            # If end_date is more than 3000-01-01, drop period. Don't drop NULL end_dates
+            AND (end_date IS NULL OR end_date < '3000-01-01')""",
         date_interval=date_interval,
         date_part=date_part,
         start_date="start_date",
