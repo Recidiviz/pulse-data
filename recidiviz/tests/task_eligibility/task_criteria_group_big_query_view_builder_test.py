@@ -809,7 +809,7 @@ GROUP BY 1, 2, 3, 4
                     "other_reason": "ANY_VALUE",
                 },
             )
-            print(criteria_group.flatten_reasons_blob_clause())
+            print(criteria_group.get_query_template())
 
     def test_inverted_criteria_state_specific_criteria_name(self) -> None:
         """Checks inverted state-specific criteria"""
