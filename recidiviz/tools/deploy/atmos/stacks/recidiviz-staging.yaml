@@ -16,6 +16,7 @@ components:
   terraform:
     dag-triggering:
       vars:
+        time_zone: America/Los_Angeles
         composer:
           environment: orchestration-v2
           location: us-central1
@@ -29,7 +30,7 @@ components:
           # Calculation runs daily in staging at 6am EST
           calculation_dag:
             config:
-              INGEST_INSTANCE: PRIMARY
+              ingest_instance: PRIMARY
             schedule:
               - 0 3 * * *
 
@@ -41,6 +42,6 @@ components:
           # Raw data runs at 5 am EST
           raw_data_import_dag:
             config:
-              INGEST_INSTANCE: PRIMARY
+              ingest_instance: PRIMARY
             schedule:
               - 0 2 * * *

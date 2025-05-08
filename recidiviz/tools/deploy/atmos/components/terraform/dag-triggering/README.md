@@ -27,6 +27,7 @@ Enables passing custom configurations (in JSON) for DAGs when they are triggered
 The following are the key input variables required by this module:
 - **`project_id`**_(string)_:
 The GCP Project ID where the resources will be deployed.
+- **`time_zone`**_(string)_: The time zone for the Cloud Scheduler jobs. Default is `America/New_York`.
 - **`composer`** _(object)_:
 Configuration for the Composer environment:
     - `environment`: The name of the Composer environment.

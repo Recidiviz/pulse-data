@@ -35,6 +35,7 @@ resource "google_cloud_scheduler_job" "trigger_dag" {
   name             = "trigger-airflow-${each.key}"
   description      = "Triggers ${each.key} at ${each.value["schedule"]}"
   schedule         = each.value["schedule"]
+  time_zone        = var.time_zone
   attempt_deadline = "320s"
   region           = "us-central1"
   project          = var.project_id

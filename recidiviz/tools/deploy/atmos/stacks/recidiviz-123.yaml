@@ -16,6 +16,8 @@ components:
   terraform:
     dag-triggering:
       vars:
+        time_zone: America/Los_Angeles
+
         composer:
           location: us-central1
           environment: orchestration-v2
@@ -34,7 +36,7 @@ components:
               # On weekends, run it once at 6am EST
               - 0 3 * * 6,7
             config:
-              INGEST_INSTANCE: PRIMARY
+              ingest_instance: PRIMARY
 
           # SFTP runs every hour at the 45th minute
           sftp_dag:
@@ -50,4 +52,4 @@ components:
               # On weekends run it once at 5am EST
               - 0 2 * * 6,7
             config:
-              INGEST_INSTANCE: PRIMARY
+              ingest_instance: PRIMARY
