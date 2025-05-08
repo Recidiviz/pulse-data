@@ -32,6 +32,9 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
     not_serving_ineligible_offense_for_admin_supervision,
+    oras_employed_disabled_retired_or_student,
+    oras_has_substance_use_issues,
+    oras_risk_level_is_medium_or_lower,
     risk_release_assessment_level_is_minimum,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -51,10 +54,23 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_is_not_limited.VIEW_BUILDER,
-        # 1.1 ORAS score or Risk Release Assessment
-        risk_release_assessment_level_is_minimum.VIEW_BUILDER,
+        # 1.1 ORAS score Medium or Below OR Risk Release Assessment Minimum or Below
+        OrTaskCriteriaGroup(
+            criteria_name="US_AZ_ELIGIBLE_RISK_LEVEL",
+            sub_criteria_list=[
+                risk_release_assessment_level_is_minimum.VIEW_BUILDER,
+                oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
+        ),
+        # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
+        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
+        oras_employed_disabled_retired_or_student.VIEW_BUILDER,
         # 1.6 Mental Health Score of 3 or below.
         mental_health_score_3_or_below.VIEW_BUILDER,
+        # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
+        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
+        oras_has_substance_use_issues.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
         OrTaskCriteriaGroup(
             criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",

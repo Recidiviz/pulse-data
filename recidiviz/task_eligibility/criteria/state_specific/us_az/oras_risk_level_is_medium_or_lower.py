@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when someone is eligible due to a risk release assessment of 
-MINIMUM in AZ. This is an assessment done at intake right after people are released from 
-prison to supervision."""
+"""Describes spans of time when someone is eligible due to an ORAS risk assessment of
+MEDIUM or lower in AZ."""
 
 from google.cloud import bigquery
 
@@ -28,7 +27,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_RISK_RELEASE_ASSESSMENT_LEVEL_IS_MINIMUM"
+_CRITERIA_NAME = "US_AZ_ORAS_RISK_LEVEL_IS_MEDIUM_OR_LOWER"
 
 _QUERY_TEMPLATE = """
     SELECT 
@@ -36,15 +35,15 @@ _QUERY_TEMPLATE = """
         person_id,
         assessment_date AS start_date,
         score_end_date_exclusive AS end_date,
-        JSON_VALUE(assessment_metadata, '$.LEVEL') = 'MINIMUM' AS meets_criteria,
+        assessment_level IN ('LOW', 'LOW_MODERATE', 'MODERATE') AS meets_criteria,
         TO_JSON(STRUCT(
             assessment_score AS assessment_score,
-            JSON_VALUE(assessment_metadata, '$.LEVEL') AS assessment_level)) AS reason,
+            assessment_level AS assessment_level)) AS reason,
         assessment_score,
-        JSON_VALUE(assessment_metadata, '$.LEVEL') AS assessment_level,
+        assessment_level AS assessment_level,
     FROM `{project_id}.sessions.assessment_score_sessions_materialized`
     WHERE state_code= 'US_AZ'
-        AND assessment_type = 'CCRRA'
+        AND assessment_type = 'ORAS_COMMUNITY_SUPERVISION'
         AND assessment_class = 'RISK'"""
 
 _REASONS_FIELDS = [
