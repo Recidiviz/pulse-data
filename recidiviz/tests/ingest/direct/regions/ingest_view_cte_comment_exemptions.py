@@ -167,13 +167,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "lsi_ratings",
             "non_lsi_assessments",
         ],
-        "incarceration_sentences_v2": [
-            "charges",
-            "conditions",
-            "judges",
-            "sentences",
-            "terms",
-        ],
         "incarceration_task_deadline": ["sentences", "sorted", "terms"],
         "supervision_periods": [
             "join_statuses_and_officers",
@@ -186,13 +179,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "supervision_officer_assignments_dates",
             "supervision_periods",
             "transfers",
-        ],
-        "supervision_sentences_v2": [
-            "charges",
-            "conditions",
-            "judges",
-            "sentences",
-            "terms",
         ],
     },
     StateCode.US_NC: {

@@ -859,6 +859,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_me_ingest_view_results.incarceration_incident",
     "us_me_ingest_view_results.incarceration_sentences_v2",
     "us_me_ingest_view_results.incarceration_task_deadline",
+    "us_me_ingest_view_results.sentences",
     "us_me_ingest_view_results.supervision_periods",
     "us_me_ingest_view_results.supervision_sentences_v2",
     "us_me_ingest_view_results.supervision_staff",

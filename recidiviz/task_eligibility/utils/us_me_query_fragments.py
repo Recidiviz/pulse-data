@@ -43,6 +43,8 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
 
+ZERO_TIME_STRING = "0 YRS 0 MTHS 0 DAYS"
+
 PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
     [
         "COMPLET[A-Z]*",

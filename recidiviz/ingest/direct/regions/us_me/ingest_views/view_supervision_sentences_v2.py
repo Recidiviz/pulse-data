@@ -34,6 +34,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
 {VIEW_SENTENCE_ADDITIONAL_TABLES}
+-- Selects basic sentences
 sentences as (
     SELECT
         Cis_400_Cis_100_Client_Id as Client_Id,

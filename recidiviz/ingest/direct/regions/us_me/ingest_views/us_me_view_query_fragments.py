@@ -19,9 +19,21 @@
 # TODO(#10573): Investigate using sentencing data to determine revocation admission reasons
 # A quick analysis showed that a 7 day look back period captured most of the instances when a person transitioned from
 # supervision to incarceration because of a revocation.
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    UPDATE_DATETIME_PARAM_NAME,
+)
+
 NUM_DAYS_STATUS_LOOK_BACK = 7
 
 REGEX_TIMESTAMP_NANOS_FORMAT = r"\.\d+"
+
+
+def is_null_or_reasonable(column: str) -> str:
+    return f"({column} IS NULL OR DATE({column}) BETWEEN DATE('{STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND}') AND @{UPDATE_DATETIME_PARAM_NAME})"
+
 
 # TODO(#10111): Reconsider filtering test clients in ingest view
 VIEW_CLIENT_FILTER_CONDITION = """(
@@ -39,7 +51,9 @@ VIEW_CLIENT_FILTER_CONDITION = """(
 
 
 VIEW_SENTENCE_ADDITIONAL_TABLES = r"""
-WITH charges AS (
+WITH 
+-- Gets basic charge information
+charges AS (
     SELECT
         charge.Charge_Id,
         charge.Cis_100_Client_Id as Client_Id,
@@ -58,6 +72,7 @@ WITH charges AS (
     LEFT JOIN {CIS_4000_CHARGE_STATUS} charge_status on charge.CIS_4000_Charge_Outcome_Cd = charge_status.Charge_Outcome_Cd
     LEFT JOIN {CIS_4003_OFFENCE_TYPE} offense_type on charge.Cis_4003_Offence_Type_Cd = offense_type.Offence_Type_Cd
 ),
+-- Gets basic term information
 terms as (
     SELECT
         Term_Id,
@@ -71,6 +86,7 @@ terms as (
     FROM {CIS_319_TERM} term
     LEFT JOIN {CIS_1200_TERM_STATUS} term_status on term.Cis_1200_Term_Status_Cd = term_status.Term_Status_Cd
 ),
+-- Gets basic judge information
 judges as (
     SELECT
         professional.Professional_Id,
@@ -80,6 +96,7 @@ judges as (
     FROM {CIS_9904_PROFESSIONAL} professional
     JOIN {CIS_9903_PROFESSIONAL_TYPE} professional_type on professional.Cis_9903_Professional_Type_Cd = professional_type.Professional_Type_Cd
 ),
+-- Get's basic conditions information
 conditions as (
     SELECT
         condition_court_order.Cis_401_Court_Order_Id as Court_Order_Id,
@@ -91,7 +108,6 @@ conditions as (
     GROUP BY Court_Order_Id
 ),
 """
-
 
 VIEW_SENTENCE_COLUMN_SELECTIONS = """
 SELECT
@@ -123,7 +139,6 @@ LEFT JOIN conditions condition on sentence.Court_Order_Id = condition.Court_Orde
 LEFT JOIN judges judge on sentence.Judge_Professional_Id = judge.Professional_Id
 WHERE charge.Juvenile_Ind != 'Y'
 """
-
 CURRENT_STATUS_ORDER_BY = """
     CASE current_status
         WHEN 'County Jail' THEN 10

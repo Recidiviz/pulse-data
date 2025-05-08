@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Cis_400_Cis_100_Client_Id: STRING
+  Cis_319_Term_Id: STRING
+  Court_Order_Id: STRING
+  Cis_400_Charge_Id: STRING
+  Court_Order_Sent_Date: STRING
+  Sex_Offense_Cd: STRING
+  Judge_Professional_Id: STRING
+  conditions: STRING
+  Offense_Date: STRING
+  Referral_Date: STRING
+  Offense_Class_Cd: STRING
+  Jurisdiction_County_Cd: STRING
+  Comments_Tx: STRING
+  E_Charge_Outcome_Desc: STRING
+  E_Offence_Type_Desc: STRING
+  Mejis_Offns_Class_Tx: STRING
+  Mejis_Offns_Title_Tx: STRING
+  Mejis_Offns_Section_Tx: STRING
+  judge_First_Name: STRING
+  judge_Last_Name: STRING
+  stc_time: STRING
+  serve_time: STRING
+  probation_time: STRING
+  revocation_time: STRING
+  Detention_Days_Num_cleaned: INTEGER
+  parent_Cis_401_Court_Order_Id_cleaned: STRING
+unused_columns: []
+variables:
+  - is_sex_offense:
+      $in:
+        $value: Sex_Offense_Cd
+        $options:
+          - $literal("23")
+          - $literal("24")
+          - $literal("137")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Cis_400_Cis_100_Client_Id
+          id_type: $literal("US_ME_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: Cis_319_Term_Id
+    sentences:
+      - StateSentence:
+          sentence_group_external_id: Cis_319_Term_Id
+          # TODO(#41736) actually pull this from somewhere?
+          sentencing_authority: $literal_enum(StateSentencingAuthority.PRESENT_WITHOUT_INFO)
+          external_id: Court_Order_Id
+          imposed_date: Court_Order_Sent_Date
+          initial_time_served_days: Detention_Days_Num_cleaned
+
+          # sentence_type: All determined by the lengths of sentence.
+          # 1. PROBATION -- this is wholly suspended, straight probation. This is the case when there is only probation time
+          # 2. SPLIT -- this is the case when there is serve time and probation time
+          # 3. STATE_PRISON -- this is the case when there's only serve time and it's greater than 9 months
+          # 4. COUNTY_JAIL -- Serve time less than 9 months
+          sentence_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - stc_time
+                    - serve_time
+                    - probation_time
+                    - revocation_time
+              $custom_parser: us_me_custom_enum_parsers.parse_sentence_type
+          county_code: Jurisdiction_County_Cd
+          conditions: conditions
+          parent_sentence_external_id_array: parent_Cis_401_Court_Order_Id_cleaned
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - Cis_400_Charge_Id
+                status:
+                  $conditional:
+                    - $if:
+                        $not_null: E_Charge_Outcome_Desc
+                      $then:
+                        $enum_mapping:
+                          $raw_text: E_Charge_Outcome_Desc
+                          $mappings:
+                            StateChargeV2Status.ACQUITTED:
+                              - Acquitted
+                              - NCR # Not Criminally Responsible
+                            StateChargeV2Status.ADJUDICATED:
+                              - Adjudicated
+                              - Deferred Disposition
+                            StateChargeV2Status.CONVICTED:
+                              - Convicted
+                            StateChargeV2Status.DROPPED:
+                              - Dismissed
+                              - Charge Dropped
+                              - Incompetent
+                            StateChargeV2Status.PENDING:
+                              - Charge Pending
+                              - Filed
+                            StateChargeV2Status.TRANSFERRED_AWAY:
+                              - Bound Over-Case Transferred
+                    # If the charge outcome is null, but it's associated with a court
+                    # order that appears otherwise valid, we assume the charge is also
+                    # valid. TODO(#41300) to see if we can discover this status in a
+                    # better way.
+                    - $else: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                offense_date: Offense_Date
+                date_charged: Referral_Date
+                county_code: Jurisdiction_County_Cd
+                statute:
+                  $concat:
+                    $values:
+                      - Mejis_Offns_Class_Tx
+                      - Mejis_Offns_Title_Tx
+                      - Mejis_Offns_Section_Tx
+                    $separator: "_"
+                description: E_Offence_Type_Desc
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: Offense_Class_Cd
+                    $mappings:
+                      StateChargeV2ClassificationType.CIVIL:
+                        - V # Civil Violation
+                        - T # Class T
+                      StateChargeV2ClassificationType.FELONY:
+                        - A # Class A (Felony)
+                        - B # Class B (Felony)
+                        - C # Class C (Felony)
+                        - F # Unclassified Felonies
+                        - M # Murder
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - D # Class D (Misdemeanor)
+                        - E # Class E (Misdemeanor)
+                        - U # Unclassified Misdemeanors
+                      StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                        - X # Migration - class unknown in source
+                        - Z # Migration - class invalid in source
+                is_sex_offense: $variable(is_sex_offense)
+                charge_notes: Comments_Tx
+                judicial_district_code: Jurisdiction_County_Cd
+                judge_external_id: Judge_Professional_Id
+                judge_full_name:
+                  $conditional:
+                    - $if:
+                        $not_null: Judge_Professional_Id
+                      $then:
+                        $person_name:
+                          $given_names: judge_First_Name
+                          $surname: judge_Last_Name

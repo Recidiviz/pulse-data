@@ -21,6 +21,7 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_me_custom_enum_parsers.<function name>
 """
+import re
 from typing import Optional
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -30,7 +31,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -42,6 +46,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.task_eligibility.utils.us_me_query_fragments import ZERO_TIME_STRING
 
 # Movement and Transfer type and reasons
 FURLOUGH_MOVEMENT_TYPES = ["FURLOUGH", "FURLOUGH HOSPITAL"]
@@ -131,6 +136,10 @@ OTHER_JURISDICTION_LOCATION_TYPES = ["8", "19"]  # All US States and Federal
 DECEASED_LOCATION_TYPE = "14"
 
 MAINE_STATE = "MAINE"
+
+# Sentence related constants
+SENTENCED_TIME_REGEX = r"(\d+)\s+YRS\s+(\d+)\s+MTHS\s+(\d+)\s+DAYS"
+COUNTY_JAIL_DAYS_LIMIT = 9 * 30  # 9 months * 30 days
 
 
 def _in_temporary_custody(
@@ -434,12 +443,57 @@ def parse_deciding_body_type(
     return None
 
 
+def parse_sentence_type(raw_text: str) -> Optional[StateSentenceType]:
+    """Parses the supervision type from the lengths of various sentencing components:
+    total sentence length, serve time (jail / prison sentence), probation time,
+    revocation time (this is also jail or prison). This uses the most recent information
+    about the sentence, though these values don't typically change over time.
+    """
+    (_, serve_time, probation_time, revocation_time) = raw_text.upper().split("@@")
+
+    if ZERO_TIME_STRING not in (serve_time, probation_time):
+        return StateSentenceType.SPLIT
+    if serve_time == ZERO_TIME_STRING and probation_time != ZERO_TIME_STRING:
+        return StateSentenceType.PROBATION
+    if (
+        serve_time != ZERO_TIME_STRING or revocation_time != ZERO_TIME_STRING
+    ) and probation_time == ZERO_TIME_STRING:
+
+        # revocation_time is time that someone is sentenced to incarceration (either in
+        # county jail or prison) due to a revocation.
+        incarcerated_time = (
+            serve_time if serve_time != ZERO_TIME_STRING else revocation_time
+        )
+        match = re.match(SENTENCED_TIME_REGEX, incarcerated_time)
+
+        if match:
+            years, months, days = map(int, match.groups())
+
+            # According the sentencing manual we received, a year is equal to 365 days
+            # and a month is equal to 30 days. If you are sentenced to more than 9
+            # months, your sentence is served out in a state prison. If it's less than 9
+            # months, you will serve it at a county jail.
+            days_sentenced = (years * 365) + (months * 30) + days
+            if days_sentenced > COUNTY_JAIL_DAYS_LIMIT:
+                return StateSentenceType.STATE_PRISON
+
+            return StateSentenceType.COUNTY_JAIL
+
+    # 1. If there are no sentence times, then it's likely a fines and fees related
+    # sentence, though it could be community service or something else. For now, ingest
+    # as INTERNAL_UNKOWN.
+    # 2. If there is a sentence time, but no serve, probation, or revocation time, what
+    # does that mean? Open question to Erin that I haven't asked yet
+    return StateSentenceType.INTERNAL_UNKNOWN
+
+
 def parse_supervision_sentence_status(
     raw_text: str,
 ) -> Optional[StateSentenceStatus]:
-    """Parses the supervision sentence status from a combination of the community override reason code
-    and the court order status code. If there is a community override reason code that represents a sentence
-    status, we use that value. Otherwise, we use the court order status code.
+    """Parses the supervision sentence status from a combination of the community
+    override reason code and the court order status code. If there is a community
+    override reason code that represents a sentence status, we use that value.
+    Otherwise, we use the court order status code.
     """
     (
         community_override_reason,
@@ -462,8 +516,10 @@ def parse_supervision_sentence_status(
         return StateSentenceStatus.PENDING
     if court_order_status_description in ["COURT SANCTION"]:
         return StateSentenceStatus.SANCTIONED
-    if court_order_status_description in ["COMMITTED", "PROBATION", "TOLLED"]:
+    if court_order_status_description in ["COMMITTED", "PROBATION"]:
         return StateSentenceStatus.SERVING
+    if court_order_status_description in ["TOLLED"]:
+        return StateSentenceStatus.SUSPENDED
 
     return StateSentenceStatus.PRESENT_WITHOUT_INFO
 
