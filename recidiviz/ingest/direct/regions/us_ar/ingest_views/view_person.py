@@ -59,6 +59,36 @@ primary_name_type_special AS(
   WHERE OFFNNAMETYPE != '1' AND OFFNLASTNAME IS NOT NULL)
   WHERE seq_num = 1
 ),
+-- Several OFFNNAMETYPE values map to StatePersonAliasType.INTERNAL_UNKNOWN, unlike the
+-- other enum values which have one-to-one mappings. We will run into entity merge errors
+-- if a person has an alias with more than one of these types, since it'll result in the 
+-- same alias occurring with the same alias type (INTERNAL_UNKNOWN) more than once.
+deduped_aliases_unknown_type AS (
+  SELECT *
+  FROM (
+    SELECT *
+    FROM {OFFENDERNAMEALIAS}
+    WHERE OFFNNAMETYPE IN (
+      -- These values all map to StatePersonAliasType.INTERNAL_UNKNOWN.
+      '5','6','7','9','0'
+    )
+  )
+  QUALIFY ROW_NUMBER() OVER (
+    -- For each name for a given person that shows up multiple times with different OFFNNAMETYPE 
+    -- values that would be mapped to INTERNAL_UNKNOWN, pick the current one if possible,
+    -- and otherwise use the most recently updated.
+    PARTITION BY 
+      OFFENDERID,
+      OFFNFIRSTNAME,
+      OFFNMIDDLENAME,
+      OFFNLASTNAME,
+      OFFNNAMESUFFIX
+    ORDER BY 
+      CURRENTCOMMNAME = 'Y' DESC,
+      DATELASTUPDATE DESC,
+      TIMELASTUPDATE DESC
+    ) = 1
+),
 -- We then identify all other potential aliases from the table for a given person and then populate that info in a JSON to hydrate StatePersonAlias
 aliases AS (
   SELECT
@@ -75,7 +105,15 @@ aliases AS (
       OFFNMIDDLENAME,
       OFFNLASTNAME,
       OFFNNAMESUFFIX
-    FROM {OFFENDERNAMEALIAS}
+    FROM (
+      -- Union the deduped aliases of unknown type back with the rest of the aliases, which don't need any deduping.
+      SELECT *
+      FROM {OFFENDERNAMEALIAS}
+      WHERE OFFNNAMETYPE NOT IN ('5','6','7','9','0')
+      UNION ALL
+      SELECT *
+      FROM deduped_aliases_unknown_type
+    )
   ) unique_aliases
   GROUP BY OFFENDERID
 ),
