@@ -32,6 +32,11 @@ output:
                   - "PAROLE"
                 StateAssessmentClass.INTERNAL_UNKNOWN:
                   - "RID"
+                  - "CJAD"
+                  - "RPD"
+                  - "PRRID"
+                StateAssessmentClass.EXTERNAL_UNKNOWN:
+                  - "UNKNOWN"
           assessment_type:
             $enum_mapping:
               $raw_text: Assessment_Type
