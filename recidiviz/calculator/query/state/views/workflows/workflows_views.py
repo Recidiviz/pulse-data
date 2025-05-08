@@ -105,9 +105,6 @@ from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_use
 from recidiviz.calculator.query.state.views.workflows.resident_record_archive import (
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.sentence_id_to_opportunity_id import (
-    SENTENCE_ID_TO_OPPORTUNITY_ID_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
@@ -136,7 +133,6 @@ from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
-    SENTENCE_ID_TO_OPPORTUNITY_ID_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,

@@ -20,12 +20,18 @@ from typing import Any, Dict, Iterable, Optional, Set
 from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.us_me_snoozed_opportunities import pipeline
+from recidiviz.pipelines.supplemental.us_me_snoozed_opportunities.pipeline import (
+    ME_OPPORTUNITY_TYPES,
+)
 from recidiviz.pipelines.supplemental.us_me_snoozed_opportunities.us_me_snoozed_opportunity_notes_query_provider import (
     US_ME_SNOOZED_OPPORTUNITY_NOTES_QUERY_NAME,
 )
@@ -216,4 +222,18 @@ class TestUsMeSnoozedOpportunitiesPipeline(unittest.TestCase):
                 }
             ),
             expected_output_row,
+        )
+
+    def test_opportunities_list_matches_workflows_configs(self) -> None:
+        our_opportunities = set(ME_OPPORTUNITY_TYPES)
+
+        maine_opportunities = set(
+            cfg.opportunity_type
+            for cfg in WORKFLOWS_OPPORTUNITY_CONFIGS
+            if cfg.state_code == StateCode.US_ME
+        )
+
+        self.assertEqual(
+            our_opportunities,
+            maine_opportunities,
         )

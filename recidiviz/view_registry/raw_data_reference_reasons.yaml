@@ -1483,18 +1483,9 @@ US_NE:
     sessions.us_ne_special_condition_compliance_sessions: |-
       Get special conditions imposed during supervision.
 US_OR:
-  RCDVZ_CISPRDDTA_CMOFFT:
-    workflows_views.us_or_earned_discharge_sentence_record: |-
-      Programming history for earned discharge opportunity metadata.
-  RCDVZ_CISPRDDTA_OPCOND:
-    workflows_views.us_or_earned_discharge_sentence_record: |-
-      Sentence condition code and county for earned discharge opportunity metadata.
   RCDVZ_DOCDTA_TBCNTY:
     reference_views.us_or_location_metadata: |-
       Needed for location information.
-  RCDVZ_DOCDTA_TBCOND:
-    workflows_views.us_or_earned_discharge_sentence_record: |-
-      Sentence condition description for earned discharge opportunity metadata.
   RCDVZ_DOCDTA_TBLOCA:
     reference_views.us_or_location_metadata: |-
       Needed for location information.

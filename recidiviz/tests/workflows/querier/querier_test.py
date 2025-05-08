@@ -26,6 +26,7 @@ from unittest.mock import patch
 
 import pytest
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     PersonRecordType,
     WorkflowsOpportunityConfig,
@@ -231,9 +232,13 @@ def generate_mock_config(
         state_code=StateCode.US_ID,
         opportunity_type=opportunity_type,
         experiment_id=f"{prefix}_experiment_id",
-        opportunity_record_view_name=f"{prefix}_record_1",
+        view_builder=SimpleBigQueryViewBuilder(
+            dataset_id="mock_dataset",
+            view_id=f"{prefix}_record",
+            view_query_template="SELECT 1",
+            description="mock description",
+        ),
         task_completion_event=f"{prefix}_event",  # type: ignore
-        source_filename=f"{prefix}_source",
         export_collection_name=f"{prefix}_collection",
         opportunity_type_path_str=f"{prefix}_path",
         person_record_type=PersonRecordType.CLIENT,

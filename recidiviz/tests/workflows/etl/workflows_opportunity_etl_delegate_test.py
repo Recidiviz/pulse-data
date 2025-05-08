@@ -20,9 +20,6 @@ from copy import deepcopy
 from typing import Any
 from unittest import TestCase
 
-from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
-    WORKFLOWS_OPPORTUNITY_CONFIGS,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
@@ -360,16 +357,3 @@ class TestWorkflowsETLDelegate(TestCase):
             expected,
             new_document,
         )
-
-
-class TestWorkflowsETLConfig(TestCase):
-    """Checks constraints on the ETL config"""
-
-    def test_source_filename_format(self) -> None:
-        """Tests for common mistakes one can make when configuring filenames"""
-        for config in WORKFLOWS_OPPORTUNITY_CONFIGS:
-            # filename must have json extension
-            self.assertEqual(".json", config.source_filename[-5:])
-
-            # filename (unlike corresponding view) must not have materialized suffix
-            self.assertNotRegex(config.source_filename, r"_materialized.json$")

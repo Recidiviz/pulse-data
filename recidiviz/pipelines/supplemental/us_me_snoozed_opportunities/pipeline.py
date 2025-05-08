@@ -35,9 +35,6 @@ from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
-from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
-    WORKFLOWS_OPPORTUNITY_CONFIGS,
-)
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.serialization import json_serializable_dict
@@ -59,10 +56,16 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.utils import metadata
 
+# These are specified manually so as not to depend on every workflows ViewBuilder. The unit test
+# test_opportunities_list_matches_workflows_config verifies we're in sync with configured ME opportunities
 ME_OPPORTUNITY_TYPES = [
-    cfg.opportunity_type
-    for cfg in WORKFLOWS_OPPORTUNITY_CONFIGS
-    if cfg.state_code == StateCode.US_ME
+    "usMeEarlyTermination",
+    "usMeOverdueForDischarge",
+    "usMeSCCP",
+    "usMeWorkRelease",
+    "usMeFurloughRelease",
+    "usMeMediumTrustee",
+    "usMeReclassificationReview",
 ]
 
 

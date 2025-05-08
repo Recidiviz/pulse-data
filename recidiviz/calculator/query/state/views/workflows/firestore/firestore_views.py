@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
@@ -33,247 +36,29 @@ from recidiviz.calculator.query.state.views.workflows.firestore.resident_record 
 from recidiviz.calculator.query.state.views.workflows.firestore.supervision_staff_record import (
     SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_institutional_worker_status_record import (
-    US_AR_INSTITUTIONAL_WORKER_STATUS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_work_release_record import (
-    US_AR_WORK_RELEASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_az_approaching_acis_or_recidiviz_dtp_request_record import (
-    US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_az_approaching_acis_or_recidiviz_tpr_request_record import (
-    US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_az_overdue_for_acis_dtp_request_record import (
-    US_AZ_OVERDUE_FOR_ACIS_DTP_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_az_overdue_for_acis_tpr_request_record import (
-    US_AZ_OVERDUE_FOR_ACIS_TPR_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_az_transfer_to_administrative_supervision_record import (
-    US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ca_supervision_level_downgrade_form_record import (
-    US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ia_complete_early_discharge_form_record import (
-    US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
-    US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_full_term_discharge_from_supervision_request_record import (
-    US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (
-    US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_custody_level_downgrade_record import (
-    US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_supervision_level_downgrade_record import (
-    US_IX_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_supervision_tasks_record import (
     US_IX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_resident_worker_request_record import (
-    US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_work_release_request_record import (
-    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_limited_supervision_jii_record import (
     US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_xcrc_request_record import (
-    US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_early_termination_record import (
-    US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_transfer_to_sccp_form_record import (
-    US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_level_downgrade_to_medium_trustee_request_record import (
-    US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
-    US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_overdue_for_discharge_request_record import (
-    US_ME_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_work_release_form_record import (
-    US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_add_in_person_security_classification_committee_review_form_record import (
-    US_MI_COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_classification_review_form_record import (
-    US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_discharge_early_from_supervision_request_record import (
-    US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_full_term_discharge_from_supervision_request_record import (
-    US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_reclassification_to_general_population_request_record import (
-    US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_security_classification_committee_review_form_record import (
-    US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_transfer_to_telephone_reporting_request_record import (
-    US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_warden_in_person_security_classification_committee_review_form_record import (
-    US_MI_COMPLETE_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_supervision_level_downgrade_record import (
-    US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_initial_hearing import (
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_INITIAL_HEARING_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_release import (
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_RELEASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_review_hearing import (
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
-    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_supervision_tasks_record import (
     US_ND_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_atp_form_record import (
-    US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_minimum_facility_form_record import (
-    US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ne_override_low_to_conditional_low_record import (
-    US_NE_OVERRIDE_LOW_TO_CONDITIONAL_LOW_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ne_override_moderate_to_low_record import (
-    US_NE_OVERRIDE_MODERATE_TO_LOW_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_or_earned_discharge_sentence_record import (
-    US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
-    US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
-    US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_annual_reclassification_review_record import (
-    US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_custody_level_downgrade_record import (
-    US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
-    US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_initial_classification_review_record import (
-    US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervision_level_downgrade_record import (
-    US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension_of_direct_supervision_record import (
-    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_2025_policy_record import (
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_supervision_tasks_record import (
     US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_transfer_from_parole_to_annual_reporting_status import (
-    US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_tx_transfer_from_parole_to_early_release_from_supervision import (
-    US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ut_early_termination_from_supervision_request_record import (
-    US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-)
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    *[config.view_builder for config in WORKFLOWS_OPPORTUNITY_CONFIGS],
     CLIENT_RECORD_VIEW_BUILDER,
     RESIDENT_RECORD_VIEW_BUILDER,
     INCARCERATION_STAFF_RECORD_VIEW_BUILDER,
     SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
     LOCATION_RECORD_VIEW_BUILDER,
-    US_AR_INSTITUTIONAL_WORKER_STATUS_VIEW_BUILDER,
-    US_AR_WORK_RELEASE_RECORD_VIEW_BUILDER,
-    US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER,
-    US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_BUILDER,
-    US_AZ_OVERDUE_FOR_ACIS_DTP_REQUEST_RECORD_VIEW_BUILDER,
-    US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_VIEW_BUILDER,
-    US_AZ_OVERDUE_FOR_ACIS_TPR_REQUEST_RECORD_VIEW_BUILDER,
-    US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
-    US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_VIEW_BUILDER,
-    US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-    US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-    US_IX_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
     US_IX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-    US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
-    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
-    US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
-    US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER,
+    US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER,  # Not currently configured as a workflow
     US_ND_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-    US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
-    US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER,
-    US_NE_OVERRIDE_LOW_TO_CONDITIONAL_LOW_RECORD_VIEW_BUILDER,
-    US_NE_OVERRIDE_MODERATE_TO_LOW_RECORD_VIEW_BUILDER,
-    US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-    US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER,
-    US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
-    US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_BUILDER,
-    US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
-    US_ME_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
-    US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-    US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
-    US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_INITIAL_HEARING_RECORD_VIEW_BUILDER,
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_VIEW_BUILDER,
-    US_MO_OVERDUE_RESTRICTIVE_HOUSING_RELEASE_RECORD_VIEW_BUILDER,
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
-    US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
-    US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER,
-    US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-    US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
-    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER,
     US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-    US_TX_TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS_RECORD_VIEW_BUILDER,
-    US_TX_TRANSFER_FROM_PAROLE_TO_EARLY_RELEASE_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-    US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-    US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
+    # ...add any other non-workflow Firestore view builders here
 ]
