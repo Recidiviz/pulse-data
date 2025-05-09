@@ -44,6 +44,7 @@ US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Class") AS incident_class,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.InjuryLevel") AS injury_level,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Disposition") AS disposition,
+                NULLIF(JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.ViolenceLevel"),'') AS violence_level,
                 -- Infraction type may be blank if a hearing has not yet occurred
                 NULLIF(JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.InfractionType"),'') AS infraction_type_raw_text,
                 MIN(inc_outcome.hearing_date) AS hearing_date,
@@ -57,7 +58,7 @@ US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
           INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.Disciplinary_latest` disc
             ON pei.external_id = disc.OffenderID
             AND SPLIT(inc.external_id,'-')[SAFE_OFFSET(1)] = disc.IncidentID
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     )
     SELECT *,
         CASE 
