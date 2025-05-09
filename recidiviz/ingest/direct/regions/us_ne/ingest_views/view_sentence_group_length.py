@@ -87,7 +87,7 @@ SELECT
   -- TRD should always come after PEDD but this is not always the case in the data,
   -- in cases when this isn't true I am setting the TRD TO PEDD since in these cases 
   -- full release from custody generally falls on PEDD
-  IF(paroleEarnedDischargeDate > tentativeReleaseDate, paroleEarnedDischargeDate, tentativeReleaseDate) AS tentativeReleaseDate,
+  IF(paroleEarnedDischargeDate > tentativeReleaseDate OR tentativeReleaseDate IS NULL, paroleEarnedDischargeDate, tentativeReleaseDate) AS tentativeReleaseDate,
   paroleEarnedDischargeDate,
   modifiedDate,
 FROM joined_tables 
