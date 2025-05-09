@@ -154,6 +154,8 @@ def us_tn_classification_forms(
             event_date,
             incident_class,
             note_body,
+            injury_level,
+            incident_type,
         FROM
             disciplinaries
         -- For q6 and q7, we only want to consider guilty disciplinaries with non-missing disciplinary class
@@ -220,7 +222,11 @@ def us_tn_classification_forms(
                                                   WHEN incident_class = 'B' THEN 2
                                                   WHEN incident_class = 'C' THEN 3
                                                   END ASC,
-                                                  event_date DESC
+                                                  event_date DESC,
+                                                  -- For same-day incident types, prioritize showing ones with assault
+                                                  COALESCE(CAST(NULLIF(injury_level,'') AS INT64),0) DESC,
+                                                  -- Finally, order by incident type to make deterministic
+                                                  incident_type                                                  
                                                   ) = 1
     ),
     level_care AS (
@@ -237,7 +243,7 @@ def us_tn_classification_forms(
             pei.state_code = 'US_TN'
         WHERE
             MainServiceType = 'LVCA'
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY DATE(HealthServiceDateTime) DESC) = 1
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY DATETIME(HealthServiceDateTime) DESC) = 1
     ),
     vantage AS (
         SELECT  
