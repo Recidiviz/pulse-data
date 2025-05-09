@@ -31,6 +31,7 @@ const sidebarComponentNames = [
   "UsTnCommonlyUsedOverrideCodes",
   "UsMiRestrictiveHousing",
   "UsNeORASScores",
+  "UsNeSpecialConditions",
 
   // Resident-related components
   "Incarceration",
