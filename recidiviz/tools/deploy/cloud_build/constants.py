@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Deployment related constants"""
+from google.cloud.devtools.cloudbuild_v1 import Volume
 
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import ImageKind
 
@@ -46,3 +47,5 @@ IMAGE_DOCKERFILES: dict[ImageKind, tuple[str, str | None]] = {
     ImageKind.DATAFLOW: ("recidiviz/pipelines/Dockerfile.pipelines", None),
     ImageKind.DATAFLOW_DEV: ("recidiviz/pipelines/Dockerfile.pipelines", None),
 }
+
+RECIDIVIZ_SOURCE_VOLUME = Volume(name="git-source", path="/app/recidiviz/")

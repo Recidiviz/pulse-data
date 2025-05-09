@@ -43,6 +43,9 @@ from recidiviz.tools.deploy.cloud_build.cloud_build_client import CloudBuildClie
 from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
     DeploymentStageInterface,
 )
+from recidiviz.tools.deploy.cloud_build.stages.build_cloud_functions import (
+    BuildCloudFunctions,
+)
 from recidiviz.tools.deploy.cloud_build.stages.build_images import BuildImages
 from recidiviz.tools.deploy.cloud_build.stages.create_terraform_plan import (
     CreateTerraformPlan,
@@ -60,6 +63,7 @@ AVAILABLE_DEPLOYMENT_STAGES: set[type[DeploymentStageInterface]] = {
     TagImages,
     BuildImages,
     CreateTerraformPlan,
+    BuildCloudFunctions,
 }
 
 
@@ -99,6 +103,12 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--dry-run",
+        required=False,
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--execute-async",
         required=False,
         action="store_true",
         default=False,
@@ -144,7 +154,7 @@ if __name__ == "__main__":
 
             sys.exit()
 
-        deployment_build = interactive_prompt_retry_on_exception(
+        interactive_prompt_retry_on_exception(
             fn=lambda: cloud_build_client.run_build(
                 create_deployment_build_api_obj(
                     build_configuration=deployment_stage_cls().configure_build(
@@ -152,7 +162,8 @@ if __name__ == "__main__":
                         args=deployment_stage_args,
                     ),
                     deployment_context=deployment_context,
-                )
+                ),
+                execute_async=parsed_args.execute_async,
             ),
             input_text="An error occurred while running the build. See logs for more details.\n"
             "Would you like to retry this step?",

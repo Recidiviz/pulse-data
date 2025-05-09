@@ -32,7 +32,10 @@ from google.cloud.devtools.cloudbuild_v1 import (
 )
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
-from recidiviz.tools.deploy.cloud_build.constants import BUILDER_GCLOUD
+from recidiviz.tools.deploy.cloud_build.constants import (
+    BUILDER_GCLOUD,
+    RECIDIVIZ_SOURCE_VOLUME,
+)
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
@@ -42,6 +45,7 @@ class DeploymentContext:
     project_id: str
     commit_ref: str
     version_tag: str
+    stage: str
 
     @classmethod
     def build_from_argparse(cls, args: Namespace) -> "DeploymentContext":
@@ -49,6 +53,7 @@ class DeploymentContext:
             project_id=args.project_id,
             commit_ref=args.commit_ref,
             version_tag=args.version_tag,
+            stage=args.stage,
         )
 
     @property
@@ -138,18 +143,42 @@ def create_deployment_build_api_obj(
             # > request will result in error.
             options={"substitution_option": "ALLOW_LOOSE"},
             artifacts=Artifacts(objects=build_configuration.object_artifacts),
+            tags=[
+                # Tags are used to filter builds in the Cloud Build UI
+                deployment_context.version_tag,
+                deployment_context.commit_ref,
+                deployment_context.stage,
+            ],
         )
     )
+
+    additional_steps = [
+        # Without this step, read/write access to /workspace/ would be forbidden for non-root users
+        # https://cloud.google.com/build/docs/troubleshooting#timeout_issues_when_pulling_images_from_docker_registry
+        BuildStep(
+            name="gcr.io/cloud-builders/docker",
+            id="Give non-root users access to /workspace/ volume",
+            args=["a+w", "/workspace"],
+            entrypoint="chmod",
+        ),
+    ]
+
+    if build_configuration.uses_source:
+        additional_steps.append(
+            # This is effectively a no-op for deployment runs as the checked out source will be the same
+            # as what is bundled for the image.
+            # For Pull Requests / Continuous Delivery, this will allow us to use not-yet deployed code in the build
+            build_step_for_shell_command(
+                id_="Copy Git source to shared volume",
+                name=BUILDER_GCLOUD,
+                command="cp -r /workspace/recidiviz/* /app/recidiviz",
+                volumes=[RECIDIVIZ_SOURCE_VOLUME],
+            )
+        )
+
     builder.update_args(
         steps=[
-            # Without this step, read/write access to /workspace/ would be forbidden for non-root users
-            # https://cloud.google.com/build/docs/troubleshooting#timeout_issues_when_pulling_images_from_docker_registry
-            BuildStep(
-                name="gcr.io/cloud-builders/docker",
-                id="Give non-root users access to /workspace/ volume",
-                args=["a+w", "/workspace"],
-                entrypoint="chmod",
-            ),
+            *additional_steps,
             *build_configuration.steps,
         ],
         options=BuildOptions(machine_type=build_configuration.machine_type),

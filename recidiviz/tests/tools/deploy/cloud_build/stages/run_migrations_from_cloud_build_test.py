@@ -51,6 +51,7 @@ class RunMigrationsTest(unittest.TestCase):
             project_id=GCP_PROJECT_STAGING,
             version_tag="v1",
             commit_ref="a1b2c3d4",
+            stage="stage",
         )
 
         build_configuration = RunMigrations().configure_build(

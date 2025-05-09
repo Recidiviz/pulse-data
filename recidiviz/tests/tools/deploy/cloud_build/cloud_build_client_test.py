@@ -37,6 +37,7 @@ class CloudBuildClientTest(unittest.TestCase):
         project_id="test-project",
         commit_ref="a1b2c3d4",
         version_tag="v1.0",
+        stage="DeployStage",
     )
 
     @freezegun.freeze_time(

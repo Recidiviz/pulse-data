@@ -23,6 +23,17 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
   secret = "po_report_cdn_static_IP"
 }
 
+module "cloud-functions-bucket" {
+  project_id  = var.project_id
+  source      = "./modules/cloud-storage-bucket"
+  name_suffix = "cloud-functions"
+}
+
+locals {
+  recidiviz_cloud_function_source = "recidiviz-cloud-function-source.zip"
+}
+
+# This function is deployed by the `BuildCloudFunctions` deployment stage
 resource "google_cloudfunctions2_function" "handle_zipfile" {
   name        = "ingest_zipfile_handler"
   location    = "us-central1"
@@ -35,9 +46,9 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
       GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
     }
     source {
-      repo_source {
-        repo_name  = "github_Recidiviz_pulse-data"
-        commit_sha = var.git_hash
+      storage_source {
+        bucket = module.cloud-functions-bucket.name
+        object = local.recidiviz_cloud_function_source
       }
     }
   }
@@ -57,8 +68,18 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
     }
     ingress_settings = "ALLOW_INTERNAL_ONLY"
   }
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to storage_source because the BuildCloudFunctions deployment stage
+      # will update the source code for the function.
+      build_config.0.source,
+    ]
+  }
 }
 
+
+# This function is deployed by the `BuildCloudFunctions` deployment stage
 resource "google_cloudfunctions2_function" "filename_normalization" {
   name        = "ingest_filename_normalization"
   location    = "us-central1"
@@ -72,9 +93,9 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
       GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/ingest_filename_normalization.py"
     }
     source {
-      repo_source {
-        repo_name  = "github_Recidiviz_pulse-data"
-        commit_sha = var.git_hash
+      storage_source {
+        bucket = module.cloud-functions-bucket.name
+        object = local.recidiviz_cloud_function_source
       }
     }
   }
@@ -106,5 +127,13 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
     ingress_settings              = "ALLOW_INTERNAL_ONLY"
     vpc_connector                 = google_vpc_access_connector.cloud_function_vpc_connector.name
     vpc_connector_egress_settings = "ALL_TRAFFIC"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to storage_source because the BuildCloudFunctions deployment stage
+      # will update the source code for the function.
+      build_config.0.source,
+    ]
   }
 }

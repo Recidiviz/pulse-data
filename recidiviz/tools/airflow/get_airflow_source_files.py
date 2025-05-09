@@ -19,15 +19,9 @@ import argparse
 import logging
 import os.path
 import shutil
-from glob import glob
-
-import yaml
 
 import recidiviz
-from recidiviz.tools.file_dependencies import (
-    EntrypointDependencies,
-    convert_path_to_recidiviz_module,
-)
+from recidiviz.tools.file_dependencies import get_entrypoint_source_files
 from recidiviz.utils.params import str_to_bool
 
 DAGS_FOLDER = "dags"
@@ -39,44 +33,6 @@ SOURCE_FILE_YAML_PATH = os.path.join(
 )
 
 
-def _get_paths_list_from_file_pattern(file_pattern: tuple[str, str]) -> list[str]:
-    path, pattern = file_pattern
-    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True)
-
-
-def get_airflow_source_file_paths() -> list[str]:
-    """Lists all paths that are airflow source files."""
-    # copy all dag dependency files
-    dag_files: list[str] = _get_paths_list_from_file_pattern(
-        ("recidiviz/airflow/dags", "*dag*.py")
-    )
-    explicitly_listed_dependency_files: list[str] = []
-
-    with open(SOURCE_FILE_YAML_PATH, encoding="utf-8") as f:
-        file_patterns = yaml.safe_load(f)
-        for file_pattern in file_patterns:
-            explicitly_listed_dependency_files.extend(
-                _get_paths_list_from_file_pattern(file_pattern)
-            )
-
-    dependencies = EntrypointDependencies()
-    for dag_file in dag_files:
-        dependencies.add_dependencies_for_entrypoint(
-            convert_path_to_recidiviz_module(dag_file)
-        )
-
-    for explicitly_listed_dependency_file in explicitly_listed_dependency_files:
-        if explicitly_listed_dependency_file.endswith(".py"):
-            dependencies.add_dependencies_for_entrypoint(
-                convert_path_to_recidiviz_module(explicitly_listed_dependency_file)
-            )
-
-    return (
-        list(dependencies.all_module_dependency_source_files)
-        + explicitly_listed_dependency_files
-    )
-
-
 def main(dry_run: bool, output_path: str) -> None:
     """
     Gets the list of Airflow source files and outputs it as json map of source file path to destination file path.
@@ -84,13 +40,16 @@ def main(dry_run: bool, output_path: str) -> None:
     """
     source_files = [
         os.path.relpath(file, os.path.dirname(os.path.dirname(recidiviz.__file__)))
-        for file in get_airflow_source_file_paths()
+        for file in get_entrypoint_source_files(
+            [("recidiviz/airflow/dags", "*dag*.py")], SOURCE_FILE_YAML_PATH
+        )
     ]
 
     source_files_to_destination = {
         file: os.path.basename(file) if file.endswith("dag.py") else file
         for file in source_files
     }
+
     if not dry_run:
         for source, destination in source_files_to_destination.items():
             output_file = f"{output_path}/{destination}"

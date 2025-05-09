@@ -1,0 +1,5 @@
+# Paths of files from recidiviz non-Cloud Functions source code to add to the Cloud Function
+# source archive file
+# The paths should follow the Terraform fileset format of [path, pattern]. Any non-Python file
+# dependency must be added here. Python dependencies will be added automatically.
+- [recidiviz/cloud_functions, "requirements.txt"]

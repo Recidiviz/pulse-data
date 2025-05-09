@@ -69,8 +69,8 @@ class CloudBuildClient:
             )
         )
 
-    def run_build(self, build: Build) -> Build:
-        """Runs a build and waits for it to finish
+    def run_build(self, build: Build, execute_async: bool = False) -> Build:
+        """Runs a build and optionally waits for it to finish
         Raises:
             (TimeoutError): Build execution passed its allowed timeout
             (RuntimeError): Build did not complete successfully"""
@@ -82,6 +82,11 @@ class CloudBuildClient:
             )
         )
         log_output_printed = False
+
+        if execute_async:
+            build = self.get_build(build_id=create_build_operation.metadata.build.id)
+            logging.info("Logs can be found at %s", build.log_url)
+            return build
 
         start_time = datetime.datetime.now()
         timeout_timedelta = assert_type(build.timeout, datetime.timedelta)

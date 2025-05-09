@@ -30,12 +30,7 @@ python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
 """
 import argparse
 
-from google.cloud.devtools.cloudbuild_v1 import (
-    Artifacts,
-    BuildOptions,
-    BuildStep,
-    Volume,
-)
+from google.cloud.devtools.cloudbuild_v1 import Artifacts, BuildOptions, BuildStep
 
 from recidiviz.tools.airflow.utils import get_environment_by_name
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
@@ -52,6 +47,7 @@ from recidiviz.tools.deploy.cloud_build.constants import (
     BUILDER_GCLOUD,
     BUILDER_GIT,
     BUILDER_TERRAFORM,
+    RECIDIVIZ_SOURCE_VOLUME,
     TERRAFORM_WORKDIR,
 )
 from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
@@ -60,8 +56,6 @@ from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
 from recidiviz.tools.gsutil_shell_helpers import gcloud_storage_rsync_airflow_command
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
-
-GCLOUD_IMAGE = "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
 
 AIRFLOW_SOURCE_FILES_DIR = "/workspace/airflow_source_files"
 
@@ -72,8 +66,6 @@ PAGERDUTY_SECRET_NAME = "pagerduty_terraform_key"  # nosec
 TERRAFORM_CLI_ARGS_ENV = "TF_CLI_ARGS=-input=false -no-color -compact-warnings"
 
 STEP_SHOW_TERRAFORM_PLAN = "Show Terraform plan contents"
-
-RECIDIVIZ_SOURCE_VOLUME = Volume(name="git-source", path="/app/recidiviz/")
 
 
 def plan_file_name_for_deployment(deployment_context: DeploymentContext) -> str:
@@ -183,17 +175,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
         )
         plan_path = f"/workspace/{plan_file_name_for_deployment(deployment_context)}"
 
-        # This is effectively a no-op for deployment runs as the checked out source will be the same
-        # as what is bundled for the image.
-        # For Pull Requests, this will allow us to see the changed Airflow source files in the plan output
-        copy_git_source_to_volume = build_step_for_shell_command(
-            id_="Copy Git source to shared volume",
-            name="alpine",
-            command="cp -r /workspace/recidiviz/* /app/recidiviz",
-            volumes=[RECIDIVIZ_SOURCE_VOLUME],
-            timeout_seconds=(15 * 60),  # 15 min timeout
-        )
-
         terraform_init = BuildStep(
             id="Initialize Terraform backend",
             name=BUILDER_TERRAFORM,
@@ -220,7 +201,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 name=BUILDER_TERRAFORM,
                 command='echo "Downloaded latest image!"',
             ),
-            copy_git_source_to_volume,
             terraform_init,
             terraform_plan,
         ]

@@ -168,6 +168,14 @@ function pre_deploy_configure_infrastructure {
     else
       echo "No changes to migrations -- skipping"
     fi
+
+    echo "Building Cloud Functions asynchronously"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+      --project-id "${PROJECT}" \
+      --version-tag "${GIT_VERSION_TAG}" \
+      --commit-ref "${COMMIT_HASH}" \
+      --stage "BuildCloudFunctions" \
+      --execute-async
 }
 
 function copy_docker_image_to_repository {

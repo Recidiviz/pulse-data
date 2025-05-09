@@ -61,6 +61,7 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                         project_id="test-project",
                         commit_ref="1a2b3c4d",
                         version_tag="v1.0",
+                        stage="Stage",
                     ),
                     stage_args.get(deployment_stage, argparse.Namespace()),
                 )

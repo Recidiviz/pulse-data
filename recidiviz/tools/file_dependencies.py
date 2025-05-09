@@ -23,6 +23,7 @@ from glob import glob
 from typing import DefaultDict, Dict, List, Optional, Set, Tuple
 
 import attr
+import yaml
 
 import recidiviz
 
@@ -304,3 +305,48 @@ def get_dependencies_for_entrypoint(entrypoint: str) -> EntrypointDependencies:
     deps = EntrypointDependencies()
     deps.add_dependencies_for_entrypoint(entrypoint)
     return deps
+
+
+ROOT = os.path.dirname(recidiviz.__file__)
+
+
+def _get_paths_list_from_file_pattern(file_pattern: tuple[str, str]) -> list[str]:
+    path, pattern = file_pattern
+    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True)
+
+
+def get_entrypoint_source_files(
+    entrypoint_path_patterns: list[tuple[str, str]],
+    explicitly_listed_dependency_yaml: str,
+) -> set[str]:
+    """
+    Gets the list of source files for the entrypoint and its dependencies.
+    """
+    explicitly_listed_dependency_files: list[str] = []
+
+    with open(explicitly_listed_dependency_yaml, encoding="utf-8") as f:
+        file_patterns = yaml.safe_load(f)
+        for file_pattern in file_patterns:
+            explicitly_listed_dependency_files.extend(
+                _get_paths_list_from_file_pattern(file_pattern)
+            )
+
+    dependencies = EntrypointDependencies()
+    for entrypoint_path, entrypoint_pattern in entrypoint_path_patterns:
+        for entrypoint in _get_paths_list_from_file_pattern(
+            (entrypoint_path, entrypoint_pattern)
+        ):
+            dependencies.add_dependencies_for_entrypoint(
+                convert_path_to_recidiviz_module(entrypoint)
+            )
+
+    for explicitly_listed_dependency_file in explicitly_listed_dependency_files:
+        if explicitly_listed_dependency_file.endswith(".py"):
+            dependencies.add_dependencies_for_entrypoint(
+                convert_path_to_recidiviz_module(explicitly_listed_dependency_file)
+            )
+
+    return set(
+        list(dependencies.all_module_dependency_source_files)
+        + explicitly_listed_dependency_files
+    )
