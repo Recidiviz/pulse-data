@@ -113,7 +113,8 @@ active_referrals AS
     PREF_PGM_CTGRY_ID = "5"
     -- 226 = RESIDENTIAL; 227 = RELAPSE RESIDENTIAL
     -- 228 = SUPPORTIVE OUTPATIENT; 229 = RELAPSE OUTPATIENT
-    AND PREF_PROG_TYPE_ID IN ("226", "227", "228", "229")
+    -- 1926 = CHEYENNE CENTER
+    AND PREF_PROG_TYPE_ID IN ("226", "227", "228", "229" , "1926")
     AND PREF_PGM_STATUS IN ("1", "4", "5", "6")
 ),
 -- Collects all of the peer support program referrals 
@@ -131,9 +132,12 @@ past_referral AS (
     PREF_SID_NO AS SID_Number
   FROM `{ProgramReferral}`
   WHERE
+    -- 5 - SUBSTANCE ABUSE
+    PREF_PGM_CTGRY_ID = "5"
     -- 226 = RESIDENTIAL; 227 = RELAPSE RESIDENTIAL
     -- 228 = SUPPORTIVE OUTPATIENT; 229 = RELAPSE OUTPATIENT
-    PREF_PROG_TYPE_ID IN ("226", "227", "228", "229")
+    -- 1926 = CHEYENNE CENTER
+    AND PREF_PROG_TYPE_ID IN ("226", "227", "228", "229" , "1926")
     -- Completed
     AND PREF_PGM_STATUS = "3"
 ),
@@ -174,13 +178,9 @@ phase_logic AS (
     CASE 
       -- Client is currently in an inpatient facility
       WHEN ic.SID_Number IS NOT NULL THEN 'PHASE 1'
-      -- Client has an active referral and a corresponding team meeting phase
-      WHEN ar.SID_Number IS NOT NULL AND ltpu.SID_Number IS NOT NULL THEN ltpu.phase
       -- No active referral but has a peer support referral
-      WHEN psr.SID_Number IS NOT NULL THEN 'PHASE 3'
-      -- Has past referral and matching team meeting phase
-      WHEN pr.SID_Number IS NOT NULL AND ltpu.SID_Number IS NOT NULL THEN ltpu.phase 
-      -- Default case
+      WHEN psr.SID_Number IS NOT NULL AND ar.SID_Number IS NULL THEN 'PHASE 3'
+      -- Client is not in an inpatient facility nor do they have an active referral
       ELSE 'PHASE 2'
     END AS phase,
     ac.SID_Number
@@ -188,8 +188,6 @@ phase_logic AS (
   LEFT JOIN inpatient_clients ic USING (SID_Number)
   LEFT JOIN active_referrals ar USING (SID_Number)
   LEFT JOIN peer_support_referral psr USING (SID_Number)
-  LEFT JOIN past_referral pr USING (SID_Number)
-  LEFT JOIN latest_ttm_phase_uncoded ltpu USING (SID_Number)
 ),
 -- Ensures consistent formatting and filtering out null phases
 client_phases AS (
