@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     needs_scheduled_home_contact_monthly_critical_understaffing,
     needs_scheduled_home_contact_not_critical_understaffing,
     needs_scheduled_home_contact_quarterly_critical_understaffing,
+    needs_scheduled_home_contact_virtual_override_critical_understaffing,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     OrTaskCriteriaGroup,
@@ -40,6 +41,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
         needs_scheduled_home_contact_not_critical_understaffing.VIEW_BUILDER,
         needs_scheduled_home_contact_quarterly_critical_understaffing.VIEW_BUILDER,
         needs_scheduled_home_contact_monthly_critical_understaffing.VIEW_BUILDER,
+        needs_scheduled_home_contact_virtual_override_critical_understaffing.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[
         "frequency",
@@ -51,6 +53,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
         "officer_in_critically_understaffed_location",
         "overdue_flag",
         "period_type",
+        "override_contact_type",
     ],
 ).as_criteria_view_builder
 
