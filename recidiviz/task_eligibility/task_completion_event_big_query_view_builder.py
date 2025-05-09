@@ -96,6 +96,9 @@ class TaskCompletionEventType(Enum):
     # (potentially transfer to minimum facility & transfer to re-entry facility)
     TRANSFER_TO_MINIMUM_FACILITY = "TRANSFER_TO_MINIMUM_FACILITY"
     INCARCERATION_ASSESSMENT_COMPLETED = "INCARCERATION_ASSESSMENT_COMPLETED"
+    INCARCERATION_INTAKE_ASSESSMENT_COMPLETED = (
+        "INCARCERATION_INTAKE_ASSESSMENT_COMPLETED"
+    )
     KUDOS_SMS_SENT = "KUDOS_SMS_SENT"
     TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION = (
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
@@ -128,6 +131,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
             TaskCompletionEventType.HEARING_OCCURRED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
@@ -188,6 +192,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
         ]:
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
@@ -297,6 +302,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.HEARING_OCCURRED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.KUDOS_SMS_SENT,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
@@ -318,6 +324,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.FULL_TERM_DISCHARGE,
             TaskCompletionEventType.HEARING_OCCURRED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,

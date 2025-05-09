@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when classification hearings that were scheduled have occurred, regardless
-of whether they were on time. Excludes classification hearings done during Intake
-"""
+"""Defines a view that shows when intake classification hearings have occurred"""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
@@ -32,18 +31,18 @@ _QUERY_TEMPLATE = """
     FROM
         `{project_id}.analyst_data.custody_classification_assessment_dates_materialized` c
     -- This criteria only exists for spans where someone has received their first classification after starting
-    -- or re-starting state-prison custody, excluding those events limits to non-intake classifications
-    LEFT JOIN 
+    -- or re-starting state-prison custody, so joining here limits to only intake completion events
+    INNER JOIN 
         `{project_id}.task_eligibility_criteria_general.has_initial_classification_in_state_prison_custody_materialized` i
-        ON c.person_id = i.person_id
-        AND c.state_code = i.state_code
-        AND c.classification_decision_date = i.start_date
-    WHERE i.person_id IS NULL  
+    ON c.person_id = i.person_id
+    AND c.state_code = i.state_code
+    AND c.classification_decision_date = i.start_date  
+
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_TN,
-    completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+    completion_event_type=TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
 )

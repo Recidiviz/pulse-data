@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
-    incarceration_assessment_completed,
+    incarceration_intake_assessment_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_not_max,
@@ -56,7 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,
         custody_level_is_not_max.VIEW_BUILDER,
     ],
-    completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
+    completion_event_builder=incarceration_intake_assessment_completed.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
