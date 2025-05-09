@@ -27,7 +27,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_NAME = (
 
 COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = """This is a view that creates an initial set of sub-sessions
 from dataflow sessions. This view does the following:
-1. Unnest attribute arrays in dataflow_sessions
+1. Unnest attribute arrays in dataflow_sessions_deduped_by_system_type
 2. Deduplicate overlapping compartments
 3. Fill gaps between sessions
 4. Join with dataflow event start/end reasons
@@ -69,51 +69,9 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         session_attributes.gender,
         session_attributes.custodial_authority,
         last_day_of_data,
-    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_deduped_by_system_type_materialized`,
     UNNEST(session_attributes) session_attributes
     WHERE session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
-    )
-    ,
-    dual_recategorization_cte AS
-    (
-    SELECT DISTINCT
-        person_id,
-        dataflow_session_id,
-        state_code,
-        start_date,
-        end_date_exclusive,
-        compartment_level_1,
-        CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
-        supervising_officer_external_id,
-        compartment_location,
-        facility,
-        facility_name,
-        supervision_office,
-        supervision_office_name,
-        supervision_district,
-        supervision_district_name,
-        supervision_region_name,
-        correctional_level,
-        correctional_level_raw_text,
-        housing_unit,
-        housing_unit_category,
-        housing_unit_type,
-        housing_unit_type_raw_text,
-        case_type,
-        case_type_raw_text,
-        prioritized_race_or_ethnicity,
-        gender,
-        custodial_authority,
-        metric_source,
-        last_day_of_data,
-    FROM
-        (
-        SELECT
-            *,
-        COUNT(DISTINCT(CASE WHEN compartment_level_2 IN ('PAROLE', 'PROBATION')
-            THEN compartment_level_2 END)) OVER(PARTITION BY person_id, state_code, dataflow_session_id, compartment_level_1) AS cnt,
-        FROM session_attributes_unnested
-        )
     )
     ,
     dedup_compartment_cte AS
@@ -154,8 +112,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         
         FIRST_VALUE(IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cte.compartment_level_2, NULL)) OVER(
             PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id
-            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl1_dedup.priority, 999) ASC,
-                IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl2_dedup.priority, 999) ASC) AS open_supervision_cl2,
+            ORDER BY IF(cte.compartment_level_1 LIKE 'SUPERVISION%', cl1_dedup.priority, 999) ASC) AS open_supervision_cl2,
         
         cte.prioritized_race_or_ethnicity,
         cte.gender,
@@ -163,30 +120,11 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         cte.start_date,
         cte.end_date_exclusive,
         cte.last_day_of_data,
-    FROM dual_recategorization_cte cte
+    FROM session_attributes_unnested cte
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_dedup_priority` cl1_dedup
         USING(compartment_level_1)
-    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_2_dedup_priority` cl2_dedup
-        USING(compartment_level_1, compartment_level_2)
-    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` sl_dedup
-        ON cte.correctional_level = sl_dedup.correctional_level
-    WHERE TRUE
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id
-        ORDER BY COALESCE(cl1_dedup.priority, 999),
-                COALESCE(cl2_dedup.priority, 999),
-                COALESCE(correctional_level_priority, 999),
-                NULLIF(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(compartment_location, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(case_type_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(correctional_level_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(housing_unit, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(housing_unit_category, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(housing_unit_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
-                NULLIF(housing_unit_type_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST
-
-
-                ) = 1
+        ORDER BY COALESCE(cl1_dedup.priority, 999)) = 1
     )
      ,
     session_gaps_cte AS
