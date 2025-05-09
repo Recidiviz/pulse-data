@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,29 +58,17 @@ facility_sessions AS (
     WHERE state_code = 'US_ND'
     GROUP BY 1,2,3
 ),
-completed_sentences AS (
-    SELECT
-        SPLIT(s.external_id, '-')[OFFSET(0)] AS external_id,
-        ss.status,
-        SAFE_CAST(ss.status_update_datetime AS DATE) AS sentence_end_date,
-    FROM `{{project_id}}.normalized_state.state_sentence` s
-    LEFT JOIN `{{project_id}}.normalized_state.state_sentence_status_snapshot` ss
-        USING(sentence_id)
-    -- Filter to only join to incarceration sentences
-    WHERE s.external_id NOT LIKE "%|%"
-        AND s.state_code = 'US_ND'
-        AND ss.status = 'COMPLETED'
-    -- only pull the most recent status for a given sentence
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY external_id, sentence_id ORDER BY status_update_datetime DESC) = 1
-),
 officer_assignments AS (
   -- Combine all of the views above and get case manager assignments
     SELECT
+        peid.person_id,
         REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') AS external_id,
         SAFE_CAST(LEFT(OFFENDER_START_DATE, 10) AS DATE) AS start_date,
+        -- If the end date is NULL and the person was released from a prior incarceration 
+        -- after the assignment started, we set the assignment’s end date to that release date.
         LEAST(
             {nonnull_end_date_clause('SAFE_CAST(LEFT(OFFENDER_END_DATE, 10) AS DATE)')},
-            {nonnull_end_date_clause('cs.sentence_end_date')}
+            {nonnull_end_date_clause('iss.end_date')}
         ) AS end_date,
         SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(2)] AS given_names,
         SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(1)] AS surname,
@@ -95,9 +83,14 @@ officer_assignments AS (
         recidiviz_elite_CourseActivities_generated_view ca
     USING
         (CRS_ACTY_ID)
-    LEFT JOIN completed_sentences cs
-        ON REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') = cs.external_id
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') = peid.external_id
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    LEFT JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
+        USING(state_code, person_id)
     WHERE ps.DESCRIPTION = 'ASSIGNED CASE MANAGER'
+        AND SAFE_CAST(LEFT(OFFENDER_START_DATE, 10) AS DATE) BETWEEN iss.start_date AND {nonnull_end_date_clause('iss.end_date')}
 ), 
 
 staff_ids AS (
@@ -131,12 +124,8 @@ officer_assignments_with_staff_and_person_ids AS (
     LEFT JOIN staff_ids si
     # TODO(#31389) Find another way to join other than string matching, 
         USING(given_names, surname)
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-    ON oa.external_id = peid.external_id
-        AND peid.state_code = 'US_ND'
-        AND peid.id_type = 'US_ND_ELITE_BOOKING'
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
-    ON peid.person_id = peid2.person_id
+    ON oa.person_id = peid2.person_id
         AND peid2.state_code = 'US_ND'
         AND peid2.id_type = 'US_ND_ELITE'
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei
