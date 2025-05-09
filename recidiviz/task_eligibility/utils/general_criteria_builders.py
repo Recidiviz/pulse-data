@@ -43,6 +43,7 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
@@ -1497,3 +1498,16 @@ def status_for_at_least_x_time_criteria_query(
         TO_JSON(STRUCT({additional_column} AS {additional_column})) AS reason,
         {additional_column},
     FROM critical_date_has_passed_spans"""
+
+
+def get_reason_json_fields_query_template_for_criteria(
+    criteria_builder: StateSpecificTaskCriteriaBigQueryViewBuilder
+    | StateAgnosticTaskCriteriaBigQueryViewBuilder,
+) -> str:
+    """Returns a query template that extracts all json fields from a criteria builder"""
+    return ",\n".join(
+        [
+            f"JSON_EXTRACT_SCALAR(reason_v2, '$.{field.name}') AS {field.name}"
+            for field in criteria_builder.reasons_fields
+        ]
+    )

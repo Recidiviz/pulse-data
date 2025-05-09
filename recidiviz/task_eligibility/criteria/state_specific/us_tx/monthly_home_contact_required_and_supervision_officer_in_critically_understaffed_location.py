@@ -16,13 +16,13 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which a client
-requires a scheduled home contact and is NOT associated with the critical
-understaffing policy, which has separate requirements for quarterly home visits.
+requires monthly schedule home contacts and is associated with a critically
+understaffed location.
 """
 
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    needs_scheduled_home_contact_standard_policy,
-    not_quarterly_home_contact_required_and_supervision_officer_in_critically_understaffed_location,
+    monthly_home_contact_required,
+    supervision_officer_in_critically_understaffed_location,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
@@ -30,19 +30,23 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = (
-    "US_TX_NEEDS_SCHEDULED_HOME_CONTACT_NOT_QUARTERLY_CRITICAL_UNDERSTAFFING"
-)
+_CRITERIA_NAME = "US_TX_MONTHLY_HOME_CONTACT_REQUIRED_AND_SUPERVISION_OFFICER_IN_CRITICALLY_UNDERSTAFFED_LOCATION"
 
+_DESCRIPTION = """
+Defines a criteria span view that shows spans of time during which a client
+requires monthly schedule home contacts and is associated with a critically
+understaffed location.
+"""
 
 VIEW_BUILDER = AndTaskCriteriaGroup(
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
-        needs_scheduled_home_contact_standard_policy.VIEW_BUILDER,
-        not_quarterly_home_contact_required_and_supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+        monthly_home_contact_required.VIEW_BUILDER,
+        supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=["frequency", "type_of_contact"],
+    allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
