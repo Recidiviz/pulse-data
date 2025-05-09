@@ -68,7 +68,7 @@ eligible_clients AS (
         eligible.reasons_v2 AS reasons,
         eligible.is_eligible,
         eligible.is_almost_eligible,
-        tes_collapsed.start_date AS metadata_eligible_date,
+        tes_collapsed.start_date AS eligible_date,
     FROM eligible_clients_with_duplicate_external_ids eligible
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
         ON eligible.external_id = pei.person_external_id
@@ -158,7 +158,7 @@ SELECT
     is_eligible,
     is_almost_eligible,
     last_case_plan_check_in_as_case_notes.case_notes AS case_notes,
-    metadata_eligible_date,
+    eligible_date,
     last_four_oras_scores.last_four_oras_scores AS metadata_recent_oras_scores,
     last_four_oras_scores.latest_assessment_date AS metadata_latest_assessment_date, -- Form + Metadata
     last_four_oras_scores.next_assessment_date AS metadata_next_assessment_date, -- Form + Metadata
