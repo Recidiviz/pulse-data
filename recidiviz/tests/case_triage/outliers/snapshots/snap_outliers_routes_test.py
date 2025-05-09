@@ -670,10 +670,15 @@ Incarceration rate denominator description""",
         "updatedBy": "alexa@recidiviz.org",
         "vitalsMetrics": [
             {
+                "bodyDisplayName": "Assessment",
                 "metricId": "timely_risk_assessment",
                 "titleDisplayName": "Timely Risk Assessment",
             },
-            {"metricId": "timely_contact", "titleDisplayName": "Timely Contact"},
+            {
+                "bodyDisplayName": "Contact",
+                "metricId": "timely_contact",
+                "titleDisplayName": "Timely Contact",
+            },
         ],
         "vitalsMetricsMethodologyUrl": "https://recidiviz.org",
         "worseThanRateLabel": "label2",

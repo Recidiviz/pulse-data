@@ -155,6 +155,9 @@ class OutliersVitalsMetricConfig:
     # The display name of the metric
     title_display_name: str = attr.ib()
 
+    # A shorter display name
+    body_display_name: str = attr.ib()
+
 
 @attr.s(frozen=True, kw_only=True)
 class OutliersMetricConfig:

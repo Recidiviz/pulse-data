@@ -112,14 +112,17 @@ VIOLATIONS_ABSCONSION = OutliersMetric(
 TIMELY_RISK_ASSESSMENT = OutliersVitalsMetricConfig(
     metric_id="timely_risk_assessment",
     title_display_name="Timely Risk Assessment",
+    body_display_name="Assessment",
 )
 TIMELY_CONTACT = OutliersVitalsMetricConfig(
     metric_id="timely_contact",
     title_display_name="Timely Contact",
+    body_display_name="Contact",
 )
 TIMELY_F2F_CONTACT = OutliersVitalsMetricConfig(
     metric_id="timely_contact",
     title_display_name="Timely F2F Contact",
+    body_display_name="Contact",
 )
 
 # Lantern Events

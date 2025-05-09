@@ -285,10 +285,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 OutliersVitalsMetricConfig(
                     metric_id="timely_risk_assessment",
                     title_display_name="Timely Risk Assessment",
+                    body_display_name="Assessment",
                 ),
                 OutliersVitalsMetricConfig(
                     metric_id="timely_contact",
                     title_display_name="Timely Contact",
+                    body_display_name="Contact",
                 ),
             ],
             action_strategy_copy=ACTION_STRATEGIES_DEFAULT_COPY,

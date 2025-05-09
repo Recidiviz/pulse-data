@@ -133,10 +133,12 @@ def get_config_fixture_for_state(state_code: StateCode) -> OutliersProductConfig
             OutliersVitalsMetricConfig(
                 metric_id="timely_risk_assessment",
                 title_display_name="Timely Risk Assessment",
+                body_display_name="Assessment",
             ),
             OutliersVitalsMetricConfig(
                 metric_id="timely_contact",
                 title_display_name="Timely Contact",
+                body_display_name="Contact",
             ),
         ],
     )
