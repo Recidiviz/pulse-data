@@ -1283,6 +1283,10 @@ class BigQueryClientImpl(BigQueryClient):
 
         try:
             existing_policies = self.list_row_level_permissions(table)
+            if existing_policies and row_access_policy_lists_are_equivalent(
+                existing_policies, access_policies
+            ):
+                return
         except Exception as e:
             logging.warning(
                 "Failed to list row level permissions for table [%s.%s]: %s",
@@ -1290,11 +1294,6 @@ class BigQueryClientImpl(BigQueryClient):
                 table.table_id,
                 str(e),
             )
-
-        if existing_policies and row_access_policy_lists_are_equivalent(
-            existing_policies, access_policies
-        ):
-            return
 
         logging.info(
             "Applying row-level permissions to table [%s.%s]",
