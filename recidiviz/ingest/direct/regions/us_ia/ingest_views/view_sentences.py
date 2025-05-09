@@ -64,7 +64,7 @@ WITH
     sentence.JudgeLastNm,
     sentence.JudgeMiddleNm,
     sentence.JudgeLegalPeopleId,
-  FROM {{IA_DOC_Penalities}} penalty
+  FROM {{IA_DOC_Penalties}} penalty
   LEFT JOIN {{IA_DOC_Sentences}} sentence USING(OffenderCd, SentenceId)
   LEFT JOIN {{IA_DOC_Charges}} charge USING(OffenderCd, ChargeId)
   LEFT JOIN {{IA_DOC_CrimeCodes}} crime_codes on ConvictingCrimeCdId = CrimeCdId

@@ -50,7 +50,7 @@ VIEW_QUERY_TEMPLATE = f"""
             SentencePenaltyModifier,
             LEAST(DATE(penalty.EnteredDt), DATE(update_datetime)) AS update_datetime,
             DATE(sentence.SentenceDt) AS SentenceDt,
-          FROM {{IA_DOC_Penalities@ALL}} penalty
+          FROM {{IA_DOC_Penalties@ALL}} penalty
           LEFT JOIN {{IA_DOC_Sentences}} sentence USING(OffenderCd, SentenceId)
         )
       )
@@ -74,7 +74,7 @@ VIEW_QUERY_TEMPLATE = f"""
           WHEN DATE(sentence.SentenceEndDt) = DATE(9999,12,31) THEN DATE(sentence.SentenceDt)
           ELSE DATE(sentence.SentenceEndDt) 
           END AS update_datetime
-      FROM {{IA_DOC_Penalities}} penalty
+      FROM {{IA_DOC_Penalties}} penalty
       LEFT JOIN {{IA_DOC_Sentences}} sentence USING(OffenderCd, SentenceId)
       WHERE SentenceEndDt IS NOT NULL
     ),

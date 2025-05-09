@@ -54,7 +54,7 @@ VIEW_QUERY_TEMPLATE = f"""
           END AS penalty_length_years,
         LEAST(DATE(penalty.EnteredDt), DATE(penalty.update_datetime)) AS update_datetime,
         DATE(sentence.SentenceDt) AS SentenceDt
-      FROM {{IA_DOC_Penalities@ALL}} penalty
+      FROM {{IA_DOC_Penalties@ALL}} penalty
       INNER JOIN {{IA_DOC_Sentences}} sentence USING(OffenderCd, SentenceId)
       INNER JOIN penalties_to_keep USING(PenaltyId)
       WHERE PenaltyStorageType = 'Days' OR ModifierStorageType = 'Days'
