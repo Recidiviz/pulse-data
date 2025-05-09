@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.reentry.us_az.supervision_officer_te
 from recidiviz.calculator.query.state.views.reentry.us_ix.supervision_officer_template import (
     US_IX_REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.reentry.us_ut.supervision_officer_template import (
+    US_UT_REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE,
+)
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,6 +44,7 @@ REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE = f"""
 WITH
   ix_staff AS ({US_IX_REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE}),
   az_staff AS ({US_AZ_REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE}),
+  ut_staff AS ({US_UT_REENTRY_SUPERVISION_OFFICER_QUERY_TEMPLATE}),
   -- full_query serves as a template for when Reentry expands to other states and we union other views
   full_query AS (
   SELECT
@@ -51,7 +55,12 @@ WITH
   SELECT
     *
   FROM
-    az_staff ),
+    az_staff
+  UNION ALL
+  SELECT
+    *
+  FROM
+    ut_staff ),
   -- add pseudonymized Ids to all staff records
   full_query_with_pseudo AS (
   SELECT

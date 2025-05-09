@@ -27,6 +27,12 @@ from recidiviz.calculator.query.state.views.reentry.us_az.client_template import
 from recidiviz.calculator.query.state.views.reentry.us_ix.client_template import (
     US_IX_REENTRY_CLIENT_QUERY_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.reentry.us_ut.client_template import (
+    US_UT_REENTRY_CLIENT_QUERY_TEMPLATE,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,6 +47,7 @@ REENTRY_CLIENT_QUERY_TEMPLATE = f"""
 WITH
   ix_clients AS ({US_IX_REENTRY_CLIENT_QUERY_TEMPLATE}),
   az_clients AS ({US_AZ_REENTRY_CLIENT_QUERY_TEMPLATE}),
+  ut_clients AS ({US_UT_REENTRY_CLIENT_QUERY_TEMPLATE}),
   -- full_query serves as a template for when Reentry expands to other states and we union other views
   full_query AS (
   SELECT
@@ -51,7 +58,12 @@ WITH
   SELECT
     *
   FROM
-    az_clients ),
+    az_clients
+  UNION ALL
+  SELECT
+    *
+  FROM
+    ut_clients ),
   -- add pseudonymized Ids to all staff records
   full_query_with_pseudo AS (
   SELECT
@@ -73,6 +85,9 @@ REENTRY_CLIENT_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=REENTRY_CLIENT_QUERY_TEMPLATE,
     description=REENTRY_CLIENT_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    us_ut_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_UT, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=True,
     columns=[
         "state_code",

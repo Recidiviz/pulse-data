@@ -1859,6 +1859,11 @@ US_UT:
   assess_qstn_choice:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
       Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
+  case_mgr_ofndr:
+    reentry.case_manager: |-
+      Used to match case managers to clients in the reentry metric export table.
+    reentry.client: |-
+      Used to match case managers to clients in the reentry metric export table.
   ofndr_tst:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
       Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.
