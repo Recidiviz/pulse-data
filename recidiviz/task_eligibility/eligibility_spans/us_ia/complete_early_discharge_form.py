@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     no_open_supervision_modifiers,
     not_serving_ineligible_offense_for_early_discharge,
+    serving_supervision_case_at_least_90_days,
     supervision_fees_paid,
     supervision_level_is_0_not_available_1_2_or_3,
 )
@@ -62,6 +63,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
         not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state.VIEW_BUILDER,
         supervision_type_is_not_investigation.VIEW_BUILDER,
+        serving_supervision_case_at_least_90_days.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
