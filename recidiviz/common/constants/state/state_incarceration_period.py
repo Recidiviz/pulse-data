@@ -330,6 +330,12 @@ class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     WEEKEND_CONFINEMENT = (
         state_enum_strings.state_specialized_purpose_for_incarceration_weekend_confinement
     )
+    # Denotes that someone is "incarcerated" for safekeeping, which means they have not yet
+    # been sentenced, but are being held in a facility for their own safety or the safety of others,
+    # or for medical/health/space reasons.
+    SAFEKEEPING = (
+        state_enum_strings.state_specialized_purpose_for_incarceration_safekeeping
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -370,6 +376,10 @@ _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_VALUE_DESCRIPTIONS: Dict[
     StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT: "This person is in a "
     "facility as part of a program or sentence where they are released during the "
     "week, then readmitted every weekend.",
+    StateSpecializedPurposeForIncarceration.SAFEKEEPING: "This person is in a facility "
+    "as a 'safekeeper', which means they have not yet been sentenced, but are being "
+    "held in a facility for their own safety or the safety of others, or for "
+    "medical/health/space reasons.",
 }
 
 

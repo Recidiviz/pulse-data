@@ -62,6 +62,7 @@ SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY = [
     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
     StateSupervisionPeriodSupervisionType.ABSCONSION,
+    StateSpecializedPurposeForIncarceration.SAFEKEEPING,
     StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
     StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
 ]
