@@ -62,7 +62,8 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp 
             ON dataflow.person_id = sp.person_id
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
-            ON dataflow.facility = locations.level_1_incarceration_location_external_id
+            ON dataflow.state_code = locations.state_code
+            AND dataflow.facility = locations.level_1_incarceration_location_external_id
         LEFT JOIN `{project_id}.{reference_views_dataset}.location_metadata_materialized` location_metadata
             ON dataflow.state_code = location_metadata.state_code
             AND dataflow.facility = location_metadata.location_external_id
