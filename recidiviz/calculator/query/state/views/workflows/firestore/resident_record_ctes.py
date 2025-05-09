@@ -63,8 +63,13 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             ON dataflow.person_id = sp.person_id
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
             ON dataflow.facility = locations.level_1_incarceration_location_external_id
+        LEFT JOIN `{project_id}.{reference_views_dataset}.location_metadata_materialized` location_metadata
+            ON dataflow.state_code = location_metadata.state_code
+            AND dataflow.facility = location_metadata.location_external_id
         WHERE dataflow.state_code IN ({workflows_incarceration_states}) AND dataflow.included_in_state_population
             AND dataflow.end_date_exclusive IS NULL
+            AND NOT (dataflow.state_code = "US_AR"
+                    AND location_metadata.location_type != "STATE_PRISON")
             AND NOT (dataflow.state_code = "US_TN"
                     AND locations.level_2_incarceration_location_external_id IN ({us_tn_excluded_facility_ids}))
             AND NOT (dataflow.state_code = "US_IX"
