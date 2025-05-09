@@ -71,6 +71,9 @@ class SourceTableConfig:
     deployed_projects: list[str] = attr.ib(factory=list)
     is_sandbox_table: bool = attr.ib(default=False)
 
+    # Mapping between BigQuery project and project to substitute in the {project_id} template var
+    source_project_mapping: dict[str, str] | None = attr.ib(default=None)
+
     # Set via the external_data_configuration keyword argument, but private
     _external_data_configuration: ExternalConfig | None = attr.ib(default=None)
 
@@ -150,7 +153,9 @@ class SourceTableConfig:
             # For external tables, we store the schema on the external_data_configuration
             self._formatted_external_data_configuration.schema = self.schema_fields
             self._format_source_uris_for_project(
-                self.address, self._formatted_external_data_configuration
+                self.address,
+                self._formatted_external_data_configuration,
+                self.source_project_mapping,
             )
         return self._formatted_external_data_configuration
 
@@ -158,6 +163,7 @@ class SourceTableConfig:
     def _format_source_uris_for_project(
         address: BigQueryAddress,
         external_data_configuration: ExternalConfig,
+        source_project_mapping: dict[str, str] | None,
     ) -> None:
         """Formats any source_uris in the provided |external_data_configuration|
         so that they point to the appropriate bucket in the current project, if
@@ -171,6 +177,17 @@ class SourceTableConfig:
                 f"Cannot set external_data_configuration without any defined "
                 f"sourceUris. Found no sourceUris for table [{address.to_str()}]."
             )
+
+        source_data_project_id = None
+        if source_project_mapping:
+            if project_id in source_project_mapping:
+                source_data_project_id = source_project_mapping[project_id]
+            else:
+                raise KeyError(
+                    f"Project {project_id} not found in source_project_mapping {source_project_mapping}"
+                )
+        else:
+            source_data_project_id = project_id
 
         source_format = external_data_configuration.source_format
         if source_format == ExternalSourceFormat.GOOGLE_SHEETS:
@@ -186,7 +203,7 @@ class SourceTableConfig:
                 try:
                     formatted_source_uris.append(
                         StrictStringFormatter().format(
-                            source_uri, project_id=project_id
+                            source_uri, project_id=source_data_project_id
                         )
                     )
                 except Exception as e:
@@ -196,12 +213,6 @@ class SourceTableConfig:
                         f"example 'gs://{{project_id}}-my-bucket/source_data.csv"
                     ) from e
 
-            formatted_source_uris = [
-                StrictStringFormatter().format(
-                    source_uri, project_id=metadata.project_id()
-                )
-                for source_uri in external_data_configuration.source_uris
-            ]
             external_data_configuration.source_uris = formatted_source_uris
             return
 
@@ -401,6 +412,9 @@ class SourceTableConfig:
             time_partitioning=time_partitioning,
             require_partition_filter=yaml_definition.pop_optional(
                 "require_partition_filter", bool
+            ),
+            source_project_mapping=yaml_definition.pop_optional(
+                "source_project_mapping", dict
             ),
         )
 
