@@ -23,16 +23,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    SELECT 
-        COMMIT_NO,
-        IMS_FNAME,
-        IMS_MI,
-        IMS_LNAME,
-        DATE(PRIMARY_DOB) AS PRIMARY_DOB,
-        ASSIGNED_SEX,
-        RACE,
-        ETHNICITY
-    FROM {REC_ID_PERSON}
+SELECT DISTINCT
+    COMMIT_NO,
+    COMMIT_FNAME,
+    COMMIT_LNAME
+FROM {egt_report}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
