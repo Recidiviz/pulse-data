@@ -162,12 +162,6 @@ def get_imposed_date(
         BS_CNS: The county code (we check for "other state" OTST)
         initial_status_desc: The initial status description for this sentence.
     """
-
-    # If this is an interstate compact sentence we can have a null imposed_date
-    # OTST is the raw string MODOC uses for 'other state'
-    if BS_CNS.upper() == "OTST" or "IS COMP" in initial_status_desc.upper():
-        return None
-
     # Some revocations and revisits do not have the
     # imposed date in the incarceration sentence file,
     # despite the initial status matching up to incarceration.
@@ -197,6 +191,11 @@ def get_imposed_date(
             sup_imposed_date if sup_imposed_date is not None else inc_imposed_date
         )
     if imposed_date is None:
+        # If this is an interstate compact sentence we can have a null imposed_date
+        # OTST is the raw string MODOC uses for 'other state'
+        if BS_CNS.upper() == "OTST" or "IS COMP" in initial_status_desc.upper():
+            return None
+
         raise ValueError(
             "No valid imposed date from BT_SD or BU_SF! "
             f"{BT_SD=} {BU_SF=} {initial_status_code=} {initial_status_desc=} {BS_CNS=}"
