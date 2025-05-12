@@ -42,7 +42,7 @@ WITH roster_archive_hashes AS (
         first_name,
         last_name,
     FROM
-        `{project_id}.export_archives.product_roster_archive`
+        `{project_id}.reference_views.product_roster_archive_materialized`
     -- Filter to at most one row per user, getting the most recent district
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY state_code, email_address

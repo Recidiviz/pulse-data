@@ -54,10 +54,10 @@ WITH product_roster_archive AS (
         IFNULL(routes_insights, FALSE) AS has_insights_access,
 
     FROM
-        `{{project_id}}.export_archives.product_roster_archive` archive
+        `{{project_id}}.reference_views.product_roster_archive_materialized` archive
     LEFT JOIN (
         SELECT DISTINCT state_code, export_date AS future_export_date
-        FROM `{{project_id}}.export_archives.product_roster_archive`
+        FROM `{{project_id}}.reference_views.product_roster_archive_materialized`
     ) future_exports
         ON archive.state_code = future_exports.state_code
         AND archive.export_date < future_exports.future_export_date

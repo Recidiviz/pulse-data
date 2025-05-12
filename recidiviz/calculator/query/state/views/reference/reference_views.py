@@ -81,6 +81,9 @@ from recidiviz.calculator.query.state.views.reference.product_failed_logins_mont
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_roster_archive import (
+    PRODUCT_ROSTER_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.product_staff import (
     PRODUCT_STAFF_VIEW_BUILDER,
 )
@@ -136,6 +139,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PRODUCT_DISPLAY_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
+    PRODUCT_ROSTER_ARCHIVE_VIEW_BUILDER,
     PRODUCT_STAFF_VIEW_BUILDER,
     STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_VIEW_BUILDER,
     STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,

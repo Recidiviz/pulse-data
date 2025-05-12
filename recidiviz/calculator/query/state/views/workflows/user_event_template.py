@@ -43,7 +43,7 @@ def user_event_template(
                         external_id AS user_external_id,
                         district,
                         email_address AS email
-                    FROM `{project_id}.export_archives.product_roster_archive`
+                    FROM `{project_id}.reference_views.product_roster_archive_materialized`
                     -- Filter to at most one row per user, getting the most recent district
                     QUALIFY ROW_NUMBER() OVER (
                         PARTITION BY state_code, email_address
