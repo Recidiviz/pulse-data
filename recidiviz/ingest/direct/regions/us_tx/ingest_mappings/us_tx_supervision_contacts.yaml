@@ -33,24 +33,15 @@ output:
               $raw_text: Type_Description
               $mappings:
                 StateSupervisionContactMethod.INTERNAL_UNKNOWN:
-                  - "Collateral W/ Treatment Provider"
-                  - "Home Deferal"
-                  - "Any Contact Type"
                   - "Surveillance"
-                  - "Unit"
                 StateSupervisionContactMethod.IN_PERSON:
-                  - "Employer/Sponsor F2F"
                   - "Home"
-                  - "Residence Verification"
-                  - "Any Parolee F2F"
                   - "Employment"
                   - "Office"
-                  - "Office or Field"
                   - "Field"
                 StateSupervisionContactMethod.TELEPHONE:
                   - "Telephonic"
                 StateSupervisionContactMethod.VIRTUAL:
-                  - "Virtual"
                   - "Electronic"
                 StateSupervisionContactMethod.WRITTEN_MESSAGE:
                   - "Written"
