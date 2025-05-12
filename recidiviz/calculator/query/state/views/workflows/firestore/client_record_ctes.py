@@ -289,7 +289,7 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = """
         ) pei
         ON doc.SID = pei.external_id
         WHERE doc.PHONE IS NOT NULL
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY pei.person_id ORDER BY RECORDCRDATE DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY pei.person_id ORDER BY RECORDCRDATE DESC, phone_number) = 1
 
         UNION ALL
 
@@ -423,7 +423,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
             ARRAY_AGG(
                 STRUCT(employer_name AS name, employer_address AS address, start_date as start_date, employment_status as employment_status)
                 IGNORE NULLS
-                ORDER BY start_date ASC, employer_name, employment_status) AS current_employers
+                ORDER BY start_date ASC, employer_name, employment_status, employer_address) AS current_employers
         FROM (
             SELECT DISTINCT
                 state_code,
@@ -556,7 +556,11 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text, milestone_date AS milestone_date) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
+            ARRAY_AGG(
+                STRUCT(milestone_type AS type, milestone_text AS text, milestone_date AS milestone_date)
+                IGNORE NULLS
+                ORDER BY milestone_priority ASC, milestone_type
+            ) AS milestones
         FROM (
             -- birthdays
             -- milestone_date is the first day of the month for the individual's birthday month
