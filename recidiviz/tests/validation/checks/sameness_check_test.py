@@ -24,6 +24,7 @@ import pandas as pd
 from google.cloud import bigquery
 from google.cloud.bigquery.table import Row
 from mock import patch
+from pandas import RangeIndex
 from pandas._testing import assert_frame_equal
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -934,6 +935,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
         expected = pd.DataFrame(
             [],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
+            index=RangeIndex(start=0, stop=0, step=1),
             dtype=int,
         )
         self._check_error_view_returns_expected_values(validation, expected)
@@ -1008,6 +1010,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
         expected = pd.DataFrame(
             [],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
+            index=RangeIndex(start=0, stop=0, step=1),
             dtype=int,
         )
         self._check_error_view_returns_expected_values(validation, expected)
