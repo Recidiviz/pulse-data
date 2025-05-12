@@ -50,7 +50,9 @@ clean_name_cte AS
         Phone_Number,
         NULLIF(SID_Number, '00000000') AS SID_Number,
         NULLIF(TDCJ_Number, '00000000') AS TDCJ_Number,
-        Creation_Date
+        Creation_Date,
+        PLM_UPDATE_DATE,
+        XREF_UPDATE_DATE,
     FROM {ClientData@ALL}
 ),
 -- Aggregates all of the TDCJ_Number IDs
@@ -73,7 +75,7 @@ SELECT DISTINCT
 FROM clean_name_cte
 LEFT JOIN agg_ids_cte USING (SID_Number)
 WHERE SID_Number IS NOT NULL
-QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY Creation_Date desc, CASE WHEN Address IS NULL THEN 1 ELSE 0 END, CASE WHEN Phone_Number IS NULL THEN 1 ELSE 0 END) = 1;
+QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_Number ORDER BY Creation_Date desc, PLM_UPDATE_DATE desc, XREF_UPDATE_DATE desc, CASE WHEN Address IS NULL THEN 1 ELSE 0 END, CASE WHEN Phone_Number IS NULL THEN 1 ELSE 0 END) = 1;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
