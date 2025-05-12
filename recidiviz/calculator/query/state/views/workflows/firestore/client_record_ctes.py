@@ -235,13 +235,14 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         SELECT
             person_id,
             start_date
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
+        FROM `{{project_id}}.{{sessions_dataset}}.prioritized_supervision_super_sessions_materialized`
         WHERE state_code IN ({{workflows_supervision_states}})
-        AND end_date IS NULL
-        AND state_code NOT IN ('US_ME', 'US_CA', 'US_PA')
+        AND end_date_exclusive IS NULL
+        AND state_code NOT IN ('US_ME', 'US_CA', 'US_PA', 'US_IX')
         # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
         # TODO(#23716) - Remove 'US_CA' filter once CA date in super_sessions is fixed
         # TODO(#31253) - Remove 'US_PA' filter once prioritized_super_sessions is fixed
+        # TODO(#38913) - Remove 'US_IX' filter once PBH sessions have overlapping supervision sessions
         
         UNION ALL
 
@@ -263,7 +264,7 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
             person_id,
             LastParoleDate AS start_date
         FROM us_ca_most_recent_client_data
-                
+
         # TODO(#31253) - Move this PA-specific upstream of prioritized super sessions
         UNION ALL
         SELECT 
@@ -271,6 +272,15 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
             release_date AS start_date,
         FROM ({us_pa_supervision_super_sessions()})
         WHERE end_date_exclusive IS NULL
+
+        # TODO(#38913) - US_IX: infer parole board holds as supervision periods
+        UNION ALL
+        SELECT
+            person_id,
+            start_date,
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
+        WHERE end_date_exclusive IS NULL
+            AND state_code = "US_IX"
     ),
     """
 

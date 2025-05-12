@@ -156,6 +156,9 @@ from recidiviz.calculator.query.state.views.sessions.person_demographics import 
 from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_sessions import (
     PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_super_sessions import (
+    PRIORITIZED_SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.reincarceration_sessions_from_sessions import (
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
 )
@@ -396,6 +399,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
     PRIORITIZED_SUPERVISION_SESSIONS_VIEW_BUILDER,
+    PRIORITIZED_SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
