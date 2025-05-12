@@ -263,8 +263,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [1, 2, 3, 4]
-        suite-count: [4]
+        suite: [1, 2, 3, 4, 5]
+        suite-count: [5]
     steps:
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
       - name: Python Setup
