@@ -53,6 +53,8 @@ STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(
     ["US_CA", "US_OR"], quoted=True
 )
 
+STATES_WITH_OUT_OF_STATE_CLIENTS_INCLUDED = list_to_query_string(["US_IA"], quoted=True)
+
 _CLIENT_RECORD_US_OR_CASELOAD_CTE = """
     us_or_caseloads AS (
         SELECT
@@ -172,7 +174,12 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         ) state_specific_supervision_type
             ON sessions.person_id = state_specific_supervision_type.person_id
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
-          AND sessions.compartment_level_1 = "SUPERVISION"
+          AND (sessions.compartment_level_1 = "SUPERVISION"
+            OR (
+                sessions.state_code IN ({STATES_WITH_OUT_OF_STATE_CLIENTS_INCLUDED})
+                AND sessions.compartment_level_1 = "SUPERVISION_OUT_OF_STATE"
+            )
+          )
           AND sessions.end_date IS NULL
           AND (sessions.state_code IN ({STATES_WITH_ALTERNATE_OFFICER_SOURCES})
             OR sessions.supervising_officer_external_id_end IS NOT NULL)
