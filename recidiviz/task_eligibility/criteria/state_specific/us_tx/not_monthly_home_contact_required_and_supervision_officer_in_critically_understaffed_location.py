@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     monthly_home_contact_required_and_supervision_officer_in_critically_understaffed_location,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -37,9 +37,9 @@ someone is NOT required to have a monthly home contact or does NOT have
 a supervision officer in a critically understaffed location.
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=monthly_home_contact_required_and_supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 
 if __name__ == "__main__":

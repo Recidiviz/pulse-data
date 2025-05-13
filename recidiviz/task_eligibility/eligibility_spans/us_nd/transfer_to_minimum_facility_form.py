@@ -47,7 +47,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -58,11 +58,13 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in ND is eligible
 for a transfer into a minimum security facility.
 """
-INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD = InvertedTaskCriteriaBigQueryViewBuilder(
+INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_3_months_of_full_term_completion_date.VIEW_BUILDER,
 )
-HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT = InvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
+HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT = (
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+        sub_criteria=housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
+    )
 )
 
 

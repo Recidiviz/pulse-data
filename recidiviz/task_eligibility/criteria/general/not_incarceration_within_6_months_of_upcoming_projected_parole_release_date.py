@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_6_months_of_upcoming_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,9 +40,9 @@ Past projected parole release dates AND NULL projected parole release dates
 will satisfy this requirement.
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 
 if __name__ == "__main__":

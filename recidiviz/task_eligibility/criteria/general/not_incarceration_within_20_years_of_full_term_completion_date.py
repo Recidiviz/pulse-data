@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_20_years_of_full_term_completion_date,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,9 +34,9 @@ Defines a criteria span view that shows spans of time during which
 someone is incarcerated and their full term completion date is not within 20  years.
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

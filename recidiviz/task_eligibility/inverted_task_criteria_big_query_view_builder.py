@@ -15,138 +15,82 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class that represents an inversion of a sub-criteria (NOT boolean logic)."""
-from functools import cached_property
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import Union
 
-import attr
-
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    TaskCriteriaGroupBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
 
-if TYPE_CHECKING:
-    # Import for mypy only to avoid circular imports
-    from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-        TaskCriteriaGroupBigQueryViewBuilder,
-    )
 
-
-@attr.define
-class InvertedTaskCriteriaBigQueryViewBuilder:
-    """Class that represents an inversion of a sub-criteria (NOT boolean
-    logic).
-    """
-
+def inverted_criteria_name(
     sub_criteria: Union[
         TaskCriteriaBigQueryViewBuilder,
         "TaskCriteriaGroupBigQueryViewBuilder",
     ]
+) -> str:
+    """Converts the sub-criteria name into an inverted name with NOT
+    prepended.
 
-    @property
-    def criteria_name(self) -> str:
-        """Converts the sub-criteria name into an inverted name with NOT
-        prepended.
+    Examples:
+        HAS_POSITIVE_DRUG_SCREEN => NOT_HAS_POSITIVE_DRUG_SCREEN
+        US_XX_HAS_POSITIVE_DRUG_SCREEN => US_XX_NOT_HAS_POSITIVE_DRUG_SCREEN
+    """
+    if isinstance(sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
+        state_code_prefix = f"{sub_criteria.state_code.value}_"
+        base_name = sub_criteria.criteria_name.removeprefix(state_code_prefix)
+        return f"{state_code_prefix}NOT_{base_name}"
+    return f"NOT_{sub_criteria.criteria_name}"
 
-        Examples:
-            HAS_POSITIVE_DRUG_SCREEN => NOT_HAS_POSITIVE_DRUG_SCREEN
-            US_XX_HAS_POSITIVE_DRUG_SCREEN => US_XX_NOT_HAS_POSITIVE_DRUG_SCREEN
-        """
-        if isinstance(self.sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            state_code_prefix = f"{self.sub_criteria.state_code.value}_"
-            base_name = self.sub_criteria.criteria_name.removeprefix(state_code_prefix)
-            return f"{state_code_prefix}NOT_{base_name}"
-        return f"NOT_{self.sub_criteria.criteria_name}"
 
-    @property
-    def meets_criteria_default(self) -> bool:
-        """Returns the opposite of the meets_criteria_default value for the
-        sub-criteria.
-        """
-        return not self.sub_criteria.meets_criteria_default
+def inverted_criteria_description(
+    sub_criteria: Union[
+        TaskCriteriaBigQueryViewBuilder,
+        "TaskCriteriaGroupBigQueryViewBuilder",
+    ]
+) -> str:
+    return (
+        f"A criteria that is met for every period of time when the "
+        f"{sub_criteria.criteria_name} criteria is not met, and vice versa."
+    )
 
-    @property
-    def reasons_fields(self) -> List[ReasonsField]:
-        """Returns the reasons fields of the inverted sub-criteria"""
-        return self.sub_criteria.reasons_fields
 
-    @property
-    def state_code(self) -> Optional[StateCode]:
-        """Returns the value of the state_code associated with this
-        InvertedTaskCriteriaBigQueryViewBuilder. A state_code will only be
-        returned if the inverted task criteria is state-specific.
-        """
-        if isinstance(self.sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            return self.sub_criteria.state_code
-        return None
+def inverted_meets_criteria_default(
+    sub_criteria: Union[
+        TaskCriteriaBigQueryViewBuilder,
+        "TaskCriteriaGroupBigQueryViewBuilder",
+    ]
+) -> bool:
+    """Returns the opposite of the meets_criteria_default value for the
+    sub-criteria.
+    """
+    return not sub_criteria.meets_criteria_default
 
-    @property
-    def description(self) -> str:
-        return (
-            f"A criteria that is met for every period of time when the "
-            f"{self.sub_criteria.criteria_name} criteria is not met, and vice versa."
-        )
 
-    @cached_property
-    def as_criteria_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
-        """Returns a TaskCriteriaBigQueryViewBuilder that represents the
-        aggregation of the task criteria group.
-        """
-        sub_criteria = self._sub_criteria_as_view_builder()
-        if isinstance(sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            return StateSpecificTaskCriteriaBigQueryViewBuilder(
-                criteria_name=self.criteria_name,
-                description=self.description,
-                state_code=sub_criteria.state_code,
-                criteria_spans_query_template=self.get_query_template(),
-                meets_criteria_default=self.meets_criteria_default,
-                reasons_fields=self.sub_criteria.reasons_fields,
-            )
+def inverted_criteria_query_template(
+    sub_criteria: Union[
+        TaskCriteriaBigQueryViewBuilder,
+        "TaskCriteriaGroupBigQueryViewBuilder",
+    ]
+) -> str:
+    """Returns a query template that inverts the meets criteria values."""
+    sub_criteria = _sub_criteria_as_view_builder(sub_criteria)
 
-        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-            criteria_name=self.criteria_name,
-            description=self.description,
-            criteria_spans_query_template=self.get_query_template(),
-            meets_criteria_default=self.meets_criteria_default,
-            reasons_fields=self.sub_criteria.reasons_fields,
-        )
+    reason_columns = "\n    ".join(
+        [
+            f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name},'
+            for reason in sub_criteria.reasons_fields
+        ]
+    )
 
-    @property
-    def table_for_query(self) -> BigQueryAddress:
-        return self.as_criteria_view_builder.table_for_query
-
-    @property
-    def materialized_address(self) -> Optional[BigQueryAddress]:
-        return self.as_criteria_view_builder.materialized_address
-
-    @property
-    def address(self) -> BigQueryAddress:
-        """The (dataset_id, table_id) address for this view"""
-        return self.as_criteria_view_builder.address
-
-    @property
-    def dataset_id(self) -> str:
-        return self.address.dataset_id
-
-    def get_query_template(self) -> str:
-        """Returns a query template that inverts the meets criteria values."""
-        sub_criteria = self._sub_criteria_as_view_builder()
-
-        reason_columns = "\n    ".join(
-            [
-                f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name},'
-                for reason in sub_criteria.reasons_fields
-            ]
-        )
-
-        return f"""
+    return f"""
 SELECT
     state_code,
     person_id,
@@ -159,22 +103,107 @@ FROM
     `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
 """
 
-    # TODO(#41711): This function should go away entirely once all criteria groups and
-    #  inverted criteria are subclasses of StateSpecificTaskCriteriaBigQueryViewBuilder
-    #  and StateAgnosticTaskCriteriaBigQueryViewBuilder
-    def _sub_criteria_as_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
-        if isinstance(
-            self.sub_criteria,
-            (
-                StateSpecificTaskCriteriaBigQueryViewBuilder,
-                StateAgnosticTaskCriteriaBigQueryViewBuilder,
-            ),
-        ):
-            return self.sub_criteria
-        if hasattr(self.sub_criteria, "as_criteria_view_builder"):
-            return self.sub_criteria.as_criteria_view_builder
 
-        raise TypeError(
-            f"Inverted sub_criteria is not of a supported type: "
-            f"[{type(self.sub_criteria)}]"
+# TODO(#41711): This function should go away entirely once all criteria groups and
+#  inverted criteria are subclasses of StateSpecificTaskCriteriaBigQueryViewBuilder
+#  and StateAgnosticTaskCriteriaBigQueryViewBuilder
+def _sub_criteria_as_view_builder(
+    sub_criteria: Union[
+        TaskCriteriaBigQueryViewBuilder,
+        "TaskCriteriaGroupBigQueryViewBuilder",
+    ]
+) -> TaskCriteriaBigQueryViewBuilder:
+    if isinstance(
+        sub_criteria,
+        (
+            StateSpecificTaskCriteriaBigQueryViewBuilder,
+            StateAgnosticTaskCriteriaBigQueryViewBuilder,
+        ),
+    ):
+        return sub_criteria
+    if hasattr(sub_criteria, "as_criteria_view_builder"):
+        return sub_criteria.as_criteria_view_builder
+
+    raise TypeError(
+        f"Inverted sub_criteria is not of a supported type: " f"[{type(sub_criteria)}]"
+    )
+
+
+class StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+):
+    """Criteria view builder that represents an inversion of a state-agnostic
+    sub-criteria (NOT boolean logic).
+    """
+
+    def __init__(
+        self,
+        *,
+        sub_criteria: Union[
+            StateAgnosticTaskCriteriaBigQueryViewBuilder,
+            # TODO(#41711): Eventually remove this type once we have
+            #  StateAgnosticTaskCriteriaGroupBigQueryViewBuilder which extends
+            #  StateAgnosticTaskCriteriaBigQueryViewBuilder
+            "TaskCriteriaGroupBigQueryViewBuilder",
+        ],
+    ) -> None:
+
+        if (
+            isinstance(sub_criteria, TaskCriteriaGroupBigQueryViewBuilder)
+            and sub_criteria.state_code
+        ):
+            raise ValueError(
+                f"Building StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder with "
+                f"state-specific criteria [{sub_criteria.criteria_name}]. Must provide "
+                f"a state-agnostic criteria."
+            )
+
+        super().__init__(
+            criteria_name=inverted_criteria_name(sub_criteria),
+            description=inverted_criteria_description(sub_criteria),
+            reasons_fields=sub_criteria.reasons_fields,
+            meets_criteria_default=inverted_meets_criteria_default(sub_criteria),
+            criteria_spans_query_template=inverted_criteria_query_template(
+                sub_criteria
+            ),
         )
+        self.sub_criteria = sub_criteria
+
+
+class StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder
+):
+    """Criteria view builder that represents an inversion of a state-specific
+    sub-criteria (NOT boolean logic).
+    """
+
+    def __init__(
+        self,
+        *,
+        sub_criteria: Union[
+            StateSpecificTaskCriteriaBigQueryViewBuilder,
+            # TODO(#41711): Eventually remove this type once we have
+            #  StateAgnosticTaskCriteriaGroupBigQueryViewBuilder which extends
+            #  StateAgnosticTaskCriteriaBigQueryViewBuilder
+            "TaskCriteriaGroupBigQueryViewBuilder",
+        ],
+    ) -> None:
+
+        if not sub_criteria.state_code:
+            raise ValueError(
+                f"Building StateSpecificInvertedTaskCriteriaBigQueryViewBuilder with "
+                f"state-agnostic criteria [{sub_criteria.criteria_name}]. Must provide "
+                f"a state-specific criteria."
+            )
+
+        super().__init__(
+            criteria_name=inverted_criteria_name(sub_criteria),
+            description=inverted_criteria_description(sub_criteria),
+            reasons_fields=sub_criteria.reasons_fields,
+            meets_criteria_default=inverted_meets_criteria_default(sub_criteria),
+            criteria_spans_query_template=inverted_criteria_query_template(
+                sub_criteria
+            ),
+            state_code=sub_criteria.state_code,
+        )
+        self.sub_criteria = sub_criteria

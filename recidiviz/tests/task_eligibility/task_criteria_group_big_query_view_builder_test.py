@@ -27,7 +27,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -129,7 +129,6 @@ class TestTaskCriteriaGroupBigQueryViewBuilder(BigQueryEmulatorTestCase):
         criteria_view_builder: Union[
             TaskCriteriaBigQueryViewBuilder,
             TaskCriteriaGroupBigQueryViewBuilder,
-            InvertedTaskCriteriaBigQueryViewBuilder,
         ],
         criteria_data: List[Dict[str, Any]],
     ) -> None:
@@ -612,7 +611,9 @@ Combines the following criteria queries using AND logic:
         criteria_query = OrTaskCriteriaGroup(
             criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
             sub_criteria_list=[
-                InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=CRITERIA_5_STATE_SPECIFIC
+                ),
                 StateAgnosticTaskCriteriaBigQueryViewBuilder(
                     criteria_name="CRITERIA_WITH_ARRAY_2",
                     description="Another state-agnostic criteria with array reasons",
@@ -819,7 +820,9 @@ GROUP BY 1, 2, 3, 4
             criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
                 CRITERIA_2_STATE_AGNOSTIC,
-                InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=CRITERIA_5_STATE_SPECIFIC
+                ),
             ],
             allowed_duplicate_reasons_keys=["fees_owed"],
             reasons_aggregate_function_override={"fees_owed": "MIN"},
@@ -869,8 +872,8 @@ Combines the following criteria queries using OR logic:
         )
 
         self._load_data_for_criteria_view(
-            criteria_view_builder=InvertedTaskCriteriaBigQueryViewBuilder(
-                CRITERIA_5_STATE_SPECIFIC
+            criteria_view_builder=StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                sub_criteria=CRITERIA_5_STATE_SPECIFIC
             ),
             criteria_data=[
                 {
@@ -906,7 +909,9 @@ Combines the following criteria queries using OR logic:
             criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
                 CRITERIA_2_STATE_AGNOSTIC,
-                InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=CRITERIA_5_STATE_SPECIFIC
+                ),
             ],
             allowed_duplicate_reasons_keys=["fees_owed"],
         )

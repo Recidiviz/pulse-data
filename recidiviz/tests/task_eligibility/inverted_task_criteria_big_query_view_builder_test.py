@@ -20,7 +20,8 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -80,7 +81,7 @@ class TestInvertedTaskCriteriaBigQueryViewBuilder(BigQueryEmulatorTestCase):
 
     def test_inverted_criteria_state_specific_criteria_name(self) -> None:
         """Checks inverted state-specific criteria"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
+        criteria = StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=CRITERIA_3_STATE_SPECIFIC
         )
         self.assertEqual(criteria.criteria_name, "US_KY_NOT_CRITERIA_5")
@@ -98,13 +99,12 @@ class TestInvertedTaskCriteriaBigQueryViewBuilder(BigQueryEmulatorTestCase):
         self.assertEqual(criteria.meets_criteria_default, False)
 
         # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
+        self.assertEqual(criteria.reasons_fields, criteria.sub_criteria.reasons_fields)
 
         # Check that query template is correct
         expected_query_template = """
+WITH criteria_query_base AS (
+
 SELECT
     state_code,
     person_id,
@@ -116,17 +116,93 @@ SELECT
     JSON_VALUE_ARRAY(reason_v2, '$.offense_types') AS offense_types,
 FROM
     `{project_id}.task_eligibility_criteria_us_ky.criteria_5_materialized`
+)
+,
+_pre_sessionized AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT(
+        fees_owed,
+        offense_types
+    )) AS reason_v2,
+FROM
+    criteria_query_base
+)
+,
+_aggregated AS
+(
+
+SELECT
+    person_id, state_code,
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY person_id, state_code 
+        ORDER BY start_date, IFNULL(end_date, "9999-12-31"),CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2)
+    ) AS session_id,
+    date_gap_id,
+    start_date,
+    end_date,
+    meets_criteria, reason, reason_v2
+FROM (
+    SELECT
+        person_id, state_code,
+        session_id,
+        date_gap_id,
+        MIN(start_date) OVER w AS start_date,
+        IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
+        meets_criteria, reason, reason_v2
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+            SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
+        FROM
+            (
+            SELECT
+                person_id, state_code,
+                start_date,
+                IFNULL(end_date, "9999-12-31") AS end_date,
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
+                meets_criteria, reason, reason_v2
+            FROM _pre_sessionized
+            )
+        )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY person_id, state_code, session_id,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2))
+    )
+
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
+WHERE state_code = 'US_KY'
 """
-        self.assertEqual(expected_query_template, criteria.get_query_template())
+        self.assertEqual(expected_query_template, criteria.view_query_template)
 
     def test_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks inverted state-agnostic criteria"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
+        criteria = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=CRITERIA_2_STATE_AGNOSTIC
         )
         self.assertEqual(criteria.criteria_name, "NOT_ANOTHER_STATE_AGNOSTIC_CRITERIA")
-
-        self.assertIsNone(criteria.state_code)
 
         self.assertEqual(
             criteria.table_for_query,
@@ -139,13 +215,12 @@ FROM
         self.assertEqual(criteria.meets_criteria_default, True)
 
         # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
+        self.assertEqual(criteria.reasons_fields, criteria.sub_criteria.reasons_fields)
 
         # Check that query template is correct
         expected_query_template = """
+WITH criteria_query_base AS (
+
 SELECT
     state_code,
     person_id,
@@ -156,17 +231,92 @@ SELECT
     SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64) AS fees_owed,
 FROM
     `{project_id}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
+)
+,
+_pre_sessionized AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT(
+        fees_owed
+    )) AS reason_v2,
+FROM
+    criteria_query_base
+)
+,
+_aggregated AS
+(
+
+SELECT
+    person_id, state_code,
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY person_id, state_code 
+        ORDER BY start_date, IFNULL(end_date, "9999-12-31"),CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2)
+    ) AS session_id,
+    date_gap_id,
+    start_date,
+    end_date,
+    meets_criteria, reason, reason_v2
+FROM (
+    SELECT
+        person_id, state_code,
+        session_id,
+        date_gap_id,
+        MIN(start_date) OVER w AS start_date,
+        IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
+        meets_criteria, reason, reason_v2
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+            SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
+        FROM
+            (
+            SELECT
+                person_id, state_code,
+                start_date,
+                IFNULL(end_date, "9999-12-31") AS end_date,
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
+                meets_criteria, reason, reason_v2
+            FROM _pre_sessionized
+            )
+        )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY person_id, state_code, session_id,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2))
+    )
+
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
-        self.assertEqual(expected_query_template, criteria.get_query_template())
+
+        self.assertEqual(expected_query_template, criteria.view_query_template)
 
     def test_inverted_criteria_empty_reasons(self) -> None:
         """Checks inverted criteria with an empty reasons list"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
+        criteria = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=CRITERIA_1_STATE_AGNOSTIC
         )
         self.assertEqual(criteria.criteria_name, "NOT_MY_STATE_AGNOSTIC_CRITERIA")
-
-        self.assertIsNone(criteria.state_code)
 
         self.assertEqual(
             criteria.table_for_query,
@@ -179,13 +329,12 @@ FROM
         self.assertEqual(criteria.meets_criteria_default, False)
 
         # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
+        self.assertEqual(criteria.reasons_fields, criteria.sub_criteria.reasons_fields)
 
         # Check that query template is correct
         expected_query_template = """
+WITH criteria_query_base AS (
+
 SELECT
     state_code,
     person_id,
@@ -196,5 +345,80 @@ SELECT
 
 FROM
     `{project_id}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
+)
+,
+_pre_sessionized AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT()) AS reason_v2,
+FROM
+    criteria_query_base
+)
+,
+_aggregated AS
+(
+
+SELECT
+    person_id, state_code,
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY person_id, state_code 
+        ORDER BY start_date, IFNULL(end_date, "9999-12-31"),CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2)
+    ) AS session_id,
+    date_gap_id,
+    start_date,
+    end_date,
+    meets_criteria, reason, reason_v2
+FROM (
+    SELECT
+        person_id, state_code,
+        session_id,
+        date_gap_id,
+        MIN(start_date) OVER w AS start_date,
+        IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
+        meets_criteria, reason, reason_v2
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+            SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
+        FROM
+            (
+            SELECT
+                person_id, state_code,
+                start_date,
+                IFNULL(end_date, "9999-12-31") AS end_date,
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
+                meets_criteria, reason, reason_v2
+            FROM _pre_sessionized
+            )
+        )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY person_id, state_code, session_id,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2))
+    )
+
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
-        self.assertEqual(expected_query_template, criteria.get_query_template())
+
+        self.assertEqual(expected_query_template, criteria.view_query_template)

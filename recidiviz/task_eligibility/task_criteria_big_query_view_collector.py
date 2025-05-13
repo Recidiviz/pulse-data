@@ -28,7 +28,8 @@ from recidiviz.task_eligibility.criteria import (
     state_specific as state_specific_criteria_module,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
@@ -77,13 +78,18 @@ class TaskCriteriaBigQueryViewCollector(
         for tes_builder in tes_view_builders.collect_view_builders():
             # recursively get ALL descendant group or inverter view builders
             complex_criteria_builders = [
-                b.as_criteria_view_builder
+                (
+                    b.as_criteria_view_builder
+                    if isinstance(b, TaskCriteriaGroupBigQueryViewBuilder)
+                    else b
+                )
                 for b in tes_builder.all_descendant_criteria_builders()
                 if isinstance(
                     b,
                     (
                         TaskCriteriaGroupBigQueryViewBuilder,
-                        InvertedTaskCriteriaBigQueryViewBuilder,
+                        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
+                        StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
                     ),
                 )
             ]

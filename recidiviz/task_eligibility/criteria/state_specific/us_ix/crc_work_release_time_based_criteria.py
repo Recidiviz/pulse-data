@@ -34,11 +34,15 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_18_months_of_eprd_and_15_years_of_ftcd,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _DESCRIPTION = """
 Shows the spans of time during which someone in ID is eligible time-wise
@@ -52,18 +56,21 @@ For this to be true, the person must have one of the following three conditions:
         Tentative Parole Date (TPD) within 1 year
 """
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="US_IX_CRC_WORK_RELEASE_TIME_BASED_CRITERIA",
-    sub_criteria_list=[
-        incarceration_within_18_months_of_ftcd_or_upcoming_tpd.VIEW_BUILDER,
-        incarceration_within_18_months_of_eprd_and_15_years_of_ftcd.VIEW_BUILDER,
-        incarceration_within_1_year_of_upcoming_tpd_and_life_sentence.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[
-        "full_term_completion_date",
-        "group_projected_parole_release_date",
-    ],
-).as_criteria_view_builder
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
+    OrTaskCriteriaGroup(
+        criteria_name="US_IX_CRC_WORK_RELEASE_TIME_BASED_CRITERIA",
+        sub_criteria_list=[
+            incarceration_within_18_months_of_ftcd_or_upcoming_tpd.VIEW_BUILDER,
+            incarceration_within_18_months_of_eprd_and_15_years_of_ftcd.VIEW_BUILDER,
+            incarceration_within_1_year_of_upcoming_tpd_and_life_sentence.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[
+            "full_term_completion_date",
+            "group_projected_parole_release_date",
+        ],
+    ).as_criteria_view_builder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

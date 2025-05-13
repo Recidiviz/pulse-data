@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     mandatory_overrides_for_reclassification,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,9 +34,9 @@ Defines a criteria span view that shows spans of time during which
 someone does not have a mandatory override for reclassification to a lower custody level.
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=mandatory_overrides_for_reclassification.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 
 if __name__ == "__main__":

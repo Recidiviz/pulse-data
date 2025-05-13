@@ -24,25 +24,32 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     mandatory_overrides_for_reclassification,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
 someone has a mandatory override and is already in MEDIUM or MINIMUM custody.
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="US_IX_ALREADY_ON_LOWEST_ELIGIBLE_CUSTODY_LEVEL",
-    sub_criteria_list=[
-        mandatory_overrides_for_reclassification.VIEW_BUILDER,
-        custody_level_is_minimum_or_medium.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
+    AndTaskCriteriaGroup(
+        criteria_name="US_IX_ALREADY_ON_LOWEST_ELIGIBLE_CUSTODY_LEVEL",
+        sub_criteria_list=[
+            mandatory_overrides_for_reclassification.VIEW_BUILDER,
+            custody_level_is_minimum_or_medium.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ).as_criteria_view_builder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

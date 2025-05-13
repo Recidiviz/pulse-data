@@ -22,7 +22,7 @@ import abc
 from collections import defaultdict
 from functools import cached_property
 from textwrap import indent
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import attr
 from google.cloud import bigquery
@@ -44,13 +44,6 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
 
-if TYPE_CHECKING:
-    # Import for mypy only to avoid circular imports
-    from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-        InvertedTaskCriteriaBigQueryViewBuilder,
-    )
-
-
 FOUR_SPACES_INDENT = "    "
 
 
@@ -67,7 +60,6 @@ class TaskSubCriteriaGroup:
         Union[
             TaskCriteriaBigQueryViewBuilder,
             "TaskCriteriaGroupBigQueryViewBuilder",
-            "InvertedTaskCriteriaBigQueryViewBuilder",
         ]
     ]
 
@@ -190,7 +182,6 @@ class TaskCriteriaGroupQueryBuilder:
         sub_criteria: Union[
             TaskCriteriaBigQueryViewBuilder,
             "TaskCriteriaGroupBigQueryViewBuilder",
-            "InvertedTaskCriteriaBigQueryViewBuilder",
         ],
     ) -> str:
         """Returns the query fragment to filter a table to a specific state code if the sub-criteria is state-agnostic."""
@@ -363,7 +354,6 @@ class TaskCriteriaGroupLogicConfig:
             Union[
                 TaskCriteriaBigQueryViewBuilder,
                 "TaskCriteriaGroupBigQueryViewBuilder",
-                "InvertedTaskCriteriaBigQueryViewBuilder",
             ]
         ],
     ) -> bool:
@@ -405,7 +395,6 @@ class TaskCriteriaGroupBigQueryViewBuilder(abc.ABC, TaskCriteriaGroupLogicConfig
         Union[
             TaskCriteriaBigQueryViewBuilder,
             "TaskCriteriaGroupBigQueryViewBuilder",
-            "InvertedTaskCriteriaBigQueryViewBuilder",
         ]
     ]
 
@@ -548,7 +537,6 @@ class OrTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
             Union[
                 TaskCriteriaBigQueryViewBuilder,
                 "TaskCriteriaGroupBigQueryViewBuilder",
-                "InvertedTaskCriteriaBigQueryViewBuilder",
             ]
         ],
     ) -> bool:
@@ -575,7 +563,6 @@ class AndTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
             Union[
                 TaskCriteriaBigQueryViewBuilder,
                 "TaskCriteriaGroupBigQueryViewBuilder",
-                "InvertedTaskCriteriaBigQueryViewBuilder",
             ]
         ],
     ) -> bool:

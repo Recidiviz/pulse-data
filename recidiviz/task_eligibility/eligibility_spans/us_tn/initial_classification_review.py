@@ -29,7 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     has_initial_classification_in_state_prison_custody,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -42,7 +42,7 @@ someone in TN is eligible for an initial classification.
 """
 
 NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY = (
-    InvertedTaskCriteriaBigQueryViewBuilder(
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
     )
 )

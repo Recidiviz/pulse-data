@@ -28,11 +28,15 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     detainers_for_reclassification,
     parole_hearing_date_greater_than_5_years_away,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
@@ -41,17 +45,20 @@ being reclassified to a lower custody level.
 """
 
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
-    criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
-    sub_criteria_list=[
-        incarceration_not_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
-        parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
-        not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
-        detainers_for_reclassification.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
-    reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
-).as_criteria_view_builder
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
+    OrTaskCriteriaGroup(
+        criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
+        sub_criteria_list=[
+            incarceration_not_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
+            parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
+            not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
+            detainers_for_reclassification.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+        reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
+    ).as_criteria_view_builder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

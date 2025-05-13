@@ -40,7 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -52,7 +52,7 @@ _DESCRIPTION = """Shows the spans of time during which
 someone in PA is eligible for transfer to administrative supervision.
 """
 
-not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder = InvertedTaskCriteriaBigQueryViewBuilder(
+not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=supervision_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
 )
 

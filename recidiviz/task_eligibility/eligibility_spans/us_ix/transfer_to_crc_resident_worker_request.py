@@ -45,7 +45,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -58,8 +58,10 @@ Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC) as a resident worker.
 """
 
-US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
+US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER = (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+        sub_criteria=in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
+    )
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
@@ -83,7 +85,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_a_rider_sentence.VIEW_BUILDER,
         # Do not count someone eligible for resident worker status if they are
         # eligible for work release
-        InvertedTaskCriteriaBigQueryViewBuilder(
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=crc_work_release_time_based_criteria.VIEW_BUILDER,
         ),
     ],

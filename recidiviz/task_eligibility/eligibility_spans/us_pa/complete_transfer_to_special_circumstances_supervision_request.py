@@ -43,7 +43,7 @@ from recidiviz.task_eligibility.eligibility_spans.us_pa.complete_transfer_to_adm
     not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -81,7 +81,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 AndTaskCriteriaGroup(
                     criteria_name="US_PA_MEETS_SANCTION_CRITERIA_FOR_NON_SPECIAL_CASES",
                     sub_criteria_list=[
-                        InvertedTaskCriteriaBigQueryViewBuilder(
+                        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
                             sub_criteria=serving_special_case.VIEW_BUILDER,
                         ),
                         no_high_sanctions_in_past_year.VIEW_BUILDER,

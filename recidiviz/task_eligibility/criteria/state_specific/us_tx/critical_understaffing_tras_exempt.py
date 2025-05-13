@@ -24,11 +24,15 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     supervision_officer_in_critically_understaffed_location,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _CRITERIA_NAME = "US_TX_CRITICAL_UNDERSTAFFING_TRAS_EXEMPT"
 
@@ -37,14 +41,17 @@ are exempt from TRAS because they are located in a critically understaffed locat
 and are on low or low medium supervision.
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name=_CRITERIA_NAME,
-    sub_criteria_list=[
-        supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
-        supervision_level_is_medium_or_minimum.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
+    AndTaskCriteriaGroup(
+        criteria_name=_CRITERIA_NAME,
+        sub_criteria_list=[
+            supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+            supervision_level_is_medium_or_minimum.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ).as_criteria_view_builder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

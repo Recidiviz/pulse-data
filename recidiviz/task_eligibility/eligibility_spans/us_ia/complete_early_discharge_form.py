@@ -35,7 +35,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     supervision_level_is_0_not_available_1_2_or_3,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -58,7 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
         supervision_fees_paid.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
-        InvertedTaskCriteriaBigQueryViewBuilder(
+        StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=supervision_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER,
         ),
         not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state.VIEW_BUILDER,

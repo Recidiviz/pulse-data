@@ -33,7 +33,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -42,7 +42,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 NOT_INCARCERATION_WITHIN_6_MONTHS_OF_ACIS_DTP_DATE = (
-    InvertedTaskCriteriaBigQueryViewBuilder(
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=incarceration_within_6_months_of_acis_dtp_date.VIEW_BUILDER,
     )
 )

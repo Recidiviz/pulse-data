@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,9 +36,9 @@ someone is NOT within 3 years of their projected parole release date.
 Projected parole release dates in the past  will not satisfy this requirement.
 """
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 
 if __name__ == "__main__":

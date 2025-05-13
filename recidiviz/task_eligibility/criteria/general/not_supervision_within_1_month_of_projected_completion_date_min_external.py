@@ -22,14 +22,14 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_within_1_month_of_projected_completion_date_min_external,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=supervision_within_1_month_of_projected_completion_date_min_external.VIEW_BUILDER,
-).as_criteria_view_builder
+)
 
 
 if __name__ == "__main__":

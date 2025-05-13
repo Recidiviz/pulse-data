@@ -46,7 +46,8 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
@@ -125,6 +126,7 @@ TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
 )"""
 
 
+# TODO(#41711): Update this to be actually recursive and not just explore the first layer
 def get_all_descendant_criteria_builders(
     criteria_builders: List[AnyTaskCriteriaViewBuilder],
 ) -> List[AnyTaskCriteriaViewBuilder]:
@@ -138,7 +140,13 @@ def get_all_descendant_criteria_builders(
             view_builders += get_all_descendant_criteria_builders(
                 builder.sub_criteria_list
             )
-        elif isinstance(builder, InvertedTaskCriteriaBigQueryViewBuilder):
+        elif isinstance(
+            builder,
+            (
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
+                StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+            ),
+        ):
             view_builders.append(builder.sub_criteria)
     return view_builders
 
