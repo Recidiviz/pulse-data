@@ -28,7 +28,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     supervision_officer_in_critically_understaffed_location,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,7 +45,8 @@ as per policy for critically understaffed locations.
 """
 
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
         critical_understaffing_needs_quarterly_scheduled_home_contact.VIEW_BUILDER,
@@ -55,7 +57,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
         "type_of_contact",
         "officer_in_critically_understaffed_location",
     ],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

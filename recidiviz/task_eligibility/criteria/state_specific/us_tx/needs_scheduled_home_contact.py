@@ -27,7 +27,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     needs_scheduled_home_contact_virtual_override_critical_understaffing,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,7 +36,8 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_HOME_CONTACT"
 
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
         needs_scheduled_home_contact_not_critical_understaffing.VIEW_BUILDER,
@@ -55,7 +57,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
         "period_type",
         "override_contact_type",
     ],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

@@ -25,7 +25,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     q5_score_is_zero_or_negative,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,7 +40,8 @@ someone meets all criteria for proximity to release points:
     - no mandatory overrides
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_ELIGIBLE_FOR_PROXIMITY_TO_RELEASE_POINTS",
     sub_criteria_list=[
         q5_score_is_zero_or_negative.VIEW_BUILDER,
@@ -54,7 +56,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
         "next_parole_hearing_date",
     ],
     reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

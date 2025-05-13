@@ -48,7 +48,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -62,7 +63,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1. Completion of ordered assessments and any recommended treatment or programming
         has_completed_ordered_assessments.VIEW_BUILDER,
         # 2. Risk reduction criteria
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
             sub_criteria_list=[
                 risk_level_reduction_of_one_or_more.VIEW_BUILDER,

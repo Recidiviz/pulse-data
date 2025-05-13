@@ -26,7 +26,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_5_years_of_ftcd_and_3_years_of_phd_and_not_serving_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,7 +41,8 @@ someone meets the date based criteria for proximity to release points:
 """
 
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_IX_MEETS_DATE_BASED_CRITERIA_FOR_PROXIMITY_TO_RELEASE_POINTS",
     sub_criteria_list=[
         incarceration_within_3_years_of_ftcd_or_tpd_and_not_serving_life_sentence.VIEW_BUILDER,
@@ -53,7 +55,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
         "ineligible_offenses",
     ],
     reasons_aggregate_function_override={"ineligible_offenses": "ARRAY_CONCAT_AGG"},
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

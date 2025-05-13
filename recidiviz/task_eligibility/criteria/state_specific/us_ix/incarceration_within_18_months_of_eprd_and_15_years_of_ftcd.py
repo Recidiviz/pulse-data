@@ -27,7 +27,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_18_months_of_eprd,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,14 +39,15 @@ incarcerated within 18 months of their earliest possible release date (EPRD) AND
 of their full term completion date (FTCD).
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_INCARCERATION_WITHIN_18_MONTHS_OF_EPRD_AND_15_YEARS_OF_FTCD",
     sub_criteria_list=[
         incarceration_within_15_years_of_full_term_completion_date.VIEW_BUILDER,
         incarceration_within_18_months_of_eprd.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

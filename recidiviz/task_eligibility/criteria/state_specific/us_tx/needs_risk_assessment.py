@@ -25,7 +25,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     not_supervision_within_6_months_of_release_date,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,7 +37,8 @@ _DESCRIPTION = """Defines a criteria view that shows spans of time for which sup
 need a risk assessment conducted.
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
         meets_risk_assessment_applicable_conditions.VIEW_BUILDER,
@@ -48,7 +50,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
         "case_type",
         "supervision_level",
     ],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

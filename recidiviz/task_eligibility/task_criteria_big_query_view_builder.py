@@ -156,6 +156,8 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         if criteria_name.upper() != criteria_name:
             raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
 
+        # TODO(#41711): Enforce that criteria_name does not start with a US_XX state code
+
         super().__init__(
             dataset_id="task_eligibility_criteria_general",
             view_id=criteria_name.lower(),

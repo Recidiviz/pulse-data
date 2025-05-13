@@ -46,7 +46,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -64,7 +65,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
         in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
-        OrTaskCriteriaGroup(
+        StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_IX_INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD",
             sub_criteria_list=[
                 incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,

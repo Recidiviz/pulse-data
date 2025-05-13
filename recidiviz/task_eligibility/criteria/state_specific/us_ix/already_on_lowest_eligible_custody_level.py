@@ -28,7 +28,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,14 +41,15 @@ someone has a mandatory override and is already in MEDIUM or MINIMUM custody.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
-    AndTaskCriteriaGroup(
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
         criteria_name="US_IX_ALREADY_ON_LOWEST_ELIGIBLE_CUSTODY_LEVEL",
         sub_criteria_list=[
             mandatory_overrides_for_reclassification.VIEW_BUILDER,
             custody_level_is_minimum_or_medium.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[],
-    ).as_criteria_view_builder,
+    ),
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 

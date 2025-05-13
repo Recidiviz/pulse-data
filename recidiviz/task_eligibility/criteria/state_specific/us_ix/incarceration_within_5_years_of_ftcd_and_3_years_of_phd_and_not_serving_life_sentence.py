@@ -27,7 +27,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     parole_hearing_date_upcoming_within_3_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,7 +39,8 @@ someone is incarcerated within 5 years of their full term completion date
 and 3 years of their parole hearing date and is not serving a life sentence.
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_INCARCERATION_WITHIN_5_YEARS_OF_FTCD_AND_3_YEARS_OF_PHD_AND_NOT_SERVING_LIFE_SENTENCE",
     sub_criteria_list=[
         incarceration_within_5_years_of_full_term_completion_date.VIEW_BUILDER,
@@ -47,7 +49,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
     ],
     reasons_aggregate_function_override={"ineligible_offenses": "ARRAY_CONCAT_AGG"},
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

@@ -59,12 +59,14 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-FINES_FEES_CRITERIA_GROUP = OrTaskCriteriaGroup(
+FINES_FEES_CRITERIA_GROUP = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="HAS_FINES_FEES_BALANCE_OF_0_OR_IS_EXEMPT",
     sub_criteria_list=[
         has_fines_fees_balance_of_0.VIEW_BUILDER,

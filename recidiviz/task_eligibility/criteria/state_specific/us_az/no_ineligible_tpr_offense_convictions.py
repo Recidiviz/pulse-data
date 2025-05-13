@@ -24,12 +24,14 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_AZ_NO_INELIGIBLE_TPR_OFFENSE_CONVICTIONS",
     sub_criteria_list=[
         no_sexual_offense_conviction.VIEW_BUILDER,
@@ -40,7 +42,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
     allowed_duplicate_reasons_keys=["ineligible_offenses"],
     reasons_aggregate_function_override={"ineligible_offenses": "ARRAY_CONCAT_AGG"},
     reasons_aggregate_function_use_ordering_clause={"ineligible_offenses"},
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

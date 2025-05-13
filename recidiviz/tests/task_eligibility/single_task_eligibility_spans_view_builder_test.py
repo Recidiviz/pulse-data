@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for the SingleTaskEligibilitySpansBigQueryViewBuilder."""
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from google.cloud import bigquery
 
@@ -52,8 +52,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
-    TaskCriteriaGroupBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -144,10 +144,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
 
     def _load_data_for_criteria_view(
         self,
-        criteria_view_builder: Union[
-            TaskCriteriaBigQueryViewBuilder,
-            TaskCriteriaGroupBigQueryViewBuilder,
-        ],
+        criteria_view_builder: TaskCriteriaBigQueryViewBuilder,
         criteria_data: List[Dict[str, Any]],
     ) -> None:
         self.create_mock_table(
@@ -262,7 +259,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 description="my_task_description",
                 candidate_population_view_builder=TEST_POPULATION_BUILDER,
                 criteria_spans_view_builders=[
-                    AndTaskCriteriaGroup(
+                    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+                        logic_type=TaskCriteriaGroupLogicType.AND,
                         sub_criteria_list=[
                             TEST_CRITERIA_BUILDER_1,
                             TEST_CRITERIA_BUILDER_2,

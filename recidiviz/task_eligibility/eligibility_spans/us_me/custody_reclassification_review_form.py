@@ -35,7 +35,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,8 +45,9 @@ _DESCRIPTION = """Shows the spans of time during which someone in ME is eligible
 for a reclassification
 """
 
-INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE_VIEW_BUILDER: OrTaskCriteriaGroup = (
-    OrTaskCriteriaGroup(
+INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE_VIEW_BUILDER = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
         criteria_name="US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE",
         sub_criteria_list=[
             incarceration_past_annual_classification_date.VIEW_BUILDER,

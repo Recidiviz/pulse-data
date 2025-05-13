@@ -42,7 +42,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -58,7 +59,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#34322): Clarify Class I eligibility criteria
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_AR_CLASS_I_OR_ELIGIBLE_FOR_CLASS_I_WORK_RELEASE",
             # Someone is eligible for Work Release if they are in the Class I good time earning
             # class, *or* they are eligible for Class I -- the only criterion that applies to

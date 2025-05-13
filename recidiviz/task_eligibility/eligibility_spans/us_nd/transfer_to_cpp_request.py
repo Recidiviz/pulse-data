@@ -44,7 +44,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -70,7 +71,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_absconsion_within_1_year.VIEW_BUILDER,
         no_escape_offense_within_1_year.VIEW_BUILDER,
         # 7. Parole Review Date is at least 5 months in the future
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_ND_INCARCERATION_WITHIN_5_OR_MORE_MONTHS_OF_PRD_OR_PAST_PRD_PLUS_ONE_MONTH",
             sub_criteria_list=[
                 incarceration_within_5_or_more_months_of_parole_review_date.VIEW_BUILDER,

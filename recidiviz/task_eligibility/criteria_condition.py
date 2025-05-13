@@ -29,20 +29,10 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    TaskCriteriaGroupBigQueryViewBuilder,
-)
-
-# TODO(#41711): This type can go away once group view builders extend from
-#  StateSpecificTaskCriteriaBigQueryViewBuilder or
-#  StateAgnosticTaskCriteriaBigQueryViewBuilder
-AnyTaskCriteriaViewBuilder = (
-    TaskCriteriaBigQueryViewBuilder | TaskCriteriaGroupBigQueryViewBuilder
-)
 
 
 def get_criteria_reason_field(
-    criteria: AnyTaskCriteriaViewBuilder, reason_field_name: str
+    criteria: TaskCriteriaBigQueryViewBuilder, reason_field_name: str
 ) -> ReasonsField:
     """
     Fetch the corresponding reason field within the task criteria. Raise an error if the
@@ -69,7 +59,7 @@ class CriteriaCondition:
     @abc.abstractmethod
     def get_criteria_builders(
         self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
+    ) -> List[TaskCriteriaBigQueryViewBuilder]:
         """Return the list of criteria view builders that the CriteriaCondition covers"""
 
 
@@ -77,9 +67,9 @@ class CriteriaCondition:
 class NotEligibleCriteriaCondition(CriteriaCondition):
     """Condition relating to a single criteria being not eligible"""
 
-    criteria: AnyTaskCriteriaViewBuilder
+    criteria: TaskCriteriaBigQueryViewBuilder
 
-    def get_criteria_builders(self) -> List[AnyTaskCriteriaViewBuilder]:
+    def get_criteria_builders(self) -> List[TaskCriteriaBigQueryViewBuilder]:
         return [self.criteria]
 
 
@@ -91,23 +81,23 @@ class EligibleCriteriaCondition(CriteriaCondition):
     and at_most_n_conditions_true parameters during spans when the criterion is met.
     """
 
-    criteria: AnyTaskCriteriaViewBuilder
+    criteria: TaskCriteriaBigQueryViewBuilder
 
-    def get_criteria_builders(self) -> List[AnyTaskCriteriaViewBuilder]:
+    def get_criteria_builders(self) -> List[TaskCriteriaBigQueryViewBuilder]:
         return [self.criteria]
 
 
 class ComparatorCriteriaCondition(CriteriaCondition):
     """Condition relating to a static value within the criteria reasons fields"""
 
-    criteria: AnyTaskCriteriaViewBuilder
+    criteria: TaskCriteriaBigQueryViewBuilder
     reasons_field: ReasonsField
     value: float
     comparison_operator: str
 
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_numerical_field: str,
         value: float,
         comparison_operator: str,
@@ -134,7 +124,7 @@ class ComparatorCriteriaCondition(CriteriaCondition):
 
     def get_criteria_builders(
         self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
+    ) -> List[TaskCriteriaBigQueryViewBuilder]:
         """Return the single criteria view builder"""
         return [self.criteria]
 
@@ -142,7 +132,7 @@ class ComparatorCriteriaCondition(CriteriaCondition):
 class LessThanCriteriaCondition(ComparatorCriteriaCondition):
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_numerical_field: str,
         value: float,
         description: str,
@@ -159,7 +149,7 @@ class LessThanCriteriaCondition(ComparatorCriteriaCondition):
 class LessThanOrEqualCriteriaCondition(ComparatorCriteriaCondition):
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_numerical_field: str,
         value: float,
         description: str,
@@ -180,13 +170,13 @@ class DateComparatorCriteriaCondition(CriteriaCondition):
     |critical_date_condition_query_template| returns a True value.
     """
 
-    criteria: AnyTaskCriteriaViewBuilder
+    criteria: TaskCriteriaBigQueryViewBuilder
     reasons_field: ReasonsField
     critical_date_condition_query_template: str
 
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_date_field: str,
         critical_date_condition_query_template: str,
         description: str,
@@ -214,7 +204,7 @@ class DateComparatorCriteriaCondition(CriteriaCondition):
 
     def get_criteria_builders(
         self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
+    ) -> List[TaskCriteriaBigQueryViewBuilder]:
         """Return the single criteria view builder"""
         return [self.criteria]
 
@@ -238,7 +228,7 @@ class TimeDependentCriteriaCondition(DateComparatorCriteriaCondition):
 
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_date_field: str,
         interval_length: int,
         interval_date_part: BigQueryDateInterval,
@@ -272,7 +262,7 @@ class ReasonDateInCalendarWeekCriteriaCondition(DateComparatorCriteriaCondition)
 
     def __init__(
         self,
-        criteria: AnyTaskCriteriaViewBuilder,
+        criteria: TaskCriteriaBigQueryViewBuilder,
         reasons_date_field: str,
         description: str,
     ) -> None:
@@ -332,7 +322,7 @@ class PickNCompositeCriteriaCondition(CriteriaCondition):
 
     def get_criteria_builders(
         self,
-    ) -> List[AnyTaskCriteriaViewBuilder]:
+    ) -> List[TaskCriteriaBigQueryViewBuilder]:
         """Return all criteria view builders by recursively merging all sub condition criteria builders"""
         return list(
             itertools.chain.from_iterable(

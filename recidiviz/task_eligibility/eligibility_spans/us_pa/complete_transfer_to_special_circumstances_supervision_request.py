@@ -49,8 +49,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -66,10 +66,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_special_circumstances_criteria_for_time_served.VIEW_BUILDER,
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_SANCTIONS",
             sub_criteria_list=[
-                AndTaskCriteriaGroup(
+                StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                    logic_type=TaskCriteriaGroupLogicType.AND,
                     criteria_name="US_PA_MEETS_SANCTION_CRITERIA_FOR_SPECIAL_CASE",
                     sub_criteria_list=[
                         serving_special_case.VIEW_BUILDER,
@@ -78,7 +80,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     ],
                     allowed_duplicate_reasons_keys=["latest_sanction_date"],
                 ),
-                AndTaskCriteriaGroup(
+                StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                    logic_type=TaskCriteriaGroupLogicType.AND,
                     criteria_name="US_PA_MEETS_SANCTION_CRITERIA_FOR_NON_SPECIAL_CASES",
                     sub_criteria_list=[
                         StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
@@ -95,7 +98,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 "latest_sanction_date",
             ],
         ),
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_PA_NOT_ELIGIBLE_OR_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION",
             sub_criteria_list=[
                 not_eligible_for_admin_supervision.VIEW_BUILDER,

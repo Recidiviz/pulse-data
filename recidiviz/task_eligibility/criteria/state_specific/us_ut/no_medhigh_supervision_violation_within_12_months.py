@@ -17,8 +17,6 @@
 """Spans of time when someone in UT has been 3 months or more without a medium or high level
 violation while on supervision.
 """
-from typing import cast
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -28,30 +26,20 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _CRITERIA_NAME = "US_UT_NO_MEDHIGH_SUPERVISION_VIOLATION_WITHIN_12_MONTHS"
 
-query_dict = cast(
-    dict,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
+        state_code=StateCode.US_UT,
         description=__doc__,
         date_interval=12,
         date_part="MONTH",
         where_clause_addition="AND JSON_VALUE(violation_metadata, '$.sanction_level') IN ('3', '2')",
-        return_view_builder=False,
     ),
-)
-
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
-        reasons_fields=query_dict["reasons_fields"],
-        state_code=StateCode.US_UT,
-        criteria_spans_query_template=query_dict["criteria_query"],
-        meets_criteria_default=True,
-    )
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 
 if __name__ == "__main__":

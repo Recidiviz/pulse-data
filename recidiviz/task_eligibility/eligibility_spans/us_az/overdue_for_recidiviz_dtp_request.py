@@ -47,7 +47,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     within_6_months_of_recidiviz_dtp_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
-    AnyTaskCriteriaViewBuilder,
     EligibleCriteriaCondition,
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
@@ -56,20 +55,24 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    TaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # Criteria shared in both TPR and DTP
-COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[AnyTaskCriteriaViewBuilder] = [
+COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[TaskCriteriaBigQueryViewBuilder] = [
     no_active_felony_detainers.VIEW_BUILDER,
     custody_level_is_minimum_or_medium.VIEW_BUILDER,
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
     not_serving_flat_sentence.VIEW_BUILDER,
-    AndTaskCriteriaGroup(
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
         criteria_name="US_AZ_NO_VIOLATIONS_AND_ELIGIBLE_LEGAL_STATUS",
         sub_criteria_list=[
             no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
@@ -78,7 +81,8 @@ COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[AnyTaskCriteriaViewBuilder] = [
         ],
         allowed_duplicate_reasons_keys=[],
     ),
-    AndTaskCriteriaGroup(
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
         criteria_name="US_AZ_NO_ACIS_DTP_OR_TPR_DATE_SET",
         sub_criteria_list=[
             acis_dtp_date_not_set.VIEW_BUILDER,
@@ -88,7 +92,8 @@ COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[AnyTaskCriteriaViewBuilder] = [
     ),
 ]
 
-_FUNCTIONAL_LITERACY_CRITERIA = OrTaskCriteriaGroup(
+_FUNCTIONAL_LITERACY_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY",
     sub_criteria_list=[
         meets_functional_literacy_dtp.VIEW_BUILDER,

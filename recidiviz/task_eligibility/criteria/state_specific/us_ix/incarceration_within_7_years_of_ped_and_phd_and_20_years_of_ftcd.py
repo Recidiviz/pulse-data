@@ -27,7 +27,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     parole_hearing_date_within_7_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,7 +39,8 @@ incarcerated within 7 years of their parole eligibility date (PED), parole heari
 (PHD) AND 20 years of their full term completion date (FTCD).
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_INCARCERATION_WITHIN_7_YEARS_OF_PED_AND_PHD_AND_20_YEARS_OF_FTCD",
     sub_criteria_list=[
         incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
@@ -46,7 +48,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
         parole_hearing_date_within_7_years.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

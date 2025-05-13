@@ -17,7 +17,7 @@
 """Helper methods that return criteria view builders with similar logic that
 can be parameterized.
 """
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from google.cloud import bigquery
 
@@ -40,6 +40,7 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
     STATES_WITH_NO_INFERRED_OPEN_SPANS,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -729,21 +730,26 @@ def num_events_within_time_interval_spans(
 def supervision_violations_within_time_interval_criteria_builder(
     *,
     criteria_name: str,
+    state_code: StateCode | None = None,
     description: str,
     date_interval: int,
     date_part: str,
     violation_type: str = "",
     where_clause_addition: str = "",
     violation_date_name_in_reason_blob: str = "latest_violations",
-    return_view_builder: bool = True,
     exclude_violation_unfounded_decisions: bool = False,
-) -> Dict | StateAgnosticTaskCriteriaBigQueryViewBuilder:
+) -> (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+    | StateSpecificTaskCriteriaBigQueryViewBuilder
+):
     """
     Returns a TES criterion view builder that has spans of time where violations that
     meet certain conditions set by the user have occurred within some specified window
     of time (e.g., within the past 6 months).
     Args:
         criteria_name (str): Name of the criterion.
+        state_code (StateCode): The state code for this criteria, if it contains
+            state-specific logic.
         description (str): Description of the criterion.
         date_interval (int): Number of <date_part> when the violation will be counted as
             valid/relevant.
@@ -758,17 +764,14 @@ def supervision_violations_within_time_interval_criteria_builder(
             Defaults to "".
         violation_date_name_in_reason_blob (str, optional): Name of the `violation_date`
             field in the reason blob. Defaults to "latest_violations".
-        return_view_builder (bool, optional): Whether to return a view builder or just the
-            query string + reasons_fields in a dictionary. Defaults to True.
         exclude_violation_unfounded_decisions (bool, optional): Whether to exclude violations where the LATEST
             violation response DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
     Returns:
-        Union[str, StateAgnosticTaskCriteriaBigQueryViewBuilder]: Either a TES criterion
-        view builder that shows the spans of time where the violations that meet any
-        condition(s) set by the user have occurred (<violation_type> and <where_clause_addition>),
-        or a dictionary with the query string and reasons_fields. The span of time for
-        the validity of each violation starts at `violation_date` and ends after a
-        period specified by the user (<date_interval> and <date_part>).
+        Either a state-specific or state-agnostic TES criterion view builder that shows
+        the spans of time where the violations that meet any condition(s) set by the
+        user have occurred (<violation_type> and <where_clause_addition>). The span of
+        time for the validity of each violation starts at `violation_date` and ends
+        after a period specified by the user (<date_interval> and <date_part>).
     """
 
     # TODO(#35354): Account for violation decisions when considering which violations
@@ -826,15 +829,23 @@ def supervision_violations_within_time_interval_criteria_builder(
             description="Date when the most recent violation(s) will age out of the time interval",
         ),
     ]
-    if return_view_builder:
-        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    if state_code:
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
             criteria_name=criteria_name,
+            state_code=state_code,
             description=description,
             criteria_spans_query_template=criteria_query,
             meets_criteria_default=True,
             reasons_fields=reasons_fields,
         )
-    return {"criteria_query": criteria_query, "reasons_fields": reasons_fields}
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        meets_criteria_default=True,
+        reasons_fields=reasons_fields,
+    )
 
 
 def incarceration_incidents_within_time_interval_criteria_builder(

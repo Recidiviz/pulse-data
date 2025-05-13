@@ -17,9 +17,6 @@
 """Defines a criterion span view that shows spans of time during which there has not
 been a violation within the past 15 months on supervision.
 """
-
-from typing import cast
-
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -28,17 +25,18 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_15_MONTHS"
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = assert_type(
     supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
         date_interval=15,
         date_part="MONTH",
     ),
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 
 if __name__ == "__main__":

@@ -22,19 +22,21 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     not_previous_dtp_participant,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_AZ_NO_DTP_DENIAL_OR_PREVIOUS_DTP_RELEASE",
     sub_criteria_list=[
         no_dtp_denial_in_current_incarceration.VIEW_BUILDER,
         not_previous_dtp_participant.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

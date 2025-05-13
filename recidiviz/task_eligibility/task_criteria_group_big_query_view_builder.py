@@ -20,15 +20,14 @@ inputted criteria span views.
 
 import abc
 from collections import defaultdict
-from functools import cached_property
+from enum import Enum
 from textwrap import indent
-from typing import Dict, List, Optional, Set, Union
+from typing import List, Sequence
 
 import attr
 from google.cloud import bigquery
 from more_itertools import one
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -47,127 +46,76 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 FOUR_SPACES_INDENT = "    "
 
 
-@attr.define(kw_only=True)
-class TaskSubCriteriaGroup:
-    """Class representing a collection of sub-criteria that can be composed together
-    to form a new criteria.
+def _deduplicated_reasons_fields(
+    *,
+    criteria_group_name: str,
+    sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
+    allowed_duplicate_reasons_keys: List[str],
+    reason_fields_with_aggregate_function_override: set[str],
+) -> List[ReasonsField]:
+    """Returns the list of ALL reasons attributes based on a recursive
+    search of the sub-criteria.
+
+    Args:
+        criteria_group_name: The name of the group criteria these sub-criteria belong
+            to.
+        sub_criteria_list: The list of sub-criteria to pull reasons from.
+        allowed_duplicate_reasons_keys: List of reasons fields that we expect to
+            appear in multiple sub-criteria reasons blobs. If duplicate is allowed
+            for a given key, we assume that values agree and select one of the
+            values deterministically
+        reason_fields_with_aggregate_function_override: Set of reason fields that
+            have a defined aggregate function override in
+            reasons_aggregate_function_override. If duplicate ARRAY type fields are
+            found in sub-criteria, the field MUST have an override.
+
     """
+    reasons_fields_by_name = defaultdict(list)
+    for sub_criteria in sub_criteria_list:
+        for field in sub_criteria.reasons_fields:
+            reasons_fields_by_name[field.name].append(
+                (field, sub_criteria.criteria_name)
+            )
 
-    criteria_group_name: str
+    for field_name, fields_list in reasons_fields_by_name.items():
+        # Skip if there is only 1 criterion with the reason field name
+        if len(fields_list) == 1:
+            continue
 
-    # List of all criteria or boolean criteria blocks that make up the group
-    sub_criteria_list: List[
-        Union[
-            TaskCriteriaBigQueryViewBuilder,
-            "TaskCriteriaGroupBigQueryViewBuilder",
-        ]
-    ]
-
-    @property
-    def state_code(self) -> Optional[StateCode]:
-        """Returns the value of the state_code associated with this
-        collection of criteria. A state_code will only be returned if 1) there is at
-        least one state-specific criteria in the dependency tree, and 2) there
-        is no more than one unique state_code value across all state-specific
-        criteria in the dependency tree. If multiple states are found, raise an
-        error.
-        """
-
-        state_codes = {
-            criteria.state_code
-            for criteria in self._sub_criteria_builders()
-            if isinstance(criteria, StateSpecificTaskCriteriaBigQueryViewBuilder)
-        }
-
-        if len(state_codes) > 1:
+        sub_criteria_names = ", ".join(
+            [sub_criteria_name for _, sub_criteria_name in fields_list]
+        )
+        if field_name not in allowed_duplicate_reasons_keys:
             raise ValueError(
-                "Can not combine state-specific criteria from more than one state code."
+                f"Found reason fields with name [{field_name}] in multiple "
+                f"sub-criteria of criteria group [{criteria_group_name}]: "
+                f"{sub_criteria_names}. If you expect the values for this reason to "
+                f"always be the same in these two sub-criteria and are ok with "
+                f"arbitrarily picking one, add this reasons field to "
+                f"`allowed_duplicate_reasons_keys`."
             )
-        if len(state_codes) == 1:
-            return one(state_codes)
-        return None
 
-    def _sub_criteria_builders(self) -> List[TaskCriteriaBigQueryViewBuilder]:
-        return [
-            (
-                criteria
-                if isinstance(
-                    criteria,
-                    (
-                        StateSpecificTaskCriteriaBigQueryViewBuilder,
-                        StateAgnosticTaskCriteriaBigQueryViewBuilder,
-                    ),
-                )
-                else criteria.as_criteria_view_builder
-            )
-            for criteria in self.sub_criteria_list
-        ]
-
-    def deduplicated_reasons_fields(
-        self,
-        allowed_duplicate_reasons_keys: List[str],
-        reason_fields_with_aggregate_function_override: set[str],
-    ) -> List[ReasonsField]:
-        """Returns the list of ALL reasons attributes based on a recursive
-        search of the sub-criteria.
-
-        Args:
-            allowed_duplicate_reasons_keys: List of reasons fields that we expect to
-                appear in multiple sub-criteria reasons blobs. If duplicate is allowed
-                for a given key, we assume that values agree and select one of the
-                values deterministically
-            reason_fields_with_aggregate_function_override: Set of reason fields that
-                have a defined aggregate function override in
-                reasons_aggregate_function_override. If duplicate ARRAY type fields are
-                found in sub-criteria, the field MUST have an override.
-
-        """
-        reasons_fields_by_name = defaultdict(list)
-        for sub_criteria in self.sub_criteria_list:
-            for field in sub_criteria.reasons_fields:
-                reasons_fields_by_name[field.name].append(
-                    (field, sub_criteria.criteria_name)
-                )
-
-        for field_name, fields_list in reasons_fields_by_name.items():
-            # Skip if there is only 1 criterion with the reason field name
-            if len(fields_list) == 1:
-                continue
-
-            sub_criteria_names = ", ".join(
-                [sub_criteria_name for _, sub_criteria_name in fields_list]
-            )
-            if field_name not in allowed_duplicate_reasons_keys:
+        # Check that none of the duplicate reasons fields have ARRAY type
+        # without a corresponding entry in `reasons_aggregate_function_override`
+        for reasons_field, sub_criteria_name in fields_list:
+            if (
+                reasons_field.type == bigquery.enums.StandardSqlTypeNames.ARRAY
+                and field_name not in reason_fields_with_aggregate_function_override
+            ):
                 raise ValueError(
-                    f"Found reason fields with name [{field_name}] in multiple "
-                    f"sub-criteria of criteria group [{self.criteria_group_name}]: "
-                    f"{sub_criteria_names}. If you expect the values for this reason to "
-                    f"always be the same in these two sub-criteria and are ok with "
-                    f"arbitrarily picking one, add this reasons field to "
-                    f"`allowed_duplicate_reasons_keys`."
+                    f"Found ARRAY type reason fields with the name [{field_name}] "
+                    f"in multiple sub-criteria of criteria group "
+                    f"[{criteria_group_name}]: {sub_criteria_names}. Criteria "
+                    f"groups do not support duplicate reasons keys "
+                    f"with type ARRAY by default because they cannot be easily "
+                    f"deduplicated. Please specify a "
+                    f"reasons_aggregate_function_override for this field."
                 )
 
-            # Check that none of the duplicate reasons fields have ARRAY type
-            # without a corresponding entry in `reasons_aggregate_function_override`
-            for reasons_field, sub_criteria_name in fields_list:
-                if (
-                    reasons_field.type == bigquery.enums.StandardSqlTypeNames.ARRAY
-                    and field_name not in reason_fields_with_aggregate_function_override
-                ):
-                    raise ValueError(
-                        f"Found ARRAY type reason fields with the name [{field_name}] "
-                        f"in multiple sub-criteria of criteria group "
-                        f"[{self.criteria_group_name}]: {sub_criteria_names}. Criteria "
-                        f"groups do not support duplicate reasons keys "
-                        f"with type ARRAY by default because they cannot be easily "
-                        f"deduplicated. Please specify a "
-                        f"reasons_aggregate_function_override for this field."
-                    )
-
-        reasons_fields_list = [
-            fields_list[0][0] for fields_list in reasons_fields_by_name.values()
-        ]
-        return sorted(reasons_fields_list, key=lambda x: x.name)
+    reasons_fields_list = [
+        fields_list[0][0] for fields_list in reasons_fields_by_name.values()
+    ]
+    return sorted(reasons_fields_list, key=lambda x: x.name)
 
 
 class TaskCriteriaGroupQueryBuilder:
@@ -179,10 +127,7 @@ class TaskCriteriaGroupQueryBuilder:
     @staticmethod
     def _general_criteria_state_code_filter(
         state_code: StateCode | None,
-        sub_criteria: Union[
-            TaskCriteriaBigQueryViewBuilder,
-            "TaskCriteriaGroupBigQueryViewBuilder",
-        ],
+        sub_criteria: TaskCriteriaBigQueryViewBuilder,
     ) -> str:
         """Returns the query fragment to filter a table to a specific state code if the sub-criteria is state-agnostic."""
         if state_code and isinstance(
@@ -195,7 +140,8 @@ class TaskCriteriaGroupQueryBuilder:
     def _flatten_reasons_blob_clause(
         cls,
         *,
-        sub_criteria_group: TaskSubCriteriaGroup,
+        criteria_group_name: str,
+        sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
         allowed_duplicate_reasons_keys: List[str],
         reasons_aggregate_function_override: dict[str, str],
         reasons_aggregate_function_use_ordering_clause: set[str],
@@ -205,7 +151,9 @@ class TaskCriteriaGroupQueryBuilder:
         deterministically de-dupes across any duplicate reasons keys
         """
 
-        reasons_fields = sub_criteria_group.deduplicated_reasons_fields(
+        reasons_fields = _deduplicated_reasons_fields(
+            criteria_group_name=criteria_group_name,
+            sub_criteria_list=sub_criteria_list,
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reason_fields_with_aggregate_function_override=set(
                 reasons_aggregate_function_override
@@ -215,10 +163,10 @@ class TaskCriteriaGroupQueryBuilder:
         criteria_group_reasons_field_names = [reason.name for reason in reasons_fields]
         for reason_field_name in reasons_aggregate_function_override.keys():
             if reason_field_name not in criteria_group_reasons_field_names:
+                field_names_str = ", ".join(criteria_group_reasons_field_names)
                 raise ValueError(
                     f"Cannot override aggregate function for reason '{reason_field_name}' since it is not in the "
-                    f"{sub_criteria_group.criteria_group_name} reasons fields list: "
-                    ", ".join(criteria_group_reasons_field_names)
+                    f"{criteria_group_name} reasons fields list: {field_names_str}"
                 )
         reasons_query_fragment = ", ".join(
             [
@@ -261,7 +209,9 @@ class TaskCriteriaGroupQueryBuilder:
     def get_query_template(
         cls,
         *,
-        sub_criteria_group: TaskSubCriteriaGroup,
+        criteria_group_name: str,
+        sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
+        state_code: StateCode | None,
         meets_criteria_aggregator_clause: str,
         allowed_duplicate_reasons_keys: List[str],
         reasons_aggregate_function_override: dict[str, str],
@@ -279,7 +229,7 @@ class TaskCriteriaGroupQueryBuilder:
             "{sub_criteria.criteria_name}" AS criteria_name,
             {sub_criteria.meets_criteria_default} AS meets_criteria_default
         )"""
-                for sub_criteria in sub_criteria_group.sub_criteria_list
+                for sub_criteria in sub_criteria_list
             ]
         )
 
@@ -287,20 +237,23 @@ class TaskCriteriaGroupQueryBuilder:
         criteria_queries = [
             f"""
 SELECT *, "{sub_criteria.criteria_name}" AS criteria_name,
-FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`{cls._general_criteria_state_code_filter(sub_criteria_group.state_code, sub_criteria)}
+FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`{cls._general_criteria_state_code_filter(state_code, sub_criteria)}
 """
-            for sub_criteria in sub_criteria_group.sub_criteria_list
+            for sub_criteria in sub_criteria_list
         ]
         criteria_query_union_fragment = "UNION ALL".join(criteria_queries)
 
         flatten_reasons_blob_clause = cls._flatten_reasons_blob_clause(
-            sub_criteria_group=sub_criteria_group,
+            criteria_group_name=criteria_group_name,
+            sub_criteria_list=sub_criteria_list,
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reasons_aggregate_function_override=reasons_aggregate_function_override,
             reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
         )
 
-        reasons_fields = sub_criteria_group.deduplicated_reasons_fields(
+        reasons_fields = _deduplicated_reasons_fields(
+            criteria_group_name=criteria_group_name,
+            sub_criteria_list=sub_criteria_list,
             allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
             reason_fields_with_aggregate_function_override=set(
                 reasons_aggregate_function_override
@@ -346,16 +299,18 @@ GROUP BY 1, 2, 3, 4
 """
 
 
+class TaskCriteriaGroupLogicType(Enum):
+    OR = "OR"
+    AND = "AND"
+
+
 class TaskCriteriaGroupLogicConfig:
+    """Class providing configuration for how to combine sub-criteria."""
+
     @abc.abstractmethod
     def meets_criteria_default_for_sub_criteria(
         self,
-        sub_criteria_list: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                "TaskCriteriaGroupBigQueryViewBuilder",
-            ]
-        ],
+        sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
     ) -> bool:
         """Returns boolean value for meets criteria default based on the
         provided sub-criteria.
@@ -376,169 +331,54 @@ class TaskCriteriaGroupLogicConfig:
         by the group (AND, OR).
         """
 
+    @classmethod
+    def for_logic_type(
+        cls, logic_type: TaskCriteriaGroupLogicType
+    ) -> "TaskCriteriaGroupLogicConfig":
+        if logic_type is TaskCriteriaGroupLogicType.AND:
+            return _AndTaskCriteriaGroupLogicConfig()
+        if logic_type is TaskCriteriaGroupLogicType.OR:
+            return _OrTaskCriteriaGroupLogicConfig()
 
-@attr.define
-class TaskCriteriaGroupBigQueryViewBuilder(abc.ABC, TaskCriteriaGroupLogicConfig):
-    """
-    A builder for a view that defines spans of time during which
-    someone satisfies a collection of criteria specified by sub_criteria_list.
-    Subclasses define whether all criteria need to be met (AND logic) or
-    at least one (OR logic) for the criteria to be satisfied.
-    """
+        raise ValueError(f"Unexpected logic_type [{logic_type}]")
 
-    # Name of criteria group - this name will appear as the criteria name
-    # for any downstream task eligibility queries.
-    criteria_name: str
 
-    # List of all criteria or boolean criteria blocks that make up the group
-    sub_criteria_list: List[
-        Union[
-            TaskCriteriaBigQueryViewBuilder,
-            "TaskCriteriaGroupBigQueryViewBuilder",
-        ]
-    ]
-
-    # List of reasons fields that we expect to appear in multiple sub-criteria
-    # reasons blobs. If duplicate is allowed for a given key, we assume that
-    # values agree and select one of the values deterministically
-    allowed_duplicate_reasons_keys: List[str]
-
-    # Map of reasons field name to aggregate function string for de-duplicating the reasons field
-    # across multiple criteria. Used to override the default aggregation function:
-    # `ANY_VALUE` for arrays, `MAX` for all other types
-    reasons_aggregate_function_override: Dict[str, str] = attr.ib(factory=dict)
-
-    # Map of reasons field name to ordering clauses for ordering aggregation functions
-    # when necessary to ensure the views are deterministic
-    reasons_aggregate_function_use_ordering_clause: Set[str] = attr.ib(factory=dict)
-
-    sub_criteria_group: TaskSubCriteriaGroup = attr.ib(
-        init=False, validator=attr.validators.instance_of(TaskSubCriteriaGroup)
-    )
-
-    @sub_criteria_group.default
-    def _build_sub_criteria_group(self) -> TaskSubCriteriaGroup:
-        return TaskSubCriteriaGroup(
-            criteria_group_name=self.criteria_name,
-            sub_criteria_list=self.sub_criteria_list,
-        )
-
-    @property
-    def meets_criteria_default(self) -> bool:
-        """Returns boolean value for meets criteria default based on the
-        underlying sub-criteria.
-        """
-        return self.meets_criteria_default_for_sub_criteria(self.sub_criteria_list)
-
-    @property
-    def reasons_fields(self) -> List[ReasonsField]:
-        """Returns the list of ALL reasons attributes based on a recursive
-        search of the sub-criteria.
-        """
-        return self.sub_criteria_group.deduplicated_reasons_fields(
-            allowed_duplicate_reasons_keys=self.allowed_duplicate_reasons_keys,
-            reason_fields_with_aggregate_function_override=set(
-                self.reasons_aggregate_function_override
-            ),
-        )
-
-    def get_query_template(self) -> str:
-        """Returns a query template that performs the appropriate aggregation
-        over component criteria.
-        """
-
-        return TaskCriteriaGroupQueryBuilder.get_query_template(
-            sub_criteria_group=self.sub_criteria_group,
-            meets_criteria_aggregator_clause=self.meets_criteria_aggregator_clause,
-            allowed_duplicate_reasons_keys=self.allowed_duplicate_reasons_keys,
-            reasons_aggregate_function_override=self.reasons_aggregate_function_override,
-            reasons_aggregate_function_use_ordering_clause=self.reasons_aggregate_function_use_ordering_clause,
-        )
-
-    @property
-    def state_code(self) -> Optional[StateCode]:
-        """Returns the value of the state_code associated with this
-        TaskCriteriaGroup. A state_code will only be returned if 1) there is at
-        least one state-specific criteria in the dependency tree, and 2) there
-        is no more than one unique state_code value across all state-specific
-        criteria in the dependency tree. If multiple states are found, raise an
-        error.
-        """
-        return self.sub_criteria_group.state_code
-
-    @property
-    def description(self) -> str:
-        sub_criteria_descriptions = []
-        for criteria in self.sub_criteria_list:
-            criteria_description = (
-                # Adds an additional indent for every layer of nested criteria groups,
-                # for readability
-                indent(criteria.description, FOUR_SPACES_INDENT)
-                if isinstance(criteria, TaskCriteriaGroupBigQueryViewBuilder)
-                else criteria.description
+def task_criteria_group_description(
+    sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
+    logic_config: TaskCriteriaGroupLogicConfig,
+) -> str:
+    sub_criteria_descriptions = []
+    for criteria in sub_criteria_list:
+        criteria_description = (
+            # Adds an additional indent for every layer of nested criteria groups,
+            # for readability
+            indent(criteria.description, FOUR_SPACES_INDENT)
+            if isinstance(
+                criteria,
+                (
+                    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+                    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+                ),
             )
-            sub_criteria_descriptions.append(
-                f" - {criteria.criteria_name}: {criteria_description}"
-            )
+            else criteria.description
+        )
+        sub_criteria_descriptions.append(
+            f" - {criteria.criteria_name}: {criteria_description}"
+        )
 
-        sub_criteria_descriptions_str = "\n".join(sub_criteria_descriptions)
-        return f"""
-Combines the following criteria queries using {self.boolean_logic_description} logic:
+    sub_criteria_descriptions_str = "\n".join(sub_criteria_descriptions)
+    return f"""
+Combines the following criteria queries using {logic_config.boolean_logic_description} logic:
 {sub_criteria_descriptions_str}"""
 
-    @cached_property
-    def as_criteria_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
-        """Returns a TaskCriteriaBigQueryViewBuilder that represents the
-        aggregation of the task criteria group.
-        """
-        if self.state_code:
-            return StateSpecificTaskCriteriaBigQueryViewBuilder(
-                criteria_name=self.criteria_name,
-                description=self.description,
-                state_code=self.state_code,
-                criteria_spans_query_template=self.get_query_template(),
-                meets_criteria_default=self.meets_criteria_default,
-                reasons_fields=self.reasons_fields,
-            )
-
-        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-            criteria_name=self.criteria_name,
-            description=self.description,
-            criteria_spans_query_template=self.get_query_template(),
-            meets_criteria_default=self.meets_criteria_default,
-            reasons_fields=self.reasons_fields,
-        )
-
-    @property
-    def table_for_query(self) -> BigQueryAddress:
-        return self.as_criteria_view_builder.table_for_query
-
-    @property
-    def materialized_address(self) -> Optional[BigQueryAddress]:
-        return self.as_criteria_view_builder.materialized_address
-
-    @property
-    def address(self) -> BigQueryAddress:
-        """The (dataset_id, table_id) address for this view"""
-        return self.as_criteria_view_builder.address
-
-    @property
-    def dataset_id(self) -> str:
-        return self.address.dataset_id
-
 
 @attr.define
-class OrTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
+class _OrTaskCriteriaGroupLogicConfig(TaskCriteriaGroupLogicConfig):
     """Class that represents an OR boolean relationship between sub-criteria"""
 
     def meets_criteria_default_for_sub_criteria(
         self,
-        sub_criteria_list: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                "TaskCriteriaGroupBigQueryViewBuilder",
-            ]
-        ],
+        sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
     ) -> bool:
         # Meets criteria default is true if default is true for at least one
         # sub-criteria.
@@ -554,17 +394,12 @@ class OrTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
 
 
 @attr.define
-class AndTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
+class _AndTaskCriteriaGroupLogicConfig(TaskCriteriaGroupLogicConfig):
     """Class that represents AND boolean relationship between sub-criteria"""
 
     def meets_criteria_default_for_sub_criteria(
         self,
-        sub_criteria_list: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                "TaskCriteriaGroupBigQueryViewBuilder",
-            ]
-        ],
+        sub_criteria_list: Sequence[TaskCriteriaBigQueryViewBuilder],
     ) -> bool:
         # Meets criteria default is true only if default is true for all sub-criteria
         return all(criteria.meets_criteria_default for criteria in sub_criteria_list)
@@ -576,3 +411,180 @@ class AndTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
     @property
     def boolean_logic_description(self) -> str:
         return "AND"
+
+
+class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+):
+    """
+    A builder for a view that defines spans of time during which someone satisfies a
+    collection of state-agnostic criteria specified by sub_criteria_list.
+
+    Users must specify whether all criteria need to be met (AND logic) or
+    at least one (OR logic) for the criteria to be satisfied.
+    """
+
+    def __init__(
+        self,
+        *,
+        criteria_name: str,
+        logic_type: TaskCriteriaGroupLogicType,
+        sub_criteria_list: list[StateAgnosticTaskCriteriaBigQueryViewBuilder],
+        allowed_duplicate_reasons_keys: List[str] | None = None,
+        reasons_aggregate_function_override: dict[str, str] | None = None,
+        reasons_aggregate_function_use_ordering_clause: set[str] | None = None,
+    ) -> None:
+        """
+        Args:
+            criteria_name: The name of this criteria view
+            logic_type: Specifies the logic we use to combine sub-criteria.
+            sub_criteria_list: The list of criteria to combine.
+            allowed_duplicate_reasons_keys: List of reasons fields that we expect to
+                appear in multiple sub-criteria reasons blobs. If duplicate is allowed
+                for a given key, we assume that values agree and select one of the
+                values deterministically.
+            reasons_aggregate_function_override: Map of reasons field name to aggregate
+                function string for de-duplicating the reasons field across multiple
+                criteria. Used to override the default aggregation function:
+                `ANY_VALUE` for arrays, `MAX` for all other types
+            reasons_aggregate_function_use_ordering_clause: Map of reasons field name to
+                ordering clauses for ordering aggregation functions when necessary to
+                ensure the views are deterministic
+        """
+
+        allowed_duplicate_reasons_keys = allowed_duplicate_reasons_keys or []
+        reasons_aggregate_function_override = reasons_aggregate_function_override or {}
+        reasons_aggregate_function_use_ordering_clause = (
+            reasons_aggregate_function_use_ordering_clause or set()
+        )
+
+        logic_config = TaskCriteriaGroupLogicConfig.for_logic_type(logic_type)
+        query_template = TaskCriteriaGroupQueryBuilder.get_query_template(
+            criteria_group_name=criteria_name,
+            sub_criteria_list=sub_criteria_list,
+            state_code=None,
+            meets_criteria_aggregator_clause=logic_config.meets_criteria_aggregator_clause,
+            allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
+            reasons_aggregate_function_override=reasons_aggregate_function_override,
+            reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+        )
+        super().__init__(
+            criteria_name=criteria_name,
+            description=task_criteria_group_description(
+                sub_criteria_list, logic_config
+            ),
+            reasons_fields=_deduplicated_reasons_fields(
+                criteria_group_name=criteria_name,
+                sub_criteria_list=sub_criteria_list,
+                allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
+                reason_fields_with_aggregate_function_override=set(
+                    reasons_aggregate_function_override
+                ),
+            ),
+            meets_criteria_default=logic_config.meets_criteria_default_for_sub_criteria(
+                sub_criteria_list
+            ),
+            criteria_spans_query_template=query_template,
+        )
+        self.sub_criteria_list = sub_criteria_list
+        self.logic_config = logic_config
+
+
+class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder
+):
+    """
+    A builder for a view that defines spans of time during which someone satisfies a
+    collection of criteria specified by sub_criteria_list, where at least one
+    sub-criteria is a state-specific criteria.
+
+    Users must specify whether all criteria need to be met (AND logic) or
+    at least one (OR logic) for the criteria to be satisfied.
+    """
+
+    def __init__(
+        self,
+        *,
+        criteria_name: str,
+        logic_type: TaskCriteriaGroupLogicType,
+        sub_criteria_list: list[TaskCriteriaBigQueryViewBuilder],
+        allowed_duplicate_reasons_keys: List[str] | None = None,
+        reasons_aggregate_function_override: dict[str, str] | None = None,
+        reasons_aggregate_function_use_ordering_clause: set[str] | None = None,
+    ) -> None:
+        """
+        Args:
+            criteria_name: The name of this criteria view
+            logic_type: Specifies the logic we use to combine sub-criteria.
+            sub_criteria_list: The list of criteria to combine.
+            allowed_duplicate_reasons_keys: List of reasons fields that we expect to
+                appear in multiple sub-criteria reasons blobs. If duplicate is allowed
+                for a given key, we assume that values agree and select one of the
+                values deterministically.
+            reasons_aggregate_function_override: Map of reasons field name to aggregate
+                function string for de-duplicating the reasons field across multiple
+                criteria. Used to override the default aggregation function:
+                `ANY_VALUE` for arrays, `MAX` for all other types
+            reasons_aggregate_function_use_ordering_clause: Map of reasons field name to
+                ordering clauses for ordering aggregation functions when necessary to
+                ensure the views are deterministic
+        """
+
+        state_codes = {
+            criteria.state_code
+            for criteria in sub_criteria_list
+            if isinstance(criteria, StateSpecificTaskCriteriaBigQueryViewBuilder)
+        }
+
+        if len(state_codes) > 1:
+            raise ValueError(
+                "Can not combine state-specific criteria from more than one state code."
+            )
+        if len(state_codes) == 0:
+            raise ValueError(
+                f"Did not provide any state-specific criteria to "
+                f"StateSpecificTaskCriteriaGroupBigQueryViewBuilder [{criteria_name}]. "
+                f"If this composite criteria does not have any state-specific "
+                f"sub-criteria, use StateAgnosticTaskCriteriaGroupBigQueryViewBuilder "
+                f"instead."
+            )
+
+        state_code = one(state_codes)
+
+        allowed_duplicate_reasons_keys = allowed_duplicate_reasons_keys or []
+        reasons_aggregate_function_override = reasons_aggregate_function_override or {}
+        reasons_aggregate_function_use_ordering_clause = (
+            reasons_aggregate_function_use_ordering_clause or set()
+        )
+
+        logic_config = TaskCriteriaGroupLogicConfig.for_logic_type(logic_type)
+        query_template = TaskCriteriaGroupQueryBuilder.get_query_template(
+            criteria_group_name=criteria_name,
+            sub_criteria_list=sub_criteria_list,
+            state_code=state_code,
+            meets_criteria_aggregator_clause=logic_config.meets_criteria_aggregator_clause,
+            allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
+            reasons_aggregate_function_override=reasons_aggregate_function_override,
+            reasons_aggregate_function_use_ordering_clause=reasons_aggregate_function_use_ordering_clause,
+        )
+        super().__init__(
+            criteria_name=criteria_name,
+            description=task_criteria_group_description(
+                sub_criteria_list, logic_config
+            ),
+            reasons_fields=_deduplicated_reasons_fields(
+                criteria_group_name=criteria_name,
+                sub_criteria_list=sub_criteria_list,
+                allowed_duplicate_reasons_keys=allowed_duplicate_reasons_keys,
+                reason_fields_with_aggregate_function_override=set(
+                    reasons_aggregate_function_override
+                ),
+            ),
+            meets_criteria_default=logic_config.meets_criteria_default_for_sub_criteria(
+                sub_criteria_list
+            ),
+            criteria_spans_query_template=query_template,
+            state_code=state_code,
+        )
+        self.sub_criteria_list = sub_criteria_list
+        self.logic_config = logic_config

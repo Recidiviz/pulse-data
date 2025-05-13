@@ -32,7 +32,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -46,7 +47,8 @@ being reclassified to a lower custody level.
 
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
-    OrTaskCriteriaGroup(
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
         criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
         sub_criteria_list=[
             incarceration_not_within_3_years_of_tpd_and_life_sentence.VIEW_BUILDER,
@@ -56,7 +58,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = assert_type(
         ],
         allowed_duplicate_reasons_keys=[],
         reasons_aggregate_function_override={"eligible_offenses": "ARRAY_CONCAT_AGG"},
-    ).as_criteria_view_builder,
+    ),
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 

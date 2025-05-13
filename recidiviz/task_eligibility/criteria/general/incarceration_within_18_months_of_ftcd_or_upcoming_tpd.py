@@ -25,7 +25,8 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_18_months_of_upcoming_projected_parole_release_date,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,14 +37,15 @@ someone is incarcerated within 18 months of their full term completion date
 or upcoming projected parole release date (TPD).
 """
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
+VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="INCARCERATION_WITHIN_18_MONTHS_OF_FTCD_OR_UPCOMING_TPD",
     sub_criteria_list=[
         incarceration_within_18_months_of_full_term_completion_date.VIEW_BUILDER,
         incarceration_within_18_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

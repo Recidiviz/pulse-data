@@ -34,7 +34,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     incarceration_within_7_years_of_ped_and_phd_and_20_years_of_ftcd,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -52,7 +53,8 @@ For this to be true, the person must have one of the following three conditions:
         Tentative Parole Date (TPD) within 3 years
 """
 
-VIEW_BUILDER = OrTaskCriteriaGroup(
+VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_IX_CRC_RESIDENT_WORKER_TIME_BASED_CRITERIA",
     sub_criteria_list=[
         incarceration_within_7_years_of_ftcd_or_upcoming_tpd.VIEW_BUILDER,
@@ -63,7 +65,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
         "full_term_completion_date",
         "group_projected_parole_release_date",
     ],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

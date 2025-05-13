@@ -24,7 +24,8 @@ from recidiviz.task_eligibility.criteria.general import (
     not_serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,7 +36,8 @@ someone is incarcerated within 3 years of their full term completion date (FTRD)
 or projected parole release date (TPD) and is not serving a life sentence.
 """
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="INCARCERATION_WITHIN_3_YEARS_OF_FTCD_OR_TPD_AND_NOT_SERVING_LIFE_SENTENCE",
     sub_criteria_list=[
         incarceration_within_3_years_of_ftcd_or_tpd.VIEW_BUILDER,
@@ -43,7 +45,7 @@ VIEW_BUILDER = AndTaskCriteriaGroup(
     ],
     reasons_aggregate_function_override={"ineligible_offenses": "ARRAY_CONCAT_AGG"},
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

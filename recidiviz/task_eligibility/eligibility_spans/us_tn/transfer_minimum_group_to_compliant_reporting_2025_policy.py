@@ -55,7 +55,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -67,13 +68,16 @@ from recidiviz.utils.metadata import local_project_id_override
 # that is applied to both groups. This TES file is for Group B, and TRANSFER_UNASSIGNED_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
 # is for Group A. Both are combined in one opportunity record query.
 
-_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = OrTaskCriteriaGroup(
-    criteria_name="US_TN_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION",
-    sub_criteria_list=[
-        most_recent_fee_code_is_feep_in_last_90_days.VIEW_BUILDER,
-        has_permanent_fines_fees_exemption.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[],
+_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        criteria_name="US_TN_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION",
+        sub_criteria_list=[
+            most_recent_fee_code_is_feep_in_last_90_days.VIEW_BUILDER,
+            has_permanent_fines_fees_exemption.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    )
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(

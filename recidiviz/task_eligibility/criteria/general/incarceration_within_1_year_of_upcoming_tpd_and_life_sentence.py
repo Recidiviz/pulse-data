@@ -23,19 +23,21 @@ from recidiviz.task_eligibility.criteria.general import (
     serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = AndTaskCriteriaGroup(
+VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="INCARCERATION_WITHIN_1_YEAR_OF_UPCOMING_TPD_AND_LIFE_SENTENCE",
     sub_criteria_list=[
         serving_a_life_sentence.VIEW_BUILDER,
         incarceration_within_1_year_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
-).as_criteria_view_builder
+)
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

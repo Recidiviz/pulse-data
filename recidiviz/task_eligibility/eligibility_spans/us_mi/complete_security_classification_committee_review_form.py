@@ -41,7 +41,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,7 +50,8 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible for
                     a security classification committee review"""
 
-_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER = OrTaskCriteriaGroup(
+_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE",
     sub_criteria_list=[
         one_month_past_last_security_classification_committee_review_date.VIEW_BUILDER,

@@ -41,8 +41,9 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
-    OrTaskCriteriaGroup,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -55,7 +56,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_level_is_not_limited.VIEW_BUILDER,
         # 1.1 ORAS score Medium or Below OR Risk Release Assessment Minimum or Below
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_AZ_ELIGIBLE_RISK_LEVEL",
             sub_criteria_list=[
                 risk_release_assessment_level_is_minimum.VIEW_BUILDER,
@@ -72,11 +74,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_has_substance_use_issues.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
-        OrTaskCriteriaGroup(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
             sub_criteria_list=[
                 not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
-                AndTaskCriteriaGroup(
+                StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+                    logic_type=TaskCriteriaGroupLogicType.AND,
                     criteria_name="US_AZ_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
                     sub_criteria_list=[
                         no_supervision_violation_within_15_months.VIEW_BUILDER,

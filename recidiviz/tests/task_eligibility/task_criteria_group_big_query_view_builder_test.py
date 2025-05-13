@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for TaskCriteriaGroupBigQueryViewBuilder classes."""
+"""Tests for task_criteria_group_big_query_view_builder.py classes."""
 from datetime import date
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 from google.cloud import bigquery
 
@@ -36,9 +36,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
-    OrTaskCriteriaGroup,
-    TaskCriteriaGroupBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -120,16 +120,13 @@ CRITERIA_5_STATE_SPECIFIC = StateSpecificTaskCriteriaBigQueryViewBuilder(
 
 
 class TestTaskCriteriaGroupBigQueryViewBuilder(BigQueryEmulatorTestCase):
-    """Tests for the TaskCriteriaGroupBigQueryViewBuilder."""
+    """Tests for task_criteria_group_big_query_view_builder.py classes."""
 
     maxDiff = None
 
     def _load_data_for_criteria_view(
         self,
-        criteria_view_builder: Union[
-            TaskCriteriaBigQueryViewBuilder,
-            TaskCriteriaGroupBigQueryViewBuilder,
-        ],
+        criteria_view_builder: TaskCriteriaBigQueryViewBuilder,
         criteria_data: List[Dict[str, Any]],
     ) -> None:
         self.create_mock_table(
@@ -159,13 +156,12 @@ class TestTaskCriteriaGroupBigQueryViewBuilder(BigQueryEmulatorTestCase):
 
     def test_and_criteria_group_state_agnostic(self) -> None:
         """Checks a standard AND group between two state-agnostic criteria"""
-        criteria_group = AndTaskCriteriaGroup(
+        criteria_group = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="CRITERIA_1_AND_CRITERIA_2",
             sub_criteria_list=[CRITERIA_1_STATE_AGNOSTIC, CRITERIA_2_STATE_AGNOSTIC],
             allowed_duplicate_reasons_keys=[],
         )
-        # Check that a group with two state-agnostic criteria does not return a state_code
-        self.assertIsNone(criteria_group.state_code)
 
         # Check that the state-agnostic criteria is stored in the general criteria dataset
         self.assertEqual(
@@ -223,7 +219,7 @@ Combines the following criteria queries using AND logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 # Criteria 1 is True, Criteria 2 is missing (default False), Group is False
                 {
@@ -252,7 +248,8 @@ Combines the following criteria queries using AND logic:
 
     def test_criteria_group_state_specific_same_state(self) -> None:
         """Checks a standard OR group between two state-specific criteria from the same state"""
-        criteria_group = OrTaskCriteriaGroup(
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_KY_CRITERIA_4_AND_CRITERIA_5",
             sub_criteria_list=[CRITERIA_4_STATE_SPECIFIC, CRITERIA_5_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=[],
@@ -321,7 +318,7 @@ Combines the following criteria queries using OR logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 # Criteria 1 is False, Criteria 2 is missing (default True), Group is True
                 {
@@ -388,7 +385,8 @@ Combines the following criteria queries using OR logic:
 
     def test_criteria_group_state_specific_and_state_agnostic_no_reasons(self) -> None:
         """Checks AND group between a state-specific and a state-agnostic criteria"""
-        criteria_group = AndTaskCriteriaGroup(
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="US_HI_CRITERIA_1_AND_CRITERIA_3",
             sub_criteria_list=[CRITERIA_1_STATE_AGNOSTIC, CRITERIA_3_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=[],
@@ -460,7 +458,7 @@ Combines the following criteria queries using AND logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 # All rows for other states are dropped
                 {
@@ -479,7 +477,8 @@ Combines the following criteria queries using AND logic:
         self,
     ) -> None:
         """Checks AND group between a state-specific and a state-agnostic criteria having overlapping reasons"""
-        criteria_group = AndTaskCriteriaGroup(
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="US_KY_CRITERIA_2_AND_CRITERIA_5",
             sub_criteria_list=[CRITERIA_2_STATE_AGNOSTIC, CRITERIA_5_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=["fees_owed"],
@@ -543,7 +542,7 @@ Combines the following criteria queries using AND logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 # The MAX value is picked across criteria for the "fees_owed" reason
                 {
@@ -564,24 +563,35 @@ Combines the following criteria queries using AND logic:
         """Checks that OR group between a state-specific and a state-agnostic criteria having overlapping reasons
         with a missing exemption for duplicate keys throws an error"""
 
-        with self.assertRaises(ValueError):
-            criteria_query = OrTaskCriteriaGroup(
-                criteria_name="CRITERIA_2_AND_CRITERIA_5",
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found reason fields with name \[fees_owed\] in multiple sub-criteria of "
+            r"criteria group \[CRITERIA_2_OR_CRITERIA_5\]: "
+            r"ANOTHER_STATE_AGNOSTIC_CRITERIA, US_KY_CRITERIA_5.",
+        ):
+            _ = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                logic_type=TaskCriteriaGroupLogicType.OR,
+                criteria_name="CRITERIA_2_OR_CRITERIA_5",
                 sub_criteria_list=[
                     CRITERIA_2_STATE_AGNOSTIC,
                     CRITERIA_5_STATE_SPECIFIC,
                 ],
                 allowed_duplicate_reasons_keys=[],
             )
-            print(criteria_query.reasons_fields)
 
     def test_criteria_group_duplicate_array_reasons(
         self,
     ) -> None:
         """Checks that OR group with duplicate keys with type ARRAY throws an error when no aggregation function set"""
 
-        with self.assertRaises(ValueError):
-            criteria_query = OrTaskCriteriaGroup(
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ARRAY type reason fields with the name \[offense_types\] in multiple "
+            r"sub-criteria of criteria group \[CRITERIA_WITH_DUPLICATE_ARRAY_REASONS\]: "
+            r"US_KY_CRITERIA_5, CRITERIA_WITH_ARRAY_2.",
+        ):
+            _ = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                logic_type=TaskCriteriaGroupLogicType.OR,
                 criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
                 sub_criteria_list=[
                     CRITERIA_5_STATE_SPECIFIC,
@@ -601,15 +611,15 @@ Combines the following criteria queries using AND logic:
                 ],
                 allowed_duplicate_reasons_keys=["offense_types"],
             )
-            print(criteria_query.reasons_fields)
 
     def test_criteria_group_duplicate_array_reasons_with_aggregators(
         self,
     ) -> None:
         """Checks that groups with duplicate array keys are allowed if an override is set"""
 
-        criteria_query = OrTaskCriteriaGroup(
-            criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
+        criteria_query = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_KY_CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
             sub_criteria_list=[
                 StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
                     sub_criteria=CRITERIA_5_STATE_SPECIFIC
@@ -632,6 +642,8 @@ Combines the following criteria queries using AND logic:
             reasons_aggregate_function_override={"offense_types": "ARRAY_CONCAT_AGG"},
         )
         expected_query_template = f"""
+WITH criteria_query_base AS (
+
 WITH unioned_criteria AS (
     SELECT *, "US_KY_NOT_CRITERIA_5" AS criteria_name,
     FROM `{{project_id}}.task_eligibility_criteria_us_ky.not_criteria_5_materialized`
@@ -679,15 +691,95 @@ LEFT JOIN
 USING
     (state_code, person_id, start_date, end_date, criteria_name)
 GROUP BY 1, 2, 3, 4
+)
+,
+_pre_sessionized AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT(
+        fees_owed,
+        offense_types
+    )) AS reason_v2,
+FROM
+    criteria_query_base
+)
+,
+_aggregated AS
+(
+
+SELECT
+    person_id, state_code,
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY person_id, state_code 
+        ORDER BY start_date, IFNULL(end_date, "9999-12-31"),CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2)
+    ) AS session_id,
+    date_gap_id,
+    start_date,
+    end_date,
+    meets_criteria, reason, reason_v2
+FROM (
+    SELECT
+        person_id, state_code,
+        session_id,
+        date_gap_id,
+        MIN(start_date) OVER w AS start_date,
+        IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
+        meets_criteria, reason, reason_v2
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+            SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
+        FROM
+            (
+            SELECT
+                person_id, state_code,
+                start_date,
+                IFNULL(end_date, "9999-12-31") AS end_date,
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
+                meets_criteria, reason, reason_v2
+            FROM _pre_sessionized
+            )
+        )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY person_id, state_code, session_id,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2))
+    )
+
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
+WHERE state_code = 'US_KY'
 """
-        self.assertEqual(expected_query_template, criteria_query.get_query_template())
+
+        self.assertEqual(expected_query_template, criteria_query.view_query_template)
 
     def test_criteria_group_duplicate_array_reasons_with_aggregators_and_ordering_clause(
         self,
     ) -> None:
         """Checks that ordering clauses are inserted into aggregation queries when specified"""
 
-        criteria_query = OrTaskCriteriaGroup(
+        criteria_query = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
             sub_criteria_list=[
                 StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -735,6 +827,8 @@ GROUP BY 1, 2, 3, 4
             reasons_aggregate_function_use_ordering_clause={"array_field_one"},
         )
         expected_query_template = f"""
+WITH criteria_query_base AS (
+
 WITH unioned_criteria AS (
     SELECT *, "CRITERIA_WITH_ARRAY_1" AS criteria_name,
     FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_1_materialized`
@@ -781,13 +875,94 @@ LEFT JOIN
 USING
     (state_code, person_id, start_date, end_date, criteria_name)
 GROUP BY 1, 2, 3, 4
+)
+,
+_pre_sessionized AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT(
+        array_field_one,
+        array_field_two
+    )) AS reason_v2,
+FROM
+    criteria_query_base
+)
+,
+_aggregated AS
+(
+
+SELECT
+    person_id, state_code,
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY person_id, state_code 
+        ORDER BY start_date, IFNULL(end_date, "9999-12-31"),CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2)
+    ) AS session_id,
+    date_gap_id,
+    start_date,
+    end_date,
+    meets_criteria, reason, reason_v2
+FROM (
+    SELECT
+        person_id, state_code,
+        session_id,
+        date_gap_id,
+        MIN(start_date) OVER w AS start_date,
+        IF(MAX(end_date) OVER w = "9999-12-31", NULL, MAX(end_date) OVER w) AS end_date,
+        meets_criteria, reason, reason_v2
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(session_boundary, 1, 0)) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS session_id,
+            SUM(IF(date_gap, 1, 0)) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) AS date_gap_id,
+        FROM
+            (
+            SELECT
+                person_id, state_code,
+                start_date,
+                IFNULL(end_date, "9999-12-31") AS end_date,
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2) ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG(end_date) OVER (PARTITION BY person_id, state_code ORDER BY start_date, IFNULL(end_date, "9999-12-31")) != start_date, TRUE) AS date_gap,
+                meets_criteria, reason, reason_v2
+            FROM _pre_sessionized
+            )
+        )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY person_id, state_code, session_id,CAST(meets_criteria AS STRING) ,TO_JSON_STRING(reason) ,TO_JSON_STRING(reason_v2))
+    )
+
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
-        self.assertEqual(expected_query_template, criteria_query.get_query_template())
+        self.assertEqual(expected_query_template, criteria_query.view_query_template)
 
     def test_criteria_group_two_state_specific_criteria_error(self) -> None:
         """Checks that OR group between state-specific criteria from two different states throws an error"""
-        with self.assertRaises(ValueError):
-            criteria_query = OrTaskCriteriaGroup(
+        with self.assertRaisesRegex(
+            ValueError,
+            "Can not combine state-specific criteria from more than one state code.",
+        ):
+            _ = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                logic_type=TaskCriteriaGroupLogicType.OR,
                 criteria_name="CRITERIA_3_AND_CRITERIA_4",
                 sub_criteria_list=[
                     CRITERIA_3_STATE_SPECIFIC,
@@ -795,12 +970,17 @@ GROUP BY 1, 2, 3, 4
                 ],
                 allowed_duplicate_reasons_keys=[],
             )
-            print(criteria_query.state_code)
 
     def test_criteria_group_invalid_reason_aggregate_override(self) -> None:
         """Checks that an error is raised when an aggregate function override is set for a reason outside the group"""
-        with self.assertRaises(ValueError):
-            criteria_group = AndTaskCriteriaGroup(
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot override aggregate function for reason 'other_reason' since it is "
+            "not in the US_KY_CRITERIA_2_AND_CRITERIA_5 reasons fields list: "
+            "fees_owed, offense_types",
+        ):
+            _ = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                logic_type=TaskCriteriaGroupLogicType.AND,
                 criteria_name="US_KY_CRITERIA_2_AND_CRITERIA_5",
                 sub_criteria_list=[
                     CRITERIA_2_STATE_AGNOSTIC,
@@ -812,11 +992,11 @@ GROUP BY 1, 2, 3, 4
                     "other_reason": "ANY_VALUE",
                 },
             )
-            print(criteria_group.get_query_template())
 
     def test_or_group_and_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks OR group with a nested inverted criteria"""
-        criteria_group = OrTaskCriteriaGroup(
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
                 CRITERIA_2_STATE_AGNOSTIC,
@@ -888,7 +1068,7 @@ Combines the following criteria queries using OR logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 # The MIN value is picked across criteria for the "fees_owed" reason
                 {
@@ -905,7 +1085,8 @@ Combines the following criteria queries using OR logic:
 
     def test_multiple_nested_criteria(self) -> None:
         """Checks nested AND + OR + NOT criteria group"""
-        nested_criteria = OrTaskCriteriaGroup(
+        nested_criteria = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
                 CRITERIA_2_STATE_AGNOSTIC,
@@ -928,7 +1109,8 @@ Combines the following criteria queries using OR logic:
                 ),
             ],
         )
-        criteria_group = AndTaskCriteriaGroup(
+        criteria_group = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
             criteria_name="US_KY_CRITERIA_2_OR_NOT_5_AND_CRITERIA_WITH_ARRAY_2",
             sub_criteria_list=[
                 nested_criteria,
@@ -998,7 +1180,7 @@ Combines the following criteria queries using AND logic:
             ],
         )
         self.run_query_test(
-            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            query_str=criteria_group.build().view_query,
             expected_result=[
                 {
                     "state_code": "US_KY",
