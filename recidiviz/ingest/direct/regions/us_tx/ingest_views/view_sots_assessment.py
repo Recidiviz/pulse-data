@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,11 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Query selects completed TDCJ assessments that are: 
-  - community supervision assessments (CST, CSST)
-  - reentry assessments (SRT, RT).
-
-Other types of assessments are not included.
+This ingest view pulls in sex offender static 99 assessments (SOTS).
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -31,29 +27,21 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT
     SID_Number,
-    Assessment_Type,
-    Assessment_Level,
-    Assessment_Class,
-    DATE(ASSESSMENT_DATE) AS ASSESSMENT_DATE
-FROM 
-    {Assessment}
-JOIN 
-    {TROAStatusDescription} 
-ON 
-    ASSESSMENT_STATUS = TROA_STATUS
+    SOTS_RISK_LEVEL,
+    DATE(SOTS_TEST_DATE) AS SOTS_TEST_DATE
+FROM
+    {AssessmentAdditions}
 WHERE 
-    TROA_STATUS_DESC = "COMPLETE"
-AND 
-    Assessment_Type IN ("CST", "CSST", "SRT", "RT")
+    SOTS_RISK_LEVEL IS NOT NULL
 AND
-    ASSESSMENT_DATE IS NOT NULL
+    SOTS_TEST_DATE IS NOT NULL
 AND
-    DATE(ASSESSMENT_DATE) <= CURRENT_DATE
+    DATE(SOTS_TEST_DATE) <= CURRENT_DATE
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tx",
-    ingest_view_name="assessments",
+    ingest_view_name="sots_assessment",
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 

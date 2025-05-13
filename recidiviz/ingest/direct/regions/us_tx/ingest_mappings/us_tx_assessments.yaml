@@ -7,7 +7,7 @@ input_columns:
   Assessment_Type: STRING
   Assessment_Level: STRING
   Assessment_Class: STRING
-  ASSESSMENT_DATE: STRING
+  ASSESSMENT_DATE: DATE
 unused_columns: []
 output:
   StatePerson:

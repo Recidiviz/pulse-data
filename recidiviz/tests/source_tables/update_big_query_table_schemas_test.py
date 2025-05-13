@@ -1896,6 +1896,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_state.state_supervision_violation_type_entry",
     "us_tn_state.state_task_deadline",
     "us_tx_ingest_view_results.assessments",
+    "us_tx_ingest_view_results.sots_assessment",
     "us_tx_ingest_view_results.state_person",
     "us_tx_ingest_view_results.state_sentence",
     "us_tx_ingest_view_results.state_staff",

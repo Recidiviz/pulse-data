@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment_weekly_v2` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  SID_Number: STRING
+  SOTS_RISK_LEVEL: STRING
+  SOTS_TEST_DATE: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - SID_Number
+                - $literal("SOTS")
+                - SOTS_TEST_DATE
+          assessment_date: SOTS_TEST_DATE
+          assessment_type: $literal_enum(StateAssessmentType.STATIC_99)
+          assessment_level:
+            $enum_mapping:
+              $raw_text: SOTS_RISK_LEVEL
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - "L"
+                StateAssessmentLevel.MEDIUM:
+                  - "M"
+                StateAssessmentLevel.HIGH:
+                  - "H"
+                StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "C"
+                  - "N"
