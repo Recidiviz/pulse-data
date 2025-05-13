@@ -55,12 +55,22 @@ clean_name_cte AS
         XREF_UPDATE_DATE,
     FROM {ClientData@ALL}
 ),
+-- On 5/13 there was a client who came in with two seperate SID_Numbers but a single
+-- TDCJ number associated with both SIDs. We should limit TDCJs to a single SID_Number.
+single_sid_per_tdcj AS 
+(
+    SELECT DISTINCT
+        SID_Number,
+        TDCJ_Number
+    FROM clean_name_cte
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY TDCJ_Number ORDER BY Creation_Date desc, PLM_UPDATE_DATE desc, XREF_UPDATE_DATE desc) = 1
+),
 -- Aggregates all of the TDCJ_Number IDs
 agg_ids_cte AS (
     SELECT
         SID_Number,
         STRING_AGG(DISTINCT TDCJ_Number) as aggs
-    FROM clean_name_cte
+    FROM single_sid_per_tdcj
     GROUP BY SID_Number
 )
 SELECT DISTINCT
