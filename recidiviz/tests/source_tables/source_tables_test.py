@@ -156,12 +156,14 @@ class SourceTablesTest(unittest.TestCase):
             self.assertEqual(
                 extraneous_vestiges,
                 "",
-                "Found vestigial recidiviz/source_tables/schema/{dataset_id}/{table_id}.yaml files"
+                "Found vestigial recidiviz/source_tables/schema/<dataset_id>/<table_id>.yaml files"
                 " for the following tables that are no longer in use: \n"
                 f"{extraneous_vestiges} \n\n"
                 "To fix: \n"
-                f"- determine that the table(s) is, in fact, unused then delete the corresponding YAML configs \n"
-                "- or add an exemption to ALLOWED_VESTIGIAL_CONFIGURATIONS with a comment about why an exemption makes sense (rare)",
+                "- For any NEW table(s) that will be used in future work, add to ALLOWED_VESTIGIAL_CONFIGURATIONS with a to-do, "
+                "your issue number, and a comment describing the intended use.\n"
+                "- For table(s) that are, in fact, unused--please delete the corresponding YAML config(s)\n"
+                "- Otherwise, if this table will be unused but should still exist (rare!) add an exemption to ALLOWED_VESTIGIAL_CONFIGURATIONS with an explanation",
             )
 
     def test_that_all_referenced_source_tables_exist_staging(self) -> None:
