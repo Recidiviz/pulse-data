@@ -58,6 +58,7 @@ This table is the source of other sessions tables such as `compartment_sessions`
 |	end_date	|	Last full day of session	|
 |	end_date_exclusive	|	Day that session ends	|
 |	session_attributes	|	This is an array that stores values for metric_source, compartment_level_1, compartment_level_2, correctional_level, supervising_officer_external_id, and compartment_location in cases where there is more than of these values on a given day. This field allows us to unnest to create overlapping sessions and look at cases where a person has more than one attribute for a given time period	|
+|	prioritized_system_type	|	Field that represents the prioritized system type based on the deduped compartment_level_1 values	|
 |	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
 
 ## Methodology
@@ -176,7 +177,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     ,
     population_with_location_names AS (
         SELECT
-            population_cte.*,
+            population_cte.* EXCEPT(compartment_level_1),
+            IF(
+                    compartment_level_2 = "INVESTIGATION",
+                    "INVESTIGATION",
+                    compartment_level_1
+                ) AS compartment_level_1,
             supervision_locations.supervision_office_name,
             supervision_locations.supervision_district_name,
             supervision_locations.supervision_region_name,
@@ -222,6 +228,22 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         end_date_field_name='end_date_exclusive'
     )}
     ,
+    sub_sessions_with_prioritized_system_type AS
+    (   
+    SELECT
+        *,
+        FIRST_VALUE
+            (
+            CASE WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN 'INCARCERATION'
+                WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN 'SUPERVISION'
+                ELSE compartment_level_1 END
+            ) OVER(PARTITION BY state_code, person_id, start_date, end_date_exclusive 
+            ORDER BY COALESCE(cl1_dedup.priority,999)) AS prioritized_system_type
+    FROM sub_sessions_with_attributes
+    LEFT JOIN `{{project_id}}.sessions.compartment_level_1_dedup_priority` cl1_dedup
+        USING(compartment_level_1)
+    )
+    ,
     sub_sessions_with_attributes_dedup AS
     (
     SELECT
@@ -229,14 +251,11 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         start_date,
         end_date_exclusive,
         state_code,
+        prioritized_system_type,
         ARRAY_AGG(
             STRUCT(
                 metric_source,
-                IF(
-                    compartment_level_2 = "INVESTIGATION",
-                    "INVESTIGATION",
-                    compartment_level_1
-                ) AS compartment_level_1,
+                compartment_level_1,
                 compartment_level_2,
                 compartment_location,
                 facility,
@@ -284,9 +303,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 gender,
                 custodial_authority
             ) AS session_attributes,
-    FROM sub_sessions_with_attributes
+    FROM sub_sessions_with_prioritized_system_type
     WHERE start_date != end_date_exclusive
-    GROUP BY 1,2,3,4
+    GROUP BY 1,2,3,4,5
     )
     ,
     sessionized_cte AS
@@ -296,7 +315,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     (
     {aggregate_adjacent_spans(
                         table_name='sub_sessions_with_attributes_dedup',
-                        attribute='session_attributes',
+                        attribute=['session_attributes','prioritized_system_type'],
                         struct_attribute_subset='session_attributes',
                         session_id_output_name='dataflow_session_id',
                         end_date_field_name='end_date_exclusive'
@@ -310,6 +329,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         end_date_exclusive,
         session_attributes,
+        prioritized_system_type,
         last_day_of_data,
     FROM sessionized_cte
     JOIN last_day_of_data_by_state
