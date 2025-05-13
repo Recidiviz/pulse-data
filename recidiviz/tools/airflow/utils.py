@@ -69,14 +69,14 @@ def get_gcloud_auth_user() -> str:
     return active_auth["account"].split("@")[0]
 
 
-def get_airflow_environments() -> List[types.Environment]:
+def get_airflow_environments(*, project_id: str) -> List[types.Environment]:
     client = service.EnvironmentsClient()
 
     return list(
         client.list_environments(
             request={
                 "parent": client.common_location_path(
-                    project=GCP_PROJECT_STAGING,
+                    project=project_id,
                     location=COMPOSER_LOCATION,
                 )
             }
@@ -98,7 +98,7 @@ def get_environment_by_name(
         return one(
             [
                 environment
-                for environment in get_airflow_environments()
+                for environment in get_airflow_environments(project_id=project_id)
                 if environment.name
                 == client.environment_path(
                     project=project_id,
