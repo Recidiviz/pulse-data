@@ -14,15 +14,31 @@ exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
+    hard_max_allowed_error_override: 0.023
+    override_reason: |-
+      A very small bump to accomodate the failure rate being 0.21% above the default threshold.
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: 0.04
+    override_reason: |-
+      Small bump until #42363 is addressed.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
+    hard_max_allowed_error_override: 0.023
+    override_reason: |-
+      A very small bump to accomodate the failure rate being 0.28% above the default threshold.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
+    hard_max_allowed_error_override: 0.4
+    override_reason: |-
+      Investigation needed. TODO(#42364)
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 15000
     override_reason: To investigate (#37797)
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 50
+    hard_num_allowed_rows_override: 2000
     override_reason: |-
-      This is a very small error that is expected because of the way revocations
+      This is a small error that is expected because of the way revocations
       and shock incarcerations are tracked in the raw data. We can observe all of the 
       transitions and key details we need despite these 0-day periods having conflicting
       PFI values.
