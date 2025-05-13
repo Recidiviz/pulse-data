@@ -67,15 +67,3 @@ custom:
               add a data-bounded exclusion from the first case of a file being
               received --> today, which will exclude those dates from validation & from
               being used to calculate the median historical row count"
-  US_IA:
-    file_tags:
-      IA_DOC_OffenderWorkUnits:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2025-04-16T00:00:00Z"
-            datetime_end_exclusive: "2025-05-09T00:00:00Z"
-            reason: "This file went from diffs to a full historical dump. TODO(#42237): revisit after automated transfers finalized"
-      IA_DOC_CaseManagers:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2025-04-16T00:00:00Z"
-            datetime_end_exclusive: "2025-05-09T00:00:00Z"
-            reason: "This file went from diffs to a full historical dump. TODO(#42237): revisit after automated transfers finalized"
