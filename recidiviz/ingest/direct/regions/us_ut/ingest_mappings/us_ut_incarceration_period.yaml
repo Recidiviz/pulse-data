@@ -167,14 +167,12 @@ output:
                   - PAROLE CONTINUED
                   - PAROLE HALFWAY OUT
                   - PAROLE RESTARTED
-                  - PAROLE REVOKED
                   - PAROLE TO CUSTODY
                   - PAROLE VIOLATOR PROGRAM
                   - PAROLE/HALFWAY OUT
                   - PROBATION CONTINUED
                   - PROBATION REINSTATED
                   - PROBATION RESTARTED
-                  - PROBATION REVOKED
                   - PROBATION START
                   - HALFWAY BACK
                   - PLEA IN ABEYANCE EXTENDED
@@ -226,6 +224,8 @@ output:
                   - FACILITY NAME CHANGE
                   - INVESTIGATION NOT COMPLETED
                   - FAILED TO APPEAR AT SENTENCING
+                  - PAROLE REVOKED
+                  - PROBATION REVOKED
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   - BODY LOCATION CHANGE
                   - COMPACT IN START
