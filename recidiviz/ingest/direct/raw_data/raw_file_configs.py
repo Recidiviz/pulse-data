@@ -733,6 +733,15 @@ class DirectIngestRawFileConfig:
     # file id in the operations database.
     is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
 
+    # The maximum number of unparseable bytes we will allow this raw file to have before
+    # we throw. In general, we expect this value to be None (i.e. we don't allow
+    # unparseable bytes); however, in certain situations, states have not been able to
+    # fix unparseable bytes in their dbs so we need to be able to clean them out of files
+    # automatically during raw data import.
+    max_num_unparseable_bytes: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
     # Can include table-level validation exemptions and/or column-level exemptions to apply
     # to all relevant columns in this table.
     # Values are applied in addition to any default_import_blocking_validation_exemptions
@@ -1244,6 +1253,10 @@ class DirectIngestRawFileConfig:
             file_config_dict.pop_optional("is_chunked_file", bool) or False
         )
 
+        max_num_unparseable_bytes = file_config_dict.pop_optional(
+            "max_num_unparseable_bytes", int
+        )
+
         if len(file_config_dict) > 0:
             raise ValueError(
                 f"Found unexpected config values for raw file"
@@ -1296,6 +1309,7 @@ class DirectIngestRawFileConfig:
                 if import_blocking_validation_exemptions is not None
                 else default_import_blocking_validation_exemptions
             ),
+            max_num_unparseable_bytes=max_num_unparseable_bytes,
         )
 
 

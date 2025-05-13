@@ -1707,6 +1707,19 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             ["COL1", "COL2"],
         )
 
+        self.assertEqual(
+            region_config.raw_file_configs[
+                "tagMoreBasicData"
+            ].max_num_unparseable_bytes,
+            10,
+        )
+        self.assertEqual(
+            region_config.raw_file_configs[
+                "tagColumnRenamed"
+            ].max_num_unparseable_bytes,
+            None,
+        )
+
     def test_default_config_parsing(self) -> None:
         """Makes sure we parse us_xx_default.yaml properly."""
         default_config = self.us_xx_region_config.default_config()

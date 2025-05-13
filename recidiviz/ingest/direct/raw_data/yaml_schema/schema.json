@@ -253,6 +253,10 @@
       "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
       "type": "boolean"
     },
+    "max_num_unparseable_bytes": {
+      "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
+      "type": "integer"
+    },
     "import_blocking_validation_exemptions": {
       "description": "A list of dictionaries representing import-blocking validation types that should be exempted for this table.",
       "type": "array",

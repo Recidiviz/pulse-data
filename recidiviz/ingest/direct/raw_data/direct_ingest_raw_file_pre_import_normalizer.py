@@ -138,7 +138,9 @@ class DirectIngestRawFilePreImportNormalizer:
                 offset_reader, name=path_parts.file_tag
             )
 
-            text_reader = io.TextIOWrapper(verifiable_reader, encoding=config.encoding)
+            text_reader = io.TextIOWrapper(
+                verifiable_reader, encoding=config.encoding, errors="replace"
+            )
 
             output_reader: Union[IO, ReadOnlyCsvNormalizingStream]
 
