@@ -34,6 +34,9 @@ from recidiviz.task_eligibility.criteria_condition import (
     ReasonDateInCalendarWeekCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -53,7 +56,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
-    InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (

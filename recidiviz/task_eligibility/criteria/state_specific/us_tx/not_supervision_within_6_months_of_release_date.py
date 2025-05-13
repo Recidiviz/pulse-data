@@ -22,7 +22,7 @@ someone is NOT on supervision within 6 months of their full term completion date
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     supervision_within_6_months_of_release_date,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -26,6 +26,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -34,7 +37,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
-    InvertedTaskCriteriaBigQueryViewBuilder,
     OrTaskCriteriaGroup,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
@@ -810,127 +812,6 @@ GROUP BY 1, 2, 3, 4
                 },
             )
             print(criteria_group.get_query_template())
-
-    def test_inverted_criteria_state_specific_criteria_name(self) -> None:
-        """Checks inverted state-specific criteria"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=CRITERIA_5_STATE_SPECIFIC
-        )
-        self.assertEqual(criteria.criteria_name, "US_KY_NOT_CRITERIA_5")
-
-        self.assertEqual(StateCode.US_KY, criteria.state_code)
-
-        self.assertEqual(
-            criteria.table_for_query,
-            BigQueryAddress(
-                dataset_id="task_eligibility_criteria_us_ky",
-                table_id="not_criteria_5_materialized",
-            ),
-        )
-
-        self.assertEqual(criteria.meets_criteria_default, False)
-
-        # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
-
-        # Check that query template is correct
-        expected_query_template = """
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT meets_criteria AS meets_criteria,
-    reason,
-    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64) AS fees_owed,
-    JSON_VALUE_ARRAY(reason_v2, '$.offense_types') AS offense_types,
-FROM
-    `{project_id}.task_eligibility_criteria_us_ky.criteria_5_materialized`
-"""
-        self.assertEqual(expected_query_template, criteria.get_query_template())
-
-    def test_inverted_criteria_state_agnostic_criteria_name(self) -> None:
-        """Checks inverted state-agnostic criteria"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=CRITERIA_2_STATE_AGNOSTIC
-        )
-        self.assertEqual(criteria.criteria_name, "NOT_ANOTHER_STATE_AGNOSTIC_CRITERIA")
-
-        self.assertIsNone(criteria.state_code)
-
-        self.assertEqual(
-            criteria.table_for_query,
-            BigQueryAddress(
-                dataset_id="task_eligibility_criteria_general",
-                table_id="not_another_state_agnostic_criteria_materialized",
-            ),
-        )
-
-        self.assertEqual(criteria.meets_criteria_default, True)
-
-        # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
-
-        # Check that query template is correct
-        expected_query_template = """
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT meets_criteria AS meets_criteria,
-    reason,
-    SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64) AS fees_owed,
-FROM
-    `{project_id}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
-"""
-        self.assertEqual(expected_query_template, criteria.get_query_template())
-
-    def test_inverted_criteria_empty_reasons(self) -> None:
-        """Checks inverted criteria with an empty reasons list"""
-        criteria = InvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=CRITERIA_1_STATE_AGNOSTIC
-        )
-        self.assertEqual(criteria.criteria_name, "NOT_MY_STATE_AGNOSTIC_CRITERIA")
-
-        self.assertIsNone(criteria.state_code)
-
-        self.assertEqual(
-            criteria.table_for_query,
-            BigQueryAddress(
-                dataset_id="task_eligibility_criteria_general",
-                table_id="not_my_state_agnostic_criteria_materialized",
-            ),
-        )
-
-        self.assertEqual(criteria.meets_criteria_default, False)
-
-        # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
-        self.assertEqual(
-            criteria.as_criteria_view_builder.reasons_fields,
-            criteria.sub_criteria.reasons_fields,
-        )
-
-        # Check that query template is correct
-        expected_query_template = """
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT meets_criteria AS meets_criteria,
-    reason,
-
-FROM
-    `{project_id}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
-"""
-        self.assertEqual(expected_query_template, criteria.get_query_template())
 
     def test_or_group_and_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks OR group with a nested inverted criteria"""

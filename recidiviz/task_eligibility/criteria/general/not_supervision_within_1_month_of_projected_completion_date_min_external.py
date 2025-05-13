@@ -21,7 +21,7 @@ someone under supervision is NOT within 1 month of their minimum projected compl
 from recidiviz.task_eligibility.criteria.general import (
     supervision_within_1_month_of_projected_completion_date_min_external,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

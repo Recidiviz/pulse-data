@@ -45,6 +45,9 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     TaskCandidatePopulationBigQueryViewBuilder,
@@ -56,7 +59,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (

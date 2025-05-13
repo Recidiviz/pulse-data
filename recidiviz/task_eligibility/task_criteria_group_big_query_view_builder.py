@@ -22,7 +22,7 @@ import abc
 from collections import defaultdict
 from functools import cached_property
 from textwrap import indent
-from typing import Dict, List, Optional, Set, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Union
 
 import attr
 from google.cloud import bigquery
@@ -43,6 +43,13 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
+
+if TYPE_CHECKING:
+    # Import for mypy only to avoid circular imports
+    from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+        InvertedTaskCriteriaBigQueryViewBuilder,
+    )
+
 
 FOUR_SPACES_INDENT = "    "
 
@@ -582,141 +589,3 @@ class AndTaskCriteriaGroup(TaskCriteriaGroupBigQueryViewBuilder):
     @property
     def boolean_logic_description(self) -> str:
         return "AND"
-
-
-@attr.define
-class InvertedTaskCriteriaBigQueryViewBuilder:
-    """Class that represents an inversion of a sub-criteria (NOT boolean
-    logic).
-    """
-
-    sub_criteria: Union[
-        TaskCriteriaBigQueryViewBuilder,
-        TaskCriteriaGroupBigQueryViewBuilder,
-    ]
-
-    @property
-    def criteria_name(self) -> str:
-        """Converts the sub-criteria name into an inverted name with NOT
-        prepended.
-
-        Examples:
-            HAS_POSITIVE_DRUG_SCREEN => NOT_HAS_POSITIVE_DRUG_SCREEN
-            US_XX_HAS_POSITIVE_DRUG_SCREEN => US_XX_NOT_HAS_POSITIVE_DRUG_SCREEN
-        """
-        if isinstance(self.sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            state_code_prefix = f"{self.sub_criteria.state_code.value}_"
-            base_name = self.sub_criteria.criteria_name.removeprefix(state_code_prefix)
-            return f"{state_code_prefix}NOT_{base_name}"
-        return f"NOT_{self.sub_criteria.criteria_name}"
-
-    @property
-    def meets_criteria_default(self) -> bool:
-        """Returns the opposite of the meets_criteria_default value for the
-        sub-criteria.
-        """
-        return not self.sub_criteria.meets_criteria_default
-
-    @property
-    def reasons_fields(self) -> List[ReasonsField]:
-        """Returns the reasons fields of the inverted sub-criteria"""
-        return self.sub_criteria.reasons_fields
-
-    @property
-    def state_code(self) -> Optional[StateCode]:
-        """Returns the value of the state_code associated with this
-        InvertedTaskCriteriaBigQueryViewBuilder. A state_code will only be
-        returned if the inverted task criteria is state-specific.
-        """
-        if isinstance(self.sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            return self.sub_criteria.state_code
-        return None
-
-    @property
-    def description(self) -> str:
-        return (
-            f"A criteria that is met for every period of time when the "
-            f"{self.sub_criteria.criteria_name} criteria is not met, and vice versa."
-        )
-
-    @cached_property
-    def as_criteria_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
-        """Returns a TaskCriteriaBigQueryViewBuilder that represents the
-        aggregation of the task criteria group.
-        """
-        sub_criteria = self._sub_criteria_as_view_builder()
-        if isinstance(sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
-            return StateSpecificTaskCriteriaBigQueryViewBuilder(
-                criteria_name=self.criteria_name,
-                description=self.description,
-                state_code=sub_criteria.state_code,
-                criteria_spans_query_template=self.get_query_template(),
-                meets_criteria_default=self.meets_criteria_default,
-                reasons_fields=self.sub_criteria.reasons_fields,
-            )
-
-        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-            criteria_name=self.criteria_name,
-            description=self.description,
-            criteria_spans_query_template=self.get_query_template(),
-            meets_criteria_default=self.meets_criteria_default,
-            reasons_fields=self.sub_criteria.reasons_fields,
-        )
-
-    @property
-    def table_for_query(self) -> BigQueryAddress:
-        return self.as_criteria_view_builder.table_for_query
-
-    @property
-    def materialized_address(self) -> Optional[BigQueryAddress]:
-        return self.as_criteria_view_builder.materialized_address
-
-    @property
-    def address(self) -> BigQueryAddress:
-        """The (dataset_id, table_id) address for this view"""
-        return self.as_criteria_view_builder.address
-
-    @property
-    def dataset_id(self) -> str:
-        return self.address.dataset_id
-
-    def get_query_template(self) -> str:
-        """Returns a query template that inverts the meets criteria values."""
-        sub_criteria = self._sub_criteria_as_view_builder()
-
-        reason_columns = "\n    ".join(
-            [
-                f'{extract_object_from_json(reason.name, reason.type.value, "reason_v2")} AS {reason.name},'
-                for reason in sub_criteria.reasons_fields
-            ]
-        )
-
-        return f"""
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT meets_criteria AS meets_criteria,
-    reason,
-{f"    {reason_columns}" if len(sub_criteria.reasons_fields) > 0 else ""}
-FROM
-    `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
-"""
-
-    def _sub_criteria_as_view_builder(self) -> TaskCriteriaBigQueryViewBuilder:
-        if isinstance(
-            self.sub_criteria,
-            (
-                StateSpecificTaskCriteriaBigQueryViewBuilder,
-                StateAgnosticTaskCriteriaBigQueryViewBuilder,
-            ),
-        ):
-            return self.sub_criteria
-        if isinstance(self.sub_criteria, TaskCriteriaGroupBigQueryViewBuilder):
-            return self.sub_criteria.as_criteria_view_builder
-
-        raise TypeError(
-            f"Inverted sub_criteria is not of a supported type: "
-            f"[{type(self.sub_criteria)}]"
-        )

@@ -25,12 +25,14 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
 

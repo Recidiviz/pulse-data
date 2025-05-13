@@ -42,12 +42,14 @@ from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaC
 from recidiviz.task_eligibility.eligibility_spans.us_pa.complete_transfer_to_administrative_supervision_request import (
     not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
-    InvertedTaskCriteriaBigQueryViewBuilder,
     OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

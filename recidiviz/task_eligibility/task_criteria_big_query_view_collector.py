@@ -27,6 +27,9 @@ from recidiviz.task_eligibility.criteria import general as general_criteria_modu
 from recidiviz.task_eligibility.criteria import (
     state_specific as state_specific_criteria_module,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
 )
@@ -36,7 +39,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
 

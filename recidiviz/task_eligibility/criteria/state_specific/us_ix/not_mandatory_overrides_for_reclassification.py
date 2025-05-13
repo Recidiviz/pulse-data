@@ -21,7 +21,7 @@ someone does not have a mandatory override for reclassification to a lower custo
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     mandatory_overrides_for_reclassification,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

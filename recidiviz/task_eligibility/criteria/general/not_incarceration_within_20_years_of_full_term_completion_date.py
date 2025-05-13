@@ -21,7 +21,7 @@ someone is incarcerated and their full term completion date is not within 20  ye
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_20_years_of_full_term_completion_date,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

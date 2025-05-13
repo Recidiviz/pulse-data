@@ -22,7 +22,7 @@ and are on low or low medium supervision.
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     critical_understaffing_tras_exempt,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -39,11 +39,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
     on_supervision_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

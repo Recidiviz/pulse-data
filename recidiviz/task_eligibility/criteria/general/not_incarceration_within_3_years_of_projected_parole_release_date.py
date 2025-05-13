@@ -22,7 +22,7 @@ Projected parole release dates in the past  will not satisfy this requirement.
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_3_years_of_projected_parole_release_date,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

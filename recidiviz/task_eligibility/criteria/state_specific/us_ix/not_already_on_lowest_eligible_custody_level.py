@@ -22,7 +22,7 @@ someone does NOT have a mandatory override or is not already in MEDIUM or MINIMU
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     already_on_lowest_eligible_custody_level,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
