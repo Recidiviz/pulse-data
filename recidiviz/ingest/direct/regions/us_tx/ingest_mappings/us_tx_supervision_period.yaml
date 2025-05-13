@@ -135,12 +135,11 @@ output:
                   $enum_mapping:
                     $raw_text: assessment_level
                     $mappings:
-                      StateSupervisionLevel.MINIMUM:
-                        - L
                       StateSupervisionLevel.MEDIUM:
                         - LM
                       StateSupervisionLevel.HIGH:
                         - M
+                        - L
                       StateSupervisionLevel.MAXIMUM:
                         - MH
                         - H
