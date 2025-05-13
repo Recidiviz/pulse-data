@@ -43,12 +43,15 @@ components:
             schedule:
               - 45 * * * *
 
-          # On weekdays, we want to run the raw data import DAG twice: once at 5 am EST to have data
-          # fresh for the start of the "east coast work day" calc DAG (6 am EST) and once at
-          # 6 am PST to have data fresh for the "west coast work day" calc DAG" (7 am PST)
+          # On weekdays, we want to run the raw data import DAG three times:
+          #   - at 5 am EST to have data fresh for the start of the "east coast work day" calc DAG (6 am EST)
+          #   - at 6 am PST to have data fresh for the "west coast work day" calc DAG" (7 am PST)
+          #   - at 6:40 am PST to include the last fledglings of raw data that come in after 6 am PST, specifically
+          #     utah that can be imported very fast as it does not require pre-import normalization
           raw_data_import_dag:
             schedule:
               - 0 2,6 * * 1-5
+              - 40 6 * * 1-5
               # On weekends run it once at 5am EST
               - 0 2 * * 6,7
             config:
