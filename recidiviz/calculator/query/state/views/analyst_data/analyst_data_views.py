@@ -177,6 +177,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q5 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q6 import (
     US_IX_SLS_Q6_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_projected_dates import (
+    US_MA_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_early_discharge_sessions_preprocessing import (
     US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
@@ -415,6 +418,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
     US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
+    US_MA_PROJECTED_DATES_VIEW_BUILDER,
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
     US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER,

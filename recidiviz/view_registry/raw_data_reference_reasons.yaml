@@ -663,6 +663,10 @@ US_IX:
     workflows_views.us_ix_complete_transfer_to_limited_supervision_form_record:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+US_MA:
+  egt_report:
+    analyst_data.us_ma_projected_dates: |-
+      Used to pull information about projected dates and credit earnings.
 US_ME:
   CIS_1000_CURRENT_STATUS:
     task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-

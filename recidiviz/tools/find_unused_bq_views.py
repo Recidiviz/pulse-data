@@ -62,6 +62,9 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_projected_dates import (
+    US_MA_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -317,6 +320,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
+    ),
+    US_MA_PROJECTED_DATES_VIEW_BUILDER.address: (
+        "Will be used in person_projected_date_sessions (n-damiani 05/12/2025)"
     ),
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"
