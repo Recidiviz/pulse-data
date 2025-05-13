@@ -87,7 +87,10 @@ COMPOSER_SMALL_WORKLOADS_CONFIG = types.WorkloadsConfig(
 def action_create() -> None:
     """Creates a new experiment environment"""
     # Base the new experiment environment's configuration off of the orchestration environment
-    orchestration = get_environment_by_name("orchestration-v2")
+    orchestration = get_environment_by_name(
+        project_id=GCP_PROJECT_STAGING,
+        name="orchestration-v2",
+    )
     client = service.EnvironmentsClient()
 
     # Disable sending emails from the development environment
@@ -242,7 +245,9 @@ def action_update_files(dry_run: bool = False) -> None:
 
 def action_open() -> None:
     """Opens the user's experiment instance"""
-    environment = get_environment_by_name(name=get_user_experiment_environment_name())
+    environment = get_environment_by_name(
+        project_id=GCP_PROJECT_STAGING, name=get_user_experiment_environment_name()
+    )
     webbrowser.open_new_tab(environment.config.airflow_uri)
 
 

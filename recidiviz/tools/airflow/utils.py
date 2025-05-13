@@ -88,7 +88,11 @@ def get_user_experiment_environment_name() -> str:
     return f"experiment-{get_gcloud_auth_user()}"
 
 
-def get_environment_by_name(name: str) -> types.Environment:
+def get_environment_by_name(
+    *,
+    name: str,
+    project_id: str,
+) -> types.Environment:
     client = service.EnvironmentsClient()
     try:
         return one(
@@ -97,7 +101,7 @@ def get_environment_by_name(name: str) -> types.Environment:
                 for environment in get_airflow_environments()
                 if environment.name
                 == client.environment_path(
-                    project=GCP_PROJECT_STAGING,
+                    project=project_id,
                     location=COMPOSER_LOCATION,
                     environment=name,
                 )
@@ -108,4 +112,6 @@ def get_environment_by_name(name: str) -> types.Environment:
 
 
 def get_user_experiment_environment() -> types.Environment:
-    return get_environment_by_name(name=get_user_experiment_environment_name())
+    return get_environment_by_name(
+        project_id=GCP_PROJECT_STAGING, name=get_user_experiment_environment_name()
+    )

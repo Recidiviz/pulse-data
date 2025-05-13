@@ -102,7 +102,9 @@ def get_terraform_plan_step(
     )
 
 
-def _get_airflow_file_sync_steps(app_engine_image: str) -> list[BuildStep]:
+def _get_airflow_file_sync_steps(
+    deployment_context: DeploymentContext, app_engine_image: str
+) -> list[BuildStep]:
     """Returns build steps for updating the Airflow source files"""
     create_airflow_source_manifest = build_step_for_shell_command(
         id_="Create Airflow source manifest",
@@ -118,7 +120,10 @@ def _get_airflow_file_sync_steps(app_engine_image: str) -> list[BuildStep]:
         timeout_seconds=(1 * 60),  # 15 min timeout
     )
 
-    orchestration = get_environment_by_name("orchestration-v2")
+    orchestration = get_environment_by_name(
+        project_id=deployment_context.project_id,
+        name="orchestration-v2",
+    )
 
     copy_airflow_source_files = build_step_for_shell_command(
         command=" ".join(
@@ -208,7 +213,10 @@ class CreateTerraformPlan(DeploymentStageInterface):
         if args.apply:
             build_steps.extend(
                 [
-                    *_get_airflow_file_sync_steps(app_engine_image=app_engine_image),
+                    *_get_airflow_file_sync_steps(
+                        deployment_context=deployment_context,
+                        app_engine_image=app_engine_image,
+                    ),
                     BuildStep(
                         id="Apply Terraform plan",
                         name=BUILDER_TERRAFORM,
