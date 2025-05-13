@@ -30,7 +30,8 @@ PERIOD_EXCLUSIONS_FRAGMENT = """
             "UNKNOWN OFFENDER STATUS",
             "Returned ICC offender to sending state",
             "Other Agency Detainer",
-            "Supervised out of state"
+            "Supervised out of state",
+            "Revoked"
         )
 """
 
