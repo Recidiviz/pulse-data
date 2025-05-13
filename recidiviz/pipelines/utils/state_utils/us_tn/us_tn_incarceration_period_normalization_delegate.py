@@ -132,7 +132,7 @@ class UsTnIncarcerationNormalizationDelegate(
 
         updated_ips: List[StateIncarcerationPeriod] = []
 
-        # This loop identifies safekeeping periods and sets the PFI for these periods to TEMPORARY_CUSTDDY,
+        # This loop identifies safekeeping periods and sets the PFI for these periods to SAFEKEEPING,
         # leaving all other periods unchanged. It works as follows:
 
         # - If a period has SAREC (received for safekeeping) in the admission_reason_raw_text, then it's considered a safekeeping period.
@@ -159,7 +159,7 @@ class UsTnIncarcerationNormalizationDelegate(
                 and ("-SAREC" in ip.admission_reason_raw_text or in_safekeeping_period)
             )
             if in_safekeeping_period:
-                pfi = StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+                pfi = StateSpecializedPurposeForIncarceration.SAFEKEEPING
 
             else:
                 in_safekeeping_period = False

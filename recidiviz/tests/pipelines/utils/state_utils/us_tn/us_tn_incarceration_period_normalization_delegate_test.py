@@ -1624,48 +1624,48 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         # This period has a PFI of GENERAL, which initially gets set to WEEKEND_CONFINEMENT by the
         # legacy_standardize_purpose_for_incarceration_values function. However, the admission
         # reason contains "SAREC" which indicates the start of a safekeeping period, meaning the PFI
-        # will be set to TEMPORARY_CUSTODY instead.
+        # will be set to SAFEKEEPING instead.
         ip3_normalized = deep_entity_update(
             deepcopy(incarceration_period_3),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
         # This period doesn't have "SAREC" in the admission reason, but it comes after a period that does,
         # with no "SARET" admission reasons in between. The person will still be considered to
-        # be in safekeeping until a "SARET" movement occurs, so this period's PFI is also set to TEMPORARY_CUSTODY.
+        # be in safekeeping until a "SARET" movement occurs, so this period's PFI is also set to SAFEKEEPING.
         ip4_normalized = deep_entity_update(
             deepcopy(incarceration_period_4),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
         # This period has "SARET" in the admission reason, indicating it is a SAFEKEEPING person returning
-        # from court to facility (CTFA). We were told by TN that SAFEKEEPING only ends when a person is
+        # from court to facility (CTFA). We were told by TN that safekeeping only ends when a person is
         # fully released or you see a new admission so we want the PFI of TEMPORARY_CUSTODY to continue.
         ip5_normalized = deep_entity_update(
             deepcopy(incarceration_period_5),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
         # Because there has not been an admission reason of NEW_ADDMISSION since the "SAREC" code we
         # expect this to return TEMPORARY_CUSTODY
         ip6_normalized = deep_entity_update(
             deepcopy(incarceration_period_6),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
         # This period has "SAREC" in the admission reason, so it's considered a safekeeping period and
-        # we have not seen a NEW_ADDMISSION so we continue to set the PFI to TEMPORARY_CUSTODY.
+        # we have not seen a NEW_ADDMISSION so we continue to set the PFI to SAFEKEEPING.
         ip7_normalized = deep_entity_update(
             deepcopy(incarceration_period_7),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
         # This is the person's last period, and comes after a "SAREC" period. Its PFI is therefore
-        # set to TEMPORARY_CUSTODY–the same would be true for all periods in the future until we
+        # set to SAFEKEEPING–the same would be true for all periods in the future until we
         # see a NEW_ADMISSION.
         ip8_normalized = deep_entity_update(
             deepcopy(incarceration_period_8),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
         # This period has an admission reason of NEW_ADMISSION so we set the PFI back to GENERAL
         ip9_normalized = deep_entity_update(
