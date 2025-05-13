@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  case_wrkr_usr_id: STRING
+  beg_dt: DATETIME
+  end_dt: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: beg_dt
+          relationship_end_date_exclusive: end_dt
+          associated_staff_external_id: case_wrkr_usr_id
+          associated_staff_external_id_type: $literal("US_UT_USR_ID")
+          # Everyone in this view is by necessity an incarceration case manager
+          system_type: $literal_enum(StateSystemType.INCARCERATION)
+          relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
