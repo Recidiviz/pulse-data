@@ -1475,6 +1475,7 @@ class StateIncarcerationIncidentOutcome(StateBase, _ReferencesStatePersonSharedC
     report_date = Column(Date)
     outcome_description = Column(String(255))
     punishment_length_days = Column(Integer)
+    outcome_metadata = Column(Text)
 
     @declared_attr
     def incarceration_incident_id(self) -> Column:

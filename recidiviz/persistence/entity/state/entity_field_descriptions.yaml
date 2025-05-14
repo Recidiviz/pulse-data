@@ -190,6 +190,7 @@ state_incarceration_incident_outcome:
     projected_end_date: The date on which the outcome is supposed to end.
     punishment_length_days: The length of any durational, punishment-focused outcome.
     report_date: The date on which the incident was reported.
+    outcome_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular incident outcome.
 
 state_incarceration_period:
   fields:

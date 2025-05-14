@@ -2278,6 +2278,9 @@ class NormalizedStateIncarcerationIncidentOutcome(
     outcome_description: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    outcome_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     punishment_length_days: int | None = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )

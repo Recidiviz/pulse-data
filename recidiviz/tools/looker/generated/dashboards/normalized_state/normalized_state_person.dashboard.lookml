@@ -356,6 +356,7 @@
       normalized_state_incarceration_incident_outcome.incarceration_incident_id,
       normalized_state_incarceration_incident_outcome.incarceration_incident_outcome_id,
       normalized_state_incarceration_incident_outcome.outcome_description,
+      normalized_state_incarceration_incident_outcome.outcome_metadata,
       normalized_state_incarceration_incident_outcome.outcome_type,
       normalized_state_incarceration_incident_outcome.outcome_type_raw_text,
       normalized_state_incarceration_incident_outcome.projected_end_date,

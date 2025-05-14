@@ -345,6 +345,7 @@
       state_incarceration_incident_outcome.incarceration_incident_id,
       state_incarceration_incident_outcome.incarceration_incident_outcome_id,
       state_incarceration_incident_outcome.outcome_description,
+      state_incarceration_incident_outcome.outcome_metadata,
       state_incarceration_incident_outcome.outcome_type,
       state_incarceration_incident_outcome.outcome_type_raw_text,
       state_incarceration_incident_outcome.projected_end_date,

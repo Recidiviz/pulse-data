@@ -57,6 +57,11 @@ view: normalized_state_incarceration_incident_outcome {
     sql: ${TABLE}.outcome_description ;;
   }
 
+  dimension: outcome_metadata {
+    type: string
+    sql: ${TABLE}.outcome_metadata ;;
+  }
+
   dimension: outcome_type {
     type: string
     sql: ${TABLE}.outcome_type ;;
