@@ -36,22 +36,14 @@ COMMON_VESTIGES = [
     #   in downstream views.
     "google_sheet_backed_tables.ingest_timeline_tracker",
     "google_sheet_backed_tables.ORAS_results_sheet",
-    "validation_results.validations_completion_tracker",
     "view_update_metadata.refresh_bq_dataset_tracker",
     "view_update_metadata.rematerialization_tracker",
     "view_update_metadata.view_update_tracker",
     "view_update_metadata.per_view_update_stats",
     "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
-    "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
-    # Validation results are referenced outside the view graph via the Admin Panel
-    "validation_results.validation_results",
-    # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
-    "export_archives.workflows_snooze_status_archive",
     # This is a potentially useful general reference table for getting information about
     # a given zip code.
     "static_reference_tables.zip_city_county_state",
-    # This view will be referenced by other workflows metadata views and events/spans as part of #31645
-    "google_sheet_backed_tables.workflows_launch_metadata",
     # This is used from time to time for oneoff validation
     "static_reference_tables.us_tn_standards_due",
     # These Justice Counts V1 reference tables are managed by Terraform so must have schema definitions.
@@ -72,10 +64,10 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
     GCP_PROJECT_STAGING: {
         BigQueryAddress.from_str(address_str=address_str)
         for address_str in [
-            # This source table is only in-use in production
-            "pulse_dashboard_segment_metrics.frontend_opportunity_snoozed",
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
+            # This source table only exists & in-use in production
+            "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
             *COMMON_VESTIGES,
         ]
     },
@@ -99,7 +91,7 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
 
 
 def build_string_for_addresses(addresses: Iterable[BigQueryAddress]) -> str:
-    return ", ".join(sorted(address.to_str() for address in addresses))
+    return "\n".join(sorted(f"\t-{address.to_str()}" for address in addresses))
 
 
 class SourceTablesTest(unittest.TestCase):
@@ -136,9 +128,9 @@ class SourceTablesTest(unittest.TestCase):
             self.assertEqual(
                 missing_definitions,
                 "",
-                "Found source tables that were referenced in views, but whose view definitions do not exist: \n"
+                "\nFound source tables that were referenced in views, but whose view definitions do not exist: \n"
                 f"{missing_definitions} \n\n"
-                "If this is a table that is externally managed, add a YAML definition to recidiviz/source_tables/{dataset_id}/{table_id}.yaml"
+                "If this is a table that is externally managed, add a YAML definition to recidiviz/source_tables/<dataset_id>/<table_id>.yaml"
                 "If we expect this table to be defined in code, be sure that it is included in a SourceTableCollection inside recidiviz.source_tables.collect_all_source_table_configs.build_source_table_repository_for_collected_schemata",
             )
             # Assert there are not any vestigial YAML files for tables that are no longer used in the view graph
@@ -156,7 +148,7 @@ class SourceTablesTest(unittest.TestCase):
             self.assertEqual(
                 extraneous_vestiges,
                 "",
-                "Found vestigial recidiviz/source_tables/schema/<dataset_id>/<table_id>.yaml files"
+                "\nFound vestigial recidiviz/source_tables/schema/<dataset_id>/<table_id>.yaml files"
                 " for the following tables that are no longer in use: \n"
                 f"{extraneous_vestiges} \n\n"
                 "To fix: \n"
@@ -164,6 +156,20 @@ class SourceTablesTest(unittest.TestCase):
                 "your issue number, and a comment describing the intended use.\n"
                 "- For table(s) that are, in fact, unused--please delete the corresponding YAML config(s)\n"
                 "- Otherwise, if this table will be unused but should still exist (rare!) add an exemption to ALLOWED_VESTIGIAL_CONFIGURATIONS with an explanation",
+            )
+
+            # Assert all vestigial YAML files are only for tables that are not used in the view graph
+            now_used_definitions = (
+                referenced_source_tables & ALLOWED_VESTIGIAL_CONFIGURATIONS[project_id]
+            ) & ALLOWED_VESTIGIAL_CONFIGURATIONS[project_id]
+            now_used_definition_str = build_string_for_addresses(now_used_definitions)
+            self.assertEqual(
+                now_used_definition_str,
+                "",
+                "\nFound recidiviz/source_tables/schema/<dataset_id>/<table_id>.yaml files"
+                " for the following tables that are now in use: \n"
+                f"{now_used_definition_str} \n\n"
+                "To fix, please remove exemption from ALLOWED_VESTIGIAL_CONFIGURATIONS",
             )
 
     def test_that_all_referenced_source_tables_exist_staging(self) -> None:
