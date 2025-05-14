@@ -66,6 +66,9 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
         for address_str in [
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
+            # Daily archives of the case_insights_record export for sentencing
+            # TODO(#42347): remove from this list once we use this has downstream view graph references
+            "export_archives.case_insights_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
             *COMMON_VESTIGES,
@@ -84,6 +87,9 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "spark_public_output_data.population_estimate_raw",
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
+            # Daily archives of the case_insights_record export for sentencing
+            # TODO(#42347): remove from this list once we use this has downstream view graph references
+            "export_archives.case_insights_record_archive",
             *COMMON_VESTIGES,
         ]
     },

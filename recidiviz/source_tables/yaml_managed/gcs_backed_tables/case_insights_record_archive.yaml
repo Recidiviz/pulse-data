@@ -1,0 +1,65 @@
+address:
+  dataset_id: export_archives
+  table_id: case_insights_record_archive
+description:
+  This table contains daily archives of the case_insights_record export for
+  Sentencing, which are read directly from Cloud Storage.
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: gender
+    type: STRING
+    mode: NULLABLE
+  - name: assessment_score_bucket_start
+    type: INTEGER
+    mode: NULLABLE
+  - name: assessment_score_bucket_end
+    type: INTEGER
+    mode: NULLABLE
+  - name: most_severe_description
+    type: STRING
+    mode: NULLABLE
+  - name: recidivism_rollup
+    type: STRING
+    mode: NULLABLE
+  - name: recidivism_series
+    type: STRING
+    mode: NULLABLE
+  - name: recidivism_num_records
+    type: INTEGER
+    mode: NULLABLE
+  - name: dispositions
+    type: STRING
+    mode: NULLABLE
+  - name: disposition_num_records
+    type: INTEGER
+    mode: NULLABLE
+  - name: recidivism_probation_series
+    type: STRING
+    mode: NULLABLE
+  - name: recidivism_rider_series
+    type: STRING
+    mode: NULLABLE
+  - name: recidivism__term_series
+    type: STRING
+    mode: NULLABLE
+  - name: disposition_probation_pc
+    type: FLOAT
+    mode: NULLABLE
+  - name: disposition_rider_pc
+    type: FLOAT
+    mode: NULLABLE
+  - name: disposition_term_pc
+    type: FLOAT
+    mode: NULLABLE
+clustering_fields: null
+source_project_mapping:
+  recidiviz-staging: recidiviz-dashboard-staging
+  recidiviz-123: recidiviz-dashboard-production
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-sentencing-etl-data-archive/*/case_insights_record.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE
