@@ -83,6 +83,9 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     projected_date_2_max = projected_date_2_min + timedelta(days=30)
     projected_date_3_max = projected_date_3_min + timedelta(days=30)
 
+    earned_time_days_1 = 5
+    earned_time_days_2 = 10
+
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
         return PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER
@@ -131,6 +134,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 schema_field_for_type("projected_parole_release_date", date),
                 schema_field_for_type("projected_full_term_release_date_min", date),
                 schema_field_for_type("projected_full_term_release_date_max", date),
+                schema_field_for_type("good_time_days", int),
+                schema_field_for_type("earned_time_days", int),
                 bigquery.SchemaField(
                     "sentence_array",
                     "RECORD",
@@ -181,6 +186,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "start_date": self.critical_date_1.date(),
                 "end_date_exclusive": self.critical_date_2.date(),
                 "projected_full_term_release_date_max": self.projected_date_1_min,
+                "earned_time_days": self.earned_time_days_1,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -191,7 +197,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_1,
                     },
                 ],
             },
@@ -208,6 +214,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "group_earned_time_days": self.earned_time_days_1,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -218,7 +226,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_1,
                     },
                 ],
             },
@@ -305,6 +313,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -329,6 +339,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -434,6 +446,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -458,6 +472,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -482,6 +498,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_med,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -558,6 +576,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_parole_release_date": None,
                 "group_projected_full_term_release_date_min": None,
                 "group_projected_full_term_release_date_max": self.projected_date_1_min,
+                "group_earned_time_days": None,
+                "group_good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,

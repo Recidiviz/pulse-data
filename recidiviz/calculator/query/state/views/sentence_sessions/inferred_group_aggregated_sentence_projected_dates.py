@@ -111,7 +111,9 @@ SELECT
     MAX(parole_eligibility_date) AS parole_eligibility_date,
     MAX(projected_parole_release_date) AS projected_parole_release_date,
     MAX(projected_full_term_release_date_min) AS projected_full_term_release_date_min,
-    MAX(IF(is_life, {nonnull_end_date_clause('projected_full_term_release_date_max')}, projected_full_term_release_date_max)) AS projected_full_term_release_date_max,   
+    MAX(IF(is_life, {nonnull_end_date_clause('projected_full_term_release_date_max')}, projected_full_term_release_date_max)) AS projected_full_term_release_date_max,
+    SUM(good_time_days) AS good_time_days,
+    SUM(earned_time_days) AS earned_time_days,
     ARRAY_AGG(
         STRUCT(
             sentence_id,
@@ -138,8 +140,10 @@ SELECT
     end_date_exclusive,
     parole_eligibility_date,
     projected_parole_release_date,
-    projected_full_term_release_date_min, 
+    projected_full_term_release_date_min,
     {revert_nonnull_end_date_clause('projected_full_term_release_date_max')} AS projected_full_term_release_date_max,
+    good_time_days,
+    earned_time_days,
     sentence_array,
 FROM 
 (
@@ -150,6 +154,8 @@ FROM
                  'projected_parole_release_date',
                  'projected_full_term_release_date_min',
                  'projected_full_term_release_date_max',
+                 'earned_time_days',
+                 'good_time_days',
                  'sentence_array'],
     struct_attribute_subset = 'sentence_array',
     end_date_field_name='end_date_exclusive')

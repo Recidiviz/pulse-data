@@ -79,6 +79,9 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     projected_date_2_max = projected_date_2_min + timedelta(days=30)
     projected_date_3_max = projected_date_3_min + timedelta(days=30)
 
+    earned_time_days_1 = 5
+    earned_time_days_2 = 10
+
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
         return INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER
@@ -111,8 +114,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
         }
 
     def test_offset_overlapping_sentences_agg(self) -> None:
-        """Tests that overlapping sentences get sub-sessionized and that we take the max across sentences within an
-        inferred group when they overlap"""
+        """Tests that overlapping sentences get sub-sessionized and that we take the max projected date and the sum of
+        credits earned across sentences within an inferred group when they overlap"""
 
         projected_dates_data = [
             {
@@ -122,6 +125,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "start_date": self.critical_date_1,
                 "end_date_exclusive": self.critical_date_3,
                 "projected_full_term_release_date_min": self.projected_date_1_min,
+                "earned_time_days": self.earned_time_days_1,
             },
             # sentence 2 has a larger `projected_full_term_release_date_min` value
             # and therefore the inferred group should take this value during the overlap
@@ -134,6 +138,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "start_date": self.critical_date_2,
                 "end_date_exclusive": None,
                 "projected_full_term_release_date_min": self.projected_date_1_max,
+                "earned_time_days": self.earned_time_days_2,
             },
         ]
 
@@ -155,7 +160,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
         ]
 
         expected_data = [
-            # first session has only sentence 1 and the date associated with that sentence is the max of the group
+            # first session has only sentence 1 and the date associated with that sentence is the max of the group and
+            # the earned_time_days value is taken from sentence 1
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
@@ -166,6 +172,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": self.projected_date_1_min,
                 "projected_full_term_release_date_max": None,
+                "earned_time_days": self.earned_time_days_1,
+                "good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -176,11 +184,12 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_1,
                     },
                 ],
             },
-            # second session has both sentences and the 2nd sentence's date is the max of the group
+            # second session has both sentences and the 2nd sentence's date is the max of the group and the earned time
+            # days value is the sum of the two sentences
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
@@ -191,6 +200,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": self.projected_date_1_max,
                 "projected_full_term_release_date_max": None,
+                "earned_time_days": self.earned_time_days_1 + self.earned_time_days_2,
+                "good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -201,7 +212,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_1,
                     },
                     {
                         "sentence_id": self.sentence_id_2,
@@ -212,12 +223,12 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_2,
                     },
                 ],
             },
-            # third session only has the second sentence and the projected date stays the same but the sentence array
-            # changes
+            # third session only has the second sentence and the projected date stays the same but the earned time days
+            # field is now taken from the second sentence, and the sentence array changes
             {
                 "state_code": self.state_code.value,
                 "person_id": self.person_id,
@@ -228,6 +239,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": self.projected_date_1_max,
                 "projected_full_term_release_date_max": None,
+                "earned_time_days": self.earned_time_days_2,
+                "good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_2,
@@ -238,7 +251,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_min": None,
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
-                        "sentence_earned_time_days": None,
+                        "sentence_earned_time_days": self.earned_time_days_2,
                     },
                 ],
             },
@@ -308,6 +321,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": self.projected_date_1_min,
                 "projected_full_term_release_date_max": self.projected_date_1_max,
+                "earned_time_days": None,
+                "good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -402,6 +417,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_parole_release_date": None,
                 "projected_full_term_release_date_min": self.projected_date_1_min,
                 "projected_full_term_release_date_max": None,
+                "earned_time_days": None,
+                "good_time_days": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
