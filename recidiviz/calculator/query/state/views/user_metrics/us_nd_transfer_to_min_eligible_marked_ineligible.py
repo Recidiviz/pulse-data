@@ -32,6 +32,7 @@ US_ND_TRANSFER_TO_MIN_ELIGIBLE_MARKED_INELIGIBLE_QUERY_TEMPLATE = f"""
 {get_recent_denials_query()}
 
 SELECT 
+  rr.state_code,
   rr.person_external_id AS elite_no,
   CONCAT(
     JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
@@ -42,7 +43,6 @@ SELECT
   rr.release_date,
   DATE_DIFF(CURRENT_DATE("US/Pacific"), sp.birthdate, YEAR) AS age_in_years,
   rr.custody_level,
-  rr.state_code,
   CONCAT(
     sr.given_names, ' ', sr.surname
   ) AS officer_name,

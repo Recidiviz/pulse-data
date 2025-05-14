@@ -22,8 +22,6 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
-    TASK_COMPLETION_EVENTS_DATASET_ID,
-    completion_event_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
@@ -38,12 +36,8 @@ US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_NAME = (
 )
 
 US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_QUERY_TEMPLATE = f"""
-
-{get_minimum_housing_referals_query()},
-
-{get_recent_referrals_query(evaluation_result='Approved')}
-
-"""
+{get_minimum_housing_referals_query(join_with_completion_events=False, keep_latest_referral_only=True)},
+{get_recent_referrals_query(evaluation_result='Approved')}"""
 
 US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.USER_METRICS_DATASET_ID,
@@ -58,10 +52,6 @@ US_ND_TRANSFER_TO_MIN_ELIGIBLE_WAITING_FOR_TRANSFER_VIEW_BUILDER = SimpleBigQuer
         StateCode.US_ND
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    general_task_eligibility_completion_events_dataset=TASK_COMPLETION_EVENTS_DATASET_ID,
-    us_nd_task_eligibility_completion_events_dataset=completion_event_state_specific_dataset(
-        StateCode.US_ND
-    ),
 )
 
 if __name__ == "__main__":

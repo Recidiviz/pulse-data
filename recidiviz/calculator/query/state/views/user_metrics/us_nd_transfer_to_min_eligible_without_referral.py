@@ -32,6 +32,7 @@ US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_QUERY_TEMPLATE = f"""
 {get_recent_denials_query()}
 
 SELECT 
+    rr.state_code,
     rr.person_external_id AS elite_no,
     CONCAT(
         JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
@@ -41,7 +42,6 @@ SELECT
     rr.unit_id AS living_unit,
     rr.release_date,
     rr.custody_level,
-    rr.state_code,
     CONCAT(
         sr.given_names, ' ', sr.surname
     ) AS officer_name,

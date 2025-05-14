@@ -395,10 +395,62 @@ MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
     WHERE rea.DESCRIPTION = '{'MINIMUM HOUSING REQUEST'}'"""
 
 
-def get_minimum_housing_referals_query() -> str:
+def get_minimum_housing_referals_query(
+    join_with_completion_events: bool = True,
+    keep_latest_referral_only: bool = False,
+    evaluation_result: str = "Approved",
+) -> str:
     """
     Returns a SQL query that retrieves minimum housing referrals data.
+
+    Args:
+        join_with_completion_events (bool): Whether to join with completion events or not.
+        keep_latest_referral_only (bool): Whether to keep only the latest referral information.
     """
+
+    _COMPLETION_EVENTS_JOIN_QUERY = f""",
+        completion_events AS (
+            -- Completion events for both ATP and transfer to min
+            SELECT *
+            FROM `{{project_id}}.{{general_task_eligibility_completion_events_dataset}}.granted_work_release_materialized`
+
+            UNION ALL
+
+            SELECT *
+            FROM `{{project_id}}.{{us_nd_task_eligibility_completion_events_dataset}}.transfer_to_minimum_facility_materialized`
+        ),
+
+        min_referrals_with_external_id_and_ce AS (
+            # We join the referrals with the closest completion event date for those who were approved
+            SELECT 
+                mr.person_id,
+                mr.state_code,
+                mr.assess_type,
+                mr.assess_type_desc,
+                mr.evaluation_result,
+                mr.assess_comment_text,
+                mr.committee_comment_text,
+                mr.start_date,
+                mr.next_review_date,
+                -- We use the next_review_date as the end date if it exists
+                IFNULL(mr.next_review_date,
+                    CASE
+                        -- If not, in cases where the evaluation was approved, we either use the 
+                        -- completion event or the evaluation date + 6 months
+                        WHEN mr.evaluation_result = '{evaluation_result}' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
+                        -- For people who's evaluation was not approved, end_date = start_date + 6 months 
+                        -- after the evaluation/start date
+                        ELSE DATE_ADD(mr.start_date, INTERVAL 6 MONTH)
+                    END) AS end_date
+            FROM min_referrals_with_external_id mr
+            LEFT JOIN completion_events ce
+                ON mr.person_id = ce.person_id
+                    AND mr.start_date <= ce.completion_event_date
+                    AND mr.evaluation_result = '{evaluation_result}'
+                    AND mr.state_code = ce.state_code
+            GROUP BY 1,2,3,4,5,6,7,8,9
+        )"""
+
     return f"""WITH min_referrals AS (
     {MINIMUM_HOUSING_REFERRAL_QUERY}
 ),
@@ -421,49 +473,9 @@ min_referrals_with_external_id AS (
         ON mr.external_id = peid.external_id
             AND peid.state_code = 'US_ND'
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
-),
-
-completion_events AS (
-    -- Completion events for both ATP and transfer to min
-    SELECT *
-    FROM `{{project_id}}.{{general_task_eligibility_completion_events_dataset}}.granted_work_release_materialized`
-
-    UNION ALL
-
-    SELECT *
-    FROM `{{project_id}}.{{us_nd_task_eligibility_completion_events_dataset}}.transfer_to_minimum_facility_materialized`
-),
-
-min_referrals_with_external_id_and_ce AS (
-    # We join the referrals with the closest completion event date for those who were approved
-    SELECT 
-        mr.person_id,
-        mr.state_code,
-        mr.assess_type,
-        mr.assess_type_desc,
-        mr.evaluation_result,
-        mr.assess_comment_text,
-        mr.committee_comment_text,
-        mr.start_date,
-        mr.next_review_date,
-        -- We use the next_review_date as the end date if it exists
-        IFNULL(mr.next_review_date,
-            CASE
-                -- If not, in cases where the evaluation was approved, we either use the 
-                -- completion event or the evaluation date + 6 months
-                WHEN mr.evaluation_result = 'Approved' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
-                -- For people who's evaluation was not approved, end_date = start_date + 6 months 
-                -- after the evaluation/start date
-                ELSE DATE_ADD(mr.start_date, INTERVAL 6 MONTH)
-            END) AS end_date
-    FROM min_referrals_with_external_id mr
-    LEFT JOIN completion_events ce
-        ON mr.person_id = ce.person_id
-            AND mr.start_date <= ce.completion_event_date
-            AND mr.evaluation_result = 'Approved'
-            AND mr.state_code = ce.state_code
-    GROUP BY 1,2,3,4,5,6,7,8,9
-)"""
+    {"QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1" if keep_latest_referral_only else ''}
+)
+{_COMPLETION_EVENTS_JOIN_QUERY if join_with_completion_events else ''}"""
 
 
 def get_recent_denials_query() -> str:
@@ -505,6 +517,7 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
     )
 
     SELECT 
+        rr.state_code,
         rr.person_external_id AS elite_no,
         CONCAT(
             JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
@@ -515,7 +528,6 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
         rr.release_date,
         DATE_DIFF(CURRENT_DATE("US/Pacific"), sp.birthdate, YEAR) AS age_in_years,
         rr.custody_level,
-        rr.state_code,
         CONCAT(
             sr.given_names, ' ', sr.surname
         ) AS officer_name,
@@ -542,9 +554,8 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
             (SELECT item FROM UNNEST(JSON_EXTRACT_ARRAY(reasons, "$")) AS item
             WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "NOT_IN_WORK_RELEASE"), 
             "$.reason.most_recent_work_release_start_date") IS NULL
-        AND custody_level != 'EXTERNAL_UNKNOWN'
-    ORDER BY facility_id, officer_name, release_date DESC
-"""
+        AND custody_level = 'MINIMUM'
+    ORDER BY facility_id, officer_name, release_date DESC"""
 
 
 _SSI_NOTE_TEXT_REGEX = "|".join(
