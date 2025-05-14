@@ -21,10 +21,16 @@ critical understaffing policies.
 """
 
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
+    critical_understaffing_needs_quarterly_scheduled_home_contact,
+    monthly_home_contact_required,
     needs_scheduled_home_contact_monthly_critical_understaffing,
-    needs_scheduled_home_contact_not_critical_understaffing,
-    needs_scheduled_home_contact_quarterly_critical_understaffing,
+    needs_scheduled_home_contact_standard_policy,
     needs_scheduled_home_contact_virtual_override_critical_understaffing,
+    quarterly_home_contact_required,
+    supervision_officer_in_critically_understaffed_location,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
@@ -40,8 +46,53 @@ VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name=_CRITERIA_NAME,
     sub_criteria_list=[
-        needs_scheduled_home_contact_not_critical_understaffing.VIEW_BUILDER,
-        needs_scheduled_home_contact_quarterly_critical_understaffing.VIEW_BUILDER,
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="US_TX_NEEDS_SCHEDULED_HOME_CONTACT_NOT_CRITICAL_UNDERSTAFFING",
+            sub_criteria_list=[
+                needs_scheduled_home_contact_standard_policy.VIEW_BUILDER,
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                        logic_type=TaskCriteriaGroupLogicType.AND,
+                        criteria_name="US_TX_QUARTERLY_HOME_CONTACT_REQUIRED_AND_SUPERVISION_OFFICER_IN_CRITICALLY_UNDERSTAFFED_LOCATION",
+                        sub_criteria_list=[
+                            quarterly_home_contact_required.VIEW_BUILDER,
+                            supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+                        ],
+                    ),
+                ),
+                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                        logic_type=TaskCriteriaGroupLogicType.AND,
+                        criteria_name="US_TX_MONTHLY_HOME_CONTACT_REQUIRED_AND_SUPERVISION_OFFICER_IN_CRITICALLY_UNDERSTAFFED_LOCATION",
+                        sub_criteria_list=[
+                            monthly_home_contact_required.VIEW_BUILDER,
+                            supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+                        ],
+                    ),
+                ),
+            ],
+            allowed_duplicate_reasons_keys=[
+                "frequency",
+                "type_of_contact",
+                "contact_type",
+                "frequency_in_months",
+                "officer_in_critically_understaffed_location",
+            ],
+        ),
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="US_TX_NEEDS_SCHEDULED_HOME_CONTACT_QUARTERLY_CRITICAL_UNDERSTAFFING",
+            sub_criteria_list=[
+                critical_understaffing_needs_quarterly_scheduled_home_contact.VIEW_BUILDER,
+                supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[
+                "frequency",
+                "type_of_contact",
+                "officer_in_critically_understaffed_location",
+            ],
+        ),
         needs_scheduled_home_contact_monthly_critical_understaffing.VIEW_BUILDER,
         needs_scheduled_home_contact_virtual_override_critical_understaffing.VIEW_BUILDER,
     ],
