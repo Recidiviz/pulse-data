@@ -59,7 +59,9 @@ WITH officer_outlier_archive_with_backfill AS (
         metric_id,
         status = "FAR" AS is_surfaceable_outlier,
     FROM
-        `{{project_id}}.outliers_views.supervision_officer_outlier_status_archive_materialized` 
+        `{{project_id}}.outliers_views.supervision_officer_outlier_status_archive_materialized`
+    WHERE
+        is_surfaced_category_type
 
     UNION ALL
 
@@ -78,6 +80,8 @@ WITH officer_outlier_archive_with_backfill AS (
         status = "FAR" AS is_surfaceable_outlier,
     FROM
         `{{project_id}}.outliers_views.supervision_officer_outlier_status_archive_materialized` 
+    WHERE
+        is_surfaced_category_type
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY state_code, officer_id, metric_id, end_date ORDER BY export_date) = 1
 )
