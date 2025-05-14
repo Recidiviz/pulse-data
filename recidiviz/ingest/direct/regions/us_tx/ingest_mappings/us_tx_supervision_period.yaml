@@ -13,7 +13,7 @@ input_columns:
   end_date: DATE
   assessment_level: STRING
   rn: INTEGER
-  in_custody_flag: BOOLEAN
+  Special_Conditions: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -43,107 +43,16 @@ output:
                 $then: $literal("US_TX_STAFF_ID")
           supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
           supervision_level:
-            $conditional:
-              - $if:
-                  $equal:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - Special_Conditions
                     - case_type
-                    - $literal("Annual")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.LIMITED:
-                        - Annual
-              - $else_if:
-                  $equal:
-                    - case_type
-                    - $literal("Non-reporting")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.UNSUPERVISED:
-                        - Non-reporting
-              - $else_if:
-                  $equal:
-                    - case_type
-                    - $literal("Substance abuse - PHASE 1")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.MAXIMUM:
-                        - Substance abuse - PHASE 1
-              - $else_if:
-                  $equal:
-                    - case_type
-                    - $literal("Substance abuse - PHASE 2")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.MAXIMUM:
-                        - Substance abuse - PHASE 2
-              - $else_if:
-                  $equal:
-                    - case_type
-                    - $literal("Substance abuse - PHASE 1B")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.MAXIMUM:
-                        - Substance abuse - PHASE 1B
-              - $else_if:
-                  $equal:
-                    - case_type
-                    - $literal("Electronic monitoring")
-                $then:
-                  $enum_mapping:
-                    $raw_text: case_type
-                    $mappings:
-                      StateSupervisionLevel.MAXIMUM:
-                        - Electronic monitoring
-              - $else_if:
-                  $and:
-                    - $not_in:
-                        $value: status
-                        $options:
-                          - $literal("Pre-Revocation - Not in Custody")
-                    - $equal:
-                        - in_custody_flag
-                        - $literal("True")
-                $then:
-                  $enum_mapping:
-                    $raw_text: status
-                    $mappings:
-                      StateSupervisionLevel.IN_CUSTODY:
-                        - In Custody FCI - No PRW
-                        - In Custody OOS - No PRW
-                        - In custody - county jail
-                        - In custody - state jail
-                        - Pending warrant closure
-                        - Pre-Revocation - FCI
-                        - Pre-Revocation - ISF
-                        - Pre-Revocation - In Custody
-                        - Pre-Revocation - OOS
-                        - Pre-revocation - SAFPF
-                        - Pre-revocation - State Jail
-                        - Revoked
-                        - Revoked - OOS
-              - $else:
-                  $enum_mapping:
-                    $raw_text: assessment_level
-                    $mappings:
-                      StateSupervisionLevel.MINIMUM:
-                        - L
-                      StateSupervisionLevel.MEDIUM:
-                        - LM
-                      StateSupervisionLevel.HIGH:
-                        - M
-                      StateSupervisionLevel.MAXIMUM:
-                        - MH
-                        - H
+                    - status
+                    - assessment_level
+              $custom_parser: us_tx_custom_enum_parsers.parse_supervision_level
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
                 case_type:

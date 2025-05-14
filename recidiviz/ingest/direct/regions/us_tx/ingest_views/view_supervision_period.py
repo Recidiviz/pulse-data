@@ -500,13 +500,6 @@ fix_end_date AS
                 end_date
         END AS end_date,
         status,
-        (
-            UPPER(status) LIKE "%IN CUSTODY%" 
-            OR UPPER(status) LIKE "%PRE-REVOCATION%"
-            OR UPPER(status) LIKE "%PENDING WARRANT CLOSURE%"
-            ) 
-            AND UPPER(status) NOT LIKE "%NOT IN CUSTODY%"
-        AS in_custody_flag,
         supervision_officer,
         supervision_site,
         case_type,
@@ -524,7 +517,6 @@ periods_with_phases AS (
         start_date,
         end_date,
         status,
-        in_custody_flag,
         supervision_officer,
         supervision_site,
         assessment_level,
@@ -541,11 +533,28 @@ periods_with_phases AS (
 period_info_agg AS (
     {aggregate_adjacent_spans(
         table_name='periods_with_phases',
-        attribute=['assessment_level','case_type','supervision_officer', 'supervision_site', 'status', 'in_custody_flag'],
+        attribute=['assessment_level','case_type','supervision_officer', 'supervision_site', 'status'],
         session_id_output_name='period_info_agg',
         end_date_field_name='end_date',
         index_columns=['Period_ID_Number','SID_Number']
     )}
+),
+-- Get's the latest special conditions as we have not been given their update datetime by TX yet
+latest_special_conditions AS (
+    SELECT
+        SID_Number,
+        Period_ID_Number,
+        Special_Conditions
+    FROM `{{SupervisionPeriod}}`
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY SID_Number, Period_ID_Number 
+        ORDER BY 
+            XREF_UPDATE_DATE DESC,
+            OSTS_UPDATE_DATE DESC,
+            RMF_TIMESTAMP DESC,
+            CTH_CREATION_DATE DESC,
+            WTSK_UPDATE_DATE DESC
+    ) = 1
 )
 SELECT
     SID_Number,
@@ -558,9 +567,13 @@ SELECT
     case_type,
     assessment_level,
     ROW_NUMBER() OVER (PARTITION BY Period_ID_Number ORDER BY start_date ASC) AS rn,
-    in_custody_flag
+    Special_Conditions
 FROM 
     period_info_agg
+LEFT JOIN
+    latest_special_conditions
+USING
+    (SID_Number, Period_ID_Number)
 WHERE 
     status IS NULL OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
 """

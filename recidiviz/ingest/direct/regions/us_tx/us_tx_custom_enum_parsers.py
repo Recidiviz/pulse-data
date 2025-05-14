@@ -22,8 +22,12 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tx_custom_enum_parsers.<function name>
 """
+import re
 
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 
 
 def parse_custodial_auth(
@@ -43,3 +47,78 @@ def parse_custodial_auth(
     if len(raw_text) == 2:
         return StateCustodialAuthority.FEDERAL
     return StateCustodialAuthority.INTERNAL_UNKNOWN
+
+
+IN_CUSTODY_REGEX = re.compile(
+    "|".join(
+        [
+            "IN CUSTODY",
+            "REVOKED",
+            "PRE-REVOCATION",
+            "PENDING WARRANT CLOSURE",
+        ]
+    )
+)
+NOT_IN_CUSTODY_REGEX = re.compile(
+    "|".join(
+        [
+            "NOT REVOKED",
+            "NOT IN CUSTODY",
+        ]
+    )
+)
+
+
+def parse_supervision_level(
+    raw_text: str,
+) -> StateSupervisionLevel:
+    """
+    Determines the supervision level in this order:
+        1. Checking if the status indicates that the person is in custody
+        2. Checking the special conditions for a known special case
+        3. Checking for a provided case type
+        4. Checking for a provided assessment level
+    """
+    raw_text = raw_text.upper()
+    (
+        special_conditions,
+        case_type,
+        status,
+        assessment_level,
+    ) = raw_text.split("@@")
+
+    if IN_CUSTODY_REGEX.search(status) and not NOT_IN_CUSTODY_REGEX.search(status):
+        return StateSupervisionLevel.IN_CUSTODY
+
+    if any(c.strip() == "L" for c in special_conditions.split(";")):
+        return StateSupervisionLevel.HIGH
+
+    if case_type == "ANNUAL":
+        return StateSupervisionLevel.LIMITED
+
+    if case_type == "NON-REPORTING":
+        return StateSupervisionLevel.UNSUPERVISED
+
+    if case_type in {
+        "SUBSTANCE ABUSE - PHASE 1",
+        "SUBSTANCE ABUSE - PHASE 2",
+        "SUBSTANCE ABUSE - PHASE 1B",
+        "ELECTRONIC MONITORING",
+    }:
+        return StateSupervisionLevel.MAXIMUM
+
+    if assessment_level == "L":
+        return StateSupervisionLevel.MINIMUM
+    if assessment_level == "LM":
+        return StateSupervisionLevel.MEDIUM
+    if assessment_level == "M":
+        return StateSupervisionLevel.HIGH
+    if assessment_level in ("MH", "H"):
+        return StateSupervisionLevel.MAXIMUM
+
+    # This can happen when special_conditions, case_type, status, and
+    # assessment_level are all unknown for a given period.
+    # For example, TX creates periods for the XREF_UPDATE_DATE critical dt
+    # before establishing case_type from CTH_CREATION_DATE, status from
+    # OSTS_UPDATE_DATE, etc.
+    return StateSupervisionLevel.INTERNAL_UNKNOWN
