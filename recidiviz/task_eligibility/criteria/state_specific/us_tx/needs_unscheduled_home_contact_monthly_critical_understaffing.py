@@ -16,15 +16,14 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which a client
-with a monthly schedule home contacts who is associated with a critically
+with monthly unscheduled home contacts who is associated with a critically
 understaffed location is due for a home contact. These monthly contacts
 can be alternated between virtual and in-person visits according to a schedule
 by month and client last name, as indicated by the `override_contact_type`.
 """
 
-
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    needs_scheduled_home_contact_standard_policy,
+    needs_unscheduled_home_contact_standard_policy,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -35,22 +34,19 @@ from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_HOME_CONTACT_MONTHLY_CRITICAL_UNDERSTAFFING"
-
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which a client
-with a monthly schedule home contacts who is associated with a critically
+with monthly unscheduled home contacts who is associated with a critically
 understaffed location is due for a home contact. These monthly contacts
 can be alternated between virtual and in-person visits according to a schedule
 by month and client last name, as indicated by the `override_contact_type`.
 """
 
-
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     contact_compliance_builder_critical_understaffing_monthly_virtual_override(
         description=_DESCRIPTION,
-        base_criteria=needs_scheduled_home_contact_standard_policy.VIEW_BUILDER,
-        contact_type="SCHEDULED HOME",
+        base_criteria=needs_unscheduled_home_contact_standard_policy.VIEW_BUILDER,
+        contact_type="UNSCHEDULED HOME",
     )
 )
 

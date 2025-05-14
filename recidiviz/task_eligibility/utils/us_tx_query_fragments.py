@@ -22,11 +22,22 @@ from typing import Optional
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_intersection_spans,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    get_reason_json_fields_query_template_for_criteria,
+)
+from recidiviz.utils.string_formatting import fix_indent
 
 
 def contact_compliance_builder(
@@ -270,6 +281,221 @@ FROM periods
                 name="frequency",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Contact cadence.",
+            ),
+        ],
+    )
+
+
+def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
+    description: str,
+    base_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder,
+    contact_type: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a state-specific criteria view builder indicating the spans of time when
+    a person has on supervision has not met the contact compliance cadence for a given
+    contact type, applying an override for alternating monthly virtual contacts
+    based on critical understaffing policy, which schedules virtual contacts
+    based on the month and the last name of the client.
+
+    Args:
+        description (str): The description of the criteria
+        base_criteria (StateSpecificTaskCriteriaBigQueryViewBuilder): The criteria that represents the standard policy on which to apply overrides
+        contact_type (int): The type of contact
+    """
+
+    standard_policy_criteria_name = base_criteria.view_id
+
+    criteria_query = f"""
+WITH has_monthly_home_contact_requirement AS (
+    SELECT * FROM `{{project_id}}.analyst_data.us_tx_contact_cadence_spans_materialized`
+    WHERE frequency_in_months = 1
+    AND contact_type = "{contact_type}"
+)
+,
+-- Generate a monthly date array spanning all of the time over which a person may
+-- have had monthly contact requirements.
+date_range AS (
+    SELECT
+        person_id,
+        state_code,
+        DATE_TRUNC(MIN(start_date), MONTH) AS min_date,
+        {revert_nonnull_end_date_clause(f"MAX({nonnull_end_date_clause('end_date')})")} AS max_date,
+    FROM
+        has_monthly_home_contact_requirement
+    GROUP BY 1, 2
+)
+,
+-- Create monthly spans for each person_id, and assign an override contact type based on
+-- the first letter of the last name and the month of the contact.
+special_monthly_contact_cadence AS (
+    SELECT
+        date_range.person_id,
+        date_range.state_code,
+        contact_month_start_date,
+        DATE_ADD(contact_month_start_date, INTERVAL 1 MONTH) AS contact_month_end_date,
+        CASE
+            WHEN
+            -- If the first letter of the last name is A-M and it's an "even" month, 
+            -- or the first letter of the last name is N-Z and it's an "odd" month,
+            -- then the contact should be a virtual contact. Otherwise, the contact
+            -- is a standard home contact and there is no override.
+                (
+                    LEFT(JSON_EXTRACT_SCALAR(person.full_name, "$.surname"), 1) < "N"
+                    AND MOD(EXTRACT(MONTH FROM contact_month_start_date), 2) = 0
+                )
+                OR (
+                    LEFT(JSON_EXTRACT_SCALAR(person.full_name, "$.surname"), 1) >= "N"
+                    AND MOD(EXTRACT(MONTH FROM contact_month_start_date), 2) = 1
+                )
+            THEN "{contact_type} (VIRTUAL)"
+            ELSE NULL
+        END AS override_contact_type,
+    FROM
+        date_range,
+        UNNEST(GENERATE_DATE_ARRAY(
+            min_date,
+            IFNULL(max_date, CURRENT_DATE('US/Eastern')),
+            INTERVAL 1 MONTH
+        )) AS contact_month_start_date
+    INNER JOIN
+        `{{project_id}}.normalized_state.state_person` person
+    USING (person_id)
+)
+,
+needs_contact AS (
+    SELECT
+        *
+    FROM
+        `{{project_id}}.task_eligibility_criteria_us_tx.{standard_policy_criteria_name}_materialized`
+    WHERE
+        JSON_EXTRACT_SCALAR(reason_v2, "$.frequency") = "1 MONTH"
+)
+,
+-- Intersect the compliant month ranges with the original monthly contact
+-- cadence spans to get the final spans of time where a client is due for
+-- a monthly contact under the critical understaffing policy,
+-- along with the value of the override contact type.
+intersection_spans AS (
+    {create_intersection_spans(
+        table_1_name="needs_contact",
+        table_2_name="special_monthly_contact_cadence",
+        index_columns=["state_code", "person_id"],
+        table_1_columns=["meets_criteria", "reason_v2"],
+        table_2_columns=["override_contact_type"],
+        table_1_start_date_field_name="start_date",
+        table_1_end_date_field_name="end_date",
+        table_2_start_date_field_name="contact_month_start_date",
+        table_2_end_date_field_name="contact_month_end_date"
+    )}
+)
+,
+-- Further intersect these spans with critical understaffing spans, so that we only apply
+-- the override contact type to spans that are in the critical understaffing location.
+critical_understaffing_spans AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        meets_criteria AS officer_in_critically_understaffed_location,
+    FROM
+        `{{project_id}}.task_eligibility_criteria_us_tx.supervision_officer_in_critically_understaffed_location_materialized`
+    WHERE
+        state_code = "US_TX"
+)
+,
+-- If a client has monthly contact requirement but not in critically understaffed policy, 
+-- they'd be covered by a different criteria, so we can ignore them here by just taking
+-- spans of time when someone is both critically understaffed and requiring monthly
+-- home contact.
+intersection_spans_with_critical_understaffing AS (
+    {create_intersection_spans(
+        table_1_name="intersection_spans",
+        table_2_name="critical_understaffing_spans",
+        index_columns=["state_code", "person_id"],
+        table_1_columns=["meets_criteria", "reason_v2", "override_contact_type"],
+        table_2_columns=["officer_in_critically_understaffed_location"],
+        table_1_start_date_field_name="start_date",
+        table_1_end_date_field_name="end_date_exclusive",
+        table_2_start_date_field_name="start_date",
+        table_2_end_date_field_name="end_date"
+    )}
+)
+SELECT
+    person_id,
+    state_code,
+    start_date,
+    end_date_exclusive AS end_date,
+    -- meets_criteria still reflects the standard home contacts policy.
+    meets_criteria,
+    TO_JSON(STRUCT(
+{fix_indent(
+            get_reason_json_fields_query_template_for_criteria(base_criteria),
+            indent_level = 8
+        )},
+        override_contact_type,
+        officer_in_critically_understaffed_location
+    )) AS reason,
+{fix_indent(
+        get_reason_json_fields_query_template_for_criteria(base_criteria),
+        indent_level = 4
+    )},
+    override_contact_type,
+    officer_in_critically_understaffed_location,
+FROM intersection_spans_with_critical_understaffing
+"""
+    criteria_name = f"US_TX_NEEDS_{contact_type.replace(' ', '_')}_CONTACT_MONTHLY_CRITICAL_UNDERSTAFFING"
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        state_code=StateCode.US_TX,
+        criteria_spans_query_template=criteria_query,
+        reasons_fields=[
+            ReasonsField(
+                name="last_contact_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the last contact.",
+            ),
+            ReasonsField(
+                name="contact_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Due date of the contact.",
+            ),
+            ReasonsField(
+                name="type_of_contact",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of contact due.",
+            ),
+            ReasonsField(
+                name="overdue_flag",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Flag that indicates whether contact was missed.",
+            ),
+            ReasonsField(
+                name="contact_count",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Number of contacts done within the overall period.",
+            ),
+            ReasonsField(
+                name="period_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of period.",
+            ),
+            ReasonsField(
+                name="frequency",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Contact cadence.",
+            ),
+            ReasonsField(
+                name="override_contact_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Override contact type based on special policy.",
+            ),
+            ReasonsField(
+                name="officer_in_critically_understaffed_location",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Boolean indicating whether client is assigned to an officer in a critically understaffed location",
             ),
         ],
     )

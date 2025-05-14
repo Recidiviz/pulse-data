@@ -18,42 +18,27 @@
 """Defines a criteria view that shows spans of time for which supervision clients
 are not compliant with unscheduled office contacts
 """
-from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    needs_unscheduled_home_contact_monthly_critical_understaffing,
-    needs_unscheduled_home_contact_standard_policy,
+
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
+from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
+    contact_compliance_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT"
+_CRITERIA_NAME = "US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT_STANDARD_POLICY"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
 do not meet standards for unscheduled home contacts based on their supervision level and case type.
 """
 
-VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.OR,
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = contact_compliance_builder(
     criteria_name=_CRITERIA_NAME,
-    sub_criteria_list=[
-        needs_unscheduled_home_contact_standard_policy.VIEW_BUILDER,
-        needs_unscheduled_home_contact_monthly_critical_understaffing.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[
-        "frequency",
-        "type_of_contact",
-        "contact_count",
-        "contact_due_date",
-        "last_contact_date",
-        "contact_type",
-        "overdue_flag",
-        "period_type",
-    ],
+    description=_DESCRIPTION,
+    contact_type="UNSCHEDULED HOME",
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
