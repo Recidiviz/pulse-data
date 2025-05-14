@@ -239,7 +239,10 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
         if (
             most_recent_supervision_period
             and most_recent_supervision_period.termination_reason
-            == StateSupervisionPeriodTerminationReason.REVOCATION
+            in (
+                StateSupervisionPeriodTerminationReason.REVOCATION,
+                StateSupervisionPeriodTerminationReason.ABSCONSION,
+            )
             and most_recent_supervision_period.supervision_type
             in (
                 StateSupervisionPeriodSupervisionType.PAROLE,
