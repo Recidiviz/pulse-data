@@ -22,6 +22,7 @@ from recidiviz.tools.find_unused_bq_views import (
     UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON,
     get_unused_across_all_projects_addresses_from_all_views_dag,
 )
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 class TestFindUnusedBQViews(unittest.TestCase):
@@ -56,24 +57,41 @@ class TestFindUnusedBQViews(unittest.TestCase):
                 """,
         )
 
-    def test_addresses_to_keep_are_unused(self) -> None:
+    def test_addresses_to_keep_are_unused_or_invalid(self) -> None:
         all_unused_addresses = (
             get_unused_across_all_projects_addresses_from_all_views_dag(
                 ignore_exemptions=True
             )
         )
+
+        all_views: set[BigQueryAddress] = set(
+            vb.address for vb in all_deployed_view_builders()
+        )
+
         # Get views that are marked as unused in the exemption list, but aren't actually
         # unused.
         delete_from_keep_list_addresses = (
             set(UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON) - all_unused_addresses
         )
 
+        not_included_in_view_graph = delete_from_keep_list_addresses - all_views
+
+        self.assertEqual(
+            0,
+            len(not_included_in_view_graph),
+            f"""
+            Found the following views that are marked as unused but are not in the view graph: \n{BigQueryAddress.addresses_to_str(not_included_in_view_graph, indent_level=14)}
+             
+            Please remove the view(s) from UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON if you are deleting the view or add them to the view graph if you have not yet already.
+            """,
+        )
+
         self.assertEqual(
             0,
             len(delete_from_keep_list_addresses),
             f"""
-             Found the following views that are marked as unused but are actually used: \n{BigQueryAddress.addresses_to_str(delete_from_keep_list_addresses, indent_level=14)}
+            Found the following views that are marked as unused but are actually used: \n{BigQueryAddress.addresses_to_str(delete_from_keep_list_addresses, indent_level=14)}
              
-             Please remove the view(s) from UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON.
+            Please remove the view(s) from UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON.
             """,
         )
