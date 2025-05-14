@@ -178,6 +178,11 @@ US_AZ:
       Needed to track information about incarceration stays, including start and end dates
     workflows_views.us_az_approaching_acis_or_recidiviz_tpr_request_record: |-
       Needed to track information about incarceration stays, including start and end dates
+  DOC_PRIORITY_REPORT:
+    task_eligibility_criteria_us_az.meets_functional_literacy_dtp: |-
+      Need information on Mandatory Literacy in criteria.
+    task_eligibility_criteria_us_az.meets_functional_literacy_tpr: |-
+      Need information on Mandatory Literacy in criteria.
   DPP_INTAKE_ASSIGNMENT:
     analyst_data.us_az_action_queue: |-
       Needed a way to cleanly view raw data from a specific screen in ACIS. No place

@@ -540,6 +540,29 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         WHERE (MEETS_MANDITORY_LITERACY = 'Y' OR  LITERACY_EXCEPTION = 'Y')
         GROUP BY 1,2
     ),
+    manlit_priority_report AS (
+        SELECT
+        pei.state_code,
+        pei.person_id, 
+        -- We use the earliest possible CREATE_DTM case when we see a 'Y' for MEET_STANDARD
+        MIN(CAST(SPLIT(priority_report.DATE_CREATED, ' ')[OFFSET(0)] AS DATE)) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        TRUE AS meets_criteria,
+        MIN(CAST(SPLIT(priority_report.DATE_CREATED, ' ')[OFFSET(0)] AS DATE)) AS latest_functional_literacy_date,
+        'PRIORITY_REPORT' AS data_location,
+    FROM
+        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_PRIORITY_REPORT_latest` priority_report
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+    USING(DOC_ID)
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
+    USING(PERSON_ID)
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON ADC_NUMBER = external_id 
+        AND pei.state_code = 'US_AZ'
+        AND pei.id_type = 'US_AZ_ADC_NUMBER'
+    WHERE (MEET_STANDARD = 'Yes')
+    GROUP BY 1,2
+    ),
     union_cte AS (
         SELECT
           *
@@ -550,6 +573,11 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           *
         FROM
           manlit_prg_eval 
+        UNION ALL
+        SELECT
+          *
+        FROM
+          manlit_priority_report 
     ),
     {create_sub_sessions_with_attributes('union_cte')}
     SELECT
