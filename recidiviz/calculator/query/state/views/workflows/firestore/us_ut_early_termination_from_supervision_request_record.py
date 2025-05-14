@@ -17,6 +17,7 @@
 """Queries information needed to surface eligible clients for early termination from supervision in UT
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
@@ -170,6 +171,125 @@ case_notes_cte AS (
         USING(p_p_agrmnt_id)
     -- Only include conditions that are active today
     WHERE CURRENT_DATE('US/Eastern') BETWEEN SAFE_CAST(LEFT(s.strt_dt, 10) AS DATE) AND IFNULL(SAFE_CAST(LEFT(s.end_dt, 10) AS DATE), '9999-12-31')
+
+    UNION ALL
+
+    -- Address checks
+    SELECT 
+        peid.external_id,
+        "Recent Address Checks" AS criteria,
+        contact_reason_raw_text AS note_title,
+        CONCAT(
+            address,
+            ' - ',
+            'Successful Contacts: ', successful_counts, ' of ', attempted_counts + successful_counts, ' attempts'
+        ) AS note_body,
+        event_date
+    FROM (
+        SELECT 
+            state_code,
+            person_id,
+            ssc.contact_reason_raw_text,
+            NULLIF(JSON_VALUE(supervision_contact_metadata, '$.ADDRESS'), '') AS address,
+            SUM(IF(status_raw_text = 'ATTEMPTED', 1, 0)) AS attempted_counts,
+            SUM(IF(status_raw_text = 'SUCCESSFUL', 1, 0)) AS successful_counts,
+            MAX(contact_date) AS event_date,
+        FROM `{{project_id}}.us_ut_state.state_supervision_contact` ssc
+        INNER JOIN `{{project_id}}.sessions.prioritized_supervision_sessions_materialized` pss
+            USING(state_code, person_id)
+        WHERE ssc.state_code = 'US_UT'
+            # Only include contacts with non-null addresses
+            AND JSON_VALUE(supervision_contact_metadata, '$.ADDRESS') != ""
+            # Only pull latest supervision super sessions
+            AND CURRENT_DATE('US/Pacific') BETWEEN pss.start_date AND {nonnull_end_date_exclusive_clause('pss.end_date_exclusive')}
+            # Contact date within a supervision super session
+            AND ssc.contact_date BETWEEN pss.start_date AND {nonnull_end_date_exclusive_clause('pss.end_date_exclusive')}
+        GROUP BY 1,2,3,4
+    )
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        USING(state_code, person_id)
+
+    UNION ALL
+
+    -- Most recent drug screen
+    SELECT
+        peid.external_id,
+        "Drug Screens" AS criteria,
+        "Latest screen" AS note_title,
+        CONCAT(
+        'Result: ', IF(dsp.is_positive_result, 'Positive', 'Negative'),
+        ' - ',
+        'Sample type: ', dsp.sample_type,
+        ' - ',
+        'Substance: ', dsp.substance_detected
+        ) AS note_body,
+        dsp.drug_screen_date AS event_date
+    FROM `{{project_id}}.sessions.drug_screens_preprocessed_materialized` dsp
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        USING(state_code, person_id)
+    WHERE dsp.state_code = 'US_UT'
+    AND peid.id_type = 'US_UT_DOC'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id ORDER BY event_date DESC) = 1
+
+    UNION ALL 
+
+    -- LS/RNR drug screen questions
+    SELECT 
+        peid.external_id,
+        "Latest LS/RNR" AS criteria,
+        "Drug questions" AS note_title,
+        REGEXP_REPLACE(  
+            CONCAT(
+                -- Drug problem currently
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q31'),
+                ": ",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q31_ANSWER'),
+                ",",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q31_CMT'),
+                " - ",
+                -- Drug problem, ever
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q29'),
+                ": ",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q29_ANSWER')
+            ), r'[;.]', '') AS note_body,
+        ass.assessment_date AS event_date
+    FROM `{{project_id}}.sessions.assessment_score_sessions_materialized` ass
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        USING(state_code, person_id)
+    WHERE ass.state_code = 'US_UT'
+    AND ass.assessment_class = 'RISK'
+    AND ass.assessment_type = 'LS_RNR'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id ORDER BY ass.assessment_date DESC) = 1
+
+    UNION ALL 
+
+    -- LS/RNR alcohol screen questions
+    SELECT 
+        peid.external_id,
+        "Latest LS/RNR" AS criteria,
+        "Alcohol questions" AS note_title,
+        REGEXP_REPLACE(  
+            CONCAT(
+                -- Alcohol problem currently
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q30'),
+                ": ",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q30_ANSWER'),
+                ",",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q30_CMT'),
+                " - ",   
+                -- Alcohol problem, ever
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q28'),
+                ": ",
+                JSON_VALUE(ass.assessment_metadata, '$.LSRNR_Q28_ANSWER')
+            ), r'[;.]', '') AS note_body,
+        ass.assessment_date AS event_date
+    FROM `{{project_id}}.sessions.assessment_score_sessions_materialized` ass
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+        USING(state_code, person_id)
+    WHERE ass.state_code = 'US_UT'
+    AND ass.assessment_class = 'RISK'
+    AND ass.assessment_type = 'LS_RNR'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.external_id ORDER BY ass.assessment_date DESC) = 1
 ),
 
 array_case_notes_cte AS (
