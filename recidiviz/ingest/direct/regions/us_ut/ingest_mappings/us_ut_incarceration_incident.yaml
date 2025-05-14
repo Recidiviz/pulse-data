@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_incident`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  incdnt_id: STRING
+  incident_location: STRING
+  location_within_facility: STRING
+  incdnt_cat_desc: STRING
+  incdnt_date: DATE
+  incdnt_title: STRING
+  incdnt_smry: STRING
+  ofndr_num: STRING
+  udc_dcpln_case_num: STRING
+  dcpln_hrng_id: STRING
+  dcpln_hrng_rslt_id: STRING
+  filing_date: DATE
+  final_hearing_date: DATE
+  hrng_typ_desc: STRING
+  outcome_start_date: DATE
+  outcome_end_date: DATE
+  rstrctn_days: STRING
+  sanction_description: STRING
+  hearing_outcome_description: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                # in utah, multiple jii can be involved with the same incident id; in order
+                # to comply w/ the globally unique external id w/in a state
+                - incdnt_id
+                - ofndr_num
+          incident_date: incdnt_date
+          incident_type:
+            $enum_mapping:
+              $raw_text: incdnt_cat_desc
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - AC-ALCOHOL
+                  - CB-CONTRABAND
+                  - DR-DRUGS
+                  - PR-PROPERTY
+                  - WE-WEAPONS
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - DC-DISORDERLY CONDUC
+                  - RI-RIOT
+                  - TH-THREAT
+                StateIncarcerationIncidentType.ESCAPE:
+                  - ES-ESCAPE
+                  - WK-WALKAWAY/ABSCOND
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - BR-BRIBERY
+                  - BU-BURGLARY
+                  - EM-EMBEZZLEMENT
+                  - EX-EXTORTION
+                  - FG-FORGERY
+                  - FR-FRAUD
+                  - MA-MAIL
+                  - OB-OUT OF BOUNDS
+                  - PS-PROSTITUTION
+                  - RB-ROBBERY
+                  - TL-THEFT/LARCENY
+                  - VA-VANDALISM
+                  - VT-VEHICLE THEFT
+                  - VR-VIOLATE RULE
+                StateIncarcerationIncidentType.REPORT:
+                  - AB-ABORTION # not sure what this actually means -- referencing cases were all misc
+                  - AL-ALARM MECHANICAL
+                  - AN-ABNORMAL BEHAVIOR
+                  - CA-CHILD ABUSE
+                  - CO-COUNT
+                  - CU-CULINARY
+                  - CT-CONTRACT VIOLATIO
+                  - CV-CIVIL RIGHTS
+                  - DE-DEATH
+                  - DT-DRUG TEST
+                  - DO-DIRECT ORDER
+                  - FL-FALSE INFORMATION
+                  - GM-GAMBLING
+                  - HS-HEALTH & SAFETY
+                  - IN-INJURY
+                  - LO-LOITERING
+                  - MD-MEDICAL
+                  - MS-MISCELLANEOUS
+                  - PA-PAROLE/PROBATION # most of these were related to parole violations
+                  - RA-REQUEST ASSISTANC
+                  - SE-SEARCH
+                  - SC-SECURITY
+                  - SV-SERVICE # sort of like a maintenance request
+                  - SU-SUICIDE
+                  - SP-SUSPICIOUS
+                  - TA-TRAFFIC
+                  - TE-TELEPHONE
+                  - TR-TRANSPORTATION
+                  - VI-VISITING
+                  - WA-WARRANT # most of these were related to parole violations
+                  - WP-WORK PERFORMANCE
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - AR-ARSON
+                  - AS-ASSAULT
+                  - ASP-ASSAULT OFFICER
+                  - BM-BOMB
+                  - HM-HOMICIDE
+                  - KN-KIDNAP/HOSTAGE
+                  - SX-SEX ASSAULT
+                  - SO-SEX OFFENSES
+                StateIncarcerationIncidentType.EXTERNAL_UNKNOWN:
+                  - UNKNOWN
+          facility: incident_location
+          location_within_facility: location_within_facility
+          incident_details:
+            $concat:
+              $values:
+                - incdnt_title
+                - incdnt_smry
+              $separator: ": "
+          incarceration_incident_outcomes:
+            - $conditional:
+                - $if:
+                    $not_null: udc_dcpln_case_num
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id:
+                        $concat:
+                          $values:
+                            - incdnt_id
+                            - ofndr_num
+                            # each case can have multiple hearings and each hearing can
+                            # have multiple results; however, each hearing does not
+                            # always have a result, so we cannot just use that id here
+                            - udc_dcpln_case_num
+                            - dcpln_hrng_id
+                            - dcpln_hrng_rslt_id
+                      outcome_type:
+                        $enum_mapping:
+                          $raw_text: sanction_description
+                          $mappings:
+                            StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                              - EXTRA DUTY
+                            StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                              - PUNITIVE ISOLATION
+                            StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                              - FINE
+                              - RESTITUTION
+                            StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                              - COUNTY JAIL SANCTION
+                            StateIncarcerationIncidentOutcomeType.TREATMENT:
+                              - THERAPEUTIC INTERVEN
+                            StateIncarcerationIncidentOutcomeType.WARNING:
+                              - VERBAL REPRIMAND
+                            StateIncarcerationIncidentOutcomeType.DISMISSED:
+                              - NONE
+                            StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                              - DISCIPLINRY RSTRCTN
+                            StateIncarcerationIncidentOutcomeType.EXTERNAL_UNKNOWN:
+                              - OTHER
+                            StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                              - REPORT
+                      date_effective: outcome_start_date
+                      projected_end_date: outcome_end_date
+                      hearing_date: final_hearing_date
+                      report_date: filing_date
+                      outcome_description: hearing_outcome_description
+                      punishment_length_days: rstrctn_days
+                      outcome_metadata:
+                        $normalized_values_json_dict:
+                          hearing_type: hrng_typ_desc
+                          udc_dcpln_case_num: udc_dcpln_case_num
+                          dcpln_hrng_id: dcpln_hrng_id
+                - $else:
+                    # based on comments from the research team, cases that are linked to
+                    # a jii but have no udc_dcpln_case_num are typically incidents that
+                    # were logged and then either dismissed or never finalized; in these
+                    # cases we are ingesting them as DISMISSED with the intention that
+                    # they are excluded from opportunity eligibility downstream
+                    StateIncarcerationIncidentOutcome:
+                      external_id:
+                        $concat:
+                          $values:
+                            - incdnt_id
+                            - ofndr_num
+                            - udc_dcpln_case_num
+                            - dcpln_hrng_id
+                            - dcpln_hrng_rslt_id
+                      outcome_type: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)

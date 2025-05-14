@@ -1995,6 +1995,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ut_ingest_view_results.assessment",
     "us_ut_ingest_view_results.drug_screen",
     "us_ut_ingest_view_results.employment_period",
+    "us_ut_ingest_view_results.incarceration_incident",
     "us_ut_ingest_view_results.incarceration_period",
     "us_ut_ingest_view_results.incarceration_person_staff_relationship_period",
     "us_ut_ingest_view_results.person_housing_status_period",
