@@ -137,6 +137,12 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
 
+    def get_descendant_criteria(self) -> set["TaskCriteriaBigQueryViewBuilder"]:
+        """Returns all the criteria that are descendants (sub-criteria) of this
+        criterion, if this is a complex criterion.
+        """
+        return set()
+
 
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
@@ -156,7 +162,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         if criteria_name.upper() != criteria_name:
             raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
 
-        # TODO(#41711): Enforce that criteria_name does not start with a US_XX state code
+        # TODO(#42365): Enforce that criteria_name does not start with a US_XX state code
 
         super().__init__(
             dataset_id="task_eligibility_criteria_general",
@@ -177,6 +183,14 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.criteria_name = criteria_name
         self.meets_criteria_default = meets_criteria_default
         self.reasons_fields = reasons_fields
+
+    def get_descendant_criteria(
+        self,
+    ) -> set["StateAgnosticTaskCriteriaBigQueryViewBuilder"]:
+        """Returns all the criteria that are descendants (sub-criteria) of this
+        criterion, if this is a complex criterion.
+        """
+        return set()
 
 
 TaskCriteriaBigQueryViewBuilder = Union[

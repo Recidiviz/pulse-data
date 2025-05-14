@@ -44,10 +44,6 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
-    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
-)
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     TaskCandidatePopulationBigQueryViewBuilder,
@@ -58,10 +54,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
@@ -125,37 +117,6 @@ TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
     FROM `{{project_id}}.{completion_events_dataset_id}.{completion_events_view_id}`
     WHERE state_code = "{state_code}"
 )"""
-
-
-# TODO(#41711): Update this to be actually recursive and not just explore the first layer
-def get_all_descendant_criteria_builders(
-    criteria_builders: Sequence[TaskCriteriaBigQueryViewBuilder],
-) -> List[TaskCriteriaBigQueryViewBuilder]:
-    """Recursive function to collect all view builders representing task
-    criteria at all levels of criteria dependency tree.
-    """
-    view_builders = []
-    for builder in criteria_builders:
-        view_builders.append(builder)
-        if isinstance(
-            builder,
-            (
-                StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-                StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
-            ),
-        ):
-            view_builders += get_all_descendant_criteria_builders(
-                builder.sub_criteria_list
-            )
-        elif isinstance(
-            builder,
-            (
-                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
-                StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
-            ),
-        ):
-            view_builders.append(builder.sub_criteria)
-    return view_builders
 
 
 def get_critical_date_parsing_fragments_by_criteria(
@@ -849,7 +810,12 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
     def all_descendant_criteria_builders(
         self,
     ) -> Sequence[TaskCriteriaBigQueryViewBuilder]:
-        return get_all_descendant_criteria_builders(self.criteria_spans_view_builders)
+        all_descendants: set[TaskCriteriaBigQueryViewBuilder] = set()
+        for criteria_builder in self.criteria_spans_view_builders:
+            all_descendants.add(criteria_builder)
+            all_descendants |= criteria_builder.get_descendant_criteria()
+
+        return sorted(all_descendants, key=lambda c: c.criteria_name)
 
     @staticmethod
     def _validate_builder_state_codes(

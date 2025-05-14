@@ -102,6 +102,11 @@ class StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
         )
         self.sub_criteria = sub_criteria
 
+    def get_descendant_criteria(
+        self,
+    ) -> set[StateAgnosticTaskCriteriaBigQueryViewBuilder]:
+        return self.sub_criteria.get_descendant_criteria() | {self.sub_criteria}
+
 
 class StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
     StateSpecificTaskCriteriaBigQueryViewBuilder
@@ -124,3 +129,6 @@ class StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
             state_code=sub_criteria.state_code,
         )
         self.sub_criteria = sub_criteria
+
+    def get_descendant_criteria(self) -> set[TaskCriteriaBigQueryViewBuilder]:
+        return self.sub_criteria.get_descendant_criteria() | {self.sub_criteria}

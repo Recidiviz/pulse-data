@@ -489,6 +489,15 @@ class StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         self.sub_criteria_list = sub_criteria_list
         self.logic_config = logic_config
 
+    def get_descendant_criteria(
+        self,
+    ) -> set[StateAgnosticTaskCriteriaBigQueryViewBuilder]:
+        all_descendant_criteria = set(self.sub_criteria_list)
+        for sub_criteria in self.sub_criteria_list:
+            all_descendant_criteria.update(sub_criteria.get_descendant_criteria())
+
+        return all_descendant_criteria
+
 
 class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     StateSpecificTaskCriteriaBigQueryViewBuilder
@@ -588,3 +597,10 @@ class StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         )
         self.sub_criteria_list = sub_criteria_list
         self.logic_config = logic_config
+
+    def get_descendant_criteria(self) -> set[TaskCriteriaBigQueryViewBuilder]:
+        all_descendant_criteria = set(self.sub_criteria_list)
+        for sub_criteria in self.sub_criteria_list:
+            all_descendant_criteria.update(sub_criteria.get_descendant_criteria())
+
+        return all_descendant_criteria
