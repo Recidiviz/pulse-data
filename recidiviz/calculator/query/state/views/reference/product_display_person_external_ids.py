@@ -50,13 +50,10 @@ JOIN (
 {fix_indent(product_display_external_id_types_query(system_type), indent_level=4)}
 )
 USING (state_code, id_type)
-QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY person_id
-    # TODO(#41557): Use new is_current_display_id_for_type flag when it is added to 
-    # state_person_external_id. For now, sort reverse alphabetically to attempt 
-    # to pick the most recent ID / replicate existing behavior.
-    ORDER BY display_person_external_id DESC
-) = 1
+WHERE
+    -- Ingest pipelines enforce that this is true for exactly one id of a given type
+    -- for a given person.
+    is_current_display_id_for_type
 """
 
 
