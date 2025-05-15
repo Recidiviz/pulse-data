@@ -23,19 +23,47 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH
+-- getting only most recent inmateNumber's to avoid address/phone/email overlaps
+-- every person gets a new inmateNumber when if are re-incarcerated post release
+current_ids as (
+  SELECT 
+    inmateNumber  
+  FROM {InmatePreviousId} 
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY internalID ORDER BY receivedDate DESC) = 1
+),
+--collecting relevant address/phone/email information
+address_info AS (
+  SELECT 
+    ci.inmateNumber, 
+    DATE(startDate) AS startDate,
+    DATE(endDate) AS endDate,
+    residencePhoneNumber,
+    alternatePhoneNumber,
+    emailAddress
+  FROM current_ids ci
+  LEFT JOIN {PIMSResidence} r
+    ON ci.inmateNumber = r.inmateNumber
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ci.inmateNumber ORDER BY startDate DESC, endDate DESC nulls first) = 1
+)
 SELECT 
-    inmateNumber,
+    i.inmateNumber,
     lastName,
     firstName,
     DATE(NULLIF(dob, 'NULL')) AS dob,
     GENDER_CD,
     RACE_CD,
+    residencePhoneNumber,
+    emailAddress
 FROM 
     {InmatePreviousId} i
 LEFT JOIN 
     {CTS_Inmate} c
 ON 
     i.inmateNumber = c.ID_NBR
+LEFT JOIN address_info ai
+ON 
+    i.inmateNumber = ai.inmateNumber
 QUALIFY ROW_NUMBER() OVER(PARTITION BY internalId ORDER BY i.receivedDate DESC) = 1
 """
 

@@ -9,6 +9,8 @@ input_columns:
   GENDER_CD: STRING
   RACE_CD: STRING
   inmateNumber: STRING
+  residencePhoneNumber: STRING
+  emailAddress: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -57,3 +59,5 @@ output:
                 - AS
                 - PI
                 - HI
+    current_email_address: emailAddress
+    current_phone_number: residencePhoneNumber
