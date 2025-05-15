@@ -91,6 +91,19 @@ agg_staff_id_by_name AS (
         ) AS staff_id_list
   FROM choose_one_name_per_id
   GROUP BY FirstName,MiddleName,LastName
+),
+-- Chooses the latest email associated with a given name
+latest_email_by_name AS (
+  SELECT
+    FirstName,
+    MiddleName,
+    LastName,
+    staff_email AS latest_staff_email
+  FROM name_parts_cte
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY FirstName, MiddleName, LastName
+    ORDER BY Creation_Date DESC
+  ) = 1
 )
 
 SELECT
@@ -98,14 +111,18 @@ SELECT
     COALESCE(a.MiddleName,e.MiddleName) AS MiddleName,
     COALESCE(a.LastName,e.LastName) AS LastName,
     STRING_AGG(DISTINCT email_list, ',' ORDER BY email_list) AS email_list,
-    STRING_AGG(DISTINCT staff_id_list, ',' ORDER BY staff_id_list) AS staff_id_list
+    STRING_AGG(DISTINCT staff_id_list, ',' ORDER BY staff_id_list) AS staff_id_list,
+    l.latest_staff_email
 FROM agg_staff_id_by_name a
 FULL OUTER JOIN agg_email_by_name e
   ON a.FirstName = e.FirstName
   AND a.LastName = e.LastName
   AND (a.MiddleName = e.MiddleName OR (a.MiddleName IS NULL AND e.MiddleName IS NULL))
-GROUP BY FirstName,MiddleName,LastName;
-
+LEFT JOIN latest_email_by_name l
+  ON COALESCE(a.FirstName, e.FirstName) = l.FirstName
+  AND COALESCE(a.LastName, e.LastName) = l.LastName
+  AND COALESCE(a.MiddleName, e.MiddleName) IS NOT DISTINCT FROM l.MiddleName
+GROUP BY FirstName,MiddleName,LastName, l.latest_staff_email;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
