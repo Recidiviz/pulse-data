@@ -2,8 +2,8 @@ address:
   dataset_id: auth0_prod_action_logs
   table_id: success_signup
 description:
-  "TODO(#29155): Add a description as to what this is used for and why it isn't
-  managed in code"
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
 schema:
   - name: allowed_supervision_location_ids
     type: STRING
@@ -108,9 +108,6 @@ schema:
     type: BOOLEAN
     mode: NULLABLE
   - name: routes_insights_supervision_supervisors_list
-    type: BOOLEAN
-    mode: NULLABLE
-  - name: routes_tasks
     type: BOOLEAN
     mode: NULLABLE
 clustering_fields: null
