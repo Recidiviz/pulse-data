@@ -417,12 +417,6 @@ US_IX:
   facility:
     reference_views.us_ix_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  hsn_CounselorAssignment:
-    sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed: |-
-      Needed for resident <> case manager mapping. 01/16/2025
-  hsn_CounselorAssignmentType:
-    sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed: |-
-      Needed for resident <> case manager mapping. 01/16/2025
   ind_Alert:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

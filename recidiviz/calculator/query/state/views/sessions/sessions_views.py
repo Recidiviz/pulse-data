@@ -264,9 +264,6 @@ from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_drug_screens_pr
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_incarceration_population_metrics_preprocessed import (
     US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_incarceration_staff_assignment_sessions_preprocessed import (
-    US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_parole_board_hearing_sessions import (
     US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
@@ -433,7 +430,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_CO_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-    US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_IX_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,

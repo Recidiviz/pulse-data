@@ -34,18 +34,16 @@ US_IX_INCARCERATION_STAFF_TEMPLATE = f"""
             ids.external_id AS id,
             ids.state_code,
             CAST(NULL AS STRING) AS district,
-            LOWER(email) AS email,
-            UPPER(given_names) AS given_names,
-            UPPER(surname) AS surname,
-            incarceration_staff_assignment_role_subtype AS role_subtype,
+            LOWER(staff_with_names.email) AS email,
+            UPPER(staff_with_names.given_names) AS given_names,
+            UPPER(staff_with_names.surname) AS surname,
+            "COUNSELOR" AS role_subtype,
             {get_pseudonymized_id_query_str("'US_ID' || ids.external_id")} AS pseudonymized_id 
         FROM caseload_staff_ids ids
-        INNER JOIN `{{project_id}}.normalized_state.state_staff_external_id`
+        INNER JOIN `{{project_id}}.normalized_state.state_staff_external_id` sei
             USING(external_id, state_code)
-        INNER JOIN `{{project_id}}.reference_views.state_staff_with_names`
+        INNER JOIN `{{project_id}}.reference_views.state_staff_with_names` staff_with_names
             USING(staff_id)
-        LEFT JOIN `{{project_id}}.sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed` isa
-            ON ids.external_id = isa.incarceration_staff_assignment_external_id
     )
     SELECT 
         {{columns}}

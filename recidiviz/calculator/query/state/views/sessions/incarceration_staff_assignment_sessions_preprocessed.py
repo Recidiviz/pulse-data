@@ -29,13 +29,7 @@ INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = (
     """Materialized view for incarceration staff assignments"""
 )
 INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
-    WITH legacy_relationships AS (
-      # TODO(#40129): Remove this pre-processing view when we've ingested IX case manager 
-      #  relationships into state_person_staff_relationship_period 
-      SELECT * FROM `{project_id}.sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed`
-      
-      UNION ALL
-      
+    WITH legacy_relationships AS (      
       # TODO(#32754), TODO(#40128): Remove this pre-processing view when we've ingested 
       #  ME case manager relationships into state_person_staff_relationship_period 
       SELECT * FROM `{project_id}.sessions.us_me_incarceration_staff_assignment_sessions_preprocessed`
@@ -70,13 +64,10 @@ INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         relationship_priority
     FROM `{project_id}.normalized_state.state_person_staff_relationship_period`
     WHERE state_code NOT IN (
-        # TODO(#40129): Remove this filter when IX relationships are ingested and we 
-        #   remove us_ix_incarceration_staff_assignment_sessions_preprocessed above
-        'US_IX', 
-        # TODO(#32754), TODO(#40128): Remove this filter when IX relationships are 
+        # TODO(#32754), TODO(#40128): Remove this filter when ME relationships are 
         #   ingested and we remove us_me_incarceration_staff_assignment_sessions_preprocessed above
         'US_ME', 
-        # TODO(#32753): Remove this filter when IX relationships are ingested and we 
+        # TODO(#32753): Remove this filter when ND relationships are ingested and we 
         #   remove us_nd_incarceration_staff_assignment_sessions_preprocessed above
         'US_ND'
     ) 
