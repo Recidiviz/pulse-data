@@ -62,6 +62,7 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             output_file_path=self.output_file_path,
             chunk_boundary=self.chunk_boundary,
             crc32c=0xFFFFF,
+            byte_decoding_errors=[],
         )
 
         self.state_code = StateCode("US_XX")

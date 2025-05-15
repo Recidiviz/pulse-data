@@ -24,6 +24,7 @@ import attr
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.io.codec_error_handler import ExceededDecodingErrorThreshold
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
@@ -37,6 +38,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
+    PreImportNormalizedCsvChunkResult,
     RequiresPreImportNormalizationFileChunk,
 )
 from recidiviz.tests.cloud_storage import fixtures
@@ -54,6 +56,10 @@ WINDOWS_FILE_MULIBYTE_NEWLINES = "windows_file_with_multibyte_newlines.csv"
 
 WINDOWS_FILE_CUSTOM_TERMINATOR_TRAILING_NEWLINE = (
     "windows_file_custom_terminator_trailing_newline.csv"
+)
+
+WINDOWS_FILE_CUSTOM_DELIM_TERMINATOR_UNPARSEABLE = (
+    "windows_file_with_custom_newlines_custom_delim_unparseable.csv"
 )
 
 
@@ -105,7 +111,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         fixture_name: str,
         chunk: RequiresPreImportNormalizationFileChunk,
         expected_output: str,
-    ) -> None:
+    ) -> PreImportNormalizedCsvChunkResult:
         fixture_path = os.path.abspath(
             os.path.join(os.path.dirname(fixtures.__file__), fixture_name)
         )
@@ -117,6 +123,8 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
 
         with self.fs.open(pass_result.output_file_path, "r", encoding="UTF-8") as f:
             assert f.read() == expected_output
+
+        return pass_result
 
     def test_encoding_pass_simple_strip_headers(self) -> None:
         windows_config = attr.evolve(self.sparse_config, encoding="WINDOWS-1252")
@@ -321,6 +329,91 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         expected_output = '"á","æ","Ö"\n'
 
         self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
+
+    def test_normalization_replace_bytes_none_replaced(self) -> None:
+        windows_config = attr.evolve(
+            self.sparse_config,
+            encoding="WINDOWS-1252",
+            custom_line_terminator="‡\n",
+            separator="†",
+            max_num_unparseable_bytes=0,
+        )
+        self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
+
+        chunk = RequiresPreImportNormalizationFileChunk(
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=100, end_exclusive=107, chunk_num=3
+            ),
+        )
+        expected_output = '"á","æ","Ö"\n'
+
+        self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
+
+    def test_normalization_replace_bytes_some_replaced(self) -> None:
+        windows_config = attr.evolve(
+            self.sparse_config,
+            encoding="WINDOWS-1252",
+            custom_line_terminator="‡",
+            separator="†",
+            max_num_unparseable_bytes=3,
+        )
+        self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
+
+        chunk = RequiresPreImportNormalizationFileChunk(
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=40, end_exclusive=111, chunk_num=1
+            ),
+        )
+        # the three ? marks are replacement chars for un-parse-able bytes
+        expected_output = '"i was","wondering","if"\n"you could",",,decode",",,,the following:"\n"á?","æ","Ö"\n"ì??","ÿ","÷"\n'
+
+        result = self.run_local_test(
+            WINDOWS_FILE_CUSTOM_DELIM_TERMINATOR_UNPARSEABLE, chunk, expected_output
+        )
+
+        assert len(result.byte_decoding_errors) == 3
+        assert result.byte_decoding_errors == [
+            "'charmap' codec can't decode byte 0x9d in position 57: character maps to <undefined>",
+            "'charmap' codec can't decode byte 0x9d in position 64: character maps to <undefined>",
+            "'charmap' codec can't decode byte 0x9d in position 65: character maps to <undefined>",
+        ]
+
+    def test_normalization_replace_bytes_too_many(self) -> None:
+        windows_config = attr.evolve(
+            self.sparse_config,
+            encoding="WINDOWS-1252",
+            custom_line_terminator="‡",
+            separator="†",
+            max_num_unparseable_bytes=2,
+        )
+        self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
+
+        chunk = RequiresPreImportNormalizationFileChunk(
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=40, end_exclusive=111, chunk_num=1
+            ),
+        )
+        expected_output = '"i was","wondering","if"\n"you could",",,decode",",,,the following:"\n"á?","æ","Ö"\n"ì??","ÿ","÷"\n'
+
+        with self.assertRaisesRegex(
+            ExceededDecodingErrorThreshold,
+            r"Exceeded max number of decoding errors \[2\]:\n\t- 'charmap' codec can't decode byte 0x9d in position 57: character maps to <undefined>\n\t- 'charmap' codec can't decode byte 0x9d in position 64: character maps to <undefined>\n\t- 'charmap' codec can't decode byte 0x9d in position 65: character maps to <undefined>",
+        ):
+            self.run_local_test(
+                WINDOWS_FILE_CUSTOM_DELIM_TERMINATOR_UNPARSEABLE, chunk, expected_output
+            )
 
     def test_temp_file_naming_multiple_update_datetimes(self) -> None:
         normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)

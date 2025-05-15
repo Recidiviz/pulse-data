@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for file encodings."""
+"""Encoding-related utilities """
 import codecs
+from typing import Callable
 
 
 def to_python_standard(encoding: str) -> str:
@@ -26,3 +27,20 @@ def to_python_standard(encoding: str) -> str:
     https://docs.python.org/3.11/library/codecs.html#standard-encodings
     """
     return codecs.lookup(encoding).name
+
+
+def register_unique_error_handler(
+    *, name: str, handler: Callable[[UnicodeError], tuple[str | bytes, int]]
+) -> None:
+    """Registers an encoding/decoding error handler, ensuring that there is not already
+    a handler with that name.
+    """
+    try:
+        dupe_handler = codecs.lookup(name)
+        raise ValueError(
+            f"Found an already registered error handler with name [{name}]: {dupe_handler}"
+        )
+    except LookupError:
+        pass
+
+    codecs.register_error(name, handler)

@@ -272,6 +272,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
                 chunk_boundary=CsvChunkBoundary(0, 10, 0),
                 crc32c=self._get_checksum_int(b"these are "),
+                byte_decoding_errors=[],
             ),
             PreImportNormalizedCsvChunkResult(
                 input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
@@ -280,6 +281,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
                 chunk_boundary=CsvChunkBoundary(10, 20, 1),
                 crc32c=self._get_checksum_int(b"file bytes"),
+                byte_decoding_errors=[],
             ),
         ]
 
@@ -313,12 +315,14 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
+            byte_decoding_errors=[],
         )
         chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
+            byte_decoding_errors=[],
         )
 
         (
@@ -349,24 +353,28 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
+            byte_decoding_errors=[],
         )
         file1_chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
+            byte_decoding_errors=[],
         )
         file2_chunk0 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
+            byte_decoding_errors=[],
         )
         file2_chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
+            byte_decoding_errors=[],
         )
         error = RawFileProcessingError(
             original_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
@@ -450,18 +458,21 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
+                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
                     chunk_boundary=CsvChunkBoundary(1, 2, 1),
                     crc32c=2,
+                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/aa.csv"): [
@@ -470,6 +481,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
+                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/b.csv"): [
@@ -478,6 +490,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/c.csv"): [
@@ -486,6 +499,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
         }
@@ -579,18 +593,21 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
+                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
                     chunk_boundary=CsvChunkBoundary(1, 2, 1),
                     crc32c=2,
+                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
             # since this file is missing, a and aa will fail
@@ -600,6 +617,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             #         output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
             #         chunk_boundary=CsvChunkBoundary(0, 1, 0),
             #         crc32c=1,
+            #         byte_decoding_errors=[],
             #     ),
             # ],
             GcsfsFilePath.from_absolute_path("path/b.csv"): [
@@ -608,6 +626,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/c.csv"): [
@@ -616,6 +635,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
+                    byte_decoding_errors=[],
                 ),
             ],
         }

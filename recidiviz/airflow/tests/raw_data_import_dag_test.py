@@ -1137,6 +1137,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=0, start_inclusive=0, end_exclusive=2
                         ),
                         crc32c=0,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1149,6 +1150,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                         crc32c=2,
+                        byte_decoding_errors=[],
                     ),
                 ],
                 [
@@ -1163,6 +1165,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=1, start_inclusive=2, end_exclusive=4
                         ),
                         crc32c=1,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1175,6 +1178,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=0, start_inclusive=0, end_exclusive=2
                         ),
                         crc32c=0,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1187,6 +1191,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=1, start_inclusive=4, end_exclusive=6
                         ),
                         crc32c=1,
+                        byte_decoding_errors=[],
                     ),
                 ],
                 [
@@ -1201,6 +1206,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=2, end_exclusive=4
                         ),
                         crc32c=2,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1213,6 +1219,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=0, start_inclusive=0, end_exclusive=2
                         ),
                         crc32c=0,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1225,6 +1232,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=1, start_inclusive=4, end_exclusive=6
                         ),
                         crc32c=1,
+                        byte_decoding_errors=[],
                     ),
                     PreImportNormalizedCsvChunkResult(
                         input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1237,6 +1245,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=2, end_exclusive=4
                         ),
                         crc32c=2,
+                        byte_decoding_errors=[],
                     ),
                 ],
                 [],
@@ -1508,6 +1517,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
                             ),
                             crc32c=0,
+                            byte_decoding_errors=[],
                         ),
                         # this path fails!
                         # PreImportNormalizedCsvChunkResult(
@@ -1521,6 +1531,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         #         chunk_num=2, start_inclusive=4, end_exclusive=6
                         #     ),
                         #     crc32c=2,
+                        #     byte_decoding_errors=[],
                         # ),
                     ],
                     [
@@ -1535,6 +1546,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=1, start_inclusive=2, end_exclusive=4
                             ),
                             crc32c=1,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1547,6 +1559,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
                             ),
                             crc32c=0,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1559,6 +1572,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=1, start_inclusive=4, end_exclusive=6
                             ),
                             crc32c=1,
+                            byte_decoding_errors=[],
                         ),
                     ],
                     [
@@ -1573,6 +1587,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=2, start_inclusive=2, end_exclusive=4
                             ),
                             crc32c=2,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1585,6 +1600,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
                             ),
                             crc32c=0,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1597,6 +1613,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=1, start_inclusive=4, end_exclusive=6
                             ),
                             crc32c=1,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1609,6 +1626,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=2, start_inclusive=2, end_exclusive=4
                             ),
                             crc32c=2,
+                            byte_decoding_errors=[],
                         ),
                     ],
                     [],
@@ -1923,6 +1941,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
                             ),
                             crc32c=0,
+                            byte_decoding_errors=[],
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
@@ -1935,6 +1954,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=1, start_inclusive=4, end_exclusive=6
                             ),
                             crc32c=1,
+                            byte_decoding_errors=[],
                         ),
                     ],
                     [
@@ -1949,6 +1969,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                 chunk_num=2, start_inclusive=2, end_exclusive=4
                             ),
                             crc32c=2,
+                            byte_decoding_errors=[],
                         ),
                     ],
                     [],

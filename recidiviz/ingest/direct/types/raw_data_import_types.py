@@ -807,6 +807,7 @@ class PreImportNormalizedCsvChunkResult(BaseResult):
             offsets that specifies where the pre-import normalization process should
             start and stop reading from input_file_path
         crc32c (int): the checksum of the bytes read from input_file_path
+        num_unparseable_bytes (int): the number of un-parseable bytes found in this chunk
     """
 
     input_file_path: GcsfsFilePath = attr.ib(
@@ -819,6 +820,7 @@ class PreImportNormalizedCsvChunkResult(BaseResult):
         validator=attr.validators.instance_of(CsvChunkBoundary)
     )
     crc32c: int = attr.ib(validator=attr_validators.is_int)
+    byte_decoding_errors: list[str] = attr.ib(validator=attr_validators.is_list_of(str))
 
     def get_chunk_boundary_size(self) -> int:
         return self.chunk_boundary.get_chunk_size()
@@ -829,6 +831,7 @@ class PreImportNormalizedCsvChunkResult(BaseResult):
             "output_file_path": self.output_file_path.abs_path(),
             "chunk_boundary": self.chunk_boundary.serialize(),
             "crc32c": self.crc32c,
+            "byte_decoding_errors": self.byte_decoding_errors,
         }
         return json.dumps(result_dict)
 
@@ -840,6 +843,7 @@ class PreImportNormalizedCsvChunkResult(BaseResult):
             output_file_path=GcsfsFilePath.from_absolute_path(data["output_file_path"]),
             chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
             crc32c=data["crc32c"],
+            byte_decoding_errors=data["byte_decoding_errors"],
         )
 
 

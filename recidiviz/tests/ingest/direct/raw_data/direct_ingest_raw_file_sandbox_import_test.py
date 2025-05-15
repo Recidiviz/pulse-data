@@ -85,6 +85,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
                         start_inclusive=0, end_exclusive=10, chunk_num=0
                     ),
                     crc32c=10,
+                    byte_decoding_errors=[],
                 )
             ],
         )

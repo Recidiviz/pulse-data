@@ -22,7 +22,6 @@ from unittest import TestCase
 from recidiviz.common.io.codec_error_handler import (
     ExceededDecodingErrorThreshold,
     LimitedErrorReplacementHandler,
-    UnparseableBytes,
 )
 
 
@@ -55,12 +54,8 @@ class TestLimitedErrorReplacementHandler(TestCase):
         )
         assert decoder.read() == expected
         assert handler.exceptions == [
-            UnparseableBytes(
-                start_byte=31, end_byte=32, unparseable_bytes=b"\x87", encoding="utf-8"
-            ),
-            UnparseableBytes(
-                start_byte=32, end_byte=33, unparseable_bytes=b"\x87", encoding="utf-8"
-            ),
+            "'utf-8' codec can't decode byte 0x87 in position 31: invalid start byte",
+            "'utf-8' codec can't decode byte 0x87 in position 32: invalid start byte",
         ]
 
     def test_more_than_zero(self) -> None:
@@ -77,7 +72,7 @@ class TestLimitedErrorReplacementHandler(TestCase):
 
         with self.assertRaisesRegex(
             ExceededDecodingErrorThreshold,
-            r"Exceeded max number of decoding errors \[0\]:\n\t- \[b'\\x87'\] with encoding \[utf-8\] between \[31\] and \[32\]",
+            r"Exceeded max number of decoding errors \[0\]:\n\t- 'utf-8' codec can't decode byte 0x87 in position 31: invalid start byte",
         ):
             decoder.read()
 
@@ -95,7 +90,7 @@ class TestLimitedErrorReplacementHandler(TestCase):
 
         with self.assertRaisesRegex(
             ExceededDecodingErrorThreshold,
-            r"Exceeded max number of decoding errors \[1\]:\n\t- \[b'\\x87'\] with encoding \[utf-8\] between \[31\] and \[32\]\n\t- \[b'\\x87'\] with encoding \[utf-8\] between \[32\] and \[33\]",
+            r"Exceeded max number of decoding errors \[1\]:\n\t- 'utf-8' codec can't decode byte 0x87 in position 31: invalid start byte\n\t- 'utf-8' codec can't decode byte 0x87 in position 32: invalid start byte",
         ):
             decoder.read()
 
@@ -111,10 +106,6 @@ class TestLimitedErrorReplacementHandler(TestCase):
         )
         assert decoder.read() == expected
         assert handler.exceptions == [
-            UnparseableBytes(
-                start_byte=51, end_byte=52, unparseable_bytes=b"\xe2", encoding="utf-8"
-            ),
-            UnparseableBytes(
-                start_byte=53, end_byte=54, unparseable_bytes=b"\xa1", encoding="utf-8"
-            ),
+            "'utf-8' codec can't decode byte 0xe2 in position 51: invalid continuation byte",
+            "'utf-8' codec can't decode byte 0xa1 in position 53: invalid start byte",
         ]
