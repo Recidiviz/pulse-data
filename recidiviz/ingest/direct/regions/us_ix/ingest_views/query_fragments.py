@@ -107,7 +107,8 @@ legal_status_periods_cte AS (
         USING (ChargeId)
     LEFT JOIN {ind_LegalStatus} ls
         USING (LegalStatusId)
-    WHERE c.OffenderId IS NOT NULL
+    WHERE c.OffenderId IS NOT NULL 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY c.OffenderId, ls.LegalStatusDesc, DATE(ols.StartDate) ORDER BY ols.EndDate ASC) = 1
 )"""
 
 LEGAL_STATUS_PERIODS_INCARCERATION_CTE = """
