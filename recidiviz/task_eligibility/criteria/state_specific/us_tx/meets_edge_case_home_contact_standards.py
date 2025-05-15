@@ -200,15 +200,16 @@ contact_count_cte AS (
         reason_for_contact,
         start_date,
         end_date,
-        CASE 
+        MAX(CASE 
             WHEN contact_method_raw_text = "HOME" 
                 THEN 1 
             ELSE 0 
-        END AS contact_made_flag,
+        END) AS contact_made_flag,
     FROM union_periods_cte p
     LEFT JOIN contact_info c 
         ON c.person_id = p.person_id
         AND DATE(c.contact_date) BETWEEN DATE(start_date) AND DATE(end_date)
+    GROUP BY p.person_id, reason_for_contact, start_date, end_date
 )
     SELECT
         person_id,
