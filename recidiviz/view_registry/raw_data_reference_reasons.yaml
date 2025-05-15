@@ -1014,9 +1014,6 @@ US_ME:
     us_me_validation.population_releases: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_MI:
-  ADH_COS_FEE_TYPE:
-    workflows_views.us_mi_complete_classification_review_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   ADH_LOCATION:
     reference_views.us_mi_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1034,9 +1031,6 @@ US_MI:
       Usage reason unknown. Grandfathered in 04/18/2024.
   ADH_OFFENDER_DETAINER:
     task_eligibility_criteria_us_mi.no_pending_detainer: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ADH_OFFENDER_FEE_PROFILE:
-    workflows_views.us_mi_complete_classification_review_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ADH_OFFENDER_SCHEDULE:
     analyst_data.us_mi_security_classification_committee_review: |-
@@ -1078,8 +1072,6 @@ US_MI:
       Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_mi.not_serving_ineligible_offenses_for_telephone_reporting:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_mi_complete_classification_review_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   COMS_Case_Notes:
     workflows_views.us_mi_complete_add_in_person_security_classification_committee_review_form_record:
