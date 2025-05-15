@@ -41,6 +41,9 @@ US_AR:
       Used to pull in visitor data for 309-eligible residents.
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  SENTENCECREDITDBT:
+    task_eligibility_criteria_us_ar.class_i: |-
+      Used to determine current custody class.
   SUPERVISIONEVENT:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.

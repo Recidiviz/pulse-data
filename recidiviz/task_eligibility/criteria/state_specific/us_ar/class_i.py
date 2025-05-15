@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans of time when someone is classified as Class I in Arkansas custody.
-"""
+"""Spans of time when someone is classified as Class I in Arkansas custody."""
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
@@ -33,32 +32,76 @@ _DESCRIPTION = (
 )
 
 _QUERY_TEMPLATE = """
-    WITH class_i_status AS (
+    WITH good_time_earning_class_entries AS (
         SELECT
-            pei.state_code,
             pei.person_id,
-            ip.CURRENTGTEARNINGCLASS AS current_gt_earning_class,
-            COALESCE(ip.CURRENTGTEARNINGCLASS LIKE "%I-%", FALSE) AS is_class_i,
-            DATE(ip.DATELASTUPDATE) AS start_date,
-            CAST(NULL AS DATE) AS end_date,
-        -- TODO(#34317): Use spans based on update_datetime in `INMATEPROFILE`, or find
-        -- another way to identify historical classification changes.
-        FROM `{project_id}.us_ar_raw_data_up_to_date_views.INMATEPROFILE_latest` ip
-        INNER JOIN `{project_id}.normalized_state.state_person_external_id` pei
-        ON
-            pei.state_code = 'US_AR'
-            AND pei.id_type = 'US_AR_OFFENDERID'
-            AND ip.OFFENDERID = pei.external_id
+            pei.state_code,
+            pei.external_id,
+            DATE(sentence_credit.SENTENCECREDITENTRYDATE) AS sentence_credit_entry_date,
+            sentence_credit.GOODTIMEEARNINGCLASS AS good_time_earning_class,
+        FROM `{project_id}.us_ar_raw_data_up_to_date_views.SENTENCECREDITDBT_latest` sentence_credit
+        LEFT JOIN `{project_id}.normalized_state.state_person_external_id` pei
+            ON
+                pei.state_code = 'US_AR'
+                AND pei.id_type = 'US_AR_OFFENDERID'
+                AND sentence_credit.OFFENDERID = pei.external_id
+        WHERE 
+            -- '2' indicates that the earning class change is "applied". Anything else is pending or void.
+            sentence_credit.EARNEDTIMESTATUS = '2'
+            -- Entry dates in the future are erroneous
+            AND DATE(sentence_credit.SENTENCECREDITENTRYDATE) <= CURRENT_DATE("US/Eastern")
+            AND sentence_credit.GOODTIMEEARNINGCLASS IS NOT NULL
+    )
+    ,
+    good_time_earning_class_changes AS (
+        SELECT
+            state_code,
+            person_id,
+            external_id,
+            sentence_credit_entry_date,
+            good_time_earning_class,
+        FROM good_time_earning_class_entries
+        -- Omit entries with the same class as the previous entry (i.e., there's no change)
+        QUALIFY LAG(good_time_earning_class) OVER person_window != good_time_earning_class
+        WINDOW person_window AS (
+            PARTITION BY state_code, person_id
+            ORDER BY sentence_credit_entry_date ASC
+        )
+    )
+    ,
+    good_time_earning_class_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            sentence_credit_entry_date AS start_date,
+            LEAD(sentence_credit_entry_date) OVER person_window AS end_date,
+            -- Prioritize current earning class in INMATEPROFILE, replacing the most recent sentence
+            -- credit entry span if they differ.
+            -- TODO(#42433): Refine this logic once we better understand the source of these
+            -- discrepancies.
+            IF(
+                LEAD(sentence_credit_entry_date) OVER person_window IS NULL,
+                IFNULL(ip.CURRENTGTEARNINGCLASS, good_time_earning_class),
+                good_time_earning_class
+            ) AS good_time_earning_class,
+        FROM good_time_earning_class_changes gt
+        -- Join to get current earning class in INMATEPROFILE
+        LEFT JOIN `{project_id}.us_ar_raw_data_up_to_date_views.INMATEPROFILE_latest` ip
+            ON gt.external_id = ip.OFFENDERID
+        WINDOW person_window AS (
+            PARTITION BY state_code, person_id
+            ORDER BY sentence_credit_entry_date ASC
+        )
     )
     SELECT
         state_code,
         person_id,
         start_date,
         end_date,
-        is_class_i AS meets_criteria,
-        current_gt_earning_class,
-        TO_JSON(STRUCT(current_gt_earning_class)) AS reason
-    FROM class_i_status
+        good_time_earning_class LIKE "%I-%" AS meets_criteria,
+        good_time_earning_class,
+        TO_JSON(STRUCT(good_time_earning_class)) AS reason,
+    FROM good_time_earning_class_spans
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -67,9 +110,9 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         reasons_fields=[
             ReasonsField(
-                name="current_gt_earning_class",
+                name="good_time_earning_class",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Current Class status in Arkansas.",
+                description="Good Time Earning Class status in Arkansas.",
             )
         ],
         state_code=StateCode.US_AR,
