@@ -43,6 +43,7 @@ import attr
 import google
 import pytz
 import requests
+from google.api_core import exceptions as google_api_exceptions
 from google.api_core import retry
 from google.api_core.client_options import ClientOptions
 from google.api_core.future.polling import PollingFuture
@@ -84,7 +85,10 @@ from recidiviz.cloud_resources.resource_label import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.encoding import BIG_QUERY_UTF_8
 from recidiviz.common.google_cloud.utils import format_resource_label
-from recidiviz.common.retry_predicate import ssl_error_retry_predicate
+from recidiviz.common.retry_predicate import (
+    default_retry_with_additions,
+    ssl_error_retry_predicate,
+)
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import in_test
 from recidiviz.utils.size import total_size
@@ -172,6 +176,11 @@ DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC = 15 * 60
 CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
 CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
     "Cross-region copy {source_dataset_id} -> {destination_dataset_id} [{ts}]"
+)
+
+# Stored in a constant to test
+UPDATE_DESCRIPTION_RETRY = default_retry_with_additions(
+    google_api_exceptions.PreconditionFailed
 )
 
 
@@ -2258,8 +2267,13 @@ class BigQueryClientImpl(BigQueryClient):
                 completed_materialization_job=create_job,
             )
 
+        # Grab a new table reference after applying row level permissions for the new update
+        # https://stackoverflow.com/questions/68362833/bigquery-patch-precondition-check-failed/77287376#77287376
+        table = self.get_table(destination_address)
         table.description = description
-        updated_table = self.client.update_table(table, ["description"])
+        updated_table = self.client.update_table(
+            table, ["description"], retry=UPDATE_DESCRIPTION_RETRY
+        )
         return BigQueryViewMaterializationResult(
             view_address=view.address,
             materialized_table=updated_table,

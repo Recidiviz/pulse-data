@@ -1389,7 +1389,9 @@ class BigQueryClientImplTest(unittest.TestCase):
                 "test_view_materialized",
             )
         )
-        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
+        self.mock_client.update_table.assert_called_with(
+            mock_table, ["description"], retry=big_query_client.UPDATE_DESCRIPTION_RETRY
+        )
         self.assertEqual(
             mock_table.description,
             "Materialized data from view [fake-dataset.test_view]. "
@@ -1431,7 +1433,9 @@ class BigQueryClientImplTest(unittest.TestCase):
                 "custom_view",
             )
         )
-        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
+        self.mock_client.update_table.assert_called_with(
+            mock_table, ["description"], retry=big_query_client.UPDATE_DESCRIPTION_RETRY
+        )
 
     def test_materialize_view_to_table_no_materialized_address(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
