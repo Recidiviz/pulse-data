@@ -854,7 +854,7 @@ def workflows_state_specific_supervision_level() -> str:
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
-            -- OR prefers to see the raw-text supervision levels in the tool
+            -- States that prefer to see the raw-text supervision levels in the tool
             WHEN sl.state_code IN ('US_CA', 'US_NE', 'US_OR') THEN session_attributes.correctional_level_raw_text
             WHEN sl.state_code = 'US_PA' THEN 
                 (CASE 
@@ -876,6 +876,9 @@ def workflows_state_specific_supervision_level() -> str:
             WHEN sl.state_code = 'US_TX' THEN supervision_level
             -- US_IA uses level numbers instead of names (level 0 = unsupervised, 1 = limited, 2 = minimum, 3 = medium)
             WHEN sl.state_code = 'US_IA' THEN SPLIT(correctional_level_raw_text, ' -')[SAFE_OFFSET(0)]
+            -- US_UT prefers to see their names for supervision levels, which we parse out from the raw text
+            WHEN sl.state_code = 'US_UT' THEN
+                INITCAP(SPLIT(correctional_level_raw_text, '-')[SAFE_OFFSET(0)])
             ELSE most_recent_active_supervision_level
         END
     """
