@@ -81,7 +81,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
                 StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
                     logic_type=TaskCriteriaGroupLogicType.AND,
-                    criteria_name="US_AZ_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
+                    criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
                     sub_criteria_list=[
                         no_supervision_violation_within_15_months.VIEW_BUILDER,
                         on_supervision_at_least_15_months.VIEW_BUILDER,

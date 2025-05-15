@@ -269,8 +269,8 @@ class TestPickNCompositeCriteriaCondition(unittest.TestCase):
         Checks the composite criteria condition can combine two time dependent conditions for one eligibility criteria.
         """
         two_date_criteria = StateAgnosticTaskCriteriaBigQueryViewBuilder(
-            criteria_name="US_KY_CRITERIA_4",
-            description="A criteria for KY residents",
+            criteria_name="CRITERIA_4",
+            description="A criteria for residents",
             criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
             meets_criteria_default=False,
             reasons_fields=[

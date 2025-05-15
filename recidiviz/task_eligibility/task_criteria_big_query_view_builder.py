@@ -17,6 +17,7 @@
 """Defines BigQueryViewBuilders that can be used to define single criteria span views.
 These views are used as inputs to a task eligibility spans view.
 """
+import re
 from typing import List, Optional, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -162,7 +163,13 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         if criteria_name.upper() != criteria_name:
             raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
 
-        # TODO(#42365): Enforce that criteria_name does not start with a US_XX state code
+        if match := re.match(r"^(US_[A-Z]{2})_.*", criteria_name):
+            state_code = match.group(1)
+            raise ValueError(
+                f"Found state-agnostic task criteria [{criteria_name}] whose name "
+                f"starts with state_code [{state_code}]. This criteria should be "
+                f"renamed to have a state-agnostic name."
+            )
 
         super().__init__(
             dataset_id="task_eligibility_criteria_general",

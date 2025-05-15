@@ -67,7 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
         StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_IX_INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD",
+            criteria_name="INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD",
             sub_criteria_list=[
                 incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
                 incarceration_within_6_months_of_parole_eligibility_date.VIEW_BUILDER,

@@ -405,6 +405,19 @@ FROM _aggregated
                 reasons_fields=[],
             )
 
+    def test_state_prefix_on_criteria_throws(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found state-agnostic task criteria \[US_XX_SIMPLE_CRITERIA\] whose name "
+            r"starts with state_code \[US_XX\].",
+        ):
+            _ = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+                criteria_name="US_XX_SIMPLE_CRITERIA",
+                criteria_spans_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+                description="Simple criteria description",
+                reasons_fields=[],
+            )
+
     def test_get_template_with_reasons_as_json_empty(self) -> None:
         query_template = "SELECT * FROM my_table"
         expected_query = f"""
