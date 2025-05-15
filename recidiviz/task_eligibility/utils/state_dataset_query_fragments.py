@@ -679,6 +679,7 @@ def supervision_violations_cte(
     violation_type: str = "",
     where_clause_addition: str = "",
     exclude_violation_unfounded_decisions: bool = False,
+    use_response_date: bool = False,
 ) -> str:
     """
     Combine state_supervision_violation and state_supervision_violation_response to select violations that
@@ -689,6 +690,8 @@ def supervision_violations_cte(
     Args:
         exclude_violation_unfounded_decisions (bool): Only violations where the LATEST violation response
         DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
+        use_response_date (bool, optional): Whether to use the report date rather than the violation date when determining
+            eligibility. Defaults to False
 
     Returns:
         str: SQL query as a string.
@@ -716,14 +719,16 @@ def supervision_violations_cte(
             v.state_code,
             v.person_id,
             v.supervision_violation_id,
-            /* If there is no `violation_date` value, we treat the earliest date of any
+            /* If use_response_date is true, set the critical date as the response date.
+            Otherwise, use the following logic: 
+            If there is no `violation_date` value, we treat the earliest date of any
             response(s) as the violation date. (We take the MIN of `violation_date`
             below just because we have to aggregate the `violation_date` field in this
             expression, but note that because the violation-to-response ratio can be
             one-to-many, every row should have the same `violation_date`, and this
             therefore will just return the original `violation_date` value if there is
             one.) */
-            COALESCE(MIN(v.violation_date), MIN(vr.response_date)) AS violation_date,
+            IF({use_response_date}, MIN(vr.response_date), COALESCE(MIN(v.violation_date), MIN(vr.response_date))) AS violation_date,
         FROM `{{project_id}}.normalized_state.state_supervision_violation` v
         {violation_type_join if violation_type else ""}
         {violation_unfounded_decision_join if exclude_violation_unfounded_decisions else ""}

@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a criterion span view that shows spans of time during which there have been
 no supervision violations resulting in violation reports within the past 6 months (based
-on violation date, not response date).
+on response date, not violation date).
 """
 
 from typing import cast
@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_REPORT_WITHIN_6_MONTHS"
+_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_REPORT_WITHIN_6_MONTHS_USING_RESPONSE_DATE"
 
 _WHERE_CLAUSE_ADDITION = """
 /* Only keep 'VIOLATION_REPORT' responses. Note that this will exclude responses with
@@ -40,9 +40,6 @@ StateSupervisionViolationResponseType enum (such as 'CITATION' and
 AND vr.response_type='VIOLATION_REPORT'
 """
 
-# NB: criterion currently uses *violation dates* to assess eligibility, not *response
-# dates*. This is intended to prevent clients from being penalized by delays in the
-# submission of violation reports.
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     supervision_violations_within_time_interval_criteria_builder(
@@ -51,7 +48,8 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
         date_interval=6,
         date_part="MONTH",
         where_clause_addition=_WHERE_CLAUSE_ADDITION,
-        violation_date_name_in_reason_blob="latest_violations_resulting_in_violation_reports",
+        violation_date_name_in_reason_blob="latest_violation_report_dates",
+        use_response_date=True,
     ),
 )
 

@@ -282,6 +282,14 @@ US_CO:
     sessions.us_co_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_IA:
+  IA_DOC_BOPDecisionConditions:
+    task_eligibility_criteria_us_ia.not_excluded_from_early_discharge_by_parole_condition:
+      |-
+      Used to pull special conditions. TODO(#42139) to ingest this into state_supervision_period
+  IA_DOC_BOPDecisions:
+    task_eligibility_criteria_us_ia.not_excluded_from_early_discharge_by_parole_condition:
+      |-
+      Used to pull special conditions. TODO(#42139) to ingest this into state_supervision_period
   IA_DOC_Fees:
     task_eligibility_criteria_us_ia.supervision_fees_paid: |-
       Used to pull unpaid supervision fees - there is currently no schema to ingest fines/fees data. TODO(#41336) to address this

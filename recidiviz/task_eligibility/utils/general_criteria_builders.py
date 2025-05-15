@@ -738,6 +738,7 @@ def supervision_violations_within_time_interval_criteria_builder(
     where_clause_addition: str = "",
     violation_date_name_in_reason_blob: str = "latest_violations",
     exclude_violation_unfounded_decisions: bool = False,
+    use_response_date: bool = False,
 ) -> (
     StateAgnosticTaskCriteriaBigQueryViewBuilder
     | StateSpecificTaskCriteriaBigQueryViewBuilder
@@ -766,6 +767,8 @@ def supervision_violations_within_time_interval_criteria_builder(
             field in the reason blob. Defaults to "latest_violations".
         exclude_violation_unfounded_decisions (bool, optional): Whether to exclude violations where the LATEST
             violation response DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
+        use_response_date (bool, optional): Whether to use the response date rather than the violation date when determining
+            eligibility. Defaults to False
     Returns:
         Either a state-specific or state-agnostic TES criterion view builder that shows
         the spans of time where the violations that meet any condition(s) set by the
@@ -781,7 +784,8 @@ def supervision_violations_within_time_interval_criteria_builder(
         {supervision_violations_cte(
         violation_type,
         where_clause_addition,
-        exclude_violation_unfounded_decisions
+        exclude_violation_unfounded_decisions,
+        use_response_date
         )}
     ),
     supervision_violation_ineligibility_spans AS (
@@ -809,10 +813,10 @@ def supervision_violations_within_time_interval_criteria_builder(
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
         TO_JSON(STRUCT(
-            ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
+            ARRAY_AGG(DISTINCT violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
             MAX(violation_expiration_date) AS violation_expiration_date
         )) AS reason,
-        ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
+        ARRAY_AGG(DISTINCT violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
         MAX(violation_expiration_date) AS violation_expiration_date,
     FROM sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
