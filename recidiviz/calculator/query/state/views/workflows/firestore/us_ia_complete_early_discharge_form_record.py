@@ -23,8 +23,14 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
+    build_collapsed_tes_spans_view_materialized_address,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ia.complete_early_discharge_form import (
+    VIEW_BUILDER as TES_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,6 +42,9 @@ US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_VIEW_NAME = (
 US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_DESCRIPTION = """
 Query for relevant metadata needed to support early discharge opportunity in IA"""
 
+_COLLAPSED_TES_SPANS_ADDRESS = build_collapsed_tes_spans_view_materialized_address(
+    TES_VIEW_BUILDER
+)
 
 US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_QUERY_TEMPLATE = f"""
 {join_current_task_eligibility_spans_with_external_id(
@@ -43,6 +52,7 @@ US_IA_COMPLETE_EARLY_DISCHARGE_FORM_RECORD_QUERY_TEMPLATE = f"""
     tes_task_query_view='complete_early_discharge_form_materialized',
     id_type="'US_IA_OFFENDERCD'",
     eligible_and_almost_eligible_only=True,
+    tes_collapsed_view_for_eligible_date=_COLLAPSED_TES_SPANS_ADDRESS,
 )}
 """
 
