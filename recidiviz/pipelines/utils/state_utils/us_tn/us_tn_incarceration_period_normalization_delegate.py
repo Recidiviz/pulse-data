@@ -148,14 +148,27 @@ class UsTnIncarcerationNormalizationDelegate(
         # the safekeeping periods in the middle would then have their PFI reset again by this loop. The transfer
         # periods on either side of the safekeeping periods would keep whatever PFI was set by legacy_standardize_purpose_for_incarceration_values.
         in_safekeeping_period = False
+
+        # If a period has one of these admission reasons, or has the same admission date as another period
+        # with one of them, then any ongoing safekeeping period will close.
+        SAFEKEEPING_PERIOD_END_ADMISSION_REASONS = [
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
+        ]
         for ip in standard_date_sort_for_incarceration_periods(
             legacy_normalized_periods
         ):
+            # This variable will be True if the period's admission reason OR the admission reason
+            # of any other period starting on the same day is in SAFEKEEPING_PERIOD_END_ADMISSION_REASONS.
+            safekeeping_end_same_day = any(
+                i.admission_reason in SAFEKEEPING_PERIOD_END_ADMISSION_REASONS
+                for i in legacy_normalized_periods
+                if i.admission_date == ip.admission_date
+            )
             in_safekeeping_period = (
                 ip.admission_reason_raw_text is not None
                 # and "-SARET" not in ip.admission_reason_raw_text
-                and ip.admission_reason
-                != StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+                and not safekeeping_end_same_day
                 and ("-SAREC" in ip.admission_reason_raw_text or in_safekeeping_period)
             )
             if in_safekeeping_period:

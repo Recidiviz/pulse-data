@@ -1685,6 +1685,60 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(expected_periods, ips_with_pfi_override)
 
+    # Safekeeping periods get closed (i.e. we stop overriding the PFI with TEMPORARY_CUSTODY)
+    # once someone reaches an IP with admission reason NEW_ADMISSION or REVOCATION. This test
+    # checks that we consider a safekeeping period to be closed immediately if one of these
+    # admission reasons occurs on the same day that the safekeeping period starts. This means
+    # that the PFI override will never trigger, since the safekeeping period became closed
+    # as soon as it began.
+    def test_pfi_override_for_safekeeping_periods_when_overlapping(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 10, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="CTFA-NEWAD",
+            release_date=date(2018, 10, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 10, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CTFA-SAREC-T",
+            release_date=date(2018, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        ips_with_pfi_override = (
+            self.delegate.standardize_purpose_for_incarceration_values(
+                incarceration_periods=deepcopy(
+                    [
+                        incarceration_period_1,
+                        incarceration_period_2,
+                    ]
+                )
+            )
+        )
+        ip1_normalized = deepcopy(incarceration_period_1)
+        ip2_normalized = deepcopy(incarceration_period_2)
+        expected_periods = [
+            ip1_normalized,
+            ip2_normalized,
+        ]
+        self.assertEqual(expected_periods, ips_with_pfi_override)
+
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     """Tests the US_TN-specific aspects of the
