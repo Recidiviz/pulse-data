@@ -39,7 +39,7 @@ US_TX_MAX_TERMINATION_DATES = f"""
                     OR status NOT IN {PERIOD_EXCLUSIONS_FRAGMENT}
     )
         )
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY SID_Number, Period_ID_Number ORDER BY update_datetime DESC) = 1
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY SID_Number ORDER BY update_datetime DESC) = 1
     ),
     tx_max_date_by_person AS (
         SELECT 
