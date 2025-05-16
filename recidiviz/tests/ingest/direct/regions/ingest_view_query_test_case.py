@@ -18,9 +18,12 @@
 ingest view queries.
 """
 import abc
+import csv
 import datetime
+import io
 import logging
 import os.path
+import re
 from functools import cache
 from types import ModuleType
 from typing import Any, Optional, Tuple
@@ -31,8 +34,15 @@ from more_itertools import one
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_sqlglot_helpers import get_undocumented_ctes
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.external_id_type_helpers import (
+    external_id_types_by_state_code,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
 )
@@ -47,6 +57,11 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_raw_data_source_table_collections_for_state_and_instance,
 )
@@ -60,7 +75,10 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
+from recidiviz.tests.ingest.direct.fixture_util import (
+    fixture_path_for_address,
+    ingest_mapping_output_fixture_path,
+)
 from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
 )
@@ -154,13 +172,13 @@ def _test_validate_view_output_schema(
     )
 
 
-class StateIngestViewTestCaseMeta(abc.ABCMeta):
+class StateIngestViewAndMappingTestCaseMeta(abc.ABCMeta):
     def __new__(
         mcs, cls_name: str, bases: tuple[type], attributes: dict[str, Any]
     ) -> Any:
         # Don't enforce the rule on the StateIngestViewTestCase itself
         if cls_name not in (
-            "StateIngestViewTestCase",
+            "StateIngestViewAndMappingTestCase",
             # TODO(#38322): Delete this line when LegacyIngestViewEmulatorQueryTestCase
             #  is deleted
             "LegacyIngestViewEmulatorQueryTestCase",
@@ -176,7 +194,7 @@ class StateIngestViewTestCaseMeta(abc.ABCMeta):
 class LegacyIngestViewEmulatorQueryTestCase(
     BigQueryEmulatorTestCase,
     IngestRegionTestMixin,
-    metaclass=StateIngestViewTestCaseMeta,
+    metaclass=StateIngestViewAndMappingTestCaseMeta,
 ):
     """An extension of BigQueryEmulatorTestCase with functionality specific to testing
     ingest view queries.
@@ -428,16 +446,28 @@ def check_ingest_view_ctes_are_documented(
             )
 
 
-class StateIngestViewTestCase(
+def quote_json_values(json_str: str) -> str:
+    """Quotes unquoted values in JSON strings."""
+    # Matches patterns like: "key": value — where value is unquoted string or date
+    updated = re.sub(r'(".*?"):\s*([^",\]\}]+)', r'\1: "\2"', json_str)
+    # We want null values from within JSON to be empty strings
+    # (the behavior we had before quoting json values here)
+    return updated.replace('"NULL"', '""').replace('"null"', '""')
+
+
+class StateIngestViewAndMappingTestCase(
     BigQueryEmulatorTestCase,
     BaseStateIngestTestCase,
     # Enforce at class collection time that all subclasses of StateIngestViewTestCase
     # set __test__ back to True.
-    metaclass=StateIngestViewTestCaseMeta,
+    metaclass=StateIngestViewAndMappingTestCaseMeta,
 ):
     """
-    Base class for ingest view tests, where we test a query of
-    raw data against expected results.
+    This is the base test class for ingest testing, where we
+      - test a query of raw data against expected results
+      - test the parsing of those results against an expected entity tree
+
+    To use this test, subclass it and add a state code and ingest view builder.
     """
 
     # Prevent test discovery so we only run
@@ -462,6 +492,7 @@ class StateIngestViewTestCase(
         self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
             self.state_code(), emulator_test=self
         )
+        self.ingest_view_manifest_compiler = self.build_ingest_view_manifest_compiler()
 
     def test_validate_view_output_schema(self) -> None:
         """This test runs for all subclasses of StateIngestViewTestCase and enforces:
@@ -536,6 +567,12 @@ class StateIngestViewTestCase(
             expect_missing_fixtures_on_empty_results=False,
             expect_unique_output_rows=True,
         )
+        # After ingest view results are compared, run the ingest mapping test
+        self._run_ingest_mapping_test(
+            create_expected_output=create_expected_output,
+            ingest_view_name=ingest_view_name,
+            characteristic=characteristic,
+        )
 
     def _run_ingest_view_query(self) -> pd.DataFrame:
         """Uses the ingest view query run by Dataflow pipelines to query raw data."""
@@ -558,3 +595,110 @@ class StateIngestViewTestCase(
             results.to_string(),
         )
         return results
+
+    def _read_from_ingest_view_results_fixture(
+        self, ingest_view_name: str, characteristic: str
+    ) -> list:
+        """Reads a fixture file containing ingest view results."""
+        input_fixture = fixture_path_for_address(
+            self.state_code(),
+            BigQueryAddress(
+                dataset_id=f"{self.state_code().value.lower()}_ingest_view_results",
+                table_id=ingest_view_name,
+            ),
+            characteristic,
+        )
+        return list(
+            csv.DictReader(
+                LocalFileContentsHandle(
+                    input_fixture, cleanup_file=False
+                ).get_contents_iterator()
+            )
+        )
+
+    def _run_ingest_mapping_test(
+        self,
+        ingest_view_name: str,
+        characteristic: str,
+        create_expected_output: bool = False,
+    ) -> None:
+        """
+        This tests that an ingest mapping produces an expected output (entity tree)
+        from particular ingest view results.
+
+        Args:
+            create_expected_output:
+                When True, this argument will write the expected entity tree representation
+                to a file. The file name is <ingest view name>.fixture and is simply a text file.
+                The path to this file arises from `ingest_view_results_parsing_fixture_path`
+
+        Note that empty (either None or empty list) fields on entities are not written out to the file
+        or string buffer for this test.
+        """
+        if in_ci() and create_expected_output:
+            raise ValueError("Cannot have create_expected_output=True in the CI.")
+
+        # Build input by reading in fixture, compiling the mapping, and parsing fixture data.
+        ingest_view_results = self._read_from_ingest_view_results_fixture(
+            ingest_view_name, characteristic
+        )
+        manifest = self.ingest_view_manifest_compiler.compile_manifest(
+            ingest_view_name=ingest_view_name
+        )
+
+        # Check that our mapping has a defined RootEntity with
+        # defined external ID types.
+        if manifest.root_entity_cls not in {
+            state_entities.StatePerson,
+            state_entities.StateStaff,
+        }:
+            raise ValueError(f"Unexpected RootEntity type: {manifest.root_entity_cls}")
+        allowed_id_types = external_id_types_by_state_code()[self.state_code()]
+        found_id_types = manifest.root_entity_external_id_types
+        if unexpected_id_types := found_id_types - allowed_id_types:
+            raise ValueError(
+                f"Unexpected external ID types for {manifest.root_entity_cls}: {unexpected_id_types}"
+            )
+
+        # TODO(#39819) Remove this workaround when the emulator quotes date values
+        # in JSON correctly. big_query_emulator_test.py has examples
+        for row in ingest_view_results:
+            # Quote unquoted values in JSON strings
+            for key, value in row.items():
+                if isinstance(value, str) and value.upper().strip() != "NULL":
+                    row[key] = quote_json_values(value)
+
+        parsed_ingest_view_results = manifest.parse_contents(
+            contents_iterator=ingest_view_results,
+            context=IngestViewContentsContext.build_for_tests(),
+        )
+
+        # Build expected entity trees by loading the representation from a fixture
+        expected_fixture_path = ingest_mapping_output_fixture_path(
+            self.state_code(), ingest_view_name, characteristic
+        )
+        state_entity_context = entities_module_context_for_module(state_entities)
+        if create_expected_output:
+            self.create_directory_for_characteristic_level_fixtures(
+                expected_fixture_path, characteristic
+            )
+            with open(expected_fixture_path, "w", encoding="utf-8") as _output_fixture:
+                print_entity_trees(
+                    parsed_ingest_view_results,
+                    state_entity_context,
+                    file_or_buffer=_output_fixture,
+                )
+        with open(expected_fixture_path, "r", encoding="utf-8") as _output_fixture:
+            expected_trees = _output_fixture.read()
+
+        # Actually test the ingest mapping!
+        # We write the parsed entity tree representation to a string buffer
+        # so that we can compare against the representation in the fixture file.
+        with io.StringIO() as tree_buffer:
+            print_entity_trees(
+                parsed_ingest_view_results,
+                state_entity_context,
+                file_or_buffer=tree_buffer,
+            )
+            actual_trees = tree_buffer.getvalue()
+        self.assertEqual(actual_trees, expected_trees)
