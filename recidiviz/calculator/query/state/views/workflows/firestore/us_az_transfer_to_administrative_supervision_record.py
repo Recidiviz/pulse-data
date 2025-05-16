@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@ WITH eligible_and_almost_eligible AS (
     id_type="'US_AZ_PERSON_ID'",
     eligible_and_almost_eligible_only=True)}
 )
-# TODO(#41731): Add in side panel notes for homeless releases
 # TODO(#41734): Add in side panel notes for needs assessment and initial intake information 
 SELECT
     person_id,

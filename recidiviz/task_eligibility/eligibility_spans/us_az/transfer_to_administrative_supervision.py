@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
+    not_homeless_in_release_plan,
     not_serving_ineligible_offense_for_admin_supervision,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
@@ -65,6 +66,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
         ),
+        # 1.4 Not classified as homeless in their home release plan
+        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
+        not_homeless_in_release_plan.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
         # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
