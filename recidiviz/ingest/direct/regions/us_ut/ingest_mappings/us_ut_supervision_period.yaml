@@ -163,6 +163,7 @@ output:
                   - DIVERSION START
                   - COLLECTION ONLY START
                   - DISCHARGED TO PSRB
+                  - 402 AMENDED/REDUCED
                 StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
                   - RETURNED FROM ABSCOND
                   - WALKAWAY RETURNED
@@ -287,6 +288,7 @@ output:
                   - HALFWAY BACK
                   - REL FM HALFWAY OUT
                   - REL FM HALFWAY BACK
+                  - 402 AMENDED/REDUCED
           supervision_type:
             $enum_mapping:
               $raw_text: lgl_stat_desc
