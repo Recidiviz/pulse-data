@@ -48,6 +48,9 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_session
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.earned_credit_activity import (
+    EARNED_CREDIT_ACTIVITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions import (
     FINES_FEES_SESSIONS_VIEW_BUILDER,
 )
@@ -176,6 +179,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q5 impo
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q6 import (
     US_IX_SLS_Q6_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_earned_credit_activity_preprocessed import (
+    US_MA_EARNED_CREDIT_ACTIVITY_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_person_projected_date_sessions_preprocessed import (
+    US_MA_PERSON_PROJECTED_DATE_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_projected_dates import (
     US_MA_PROJECTED_DATES_VIEW_BUILDER,
@@ -488,4 +497,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TX_SUPERVISION_STAFF_IN_CRITICALLY_UNDERSTAFFED_LOCATION_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     SUPERVISION_STAFF_IN_CRITICALLY_UNDERSTAFFED_LOCATION_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     US_TX_CONTACT_CADENCE_SPANS_VIEW_BUILDER,
+    US_MA_EARNED_CREDIT_ACTIVITY_PREPROCESSED_VIEW_BUILDER,
+    EARNED_CREDIT_ACTIVITY_VIEW_BUILDER,
+    US_MA_PERSON_PROJECTED_DATE_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 ]

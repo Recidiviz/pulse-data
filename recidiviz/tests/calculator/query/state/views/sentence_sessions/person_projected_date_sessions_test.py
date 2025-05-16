@@ -16,12 +16,16 @@
 # =============================================================================
 """Tests the PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER."""
 from datetime import date, datetime, timedelta
+from typing import Dict, List
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.us_ma.us_ma_person_projected_date_sessions_preprocessed import (
+    US_MA_PERSON_PROJECTED_DATE_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
 )
@@ -45,6 +49,10 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     )
     aggregated_sentence_address = (
         INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query
+    )
+
+    us_ma_preprocessed_address = (
+        US_MA_PERSON_PROJECTED_DATE_SESSIONS_PREPROCESSED_VIEW_BUILDER.table_for_query
     )
 
     state_code = StateCode.US_XX
@@ -159,6 +167,46 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                     ),
                 ),
             ],
+            # TODO(#42451): Deprecate this view if sentence-level data is ingested from US_MA
+            self.us_ma_preprocessed_address: [
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("sentence_inferred_group_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date_exclusive", date),
+                schema_field_for_type("group_parole_eligibility_date", date),
+                schema_field_for_type("group_projected_parole_release_date", date),
+                schema_field_for_type(
+                    "group_projected_full_term_release_date_min", date
+                ),
+                schema_field_for_type(
+                    "group_projected_full_term_release_date_max", date
+                ),
+                schema_field_for_type("good_time_days", int),
+                schema_field_for_type("earned_time_days", int),
+                bigquery.SchemaField(
+                    "sentence_array",
+                    "RECORD",
+                    mode="REPEATED",
+                    fields=(
+                        schema_field_for_type("sentence_id", int),
+                        schema_field_for_type("sentence_parole_eligibility_date", date),
+                        schema_field_for_type(
+                            "sentence_projected_parole_release_date", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_min", date
+                        ),
+                        schema_field_for_type(
+                            "sentence_projected_full_term_release_date_max", date
+                        ),
+                        schema_field_for_type("sentence_length_days_min", int),
+                        schema_field_for_type("sentence_length_days_max", int),
+                        schema_field_for_type("sentence_good_time_days", int),
+                        schema_field_for_type("sentence_earned_time_days", int),
+                    ),
+                ),
+            ],
         }
 
     def test_single_inferred_group_input_from_both_sources(self) -> None:
@@ -203,6 +251,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        us_ma_preprocessed_data: List[Dict] = []
+
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -236,6 +286,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
+                self.us_ma_preprocessed_address: us_ma_preprocessed_data,
             },
             expected_output,
         )
@@ -302,6 +353,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        us_ma_preprocessed_data: List[Dict] = []
+
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -361,6 +414,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
+                self.us_ma_preprocessed_address: us_ma_preprocessed_data,
             },
             expected_output,
         )
@@ -434,6 +488,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 ],
             },
         ]
+
+        us_ma_preprocessed_data: List[Dict] = []
 
         expected_output = [
             {
@@ -520,6 +576,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
+                self.us_ma_preprocessed_address: us_ma_preprocessed_data,
             },
             expected_output,
         )
@@ -565,6 +622,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
 
+        us_ma_preprocessed_data: List[Dict] = []
+
         expected_output = [
             {
                 "state_code": self.state_code.value,
@@ -598,6 +657,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
             {
                 self.aggregated_sentence_group_address: aggregated_sentence_groups_data,
                 self.aggregated_sentence_address: aggregated_sentence_data,
+                self.us_ma_preprocessed_address: us_ma_preprocessed_data,
             },
             expected_output,
         )

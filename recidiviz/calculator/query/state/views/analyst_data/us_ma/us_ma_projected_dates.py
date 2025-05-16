@@ -43,6 +43,7 @@ SELECT DISTINCT
   person_id,
   COMMIT_NO AS external_id,
   CAST(RPT_RUN_DATE AS DATETIME) AS update_date,
+  CAST(EGT_INITIAL_DATE AS DATETIME) AS egt_initial_date,
   -- If someone hasn't earned any EGT credit at the time of a report, the total credit values 
   -- will be '0' unless the person hasn't started earning EGT whatsoever, in which case
   -- the total credit will be blank. The latter case still means that the person has 0 days

@@ -675,6 +675,8 @@ US_IX:
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_MA:
   egt_report:
+    analyst_data.us_ma_earned_credit_activity_preprocessed: |-
+      Used to pull information about credit activity.
     analyst_data.us_ma_projected_dates: |-
       Used to pull information about projected dates and credit earnings.
 US_ME:

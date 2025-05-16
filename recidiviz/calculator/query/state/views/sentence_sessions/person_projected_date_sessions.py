@@ -25,10 +25,16 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
+    list_to_query_string,
 )
-from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SENTENCE_SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+PREPROCESSED_STATES_TO_EXCLUDE = ["US_MA"]
 
 PERSON_PROJECTED_DATE_SESSIONS = "person_projected_date_sessions"
 
@@ -183,6 +189,14 @@ FROM (
         'sentence_array'],
     struct_attribute_subset='sentence_array',
     end_date_field_name='end_date_exclusive')})
+WHERE state_code NOT IN ({{preprocessed_states_to_exclude}}) 
+
+UNION ALL
+
+--TODO(#42451): Deprecate this view if sentence-level data is ingested from US_MA
+SELECT 
+    *
+FROM `{{project_id}}.{{analyst_data_dataset}}.us_ma_person_projected_date_sessions_preprocessed_materialized`
 """
 
 
@@ -190,9 +204,14 @@ PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SENTENCE_SESSIONS_DATASET,
     view_id=PERSON_PROJECTED_DATE_SESSIONS,
     sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
+    analyst_data_dataset=ANALYST_VIEWS_DATASET,
     view_query_template=QUERY_TEMPLATE,
     description=__doc__,
     should_materialize=True,
+    preprocessed_states_to_exclude=list_to_query_string(
+        string_list=PREPROCESSED_STATES_TO_EXCLUDE,
+        quoted=True,
+    ),
 )
 
 if __name__ == "__main__":
