@@ -31,14 +31,13 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
 
     for metric_class, table_id in dataflow_config.DATAFLOW_METRICS_TO_TABLES.items():
         schema = metric_class.bq_schema_for_metric_table()
-        clustering_fields = (
-            dataflow_config.METRIC_CLUSTERING_FIELDS
-            if all(
-                cluster_field in attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
-                for cluster_field in dataflow_config.METRIC_CLUSTERING_FIELDS
-            )
-            else None
-        )
+        # cluster on all fields in dataflow_config.METRIC_CLUSTERING_FIELDS that are
+        # present in metric table
+        clustering_fields = [
+            cluster_field
+            for cluster_field in dataflow_config.METRIC_CLUSTERING_FIELDS
+            if cluster_field in attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
+        ] or None
 
         dataflow_metrics.add_source_table(
             table_id=table_id,
