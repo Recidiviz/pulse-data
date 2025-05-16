@@ -89,6 +89,11 @@ view: state_person_address_period {
     sql: ${TABLE}.address_zip ;;
   }
 
+  dimension: full_address {
+    type: string
+    sql: ${TABLE}.full_address ;;
+  }
+
   dimension: person_address_period_id {
     type: number
     primary_key: yes

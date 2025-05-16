@@ -281,7 +281,10 @@ state_incarceration_sentence:
 state_person:
   fields:
     birthdate: Date the person was born. Use this when it is known. When a person's age but not birthdate is reported, use age instead.
-    current_address: The current address of the person.
+    current_address: >-
+      The current address of the person. THIS FIELD WILL EVENTUALLY BE DEPRECATED IN FAVOR OF THE 
+      state_person_address_period TABLE (see https://github.com/Recidiviz/pulse-data/issues/42457). Wherever 
+      possible, use state_person_address_period and views derived from that table instead.
     current_email_address: The current email address of the person.
     current_phone_number: The current phone number of the person.
     full_name: A person's name. Only use this when names are in a single field. Use surname and given_names when they are separate.
@@ -307,6 +310,7 @@ state_person_address_period:
     address_type: Indicates the address type
     address_type_raw_text: Text used to infer address_type
     address_zip: The 5 digit zipcode of the address
+    full_address: A multi-line formatted string version of this address.
 
 state_person_alias:
   fields:

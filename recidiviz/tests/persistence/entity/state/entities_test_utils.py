@@ -1496,6 +1496,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         address_zip="10000",
         address_county="GLACIER COUNTY",
         address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        full_address="123 SANTA STREET\nAPT 4\nNORTH POLE 10000",
     )
 
     housing_status_period = (

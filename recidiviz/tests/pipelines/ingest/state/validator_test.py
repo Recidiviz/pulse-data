@@ -1472,13 +1472,22 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         errors = validate_root_entity(mr_lion)
         # Mr. Lion's apartment can't be his residential and mailing address.
         assert errors == [
-            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with StateAddressPeriod address used with multiple StatePersonAddressType enums.If this assumption is too strict for your state (e.g. we need an addressto be both PHYSICAL_RESIDENCE and MAILING), ping #platform-channel to discuss!"
+            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with StateAddressPeriod address used with multiple StatePersonAddressType enums. If this assumption is too strict for your state (e.g. we need an address to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-team to discuss!"
         ]
 
         # Mr. Lion's building has a mail room. The now unique address can
         # be his mailing address.
-        mailing.address_line_2 = "Attn: Mr. Lion, Box 4401"
-        mr_lion.address_periods = [residence, mailing]
+        updated_mailing = state_entities.StatePersonAddressPeriod(
+            state_code=self.STATE_CODE_VALUE,
+            address_line_1="14 Yellow Brick Road",
+            address_line_2="Attn: Mr. Lion, Box 4401",
+            address_city="Emerald City",
+            address_start_date=date(2001, 1, 1),
+            address_end_date=date(2021, 1, 1),
+            address_type=StatePersonAddressType.MAILING_ONLY,
+        )
+
+        mr_lion.address_periods = [residence, updated_mailing]
         errors = validate_root_entity(mr_lion)
         assert not any(errors)
 
@@ -1490,7 +1499,7 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
             address_start_date=date(2021, 1, 1),
             address_type=StatePersonAddressType.MAILING_ONLY,
         )
-        mr_lion.address_periods = [residence, mailing, post_office]
+        mr_lion.address_periods = [residence, updated_mailing, post_office]
         errors = validate_root_entity(mr_lion)
         assert not any(errors)
 
@@ -1519,7 +1528,7 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         errors = validate_root_entity(mr_lion)
 
         assert errors == [
-            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=datetime.date(2002, 1, 1)), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=datetime.date(2002, 1, 1)), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-team to discuss!"
         ]
 
         # Mr. Lion decided he never left the wilderness.
@@ -1528,7 +1537,7 @@ class TestStatePersonAddressPeriodChecks(unittest.TestCase):
         mr_lion.address_periods = [residence, the_wilderness]
         errors = validate_root_entity(mr_lion)
         assert errors == [
-            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=None), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            "Found StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='Mr. Lion', id_type='US_OZ_CHARACTER', person_external_id_id=None)]) with address periods of type StatePersonAddressType.PHYSICAL_RESIDENCE that overlap.\nDate Ranges: [PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2000, 1, 1), upper_bound_exclusive_date=None), PotentiallyOpenDateRange(lower_bound_inclusive_date=datetime.date(2001, 1, 1), upper_bound_exclusive_date=datetime.date(2021, 1, 1))] If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-team to discuss!"
         ]
 
         # We know he loves going into the wilderness though.

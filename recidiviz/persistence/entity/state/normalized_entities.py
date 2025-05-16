@@ -3268,6 +3268,8 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    full_address: str = attr.ib(validator=attr_validators.is_str)
+
     address_start_date: date = attr.ib(
         validator=attr_validators.is_reasonable_past_date(
             min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
@@ -3345,6 +3347,8 @@ class NormalizedStatePerson(
     # Attributes
 
     #   - Where
+    # TODO(#42457): Deprecate this field in favor of structured address data stored in
+    #  NormalizedStatePersonAddressPeriod.
     current_address: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

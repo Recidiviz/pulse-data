@@ -361,7 +361,7 @@ def _person_address_period_checks(
         both be the PHYSICAL_RESIDENCE address for a person *at the same time*
 
     If these assumptions are too strict for your state (e.g. we need an address
-    to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-channel to discuss!
+    to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-team to discuss!
     """
     by_address: dict[str, StatePersonAddressType] = {}
     by_type: dict[StatePersonAddressType, list[PotentiallyOpenDateRange]] = defaultdict(
@@ -372,9 +372,11 @@ def _person_address_period_checks(
             addr_type := by_address.get(period.full_address)
         ) is not None and addr_type != period.address_type:
             yield (
-                f"Found {person.limited_pii_repr()} with StateAddressPeriod address used with multiple StatePersonAddressType enums."
-                "If this assumption is too strict for your state (e.g. we need an address"
-                "to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-channel to discuss!"
+                f"Found {person.limited_pii_repr()} with StateAddressPeriod address "
+                f"used with multiple StatePersonAddressType enums. "
+                f"If this assumption is too strict for your state (e.g. we need an "
+                f"address to be both PHYSICAL_RESIDENCE and MAILING), ping "
+                "#platform-team to discuss!"
             )
         by_address[period.full_address] = period.address_type
         by_type[period.address_type].append(period.date_range)
@@ -384,7 +386,7 @@ def _person_address_period_checks(
             yield (
                 f"Found {person.limited_pii_repr()} with address periods of type {period_type} that overlap.\n"
                 f"Date Ranges: {sorted(overlapping_ranges, key= lambda dr: dr.lower_bound_inclusive_date)} "
-                "If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+                "If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-team to discuss!"
             )
 
 
@@ -403,7 +405,7 @@ def _normalized_person_staff_relationship_period_checks(
     All relationship periods with relationship_type INTERNAL_UNKNOWN are excluded from
     the above checks.
 
-    If these assumptions are too strict for your state, ping #platform-channel to
+    If these assumptions are too strict for your state, ping #platform-team to
     discuss!
     """
     critical_range_builder = CriticalRangesBuilder(person.staff_relationship_periods)

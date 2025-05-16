@@ -492,6 +492,7 @@
       state_person_address_period.address_type,
       state_person_address_period.address_type_raw_text,
       state_person_address_period.address_zip,
+      state_person_address_period.full_address,
       state_person_address_period.person_address_period_id,
       state_person_address_period.state_code]
     sorts: [state_person_address_period.address_end_date desc, state_person_address_period.address_start_date desc]

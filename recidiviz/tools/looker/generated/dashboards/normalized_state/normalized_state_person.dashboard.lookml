@@ -506,6 +506,7 @@
       normalized_state_person_address_period.address_type,
       normalized_state_person_address_period.address_type_raw_text,
       normalized_state_person_address_period.address_zip,
+      normalized_state_person_address_period.full_address,
       normalized_state_person_address_period.person_address_period_id,
       normalized_state_person_address_period.state_code]
     sorts: [normalized_state_person_address_period.address_end_date desc, normalized_state_person_address_period.address_start_date desc]

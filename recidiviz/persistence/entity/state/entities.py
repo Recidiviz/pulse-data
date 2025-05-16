@@ -199,7 +199,7 @@ class StatePersonAddressPeriod(
     """
 
     # Attributes
-    address_line_1: str = attr.ib(validator=attr_validators.is_str)
+    address_line_1: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     address_line_2: Optional[str] = attr.ib(
         default=None,
@@ -271,24 +271,47 @@ class StatePersonAddressPeriod(
     def date_range(self) -> PotentiallyOpenDateRange:
         return PotentiallyOpenDateRange(self.address_start_date, self.address_end_date)
 
-    @property
-    def full_address(self) -> str:
+    full_address: str = attr.ib(validator=attr_validators.is_str)
+
+    @full_address.default
+    def _full_address(self) -> str:
         """
         Returns a full address like so:
             Required Line 1
             Optional Line 2
-            Optional City
-            Optional ZIP Optional County
+            Optional City, Optional State Optional ZIP
+            Optional Country
         """
-        address = self.address_line_1
-        for addr_part in [
-            self.address_line_2,
-            self.address_city,
-            f"{self.address_zip or ''} {self.address_county or ''}".strip(),
-        ]:
-            if addr_part:
-                address += f"\n{addr_part}"
-        return address.strip()
+        lines = [self.address_line_1]
+        if self.address_line_2:
+            lines.append(self.address_line_2)
+
+        city_state_zip = ""
+        if self.address_city:
+            city_state_zip += self.address_city
+        if self.address_state:
+            city_state_zip += (", " if self.address_city else "") + self.address_state
+        if self.address_zip:
+            city_state_zip += (
+                f" {self.address_zip}"
+                if self.address_city or self.address_state
+                else self.address_zip
+            )
+
+        if city_state_zip.strip():
+            lines.append(city_state_zip.strip())
+
+        if self.address_country:
+            lines.append(self.address_country)
+
+        return "\n".join(lines)
+
+    def __attrs_post_init__(self) -> None:
+        if self._full_address() != self.full_address:
+            raise ValueError(
+                "Cannot construct a StatePersonAddressPeriod with a full_address that "
+                "differs from the derived full_address."
+            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -489,6 +512,8 @@ class StatePerson(
     # Attributes
 
     #   - Where
+    # TODO(#42457): Deprecate this field in favor of structured address data stored in
+    #  StatePersonAddressPeriod.
     current_address: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

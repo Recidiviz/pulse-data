@@ -286,7 +286,7 @@ class TestStateEntities(TestCase):
     def test_state_person_address_period_properties(self) -> None:
         """Tests the computed properties of address periods work as expected."""
         CITY = "Emerald City"
-        COUNTY = "Wiz County"
+        COUNTRY = "Land of Oz"
 
         period = StatePersonAddressPeriod(
             state_code="US_OZ",
@@ -312,29 +312,29 @@ class TestStateEntities(TestCase):
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
             address_city=CITY,
-            address_county=COUNTY,
+            address_country=COUNTRY,
             address_start_date=date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
-        assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n{COUNTY}"
+        assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n{COUNTRY}"
 
         period = StatePersonAddressPeriod(
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
             address_city=CITY,
-            address_county=COUNTY,
+            address_country=COUNTRY,
             address_zip="00001",
             address_start_date=date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
-        assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n00001 {COUNTY}"
+        assert period.full_address == f"14 Yellow Brick Road\n{CITY} 00001\n{COUNTRY}"
 
         period = StatePersonAddressPeriod(
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
             address_line_2="Attn: Mr. Lion",
             address_city=CITY,
-            address_county=COUNTY,
+            address_country=COUNTRY,
             address_zip="00001",
             address_start_date=date(2001, 1, 1),
             address_end_date=date(2021, 1, 1),
@@ -345,8 +345,28 @@ class TestStateEntities(TestCase):
             [
                 "14 Yellow Brick Road",
                 "Attn: Mr. Lion",
-                f"{CITY}",
-                f"00001 {COUNTY}",
+                f"{CITY} 00001",
+                f"{COUNTRY}",
+            ]
+        )
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_line_2="Attn: Mr. Lion",
+            address_city=CITY,
+            address_state="OZ",
+            address_zip="00001",
+            address_start_date=date(2001, 1, 1),
+            address_end_date=date(2021, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert not period.date_range.is_open
+        assert period.full_address == "\n".join(
+            [
+                "14 Yellow Brick Road",
+                "Attn: Mr. Lion",
+                f"{CITY}, OZ 00001",
             ]
         )
 

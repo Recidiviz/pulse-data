@@ -965,6 +965,8 @@ class StatePersonAddressPeriod(StateBase, _ReferencesStatePersonSharedColumns):
 
     address_county = Column(String(255))
 
+    full_address = Column(String(255))
+
     address_start_date = Column(Date)
 
     address_end_date = Column(Date)
