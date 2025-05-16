@@ -76,7 +76,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -281,6 +281,14 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project in which to run this script.",
+        required=False,
+        default=GCP_PROJECT_STAGING,
+    )
+
+    parser.add_argument(
         "--state-code",
         help="State that these raw files are for, in the form US_XX.",
         type=str,
@@ -362,9 +370,8 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
     known_args = parse_arguments()
-    with local_project_id_override(GCP_PROJECT_STAGING):
+    with local_project_id_override(known_args.project_id):
         do_sandbox_raw_file_import(
             state_code=StateCode(known_args.state_code),
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
