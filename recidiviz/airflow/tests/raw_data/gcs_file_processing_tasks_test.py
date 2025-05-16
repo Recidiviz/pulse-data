@@ -18,6 +18,7 @@
 import base64
 import datetime
 import unittest
+from itertools import chain
 from typing import ClassVar, List, Optional
 from unittest.mock import MagicMock, patch
 
@@ -29,11 +30,15 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     divide_file_chunks_into_batches,
     filter_normalization_results_based_on_errors,
     read_and_verify_column_headers_concurrently,
+    regroup_and_verify_file_chunks,
     regroup_normalized_file_chunks,
     verify_file_checksums,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,
@@ -44,6 +49,8 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
+from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 from recidiviz.utils.types import assert_type
 
 
@@ -246,8 +253,10 @@ class TestCreateChunkBatches(unittest.TestCase):
         ]
 
 
-class TestRegroupAndVerifyFileChunks(unittest.TestCase):
-    """Tests for regrouping and verifying checksums of normalized file chunks"""
+class TestRegroupAndVerifyFileChunkUnitTests(unittest.TestCase):
+    """Unit tests for individual parts of regrouping and verifying checksums of
+    normalized file chunks
+    """
 
     def setUp(self) -> None:
         file_bytes = b"these are file bytes"
@@ -261,8 +270,15 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         fs_patcher = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
             return_value=self.fs,
-        ).start()
+        )
+        fs_patcher.start()
         self.addCleanup(fs_patcher.stop)
+        region_module_patch = patch(
+            "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
+            fake_regions,
+        )
+        region_module_patch.start()
+        self.addCleanup(region_module_patch.stop)
 
         self.normalized_chunks = [
             PreImportNormalizedCsvChunkResult(
@@ -272,7 +288,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
                 chunk_boundary=CsvChunkBoundary(0, 10, 0),
                 crc32c=self._get_checksum_int(b"these are "),
-                byte_decoding_errors=[],
             ),
             PreImportNormalizedCsvChunkResult(
                 input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
@@ -281,7 +296,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                 ),
                 chunk_boundary=CsvChunkBoundary(10, 20, 1),
                 crc32c=self._get_checksum_int(b"file bytes"),
-                byte_decoding_errors=[],
             ),
         ]
 
@@ -315,14 +329,12 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
-            byte_decoding_errors=[],
         )
         chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
-            byte_decoding_errors=[],
         )
 
         (
@@ -353,28 +365,24 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_1"),
             chunk_boundary=CsvChunkBoundary(0, 10, 0),
             crc32c=self._get_checksum_int(b"these are "),
-            byte_decoding_errors=[],
         )
         file1_chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file1_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
-            byte_decoding_errors=[],
         )
         file2_chunk0 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
-            byte_decoding_errors=[],
         )
         file2_chunk1 = PreImportNormalizedCsvChunkResult(
             input_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
             output_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2_0"),
             chunk_boundary=CsvChunkBoundary(10, 20, 1),
             crc32c=self._get_checksum_int(b"file bytes"),
-            byte_decoding_errors=[],
         )
         error = RawFileProcessingError(
             original_file_path=GcsfsFilePath.from_absolute_path("test_bucket/file2"),
@@ -458,21 +466,18 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
-                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
                     chunk_boundary=CsvChunkBoundary(1, 2, 1),
                     crc32c=2,
-                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/aa.csv"): [
@@ -481,7 +486,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
-                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/b.csv"): [
@@ -490,7 +494,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/c.csv"): [
@@ -499,7 +502,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
         }
@@ -593,21 +595,18 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
                     chunk_boundary=CsvChunkBoundary(0, 1, 0),
                     crc32c=1,
-                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
                     chunk_boundary=CsvChunkBoundary(1, 2, 1),
                     crc32c=2,
-                    byte_decoding_errors=[],
                 ),
                 PreImportNormalizedCsvChunkResult(
                     input_file_path=GcsfsFilePath.from_absolute_path("path/a.csv"),
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
             # since this file is missing, a and aa will fail
@@ -617,7 +616,7 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             #         output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
             #         chunk_boundary=CsvChunkBoundary(0, 1, 0),
             #         crc32c=1,
-            #         byte_decoding_errors=[],
+            #
             #     ),
             # ],
             GcsfsFilePath.from_absolute_path("path/b.csv"): [
@@ -626,7 +625,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/b.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
             GcsfsFilePath.from_absolute_path("path/c.csv"): [
@@ -635,7 +633,6 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
                     output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
                     chunk_boundary=CsvChunkBoundary(2, 3, 2),
                     crc32c=3,
-                    byte_decoding_errors=[],
                 ),
             ],
         }
@@ -859,6 +856,478 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
         assert non_blocked_files == files[:2]
         assert len(skipped_errors) == 1
         assert skipped_errors[0].original_file_path == files[2].original_file_paths[0]
+
+
+class TestRegroupAndVerifyFileChunkIntegrationTests(unittest.TestCase):
+    """Integration tests for individual parts of regrouping and verifying checksums of
+    normalized file chunks
+    """
+
+    @staticmethod
+    def _get_checksum_int(bytes_to_checksum: bytes) -> int:
+        checksum = google_crc32c.Checksum()
+        checksum.update(bytes_to_checksum)
+        return int.from_bytes(checksum.digest(), byteorder="big")
+
+    def setUp(self) -> None:
+        file_bytes = b"these are file bytes"
+
+        file_checksum = google_crc32c.Checksum()
+        file_checksum.update(file_bytes)
+        file_checksum_str = base64.b64encode(file_checksum.digest()).decode("utf-8")
+        self.fs = MagicMock()
+        self.fs.get_crc32c.return_value = file_checksum_str
+
+        fs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
+            return_value=self.fs,
+        )
+        fs_patcher.start()
+        self.addCleanup(fs_patcher.stop)
+
+    def test_empty(self) -> None:
+        output = regroup_and_verify_file_chunks.function([], [], {})
+
+        assert BatchedTaskInstanceOutput.deserialize(
+            output, ImportReadyFile, RawFileProcessingError
+        ) == BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
+            results=[], errors=[]
+        )
+
+    def test_success(self) -> None:
+        results = {
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 6, 0),
+                    crc32c=self._get_checksum_int(b"these "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                    chunk_boundary=CsvChunkBoundary(6, 10, 1),
+                    crc32c=self._get_checksum_int(b"are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 2),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 6, 0),
+                    crc32c=self._get_checksum_int(b"these "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                    chunk_boundary=CsvChunkBoundary(6, 10, 1),
+                    crc32c=self._get_checksum_int(b"are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 2),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 10, 0),
+                    crc32c=self._get_checksum_int(b"these are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 1),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagMoreBasicData.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagMoreBasicData.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/c.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 20, 0),
+                    crc32c=self._get_checksum_int(b"these are file bytes"),
+                ),
+            ],
+        }
+        chunks = chain.from_iterable(results.values())
+        errors: list[RawFileProcessingError] = []
+        bq_metadata = [
+            RawBigQueryFileMetadata(
+                file_id=1,
+                file_tag="tagChunkedFile",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadata(
+                        gcs_file_id=2,
+                        file_id=1,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=4,
+                        file_id=2,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                        ),
+                    )
+                ],
+                update_datetime=datetime.datetime(2021, 1, 2, tzinfo=datetime.UTC),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=3,
+                file_tag="tagMoreBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=5,
+                        file_id=3,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagMoreBasicData.csv"
+                        ),
+                    )
+                ],
+                update_datetime=datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC),
+            ),
+        ]
+        bq_schemas = {
+            1: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            2: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            3: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+        }
+
+        output_str = regroup_and_verify_file_chunks.function(
+            [
+                BatchedTaskInstanceOutput(
+                    results=list(chunks), errors=errors
+                ).serialize()
+            ],
+            [meta_.serialize() for meta_ in bq_metadata],
+            {str(id_): schema_.serialize() for id_, schema_ in bq_schemas.items()},
+        )
+        output = BatchedTaskInstanceOutput.deserialize(
+            output_str, ImportReadyFile, RawFileProcessingError
+        )
+        assert not output.errors
+        assert sorted(output.results, key=lambda x: x.file_id) == sorted(
+            [
+                ImportReadyFile.from_bq_metadata_load_config_and_normalized_chunk_result(
+                    metadata,
+                    bq_schemas[assert_type(metadata.file_id, int)],
+                    {file.path: results[file.path] for file in metadata.gcs_files},
+                )
+                for metadata in bq_metadata
+            ],
+            key=lambda x: x.file_id,
+        )
+
+    def test_encoding_and_checksum_error_block(self) -> None:
+        results = {
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 6, 0),
+                    crc32c=self._get_checksum_int(b"these "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                    chunk_boundary=CsvChunkBoundary(6, 10, 1),
+                    crc32c=self._get_checksum_int(b"are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 2),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 6, 0),
+                    crc32c=self._get_checksum_int(b"these "),
+                ),
+                # this chunk had an issue!
+                # PreImportNormalizedCsvChunkResult(
+                #     input_file_path=GcsfsFilePath.from_absolute_path(
+                #         "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                #     ),
+                #     output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                #     chunk_boundary=CsvChunkBoundary(6, 10, 1),
+                #     crc32c=self._get_checksum_int(b"are "),
+                #
+                # ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 2),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 6, 0),
+                    crc32c=self._get_checksum_int(b"these "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
+                    chunk_boundary=CsvChunkBoundary(6, 10, 1),
+                    crc32c=self._get_checksum_int(b"are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 2),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+            GcsfsFilePath.from_absolute_path(
+                "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+            ): [
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
+                    chunk_boundary=CsvChunkBoundary(0, 10, 0),
+                    crc32c=self._get_checksum_int(b"these are "),
+                ),
+                PreImportNormalizedCsvChunkResult(
+                    input_file_path=GcsfsFilePath.from_absolute_path(
+                        "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                    ),
+                    output_file_path=GcsfsFilePath.from_absolute_path("outpath/aa.csv"),
+                    chunk_boundary=CsvChunkBoundary(10, 20, 1),
+                    crc32c=self._get_checksum_int(b"file bytes"),
+                ),
+            ],
+        }
+        chunks = chain.from_iterable(results.values())
+        errors = [
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                ),
+                error_msg="yike!",
+                temporary_file_paths=[
+                    GcsfsFilePath.from_absolute_path("outpath/a1.csv")
+                ],
+            )
+        ]
+        bq_metadata = [
+            RawBigQueryFileMetadata(
+                file_id=1,
+                file_tag="tagChunkedFile",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=1,
+                        file_id=1,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv"
+                        ),
+                    ),
+                    RawGCSFileMetadata(
+                        gcs_file_id=2,
+                        file_id=1,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=4,
+                file_tag="tagChunkedFile",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=6,
+                        file_id=4,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv"
+                        ),
+                    ),
+                ],
+                update_datetime=datetime.datetime(2021, 1, 2, tzinfo=datetime.UTC),
+            ),
+            RawBigQueryFileMetadata(
+                file_id=2,
+                file_tag="tagBasicData",
+                gcs_files=[
+                    RawGCSFileMetadata(
+                        gcs_file_id=4,
+                        file_id=2,
+                        path=GcsfsFilePath.from_absolute_path(
+                            "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                        ),
+                    )
+                ],
+                update_datetime=datetime.datetime(2021, 1, 2, tzinfo=datetime.UTC),
+            ),
+        ]
+        bq_schemas = {
+            1: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            2: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+            4: RawFileBigQueryLoadConfig(schema_fields=[], skip_leading_rows=0),
+        }
+
+        output_str = regroup_and_verify_file_chunks.function(
+            [
+                BatchedTaskInstanceOutput(
+                    results=list(chunks), errors=errors
+                ).serialize()
+            ],
+            [meta_.serialize() for meta_ in bq_metadata],
+            {str(id_): schema_.serialize() for id_, schema_ in bq_schemas.items()},
+        )
+        output = BatchedTaskInstanceOutput.deserialize(
+            output_str, ImportReadyFile, RawFileProcessingError
+        )
+        assert sorted(output.errors, key=lambda x: x.error_msg) == sorted(
+            [
+                *errors,
+                RawFileProcessingError(
+                    error_msg="Missing [test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv] paths so could not build full conceptual file",
+                    original_file_path=GcsfsFilePath(
+                        bucket_name="test_bucket",
+                        blob_name="unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-1.csv",
+                    ),
+                    temporary_file_paths=[
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a.csv"),
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a1.csv"),
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a2.csv"),
+                    ],
+                ),
+                RawFileProcessingError(
+                    error_msg="Chunk [0] of [test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv] skipped due to error encountered with a different chunk with the same input path",
+                    original_file_path=GcsfsFilePath(
+                        bucket_name="test_bucket",
+                        blob_name="unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv",
+                    ),
+                    temporary_file_paths=[
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a.csv")
+                    ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                ),
+                RawFileProcessingError(
+                    error_msg="Chunk [2] of [test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv] skipped due to error encountered with a different chunk with the same input path",
+                    original_file_path=GcsfsFilePath(
+                        bucket_name="test_bucket",
+                        blob_name="unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv",
+                    ),
+                    temporary_file_paths=[
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a2.csv")
+                    ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                ),
+                RawFileProcessingError(
+                    error_msg="Blocked Import: failed due to import-blocking failure from GcsfsFilePath(bucket_name='test_bucket', blob_name='unprocessed_2021-01-01T00:00:00:000000_raw_tagChunkedFile-2.csv')",
+                    original_file_path=GcsfsFilePath(
+                        bucket_name="test_bucket",
+                        blob_name="unprocessed_2021-01-02T00:00:00:000000_raw_tagChunkedFile-2.csv",
+                    ),
+                    temporary_file_paths=[
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a.csv"),
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a1.csv"),
+                        GcsfsFilePath(bucket_name="outpath", blob_name="a2.csv"),
+                    ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                ),
+            ],
+            key=lambda x: x.error_msg,
+        )
+        assert sorted(output.results, key=lambda x: x.file_id) == sorted(
+            [
+                ImportReadyFile.from_bq_metadata_load_config_and_normalized_chunk_result(
+                    metadata,
+                    bq_schemas[assert_type(metadata.file_id, int)],
+                    {file.path: results[file.path] for file in metadata.gcs_files},
+                )
+                for metadata in bq_metadata
+                if metadata.file_id
+                not in {
+                    1,  # failed checksum
+                    4,  # blocked due to above
+                }
+            ],
+            key=lambda x: x.file_id,
+        )
 
 
 class TestReadAndVerifyColumnHeaders(unittest.TestCase):

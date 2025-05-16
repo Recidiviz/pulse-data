@@ -491,8 +491,10 @@ def build_import_ready_files(
                     assert_type(bq_metadata.file_id, int)
                 ],
                 {
-                    input_path: filtered_file_path_to_normalized_chunks[input_path]
-                    for input_path in all_input_paths
+                    gcs_file.path: filtered_file_path_to_normalized_chunks[
+                        gcs_file.path
+                    ]
+                    for gcs_file in bq_metadata.gcs_files
                 },
             )
         )

@@ -298,7 +298,6 @@ class TestSerialization(unittest.TestCase):
             output_file_path=GcsfsFilePath.from_absolute_path("path/to/result.csv"),
             chunk_boundary=chunk_boundary,
             crc32c=0xFFFFFFFF,
-            byte_decoding_errors=[],
         )
 
         self._validate_serialization(original, PreImportNormalizedCsvChunkResult)

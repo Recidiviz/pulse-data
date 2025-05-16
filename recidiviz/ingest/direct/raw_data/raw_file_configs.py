@@ -733,12 +733,16 @@ class DirectIngestRawFileConfig:
     # file id in the operations database.
     is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
 
-    # The maximum number of unparseable bytes we will allow this raw file to have before
-    # we throw. In general, we expect this value to be None (i.e. we don't allow
-    # unparseable bytes); however, in certain situations, states have not been able to
+    # The maximum number of unparseable bytes we will allow this raw file to have in a single
+    # 100 mb sample before we throw. In general, we expect this value to be None (i.e. we
+    # don't allow unparseable bytes); however, in certain situations, states have not been able to
     # fix unparseable bytes in their dbs so we need to be able to clean them out of files
-    # automatically during raw data import.
-    max_num_unparseable_bytes: Optional[int] = attr.ib(
+    # automatically during raw data import. It's per chunk as this is the most un-parseable
+    # bytes that we'll allow a ~100 mB sample of the raw file have. In practice, we don't
+    # need to worry about being super precise with the number of un-parseable bytes as
+    # we are mainly concerned with enforcing a reasonable ceiling (like less than 10k)
+    # than we are with strictly monitoring the number of bytes
+    max_num_unparseable_bytes_per_chunk: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
@@ -1253,8 +1257,8 @@ class DirectIngestRawFileConfig:
             file_config_dict.pop_optional("is_chunked_file", bool) or False
         )
 
-        max_num_unparseable_bytes = file_config_dict.pop_optional(
-            "max_num_unparseable_bytes", int
+        max_num_unparseable_bytes_per_chunk = file_config_dict.pop_optional(
+            "max_num_unparseable_bytes_per_chunk", int
         )
 
         if len(file_config_dict) > 0:
@@ -1309,7 +1313,7 @@ class DirectIngestRawFileConfig:
                 if import_blocking_validation_exemptions is not None
                 else default_import_blocking_validation_exemptions
             ),
-            max_num_unparseable_bytes=max_num_unparseable_bytes,
+            max_num_unparseable_bytes_per_chunk=max_num_unparseable_bytes_per_chunk,
         )
 
 

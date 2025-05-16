@@ -1710,13 +1710,13 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual(
             region_config.raw_file_configs[
                 "tagMoreBasicData"
-            ].max_num_unparseable_bytes,
+            ].max_num_unparseable_bytes_per_chunk,
             10,
         )
         self.assertEqual(
             region_config.raw_file_configs[
                 "tagColumnRenamed"
-            ].max_num_unparseable_bytes,
+            ].max_num_unparseable_bytes_per_chunk,
             None,
         )
 

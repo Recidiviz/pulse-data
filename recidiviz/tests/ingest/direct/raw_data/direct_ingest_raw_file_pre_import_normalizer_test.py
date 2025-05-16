@@ -336,7 +336,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             encoding="WINDOWS-1252",
             custom_line_terminator="‡\n",
             separator="†",
-            max_num_unparseable_bytes=0,
+            max_num_unparseable_bytes_per_chunk=0,
         )
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
@@ -359,7 +359,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             encoding="WINDOWS-1252",
             custom_line_terminator="‡",
             separator="†",
-            max_num_unparseable_bytes=3,
+            max_num_unparseable_bytes_per_chunk=3,
         )
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
@@ -375,16 +375,9 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         # the three ? marks are replacement chars for un-parse-able bytes
         expected_output = '"i was","wondering","if"\n"you could",",,decode",",,,the following:"\n"á?","æ","Ö"\n"ì??","ÿ","÷"\n'
 
-        result = self.run_local_test(
+        self.run_local_test(
             WINDOWS_FILE_CUSTOM_DELIM_TERMINATOR_UNPARSEABLE, chunk, expected_output
         )
-
-        assert len(result.byte_decoding_errors) == 3
-        assert result.byte_decoding_errors == [
-            "'charmap' codec can't decode byte 0x9d in position 57: character maps to <undefined>",
-            "'charmap' codec can't decode byte 0x9d in position 64: character maps to <undefined>",
-            "'charmap' codec can't decode byte 0x9d in position 65: character maps to <undefined>",
-        ]
 
     def test_normalization_replace_bytes_too_many(self) -> None:
         windows_config = attr.evolve(
@@ -392,7 +385,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             encoding="WINDOWS-1252",
             custom_line_terminator="‡",
             separator="†",
-            max_num_unparseable_bytes=2,
+            max_num_unparseable_bytes_per_chunk=2,
         )
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 

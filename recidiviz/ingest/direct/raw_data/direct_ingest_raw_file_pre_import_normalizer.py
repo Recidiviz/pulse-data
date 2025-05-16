@@ -19,7 +19,7 @@ import csv
 import io
 import logging
 from types import ModuleType
-from typing import IO, Callable, Optional, Union
+from typing import IO, Optional, Union
 
 from recidiviz.cloud_storage.bytes_chunk_reader import BytesChunkReader
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -40,7 +40,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizedCsvChunkResult,
     RequiresPreImportNormalizationFileChunk,
 )
-from recidiviz.utils.encoding import register_unique_error_handler
+from recidiviz.utils.encoding import register_unique_unicode_error_handler
 
 # See #28586 for bandwidth testing that lead to this default
 DEFAULT_READ_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
@@ -90,21 +90,26 @@ class DirectIngestRawFilePreImportNormalizer:
         )
 
     @staticmethod
-    def _get_errors_mode_and_counter(
+    def _get_errors_handler_name(
         max_unparseable_bytes: int | None,
         chunk: RequiresPreImportNormalizationFileChunk,
-    ) -> tuple[str, Callable[[], list[str]]]:
+    ) -> str:
+        """Returns a unicode error handler name that has been globally registered with
+        codec. If |max_unparseable_bytes| is None, we return the built-in 'strict' error
+        handler name, which will throw on any unicode errors. If |max_unparseable_bytes|
+        is an int, we will register a globally unique handler name that will catch up
+        to |max_unparseable_bytes| errors before throwing.
+        """
         if max_unparseable_bytes is None:
-            return "strict", lambda: []
+            return "strict"
 
-        handler_name = f"{chunk.path.uri()}--{chunk.chunk_boundary.chunk_num}"
         handler = LimitedErrorReplacementHandler(
             max_number_of_errors=max_unparseable_bytes
         )
+        handler_name = f"{chunk.path.uri()}--{chunk.chunk_boundary.chunk_num}"
+        register_unique_unicode_error_handler(name=handler_name, handler=handler)
 
-        register_unique_error_handler(name=handler_name, handler=handler)
-
-        return handler_name, handler.get_exceptions
+        return handler_name
 
     def output_path_for_chunk(
         self, chunk: RequiresPreImportNormalizationFileChunk
@@ -133,8 +138,8 @@ class DirectIngestRawFilePreImportNormalizer:
         path_parts = filename_parts_from_path(chunk.path)
         config = self._region_config.raw_file_configs[path_parts.file_tag]
         output_path = self.output_path_for_chunk(chunk)
-        errors_mode, error_counter = self._get_errors_mode_and_counter(
-            config.max_num_unparseable_bytes, chunk
+        errors_handler_name = self._get_errors_handler_name(
+            config.max_num_unparseable_bytes_per_chunk, chunk
         )
 
         logging.info(
@@ -163,7 +168,7 @@ class DirectIngestRawFilePreImportNormalizer:
             text_reader = io.TextIOWrapper(
                 verifiable_reader,
                 encoding=config.encoding,
-                errors=errors_mode,
+                errors=errors_handler_name,
             )
 
             output_reader: Union[IO, ReadOnlyCsvNormalizingStream]
@@ -198,5 +203,4 @@ class DirectIngestRawFilePreImportNormalizer:
             output_file_path=output_path,
             chunk_boundary=chunk.chunk_boundary,
             crc32c=verifiable_reader.get_crc32c_as_int(),
-            byte_decoding_errors=error_counter(),
         )

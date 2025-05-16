@@ -189,8 +189,8 @@ class RawDataConfigWriter:
                 raw_file_config.custom_line_terminator
             ).strip("'")
             config += f'custom_line_terminator: "{custom_line_terminator_for_yaml}"\n'
-        if raw_file_config.max_num_unparseable_bytes is not None:
-            config += f"max_num_unparseable_bytes: {raw_file_config.max_num_unparseable_bytes}\n"
+        if raw_file_config.max_num_unparseable_bytes_per_chunk is not None:
+            config += f"max_num_unparseable_bytes_per_chunk: {raw_file_config.max_num_unparseable_bytes_per_chunk}\n"
         if raw_file_config.update_cadence != default_update_cadence:
             config += f"update_cadence: {raw_file_config.update_cadence.value}\n"
         if raw_file_config.is_code_file:

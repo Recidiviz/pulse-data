@@ -16,4 +16,4 @@ columns:
     description: |-
       column 6 description
 custom_line_terminator: "\n"
-max_num_unparseable_bytes: 10
+max_num_unparseable_bytes_per_chunk: 10

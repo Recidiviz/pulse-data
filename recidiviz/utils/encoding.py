@@ -29,11 +29,11 @@ def to_python_standard(encoding: str) -> str:
     return codecs.lookup(encoding).name
 
 
-def register_unique_error_handler(
+def register_unique_unicode_error_handler(
     *, name: str, handler: Callable[[UnicodeError], tuple[str | bytes, int]]
 ) -> None:
-    """Registers an encoding/decoding error handler, ensuring that there is not already
-    a handler with that name.
+    """Registers a global encoding/decoding error handler, first ensuring that there is
+    not already another global handler with the same name.
     """
     try:
         dupe_handler = codecs.lookup(name)

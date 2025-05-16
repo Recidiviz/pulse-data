@@ -253,8 +253,8 @@
       "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
       "type": "boolean"
     },
-    "max_num_unparseable_bytes": {
-      "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
+    "max_num_unparseable_bytes_per_chunk": {
+      "description": "The maximum number of unparseable bytes we will allow this raw file to have in a single 100 mb sample before we throw. In general, we expect this value to be None (i.e. we don't allow unparseable bytes); however, in certain situations, states have not been able to fix unparseable bytes in their dbs so we need to be able to clean them out of files automatically during raw data import. It's per chunk as this is the most un-parseable bytes that we'll allow a ~100 mB sample of the raw file have. In practice, we don't need to worry about being super precise with the number of un-parseable bytes as we are mainly concerned with enforcing a reasonable ceiling (like less than 10k) than we are with strictly monitoring the number of bytes",
       "type": "integer"
     },
     "import_blocking_validation_exemptions": {

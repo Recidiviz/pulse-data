@@ -44,8 +44,10 @@ def get_replacement_char(encoding: str, replacement_override: bytes | None) -> s
 
 class LimitedErrorReplacementHandler:
     """Class for limiting the number of errors seen for a particular input stream,
-    replacing all unparseable bytes with the specified |replace_char| (defaults to ascii
-    question mark or )"""
+    replacing all unparseable bytes with the specified |replace_char| (defaults to the
+    utf replacement char if supported by the provided encoding, otherwise will use the
+    ascii question mark)
+    """
 
     def __init__(
         self, max_number_of_errors: int, replace_char: bytes | None = None
