@@ -54,8 +54,6 @@ split_path AS (
         END AS state_code,
         SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts
     FROM `{project_id}.export_archives.outliers_supervision_officer_outlier_status_archive`
-    -- exclude temp files we may have inadvertently archived
-    WHERE _FILE_NAME NOT LIKE "%/staging/%"
 
     UNION ALL
 
@@ -80,14 +78,14 @@ split_path AS (
         END AS state_code,
         SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts
     FROM `{project_id}.export_archives.insights_supervision_officer_outlier_status_archive`
-    -- exclude temp files we may have inadvertently archived
-    WHERE _FILE_NAME NOT LIKE "%/staging/%"
 )
 , archives_with_date AS (
     SELECT DISTINCT
         split_path.* EXCEPT (path_parts),
         DATE(path_parts[SAFE_OFFSET(1)]) AS export_date
     FROM split_path
+    -- exclude temp files we may have inadvertently archived
+    WHERE ARRAY_LENGTH(path_parts) = 4
 )
 SELECT * EXCEPT (is_surfaced_category_type),
 CASE
