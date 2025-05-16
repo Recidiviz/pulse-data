@@ -2338,6 +2338,6 @@ def test_validate_all_raw_yaml_no_valid_primary_keys() -> None:
             ):
                 raise ValueError(
                     f"[state_code={region_code.upper()}][file_tag={file_tag}]: Cannot set "
-                    "`no_valid_primary_keys=True` if `always_historical_export=False`. If this file is "
-                    "always historical, set `always_historical_export=True`."
+                    "`no_valid_primary_keys=True` if `export_lookback_window` is not 'FULL_HISTORICAL_LOOKBACK'. If this file is "
+                    "always historical, set `export_lookback_window=FULL_HISTORICAL_LOOKBACK`."
                 )
