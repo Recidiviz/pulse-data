@@ -65,7 +65,11 @@ class LimitedErrorReplacementHandler:
         if not isinstance(err, UnicodeDecodeError):
             raise ValueError(f"{self} is only configured to handle decode errors")
 
-        logging.info(str(err))
+        logging.info(
+            "\t Found unparseable byte [%s], replacing with [%s]",
+            str(err),
+            get_replacement_char(err.encoding, self._replace_char),
+        )
         self.exceptions.append(str(err))
 
         if len(self.exceptions) > self._max_number_of_errors:

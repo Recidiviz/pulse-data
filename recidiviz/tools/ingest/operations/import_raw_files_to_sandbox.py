@@ -370,6 +370,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
     known_args = parse_arguments()
     with local_project_id_override(known_args.project_id):
         do_sandbox_raw_file_import(
