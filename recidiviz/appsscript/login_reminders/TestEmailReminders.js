@@ -60,6 +60,38 @@ function testRunSupervisorQuery() {
   testQuery_(SUPERVISOR_QUERY);
 }
 
+/**
+ * Test to see if user login info outputs correctly
+ */
+function testGetUserLoginInfo() {
+  const authToken = getAuth0Token();
+  const emails = ["ryan@recidiviz.org", "kirtana@recidiviz.org"];
+  const userLoginInfo = getUserLoginInfo(emails, authToken);
+
+  if (typeof userLoginInfo !== "object") {
+    throw new Error("User login info is not returning an object");
+  }
+
+  if (Object.keys(userLoginInfo).length != emails.length) {
+    throw new Error("Length of user login info is incorrect");
+  }
+
+  // Checking keys and values of userLoginInfo
+  for (const [email, lastLogin] of Object.entries(userLoginInfo)) {
+    if (!emails.includes(email)) {
+      throw new Error(
+        "The user login info keys (" + emails + ") are not valid"
+      );
+    }
+    if (!(lastLogin instanceof Date)) {
+      throw new Error(
+        "User login info values (" + lastLogin + ") are not dates"
+      );
+    }
+  }
+  console.log("Successfully fetched login information:", userLoginInfo);
+}
+
 // =============================================================================
 // Private functions, indicated by the underscore at the end of the name, will not
 // show up in the Apps Script UI.

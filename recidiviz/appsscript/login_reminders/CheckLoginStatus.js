@@ -24,23 +24,28 @@
  * MOST RECENT login timestamp (as of when this script was run) to the sheet.
  *
  * Prints a summary of how many users logged in after email send.
+ * @return {Array} statements holds login summaries for each sheet
  */
 function checkLoginStatus() {
   const authToken = getAuth0Token();
-
+  const statements = [];
   // The first two sheets returned by getSheets() are the leftmost in viewing order.
   // We assume these were the most recently added by sending email reminders
   const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(0, 2);
+  // Adding all the login summaries to statements array
   for (const sheet of sheets) {
     console.log(`Getting login statuses for sheet "${sheet.getName()}"`);
-    writeLoginStatusToSheet_(sheet, authToken);
+    statements.push(writeLoginStatusToSheet_(sheet, authToken));
   }
+  return statements;
 }
 
 /**
  * Private function for writing login status to a particular spreadsheet.
  * @param {Spreadsheet} sheet the spreadsheet we'd like to write to
  * @param {string} authToken  an auth0 Management API Token
+ * @return {string} loginSummary a summary of how many users logged in after
+ * receiving the email reminder
  */
 function writeLoginStatusToSheet_(sheet, authToken) {
   // Ignoring the first row, get all the emails and email sent timestamps,
@@ -89,7 +94,11 @@ function writeLoginStatusToSheet_(sheet, authToken) {
   sheet
     .getRange(1, colToWrite)
     .setValue(`Most Recent Login as of ${formattedToday}`);
+
   const numEmailsSent = emailData.getNumRows();
+
   const loginSummary = `As of ${formattedToday}, ${loginsAfterEmailSent} out of ${numEmailsSent} emailed users in "${sheet.getName()}" had logged in after the reminder email was sent to them.`;
   console.log(loginSummary);
+
+  return loginSummary;
 }

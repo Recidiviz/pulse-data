@@ -360,6 +360,7 @@ function onOpen() {
     .createMenu("Send Emails")
     .addItem("Send line staff emails", "sendLinestaffEmailRemindersMenuItem")
     .addItem("Send supervisor emails", "sendSupervisorEmailRemindersMenuItem")
+    .addItem("Check login status", "checkLoginStatusMenuItem")
     .addToUi();
 }
 
@@ -386,6 +387,31 @@ function sendSupervisorEmailRemindersMenuItem() {
   if (confirmation) {
     sendSupervisorEmailReminders_();
     sheet.alert("Supervisor emails sent successfully!");
+  }
+}
+
+/**
+ * Menu item for checking login status
+ */
+function checkLoginStatusMenuItem() {
+  const sheetUI = SpreadsheetApp.getUi();
+  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(0, 2);
+
+  // Confirms with user if these are the two sheets they want to check login status for
+  const response = sheetUI.alert(
+    "Checking the login status for the leftmost two sheets.",
+    `The sheets are ${sheets[0].getName()} and ${sheets[1].getName()}. \n Do you wish to proceed?`,
+    sheetUI.ButtonSet.YES_NO
+  );
+
+  if (response === sheetUI.Button.YES) {
+    // checkLoginStatus returns the login summaries
+    const statements = checkLoginStatus();
+    sheetUI.alert(
+      "Checked login status successfully!\n" + statements.join(" \n")
+    );
+  } else {
+    sheetUI.alert("Move the two sheets you want to check to the left");
   }
 }
 
