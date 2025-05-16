@@ -72,6 +72,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
+from recidiviz.utils.types import assert_type
 
 
 class SplitByPreImportNormalizationTest(TestCase):
@@ -961,14 +962,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                         path=GcsfsFilePath.from_absolute_path(
                             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
                         ),
-                    ),
-                    RawGCSFileMetadata(
-                        gcs_file_id=3,
-                        file_id=2,
-                        path=GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_2.csv"
-                        ),
-                    ),
+                    )
                 ],
                 update_datetime=datetime.datetime(
                     2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
@@ -983,19 +977,26 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 ),
                 temporary_file_paths=[
                     GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_1.csv"),
-                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_2.csv"),
                 ],
-                error_msg="yike!",
+                error_msg="yike 1!",
             ),
             RawFileProcessingError(
                 original_file_path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_2.csv"
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
                 ),
                 temporary_file_paths=[
-                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_2_1.csv"),
-                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_2_2.csv"),
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_2.csv"),
                 ],
-                error_msg="yike!",
+                error_msg="yike 2!",
+            ),
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
+                ),
+                temporary_file_paths=[
+                    GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_3.csv"),
+                ],
+                error_msg="yike 3!",
             ),
         ]
 
@@ -1016,6 +1017,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
             file_imports[2].import_status
             == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
+        assert "yike 1!" in assert_type(file_imports[2].error_message, str)
+        assert "yike 2!" in assert_type(file_imports[2].error_message, str)
+        assert "yike 3!" in assert_type(file_imports[2].error_message, str)
 
     def test_build_file_imports_for_errors_processing_pruning_propagated(
         self,

@@ -18,6 +18,7 @@
 import concurrent.futures
 import logging
 from collections import deque
+from itertools import groupby
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from airflow.decorators import task
@@ -480,8 +481,6 @@ def _build_file_imports_for_errors(
 ) -> Dict[int, RawFileImport]:
     """Builds RawFileImport objects for all errors seen during the import process"""
 
-    # TODO(#34937) add logic to better coalesce if we have multiple failures for a single
-    # file_id -- should we just append??
     failed_file_imports: Dict[int, RawFileImport] = {}
 
     # --- simple case: append_errors and load_and_prep_errors have file_id -------------
@@ -514,18 +513,26 @@ def _build_file_imports_for_errors(
         for gcs_metadata in metadata.gcs_files
     }
 
-    for processing_error in processing_errors:
-        bq_metadata_for_error = path_to_bq_metadata[processing_error.original_file_path]
+    # because we split files up during the pre-import normalization stage, it's possible
+    # that we could have more than one error per input path
+    for failing_file_path, processing_errors_for_path_iter in groupby(
+        sorted(processing_errors, key=lambda x: x.original_file_path),
+        key=lambda x: x.original_file_path,
+    ):
+        processing_errors_for_path = list(processing_errors_for_path_iter)
+        bq_metadata_for_error = path_to_bq_metadata[failing_file_path]
         file_id = assert_type(bq_metadata_for_error.file_id, int)
         failed_file_imports[file_id] = RawFileImport(
             file_id=file_id,
-            import_status=processing_error.error_type,
+            import_status=processing_errors_for_path[0].error_type,
             historical_diffs_active=_historical_diffs_active_for_tag(
                 raw_region_config,
                 raw_data_instance,
-                processing_error.parts.file_tag,
+                processing_errors_for_path[0].parts.file_tag,
             ),
-            error_message=processing_error.error_msg,
+            error_message="\n\n".join(
+                error.error_msg for error in processing_errors_for_path
+            ),
         )
 
     return failed_file_imports
