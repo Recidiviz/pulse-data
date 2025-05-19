@@ -115,7 +115,11 @@ SELECT
   pp.PERSONFIRSTNAME as ra_first_name,
   pp.PERSONMIDDLENAME as ra_middle_name,
   pp.PERSONSUFFIX as ra_suffix,
-  IF(pp.PERSONDATEOFBIRTH = "1000-01-01", NULL, DATE(pp.PERSONDATEOFBIRTH)) as ra_dob,
+  IF(
+    DATE(pp.PERSONDATEOFBIRTH) < "1900-01-01" OR DATE(pp.PERSONDATEOFBIRTH) > CURRENT_DATE("US/Eastern"),
+    NULL,
+    DATE(pp.PERSONDATEOFBIRTH)
+  ) AS ra_dob,
   -- The DOB is flagged as approximate if APPROXDOB = Y. If this is null, the DOB is not flagged as approximate.
   IFNULL(pp.APPROXDOB,"N") = "Y" as ra_dob_is_approx,
   pp.PERSONRACE as ra_race,
