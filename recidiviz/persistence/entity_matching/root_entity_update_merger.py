@@ -33,6 +33,7 @@ from recidiviz.persistence.entity.base_entity import (
     EntityT,
     EnumEntity,
     ExternalIdEntity,
+    ExternalIdEntityT,
     HasExternalIdEntity,
     HasExternalIdEntityT,
     RootEntity,
@@ -254,6 +255,10 @@ class RootEntityUpdateMerger:
                     all_children = self._merge_has_external_id_entity_children(
                         old_children, new_or_updated_children
                     )
+                elif issubclass(child_cls, ExternalIdEntity):
+                    all_children = self._merge_external_id_entity_children(
+                        old_children, new_or_updated_children
+                    )
                 else:
                     key_fn: Callable[[Any], str]
                     if issubclass(child_cls, EnumEntity):
@@ -262,8 +267,6 @@ class RootEntityUpdateMerger:
                             return enum_entity_key(entity)
 
                         key_fn = _enum_entity_key
-                    elif issubclass(child_cls, ExternalIdEntity):
-                        key_fn = external_id_key
                     elif issubclass(child_cls, StatePersonAlias):
                         key_fn = state_person_alias_key
                     elif issubclass(child_cls, StatePersonAddressPeriod):
@@ -310,21 +313,110 @@ class RootEntityUpdateMerger:
         key_fn: Callable[[EntityT], str],
     ) -> List[EntityT]:
         """Given two lists of leaf node entities of the same type, returns a merged
-        single list that applies updates. Any children with the same |key_fn| result
-        will be merged together.
+        single list that applies updates. Any entity in `new_or_updated_children` with
+        the same |key_fn| result as an entity in `old_children` will replace it in the
+        merged list.
         """
         new_keys = _to_set_assert_no_dupes(key_fn(e) for e in new_or_updated_children)
         _to_set_assert_no_dupes(key_fn(e) for e in old_children)
         return [
             *new_or_updated_children,
+            *[e for e in old_children if key_fn(e) not in new_keys],
+        ]
+
+    def _merge_external_id_entity_children(
+        self,
+        old_children: List[ExternalIdEntityT],
+        new_or_updated_children: List[ExternalIdEntityT],
+    ) -> List[ExternalIdEntityT]:
+        """Given two lists of ExternalIdEntity entities of the same type, returns a
+        merged single list that applies updates. Any external ids with the same |key_fn|
+        result will be merged together. When merging, if optional fields are nonnull on
+        either entity, we always take the nonnull value. If multiple have conflicting
+        nonnull values, we throw.
+        """
+        old_ids_by_key = defaultdict(list)
+        for eid in old_children:
+            old_ids_by_key[external_id_key(eid)].append(eid)
+
+        new_ids_by_key = defaultdict(list)
+        for eid in new_or_updated_children:
+            new_ids_by_key[external_id_key(eid)].append(eid)
+
+        # First collect children with no match between new and old
+        merged_children = [
             *[
-                e
-                for e in old_children
-                # If the key matches a key in the new children, that means this old
-                # entity is identical, and we exclude it to avoid duplicates.
-                if key_fn(e) not in new_keys
+                one(ids_with_key)
+                for key, ids_with_key in new_ids_by_key.items()
+                if key not in old_ids_by_key
+            ],
+            *[
+                one(ids_with_key)
+                for key, ids_with_key in old_ids_by_key.items()
+                if key not in new_ids_by_key
             ],
         ]
+
+        # Next, merge
+        keys_with_match = set(old_ids_by_key).intersection(new_ids_by_key)
+        for key in keys_with_match:
+            merged_eid = self._merge_matched_external_ids(
+                one(old_ids_by_key[key]), one(new_ids_by_key[key])
+            )
+            merged_children.append(merged_eid)
+        return merged_children
+
+    def _merge_matched_external_ids(
+        self,
+        old_external_id: ExternalIdEntityT,
+        new_or_updated_external_id: ExternalIdEntityT,
+    ) -> ExternalIdEntityT:
+        """Merges the two matched (same key function value) external ids into a single
+        entity.
+
+        When merging, if optional fields are nonnull on either entity, we always take
+        the nonnull value. If multiple have conflicting nonnull values, we throw.
+        """
+
+        old_key = external_id_key(old_external_id)
+        new_key = external_id_key(new_or_updated_external_id)
+        if new_key != old_key:
+            raise ValueError(
+                f"This function should never be called for external ids with different "
+                f"keys. Found {old_key} and {new_key}."
+            )
+
+        key_fields = {"external_id", "id_type"}
+
+        for child_field in self._flat_fields_to_merge(new_or_updated_external_id):
+            old_field_value = old_external_id.get_field(child_field)
+            new_field_value = new_or_updated_external_id.get_field(child_field)
+
+            if old_field_value == new_field_value:
+                # No need to update, fields already equal
+                continue
+
+            if child_field in key_fields:
+                raise ValueError(
+                    f"Found two external id entities with the same key ([{old_key}] "
+                    f"and [{new_key}]) with different {child_field} values. This "
+                    f"should never happen."
+                )
+
+            if old_field_value is not None and new_field_value is not None:
+                raise ValueError(
+                    f"Merging field [{child_field}] with two conflicting nonnull "
+                    f"values: [{old_field_value}] != [{new_field_value}]. For ids with "
+                    f"key: {new_key}."
+                )
+
+            nonnull_value = one(
+                field_value
+                for field_value in [old_field_value, new_field_value]
+                if field_value is not None
+            )
+            old_external_id.set_field(child_field, nonnull_value)
+        return old_external_id
 
     def _merge_has_external_id_entity_children(
         self,

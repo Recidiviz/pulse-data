@@ -965,6 +965,143 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             expected_result=expected_result, result=result
         )
 
+    def test_merge_people_same_external_id_str_different_type(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[
+                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+            ],
+        )
+        entity_updates = make_person(
+            external_ids=[
+                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_2")
+            ],
+        )
+
+        expected_result = attr.evolve(
+            previous_root_entity,
+            external_ids=[
+                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_2"),
+            ],
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_exact_match_except_id_active_dates(self) -> None:
+        external_id = _EXTERNAL_ID_ENTITY_1
+        external_id_with_update_dates = attr.evolve(
+            external_id, id_active_from_datetime=datetime.datetime(2020, 1, 1)
+        )
+
+        previous_root_entity = make_person(
+            external_ids=[external_id_with_update_dates],
+        )
+        entity_updates = make_person(
+            external_ids=[external_id],
+        )
+
+        # Expect no change since there is no new info in the updates
+        expected_result = attr.evolve(previous_root_entity)
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_exact_match_except_id_active_dates_reverse_order(
+        self,
+    ) -> None:
+        external_id = _EXTERNAL_ID_ENTITY_1
+        external_id_with_update_dates = attr.evolve(
+            external_id, id_active_from_datetime=datetime.datetime(2020, 1, 1)
+        )
+
+        previous_root_entity = make_person(
+            external_ids=[external_id],
+        )
+        entity_updates = make_person(
+            external_ids=[external_id_with_update_dates],
+        )
+
+        # Expect no change since there is no new info in the updates
+        expected_result = attr.evolve(previous_root_entity)
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_conflicting_external_id_date_values(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[
+                make_person_external_id(
+                    external_id="ID_1",
+                    id_type="ID_TYPE_1",
+                    id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                )
+            ],
+        )
+        entity_updates = make_person(
+            external_ids=[
+                make_person_external_id(
+                    external_id="ID_1",
+                    id_type="ID_TYPE_1",
+                    id_active_from_datetime=datetime.datetime(2020, 2, 2),
+                )
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Error merging children of type \[StatePersonExternalId\]"
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=previous_root_entity,
+                root_entity_updates=entity_updates,
+            )
+
+    def test_merge_people_conflicting_is_current_display_values(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[
+                make_person_external_id(
+                    external_id="ID_1",
+                    id_type="ID_TYPE_1",
+                    is_current_display_id_for_type=True,
+                )
+            ],
+        )
+        entity_updates = make_person(
+            external_ids=[
+                make_person_external_id(
+                    external_id="ID_1",
+                    id_type="ID_TYPE_1",
+                    is_current_display_id_for_type=False,
+                )
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Error merging children of type \[StatePersonExternalId\]"
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=previous_root_entity,
+                root_entity_updates=entity_updates,
+            )
+
     def test_merge_people_complex_exact_match(self) -> None:
         previous_root_entity = generate_full_graph_state_person(
             set_back_edges=False,
