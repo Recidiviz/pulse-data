@@ -180,6 +180,8 @@ def gcloud_storage_rsync_airflow_command(
     additional_options = [
         # Sync subdirectories
         "--recursive",
+        # Ignore mtime of files and use checksums to determine if files are different
+        "--checksums-only",
         # Delete files that are no longer in the source manifest
         "--delete-unmatched-destination-objects",
         # airflow_monitoring.py is managed by Cloud Composer, do not delete it

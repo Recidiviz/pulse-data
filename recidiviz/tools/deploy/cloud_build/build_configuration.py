@@ -171,7 +171,8 @@ def create_deployment_build_api_obj(
             build_step_for_shell_command(
                 id_="Copy Git source to shared volume",
                 name=BUILDER_GCLOUD,
-                command="cp -r /workspace/recidiviz/* /app/recidiviz",
+                # Keep file metadata (such as modified time) when copying files by using -p
+                command="cp -pr /workspace/recidiviz/* /app/recidiviz",
                 volumes=[RECIDIVIZ_SOURCE_VOLUME],
             )
         )
