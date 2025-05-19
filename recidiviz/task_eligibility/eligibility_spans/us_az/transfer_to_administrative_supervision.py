@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
     oras_risk_level_is_medium_or_lower,
+    risk_release_assessment_is_completed,
     risk_release_assessment_level_is_minimum,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -66,6 +67,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
         ),
+        # 1.3 Has completed initial intake and needs assessment
+        risk_release_assessment_is_completed.VIEW_BUILDER,
         # 1.4 Not classified as homeless in their home release plan
         # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         not_homeless_in_release_plan.VIEW_BUILDER,

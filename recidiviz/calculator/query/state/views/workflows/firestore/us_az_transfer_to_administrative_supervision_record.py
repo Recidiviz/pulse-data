@@ -42,7 +42,6 @@ WITH eligible_and_almost_eligible AS (
     id_type="'US_AZ_PERSON_ID'",
     eligible_and_almost_eligible_only=True)}
 )
-# TODO(#41734): Add in side panel notes for needs assessment and initial intake information 
 SELECT
     person_id,
     external_id,
