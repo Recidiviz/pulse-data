@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all transfers to institutional workers status for any person, 
+"""Defines a view that shows all transfers to institutional workers status for any person,
 across all states.
 """
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
@@ -26,15 +26,36 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#34423): Implement completion event
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
+-- Identify all spans when someone is in 309. These could include adjacent spans where
+-- someone is in 309 in two different locations
+WITH in_309_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        in_309
+    FROM
+        `{{project_id}}.sessions.us_ar_non_traditional_bed_sessions_preprocessed_materialized`
+    WHERE in_309
+)
+,
+-- Aggregate adjacent 309 spans to find when someone was transferred to 309 from somewhere
+-- else.
+in_309_spans_collapsed AS (
+    {aggregate_adjacent_spans(
+        table_name="in_309_spans",
+        index_columns=["state_code", "person_id"],
+        attribute=["in_309"],
+        end_date_field_name='end_date_exclusive'
+    )}
+)
 SELECT
     state_code,
     person_id,
     start_date AS completion_event_date,
-FROM
-    `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-LIMIT 0
+FROM in_309_spans_collapsed
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
@@ -42,7 +63,6 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecifi
     completion_event_type=TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

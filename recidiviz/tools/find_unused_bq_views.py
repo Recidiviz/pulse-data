@@ -142,9 +142,6 @@ from recidiviz.calculator.query.state.views.sessions.incarceration_staff_caseloa
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_ar.us_ar_non_traditional_bed_sessions_preprocessed import (
-    US_AR_NON_TRADITIONAL_BED_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
@@ -359,9 +356,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
         "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    US_AR_NON_TRADITIONAL_BED_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: (
-        "Used in AR non-traditional bed analysis notebooks (dallen5 1/15/25)"
     ),
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
