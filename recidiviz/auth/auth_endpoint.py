@@ -649,11 +649,32 @@ def get_auth_endpoint_blueprint(
                 # For each user in Roster who is not ingested, copy over their info
                 # to UserOverride so we don't lose anything by accident. At the same
                 # time, set their upcoming block date for one week in the future.
-                roster_users_to_be_deleted = (
+                roster_user_deletion_criteria = [
+                    Roster.state_code == state_code,
+                    Roster.email_address.not_in(ingested_emails),
+                ]
+
+                roster_users_to_delete = (
                     session.execute(
-                        select(Roster).where(
-                            Roster.state_code == state_code,
-                            Roster.email_address.not_in(ingested_emails),
+                        select(Roster).where(*roster_user_deletion_criteria)
+                    )
+                    .scalars()
+                    .all()
+                )
+
+                # If a user has a facilities role, delete them from Roster but don't
+                # block them. They are still an active user but should not be in Roster
+                # anymore because they are not supervision staff/being ingested through
+                # roster sync
+                facilities_users = (
+                    session.execute(
+                        select(UserOverride.email_address).where(
+                            UserOverride.email_address.in_(
+                                [user.email_address for user in roster_users_to_delete]
+                            ),
+                            func.array_to_string(UserOverride.roles, ", ").ilike(
+                                "%facilities%"
+                            ),
                         )
                     )
                     .scalars()
@@ -663,9 +684,11 @@ def get_auth_endpoint_blueprint(
                 roster_users_as_dicts = [
                     {
                         **user.to_dict(),
-                        "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1),
+                        "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1)
+                        if user.email_address not in facilities_users
+                        else None,
                     }
-                    for user in roster_users_to_be_deleted
+                    for user in roster_users_to_delete
                 ]
 
                 for user in roster_users_as_dicts:
@@ -673,10 +696,8 @@ def get_auth_endpoint_blueprint(
 
                 # Now we can delete the users not in the CSV file from Roster
                 session.execute(
-                    delete(Roster).where(
-                        Roster.state_code == state_code,
-                        Roster.email_address.not_in(ingested_emails),
-                    )
+                    delete(Roster).where(*roster_user_deletion_criteria),
+                    execution_options={"synchronize_session": False},
                 )
 
                 session.commit()

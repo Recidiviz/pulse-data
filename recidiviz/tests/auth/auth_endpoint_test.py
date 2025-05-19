@@ -1115,10 +1115,148 @@ class AuthEndpointTests(TestCase):
         )
         # Non-null fields will be updated in UserOverride with info from Roster and
         # future block date added
+        roster_supervision_staff = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_XX",
+            roles=[SUPERVISION_STAFF],
+            district="",
+            first_name="Supervision Staff",
+            last_name="User",
+        )
+        user_override_supervision_staff = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_XX",
+            district="District A",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_supervision_staff,
+                user_override_supervision_staff,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+            self.assertEqual(
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
+                response.data,
+            )
+            expected: List[Dict[str, Any]] = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "leadership@testdomain.com",
+                    "externalId": None,
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "roles": [LEADERSHIP_ROLE],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
+                    .astimezone(timezone.utc)
+                    .isoformat(),
+                    "district": "District A",
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "featureVariants": {},
+                    "firstName": "Supervision Staff",
+                    "lastName": "User",
+                    "pseudonymizedId": None,
+                    "roles": [SUPERVISION_STAFF],
+                    "routes": {},
+                    "stateCode": "US_XX",
+                    "userHash": _PARAMETER_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blockedOn": None,
+                    "district": "D1",
+                    "emailAddress": "supervision_staff@testdomain.com",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": "pseudo-3706",
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blockedOn": None,
+                    "district": "D2",
+                    "emailAddress": "user@testdomain.com",
+                    "externalId": "98725",
+                    "firstName": "supervision2",
+                    "lastName": "user2",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _USER_HASH,
+                    "pseudonymizedId": "hashed-98725",
+                },
+            ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_keep_facilities_users(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
+        )
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        # User will not be blocked because their user override role is a facilities role
         roster_facilities_staff = generate_fake_rosters(
             email="facilities_staff@testdomain.com",
             region_code="US_XX",
-            roles=[FACILITIES_STAFF],
+            roles=[SUPERVISION_STAFF],
             district="",
             first_name="Facilities",
             last_name="User",
@@ -1126,7 +1264,8 @@ class AuthEndpointTests(TestCase):
         user_override_facilities_staff = generate_fake_user_overrides(
             email="facilities_staff@testdomain.com",
             region_code="US_XX",
-            district="District A",
+            roles=[FACILITIES_STAFF],
+            district="",
         )
         # Create associated default permissions by role
         leadership_default = generate_fake_default_permissions(
@@ -1170,10 +1309,8 @@ class AuthEndpointTests(TestCase):
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
-                    "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
-                    .astimezone(timezone.utc)
-                    .isoformat(),
-                    "district": "District A",
+                    "blockedOn": None,
+                    "district": "",
                     "emailAddress": "facilities_staff@testdomain.com",
                     "externalId": None,
                     "featureVariants": {},
