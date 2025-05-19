@@ -40,7 +40,8 @@ LEFT JOIN {ContactReasonDescription}
     USING(Contact_Reason)
 LEFT JOIN {ContactLocationDescription}
     USING(Contact_Location)
-WHERE UPPER(Deleted_Flag) = "ACTIVE"
+-- These flags mean the contact is not deleted
+WHERE UPPER(Deleted_Flag) IN ("ACTIVE", "0")
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
