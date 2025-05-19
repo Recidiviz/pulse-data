@@ -4,6 +4,9 @@ US_AR:
       Used to pull in visitor data for 309-eligible residents.
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  CODEVALUEDESC:
+    analyst_data.us_ar_resident_approved_visitors_preprocessed: |-
+      Used to pull in visitor data (county code) for 309-eligible residents.
   HOUSINGAREA:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.

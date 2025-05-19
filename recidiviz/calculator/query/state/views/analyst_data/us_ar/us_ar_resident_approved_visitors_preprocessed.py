@@ -69,22 +69,37 @@ addresses AS (
     rp.PARTYID,
     PARTYRELTYPE = "9AA" AS is_physical_address,
     PARTYRELTYPE = "9AB" AS is_mailing_address,
-    TO_JSON(
-      STRUCT(
-        a.STREETNUMBER AS street_number,
-        a.STREETNAME AS street_name,
-        a.STREETTYPE AS street_type,
-        a.SUITENUMBER AS suite_number,
-        a.APARTMENTNUM AS apartment_number,
-        a.POBOX AS po_box,
-        a.CITY AS city,
-        a.STATE AS state,
-        a.ZIPCODE AS zip_code
-      )
-    ) AS address_json
+    TO_JSON(STRUCT(
+      IF (
+        a.POBOX IS NOT NULL,
+        CONCAT("PO Box ", a.POBOX),
+        CONCAT(
+          COALESCE(CONCAT(a.STREETNUMBER, ' '), ''),
+          COALESCE(CONCAT(a.STREETDIRECTION, ' '), ''), 
+          COALESCE(CONCAT(a.STREETNAME, ' '), ''), 
+          COALESCE(a.STREETTYPE, ''),
+          COALESCE(CONCAT(' ', a.SUITENUMBER), CONCAT(' ', a.APARTMENTNUM), '')
+        )
+      ) AS address_line_1,
+      CONCAT(
+        COALESCE(CONCAT(a.CITY, ', '), ''),
+        COALESCE(CONCAT(a.STATE, ' '), ''),
+        COALESCE(NULLIF(a.ZIPCODE, '00000'), '')
+      ) AS address_line_2,
+      COALESCE(
+        CONCAT(
+          NULLIF(county_code.CODEDESCRIPTION, "Other State"),
+           " County"
+        )
+     ) AS county
+    )) AS address_json
   FROM `{project_id}.{us_ar_raw_data_up_to_date_dataset}.RELATEDPARTY_latest` rp
   LEFT JOIN `{project_id}.{us_ar_raw_data_up_to_date_dataset}.ADDRESS_latest` a
     ON RELATEDPARTYID = ADDRESSID
+  LEFT JOIN `{project_id}.us_ar_raw_data_up_to_date_views.CODEVALUEDESC_latest` county_code
+  ON
+    county_code.DATANAME = 'COUNTYCD'
+    AND a.COUNTY = county_code.CODEVALUE
   -- Only use active addresses, which will have no relationship end date.
   WHERE rp.PARTYRELEND IS NULL
     
