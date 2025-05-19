@@ -99,8 +99,9 @@ TASK_CONFIGS: List[TaskConfig] = [
     },
     {
         "type": "usTxTypeAgnosticContact",
-        "table": "meets_type_agnostic_contact_standards_materialized",
+        "table": "needs_type_agnostic_contact_materialized",
         "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
     {
         "type": "usTxInCustodyContact",

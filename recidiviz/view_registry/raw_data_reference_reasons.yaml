@@ -1828,7 +1828,8 @@ US_TX:
     analyst_data.us_tx_contact_cadence_spans: |-
       Used as a reference table to indicate contact cadences. 04/29/2025.
   RECIDIVIZ_REFERENCE_ContactCadenceAgnostic:
-    task_eligibility_criteria_us_tx.meets_type_agnostic_contact_standards: |-
+    task_eligibility_criteria_us_tx.needs_type_agnostic_contact_standard_policy:
+      |-
       Used as a reference table to indicate agnostic contact type cadences. 12/30/2024.
   RECIDIVIZ_REFERENCE_RiskAssessmentCadence:
     task_eligibility_criteria_us_tx.meets_risk_assessment_event_triggers: |-

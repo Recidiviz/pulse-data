@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Defines a criteria view that shows spans of time for which supervision clients
-are compliant with type agnostic contacts
+do not meet standards for type agnostic contacts.
 """
 from google.cloud import bigquery
 
@@ -31,10 +31,10 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_MEETS_TYPE_AGNOSTIC_CONTACT_STANDARDS"
+_CRITERIA_NAME = "US_TX_NEEDS_TYPE_AGNOSTIC_CONTACT_STANDARD_POLICY"
 
 _DESCRIPTION = """Defines a criteria view that shows spans of time for which supervision clients
-meet standards for type agnostic contacts.
+do not meet standards for type agnostic contacts.
 """
 _QUERY_TEMPLATE = f"""
 WITH
@@ -275,18 +275,18 @@ compliance_check AS (
         case_type,
         CASE
             WHEN CAST(SCHEDULED_HOME_REQ AS INT64) <= scheduled_home_count AND CAST(SCHEDULED_HOME_REQ AS INT64) != 0
-                THEN TRUE
+                THEN FALSE
             WHEN CAST(SCHEDULED_FIELD_REQ AS INT64) <= scheduled_field_count AND CAST(SCHEDULED_FIELD_REQ AS INT64) != 0
-                THEN TRUE
+                THEN FALSE
             WHEN CAST(UNSCHEDULED_FIELD_REQ AS INT64) <= unscheduled_field_count AND CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0 
-                THEN TRUE
+                THEN FALSE
             WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) <= unscheduled_home_count AND CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0
-                THEN TRUE
+                THEN FALSE
             WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) <= scheduled_electronic_count AND CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 
-                THEN TRUE
+                THEN FALSE
             WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) <= scheduled_office_count AND CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0  
-                THEN TRUE
-            ELSE FALSE
+                THEN FALSE
+            ELSE TRUE
         END AS meets_criteria,
         TO_JSON(STRUCT(
             scheduled_home_count AS scheduled_home_done,
@@ -325,7 +325,6 @@ finalized_periods AS (
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(meets_criteria AS compliance)) AS reason,
         contact_due_date,
         types_and_amounts_done,
         types_and_amounts_due,
@@ -333,7 +332,7 @@ finalized_periods AS (
         period_type,
         ci.contact_date AS last_contact_date,
         CASE WHEN
-            meets_criteria IS FALSE AND CURRENT_DATE > end_date
+            meets_criteria IS TRUE AND CURRENT_DATE > end_date
             THEN TRUE
             ELSE FALSE
         END AS overdue_flag,
@@ -348,7 +347,19 @@ finalized_periods AS (
     QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, contact_types_accepted, start_date ORDER BY contact_date DESC) = 1
 )
 SELECT 
-  *
+  *,
+  TO_JSON(STRUCT(
+    last_contact_date,
+    contact_due_date,
+    types_and_amounts_due,
+    types_and_amounts_done,
+    period_type,
+    overdue_flag,
+    frequency,
+    contact_types_accepted,
+    supervision_level,
+    case_type
+  )) AS reason,
 FROM finalized_periods
 """
 
