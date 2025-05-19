@@ -132,7 +132,9 @@ resource "google_project_iam_member" "admin_panel_iam" {
     "roles/storage.objectCreator",
     "roles/cloudsql.viewer",
     "roles/pubsub.publisher",
-    "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}"
+    "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}",
+    # Custom role created in recidiviz/tools/deploy/atmos/components/terraform/dag-triggering/main.tf
+    "projects/${var.project_id}/roles/composer.executor",
   ]))
   project = var.project_id
   role    = each.key
