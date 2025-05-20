@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.reference.cleaned_offense_descriptio
 from recidiviz.calculator.query.state.views.reference.completion_event_type_metadata import (
     get_completion_event_metadata_view_builder,
 )
+from recidiviz.calculator.query.state.views.reference.current_physical_residence_address import (
+    CURRENT_PHYSICAL_RESIDENCE_ADDRESS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.current_staff import (
     CURRENT_STAFF_VIEW_BUILDER,
 )
@@ -133,6 +136,7 @@ LOCATION_METADATA_VIEW_BUILDERS = [
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
+    CURRENT_PHYSICAL_RESIDENCE_ADDRESS_VIEW_BUILDER,
     CURRENT_STAFF_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,

@@ -340,6 +340,24 @@ _CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
     ),
 """
 
+_CLIENT_RECORD_PHYSICAL_ADDRESSES_CTE = """
+    physical_addresses AS (
+        SELECT
+            state_code,
+            person_id,
+            full_address AS current_physical_residence_address_unstructured,
+            TO_JSON_STRING(STRUCT(
+                address_line_1,
+                address_line_2,
+                address_city,
+                address_state,
+                address_zip,
+                address_country
+            )) AS current_physical_residence_address_structured
+        FROM  `{project_id}.reference_views.current_physical_residence_address_materialized`
+    ),
+"""
+
 _CLIENT_RECORD_FINES_FEES_INFO_CTE = f"""
     {us_tn_fines_fees_info()}
 """
@@ -935,7 +953,12 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           did.display_person_external_id,
           did.display_person_external_id_type,
           sp.full_name as person_name,
-          sp.current_address as address,
+          # TODO(#42464): Update all frontend references to address to instead reference
+          #  current_physical_residence_address_unstructured and delete this field
+          #  from the client record.
+          pa.current_physical_residence_address_unstructured AS address,
+          pa.current_physical_residence_address_unstructured,
+          pa.current_physical_residence_address_structured,
           SAFE_CAST(ph.phone_number AS INT64) AS phone_number,
           LOWER(ea.email_address) AS email_address,
           sc.supervision_type,
@@ -974,9 +997,13 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         LEFT JOIN fines_fees_payment_info pp
             ON sc.person_id = pp.person_id
         LEFT JOIN case_type ct
-            ON ct.person_id = sc.person_id
+            ON ct.state_code = sc.state_code
+            AND ct.person_id = sc.person_id
         LEFT JOIN metadata m
             ON sc.person_id = m.person_id
+        LEFT JOIN physical_addresses pa
+            ON sc.state_code = pa.state_code
+            AND sc.person_id = pa.person_id
         
     ),
     """
@@ -1001,6 +1028,8 @@ _CLIENTS_CTE = """
             supervision_level,
             supervision_level_start,
             address,
+            current_physical_residence_address_unstructured,
+            current_physical_residence_address_structured,
             phone_number,
             email_address,
             supervision_start_date,
@@ -1055,6 +1084,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SPECIAL_CONDITIONS_CTE}
     {_CLIENT_RECORD_BOARD_CONDITIONS_CTE}
     {_CLIENT_RECORD_EMAIL_ADDRESSES_CTE}
+    {_CLIENT_RECORD_PHYSICAL_ADDRESSES_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
     {_CLIENT_RECORD_ACTIVE_SENTENCES_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
