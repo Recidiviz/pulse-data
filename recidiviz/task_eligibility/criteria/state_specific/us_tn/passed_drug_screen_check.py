@@ -34,7 +34,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.criteria.general.at_least_6_months_since_most_recent_positive_drug_test import (
     VIEW_BUILDER as at_least_6_months_since_most_recent_positive_drug_test_builder,
 )
@@ -54,10 +53,26 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    STRONGR_ASSESSMENT_METADATA_DICT,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_PASSED_DRUG_SCREEN_CHECK"
+
+ASSESSMENT_TYPE_CASE_WHEN = "CASE assessment_type\n"
+
+for assessment_type, metadata_mapping in STRONGR_ASSESSMENT_METADATA_DICT[
+    "ALC_DRUG_NEED_LEVEL"
+].items():
+    ASSESSMENT_TYPE_CASE_WHEN += (
+        f"WHEN '{assessment_type}' "
+        f"THEN NULLIF(REPLACE(JSON_EXTRACT(assessment_metadata, '$.{metadata_mapping}'), '\"', ''),'')\n"
+    )
+
+ASSESSMENT_TYPE_CASE_WHEN += "ELSE NULL\nEND AS alc_drug_need_level"
+
 
 _QUERY_TEMPLATE = f"""
     WITH combine_views AS (
@@ -66,8 +81,8 @@ _QUERY_TEMPLATE = f"""
             person_id,
             assessment_date AS start_date,
             LEAD(assessment_date) OVER(PARTITION BY person_id ORDER BY assessment_date ASC) AS end_date,
-            COALESCE(ALC_DRUG_NEED_LEVEL, 'MISSING') IN ('LOW') AS meets_criteria_low,
-            COALESCE(ALC_DRUG_NEED_LEVEL, 'MISSING') IN ('MOD','HIGH') AS meets_criteria_high,
+            COALESCE(alc_drug_need_level, 'MISSING') IN ('LOW') AS meets_criteria_low,
+            COALESCE(alc_drug_need_level, 'MISSING') IN ('MOD','HIGH') AS meets_criteria_high,
             CAST(NULL AS BOOL) AS meets_criteria_low_1_negative_screen,
             CAST(NULL AS BOOL) AS meets_criteria_low_6_months_since_positive,
             CAST(NULL AS BOOL) AS meets_criteria_high_2_negative_screens,
@@ -80,9 +95,9 @@ _QUERY_TEMPLATE = f"""
         FROM
             (
             SELECT *,
-                REPLACE(JSON_EXTRACT(assessment_metadata, "$.ALCOHOL_DRUG_NEED_LEVEL"), '"','') AS alc_drug_need_level,
+            {ASSESSMENT_TYPE_CASE_WHEN},
             FROM
-                `{{project_id}}.{{normalized_state_dataset}}.state_assessment`
+                `{{project_id}}.sessions.risk_assessment_score_sessions_materialized`
             WHERE
                 state_code = 'US_TN'
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date
@@ -263,7 +278,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=__doc__,
     criteria_dataset=has_at_least_1_negative_drug_test_past_year_builder.dataset_id,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     meets_criteria_default=False,
     reasons_fields=[
         ReasonsField(

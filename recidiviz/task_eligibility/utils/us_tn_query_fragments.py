@@ -94,6 +94,45 @@ STRONG_R2_ASSESSMENT_METADATA_KEYS = [
     "V2_FAMILY_NEED_LEVEL",
     "V2_EDUCATION_EMPLOYMENT_NEED_LEVEL",
 ]
+STRONGR_ASSESSMENT_METADATA_DICT = {
+    "FRIENDS_NEED_LEVEL": {
+        "STRONG_R": "FRIENDS_NEED_LEVEL",
+        "STRONG_R2": "V2_FRIENDS_RESIDENTIAL_NEED_LEVEL",
+    },
+    "ATTITUDE_BEHAVIOR_NEED_LEVEL": {
+        "STRONG_R": "ATTITUDE_BEHAVIOR_NEED_LEVEL",
+        "STRONG_R2": "V2_ATTITUDE_BEHAVIOR_NEED_LEVEL",
+    },
+    "AGGRESSION_NEED_LEVEL": {
+        "STRONG_R": "AGGRESSION_NEED_LEVEL",
+        "STRONG_R2": "V2_AGGRESSION_NEED_LEVEL",
+    },
+    "MENTAL_HEALTH_NEED_LEVEL": {
+        "STRONG_R": "MENTAL_HEALTH_NEED_LEVEL",
+        "STRONG_R2": "V2_MENTAL_HEALTH_NEED_LEVEL",
+    },
+    "ALC_DRUG_NEED_LEVEL": {
+        "STRONG_R": "ALCOHOL_DRUG_NEED_LEVEL",
+        "STRONG_R2": "V2_ALCOHOL_DRUG_NEED_LEVEL",
+    },
+    "RESIDENT_NEED_LEVEL": {
+        "STRONG_R": "RESIDENT_NEED_LEVEL",
+        "STRONG_R2": "V2_FRIENDS_RESIDENTIAL_NEED_LEVEL",
+    },
+    "FAMILY_NEED_LEVEL": {
+        "STRONG_R": "FAMILY_NEED_LEVEL",
+        "STRONG_R2": "V2_FAMILY_NEED_LEVEL",
+    },
+    "EMPLOYMENT_NEED_LEVEL": {
+        "STRONG_R": "EMPLOYMENT_NEED_LEVEL",
+        "STRONG_R2": "V2_EDUCATION_EMPLOYMENT_NEED_LEVEL",
+    },
+    "EDUCATION_NEED_LEVEL": {
+        "STRONG_R": "EDUCATION_NEED_LEVEL",
+        "STRONG_R2": "V2_EDUCATION_EMPLOYMENT_NEED_LEVEL",
+    },
+}
+
 
 # Combines state_supervision_violation_response with state_supervision_violation_response_decision_entry
 # to keep person-date level sanctions. We filter out certain types of decisions that don't result in an impact
