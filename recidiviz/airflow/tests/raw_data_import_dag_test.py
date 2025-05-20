@@ -51,11 +51,13 @@ from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failing_operator_constructor,
-    fake_k8s_operator_for_entrypoint,
-    fake_k8s_operator_with_return_value,
     fake_operator_from_callable,
     fake_operator_with_return_value,
     fake_task_function_with_return_value,
+)
+from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
+    fake_k8s_operator_for_entrypoint,
+    fake_k8s_operator_with_return_value,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -561,46 +563,49 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 )
             ]
 
-            assert import_ready_files == [
-                ImportReadyFile(
-                    file_id=1,
-                    file_tag="tagBasicData",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-25T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=None,
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
-                        )
-                    ],
-                    bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
-                        file_headers=["col1", "col2", "col3"],
-                        raw_file_config=region_raw_file_config.raw_file_configs[
-                            "tagBasicData"
+            assert sorted(import_ready_files, key=lambda x: x.file_id) == sorted(
+                [
+                    ImportReadyFile(
+                        file_id=1,
+                        file_tag="tagBasicData",
+                        update_datetime=datetime.datetime.fromisoformat(
+                            "2024-01-25T16:35:33:617135Z"
+                        ),
+                        pre_import_normalized_file_paths=None,
+                        original_file_paths=[
+                            GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                            )
                         ],
+                        bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                            file_headers=["col1", "col2", "col3"],
+                            raw_file_config=region_raw_file_config.raw_file_configs[
+                                "tagBasicData"
+                            ],
+                        ),
                     ),
-                ),
-                ImportReadyFile(
-                    file_id=2,
-                    file_tag="tagFileConfigHeaders",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-26T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=None,
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
-                        )
-                    ],
-                    bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
-                        file_headers=["col1", "col2", "col3"],
-                        raw_file_config=region_raw_file_config.raw_file_configs[
-                            "tagFileConfigHeaders"
+                    ImportReadyFile(
+                        file_id=2,
+                        file_tag="tagFileConfigHeaders",
+                        update_datetime=datetime.datetime.fromisoformat(
+                            "2024-01-26T16:35:33:617135Z"
+                        ),
+                        pre_import_normalized_file_paths=None,
+                        original_file_paths=[
+                            GcsfsFilePath.from_absolute_path(
+                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
+                            )
                         ],
+                        bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                            file_headers=["col1", "col2", "col3"],
+                            raw_file_config=region_raw_file_config.raw_file_configs[
+                                "tagFileConfigHeaders"
+                            ],
+                        ),
                     ),
-                ),
-            ]
+                ],
+                key=lambda x: x.file_id,
+            )
 
             # --- validate persisted rows in operations db
 

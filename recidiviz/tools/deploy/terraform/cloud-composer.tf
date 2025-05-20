@@ -106,7 +106,7 @@ resource "google_composer_environment" "default_v2" {
         "apache-airflow-providers-github" = "==2.6.2"
         "pygithub"                        = "==2.5.0"
       }
-      image_version = "composer-2.9.7-airflow-2.7.3"
+      image_version = "composer-2.13.1-airflow-2.10.5"
     }
 
     private_environment_config {
