@@ -1878,6 +1878,9 @@ US_UT:
       Used to match case managers to clients in the reentry metric export table.
     reentry.client: |-
       Used to match case managers to clients in the reentry metric export table.
+  crt_case:
+    workflows_views.us_ut_client_metadata: |-
+      Used to display the relevant court case number along with the supervision start and end dates.
   ofndr_tst:
     workflows_views.us_ut_early_termination_from_supervision_request_record: |-
       Used to display latest assessment information in side-panel notes. TODO(#40921) to ingest in assessment_metadata instead.

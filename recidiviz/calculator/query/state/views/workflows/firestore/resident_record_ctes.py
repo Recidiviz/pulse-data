@@ -15,14 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """CTEs used to create resident record query."""
-from typing import List
-
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     nonnull_start_date_clause,
     revert_nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.generate_person_metadata_cte import (
+    generate_person_metadata_cte,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.shared_state_agnostic_ctes import (
     CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
@@ -363,59 +364,6 @@ _RESIDENT_MONTHS_REMAINING_NEEDED_CTE = """
     ),
 """
 
-
-def generate_resident_metadata_cte(states_with_metadata: List[StateCode]) -> str:
-    """
-    Given a list of state codes, generates a CTE that maps from person_id to
-    json-formatted metadata blob when available.
-
-    State-specific metadata is expected to live in `workflows_views.us_xx_resident_metadata`.
-
-    This CTE will take all columns in the state-specific views for each state and pack them
-    into a json blob in the `metadata` column. The state-specific views should only
-    have one entry per person, but this CTE does some deduping to prevent run-time errors.
-
-    When no metadata is found for a person, they do not have an entry in this CTE. Hence,
-    we make sure to set a fallback for the metadata blob to `{}` when joining the
-    rest of the resident record to this CTE.
-    """
-    dedup_clauses = ", ".join(
-        f"""
-        deduped_{state_code.value.lower()}_metadata AS (
-            SELECT *
-            FROM `{{project_id}}.{{workflows_dataset}}.{state_code.value.lower()}_resident_metadata_materialized`
-            QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id) = 1
-        )
-    """
-        for state_code in states_with_metadata
-    )
-
-    metadata_to_json_clauses = "    UNION ALL\n".join(
-        f"""
-        SELECT
-            ic.person_id,
-            TO_JSON_STRING(
-                (SELECT AS STRUCT m.* EXCEPT (person_id), "{state_code.value.upper()}" AS state_code
-                    FROM deduped_{state_code.value.lower()}_metadata m
-                    WHERE ic.person_id = m.person_id)
-            ) as metadata,
-        FROM incarceration_cases_wdates ic
-        INNER JOIN  deduped_{state_code.value.lower()}_metadata
-        USING (person_id)
-        WHERE ic.state_code = "{state_code.value.upper()}"
-    """
-        for state_code in states_with_metadata
-    )
-
-    return f"""
-    metadata AS (
-        WITH {dedup_clauses}
-
-        {metadata_to_json_clauses}
-    ),
-    """
-
-
 _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
     join_residents AS (
         SELECT DISTINCT
@@ -500,7 +448,7 @@ def full_resident_record() -> str:
     {_RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE}
     {_RESIDENT_PORTION_NEEDED_CTE}
     {_RESIDENT_MONTHS_REMAINING_NEEDED_CTE}
-    {generate_resident_metadata_cte(STATES_WITH_RESIDENT_METADATA)}
+    {generate_person_metadata_cte("resident", "incarceration_cases_wdates", STATES_WITH_RESIDENT_METADATA)}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
     {stable_person_external_ids_cte}
     {_RESIDENTS_CTE}

@@ -76,19 +76,6 @@ all_current_spans_with_tab_names AS (
     WHERE is_eligible
 ),
 
-all_current_spans_with_tab_names_and_interstate_compact_in AS (
-    -- Interstate compact in cases
-    SELECT
-        acs.*,
-        IF(slr.supervision_level_raw_text IS NOT NULL, True, False) AS metadata_interstate_compact_in,
-    FROM all_current_spans_with_tab_names acs
-    LEFT JOIN `{{project_id}}.sessions.supervision_level_raw_text_sessions_materialized` slr
-    ON acs.person_id = slr.person_id
-        AND acs.state_code = slr.state_code
-        AND slr.end_date_exclusive IS NULL
-        AND REGEXP_CONTAINS(slr.supervision_level_raw_text, 'COMPACT IN')
-),
-
 case_notes_cte AS (
     -- Latest LS/RNR's score
     SELECT 
@@ -297,8 +284,8 @@ array_case_notes_cte AS (
 )
 
 {opportunity_query_final_select_with_case_notes(
-    from_cte="all_current_spans_with_tab_names_and_interstate_compact_in",
-    additional_columns="metadata_tab_name, metadata_interstate_compact_in",)}
+    from_cte="all_current_spans_with_tab_names",
+    additional_columns="metadata_tab_name",)}
 """
 
 US_UT_EARLY_TERMINATION_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

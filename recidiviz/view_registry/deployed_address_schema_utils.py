@@ -120,6 +120,9 @@ from recidiviz.calculator.query.state.views.workflows.us_me.resident_metadata im
 from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
     US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ut.client_metadata import (
+    US_UT_CLIENT_METADATA_VIEW_BUILDER,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -219,6 +222,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
+        US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
     }
 
     return {

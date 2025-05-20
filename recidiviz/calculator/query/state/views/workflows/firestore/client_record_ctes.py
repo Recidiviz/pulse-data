@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
     STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
     STATES_WITH_NO_INFERRED_OPEN_SPANS,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.generate_person_metadata_cte import (
+    generate_person_metadata_cte,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.shared_state_agnostic_ctes import (
     CLIENT_OR_RESIDENT_RECORD_STABLE_PERSON_EXTERNAL_IDS_CTE_TEMPLATE,
 )
@@ -41,6 +44,7 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
 from recidiviz.calculator.query.state.views.workflows.us_tx.shared_ctes import (
     US_TX_MAX_TERMINATION_DATES,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
@@ -48,6 +52,10 @@ from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
     us_pa_supervision_super_sessions,
 )
 from recidiviz.utils.string import StrictStringFormatter
+
+STATES_WITH_CLIENT_METADATA = [
+    StateCode.US_UT,
+]
 
 STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(
     ["US_CA", "US_OR"], quoted=True
@@ -945,6 +953,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           ff.current_balance,
           pp.last_payment_date,
           pp.last_payment_amount,
+          COALESCE(m.metadata, '{{}}') AS metadata,
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
@@ -955,23 +964,19 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
             FROM `{project_id}.reference_views.product_display_person_external_ids_materialized`
             WHERE system_type = "SUPERVISION"
         ) did
-            ON sc.state_code = did.state_code
-            AND sc.person_id = did.person_id
+            ON sc.person_id = did.person_id
         LEFT JOIN phone_numbers ph
-            ON sc.state_code = ph.state_code
-            AND sc.person_id = ph.person_id
+            ON sc.person_id = ph.person_id
         LEFT JOIN email_addresses ea
-            ON sc.state_code = ea.state_code
-            AND sc.person_id = ea.person_id
+            ON sc.person_id = ea.person_id
         LEFT JOIN fines_fees_balance_info ff
-            ON sc.state_code = ff.state_code
-            AND sc.person_id = ff.person_id
+            ON sc.person_id = ff.person_id
         LEFT JOIN fines_fees_payment_info pp
-            ON sc.state_code = pp.state_code
-            AND sc.person_id = pp.person_id
+            ON sc.person_id = pp.person_id
         LEFT JOIN case_type ct
-            ON ct.state_code = sc.state_code
-            AND ct.person_id = sc.person_id
+            ON ct.person_id = sc.person_id
+        LEFT JOIN metadata m
+            ON sc.person_id = m.person_id
         
     ),
     """
@@ -1010,6 +1015,7 @@ _CLIENTS_CTE = """
             spc.special_conditions_on_current_sentences AS special_conditions,
             bc.board_conditions,
             active_sentences.active_sentences,
+            metadata,
         FROM join_clients c
         LEFT JOIN stable_person_external_ids
             USING (person_id)
@@ -1053,6 +1059,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_ACTIVE_SENTENCES_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
     {_CLIENT_RECORD_INCLUDE_CLIENTS_CTE}
+    {generate_person_metadata_cte("client", "include_clients", STATES_WITH_CLIENT_METADATA)}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
     {_CLIENTS_CTE}
     """
