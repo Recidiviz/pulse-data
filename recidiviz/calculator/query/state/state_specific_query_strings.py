@@ -283,6 +283,8 @@ def state_specific_incarceration_external_id_type(state_code_table_prefix: str) 
           THEN 'US_ID_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_IX'
           THEN 'US_IX_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_MA'
+          THEN 'US_MA_COMMIT_NO'
           WHEN {state_code_table_prefix}.state_code = 'US_ME'
           THEN 'US_ME_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_MI'

@@ -34,6 +34,7 @@ from recidiviz.utils.string import StrictStringFormatter
 STATES_WITH_RESIDENT_METADATA = [
     StateCode.US_AR,
     StateCode.US_AZ,
+    StateCode.US_MA,
     StateCode.US_MO,
     StateCode.US_ME,
     StateCode.US_IX,
@@ -203,7 +204,35 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         USING
             (state_code, person_id)
         WHERE ic.state_code = "US_AZ"
-    ),
+        
+        UNION ALL
+        
+        SELECT
+            state_code,
+            person_id,
+            full_name AS person_name,
+            gender,
+            facility_id,
+            CAST(NULL AS DATE) AS us_tn_facility_admission_date,
+            CAST(NULL AS DATE) AS admission_date,
+            CAST(NULL AS DATE) AS release_date
+        FROM `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` ex
+        JOIN `{{project_id}}.normalized_state.state_person` sp
+            USING(state_code, person_id) 
+        LEFT JOIN 
+            --TODO(#42455): Pull facility_id from incarceration periods instead of this subquery when ingested
+            (
+            SELECT 
+                commit_no AS person_external_id,
+                'US_MA' AS state_code,
+                CUR_INST AS facility_id
+            FROM `{{project_id}}.{{us_ma_raw_data_up_to_date_dataset}}.egt_report_latest`
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_external_id ORDER BY RPT_RUN_DATE DESC, PERIOD_ENDING DESC) = 1
+            )
+            USING(state_code, person_external_id)
+        WHERE state_code = 'US_MA'
+            AND system_type = 'INCARCERATION'
+        ),
 """
 
 _RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""

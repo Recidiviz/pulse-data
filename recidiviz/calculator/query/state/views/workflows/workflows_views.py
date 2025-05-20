@@ -114,6 +114,9 @@ from recidiviz.calculator.query.state.views.workflows.us_az.resident_metadata im
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ma.resident_metadata import (
+    US_MA_RESIDENT_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_me.resident_metadata import (
     US_ME_RESIDENT_METADATA_VIEW_BUILDER,
 )
@@ -168,4 +171,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     MILESTONES_FUNNEL_VIEW_BUILDER,
     US_ME_RESIDENT_METADATA_VIEW_BUILDER,
     WORKFLOWS_CASELOAD_SEARCH_FIELD_BY_STATE_VIEW_BUILDER,
+    US_MA_RESIDENT_METADATA_VIEW_BUILDER,
 ]

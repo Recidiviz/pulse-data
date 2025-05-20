@@ -49,9 +49,6 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.earned_credit_activity import (
-    EARNED_CREDIT_ACTIVITY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -316,9 +313,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
-    ),
-    EARNED_CREDIT_ACTIVITY_VIEW_BUILDER.address: (
-        "Will be used for MA JII tool (Andrew Gaidus 05/14/2025)"
     ),
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"

@@ -111,6 +111,9 @@ from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata im
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ma.resident_metadata import (
+    US_MA_RESIDENT_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_me.resident_metadata import (
     US_ME_RESIDENT_METADATA_VIEW_BUILDER,
 )
@@ -207,6 +210,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address,
         US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER.address,
         US_IX_RESIDENT_METADATA_VIEW_BUILDER.address,
+        US_MA_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_ME_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
         US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address,

@@ -682,6 +682,8 @@ US_MA:
       Used to pull information about credit activity.
     analyst_data.us_ma_projected_dates: |-
       Used to pull information about projected dates and credit earnings.
+    workflows_views.resident_record: |-
+      Pulls in facility ID prior to incarceration periods being ingested. See TODO(#42455) to ingest this data.
 US_ME:
   CIS_1000_CURRENT_STATUS:
     task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-

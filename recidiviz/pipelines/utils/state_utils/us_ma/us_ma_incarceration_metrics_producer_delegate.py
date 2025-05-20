@@ -17,6 +17,10 @@
 """Contains US_MA implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 from typing import Optional
 
+from recidiviz.common.constants.state.external_id_types import (
+    US_MA_COMMIT_NO,
+    US_MA_SID,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -28,7 +32,8 @@ class UsMaIncarcerationMetricsProducerDelegate(
     """US_MA implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> str:
-        return "US_MA_SID"
+        return US_MA_COMMIT_NO
 
+    # TODO(#42589): Deprecate US_MA_SID
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_MA_COMMIT_NO"
+        return US_MA_SID
