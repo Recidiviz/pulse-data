@@ -27,7 +27,6 @@ from airflow.utils.task_group import TaskGroup
 from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_START_TASK_NAME,
     create_branch_end,
-    get_branch_leaf_tasks,
     get_branch_root_tasks,
 )
 from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
@@ -64,15 +63,9 @@ def create_branching_by_key(
     If no branches are selected, the end node will fail.
     """
     branch_roots_by_key: Dict[str, List[BaseOperator]] = {}
-    branch_leaves_by_key: Dict[str, List[BaseOperator]] = {}
 
     for key, branch in branch_by_key.items():
-        # TODO(#33716) Airflow does not allow branch operators to branch to TaskGroups,
-        # only Tasks in Airflow versions pre-2.10.
-        # so for now, instead of branching to the TaskGroup, we can branch to the roots
-        # of the task group and then from the leaves to branch_end
         branch_roots_by_key[key] = get_branch_root_tasks(branch)
-        branch_leaves_by_key[key] = get_branch_leaf_tasks(branch)
 
     @task.branch(task_id=BRANCH_START_TASK_NAME)
     def get_selected_branch_ids(dag_run: Optional[DagRun] = None) -> Any:
@@ -99,9 +92,7 @@ def create_branching_by_key(
     branch_start: BranchPythonOperator = get_selected_branch_ids()
     branch_end: PythonOperator = create_branch_end()
 
-    for key in branch_by_key:
-        for branch_root in branch_roots_by_key[key]:
-            branch_start >> branch_root
-        for branch_leaf in branch_leaves_by_key[key]:
-            branch_leaf >> branch_end
+    for key, branch in branch_by_key.items():
+        branch_start >> branch
+        branch >> branch_end
     return branch_start, branch_end
