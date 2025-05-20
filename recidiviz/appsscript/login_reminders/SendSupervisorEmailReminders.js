@@ -16,17 +16,6 @@
 // =============================================================================
 /* Apps Script for sending email reminders to supervisors. */
 
-const SUPERVISOR_SETTINGS = {
-  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
-
-  EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
-  FEEDBACK_EMAIL: "feedback@recidiviz.org",
-
-  EMAIL_SUBJECT: "Recidiviz missed you this month!",
-  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
-  RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
-};
-
 const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
 
 // =============================================================================
@@ -57,7 +46,7 @@ function sendSupervisorEmailReminders_() {
   sendAllLoginReminders(
     true,
     SUPERVISOR_QUERY,
-    SUPERVISOR_SETTINGS,
+    EMAIL_SETTINGS,
     SUPERVISOR_INCLUDED_STATES
   );
 }

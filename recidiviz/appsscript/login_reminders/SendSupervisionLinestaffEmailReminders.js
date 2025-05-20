@@ -14,31 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-/* Apps Script for sending email reminders to line staff. */
+/* Apps Script for sending email reminders to supervision line staff. */
 
-const LINESTAFF_SETTINGS = {
-  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
-
-  EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
-  FEEDBACK_EMAIL: "feedback@recidiviz.org",
-
-  EMAIL_SUBJECT: "Recidiviz missed you this month!",
-  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
-  RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
-};
-
-const LINESTAFF_INCLUDED_STATES = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
+const SUPERVISION_LINESTAFF_INCLUDED_STATES = [
+  "US_IX",
+  "US_ME",
+  "US_MI",
+  "US_ND",
+  "US_TN",
+];
 
 // =============================================================================
 
 // comma-separated list of state codes as strings
-const linestaffStatesForQuery = LINESTAFF_INCLUDED_STATES.map(
-  (s) => `"${s}"`
-).join();
+const supervisionLinestaffStatesForQuery =
+  SUPERVISION_LINESTAFF_INCLUDED_STATES.map((s) => `"${s}"`).join();
 
 // Note: If the order of the columns in the query changes, we must
 // account for the change within EmailReminderHelpers.
-const LINESTAFF_QUERY = `SELECT 
+const SUPERVISION_LINESTAFF_QUERY = `SELECT 
   state_code,
   officer_id,
   officer_name,
@@ -50,7 +44,7 @@ FROM
   \`recidiviz-123.user_metrics.workflows_supervision_user_available_actions_materialized\`
 
 WHERE
-  state_code IN (${linestaffStatesForQuery})
+  state_code IN (${supervisionLinestaffStatesForQuery})
 GROUP BY
   state_code, 
   officer_id, 
@@ -59,11 +53,11 @@ GROUP BY
   location_name, 
   total_opportunities`;
 
-function sendLinestaffEmailReminders_() {
+function sendSupervisionLinestaffEmailReminders_() {
   sendAllLoginReminders(
     false,
-    LINESTAFF_QUERY,
-    LINESTAFF_SETTINGS,
-    LINESTAFF_INCLUDED_STATES
+    SUPERVISION_LINESTAFF_QUERY,
+    EMAIL_SETTINGS,
+    SUPERVISION_LINESTAFF_INCLUDED_STATES
   );
 }

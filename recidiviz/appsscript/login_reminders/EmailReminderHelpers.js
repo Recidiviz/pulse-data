@@ -20,12 +20,24 @@
  * You should not run any of these functions from the Apps Script UI.
  *
  * The functions in this file handle all the steps of sending email reminders, namely:
- * 1. query BigQuery for all linestaff or supervisors in the states we'd like to email
+ * 1. query BigQuery for all supervision linestaff or supervisors in the states we'd like to email
  * 2. query Auth0 to see which emails from step 1 haven't logged in this month
  * 3. for each user, assemble an email body with copy depending on the user's state,
  *    number of outstanding opportunities, etc. (from BQ)
  * 4. send emails using AppsScript's GmailApp connection
  */
+
+// Global EMAIL_SETTINGS that applies to all types of email reminders
+const EMAIL_SETTINGS = {
+  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
+
+  EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
+  FEEDBACK_EMAIL: "feedback@recidiviz.org",
+
+  EMAIL_SUBJECT: "Recidiviz missed you this month!",
+  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
+  RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
+};
 
 /**
  * @param {string} stateCode the state of the person being emailed
@@ -177,7 +189,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
 /**
  * Send login reminder emails to all people surfaced by the provided query.
  * Creates a new sheet within the connected sheet to track what emails were sent.
- * @param {boolean} isSupervisors true if emailing supervisors, false if linestaff
+ * @param {boolean} isSupervisors true if emailing supervisors, false if supervision linestaff
  * @param {string} query a BigQuery query collecting all people eligible for emails.
  *                       the expected shape of results is
  *                       [state code, external id, name, email, district,
@@ -187,7 +199,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
  *                          EMAIL_SUBJECT, EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
  */
 function sendAllLoginReminders(isSupervisors, query, settings, stateCodes) {
-  const users = isSupervisors ? "Supervisors" : "Linestaff";
+  const users = isSupervisors ? "Supervisors" : "Supervision Linestaff";
 
   console.log(`Getting list of all ${users} from BigQuery...`);
   const data = RecidivizHelpers.runQuery(query);
@@ -358,21 +370,24 @@ function onOpen() {
   const sheet = SpreadsheetApp.getUi();
   sheet
     .createMenu("Send Emails")
-    .addItem("Send line staff emails", "sendLinestaffEmailRemindersMenuItem")
+    .addItem(
+      "Send supervision line staff emails",
+      "sendSupervisionLinestaffEmailRemindersMenuItem"
+    )
     .addItem("Send supervisor emails", "sendSupervisorEmailRemindersMenuItem")
     .addItem("Check login status", "checkLoginStatusMenuItem")
     .addToUi();
 }
 
 /**
- * Menu item for sending line staff emails
+ * Menu item for sending supervision line staff emails
  */
-function sendLinestaffEmailRemindersMenuItem() {
+function sendSupervisionLinestaffEmailRemindersMenuItem() {
   const sheet = SpreadsheetApp.getUi();
   const confirmation = getConfirmation(sheet, false);
 
   if (confirmation) {
-    sendLinestaffEmailReminders_();
+    sendSupervisionLinestaffEmailReminders_();
     sheet.alert("Line staff emails sent successfully!");
   }
 }

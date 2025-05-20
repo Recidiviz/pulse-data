@@ -34,11 +34,11 @@ const BASE_INFO = {
   opportunities: TEST_NUM_OPPORTUNITIES,
 };
 
-function testSendLinestaffEmails() {
+function testSendSupervisionLinestaffEmails() {
   sendTestEmails_(
-    "[TESTING] Sent Emails to Linestaff",
-    LINESTAFF_SETTINGS,
-    LINESTAFF_INCLUDED_STATES,
+    "[TESTING] Sent Emails to Supervision Linestaff",
+    EMAIL_SETTINGS,
+    SUPERVISION_LINESTAFF_INCLUDED_STATES,
     false
   );
 }
@@ -46,14 +46,14 @@ function testSendLinestaffEmails() {
 function testSendSupervisorEmails() {
   sendTestEmails_(
     "[TESTING] Sent Emails to Supervisors",
-    SUPERVISOR_SETTINGS,
+    EMAIL_SETTINGS,
     SUPERVISOR_INCLUDED_STATES,
     true
   );
 }
 
-function testRunLinestaffQuery() {
-  testQuery_(LINESTAFF_QUERY);
+function testRunSupervisionLinestaffQuery() {
+  testQuery_(SUPERVISION_LINESTAFF_QUERY);
 }
 
 function testRunSupervisorQuery() {
