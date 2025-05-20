@@ -20,7 +20,7 @@ someone in TN is eligible for an annual reclassification.
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population_state_prison,
+    incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     incarceration_assessment_completed,
@@ -49,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="ANNUAL_RECLASSIFICATION_REVIEW",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
+    candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         at_least_12_months_since_latest_assessment.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,

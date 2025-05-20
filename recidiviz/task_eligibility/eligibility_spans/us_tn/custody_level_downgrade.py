@@ -19,7 +19,7 @@ someone in TN is eligible for a custody level downgrade.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population_state_prison,
+    incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
@@ -45,7 +45,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="CUSTODY_LEVEL_DOWNGRADE",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
+    candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         latest_caf_assessment_not_override.VIEW_BUILDER,
         ineligible_for_annual_reclassification.VIEW_BUILDER,

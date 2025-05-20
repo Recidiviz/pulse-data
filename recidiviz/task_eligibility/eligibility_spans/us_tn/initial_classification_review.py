@@ -19,7 +19,7 @@ someone in TN is eligible for an initial classification.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    incarceration_population_state_prison,
+    incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     incarceration_intake_assessment_completed,
@@ -51,7 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="INITIAL_CLASSIFICATION_REVIEW",
     description=_DESCRIPTION,
-    candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
+    candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,
         custody_level_is_not_max.VIEW_BUILDER,
