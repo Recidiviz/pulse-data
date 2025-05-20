@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains US_MA implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
-
+from recidiviz.common.constants.state.external_id_types import US_MA_COMMIT_NO
 from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
 )
@@ -28,4 +28,4 @@ class UsMaRecidivismMetricsProducerDelegate(
     """US_MA implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> str:
-        return "US_MA_SID"
+        return US_MA_COMMIT_NO

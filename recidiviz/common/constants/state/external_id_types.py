@@ -51,8 +51,6 @@ US_IX_STAFF_ID = "US_IX_STAFF_ID"
 US_IX_STAFF_EMAIL = "US_IX_STAFF_EMAIL"
 
 
-# Unique identifier, only in primary table
-US_MA_SID = "US_MA_SID"
 # DOC's internal tracking number. Individuals may receive different numbers based on varying scenarios: subsequent incarcerations, serving consecutive sentences, transitioning from M/F facility to F/M, awaiting trial THEN being sentenced among a few.
 US_MA_COMMIT_NO = "US_MA_COMMIT_NO"
 
