@@ -56,7 +56,6 @@ facility_locs AS (
     'BG', -- Inmate Hospital
     'I4', -- Other State Law Enforc. Agency
     'B6', -- County Jail Contract Condition
-    'C9', -- ACC Interstate Compact
     'B7', -- County 309-In Jail
     'BC', -- City Jail Backup
     'E3', -- Police Department
@@ -64,7 +63,6 @@ facility_locs AS (
     'U1', -- US Marshal
     'BA', -- City Jail Contract Conditional
     'U5', -- Federal Prison
-    'C1', -- ACC Director's Office
     'BB', -- City 309-In Jail
     'BE', -- Ark Non-DOC Facility
     'C5', -- ACC Institu. Parole Services
@@ -79,7 +77,12 @@ facility_locs AS (
     inconsistency is handled in the following CTE.
     */
     'E1'  -- County Jail/Sheriff
-  )
+  ) AND 
+  -- The location with PARTYID 0141218, named 'Unknown Location', has a type of I4 ('Other State Law Enforc. Agency'),
+  -- which is included in the list of allowed facility types specified above. However, this
+  -- particular location is only ever used when someone is discharged to another state, and
+  -- therefore does not indicate the person actually being incarcerated in this 'location'.
+  PARTYID != '0141218' 
 ),
 
 -- STEP I. IDENTIFYING TRANSITIONS
