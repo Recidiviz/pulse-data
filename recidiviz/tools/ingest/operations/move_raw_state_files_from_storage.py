@@ -278,7 +278,8 @@ class MoveFilesFromStorageController:
         If in dry_run mode, merely logs the move, but does not execute it.
         """
         original_file_path, new_file_path = original_and_new_file_paths
-        gsutil_mv(original_file_path, new_file_path)
+        if not self.dry_run:
+            gsutil_mv(original_file_path, new_file_path)
 
     def build_moved_file_path(self, original_file_path: str) -> str:
         """Builds the desired path for the given file in the ingest bucket, changing the
