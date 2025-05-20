@@ -226,7 +226,11 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_client_success"] = {
     "client": {
         "birthdate": "1989-01-01",
         "clientId": "111",
-        "clientName": {"givenNames": "Harry", "middleNames": None, "surname": "Potter"},
+        "clientName": {
+            "givenNames": "Harry",
+            "middleNames": "James",
+            "surname": "Potter",
+        },
         "gender": "MALE",
         "pseudonymizedClientId": "clienthash1",
         "raceOrEthnicity": "WHITE",
@@ -240,7 +244,11 @@ snapshots[
     "client": {
         "birthdate": "1989-01-01",
         "clientId": "111",
-        "clientName": {"givenNames": "Harry", "middleNames": None, "surname": "Potter"},
+        "clientName": {
+            "givenNames": "Harry",
+            "middleNames": "James",
+            "surname": "Potter",
+        },
         "gender": "MALE",
         "pseudonymizedClientId": "clienthash1",
         "raceOrEthnicity": "WHITE",
@@ -251,12 +259,12 @@ snapshots[
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_no_name"] = {
     "events": [
         {
-            "attributes": None,
+            "attributes": {"code": "NON-TECHNICAL", "description": None},
             "clientId": "555",
             "clientName": None,
             "eventDate": "2023-04-01",
             "metricId": "violations",
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash5",
             "stateCode": "US_XX",
         },
@@ -285,7 +293,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_succe
             },
             "eventDate": "2023-05-01",
             "metricId": "violations",
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash1",
             "stateCode": "US_XX",
         }
@@ -306,7 +314,7 @@ snapshots[
             },
             "eventDate": "2023-05-01",
             "metricId": "violations",
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash1",
             "stateCode": "US_XX",
         }
@@ -329,7 +337,7 @@ snapshots[
             "metricId": "incarceration_starts_and_inferred",
             "officerAssignmentDate": "2022-01-01",
             "officerAssignmentEndDate": "2023-06-01",
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash2",
             "stateCode": "US_XX",
             "supervisionEndDate": "2023-06-01",
@@ -355,7 +363,7 @@ snapshots[
             "metricId": "incarceration_starts_and_inferred",
             "officerAssignmentDate": "2022-01-01",
             "officerAssignmentEndDate": "2023-06-01",
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash2",
             "stateCode": "US_XX",
             "supervisionEndDate": "2023-06-01",
@@ -381,7 +389,7 @@ snapshots[
             "metricId": "absconsions_bench_warrants",
             "officerAssignmentDate": None,
             "officerAssignmentEndDate": None,
-            "officerId": "03",
+            "officerId": "OFFICER3",
             "pseudonymizedClientId": "clienthash4",
             "stateCode": "US_XX",
             "supervisionEndDate": None,

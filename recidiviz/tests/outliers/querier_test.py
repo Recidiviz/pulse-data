@@ -639,7 +639,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         with SessionFactory.using_database(self.insights_database_key) as session:
             new_outlier_status_dict = {
                 "state_code": "US_XX",
-                "officer_id": "09",
+                "officer_id": "OFFICER9",
                 "metric_id": "incarceration_starts_and_inferred",
                 "period": "YEAR",
                 "end_date": "2023-05-01",
@@ -1339,14 +1339,18 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_supervision_officers_by_external_ids(self) -> None:
 
         TEST_CASES = [
-            ("one valid external_id", ["01"], ["01"]),
+            ("one valid external_id", ["OFFICER1"], ["OFFICER1"]),
             ("one invalid external_id", ["some_bad_external_id"], []),
             (
                 "one invalid external_id, one valid_external_id",
-                ["02", "bad_external_id"],
-                ["02"],
+                ["OFFICER2", "bad_external_id"],
+                ["OFFICER2"],
             ),
-            ("all valid external_ids", ["01", "02"], ["01", "02"]),
+            (
+                "all valid external_ids",
+                ["OFFICER1", "OFFICER2"],
+                ["OFFICER1", "OFFICER2"],
+            ),
             ("no external_id", [], []),
         ]
 
@@ -1386,7 +1390,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
                     expected_external_ids, [o.external_id for o in actual]
                 )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1405,7 +1409,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_officer_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1428,7 +1432,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_supervisor_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1454,7 +1458,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_supervisor_can_access_all_supervisors_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1479,7 +1483,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_supervisor_with_no_officers_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1501,7 +1505,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_missing_latest_metric_value_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1523,7 +1527,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_missing_previous_metric_value_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1545,7 +1549,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_missing_previous_date_vitals_metric"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1565,7 +1569,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="test_get_no_vitals_metrics"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
@@ -1587,7 +1591,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             result, name="get_missing_latest_date_and_value_vitals_metric"
         )
 
-    @freezegun.freeze_time(datetime(2024, 12, 1, 0, 0, 0, 0))
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
