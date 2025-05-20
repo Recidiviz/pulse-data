@@ -14,4 +14,7 @@ updates:
     open-pull-requests-limit: 10
     allow:
       - dependency-type: "production" # Only updates production dependencies
-
+    labels:
+      - dependencies
+      - javascript
+      - "Type: Dependency Upgrade"
