@@ -75,6 +75,9 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_data_dependency,
 )
 from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
+from recidiviz.tools.ingest.testing.ingest_fixture_creation.fixture_pruning import (
+    prune_fixture_data,
+)
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.pull_root_entity_filtered_raw_data_for_ingest_view import (
     build_root_entity_filtered_raw_data_queries,
 )
@@ -345,6 +348,17 @@ def main() -> None:
             )
             df = query_job.result().to_dataframe()
             df = randomize_fixture_data(df, dependency.raw_file_config)
+            if not dependency.is_code_file:
+                if dependency.raw_file_config.no_valid_primary_keys:
+                    prompt_for_confirmation(
+                        f"\n\nThe raw data table {dependency.file_tag} does not have a primary key. "
+                        "This fixture will use ALL columns in the config to drop duplicate rows across file_ids. "
+                        "Are you sure you want to continue?"
+                    )
+                    pks = [c.name for c in dependency.raw_file_config.current_columns]
+                else:
+                    pks = dependency.raw_file_config.primary_key_cols
+                df = prune_fixture_data(df, pks)
             fixture.write_dataframe_into_fixture_file(
                 df,
                 args.test_characteristic,
