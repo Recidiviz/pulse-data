@@ -200,7 +200,8 @@ WHERE state_code = 'US_KY'
     def test_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks inverted state-agnostic criteria"""
         criteria = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=CRITERIA_2_STATE_AGNOSTIC
+            sub_criteria=CRITERIA_2_STATE_AGNOSTIC,
+            invert_meets_criteria_default=False,
         )
         self.assertEqual(criteria.criteria_name, "NOT_ANOTHER_STATE_AGNOSTIC_CRITERIA")
 
@@ -212,7 +213,7 @@ WHERE state_code = 'US_KY'
             ),
         )
 
-        self.assertEqual(criteria.meets_criteria_default, True)
+        self.assertEqual(criteria.meets_criteria_default, False)
 
         # Check that the reasons fields are the same between the inverted criteria view builder and the sub-criteria
         self.assertEqual(criteria.reasons_fields, criteria.sub_criteria.reasons_fields)
@@ -422,3 +423,12 @@ FROM _aggregated
 """
 
         self.assertEqual(expected_query_template, criteria.view_query_template)
+
+    def test_inverted_criteria_state_specific_non_inverted_meets_default(self) -> None:
+        """Checks inverted state-specific criteria with non-inverted meets_criteria_default"""
+        criteria = StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=CRITERIA_3_STATE_SPECIFIC,
+            invert_meets_criteria_default=False,
+        )
+
+        self.assertEqual(criteria.meets_criteria_default, True)

@@ -47,13 +47,20 @@ def inverted_criteria_description(sub_criteria: TaskCriteriaBigQueryViewBuilder)
     )
 
 
-def inverted_meets_criteria_default(
+def _inverted_meets_criteria_default(
     sub_criteria: TaskCriteriaBigQueryViewBuilder,
+    invert_meets_criteria_default: bool,
 ) -> bool:
     """Returns the opposite of the meets_criteria_default value for the
-    sub-criteria.
+    sub-criteria if invert_meets_criteria_default is True, otherwise returns
+    the same meets_criteria_default value as the sub-criteria.
     """
-    return not sub_criteria.meets_criteria_default
+    meets_criteria_default = (
+        not sub_criteria.meets_criteria_default
+        if invert_meets_criteria_default
+        else sub_criteria.meets_criteria_default
+    )
+    return meets_criteria_default
 
 
 def inverted_criteria_query_template(
@@ -86,16 +93,25 @@ class StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
 ):
     """Criteria view builder that represents an inversion of a state-agnostic
     sub-criteria (NOT boolean logic).
+    The invert_meets_criteria_default option can be set to False if the inverted criteria
+    should use the same meets_criteria_default value as the sub-criteria for any eligibility
+    spans without an overlapping inverted criteria span.
     """
 
     def __init__(
-        self, *, sub_criteria: StateAgnosticTaskCriteriaBigQueryViewBuilder
+        self,
+        *,
+        sub_criteria: StateAgnosticTaskCriteriaBigQueryViewBuilder,
+        invert_meets_criteria_default: bool = True,
     ) -> None:
+        meets_criteria_default = _inverted_meets_criteria_default(
+            sub_criteria, invert_meets_criteria_default
+        )
         super().__init__(
             criteria_name=inverted_criteria_name(sub_criteria),
             description=inverted_criteria_description(sub_criteria),
             reasons_fields=sub_criteria.reasons_fields,
-            meets_criteria_default=inverted_meets_criteria_default(sub_criteria),
+            meets_criteria_default=meets_criteria_default,
             criteria_spans_query_template=inverted_criteria_query_template(
                 sub_criteria
             ),
@@ -113,16 +129,25 @@ class StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
 ):
     """Criteria view builder that represents an inversion of a state-specific
     sub-criteria (NOT boolean logic).
+    The invert_meets_criteria_default option can be set to False if the inverted criteria
+    should use the same meets_criteria_default value as the sub-criteria for any eligibility
+    spans without an overlapping inverted criteria span.
     """
 
     def __init__(
-        self, *, sub_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder
+        self,
+        *,
+        sub_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder,
+        invert_meets_criteria_default: bool = True,
     ) -> None:
+        meets_criteria_default = _inverted_meets_criteria_default(
+            sub_criteria, invert_meets_criteria_default
+        )
         super().__init__(
             criteria_name=inverted_criteria_name(sub_criteria),
             description=inverted_criteria_description(sub_criteria),
             reasons_fields=sub_criteria.reasons_fields,
-            meets_criteria_default=inverted_meets_criteria_default(sub_criteria),
+            meets_criteria_default=meets_criteria_default,
             criteria_spans_query_template=inverted_criteria_query_template(
                 sub_criteria
             ),
