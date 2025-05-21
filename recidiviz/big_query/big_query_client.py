@@ -85,10 +85,8 @@ from recidiviz.cloud_resources.resource_label import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.encoding import BIG_QUERY_UTF_8
 from recidiviz.common.google_cloud.utils import format_resource_label
-from recidiviz.common.retry_predicate import (
-    default_retry_with_additions,
-    ssl_error_retry_predicate,
-)
+from recidiviz.common.retry import default_bq_retry_with_additions
+from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import in_test
 from recidiviz.utils.size import total_size
@@ -179,7 +177,7 @@ CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
 )
 
 # Stored in a constant to test
-UPDATE_DESCRIPTION_RETRY = default_retry_with_additions(
+UPDATE_DESCRIPTION_RETRY = default_bq_retry_with_additions(
     google_api_exceptions.PreconditionFailed
 )
 

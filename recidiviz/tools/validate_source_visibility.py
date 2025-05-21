@@ -456,6 +456,7 @@ def main() -> int:
         "recidiviz.common.constants",
         "recidiviz.common.google_cloud_attr_validators",
         "recidiviz.common.google_cloud.utils",
+        "recidiviz.common.retry",
         "recidiviz.common.retry_predicate",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.metric_big_query_view",

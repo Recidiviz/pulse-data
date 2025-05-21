@@ -16,11 +16,9 @@
 # =============================================================================
 """Google API Retry Predicate to be used throughout the Recidiviz codebase."""
 
-from typing import Type
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.api_core import retry
-from google.cloud.bigquery.retry import DEFAULT_RETRY
 from requests.exceptions import SSLError
 
 EXCEEDED_RATE_LIMITS_ERROR_MESSAGE: str = "Exceeded rate limits:"
@@ -34,21 +32,6 @@ def google_api_retry_predicate(
         retry.if_transient_error(exception)
         or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
         or retry.if_exception_type(exceptions.BadGateway)(exception)
-    )
-
-
-def default_retry_with_additions(
-    *additional_exceptions_for_retry: Type[Exception],
-) -> retry.Retry:
-    """
-    Considers the given exceptions to the default retry predicate.
-    Note the default retry predicate != retry.if_transient_error
-    """
-    additional_retry = retry.if_exception_type(*additional_exceptions_for_retry)
-    return retry.Retry(
-        # pylint: disable=protected-access
-        predicate=lambda exc: additional_retry(exc) or DEFAULT_RETRY._predicate(exc),
-        timeout=DEFAULT_RETRY.timeout,
     )
 
 

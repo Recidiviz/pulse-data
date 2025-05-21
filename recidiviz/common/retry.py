@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Callable, Optional, Self, Type
+"""Google API Retry classes and builders"""
 
-def if_transient_error(exception: Exception) -> Callable[[Exception], bool]: ...
-def if_exception_type(
-    *exception_types: Type[Exception],
-) -> Callable[[Exception], bool]: ...
+from typing import Type
 
-class Retry:
-    def __init__(
-        self,
-        predicate: Callable[[Exception], Callable[[Exception], bool]],
-        initial: float = ...,
-        maximum: float = ...,
-        multiplier: float = ...,
-        timeout: Optional[float] = ...,
-    ) -> None: ...
-    def __call__(
-        self, func: Callable, on_error: Optional[Callable] = None
-    ) -> Callable: ...
-    def with_predicate(self, predicate: Callable[[Exception], bool]) -> Self: ...
+from google.api_core import retry
+from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+
+def default_bq_retry_with_additions(
+    *additional_exceptions_for_retry: Type[Exception],
+) -> retry.Retry:
+    """Adds |additional_exceptions_for_retry| to the default BigQuery retry."""
+    additional_retry = retry.if_exception_type(*additional_exceptions_for_retry)
+    return DEFAULT_RETRY.with_predicate(
+        predicate=lambda exc: additional_retry(exc)
+        or DEFAULT_RETRY._predicate(exc),  # pylint: disable=protected-access
+    )
