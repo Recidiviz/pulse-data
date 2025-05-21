@@ -93,7 +93,11 @@ FROM
 LEFT JOIN
   staff s
 ON
-  ( psi.surname = s.surname
+  -- JOIN on the external id if it is available, otherwise try a fuzzy matching to the name
+  -- This is because only cases after April 2025 have the PSI_WRITER_OFFICER_ID field set
+  ( psi.PSI_WRITER_OFFICER_ID IS NOT NULL
+    AND psi.PSI_WRITER_OFFICER_ID = s.external_id )
+  OR ( psi.surname = s.surname
     -- This catches instances where PSI full name = MITCH and ingested full name = MITCHEL
     -- as well as instances where PSI full name = VALERIE and ingested full name = VAL
     -- We may want to work in similar protections for surname?

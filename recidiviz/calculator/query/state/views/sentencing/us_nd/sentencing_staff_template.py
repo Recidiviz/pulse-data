@@ -26,20 +26,17 @@ ND's PSI data:
 
 US_ND_SENTENCING_STAFF_TEMPLATE = """
 WITH
+  -- Select their names and external_ids because only cases after April 2025 have the PSI_WRITER_OFFICER_ID field set
   psi AS (
   SELECT
-    DISTINCT UPPER(TRIM(SPLIT(NAME, ',')[
+    UPPER(TRIM(SPLIT(NAME, ',')[
       OFFSET
         (0)])) AS surname,
     UPPER(TRIM(SPLIT(NAME, ',')[SAFE_OFFSET(1)])) AS given_names,
-    STRING_AGG(CONCAT('"',REPLACE(RecId, ',', ''),'"'), ','
-    ORDER BY
-      CAST(RecDate AS DATETIME)) AS case_ids,
+    PSI_WRITER_OFFICER_ID AS external_id,
+    REPLACE(RecId, ',', '') AS case_id
   FROM
-    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-  GROUP BY
-    surname,
-    given_names),
+    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`),
   staff AS (
   SELECT
     *
@@ -63,20 +60,30 @@ WITH
     rn = 1)
 SELECT
   "US_ND" AS state_code,
-  external_id,
+  s.external_id,
   s.full_name,
   s.email,
-  CONCAT('[', case_ids,']') AS case_ids,
+  CONCAT('[', STRING_AGG(CONCAT('"',case_id,'"'), ','
+    ORDER BY
+      case_id),']') AS case_ids,
   CAST(NULL AS STRING) AS supervisor_id,
 FROM
   psi
 JOIN
   staff s
 ON
-  ( psi.surname = s.surname
+  -- JOIN on the external id if it is available, otherwise try a fuzzy matching to the name
+  ( psi.external_id IS NOT NULL
+    AND psi.external_id = s.external_id )
+  OR ( psi.surname = s.surname
     -- This catches instances where PSI full name = MITCH and ingested full name = MITCHEL
     -- as well as instances where PSI full name = VALERIE and ingested full name = VAL
     -- We may want to work in similar protections for surname?
     AND( psi.given_names LIKE CONCAT(UPPER(s.given_names), '%')
       OR UPPER(s.given_names) LIKE CONCAT(psi.given_names, '%')))
+  -- It's safe to group by all of these because they are all coming from the same row in the staff table anyways and it makes the query simpler
+GROUP BY
+  s.external_id,
+  s.full_name,
+  s.email
 """
