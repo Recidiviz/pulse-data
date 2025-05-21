@@ -55,6 +55,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 STATES_WITH_CLIENT_METADATA = [
     StateCode.US_UT,
+    StateCode.US_NE,
 ]
 
 STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(

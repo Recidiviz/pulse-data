@@ -106,10 +106,10 @@ from recidiviz.calculator.query.state.views.workflows.resident_record_archive im
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
-    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_az.resident_metadata import (
-    US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_AZ_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
@@ -121,10 +121,13 @@ from recidiviz.calculator.query.state.views.workflows.us_me.resident_metadata im
     US_ME_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
-    US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_MO_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_metadata import (
     US_ND_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_ne.client_metadata import (
+    US_NE_CLIENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ut.client_metadata import (
     US_UT_CLIENT_METADATA_VIEW_BUILDER,
@@ -162,18 +165,19 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_SNOOZE_SPANS_VIEW_BUILDER,
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
-    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
-    US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
     WORKFLOWS_USAGE_VIEW_BUILDER,
-    US_IX_RESIDENT_METADATA_VIEW_BUILDER,
-    US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
-    US_ND_RESIDENT_METADATA_VIEW_BUILDER,
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
     CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
     MILESTONES_FUNNEL_VIEW_BUILDER,
-    US_ME_RESIDENT_METADATA_VIEW_BUILDER,
-    US_UT_CLIENT_METADATA_VIEW_BUILDER,
     WORKFLOWS_CASELOAD_SEARCH_FIELD_BY_STATE_VIEW_BUILDER,
+    US_AR_RESIDENT_METADATA_VIEW_BUILDER,
+    US_AZ_RESIDENT_METADATA_VIEW_BUILDER,
+    US_IX_RESIDENT_METADATA_VIEW_BUILDER,
     US_MA_RESIDENT_METADATA_VIEW_BUILDER,
+    US_ME_RESIDENT_METADATA_VIEW_BUILDER,
+    US_MO_RESIDENT_METADATA_VIEW_BUILDER,
+    US_ND_RESIDENT_METADATA_VIEW_BUILDER,
+    US_NE_CLIENT_METADATA_VIEW_BUILDER,
+    US_UT_CLIENT_METADATA_VIEW_BUILDER,
 ]

@@ -106,7 +106,7 @@ from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_pri
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
-    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
@@ -118,7 +118,10 @@ from recidiviz.calculator.query.state.views.workflows.us_me.resident_metadata im
     US_ME_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
-    US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_MO_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_ne.client_metadata import (
+    US_NE_CLIENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ut.client_metadata import (
     US_UT_CLIENT_METADATA_VIEW_BUILDER,
@@ -175,7 +178,7 @@ STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS = {
 
 
 def state_specific_deployed_views_without_state_code_columns(
-    deployed_view_builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder]
+    deployed_view_builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder],
 ) -> set[BigQueryAddress]:
     """Returns the addresses for state-specific views that we do not expect to have a
     state_code column. While it's generally good to add a state_code column to views
@@ -208,7 +211,7 @@ def state_specific_deployed_views_without_state_code_columns(
 
     missing_state_code_col_addresses = {
         *raw_data_views_no_state_code_column,
-        US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER.address,
+        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,
         US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address,
         US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER.address,
@@ -218,8 +221,9 @@ def state_specific_deployed_views_without_state_code_columns(
         US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
         US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address,
         US_MO_PROGRAM_TRACKS_VIEW_BUILDER.address,
-        US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER.address,
+        US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address,
+        US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
@@ -233,7 +237,7 @@ def state_specific_deployed_views_without_state_code_columns(
 
 
 def state_agnostic_deployed_views_without_state_code_column(
-    deployed_view_builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder]
+    deployed_view_builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder],
 ) -> set[BigQueryAddress]:
     """Returns the addresses for state-agnostic views that we do not expect to have a
     state_code column. This list should be added to *very* sparingly - generally, all

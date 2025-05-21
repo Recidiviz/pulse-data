@@ -38,7 +38,7 @@ US_MO_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
     FROM `{project_id}.analyst_data.us_mo_restrictive_housing_record_materialized`
 """
 
-US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_MO_RESIDENT_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=WORKFLOWS_VIEWS_DATASET,
     view_id=US_MO_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_MO_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
@@ -49,4 +49,4 @@ US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER.build_and_print()
+        US_MO_RESIDENT_METADATA_VIEW_BUILDER.build_and_print()
