@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.views.reference.product_person_external_id
     get_product_stable_person_external_id_types_by_state,
 )
 from recidiviz.common.constants.state.external_id_types import (
+    US_CA_DOC,
     US_ND_ELITE,
     US_ND_SID,
     US_NE_ID_NBR,
@@ -252,6 +253,10 @@ class TestProductPersonExternalIdHelpers(unittest.TestCase):
         # PLEASE DO NOT ADD TO THIS EXEMPTIONS LIST WITHOUT TALKING TO DOPPLER / ASKING
         # IN #platform-team.
         known_unstable_stable_ids = {
+            StateCode.US_CA: {
+                StateSystemType.INCARCERATION: US_CA_DOC,
+                StateSystemType.SUPERVISION: US_CA_DOC,
+            },
             StateCode.US_ND: {
                 StateSystemType.INCARCERATION: US_ND_ELITE,
                 StateSystemType.SUPERVISION: US_ND_SID,

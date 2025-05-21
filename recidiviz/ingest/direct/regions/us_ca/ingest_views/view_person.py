@@ -29,18 +29,56 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-  SELECT
-    OffenderId,
-    FirstName,
-    MiddleName,
-    LastName,
-    NameSuffix,
-    Birthday,
-    Sex,
-    Race,
-    Ethnic,
-    AddressType
-  FROM {PersonParole}
+  WITH 
+  -- Pulls all necessary person info. This CTE may return multiple rows per real-world
+  -- person, but should return exactly one row per OffenderId.
+  base_info AS (
+      SELECT
+        OffenderId,
+        Cdcno,
+        FirstName,
+        MiddleName,
+        LastName,
+        NameSuffix,
+        Birthday,
+        Sex,
+        Race,
+        Ethnic,
+        AddressType,
+        LastParoleDate
+      FROM {PersonParole}
+  ),
+  -- Returns one row per Cdcno, with a JSON array containing info about each OffenderId
+  -- associated with that Cdcno. Generally, Cdcno to OffenderId is a 1:1 relationship,
+  -- but there are a handful (3 as of 5/16/2025) of people with multiple different 
+  -- OffenderId.
+  offender_ids_by_cdcno AS (
+    SELECT 
+      Cdcno,
+      TO_JSON_STRING(
+        ARRAY_AGG(STRUCT(OffenderId, LastParoleDate) ORDER BY LastParoleDate DESC, OffenderId)
+      ) AS OffenderIds
+    FROM base_info
+    WHERE Cdcno IS NOT NULL
+    GROUP BY Cdcno
+  )
+
+  SELECT 
+    TO_JSON_STRING([STRUCT(OffenderId, LastParoleDate)]) AS OffenderIds, 
+    base_info.* EXCEPT(Cdcno, LastParoleDate, OffenderId) 
+  FROM base_info
+  WHERE Cdcno IS NULL
+  
+  UNION ALL
+  
+  SELECT OffenderIds, base_info.* EXCEPT(Cdcno, LastParoleDate, OffenderId) 
+  FROM base_info
+  JOIN offender_ids_by_cdcno
+    USING (Cdcno)
+  # Choose the most recent row for each Cdcno as this will contain the most up-to-date
+  # name / birthdate info. As of 5/14/2025 there are 3 Cdcno that have multiple
+  # OffenderId values.
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY Cdcno ORDER BY LastParoleDate) = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

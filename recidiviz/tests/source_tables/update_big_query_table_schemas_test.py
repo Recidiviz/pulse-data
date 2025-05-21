@@ -265,6 +265,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_az_state.state_task_deadline",
     "us_ca_ingest_view_results.ARMS_program_assignment",
     "us_ca_ingest_view_results.assessments",
+    "us_ca_ingest_view_results.cdc_numbers",
     "us_ca_ingest_view_results.employment_period",
     "us_ca_ingest_view_results.person",
     "us_ca_ingest_view_results.staff",

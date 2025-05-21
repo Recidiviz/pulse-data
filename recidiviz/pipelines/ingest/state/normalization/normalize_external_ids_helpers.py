@@ -15,7 +15,64 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for normalizing external id entities."""
+import datetime
+
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
+
+
+def select_most_recently_active_person_external_id(
+    external_ids: list[StatePersonExternalId],
+    enforce_nonnull_id_active_from: bool = True,
+) -> StatePersonExternalId:
+    """Given a list of StatePersonExternalId all with the same id_type, returns the
+    StatePersonExternalId that was active most recently, using the
+    (id_active_from_datetime and id_active_to_datetime) dates.
+
+    Throws if given an empty list.
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_most_recently_active_person_external_id() with an "
+            "empty external_ids list"
+        )
+    id_types = {pei.id_type for pei in external_ids}
+    if len(id_types) > 1:
+        raise ValueError(
+            f"Found multiple id_types in the provided external_ids list: "
+            f"{sorted(id_types)}. Expected external_ids only of a single type."
+        )
+
+    found_external_ids = set()
+    for pei in external_ids:
+        if pei.external_id in found_external_ids:
+            raise ValueError(
+                f"Found multiple external ids with external_id [{pei.external_id}] "
+                f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
+                f"this point."
+            )
+        found_external_ids.add(pei.external_id)
+
+    def sort_key(
+        e: StatePersonExternalId,
+    ) -> tuple[datetime.datetime, datetime.datetime | None, str]:
+        if not enforce_nonnull_id_active_from and e.id_active_from_datetime is None:
+            id_active_from_datetime = datetime.datetime.min
+        else:
+            if e.id_active_from_datetime is None:
+                raise ValueError(
+                    f"Found null id_active_from_datetime value on external_id "
+                    f"[{e.limited_pii_repr()}]."
+                )
+            id_active_from_datetime = e.id_active_from_datetime
+
+        return (
+            (e.id_active_to_datetime or datetime.datetime.max),
+            id_active_from_datetime,
+            # If all the dates are the same, sort by external id
+            e.external_id,
+        )
+
+    return list(reversed(sorted(external_ids, key=sort_key)))[0]
 
 
 def select_alphabetically_highest_person_external_id(

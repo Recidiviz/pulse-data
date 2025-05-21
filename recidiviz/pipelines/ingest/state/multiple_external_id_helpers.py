@@ -21,6 +21,8 @@ from recidiviz.common.constants.state.external_id_types import (
     US_AR_PARTYID,
     US_AZ_PERSON_ID,
     US_CA_BADGE_NO,
+    US_CA_CDCNO,
+    US_CA_DOC,
     US_IX_CIS_EMPL_CD,
     US_IX_EMPLOYEE,
     US_IX_STAFF_ID,
@@ -57,6 +59,7 @@ def person_external_id_types_with_allowed_multiples_per_person(
     # DUPLICATES, IT'S LIKELY A DATA ENTRY ERROR AND YOU SHOULD FIX VIA RAW DATA
     # MIGRATIONS OR BY FILTERING OUT THE RAW DATA.
     allowed_types_by_state = {
+        StateCode.US_CA: {US_CA_DOC, US_CA_CDCNO},
         StateCode.US_MI: {US_MI_DOC_BOOK},
         StateCode.US_ND: {US_ND_ELITE_BOOKING, US_ND_SID, US_ND_ELITE},
         StateCode.US_NE: {US_NE_ID_NBR},

@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  OffenderId: STRING
+  OffenderIds: STRING
   FirstName: STRING
   MiddleName: STRING
   LastName: STRING
@@ -17,9 +17,20 @@ unused_columns: []
 output:
   StatePerson:
     external_ids:
-      - StatePersonExternalId:
-          external_id: OffenderId
-          id_type: $literal("US_CA_DOC")
+      - $foreach:
+          $iterable:
+            $split_json: OffenderIds
+          $result:
+            StatePersonExternalId:
+              external_id:
+                $json_extract:
+                  $key: OffenderId
+                  $json: $iter_item
+              id_type: $literal("US_CA_DOC")
+              id_active_from_datetime:
+                $json_extract:
+                  $key: LastParoleDate
+                  $json: $iter_item
     birthdate: Birthday
     full_name:
       $person_name:

@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_CLIENT` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderId: STRING
+  CDCNO: STRING
+  CDCNO_IDVERIFYDATE: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_CA_DOC")
+      - StatePersonExternalId:
+          external_id: CDCNO
+          id_type: $literal("US_CA_CDCNO")
+          id_active_from_datetime: CDCNO_IDVERIFYDATE
