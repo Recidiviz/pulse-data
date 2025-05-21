@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the eligibility spans for supervision clients in AZ who are eligible 
+"""Shows the eligibility spans for supervision clients in AZ who are eligible
 for a transfer to administrative supervision"""
 
 from recidiviz.common.constants.states import StateCode
@@ -30,7 +30,6 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_limited,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
-    mental_health_score_3_or_below,
     not_homeless_in_release_plan,
     not_serving_ineligible_offense_for_admin_supervision,
     oras_employed_disabled_retired_or_student,
@@ -75,8 +74,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
         # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
-        # 1.6 Mental Health Score of 3 or below.
-        mental_health_score_3_or_below.VIEW_BUILDER,
+        # # TODO(#42752): Re-enable mental health criteria once all assessments are available in prod
+        # # 1.6 Mental Health Score of 3 or below.
+        # mental_health_score_3_or_below.VIEW_BUILDER,
         # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
         # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_has_substance_use_issues.VIEW_BUILDER,
