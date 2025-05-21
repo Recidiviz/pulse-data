@@ -25,9 +25,6 @@ from google.cloud.bigquery import QueryJob
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
     RawTableDiffQueryResult,
@@ -49,39 +46,41 @@ class RawDataRegionDiffQueryExecutor:
     """Executes raw data comparison queries for the given file tags in a region.
     If no file tags are provided, all file tags in the region are used."""
 
-    region_code: str
-    project_id: str
-    query_generator: RawTableDiffQueryGenerator
-    file_tags: List[str]
+    region_code: str = attr.ib()
+    query_generator: RawTableDiffQueryGenerator = attr.ib()
+    file_tags: List[str] = attr.ib()
 
-    region_raw_file_config: DirectIngestRegionRawFileConfig = attr.ib(init=False)
-    bq_client: BigQueryClientImpl = attr.ib(init=False)
+    bq_client: BigQueryClientImpl = attr.ib()
 
-    save_to_table: bool = False
-    dataset_id: Optional[str] = attr.ib(default=None)
-    table_name_prefix: Optional[str] = attr.ib(default=None)
+    save_to_table: bool = attr.ib()
+    dataset_id: Optional[str] = attr.ib()
+    table_name_prefix: Optional[str] = attr.ib()
 
-    def __attrs_post_init__(self) -> None:
-        self.region_raw_file_config = DirectIngestRegionRawFileConfig(self.region_code)
-        self.bq_client = BigQueryClientImpl(project_id=self.project_id)
+    @classmethod
+    def build(
+        cls,
+        query_generator: RawTableDiffQueryGenerator,
+        region_code: str,
+        project_id: str,
+        file_tags: List[str],
+        save_to_table: bool = False,
+        dataset_id: Optional[str] = None,
+        table_name_prefix: Optional[str] = None,
+    ) -> "RawDataRegionDiffQueryExecutor":
 
-        if self.file_tags:
-            self._verify_file_tags_have_config()
-        else:
-            self.file_tags = list(self.region_raw_file_config.raw_file_configs.keys())
-
-        if self.save_to_table and (not self.dataset_id or not self.table_name_prefix):
+        if save_to_table and (not dataset_id or not table_name_prefix):
             raise ValueError(
                 "Dataset ID and table name prefix must be provided when saving to a table"
             )
-
-    def _verify_file_tags_have_config(self) -> None:
-        """Verify that the provided file tags have corresponding raw file configs."""
-        for file_tag in self.file_tags:
-            if file_tag not in self.region_raw_file_config.raw_file_configs:
-                raise ValueError(
-                    f"File tag [{file_tag}] not found in region config for [{self.region_code}]"
-                )
+        return cls(
+            region_code=region_code,
+            query_generator=query_generator,
+            bq_client=BigQueryClientImpl(project_id=project_id),
+            file_tags=file_tags,
+            save_to_table=save_to_table,
+            dataset_id=dataset_id,
+            table_name_prefix=table_name_prefix,
+        )
 
     def _get_table_address(self, file_tag: str) -> BigQueryAddress:
         if not self.dataset_id or not self.table_name_prefix:

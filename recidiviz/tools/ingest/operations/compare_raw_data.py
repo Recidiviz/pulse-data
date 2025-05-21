@@ -34,6 +34,10 @@ import logging
 import sys
 from typing import Dict, List, Optional
 
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.helpers.raw_data_region_diff_query_executor import (
     RawDataRegionDiffQueryExecutor,
@@ -52,9 +56,11 @@ from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.log_helpers import make_log_output_path
 
-LINE_SEPARATOR = "-" * 100
+LINE_WIDTH = 100
+FILL_CHAR = "-"
+LINE_SEPARATOR = "#" * LINE_WIDTH
 
-RESULT_ROW_DISPLAY_LIMIT = 10
+RESULT_ROW_DISPLAY_LIMIT = 50
 
 RAW_DATA_DIFF_RESULTS_DATASET_ID = "raw_data_comparison_output"
 
@@ -71,13 +77,12 @@ def _get_table_name_prefix(
 
 
 def _log_successes(succeeded_tables: List[str]) -> str:
-    success_log = ""
+    success_log = "\n"
 
     if not succeeded_tables:
         return success_log
 
-    success_log += "\nSUCCESSES"
-    success_log += LINE_SEPARATOR
+    success_log += "SUCCESSES".ljust(LINE_WIDTH, FILL_CHAR)
     success_log += "\n"
     for file_tag in succeeded_tables:
         success_log += f"\t- {file_tag}"
@@ -90,31 +95,29 @@ def _log_failures(
     failed_table_results: Dict[str, RawTableDiffQueryResult],
     result_row_display_limit: Optional[int] = None,
 ) -> str:
-    fail_log = ""
+    fail_log = "\n"
 
     if not failed_table_results:
         return ""
 
-    fail_log += "\nFAILURES"
-    fail_log += LINE_SEPARATOR
-    fail_log += "\n"
-    fail_log += "see log file or bq table for more details"
-    logging.error(fail_log)
+    fail_log += "FAILURES".ljust(LINE_WIDTH, FILL_CHAR)
     for file_tag, result in failed_table_results.items():
-        # since these can be so big, only log the file tag with failures
-        logging.error("%s:\n", file_tag)
-        fail_log += f"{file_tag}: \n"
-        fail_log += result.build_result_rows_str(limit=result_row_display_limit)
-        fail_log += LINE_SEPARATOR
         fail_log += "\n"
+        fail_log += file_tag.ljust(70, FILL_CHAR)
+        fail_log += "\n"
+        fail_log += result.build_result_rows_str(limit=result_row_display_limit)
+    logging.exception(fail_log)
     return fail_log
 
 
 def _log_results(
     logfile_path: str,
+    header: str,
     results: RawDataRegionQueryResult,
     result_row_display_limit: Optional[int] = None,
 ) -> None:
+    header_logs = f"{LINE_SEPARATOR}\n{header.center(LINE_WIDTH)}\n{LINE_SEPARATOR}"
+    logging.info(header_logs)
     success_logs = _log_successes(
         succeeded_tables=results.succeeded_tables,
     )
@@ -122,9 +125,10 @@ def _log_results(
         failed_table_results=results.failed_table_results,
         result_row_display_limit=result_row_display_limit,
     )
+    logging.info(LINE_SEPARATOR)
 
     with open(logfile_path, "w", encoding="utf-8") as f:
-        f.writelines([success_logs, failure_logs])
+        f.writelines([header_logs, success_logs, failure_logs, LINE_SEPARATOR])
 
 
 def _execute_diff_query(
@@ -140,7 +144,7 @@ def _execute_diff_query(
     Returns True if the query returned no differences for all tables, False otherwise.
     """
 
-    query_executor = RawDataRegionDiffQueryExecutor(
+    query_executor = RawDataRegionDiffQueryExecutor.build(
         region_code=region_code,
         project_id=project_id,
         query_generator=query_generator,
@@ -151,6 +155,17 @@ def _execute_diff_query(
     )
 
     return query_executor.run_queries()
+
+
+def _verify_file_tags_have_config(
+    file_tags: list[str], region_config: DirectIngestRegionRawFileConfig
+) -> None:
+    """Verify that the provided file tags have corresponding raw file configs."""
+    for file_tag in file_tags:
+        if file_tag not in region_config.raw_file_configs:
+            raise ValueError(
+                f"File tag [{file_tag}] not found in region config for [{region_config.region_code}]"
+            )
 
 
 def _parse_args() -> argparse.Namespace:
@@ -199,7 +214,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--file-tags",
         type=comma_separated_list,
-        default=[],
+        default=None,
         help="Specifies a comma-separated list of file tags to compare. If not provided, all file tags in the datasets will be compared.",
     )
     parser.add_argument(
@@ -231,23 +246,27 @@ def main() -> None:
     """Runs the table comparisons and logs results."""
     args = _parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    region_config = get_region_raw_file_config(region_code=args.region)
+    file_tags = args.file_tags
+    if file_tags is None:
+        file_tags = list(region_config.raw_file_configs.keys())
+
+    _verify_file_tags_have_config(file_tags, region_config)
 
     logging.info(
         "\nComparing raw data for [%s] between src (project=[%s], instance=[%s]) and"
-        " cmp (project=[%s], instance=[%s])",
+        " cmp (project=[%s], instance=[%s]) for the following file tags: \n %s",
         args.region,
         args.source_project_id,
         args.source_ingest_instance.value,
         args.comparison_project_id,
         args.comparison_ingest_instance.value,
+        file_tags,
     )
-    logging.info(LINE_SEPARATOR)
 
     path = make_log_output_path("compare_raw_data", region_code=args.region)
     logging.info("writing full logs to [%s]", path)
 
-    file_tags = args.file_tags
     if not args.skip_file_counts_check:
         results = _execute_diff_query(
             query_generator=RawTableFileCountsDiffQueryGenerator.create_query_generator(
@@ -258,12 +277,12 @@ def main() -> None:
                 cmp_ingest_instance=args.comparison_ingest_instance,
                 truncate_update_datetime_part=args.truncate_update_datetime,
                 start_date_inclusive=(
-                    datetime.datetime.fromisoformat(args.start_date)
+                    datetime.datetime.fromisoformat(args.start_date_inclusive)
                     if args.start_date_inclusive
                     else None
                 ),
                 end_date_exclusive=(
-                    datetime.datetime.fromisoformat(args.end_date)
+                    datetime.datetime.fromisoformat(args.end_date_exclusive)
                     if args.end_date_exclusive
                     else None
                 ),
@@ -272,7 +291,7 @@ def main() -> None:
             project_id=args.source_project_id,
             file_tags=file_tags,
         )
-        _log_results(path, results)
+        _log_results(path, "FILE COUNTS DIFF", results)
         # Only fully compare the data for tables that have the same number of distinct file_ids
         file_tags = results.succeeded_tables
 
@@ -314,6 +333,7 @@ def main() -> None:
     )
     _log_results(
         path,
+        "ROW-LEVEL DIFF",
         results,
         result_row_display_limit=(RESULT_ROW_DISPLAY_LIMIT),
     )
@@ -321,6 +341,7 @@ def main() -> None:
         "Only the first %d rows of each category are displayed.",
         RESULT_ROW_DISPLAY_LIMIT,
     )
+    logging.info("See full error log at %s", path)
     if args.save_to_table:
         logging.info(
             "To view all results, please check the BigQuery table for each file tag at %s.%s.%s{file_tag}",
@@ -343,4 +364,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     main()

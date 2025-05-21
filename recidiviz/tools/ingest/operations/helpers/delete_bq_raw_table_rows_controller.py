@@ -62,7 +62,6 @@ class DeleteBQRawTableRowsController:
         if not self.skip_prompts:
             prompt_for_confirmation(
                 f"This operation will delete rows from dataset [{self.dataset_id}] for files: {file_tag_to_file_ids_to_delete}. ",
-                accepted_response_override="yes",
                 dry_run=self.dry_run,
             )
 

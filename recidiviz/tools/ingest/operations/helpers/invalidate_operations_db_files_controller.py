@@ -375,7 +375,6 @@ class InvalidateOperationsDBFilesController:
                 if not self.skip_prompts:
                     prompt_for_confirmation(
                         f"This operation will invalidate [{len(files_to_be_invalidated.normalized_file_names)}] files.",
-                        accepted_response_override="yes",
                         dry_run=self.dry_run,
                     )
 

@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""recidiviz.deploy.utls.script_helpers.py tests"""
+"""Unit tests for script helpers"""
 import logging
 from contextlib import nullcontext
-from typing import Any, Callable, Dict, List, Tuple
-from unittest import mock
+from typing import Any, Callable, Dict, Tuple
+from unittest import TestCase, mock
+from unittest.mock import MagicMock, call, patch
 
 import pytest
+from parameterized import param, parameterized
 
 from recidiviz.tools.utils.script_helpers import (
     interactive_loop_until_tasks_succeed,
@@ -30,176 +31,203 @@ from recidiviz.tools.utils.script_helpers import (
 )
 
 
-@pytest.mark.parametrize(
-    ("kwparams"),
-    [
-        pytest.param(
-            {
-                "call_args": {},
-                "user_input": "y",
-                "logging_results": [],
-                "input_mock_check": lambda m: m.mock_calls
-                == [mock.call("test input [y/n]: \n")],
-                "exit_mock_check": lambda m: not m.called,
-            },
-            id="yes",
-        ),
-        pytest.param(
-            {
-                "call_args": {},
-                "user_input": "n",
-                "logging_results": [
-                    (
-                        "root",
-                        logging.WARNING,
-                        "\nResponded with [n]. Confirmation aborted.",
-                    )
-                ],
-                "input_mock_check": lambda m: m.mock_calls
-                == [mock.call("test input [y/n]: \n")],
-                "exit_mock_check": lambda m: m.mock_calls == [mock.call(1)],
-            },
-            id="no and exit",
-        ),
-        pytest.param(
-            {
-                "call_args": {"accepted_response_override": "YES"},
-                "user_input": "yes",
-                "logging_results": [],
-                "input_mock_check": lambda m: m.mock_calls
-                == [
-                    mock.call(
-                        "test input"
-                        '\nPlease type "YES" to confirm. '
-                        "(Anything else exits):\n"
-                    )
-                ],
-                "exit_mock_check": lambda m: not m.called,
-            },
-            id="yes with override",
-        ),
-        pytest.param(
-            {
-                "call_args": {"accepted_response_override": "YES"},
-                "user_input": """
-                
-                
-                yes """,
-                "logging_results": [],
-                "input_mock_check": lambda m: m.mock_calls
-                == [
-                    mock.call(
-                        "test input"
-                        '\nPlease type "YES" to confirm. '
-                        "(Anything else exits):\n"
-                    )
-                ],
-                "exit_mock_check": lambda m: not m.called,
-            },
-            id="yes with override",
-        ),
-        pytest.param(
-            {
-                "call_args": {"dry_run": True},
-                "user_input": None,
-                "logging_results": [
-                    (
-                        "root",
-                        logging.INFO,
-                        (
-                            "[DRY RUN] test input [y/n]: \n "
-                            "**DRY RUN - SKIPPED CONFIRMATION**"
+class TestScriptHelpers(TestCase):
+    """Unit tests w/ unittest for script helpers"""
+
+    @parameterized.expand(
+        [
+            param.explicit(
+                kwargs={
+                    "call_args": {},
+                    "user_input": ["y"],
+                    "logging_results": [],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [],
+                },
+                args=(["yes"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {},
+                    "user_input": ["n"],
+                    "logging_results": [
+                        "WARNING:root:\nResponded with [n]. Confirmation aborted.",
+                    ],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [call(1)],
+                },
+                args=(["no and exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"accepted_response_override": "YES"},
+                    "user_input": ["yes"],
+                    "logging_results": [],
+                    "input_calls": [
+                        call(
+                            "test input"
+                            "\nPlease type [YES] to confirm, [n] to cancel:\n"
+                        )
+                    ],
+                    "exit_calls": [],
+                },
+                args=(["yes with override"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"accepted_response_override": "YES"},
+                    "user_input": [
+                        "Y",
+                        """
+
+                    yes """,
+                    ],
+                    "logging_results": ["INFO:root:Invalid choice [y]"],
+                    "input_calls": [
+                        call(
+                            "test input"
+                            "\nPlease type [YES] to confirm, [n] to cancel:\n"
                         ),
-                    )
-                ],
-                "input_mock_check": lambda m: not m.called,
-                "exit_mock_check": lambda m: not m.called,
-            },
-            id="dry run",
-        ),
-    ],
-)
-@mock.patch("sys.exit")
-@mock.patch("builtins.input")
-def test_prompt_for_confirmation_legacy_behavior(
-    input_mock: mock.MagicMock,
-    exit_mock: mock.MagicMock,
-    caplog: Any,
-    kwparams: Dict[str, Any],
-) -> None:
-    input_mock.return_value = kwparams["user_input"]
-    caplog.set_level(logging.INFO)
-    prompt_for_confirmation("test input", **kwparams["call_args"])
-    assert kwparams["input_mock_check"](input_mock)
-    assert kwparams["exit_mock_check"](exit_mock)
-    assert caplog.record_tuples == kwparams["logging_results"]
+                        call(
+                            "test input"
+                            "\nPlease type [YES] to confirm, [n] to cancel:\n"
+                        ),
+                    ],
+                    "exit_calls": [],
+                },
+                args=(["yes with override"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"dry_run": True},
+                    "user_input": [],
+                    "logging_results": [
+                        "INFO:root:[DRY RUN] test input [y/n]: \n **DRY RUN - SKIPPED CONFIRMATION**",
+                    ],
+                    "input_calls": [],
+                    "exit_calls": [],
+                },
+                args=(["dry run"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": False},
+                    "user_input": ["y"],
+                    "logging_results": [],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [],
+                },
+                args=(["custom_exit_code_dont_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": True},
+                    "user_input": ["y"],
+                    "logging_results": [],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [],
+                },
+                args=(["custom_exit_code_on_cancel_dont_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": False},
+                    "user_input": ["n"],
+                    "logging_results": [
+                        "WARNING:root:\nResponded with [n]. Confirmation aborted."
+                    ],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [],
+                },
+                args=(["custom_exit_code_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": True},
+                    "user_input": ["n"],
+                    "logging_results": [
+                        "WARNING:root:\nResponded with [n]. Confirmation aborted."
+                    ],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [call(100)],
+                },
+                args=(["custom_exit_code_on_cancel_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": True},
+                    "user_input": ["n"],
+                    "logging_results": [
+                        "WARNING:root:\nResponded with [n]. Confirmation aborted."
+                    ],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [call(100)],
+                },
+                args=(["custom_exit_code_on_cancel_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"exit_code": 100, "exit_on_cancel": True},
+                    "user_input": ["n"],
+                    "logging_results": [
+                        "WARNING:root:\nResponded with [n]. Confirmation aborted."
+                    ],
+                    "input_calls": [call("test input [y/n]: \n")],
+                    "exit_calls": [call(100)],
+                },
+                args=(["custom_exit_code_on_cancel_exit"]),
+            ),
+            param.explicit(
+                kwargs={
+                    "call_args": {"rejected_response_override": "NAH"},
+                    "user_input": ["n", "nah"],
+                    "logging_results": [
+                        "INFO:root:Invalid choice [n]",
+                        "WARNING:root:\nResponded with [nah]. Confirmation aborted.",
+                    ],
+                    "input_calls": [
+                        call(
+                            "test input\nPlease type [y] to confirm, [NAH] to cancel:\n"
+                        ),
+                        call(
+                            "test input\nPlease type [y] to confirm, [NAH] to cancel:\n"
+                        ),
+                    ],
+                    "exit_calls": [call(1)],
+                },
+                args=(["custom_rejected"]),
+            ),
+        ],
+    )
+    @patch("sys.exit")
+    @patch("builtins.input")
+    def test_prompt_for_confirmation(
+        self,
+        _test_name: str,
+        input_mock: MagicMock,
+        exit_mock: MagicMock,
+        *,
+        call_args: dict[str, Any],
+        user_input: list[str],
+        logging_results: list[str],
+        input_calls: list[tuple],
+        exit_calls: list[tuple],
+    ) -> None:
+        input_call_count = 0
 
+        def _input_return(_prompt: str) -> str:
+            nonlocal input_call_count
+            input_call_count += 1
+            return user_input[input_call_count - 1]
 
-@pytest.mark.parametrize(
-    ("user_input", "logging_results", "rv"),
-    [
-        ("y", [], True),
-        (
-            "n",
-            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
-            False,
-        ),
-    ],
-)
-@mock.patch("builtins.input")
-def test_prompt_for_confirmation_no_exit_boolean(
-    input_mock: mock.MagicMock,
-    caplog: Any,
-    user_input: str,
-    logging_results: List[Tuple[str, int, str]],
-    rv: bool,
-) -> None:
-    input_mock.return_value = user_input
-    assert rv == prompt_for_confirmation("test input", exit_on_cancel=False)
-    assert input_mock.mock_calls == [mock.call("test input [y/n]: \n")]
-    assert caplog.record_tuples == logging_results
-
-
-@pytest.mark.parametrize(
-    ("user_input", "logging_results", "exit_code", "exit_assertion"),
-    [
-        ("y", [], 0, lambda m: not m.called),
-        (
-            "n",
-            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
-            0,
-            lambda m: m.mock_calls == [mock.call(0)],
-        ),
-        (
-            "n",
-            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
-            100,
-            lambda m: m.mock_calls == [mock.call(100)],
-        ),
-        (
-            "n",
-            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
-            -100,
-            lambda m: m.mock_calls == [mock.call(-100)],
-        ),
-    ],
-)
-@mock.patch("sys.exit")
-@mock.patch("builtins.input")
-def test_prompt_for_confirmation_custom_exit_code(
-    input_mock: mock.MagicMock,
-    exit_mock: mock.MagicMock,
-    caplog: Any,
-    user_input: str,
-    logging_results: List[Tuple[str, int, str]],
-    exit_code: int,
-    exit_assertion: Callable,
-) -> None:
-    input_mock.return_value = user_input
-    prompt_for_confirmation("test input", exit_code=exit_code)
-    assert input_mock.mock_calls == [mock.call("test input [y/n]: \n")]
-    assert caplog.record_tuples == logging_results
-    assert exit_assertion(exit_mock)
+        log_assert = self.assertLogs if logging_results else self.assertNoLogs
+        with log_assert(level="INFO") as capture:
+            input_mock.side_effect = _input_return
+            prompt_for_confirmation("test input", **call_args)
+            assert input_mock.mock_calls == input_calls
+            assert exit_mock.mock_calls == exit_calls
+            if capture:
+                assert capture.output == logging_results
 
 
 @pytest.mark.parametrize(
@@ -207,14 +235,14 @@ def test_prompt_for_confirmation_custom_exit_code(
     [
         pytest.param(
             True,
-            lambda m: m.mock_calls == [mock.call(), mock.call()],
+            lambda m: m.mock_calls == [call(), call()],
             "A",
             nullcontext(),
             id="confirm retry",
         ),
         pytest.param(
             False,
-            lambda m: m.mock_calls == [mock.call()],
+            lambda m: m.mock_calls == [call()],
             None,
             pytest.raises(KeyError),
             id="cancel retry",
@@ -243,7 +271,7 @@ def test_interactive_prompt_retry_on_exception(
         assert answer == expected
     assert calls(exceptional_call_mock)
     assert prompt_mock.mock_calls == [
-        mock.call(
+        call(
             input_text="test input",
             accepted_response_override="yes",
             dry_run=False,
@@ -286,7 +314,7 @@ class TestInteractiveLoopUntilTasksSucceed:
         interactive_loop_until_tasks_succeed(
             tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
         )
-        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert mock_tasks_fn.mock_calls == [call(tasks_kwargs=list(tasks))]
         assert caplog_info.record_tuples == [
             ("root", logging.INFO, "All tasks complete")
         ]
@@ -303,9 +331,9 @@ class TestInteractiveLoopUntilTasksSucceed:
         interactive_loop_until_tasks_succeed(
             tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
         )
-        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert mock_tasks_fn.mock_calls == [call(tasks_kwargs=list(tasks))]
         assert mock_prompt.mock_calls == [
-            mock.call(
+            call(
                 input_text="Should we rerun all tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
@@ -333,9 +361,9 @@ class TestInteractiveLoopUntilTasksSucceed:
         interactive_loop_until_tasks_succeed(
             tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
         )
-        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert mock_tasks_fn.mock_calls == [call(tasks_kwargs=list(tasks))]
         assert mock_prompt.mock_calls == [
-            mock.call(
+            call(
                 input_text="Should we rerun the failed tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
@@ -370,16 +398,16 @@ class TestInteractiveLoopUntilTasksSucceed:
             tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
         )
         assert mock_tasks_fn.mock_calls == [
-            mock.call(tasks_kwargs=list(tasks)),
-            mock.call(tasks_kwargs=list(tasks)),
+            call(tasks_kwargs=list(tasks)),
+            call(tasks_kwargs=list(tasks)),
         ]
         assert mock_prompt.mock_calls == [
-            mock.call(
+            call(
                 input_text="Should we rerun all tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
             ),
-            mock.call(
+            call(
                 input_text="Should we rerun the failed tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
@@ -419,23 +447,23 @@ class TestInteractiveLoopUntilTasksSucceed:
             tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
         )
         assert mock_tasks_fn.mock_calls == [
-            mock.call(tasks_kwargs=list(tasks)),
-            mock.call(tasks_kwargs=list(tasks)),
-            mock.call(tasks_kwargs=[task_two, task_four]),
-            mock.call(tasks_kwargs=[task_four]),
+            call(tasks_kwargs=list(tasks)),
+            call(tasks_kwargs=list(tasks)),
+            call(tasks_kwargs=[task_two, task_four]),
+            call(tasks_kwargs=[task_four]),
         ]
         assert mock_prompt.mock_calls == [
-            mock.call(
+            call(
                 input_text="Should we rerun all tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
             ),
-            mock.call(
+            call(
                 input_text="Should we rerun the failed tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,
             ),
-            mock.call(
+            call(
                 input_text="Should we rerun the failed tasks?",
                 accepted_response_override="yes",
                 exit_on_cancel=True,

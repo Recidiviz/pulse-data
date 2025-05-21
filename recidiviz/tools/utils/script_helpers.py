@@ -31,16 +31,26 @@ class RunCommandUnsuccessful(RuntimeError):
 def prompt_for_confirmation(
     input_text: str,
     accepted_response_override: Optional[str] = None,
+    rejected_response_override: Optional[str] = None,
     dry_run: bool = False,
     exit_on_cancel: bool = True,
     exit_code: int = 1,
 ) -> Optional[bool]:
+    """Helper that prompts the user to ask for confirmation about whether or not they
+    want to continue with a script.
+
+    If |dry_run| is True, we print out the prompts that would be printed and return None.
+
+    If the user choses to exit, we will return with |exit_code| if |exit_on_cancel| is
+    True; otherwise, we will return with False. If the user choses to continue, we will
+    return True. Loops until a valid response is found.
+    """
     input_prompt = f"{input_text}"
-    accepted_response = accepted_response_override or "Y"
-    if accepted_response_override:
-        input_prompt += f'\nPlease type "{accepted_response}" to confirm:'
-        if exit_on_cancel:
-            input_prompt = input_prompt.rstrip(":") + ". (Anything else exits):"
+    accepted_response = accepted_response_override or "y"
+    rejected_response = rejected_response_override or "n"
+
+    if accepted_response_override or rejected_response_override:
+        input_prompt += f"\nPlease type [{accepted_response}] to confirm, [{rejected_response}] to cancel:"
     else:
         input_prompt += " [y/n]: "
 
@@ -48,12 +58,17 @@ def prompt_for_confirmation(
     if dry_run:
         logging.info("[DRY RUN] %s **DRY RUN - SKIPPED CONFIRMATION**", input_prompt)
         return None
-    check = input(input_prompt)
-    if not (confirm := check.lower().strip() == accepted_response.lower()):
-        logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
-        if exit_on_cancel:
-            sys.exit(exit_code)
-    return confirm
+
+    while True:
+        check = input(input_prompt).lower().strip()
+        if check == accepted_response.lower().strip():
+            return True
+        if check == rejected_response.lower().strip():
+            logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
+            if exit_on_cancel:
+                sys.exit(exit_code)
+            return False
+        logging.info("Invalid choice [%s]", check)
 
 
 def prompt_for_step(step_description: str) -> bool:
