@@ -51,6 +51,20 @@ _QUERY_TEMPLATE = """
             -- Entry dates in the future are erroneous
             AND DATE(sentence_credit.SENTENCECREDITENTRYDATE) <= CURRENT_DATE("US/Eastern")
             AND sentence_credit.GOODTIMEEARNINGCLASS IS NOT NULL
+        -- Deduplicate same-day entries
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY 
+                pei.state_code, 
+                pei.person_id, 
+                DATE(sentence_credit.SENTENCECREDITENTRYDATE)
+            ORDER BY 
+                -- Prioritize the latest entry
+                sentence_credit.SENTENCECREDITENTRYTIME DESC,
+                -- If entered at the same time, prioritize by lowest class level (alphabetical
+                -- order happens to map to actual level order for this field, which uses
+                -- Roman numerals I, I-A, I-B, ..., II, III, and IV)
+                sentence_credit.GOODTIMEEARNINGCLASS ASC
+        ) = 1
     )
     ,
     good_time_earning_class_changes AS (
