@@ -17,5 +17,5 @@
 export const LOOKER_DASHBOARDS_BASE =
   "https://recidiviz.cloud.looker.com/dashboards";
 
-export const LOOKER_PERSON_DETAILS_STAGING = `${LOOKER_DASHBOARDS_BASE}/recidiviz-staging::person_details_staging`;
-export const LOOKER_PERSON_DETAILS_PROD = `${LOOKER_DASHBOARDS_BASE}/recidiviz-123::person_details_prod`;
+export const LOOKER_PERSON_DETAILS_STAGING = `${LOOKER_DASHBOARDS_BASE}/recidiviz-staging::state_person_staging`;
+export const LOOKER_PERSON_DETAILS_PROD = `${LOOKER_DASHBOARDS_BASE}/recidiviz-123::state_person_prod`;
