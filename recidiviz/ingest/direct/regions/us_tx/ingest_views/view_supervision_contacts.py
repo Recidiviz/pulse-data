@@ -42,7 +42,7 @@ LEFT JOIN {ContactLocationDescription}
     USING(Contact_Location)
 -- These flags mean the contact is not deleted
 WHERE UPPER(Deleted_Flag) IN ("ACTIVE", "0") 
-AND UPPER(Reason_Description) NOT IN ("ALERT NOTIFICATION - EQUIPMENT")
+AND UPPER(Reason_Description) IS DISTINCT FROM ("ALERT NOTIFICATION - EQUIPMENT")
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
