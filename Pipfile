@@ -259,4 +259,5 @@ fixtures-jc = "docker exec pulse-data-control_panel_backend-1 pipenv run python 
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
 docker-build-prototypes = "docker build . -f Dockerfile.prototypes -t us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest --platform=linux/amd64"
 docker-prototypes = "docker compose -f docker-compose.yaml -f docker-compose.prototypes.yaml up"
-docker-resource-search = "docker compose -f docker-compose.yaml up resource_search_db"
+migrate-resource-search = "python -m recidiviz.tools.migrations.autogenerate_migration --database RESOURCE_SEARCH --message "
+docker-resource-search = "docker compose -f docker-compose.yaml up resource_search_db resource_search_migrations"

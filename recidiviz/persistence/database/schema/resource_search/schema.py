@@ -18,7 +18,6 @@
 """Define the ORM schema objects that map directly to the database
 for the Research Search application.
 """
-
 from geoalchemy2 import Geometry
 from pgvector.sqlalchemy import Vector  # type: ignore
 from sqlalchemy import (
