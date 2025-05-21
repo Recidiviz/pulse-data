@@ -45,10 +45,32 @@ WITH current_parole_pop_cte AS (
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_CA'", 
         tes_task_query_view = 'supervision_level_downgrade_materialized',
-        id_type = "'US_CA_DOC'")}),
+        id_type = "'US_CA_DOC'")}
+),
+offender_id_by_person AS (
+    SELECT person_id, external_id AS OffenderId
+    FROM `{{project_id}}.us_ca_normalized_state.state_person_external_id`
+    WHERE id_type = 'US_CA_DOC'
+    -- It's very rare but possible for a person to have multiple OffenderId
+    -- TODO(#41554): Use the stable product ids view to properly choose OffenderId when
+    -- there are multiple here.
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY OffenderId) = 1
+),
+cdcno_by_person AS (
+    -- TODO(#41541): Replace this logic with logic that pulls US_CA_CDCNO ids from 
+    -- state_person_external_id once those are ingested
+    SELECT person_id, pp.Cdcno
+    FROM current_parole_pop_cte
+    LEFT JOIN `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
+        ON external_id=pp.OffenderId
+    -- It's very rare but possible for a person to have multiple OffenderId. For now, 
+    -- pick the CDC number associated with the lowest OffenderId.
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY OffenderId) = 1
+),
 additional_information AS (
   SELECT 
-    speid.external_id,
+    person_id,
+    offender_id_by_person.OffenderId,
     ssp.supervision_site AS form_information_parole_unit,
     CASE ssp.supervision_level_raw_text 
         -- Abbreviate SO main categories
@@ -67,27 +89,27 @@ additional_information AS (
     END AS form_information_supervision_level,
     scte.case_type,
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
-  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` speid USING (person_id)
+  LEFT JOIN offender_id_by_person USING (person_id)
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` scte USING (person_id, supervision_period_id)
   WHERE ssp.state_code = 'US_CA' AND ssp.termination_date IS NULL
 )
 
 SELECT 
     person_id,
-    external_id,
+    OffenderId AS external_id,
     state_code,
     reasons,
     ineligible_criteria,
     is_eligible,
     is_almost_eligible,
     ai.case_type,
-    pp.Cdcno as form_information_cdcno,
+    cdcno_by_person.Cdcno as form_information_cdcno,
     ai.form_information_parole_unit,
     ai.form_information_supervision_level
 FROM current_parole_pop_cte
-LEFT JOIN `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
-    ON external_id=pp.OffenderId
-LEFT JOIN additional_information ai using (external_id)
+LEFT JOIN cdcno_by_person
+USING (person_id)
+LEFT JOIN additional_information ai USING (person_id)
 WHERE is_eligible
 """
 

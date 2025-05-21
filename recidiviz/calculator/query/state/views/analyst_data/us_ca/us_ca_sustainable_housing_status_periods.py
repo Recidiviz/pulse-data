@@ -36,11 +36,13 @@ WITH formatted_cte AS (
     SELECT *
     FROM (
         SELECT DISTINCT
-            OffenderId,
+            person_id,
             CAST(ADDREFFECTIVEDATE AS DATETIME) AS start_date,
             CAST(IFNULL(ADDRENDDATE, '9999-12-31') AS DATETIME) AS end_date,
             AddressTypeDesc,
         FROM `{project_id}.{us_ca_raw_dataset}.ParoleHousing_latest`
+        JOIN `{project_id}.us_ca_normalized_state.state_person_external_id` pei
+        ON OffenderId = pei.external_id AND state_code = 'US_CA' AND id_type = 'US_CA_DOC'
     )
     -- Drop obviously incoherent periods before going any further
     WHERE start_date < end_date
@@ -51,14 +53,14 @@ WITH formatted_cte AS (
 -- periods based on all (potentially overlapping) periods in raw data
 transitions_cte AS (
     SELECT DISTINCT
-        OffenderId,
+        person_id,
         start_date AS transition_date,
     FROM formatted_cte
 
     UNION DISTINCT
 
     SELECT DISTINCT
-      OffenderId,
+      person_id,
       end_date AS transition_date,
     FROM formatted_cte
 ),
@@ -67,9 +69,9 @@ periods_cte AS (
     SELECT *
     FROM (
         SELECT
-            OffenderId,
+            person_id,
             transition_date AS start_date,
-            LEAD(transition_date) OVER (PARTITION BY OffenderId ORDER BY transition_date) AS end_date,
+            LEAD(transition_date) OVER (PARTITION BY person_id ORDER BY transition_date) AS end_date,
         FROM transitions_cte
     )
     WHERE end_date IS NOT NULL
@@ -78,7 +80,7 @@ periods_cte AS (
 -- housing information, use the most recent housing type assigned to a person
 periods_with_attributes AS (
     SELECT DISTINCT
-        p.OffenderId,
+        p.person_id,
         p.start_date,
         p.end_date,
         c.AddressTypeDesc,
@@ -88,11 +90,11 @@ periods_with_attributes AS (
         END AS sustainable_housing,
     FROM periods_cte p
     LEFT JOIN formatted_cte c
-        ON p.OffenderId = c.OffenderId
+        ON p.person_id = c.person_id
         AND p.start_date >= c.start_date
         AND p.end_date <= c.end_date
     QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY p.OffenderId, p.start_date
+        PARTITION BY p.person_id, p.start_date
         ORDER BY
             c.start_date DESC,
             -- Deterministically sort in cases of periods starting on the same day
@@ -123,7 +125,7 @@ periods_with_attributes AS (
 -- Collapse adjacent spans that are both temporally adjacent and have the same housing
 -- status
 SELECT DISTINCT
-    OffenderId,
+    person_id,
     MIN(start_date) OVER (w_spans) AS start_date,
     MAX(end_date) OVER (w_spans) AS end_date,
     ANY_VALUE(sustainable_housing) OVER (w_spans) AS sustainable_housing,
@@ -141,20 +143,20 @@ FROM (
             IF(start_date = LAG(end_date) OVER (w_flags), 0, 1) AS temporal_gap,
         FROM periods_with_attributes
         WINDOW w_flags AS (
-            PARTITION BY OffenderId
+            PARTITION BY person_id
             ORDER BY start_date, end_date
         )
     )
     WINDOW w_periods AS (
-        PARTITION BY OffenderId
+        PARTITION BY person_id
         ORDER BY start_date, end_date
     )
 )
 WINDOW w_spans AS (
-    PARTITION BY OffenderId, status_period_id, temporal_period_id
+    PARTITION BY person_id, status_period_id, temporal_period_id
 )
 
-ORDER BY OffenderId, start_date, end_date
+ORDER BY person_id, start_date, end_date
 """
 
 US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

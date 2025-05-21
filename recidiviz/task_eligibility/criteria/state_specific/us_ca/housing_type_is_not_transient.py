@@ -26,7 +26,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -47,15 +46,12 @@ _QUERY_TEMPLATE = f"""
 # TODO(#21353): switch to supervision periods and make a state agnostic criteria
 WITH sustainable_housing AS (
   SELECT 
-    peid.person_id,
-    peid.state_code,
+    person_id,
+    "US_CA" AS state_code,
     CAST(sp.start_date AS DATE) AS start_date,
     CAST(sp.end_date AS DATE) AS end_date, 
     sp.sustainable_housing
   FROM `{{project_id}}.{{analyst_dataset}}.us_ca_sustainable_housing_status_periods_materialized` sp
-  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-    ON peid.state_code = 'US_CA'
-      AND sp.OffenderId = peid.external_id
   # Sustainable housing is defined as not homeless/transient.
   WHERE sp.sustainable_housing = 1
 ),
@@ -82,7 +78,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_CA,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         reason_string=_REASON_STRING,
         reasons_fields=[
             ReasonsField(
