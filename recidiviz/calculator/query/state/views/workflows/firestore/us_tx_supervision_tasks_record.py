@@ -104,9 +104,21 @@ TASK_CONFIGS: List[TaskConfig] = [
         "meets_criteria_means_action_required": True,
     },
     {
+        "type": "usTxTypeAgnosticContact",
+        "table": "needs_type_agnostic_contact_standard_policy_secondary_materialized",
+        "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
+    },
+    {
         "type": "usTxInCustodyContact",
         "table": "meets_weekly_in_custody_contact_standards_materialized",
         "due_date_field": "contact_due_date",
+    },
+    {
+        "type": "usTxElectronicOrOfficeContact",
+        "table": "needs_scheduled_electronic_or_office_contact_materialized",
+        "due_date_field": "contact_due_date",
+        "meets_criteria_means_action_required": True,
     },
 ]
 

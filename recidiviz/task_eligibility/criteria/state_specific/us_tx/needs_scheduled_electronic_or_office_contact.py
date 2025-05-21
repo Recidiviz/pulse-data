@@ -16,7 +16,8 @@
 # =============================================================================
 
 """Defines a criteria view that shows spans of time for which supervision clients
-do not meet standards for type agnostic contacts.
+do not meet standards for scheduled electronic contacts, in cases where extra office
+contacts may count towards electronic contacts.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,17 +29,12 @@ from recidiviz.task_eligibility.utils.us_tx_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TX_NEEDS_TYPE_AGNOSTIC_CONTACT_STANDARD_POLICY"
+_CRITERIA_NAME = "US_TX_NEEDS_SCHEDULED_ELECTRONIC_OR_OFFICE_CONTACT"
 
 _WHERE_CLAUSE = """
-        -- These overlapping type-agnostic contacts are implemented in other criteria to avoid overlapping criteria spans
-        WHERE NOT (
-            supervision_level = 'MAXIMUM'
-            AND case_type = 'GENERAL'
-            AND contact_types_accepted = 'UNSCHEDULED FIELD,UNSCHEDULED HOME,' 
-            AND frequency_in_months = '3'
-        )
-            AND NOT (contact_types_accepted = 'SCHEDULED ELECTRONIC,SCHEDULED OFFICE,')
+        -- This includes the type-agnostic criteria for scheduled electronic contacts, 
+        -- in cases where extra office contacts may count towards electronic contacts
+        WHERE contact_types_accepted = 'SCHEDULED ELECTRONIC,SCHEDULED OFFICE,'
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
