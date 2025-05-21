@@ -41,7 +41,6 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 )
 from recidiviz.airflow.dags.raw_data.utils import (
     evenly_weighted_buckets_with_max,
-    get_direct_ingest_region_raw_config,
     get_est_number_of_chunks_concurrently,
     max_number_of_buckets_with_target,
 )
@@ -62,6 +61,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader impor
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
@@ -507,11 +507,11 @@ def _read_and_validate_headers(
     raw_file_config: DirectIngestRawFileConfig,
     gcs_file: GcsfsFilePath,
 ) -> List[str]:
-    """For the given |gcs_file_path| --
-    - If the raw file config has infer_columns_from_config=False, read the first row of the file
-      and verify that the headers match the expected headers from the raw file config.
-    - If the raw file config has infer_columns_from_config=True, return the column headers found
-      in the raw file config and verify that there is no unexpected header row in the file.
+    """For the given |gcs_file_path|,
+    If the raw file config has infer_columns_from_config=False, read the first row of the file
+    and verify that the headers match the expected headers from the raw file config.
+    If the raw file config has infer_columns_from_config=True, return the column headers found
+    in the raw file config and verify that there is no unexpected header row in the file.
     """
     file_reader = DirectIngestRawFileHeaderReader(fs, raw_file_config)
 
@@ -600,7 +600,7 @@ def read_and_verify_column_headers(
     ]
 
     fs = GcsfsFactory.build()
-    region_raw_file_config = get_direct_ingest_region_raw_config(region_code)
+    region_raw_file_config = get_region_raw_file_config(region_code)
 
     results, errors = read_and_verify_column_headers_concurrently(
         fs, region_raw_file_config, bq_metadata

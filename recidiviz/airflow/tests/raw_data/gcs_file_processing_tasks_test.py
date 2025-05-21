@@ -1568,8 +1568,7 @@ class TestReadAndVerifyColumnHeaders(unittest.TestCase):
         self.file_reader_patcher = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.DirectIngestRawFileHeaderReader",
             return_value=self.file_reader,
-        )
-        self.file_reader_patcher.start()
+        ).start()
         self.addCleanup(self.file_reader_patcher.stop)
 
     def test_read_and_verify_column_headers_concurrently(self) -> None:

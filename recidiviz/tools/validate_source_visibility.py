@@ -324,6 +324,9 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.cloud_storage.gcs_file_system",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.entrypoint_utils",
                 "recidiviz.tests.ingest.direct.fake_regions",
                 "recidiviz.tests.metrics.export.fixtures",
                 "recidiviz.tests.pipelines",

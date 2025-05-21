@@ -19,9 +19,8 @@ import datetime
 import re
 from unittest.mock import patch
 
-from airflow.models import DAG, BaseOperator, DagBag
+from airflow.models import DAG, DagBag
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
 from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy import text
@@ -40,9 +39,6 @@ from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
     FakeSftpDownloadDelegateFactory,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
-from recidiviz.airflow.tests.utils.dag_helper_functions import (
-    fake_operator_from_callable,
-)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
@@ -307,8 +303,7 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
         # external system mocks
 
         self.find_sftp_files_patcher = patch(
-            "recidiviz.airflow.dags.sftp_dag.FindSftpFilesOperator",
-            side_effect=fake_operator_from_callable(self._sftp_call),
+            "recidiviz.airflow.dags.sftp_dag.FindSftpFilesOperator.execute"
         )
         self.find_sftp_files_mock = self.find_sftp_files_patcher.start()
 
@@ -366,9 +361,6 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
 
         return sftp_dag()
 
-    def _sftp_call(self, _base: BaseOperator, _context: Context) -> list:
-        return self.found_sftp_files
-
     def _set_up_env(
         self,
         *,
@@ -380,7 +372,7 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
         ingest_upload_time: datetime.datetime | None = None,
     ) -> None:
         """Sets values for environment mocks."""
-        self.found_sftp_files = sftp_files_to_find or []
+        self.find_sftp_files_mock.return_value = sftp_files_to_find or []
 
         self.remote_discovery_time = remote_discovery_time or datetime.datetime(
             2024, 1, 1, 1, tzinfo=datetime.UTC
