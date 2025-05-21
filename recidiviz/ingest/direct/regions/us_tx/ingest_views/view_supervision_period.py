@@ -83,6 +83,15 @@ distinct_supervision_officer_update_dates AS (
         ORDER BY CAST(WTSK_UPDATE_DATE AS DATETIME) DESC
     ) = 1
 ),
+distinct_supervision_officer_periods AS (
+    SELECT
+        SID_number,
+        Period_ID_number,
+        Staff_ID_Number,
+        WTSK_UPDATE_DATE AS start_date,
+        LEAD(WTSK_UPDATE_DATE) OVER (PARTITION BY Period_ID_number ORDER BY WTSK_UPDATE_DATE ASC) as end_date
+    from distinct_supervision_officer_update_dates
+),
 -- This CTE combines distinct critical dates of officer supervision and all known location
 -- starts for those officers.
 -- We end up with two sets of date/location pairs in each row. 
@@ -95,9 +104,10 @@ distinct_supervision_officer_update_dates AS (
 -- in the next CTE.
 all_supervision_officer_movements_per_location_period AS (
 SELECT 
-  distinct_supervision_officer_update_dates.SID_number, 
-  distinct_supervision_officer_update_dates.Period_id_number, 
-  distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE, 
+  distinct_supervision_officer_periods.SID_number, 
+  distinct_supervision_officer_periods.Period_id_number, 
+  distinct_supervision_officer_periods.start_date,
+  distinct_supervision_officer_periods.end_date, 
   staff_location_periods.Staff_ID_number, 
   -- We hold on to this value to determine the most relevant LP if there are multiple
   -- location changes before the supervision officer starts supervising the client
@@ -105,17 +115,19 @@ SELECT
   staff_location_periods.Agency_of_employment AS staff_location_period_location,
   -- If the officer starts at a location while already supervising this client, then we want to have a new period with that location. 
   -- Otherwise the officer was already at this location when they began supervision this client. 
-  GREATEST(start_date, distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE) AS floored_location_period_start,
+  GREATEST(staff_location_periods.start_date, distinct_supervision_officer_periods.start_date) AS floored_location_period_start,
   CASE WHEN 
-        start_date > distinct_supervision_officer_update_dates.WTSK_UPDATE_DATE 
+        staff_location_periods.start_date > distinct_supervision_officer_periods.start_date 
         THEN NULL ELSE Agency_of_employment 
   END AS location_for_wtsk
 FROM 
-    distinct_supervision_officer_update_dates
+    distinct_supervision_officer_periods
 LEFT JOIN 
     staff_location_periods 
 USING
     (Staff_ID_Number)
+-- Make sure that we only track changes while the officer is supervising the client
+WHERE staff_location_periods.start_date <= COALESCE(distinct_supervision_officer_periods.end_date, DATE("9999-12-31"))
 ),
 -- This takes the two separate categories of critical dates and locations from the previous CTE and 
 -- stacks their DISTINCT union, forming unique date/location pairs for each officer and supervision period
@@ -131,11 +143,11 @@ all_supervision_officer_and_site_critical_dates AS (
         SID_Number,
         Period_id_number,
         Staff_ID_number,
-        WTSK_UPDATE_DATE AS critical_date,
+        start_date AS critical_date,
         location_for_wtsk AS supervision_site
     FROM 
         all_supervision_officer_movements_per_location_period
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_number, Period_id_number, WTSK_UPDATE_DATE ORDER BY original_location_period_date DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY SID_number, Period_id_number, start_date ORDER BY original_location_period_date DESC) = 1
 
     UNION DISTINCT 
 
@@ -148,7 +160,7 @@ all_supervision_officer_and_site_critical_dates AS (
         staff_location_period_location AS supervision_site
     FROM 
         all_supervision_officer_movements_per_location_period
-    QUALIFY row_number() over (partition by SID_number, Period_id_number, WTSK_UPDATE_DATE order by original_location_period_date desc) = 1
+    QUALIFY row_number() over (partition by SID_number, Period_id_number, start_date order by original_location_period_date desc) = 1
   )
 )
 -- This CTE takes all supervision officer and site critical dates and finally turns them into periods to be used
