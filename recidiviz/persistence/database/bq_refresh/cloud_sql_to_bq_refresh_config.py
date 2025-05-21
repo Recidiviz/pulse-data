@@ -156,6 +156,7 @@ class CloudSqlToBQConfig:
             SchemaType.STATE,
             SchemaType.WORKFLOWS,
             SchemaType.INSIGHTS,
+            SchemaType.RESOURCE_SEARCH,
         ):
             return False
 

@@ -236,6 +236,8 @@ class TestSchemaUtils(unittest.TestCase):
             "action_strategy_surfaced_events",
         ]
 
+        resource_search_table_names = ["resource", "resource_score", "scrape_source"]
+
         expected_table_class_names = (
             case_triage_table_names
             + justice_counts_table_names
@@ -244,6 +246,7 @@ class TestSchemaUtils(unittest.TestCase):
             + state_table_names
             + workflows_table_names
             + insights_table_names
+            + resource_search_table_names
         )
 
         all_table_classes = get_all_table_classes()

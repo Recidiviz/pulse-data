@@ -236,6 +236,22 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
 
@@ -274,7 +290,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
         # Act
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(self._all_db_keys())
-
         # Assert
         self.assertCountEqual(
             mock_create_engine.call_args_list,
@@ -415,6 +430,22 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
 
@@ -430,13 +461,14 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:444",
             "project:region:555",
             "project:region:666",
+            "project:region:777",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777"])
         mock_secrets.assert_has_calls(
             [
                 mock.call("operations_v2_cloudsql_instance_id"),
@@ -445,6 +477,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 mock.call("pathways_cloudsql_instance_id"),
                 mock.call("workflows_cloudsql_instance_id"),
                 mock.call("insights_cloudsql_instance_id"),
+                mock.call("resource_search_cloudsql_instance_id"),
             ],
             any_order=True,
         )
