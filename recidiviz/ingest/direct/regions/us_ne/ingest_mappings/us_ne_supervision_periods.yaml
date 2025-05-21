@@ -117,3 +117,9 @@ output:
                     - inOutStateIndicator3Code
                   $include_nulls: True
               $custom_parser: us_ne_custom_enum_parsers.parse_custodial_authority
+          case_type_entries:
+            - StateSupervisionCaseTypeEntry:
+                case_type:
+                  $enum_mapping:
+                    $raw_text: supervisedLevel
+                    $custom_parser: us_ne_custom_enum_parsers.parse_supervision_case_type
