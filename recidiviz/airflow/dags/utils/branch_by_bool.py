@@ -26,6 +26,7 @@ from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_START_TASK_NAME,
     TaskGroupOrOperator,
     create_branch_end,
+    get_branch_leaf_tasks,
     get_branch_root_tasks,
 )
 
@@ -53,6 +54,11 @@ def create_branch_by_bool(
         False: get_branch_root_tasks(branch_if_false),
     }
 
+    branch_leaves_by_bool = {
+        True: get_branch_leaf_tasks(branch_if_true),
+        False: get_branch_leaf_tasks(branch_if_false),
+    }
+
     @task.branch(task_id=BRANCH_START_TASK_NAME, trigger_rule=start_trigger_rule)
     def get_selected_branch_ids() -> List[str]:
         return [task.task_id for task in branch_roots_by_bool[bool_value]]
@@ -60,9 +66,8 @@ def create_branch_by_bool(
     branch_start: BranchPythonOperator = get_selected_branch_ids()
     branch_end: PythonOperator = create_branch_end()
 
-    branch_start >> branch_if_true
-    branch_start >> branch_if_false
-    branch_if_true >> branch_end
-    branch_if_false >> branch_end
-
+    for branch_root in branch_roots_by_bool.values():
+        branch_start >> branch_root
+    for branch_leaf in branch_leaves_by_bool.values():
+        branch_leaf >> branch_end
     return branch_start, branch_end
