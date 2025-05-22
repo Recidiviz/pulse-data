@@ -48,6 +48,7 @@ python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest
 """
 import argparse
 import os
+import sys
 
 from tabulate import tabulate
 
@@ -123,10 +124,10 @@ def _parse_args() -> argparse.Namespace:
         help="The external ID type to filter on (e.g., 'US_AZ_PERSON_ID').",
     )
     parser.add_argument(
-        "--external_id_value",
-        type=str,
+        "--external_id_values",
+        type=lambda x: set(x.split(" ")),
         required=True,
-        help="The external ID value to filter on (e.g., '12345').",
+        help="The external ID values to filter on, quoted and separated by a space (e.g., '12345 6543').",
     )
     parser.add_argument(
         "--test_characteristic",
@@ -157,7 +158,18 @@ def _parse_args() -> argparse.Namespace:
             "Please only use this as a last resort!"
         ),
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        parser.print_help()
+        print(
+            "\n*********************************************\n"
+            "Failed to parse commandline arguments.\n"
+            "NOTE: If you passed MULTIPLE values for --external_id_values "
+            "you need to quote the value like this:\n"
+            '--external_id_values "12345 6543"\n\n'
+        )
+        sys.exit(1)
 
     state_id_types = external_id_types_by_state_code()[args.state_code]
     if args.external_id_type not in state_id_types:
@@ -174,7 +186,7 @@ def _validate_and_preview_external_id(
     state_code: StateCode,
     ingest_view_name: str,
     external_id_type: str,
-    external_id_value: str,
+    external_id_values: set[str],
 ) -> DirectIngestViewQueryBuilder:
     """
     Checks if the external ID type is valid for the given ingest view and state code.
@@ -202,14 +214,14 @@ def _validate_and_preview_external_id(
                 "State Code",
                 "Ingest View Name",
                 "External ID Type",
-                "External ID Value",
+                "External ID Value(s)",
             ],
             [
                 project_id,
                 state_code.value.upper(),
                 ingest_view_name,
                 external_id_type,
-                external_id_value,
+                ", ".join(external_id_values),
             ],
         ],
         headers="firstrow",
@@ -263,7 +275,7 @@ def _validate_and_preview_file_paths(
 def _validate_and_preview_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
-    external_id_value: str,
+    external_id_values: set[str],
     dataset: str,
     project_id: str,
     file_tags_to_skip_with_reason: dict[str, str],
@@ -272,7 +284,7 @@ def _validate_and_preview_queries(
     queries = build_root_entity_filtered_raw_data_queries(
         view_builder,
         external_id_type,
-        external_id_value,
+        external_id_values,
         dataset,
         project_id,
         file_tags_to_skip_with_reason,
@@ -304,7 +316,7 @@ def main() -> None:
         args.state_code,
         args.ingest_view_name,
         args.external_id_type,
-        args.external_id_value,
+        args.external_id_values,
     )
     dataset = raw_tables_dataset_for_region(
         args.state_code, DirectIngestInstance.PRIMARY
@@ -321,7 +333,7 @@ def main() -> None:
     queries = _validate_and_preview_queries(
         view_builder,
         args.external_id_type,
-        args.external_id_value,
+        args.external_id_values,
         dataset,
         args.project_id,
         fixtures_to_skip_queries,

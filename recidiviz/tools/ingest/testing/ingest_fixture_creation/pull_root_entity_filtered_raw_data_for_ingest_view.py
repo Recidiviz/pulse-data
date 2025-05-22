@@ -55,7 +55,7 @@ def throw_cant_find_id_msg(file_tag: str, external_id_type: str) -> str:
 def _join_table_to_external_id_table(
     config: DirectIngestRawFileConfig,
     external_id_type: str,
-    external_id_value: str,
+    external_id_sql_arr: str,
     dataset: str,
     project_id: str,
     all_dependencies: dict[str, DirectIngestViewRawFileDependency],
@@ -86,7 +86,7 @@ def _join_table_to_external_id_table(
             ).strip()
             if id_col := f_table.get_external_id_col_with_type(external_id_type):
                 return (
-                    join_clause + f" WHERE {id_col.name} = '{external_id_value}'"
+                    join_clause + f" WHERE {id_col.name} IN {external_id_sql_arr}"
                 ).strip()
             table_queue.put(TableJoin(f_table, join_clause))
     raise ValueError(throw_cant_find_id_msg(config.file_tag, external_id_type))
@@ -95,7 +95,7 @@ def _join_table_to_external_id_table(
 def _get_config_filter(
     config: DirectIngestRawFileConfig,
     external_id_type: str,
-    external_id_value: str,
+    external_id_sql_arr: str,
     dataset: str,
     project_id: str,
     all_dependencies: dict[str, DirectIngestViewRawFileDependency],
@@ -104,12 +104,12 @@ def _get_config_filter(
     if config.is_code_file:
         return ""
     if id_column := config.get_external_id_col_with_type(external_id_type):
-        return f"WHERE {id_column.name} = '{external_id_value}'"
+        return f"WHERE {id_column.name} IN {external_id_sql_arr}"
     if config.table_relationships:
         return _join_table_to_external_id_table(
             config,
             external_id_type,
-            external_id_value,
+            external_id_sql_arr,
             dataset,
             project_id,
             all_dependencies,
@@ -120,7 +120,7 @@ def _get_config_filter(
 def build_root_entity_filtered_raw_data_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
-    external_id_value: str,
+    external_id_values: set[str],
     dataset: str,
     project_id: str,
     file_tags_to_skip_with_reason: dict[str, str] | None = None,
@@ -137,13 +137,16 @@ def build_root_entity_filtered_raw_data_queries(
         if file_tags_to_skip_with_reason and file_tag in file_tags_to_skip_with_reason:
             subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
         else:
+            external_id_sql_arr = (
+                "(" + ", ".join(sorted(f"'{id_}'" for id_ in external_id_values)) + ")"
+            )
             subset_queries[file_tag] = (
                 f"SELECT DISTINCT {file_tag}.* "
                 + f"FROM {project_id}.{dataset}.{file_tag} AS {file_tag} "
                 + _get_config_filter(
                     raw_file_dependency.raw_file_config,
                     external_id_type,
-                    external_id_value,
+                    external_id_sql_arr,
                     dataset,
                     project_id,
                     all_dependencies,
