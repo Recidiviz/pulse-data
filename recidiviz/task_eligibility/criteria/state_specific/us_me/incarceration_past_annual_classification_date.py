@@ -43,6 +43,7 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone is past their annual reclassification date"""
 
 _QUERY_TEMPLATE = f"""
+    #TODO(#42446): simplify query, consider using general critical date logic
       /* The following CTEs take the time between an individual's start and end date and spanifies it into yearly 
         spans. The logic checks whether a given span has a meeting date within its start and end date 
         OR if a reclassification meeting took place within 60 days of the span's start date. A one-to-one mapping 

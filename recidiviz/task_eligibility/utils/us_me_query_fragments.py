@@ -831,10 +831,10 @@ def reclassification_shared_logic(reclass_type: str) -> str:
           ON
             rs.person_id = meetings.person_id
             AND reclass_meeting_date BETWEEN DATE_SUB(rs.start_date, INTERVAL 60 day)
-            AND rs.end_date 
+            AND DATE_SUB(rs.end_date, INTERVAL 1 day)
       ),
       -- For any meeting that is not the earliest meeting within a span, we check if it is close enough to the next span 
-      -- (within 60 days) and if so, consider it as part of the next span. We remove other meetings
+      -- (within 60 days) but not IN the next span, and if so, consider it as part of the next span. We remove other meetings
       -- (i.e. a third meeting within a span) to ensure a 1:1 mapping between reclass meetings and spans
       span_id_change AS (
         SELECT 
@@ -861,21 +861,76 @@ def reclassification_shared_logic(reclass_type: str) -> str:
             AND rs.person_id = sic.person_id
             AND rs.state_code = sic.state_code 
             AND rs.span_id = sic.new_span_id
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, span_id ORDER BY reclass_meeting_date ASC) = 1
+      ),
+      
+      -- this CTE splits spans that have a reclass meeting within them into two separate spans: one span from date of eligibility to day of  
+      --  the meeting, one span from day of meeting to last day of eligibility.  
+      -- The logic works because reclass_meeting_date in each span is either null, within the bound of the span, or 
+      -- within 60 days of the span start_date, and each meeting date matches to one span
+      correct_eligibility AS (
+
+      -- First part: span from start_date through meeting_date (inclusive) where meeting date is after start date.
+      -- Set reclass_meeting_date as null (this is the 'eligible' span before the meeting happens)
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            reclass_meeting_date AS end_date,
+            NULL AS reclass_meeting_date
+        FROM rejoin_to_all_spans
+        WHERE reclass_meeting_date > start_date
+
+        UNION ALL
+        
+        -- Second part: span from meeting_date (inclusive) to end_date where meeting date was after start_date
+        -- reclass_meeting_date stays as is, this is the 'ineligible' span due to task completion 
+        SELECT 
+            state_code,
+            person_id,
+            reclass_meeting_date AS start_date,
+            end_date,
+            reclass_meeting_date
+        FROM rejoin_to_all_spans
+        WHERE reclass_meeting_date > start_date
+
+        UNION ALL
+
+        -- Keep rows with no meeting_date or meeting date on or before start_date unchanged
+        -- These are spans that should remain as 'ineligible' spans throughout
+        
+        #TODO(#42444): if someone has a reclass meeting ON the day of their eligibility beginning,  
+        # that day is marked as a period of ineligibility with this current syntax and this case would not count 
+        # toward task completed while eligible. In theory it should count. 
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            reclass_meeting_date
+        FROM rejoin_to_all_spans
+        WHERE (reclass_meeting_date IS NULL OR reclass_meeting_date <= start_date)
       )
+      
     SELECT
-      rts.state_code,
-      rts.person_id,
-      rts.start_date,
-      {revert_nonnull_end_date_clause('rts.end_date')} AS end_date,
+      state_code,
+      person_id,
+      start_date,
+      {revert_nonnull_end_date_clause('end_date')} AS end_date,
       {"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
-      MAX(rts.reclass_meeting_date) AS latest_classification_date,
-      MAX(rts.reclass_meeting_date) IS NULL AS meets_criteria,
+      MAX(reclass_meeting_date) AS latest_classification_date,
+      MAX(reclass_meeting_date) IS NULL AS meets_criteria,
       TO_JSON(STRUCT({"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
-        MAX(rts.reclass_meeting_date) AS latest_classification_date,
-        MAX(rts.end_date) as eligible_date)) as reason,
-      MAX(rts.end_date) as eligible_date,
+        MAX(reclass_meeting_date) AS latest_classification_date,
+        MAX(end_date) as eligible_date)) as reason,
+      MAX(end_date) as eligible_date,
     FROM
-      rejoin_to_all_spans rts
+      correct_eligibility
+    -- This corrects cases of zero day 
+    #TODO(#42444): if someone has a reclass meeting ON the day of their eligibility beginning,  
+        # this causes the zero-day span. May want to fix this in the future with timestamps and then this filtering
+        # won't be needed. 
+    WHERE end_date > start_date
     GROUP BY 1,2,3,4,5"""
 
 
