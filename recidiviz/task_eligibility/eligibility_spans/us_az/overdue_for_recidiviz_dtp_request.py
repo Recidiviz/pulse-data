@@ -44,7 +44,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_unsatisfactory_program_ratings_within_3_months,
     not_serving_flat_sentence,
     only_drug_offense_convictions,
-    within_6_months_of_recidiviz_dtp_date,
+    within_7_days_of_recidiviz_dtp_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     EligibleCriteriaCondition,
@@ -122,7 +122,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # d. Self improvement programs
         no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
         # e. Time
-        within_6_months_of_recidiviz_dtp_date.VIEW_BUILDER,
+        within_7_days_of_recidiviz_dtp_date.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_drug_program_not_overdue.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
@@ -135,8 +135,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         description="Missing Mandatory Literacy criteria",
                     ),
                     EligibleCriteriaCondition(
-                        criteria=within_6_months_of_recidiviz_dtp_date.VIEW_BUILDER,
-                        description="Within 6 months of projected TPR eligibility date",
+                        criteria=within_7_days_of_recidiviz_dtp_date.VIEW_BUILDER,
+                        description="Within 7 days of projected TPR eligibility date",
                     ),
                     EligibleCriteriaCondition(
                         criteria=no_active_felony_detainers.VIEW_BUILDER,
@@ -145,15 +145,16 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 ],
                 at_least_n_conditions_true=3,
             ),
-            # Projected DTP Date Between 6 - 12 Months AND (missing mandatory literacy XOR felony detainers)
+            # Projected DTP Date Between 7 days - 12 Months AND (missing mandatory literacy XOR felony detainers)
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
+                    # TODO(#42817): update this condition to "date within 6-12 months"
                     TimeDependentCriteriaCondition(
-                        criteria=within_6_months_of_recidiviz_dtp_date.VIEW_BUILDER,
+                        criteria=within_7_days_of_recidiviz_dtp_date.VIEW_BUILDER,
                         reasons_date_field="recidiviz_dtp_date",
                         interval_length=12,
                         interval_date_part=BigQueryDateInterval.MONTH,
-                        description="Within 6-12 months from Recidiviz projected DTP date",
+                        description="Within 7 days to 12 months from Recidiviz projected DTP date",
                     ),
                     # Felony Detainer XOR Mandatory Literacy (only 1 met)
                     PickNCompositeCriteriaCondition(

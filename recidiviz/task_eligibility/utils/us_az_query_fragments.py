@@ -398,59 +398,60 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
 
     UNION ALL
 
-    -- Almost eligible section 1: Projected TPR date within 7-180 days
-    -- Almost eligible section 1: Projected TPR date within 7-180 days AND missing man lit
-    -- Almost eligible section 2: Projected TPR date within 181-365 days AND missing at most one other criteria
+    -- Almost eligible section 1: Projected {opp_name.lower()} date within 7-180 days
+    -- Almost eligible section 1: Projected {opp_name.lower()} date within 7-180 days AND missing man lit
+    -- Almost eligible section 2: Projected {opp_name.lower()} date within 181-365 days AND missing at most one other criteria
     -- (functional literacy XOR no felony detainers)
     # TODO(#33958) - recidiviz_xxx_date_approaching needs to be split into section 1 and 2
     SELECT 
         * EXCEPT(criteria_reason),
         CASE
-            WHEN is_eligible THEN "ALMOST_ELIGIBLE_BETWEEN_7_AND_180_DAYS"
-            WHEN ARRAY_LENGTH(ineligible_criteria) = 1
+            -- Tab 1: Upcoming {opp_name} date in the next 7-180 days
+            WHEN
+                SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_{opp_name.lower()}_date') AS DATE)
+                    <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
                 THEN CASE
-                    -- criteria name for DTP
+                    -- Missing mandatory literacy (check criteria names for DTP & TPR)
                     WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY" IN UNNEST(ineligible_criteria)
-                    -- criteria name for TPR
-                    OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
+                            OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_MISSING_MANLIT_BETWEEN_7_AND_180_DAYS"
-                    WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
-                        THEN "ALMOST_ELIGIBLE_BETWEEN_181_AND_365_DAYS"
-                    END
+                    -- Only missing the date requirement by 7-180 days
+                    ELSE "ALMOST_ELIGIBLE_BETWEEN_7_AND_180_DAYS"
+                END
+            -- Tab 2: {opp_name} date in the next 181-365 days
+            WHEN ARRAY_LENGTH(ineligible_criteria) = 1
+                -- Only missing the date requirements by 181-365 days
+                THEN "ALMOST_ELIGIBLE_BETWEEN_181_AND_365_DAYS"
             ELSE "ALMOST_ELIGIBLE_MISSING_CRITERIA_AND_BETWEEN_181_AND_365_DAYS"
         END AS metadata_tab_description,
-        CASE
-            WHEN is_eligible THEN "ALMOST_ELIGIBLE_1"
-            WHEN ARRAY_LENGTH(ineligible_criteria) = 1
-                THEN CASE
-                    -- criteria name for DTP
-                    WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY" IN UNNEST(ineligible_criteria)
-                    -- criteria name for TPR
-                    OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
-                        THEN "ALMOST_ELIGIBLE_1"
-                    WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
-                        THEN "ALMOST_ELIGIBLE_2"
-                    END
-            ELSE "ALMOST_ELIGIBLE_2"
-        END AS metadata_tab_name,
+        IF(
+            -- If the projected {opp_name} date is within 180 days: Almost Eligible Tab 1
+            SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_{opp_name.lower()}_date') AS DATE)
+                <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY),
+            "ALMOST_ELIGIBLE_1",
+            -- Else: Almost Eligible Tab 2 (181-365 days)
+            "ALMOST_ELIGIBLE_2"
+        ) AS metadata_tab_name,
     FROM recidiviz_{opp_name.lower()}_date_approaching,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
     WHERE
-        SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE"
+        -- Pull out the criteria that has the projected {opp_name} date in the reasons field
+        JSON_VALUE(criteria_reason, '$.criteria_name') = "US_AZ_WITHIN_7_DAYS_OF_RECIDIVIZ_{opp_name.upper()}_DATE"
+        -- TODO(#42817): move this logic to TES almost eligible conditions once almost eligible refactor is completed
+        -- Clients with an active detainer must have more than 180 days until their {opp_name} date to be displayed
+        -- in the tool
         AND (
-            is_almost_eligible
-            OR (
-                -- Only include residents with more than 7 days until the projected date if all other criteria are met
-                is_eligible
-                AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
-                    < SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_{opp_name.lower()}_date') AS DATE)
-            )
+            "US_AZ_NO_ACTIVE_FELONY_DETAINERS" NOT IN UNNEST(ineligible_criteria)
+            OR SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_{opp_name.lower()}_date') AS DATE)
+                    > DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
         )
     """
 
 
-def within_x_months_of_date(opp_name: str, time_interval: int) -> str:
-    """Returns a query finding if the chosen opportunity date is within x months"""
+def within_x_time_of_date(
+    opp_name: str, time_interval: int, date_part: str = "MONTH"
+) -> str:
+    """Returns a query finding if the chosen opportunity date is within x time (defaults to x months)"""
     assert opp_name.upper() in ["TPR", "DTP"], "Opportunity Name must be TPR or DTP"
     return f"""
         WITH critical_date_spans AS (
@@ -464,7 +465,7 @@ def within_x_months_of_date(opp_name: str, time_interval: int) -> str:
             ),
         {critical_date_has_passed_spans_cte(
         meets_criteria_leading_window_time=time_interval,
-        date_part="MONTH",
+        date_part=date_part,
     )}
         SELECT
             cd.state_code,

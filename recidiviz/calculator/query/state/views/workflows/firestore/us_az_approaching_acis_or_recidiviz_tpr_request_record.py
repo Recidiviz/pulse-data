@@ -54,7 +54,7 @@ WITH recidiviz_tpr_date_approaching AS (
     state_code="'US_AZ'",
     tes_task_query_view='overdue_for_recidiviz_tpr_request_materialized',
     id_type="'US_AZ_PERSON_ID'",
-    eligible_and_almost_eligible_only=True)}
+    almost_eligible_only=True)}
 ),
 
 acis_tpr_wo_reasons AS (
