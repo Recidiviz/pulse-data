@@ -82,6 +82,9 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     earned_time_days_1 = 5
     earned_time_days_2 = 10
 
+    in_state_sentencing_authority = "STATE"
+    out_of_state_sentencing_authority = "OTHER_STATE"
+
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
         return INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER
@@ -110,12 +113,14 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 schema_field_for_type("sentence_id", int),
                 schema_field_for_type("sentence_inferred_group_id", int),
                 schema_field_for_type("is_life", bool),
+                schema_field_for_type("sentencing_authority", str),
             ],
         }
 
     def test_offset_overlapping_sentences_agg(self) -> None:
-        """Tests that overlapping sentences get sub-sessionized and that we take the max projected date and the sum of
-        credits earned across sentences within an inferred group when they overlap"""
+        """Tests that overlapping sentences get sub-sessionized and that we take (1) the max projected date, (2) the sum
+        of credits earned across sentences, and (3) a TRUE value for has_any_in_state_sentences and
+        has_any_out_of_state_sentences if any sentence being served is in state or out of state, respectively"""
 
         projected_dates_data = [
             {
@@ -149,6 +154,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_1,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": False,
+                "sentencing_authority": self.in_state_sentencing_authority,
             },
             {
                 "state_code": self.state_code.value,
@@ -156,6 +162,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_2,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": False,
+                "sentencing_authority": self.out_of_state_sentencing_authority,
             },
         ]
 
@@ -174,6 +181,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": None,
                 "earned_time_days": self.earned_time_days_1,
                 "good_time_days": None,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": True,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -185,6 +194,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_1,
+                        "sentencing_authority": self.in_state_sentencing_authority,
                     },
                 ],
             },
@@ -202,6 +212,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": None,
                 "earned_time_days": self.earned_time_days_1 + self.earned_time_days_2,
                 "good_time_days": None,
+                "has_any_out_of_state_sentences": True,
+                "has_any_in_state_sentences": True,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -213,6 +225,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_1,
+                        "sentencing_authority": self.in_state_sentencing_authority,
                     },
                     {
                         "sentence_id": self.sentence_id_2,
@@ -224,6 +237,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_2,
+                        "sentencing_authority": self.out_of_state_sentencing_authority,
                     },
                 ],
             },
@@ -241,6 +255,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": None,
                 "earned_time_days": self.earned_time_days_2,
                 "good_time_days": None,
+                "has_any_out_of_state_sentences": True,
+                "has_any_in_state_sentences": False,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_2,
@@ -252,6 +268,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_2,
+                        "sentencing_authority": self.out_of_state_sentencing_authority,
                     },
                 ],
             },
@@ -299,6 +316,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_1,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": False,
+                "sentencing_authority": None,
             },
             {
                 "state_code": self.state_code.value,
@@ -306,6 +324,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_2,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": False,
+                "sentencing_authority": None,
             },
         ]
 
@@ -323,6 +342,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": self.projected_date_1_max,
                 "earned_time_days": None,
                 "good_time_days": None,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": False,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -334,6 +355,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                     {
                         "sentence_id": self.sentence_id_2,
@@ -345,6 +367,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -394,6 +417,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_1,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": True,
+                "sentencing_authority": None,
             },
             {
                 "state_code": self.state_code.value,
@@ -401,6 +425,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "sentence_id": self.sentence_id_2,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "is_life": False,
+                "sentencing_authority": None,
             },
         ]
 
@@ -419,6 +444,8 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": None,
                 "earned_time_days": None,
                 "good_time_days": None,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": False,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -430,6 +457,7 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                     {
                         "sentence_id": self.sentence_id_2,
@@ -441,6 +469,289 @@ class SentenceProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
+            },
+            expected_data,
+        )
+
+    def test_sentencing_authority_aggregation_in_state_and_out_of_state(self) -> None:
+        """Tests than when overlapping sentences are aggregated to an inferred group, that the group level booleans are
+        `has_any_out_of_state_sentences` and `has_any_in_state_state_sentences` are both TRUE when there is one of
+        each sentencing authority value in the underlying sentences
+        """
+        # The two sentences perfectly overlap each other
+        projected_dates_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+        ]
+
+        # Both sentences are in the same inferred group, one has an in state sentence and the other has an out of state
+        # sentence
+        sentences_and_charges_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": self.in_state_sentencing_authority,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": self.out_of_state_sentencing_authority,
+            },
+        ]
+
+        # both sentence authority booleans are true
+        expected_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+                "earned_time_days": None,
+                "good_time_days": None,
+                "has_any_out_of_state_sentences": True,
+                "has_any_in_state_sentences": True,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": self.in_state_sentencing_authority,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": self.out_of_state_sentencing_authority,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
+            },
+            expected_data,
+        )
+
+    def test_sentencing_authority_aggregation_in_state_and_null(self) -> None:
+        """Tests than when overlapping sentences are aggregated to an inferred group, that the group level booleans are
+        `has_any_out_of_state_sentences` and `has_any_in_state_state_sentences` are hydrated correctly when there is one
+         hydrated sentence authority value and one null sentence authority value.
+        """
+        # The two sentences perfectly overlap each other
+        projected_dates_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+        ]
+
+        # Both sentences are in the same inferred group, one has an in state sentence and the other has a NULL value for
+        # sentencing authority
+        sentences_and_charges_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": self.in_state_sentencing_authority,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": None,
+            },
+        ]
+
+        # both sentence authority booleans are non-null. The in-state boolean is TRUE and the out-of-state boolean is
+        # FALSE
+        expected_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+                "earned_time_days": None,
+                "good_time_days": None,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": True,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": self.in_state_sentencing_authority,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
+                    },
+                ],
+            },
+        ]
+        self.run_simple_view_builder_query_test_from_data(
+            {
+                self.sentence_projected_dates_address: projected_dates_data,
+                self.sentences_and_charges_address: sentences_and_charges_data,
+            },
+            expected_data,
+        )
+
+    def test_sentencing_authority_aggregation_both_null(self) -> None:
+        """Tests than when overlapping sentences are aggregated to an inferred group, that the group level booleans are
+        both NULL when none of the underlying sentences have sentence_authority hydration
+        """
+        # The two sentences perfectly overlap each other
+        projected_dates_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "start_date": self.critical_date_1,
+                "end_date_exclusive": self.critical_date_2,
+            },
+        ]
+
+        # Both sentences are in the same inferred group, both have NULL sentencing_authority values
+        sentences_and_charges_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_1,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": None,
+            },
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_id": self.sentence_id_2,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "sentencing_authority": None,
+            },
+        ]
+
+        # both sentence authority booleans are NULL
+        expected_data = [
+            {
+                "state_code": self.state_code.value,
+                "person_id": self.person_id,
+                "sentence_inferred_group_id": self.inferred_group_id,
+                "start_date": self.critical_date_1.date(),
+                "end_date_exclusive": self.critical_date_2.date(),
+                "parole_eligibility_date": None,
+                "projected_parole_release_date": None,
+                "projected_full_term_release_date_min": None,
+                "projected_full_term_release_date_max": None,
+                "earned_time_days": None,
+                "good_time_days": None,
+                # TODO(#42827): Look into unexpected NULL handling in emulator output. These two flags should be NULL
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": False,
+                "sentence_array": [
+                    {
+                        "sentence_id": self.sentence_id_1,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
+                    },
+                    {
+                        "sentence_id": self.sentence_id_2,
+                        "sentence_parole_eligibility_date": None,
+                        "sentence_projected_parole_release_date": None,
+                        "sentence_projected_full_term_release_date_min": None,
+                        "sentence_projected_full_term_release_date_max": None,
+                        "sentence_length_days_min": None,
+                        "sentence_length_days_max": None,
+                        "sentence_good_time_days": None,
+                        "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },

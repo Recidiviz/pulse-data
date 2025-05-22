@@ -49,7 +49,7 @@ SELECT
     -- rts (release-to-supervision) date is technically not a parole eligibility date and this is a separate concept in
     -- US_MA. However, we do not receive parole_eligibility_date and this is probably the best spot for it in our schema
     CAST(rts_date AS DATE) AS parole_eligibility_date,
-    CAST(adjusted_max_release_date AS DATE) AS projected_full_term_release_date_max
+    CAST(adjusted_max_release_date AS DATE) AS projected_full_term_release_date_max,
 FROM `{{project_id}}.{{analyst_views_dataset}}.us_ma_projected_dates_materialized`
 
 UNION ALL
@@ -100,6 +100,8 @@ SELECT
     projected_full_term_release_date_max AS group_projected_full_term_release_date_max,
     good_time_days AS group_good_time_days,
     earned_time_days AS group_earned_time_days,
+    CAST(NULL AS BOOL) AS has_any_out_of_state_sentences,
+    CAST(NULL AS BOOL) AS has_any_in_state_sentences,
     ARRAY_AGG(
         STRUCT(
             person_id AS sentence_id,
@@ -110,7 +112,8 @@ SELECT
             CAST(NULL AS INT64) AS sentence_length_days_min,
             CAST(NULL AS INT64) AS sentence_length_days_max,
             good_time_days AS sentence_good_time_days,
-            earned_time_days AS sentence_earned_time_days
+            earned_time_days AS sentence_earned_time_days,
+            CAST(NULL AS STRING) AS sentencing_authority
             )
             ORDER BY person_id
         ) AS sentence_array 

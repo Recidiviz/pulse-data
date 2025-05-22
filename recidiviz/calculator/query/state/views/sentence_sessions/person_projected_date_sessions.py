@@ -62,6 +62,8 @@ SELECT
     projected_full_term_release_date_max AS group_projected_full_term_release_date_max,
     CAST(NULL AS INT64) AS group_good_time_days,
     CAST(NULL AS INT64) AS group_earned_time_days,
+    CAST(NULL AS BOOL) AS has_any_out_of_state_sentences,
+    CAST(NULL AS BOOL) AS has_any_in_state_sentences,
     CAST(NULL AS INT64) AS sentence_id,
     CAST(NULL AS DATE) AS sentence_parole_eligibility_date,
     CAST(NULL AS DATE) AS sentence_projected_parole_release_date,
@@ -71,6 +73,7 @@ SELECT
     CAST(NULL AS INT64) AS sentence_length_days_max,
     CAST(NULL AS INT64) AS sentence_good_time_days,
     CAST(NULL AS INT64) AS sentence_earned_time_days,
+    CAST(NULL AS STRING) AS sentencing_authority,
 FROM `{{project_id}}.{{sentence_sessions_dataset}}.inferred_sentence_group_aggregated_sentence_group_projected_dates_materialized`
 UNION ALL
 SELECT 
@@ -85,6 +88,8 @@ SELECT
     projected_full_term_release_date_max AS group_projected_full_term_release_date_max,
     good_time_days AS group_good_time_days,
     earned_time_days AS group_earned_time_days,
+    has_any_out_of_state_sentences,
+    has_any_in_state_sentences,
     sentence_id,
     sentence_parole_eligibility_date,
     sentence_projected_parole_release_date,
@@ -94,6 +99,7 @@ SELECT
     sentence_length_days_max,
     sentence_good_time_days,
     sentence_earned_time_days,
+    sentencing_authority,
 FROM `{{project_id}}.{{sentence_sessions_dataset}}.inferred_sentence_group_aggregated_sentence_projected_dates_materialized`,
 UNNEST(sentence_array)
 )
@@ -119,6 +125,8 @@ SELECT
     MAX(group_projected_full_term_release_date_max) OVER w AS group_projected_full_term_release_date_max,
     MAX(group_good_time_days) OVER w AS group_good_time_days,
     MAX(group_earned_time_days) OVER w AS group_earned_time_days,
+    MAX(has_any_out_of_state_sentences) OVER w AS has_any_out_of_state_sentences,
+    MAX(has_any_in_state_sentences) OVER w AS has_any_in_state_sentences,
     sentence_id,
     sentence_parole_eligibility_date,
     sentence_projected_parole_release_date,
@@ -128,6 +136,7 @@ SELECT
     sentence_length_days_max,
     sentence_good_time_days,
     sentence_earned_time_days,
+    sentencing_authority,
 FROM sub_sessions_with_attributes
 --The group projected dates sourced from `inferred_sentence_group_aggregated_sentence_group_projected_dates` will have a null sentence_id value
 --However, we have already taken the max dates for each group, so we can now drop that row as it is not needed when we aggregate the sentence dates
@@ -155,6 +164,8 @@ SELECT
     ANY_VALUE(group_projected_full_term_release_date_max) AS group_projected_full_term_release_date_max,
     ANY_VALUE(group_good_time_days) AS group_good_time_days,
     ANY_VALUE(group_earned_time_days) AS group_earned_time_days,
+    ANY_VALUE(has_any_out_of_state_sentences) AS has_any_out_of_state_sentences,
+    ANY_VALUE(has_any_in_state_sentences) AS has_any_in_state_sentences,
     ARRAY_AGG(
         STRUCT(
             sentence_id,
@@ -165,7 +176,8 @@ SELECT
             sentence_length_days_min,
             sentence_length_days_max,
             sentence_good_time_days,
-            sentence_earned_time_days
+            sentence_earned_time_days,
+            sentencing_authority
             )
         ORDER BY
             sentence_id
@@ -186,6 +198,8 @@ FROM (
         'group_projected_full_term_release_date_max',
         'group_good_time_days',
         'group_earned_time_days',
+        'has_any_out_of_state_sentences',
+        'has_any_in_state_sentences',
         'sentence_array'],
     struct_attribute_subset='sentence_array',
     end_date_field_name='end_date_exclusive')})

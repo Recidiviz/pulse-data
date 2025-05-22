@@ -94,6 +94,9 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
     earned_time_days_1 = 5
     earned_time_days_2 = 10
 
+    in_state_sentencing_authority = "STATE"
+    out_of_state_sentencing_authority = "OTHER_STATE"
+
     @property
     def view_builder(self) -> SimpleBigQueryViewBuilder:
         return PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER
@@ -144,6 +147,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 schema_field_for_type("projected_full_term_release_date_max", date),
                 schema_field_for_type("good_time_days", int),
                 schema_field_for_type("earned_time_days", int),
+                schema_field_for_type("has_any_out_of_state_sentences", bool),
+                schema_field_for_type("has_any_in_state_sentences", bool),
                 bigquery.SchemaField(
                     "sentence_array",
                     "RECORD",
@@ -164,6 +169,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         schema_field_for_type("sentence_length_days_max", int),
                         schema_field_for_type("sentence_good_time_days", int),
                         schema_field_for_type("sentence_earned_time_days", int),
+                        schema_field_for_type("sentencing_authority", str),
                     ),
                 ),
             ],
@@ -184,6 +190,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 ),
                 schema_field_for_type("good_time_days", int),
                 schema_field_for_type("earned_time_days", int),
+                schema_field_for_type("has_any_out_of_state_sentences", bool),
+                schema_field_for_type("has_any_in_state_sentences", bool),
                 bigquery.SchemaField(
                     "sentence_array",
                     "RECORD",
@@ -204,6 +212,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         schema_field_for_type("sentence_length_days_max", int),
                         schema_field_for_type("sentence_good_time_days", int),
                         schema_field_for_type("sentence_earned_time_days", int),
+                        schema_field_for_type("sentencing_authority", str),
                     ),
                 ),
             ],
@@ -235,6 +244,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "end_date_exclusive": self.critical_date_2.date(),
                 "projected_full_term_release_date_max": self.projected_date_1_min,
                 "earned_time_days": self.earned_time_days_1,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": True,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -246,6 +257,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_1,
+                        "sentencing_authority": self.in_state_sentencing_authority,
                     },
                 ],
             },
@@ -266,6 +278,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "group_earned_time_days": self.earned_time_days_1,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": False,
+                "has_any_in_state_sentences": True,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -277,6 +291,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": self.earned_time_days_1,
+                        "sentencing_authority": self.in_state_sentencing_authority,
                     },
                 ],
             },
@@ -368,6 +383,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -379,6 +396,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -394,6 +412,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -405,6 +425,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -504,6 +525,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -515,6 +538,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -530,6 +554,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_max,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -541,6 +567,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -556,6 +583,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_med,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -567,6 +596,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },
@@ -637,6 +667,8 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                 "group_projected_full_term_release_date_max": self.projected_date_1_min,
                 "group_earned_time_days": None,
                 "group_good_time_days": None,
+                "has_any_out_of_state_sentences": None,
+                "has_any_in_state_sentences": None,
                 "sentence_array": [
                     {
                         "sentence_id": self.sentence_id_1,
@@ -648,6 +680,7 @@ class PersonProjectedDateSessionsTest(SimpleBigQueryViewBuilderTestCase):
                         "sentence_length_days_max": None,
                         "sentence_good_time_days": None,
                         "sentence_earned_time_days": None,
+                        "sentencing_authority": None,
                     },
                 ],
             },

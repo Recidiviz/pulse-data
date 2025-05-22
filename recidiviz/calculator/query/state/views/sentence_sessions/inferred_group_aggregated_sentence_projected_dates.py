@@ -81,6 +81,7 @@ SELECT DISTINCT
    p.*,
    IF(state_code IN ({{v2_non_migrated_states}}), p.person_id, s.sentence_inferred_group_id) AS sentence_inferred_group_id,
    s.is_life,
+   s.sentencing_authority,
 FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_projected_date_sessions_materialized` p
 JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` s
     USING(state_code, person_id, sentence_id)
@@ -114,6 +115,8 @@ SELECT
     MAX(IF(is_life, {nonnull_end_date_clause('projected_full_term_release_date_max')}, projected_full_term_release_date_max)) AS projected_full_term_release_date_max,
     SUM(good_time_days) AS good_time_days,
     SUM(earned_time_days) AS earned_time_days,
+    LOGICAL_OR(sentencing_authority = 'OTHER_STATE') AS has_any_out_of_state_sentences,
+    LOGICAL_OR(sentencing_authority != 'OTHER_STATE') AS has_any_in_state_sentences,
     ARRAY_AGG(
         STRUCT(
             sentence_id,
@@ -124,7 +127,8 @@ SELECT
             sentence_length_days_min,
             sentence_length_days_max,
             good_time_days AS sentence_good_time_days,
-            earned_time_days AS sentence_earned_time_days
+            earned_time_days AS sentence_earned_time_days,
+            sentencing_authority
             )
         ORDER BY
             sentence_id
@@ -144,6 +148,8 @@ SELECT
     {revert_nonnull_end_date_clause('projected_full_term_release_date_max')} AS projected_full_term_release_date_max,
     good_time_days,
     earned_time_days,
+    has_any_out_of_state_sentences,
+    has_any_in_state_sentences,
     sentence_array,
 FROM 
 (
@@ -156,6 +162,8 @@ FROM
                  'projected_full_term_release_date_max',
                  'earned_time_days',
                  'good_time_days',
+                 'has_any_out_of_state_sentences',
+                 'has_any_in_state_sentences',
                  'sentence_array'],
     struct_attribute_subset = 'sentence_array',
     end_date_field_name='end_date_exclusive')
