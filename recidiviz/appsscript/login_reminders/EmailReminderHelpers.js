@@ -438,12 +438,29 @@ function onOpen() {
   sheet
     .createMenu("Send Emails")
     .addItem(
+      "Send facilities line staff emails",
+      "sendFacilitiesLinestaffEmailRemindersMenuItem"
+    )
+    .addItem(
       "Send supervision line staff emails",
       "sendSupervisionLinestaffEmailRemindersMenuItem"
     )
     .addItem("Send supervisor emails", "sendSupervisorEmailRemindersMenuItem")
     .addItem("Check login status", "checkLoginStatusMenuItem")
     .addToUi();
+}
+
+/**
+ * Menu item for sending facilities line staff emails
+ */
+function sendFacilitiesLinestaffEmailRemindersMenuItem() {
+  const sheet = SpreadsheetApp.getUi();
+  const confirmation = getConfirmation(sheet, FACILITIES_LINESTAFF);
+
+  if (confirmation) {
+    sendFacilitiesLinestaffEmailReminders_();
+    sheet.alert("Facilities Line staff emails sent successfully!");
+  }
 }
 
 /**
@@ -455,7 +472,7 @@ function sendSupervisionLinestaffEmailRemindersMenuItem() {
 
   if (confirmation) {
     sendSupervisionLinestaffEmailReminders_();
-    sheet.alert("Line staff emails sent successfully!");
+    sheet.alert("Supervision line staff emails sent successfully!");
   }
 }
 
