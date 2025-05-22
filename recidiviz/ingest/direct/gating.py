@@ -54,6 +54,10 @@ class RawDataPruningExemptionReason(Enum):
 FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
     StateCode, dict[str, RawDataPruningExemptionReason]
 ] = {
+    StateCode.US_IA: {
+        "IA_DOC_MAINT_Staff": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "IA_DOC_MAINT_StaffWorkUnits": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+    },
     StateCode.US_IX: {
         "employee": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "ref_Employee": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
