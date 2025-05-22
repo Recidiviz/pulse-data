@@ -24,6 +24,9 @@ my_enum_field:
 """
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 
 
 def map_to_probation_but_retain_raw_text(
@@ -34,5 +37,17 @@ def map_to_probation_but_retain_raw_text(
 
     if raw_text:
         return StateSentenceType.PROBATION
+
+    raise ValueError("This parser should never be called on missing raw text.")
+
+
+def map_to_residential_but_retain_raw_text(
+    raw_text: str,
+) -> StateSupervisionLevel:
+    """Maps supervision level to RESIDENTIAL_PROGRAM for supervision periods with a residential services location type;
+    used instead of literal enum so that raw text of the original supervision level can be preserved"""
+
+    if raw_text:
+        return StateSupervisionLevel.RESIDENTIAL_PROGRAM
 
     raise ValueError("This parser should never be called on missing raw text.")

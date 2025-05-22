@@ -13,6 +13,7 @@ input_columns:
   CaseManagerStaffId: STRING
   Specialty: STRING
   WorkUnitId: STRING
+  WorkUnitServiceType: STRING
   SupervisionLevel: STRING
   SupervisionModifier: STRING
   period_seq_num: INTEGER
@@ -191,6 +192,19 @@ output:
                         - Jail (Designated Site)
                       StateSupervisionLevel.WARRANT:
                         - Warrant
+              - $else_if:
+                  $equal:
+                    - $literal("Residential Services")
+                    - WorkUnitServiceType
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("RESIDENTIAL")
+                          - SupervisionLevel
+                        $separator: "@@"
+                    $custom_parser: us_ia_custom_enum_parsers.map_to_residential_but_retain_raw_text
               - $else:
                   $enum_mapping:
                     $raw_text: SupervisionLevel

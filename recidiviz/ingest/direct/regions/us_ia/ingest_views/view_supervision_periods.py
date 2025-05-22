@@ -119,10 +119,12 @@ WITH
       OffenderCd,
       SupervisionStatusInformationId,
       WorkUnitId,
+      WorkUnitServiceType,
       DATE(WorkUnitStartDt) AS start_date,
       DATE(WorkUnitEndDt) AS end_date,
       CAST(EnteredDt AS DATETIME) as update_datetime
     FROM {IA_DOC_OffenderWorkUnits}
+    LEFT JOIN {IA_DOC_MAINT_WorkUnits} USING(WorkUnitId)
   ),
 
   -- This CTE returns spans of time for each supervision specialty
@@ -362,6 +364,7 @@ WITH
         officer.CaseManagerStaffId,
         specialty.Specialty,
         location.WorkUnitId,
+        location.WorkUnitServiceType,
         level.SupervisionLevel,
         modifier.SupervisionModifier
       FROM tiny_spans ts
