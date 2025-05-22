@@ -24,6 +24,7 @@ const TESTING_NAME = "Firstname Lastname";
 const TESTING_DISTRICT = "Fake District";
 const TEST_NUM_OUTLIERS = 123;
 const TEST_NUM_OPPORTUNITIES = 456;
+const TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES = 20;
 
 const BASE_INFO = {
   name: TESTING_NAME,
@@ -31,15 +32,25 @@ const BASE_INFO = {
   district: TESTING_DISTRICT,
   lastLogin: null,
   outliers: TEST_NUM_OUTLIERS,
-  opportunities: TEST_NUM_OPPORTUNITIES,
+  totalOpportunities: TEST_NUM_OPPORTUNITIES,
+  almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
 };
+
+function testSendFacilitiesLinestaffEmails() {
+  sendTestEmails_(
+    "[TESTING] Sent Emails to Facilities Linestaff",
+    EMAIL_SETTINGS,
+    FACILITIES_LINESTAFF_INCLUDED_STATES,
+    FACILITIES_LINESTAFF
+  );
+}
 
 function testSendSupervisionLinestaffEmails() {
   sendTestEmails_(
     "[TESTING] Sent Emails to Supervision Linestaff",
     EMAIL_SETTINGS,
     SUPERVISION_LINESTAFF_INCLUDED_STATES,
-    false
+    SUPERVISION_LINESTAFF
   );
 }
 
@@ -48,8 +59,12 @@ function testSendSupervisorEmails() {
     "[TESTING] Sent Emails to Supervisors",
     EMAIL_SETTINGS,
     SUPERVISOR_INCLUDED_STATES,
-    true
+    SUPERVISORS
   );
+}
+
+function testRunFacilitiesLinestaffQuery() {
+  testQuery_(FACILITIES_LINESTAFF_QUERY);
 }
 
 function testRunSupervisionLinestaffQuery() {
@@ -69,11 +84,19 @@ function testGetUserLoginInfo() {
   const userLoginInfo = getUserLoginInfo(emails, authToken);
 
   if (typeof userLoginInfo !== "object") {
-    throw new Error("User login info is not returning an object");
+    throw new Error(
+      `User login info is returning ${typeof userLoginInfo}, not an object.`
+    );
   }
 
   if (Object.keys(userLoginInfo).length != emails.length) {
-    throw new Error("Length of user login info is incorrect");
+    throw new Error(
+      `Length of user login info is ${
+        Object.keys(userLoginInfo).length
+      } when it should be ${
+        emails.length
+      }. The current emails going through are ${Object.keys(userLoginInfo)}`
+    );
   }
 
   // Checking keys and values of userLoginInfo
@@ -96,7 +119,7 @@ function testGetUserLoginInfo() {
 // Private functions, indicated by the underscore at the end of the name, will not
 // show up in the Apps Script UI.
 
-function sendTestEmails_(sheetName, settings, stateCodesToTest, isSupervisors) {
+function sendTestEmails_(sheetName, settings, stateCodesToTest, userType) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet();
   let sentEmailsSheet = sheet.getSheetByName(sheetName);
   if (!sentEmailsSheet) {
@@ -110,7 +133,7 @@ function sendTestEmails_(sheetName, settings, stateCodesToTest, isSupervisors) {
       EMAIL_SUBJECT: `[TESTING ${stateCode}] ${settings.EMAIL_SUBJECT}`,
     };
     const info = { ...BASE_INFO, stateCode };
-    const body = buildLoginReminderBody(info, isSupervisors, testSettings);
+    const body = buildLoginReminderBody(info, userType, testSettings);
     sendLoginReminder(info, body, sentEmailsSheet, testSettings);
   }
   console.log(

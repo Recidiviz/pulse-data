@@ -37,6 +37,8 @@ SELECT
         IFNULL(metrics.workflows_distinct_people_eligible_and_actionable, 0)
         + IFNULL(metrics.workflows_distinct_people_almost_eligible_and_actionable, 0)
     ) AS total_opportunities,
+    IFNULL(metrics.workflows_distinct_people_eligible_and_actionable, 0) AS eligible_opportunities,
+    IFNULL(metrics.workflows_distinct_people_almost_eligible_and_actionable, 0) AS almost_eligible_opportunities,
     IFNULL(metrics.distinct_outlier_officers_visible_in_tool, 0) AS total_outliers,
 FROM
     `{project_id}.user_metrics.insights__supervision_unit_aggregated_metrics_materialized` metrics

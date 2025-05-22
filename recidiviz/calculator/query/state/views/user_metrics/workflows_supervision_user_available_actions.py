@@ -110,6 +110,8 @@ WITH selected_users AS (
             IFNULL(metrics.workflows_distinct_people_eligible_and_actionable, 0)
             + IFNULL(metrics.workflows_distinct_people_almost_eligible_and_actionable, 0)
         ) AS total_opportunities,
+        IFNULL(metrics.workflows_distinct_people_eligible_and_actionable, 0) AS eligible_opportunities,
+        IFNULL(metrics.workflows_distinct_people_almost_eligible_and_actionable, 0) AS almost_eligible_opportunities,
         metrics.*
     FROM
         `{{project_id}}.user_metrics.workflows__supervision_officer_aggregated_metrics_materialized` metrics
@@ -155,6 +157,8 @@ SELECT
     su.workflows_user_email_address,
     su.location_name,
     su.total_opportunities,
+    su.eligible_opportunities,
+    su.almost_eligible_opportunities,
     tc.total_clients_by_opportunity,
     uc.urgent_clients_by_opportunity
 FROM

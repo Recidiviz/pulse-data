@@ -14,41 +14,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-/* Apps Script for sending email reminders to supervisors. */
+/* Apps Script for sending email reminders to facilities line staff. */
 
-const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
+const FACILITIES_LINESTAFF_INCLUDED_STATES = ["US_AZ"];
 
 // =============================================================================
 
 // comma-separated list of state codes as strings
-const supervisorStatesForQuery = SUPERVISOR_INCLUDED_STATES.map(
-  (s) => `"${s}"`
-).join();
+const facilitiesLinestaffStatesForQuery =
+  FACILITIES_LINESTAFF_INCLUDED_STATES.map((s) => `"${s}"`).join();
 
 // Note: If the order of the columns in the query changes, we must
 // account for the change within EmailReminderHelpers.
-const SUPERVISOR_QUERY = `SELECT 
+const FACILITIES_LINESTAFF_QUERY = `SELECT 
   state_code,
-  staff_external_id,
-  unit_supervisor_name,
-  insights_user_email_address,
+  facility_counselor_id,
+  facility_counselor_name,
+  workflows_user_email_address,
   location_name,
   total_opportunities,
   eligible_opportunities,
   almost_eligible_opportunities,
-  total_outliers,
 
 FROM
-  \`recidiviz-123.user_metrics.insights_user_available_actions_materialized\`
+  \`recidiviz-123.user_metrics.workflows_facilities_user_available_actions_materialized\`
 
 WHERE
-  state_code IN ( ${supervisorStatesForQuery} )`;
+  state_code IN (${facilitiesLinestaffStatesForQuery})`;
 
-function sendSupervisorEmailReminders_() {
+function sendFacilitiesLinestaffEmailReminders_() {
   sendAllLoginReminders(
-    SUPERVISORS,
-    SUPERVISOR_QUERY,
+    FACILITIES_LINESTAFF,
+    FACILITIES_LINESTAFF_QUERY,
     EMAIL_SETTINGS,
-    SUPERVISOR_INCLUDED_STATES
+    FACILITIES_LINESTAFF_INCLUDED_STATES
   );
 }

@@ -39,6 +39,8 @@ const SUPERVISION_LINESTAFF_QUERY = `SELECT
   workflows_user_email_address,
   location_name,
   total_opportunities,
+  eligible_opportunities,
+  almost_eligible_opportunities,
 
 FROM
   \`recidiviz-123.user_metrics.workflows_supervision_user_available_actions_materialized\`
@@ -55,7 +57,7 @@ GROUP BY
 
 function sendSupervisionLinestaffEmailReminders_() {
   sendAllLoginReminders(
-    false,
+    SUPERVISION_LINESTAFF,
     SUPERVISION_LINESTAFF_QUERY,
     EMAIL_SETTINGS,
     SUPERVISION_LINESTAFF_INCLUDED_STATES
