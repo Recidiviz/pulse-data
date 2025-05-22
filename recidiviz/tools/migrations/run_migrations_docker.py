@@ -85,10 +85,9 @@ def main(
             logging.error("Migrations failed to run: %s", e)
             sys.exit(1)
         finally:
-            if schema_type.is_multi_db_schema:
-                SQLAlchemyEngineManager.teardown_engine_for_database_key(
-                    database_key=database_key
-                )
+            SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                database_key=database_key
+            )
 
 
 if __name__ == "__main__":

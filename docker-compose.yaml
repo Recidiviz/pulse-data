@@ -1,5 +1,8 @@
 # Defines services that shared across multiple apps, such as Redis and our databases
 # Run via `docker-compose up`
+
+version: "3"
+
 services:
   case_triage_migrations:
     image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
@@ -60,7 +63,7 @@ services:
       POSTGRES_PASSWORD: example
       POSTGRES_DB: postgres
     ports:
-      - "5445:5432"
+      - "5435:5432"
     volumes:
       - operations_db_data:/var/lib/postgresql/data
       - operations_db_socket:/var/run/postgresql/
@@ -137,35 +140,6 @@ services:
       - insights_db_data:/var/lib/postgresql/data
       - insights_db_socket:/var/run/postgresql/
 
-  resource_search_db:
-    build:
-      context: .
-      dockerfile: Dockerfile.resource-search
-    environment:
-      POSTGRES_USER: resource_user
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: postgres
-    ports:
-      - "5440:5432"
-    volumes:
-      - resource_search_db_data:/var/lib/postgresql/data
-      - resource_search_db_socket:/var/run/postgresql/
-
-  resource_search_migrations:
-    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
-    volumes:
-      - "./recidiviz:/app/recidiviz/"
-    depends_on:
-      - resource_search_db
-    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database RESOURCE_SEARCH
-    environment:
-      - IS_DEV=true
-      - SQLALCHEMY_DB_HOST=resource_search_db
-      - SQLALCHEMY_DB_NAME=postgres
-      - SQLALCHEMY_DB_USER=resource_user
-      - SQLALCHEMY_DB_PASSWORD=example
-      - SQLALCHEMY_USE_SSL=0
-
 volumes:
   case_triage_db_data:
   case_triage_db_socket:
@@ -179,5 +153,3 @@ volumes:
   workflows_db_socket:
   insights_db_data:
   insights_db_socket:
-  resource_search_db_data:
-  resource_search_db_socket:
