@@ -16,12 +16,16 @@
 # =============================================================================
 """Configuration module for US_NE's SQL Server to GCS export tasks, with a task
 representing a single table export/upload."""
+import datetime
 from collections import defaultdict
 from enum import Enum
 
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_raw_file_name,
+)
 
 # Most of the file tags are found in the DCS_WEB db
 # but the following are only in the DCS_MVS db
@@ -61,10 +65,13 @@ class UsNeSqltoGCSExportTask:
     db: UsNeDatabaseName = attr.ib(
         validator=attr.validators.instance_of(UsNeDatabaseName)
     )
+    update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
 
     @classmethod
-    def from_file_tag(cls, file_tag: str) -> "UsNeSqltoGCSExportTask":
-        """Factory to create export tasks for the given file tag.
+    def from_file_tag_and_update_dt(
+        cls, file_tag: str, update_datetime: datetime.datetime
+    ) -> "UsNeSqltoGCSExportTask":
+        """Factory to create export tasks for the given file tag and update_datetime.
 
         We assume that file tags are found in DCS_WEB and have table names
         that match the file tag by default.
@@ -79,25 +86,31 @@ class UsNeSqltoGCSExportTask:
             file_tag=file_tag,
             table_name=table_name,
             db=db,
+            update_datetime=update_datetime,
         )
 
     @property
-    def local_file_name(self) -> str:
-        return f"{self.file_tag}.csv"
+    def file_name(self) -> str:
+        return to_normalized_unprocessed_raw_file_name(
+            file_name=self.file_tag, dt=self.update_datetime
+        )
 
     def to_str(self) -> str:
         return f"File Tag: {self.file_tag}, Table: {self.db.value}.{self.table_name}"
 
 
 def sql_to_gcs_export_tasks_by_db(
-    file_tags: list[str],
-) -> dict[str, list[UsNeSqltoGCSExportTask]]:
-    """Group export tasks by database."""
+    file_tags: list[str], update_datetime: datetime.datetime
+) -> dict[UsNeDatabaseName, list[UsNeSqltoGCSExportTask]]:
+    """Group export tasks by database. Assumes all files have the same update_datetime."""
     export_tasks = [
-        UsNeSqltoGCSExportTask.from_file_tag(file_tag) for file_tag in file_tags
+        UsNeSqltoGCSExportTask.from_file_tag_and_update_dt(file_tag, update_datetime)
+        for file_tag in file_tags
     ]
-    tasks_by_db: dict[str, list[UsNeSqltoGCSExportTask]] = defaultdict(list)
+    tasks_by_db: dict[UsNeDatabaseName, list[UsNeSqltoGCSExportTask]] = defaultdict(
+        list
+    )
     for task in export_tasks:
-        tasks_by_db[task.db.value].append(task)
+        tasks_by_db[task.db].append(task)
 
     return tasks_by_db

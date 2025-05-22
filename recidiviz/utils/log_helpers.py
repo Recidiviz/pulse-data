@@ -18,6 +18,7 @@
 
 import datetime
 import difflib
+import logging
 import os
 
 import recidiviz
@@ -26,6 +27,9 @@ RECIDIVIZ_ROOT = os.path.abspath(os.path.join(recidiviz.__file__, "../.."))
 
 # This directory is in the .gitignore so these files won't get committed
 LOG_OUTPUT_DIR = "logs/"
+
+LOGGING_WIDTH = 80
+FILL_CHAR = "#"
 
 
 def write_html_diff_to_file(
@@ -80,3 +84,9 @@ def make_log_output_path(
     if not os.path.isdir(folder):
         os.mkdir(folder)
     return os.path.join(folder, file_name)
+
+
+def log_info_with_fill(
+    s: str, logging_width: int = LOGGING_WIDTH, fill_char: str = FILL_CHAR
+) -> None:
+    logging.info(s.center(logging_width, fill_char))

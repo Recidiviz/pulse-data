@@ -22,6 +22,9 @@ import attr
 import paramiko
 
 from recidiviz.common import attr_validators
+from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
+    UsNeDatabaseName,
+)
 from recidiviz.utils.secrets import get_secret
 
 # Bandit flags these constants as hardcoded secrets, but they are not
@@ -129,11 +132,11 @@ class UsNeDatabaseConnectionConfigProvider:
             "local_bind_address": (LOCAL_ADDRESS, DB_PORT),
         }
 
-    def get_db_connection_config(self, db_name: str) -> dict[str, str | None]:
+    def get_db_connection_config(self, db_name: UsNeDatabaseName) -> dict[str, Any]:
         """Get database connection configuration parameters."""
         return {
             "server": LOCAL_ADDRESS,
-            "database": db_name,
+            "database": db_name.value,
             "user": self.db_user,
             "password": self.db_password,
         }

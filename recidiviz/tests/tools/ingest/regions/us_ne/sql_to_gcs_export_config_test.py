@@ -23,6 +23,9 @@ import paramiko
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_config import (
     UsNeDatabaseConnectionConfigProvider,
 )
+from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
+    UsNeDatabaseName,
+)
 
 
 class TestDatabaseConnectionConfigProvider(unittest.TestCase):
@@ -70,11 +73,11 @@ class TestDatabaseConnectionConfigProvider(unittest.TestCase):
 
         expected_config = {
             "server": "127.0.0.1",
-            "database": "mock_db_name",
+            "database": "DCS_MVS",
             "user": "mock_db_user",
             "password": "mock_db_password",
         }
         self.assertEqual(
-            config_provider.get_db_connection_config(db_name="mock_db_name"),
+            config_provider.get_db_connection_config(db_name=UsNeDatabaseName.DCS_MVS),
             expected_config,
         )

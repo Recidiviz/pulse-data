@@ -284,7 +284,7 @@ def _validate_assignment_df_columns(
     # Validate column types
     for col in experiments_table_config.schema_fields:
         _convert_df_column_to_type_if_necessary(
-            df, column_name=col.name, desired_type=col.field_type
+            df, column_name=col.name, desired_type=BigQueryFieldType(col.field_type)
         )
 
 

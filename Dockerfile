@@ -21,6 +21,9 @@ RUN apt install -y \
     python3.11-dev \
     curl && rm -rf /var/lib/apt/lists/* && \
     apt-get clean
+# Install dependencies for pymssql 
+RUN apt-get update -y && \
+    apt-get install -y freetds-dev gcc g++ unixodbc-dev
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8

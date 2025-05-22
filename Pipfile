@@ -235,7 +235,8 @@ matplotx = "*"
 sqlglot = "==23.11.2"
 tabulate = "*"
 tenacity="*"
-
+sshtunnel = "*"
+pymssql = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

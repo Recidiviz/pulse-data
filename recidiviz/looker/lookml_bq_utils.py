@@ -83,6 +83,6 @@ def lookml_view_field_for_schema_field(
         )
     return DimensionLookMLViewField.for_column(
         schema_field.name,
-        lookml_field_type_for_bq_type(schema_field.field_type),
+        lookml_field_type_for_bq_type(field_type),
         custom_params,
     )

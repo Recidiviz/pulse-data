@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the SQL to GCS export tasks."""
+import datetime
 import unittest
 
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
@@ -28,8 +29,10 @@ class TestUsNeSqltoGCSExportTasks(unittest.TestCase):
 
     def test_sql_to_gcs_export_task_factory(self) -> None:
         file_tags = ["test_file_1", "PIMSSanctions", "E04_LOCT_PRFX"]
+        update_dt = datetime.datetime(2023, 1, 1)
         tasks = [
-            UsNeSqltoGCSExportTask.from_file_tag(file_tag) for file_tag in file_tags
+            UsNeSqltoGCSExportTask.from_file_tag_and_update_dt(file_tag, update_dt)
+            for file_tag in file_tags
         ]
 
         self.assertEqual(len(tasks), 3)
@@ -37,11 +40,23 @@ class TestUsNeSqltoGCSExportTasks(unittest.TestCase):
         self.assertEqual(tasks[0].file_tag, "test_file_1")
         self.assertEqual(tasks[0].table_name, "test_file_1")
         self.assertEqual(tasks[0].db, UsNeDatabaseName.DCS_WEB)
+        self.assertEqual(
+            tasks[0].file_name,
+            "unprocessed_2023-01-01T00:00:00:000000_raw_test_file_1.csv",
+        )
 
         self.assertEqual(tasks[1].file_tag, "PIMSSanctions")
         self.assertEqual(tasks[1].table_name, "view_PIMSSanctions")
         self.assertEqual(tasks[1].db, UsNeDatabaseName.DCS_WEB)
+        self.assertEqual(
+            tasks[1].file_name,
+            "unprocessed_2023-01-01T00:00:00:000000_raw_PIMSSanctions.csv",
+        )
 
         self.assertEqual(tasks[2].file_tag, "E04_LOCT_PRFX")
         self.assertEqual(tasks[2].table_name, "E04_LOCT_PRFX")
         self.assertEqual(tasks[2].db, UsNeDatabaseName.DCS_MVS)
+        self.assertEqual(
+            tasks[2].file_name,
+            "unprocessed_2023-01-01T00:00:00:000000_raw_E04_LOCT_PRFX.csv",
+        )
