@@ -33,9 +33,6 @@ CHARGES_PREPROCESSED_VIEW_NAME = "charges_preprocessed"
 
 CHARGES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Charge Data"""
 
-# List of states that have separate sentence preprocessed views
-CHARGES_PREPROCESSED_SPECIAL_STATES = ["US_MO"]
-
 CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     WITH charge AS (
         SELECT
@@ -44,7 +41,6 @@ CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
             * EXCEPT (charge_id),
         FROM `{project_id}.{normalized_state_dataset}.state_charge`
         WHERE state_code IN ({v2_non_migrated_states})
-            AND state_code NOT IN ({special_states})
 
         UNION ALL
 
@@ -68,14 +64,6 @@ CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     USING (state_code, county_code)
     LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
     ON charge.description = charge_labels.offense_description
-
-    UNION ALL
-
-    SELECT
-        charge_id,
-        NULL AS charge_v2_id,
-        * EXCEPT (charge_id),
-    FROM `{project_id}.{sessions_dataset}.us_mo_charges_preprocessed`
 """
 
 CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -84,12 +72,7 @@ CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CHARGES_PREPROCESSED_QUERY_TEMPLATE,
     description=CHARGES_PREPROCESSED_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    special_states=list_to_query_string(
-        string_list=CHARGES_PREPROCESSED_SPECIAL_STATES,
-        quoted=True,
-    ),
     v2_non_migrated_states=list_to_query_string(
         string_list=STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
         quoted=True,

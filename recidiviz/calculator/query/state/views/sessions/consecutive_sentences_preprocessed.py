@@ -34,12 +34,6 @@ CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.us_tn_consecutive_sentences_preprocessed_materialized`
     
     UNION ALL
-    
-    SELECT 
-        *
-    FROM `{project_id}.{sessions_dataset}.us_mo_consecutive_sentences_preprocessed_materialized`
-    
-    UNION ALL
 
     SELECT 
         *

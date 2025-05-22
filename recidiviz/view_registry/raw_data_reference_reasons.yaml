@@ -1238,8 +1238,6 @@ US_MO:
   LBAKRDTA_TAK022:
     analyst_data.us_mo_program_tracks: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    sessions.us_mo_charges_preprocessed: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   LBAKRDTA_TAK023:
     analyst_data.us_mo_program_tracks: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

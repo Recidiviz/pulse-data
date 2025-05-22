@@ -285,14 +285,8 @@ from recidiviz.calculator.query.state.views.sessions.us_mi.us_mi_facility_housin
 from recidiviz.calculator.query.state.views.sessions.us_mi.us_mi_housing_unit_type_collapsed_solitary_sessions import (
     US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
-    US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_confinement_type_sessions import (
     US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_consecutive_sentences_preprocessed import (
-    US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_housing_stay_sessions import (
     US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER,
@@ -439,9 +433,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ME_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
     US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
-    US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,
-    US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
     US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER,
     US_NE_SPECIAL_CONDITION_COMPLIANCE_SESSIONS_VIEW_BUILDER,

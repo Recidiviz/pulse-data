@@ -61,7 +61,6 @@ STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA = [
     StateCode.US_IX.name,
     StateCode.US_ME.name,
     StateCode.US_MI.name,
-    StateCode.US_MO.name,
     StateCode.US_ND.name,
     StateCode.US_OR.name,
     StateCode.US_PA.name,
