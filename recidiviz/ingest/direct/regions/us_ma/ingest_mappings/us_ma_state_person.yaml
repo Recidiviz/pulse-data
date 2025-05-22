@@ -17,3 +17,4 @@ output:
       $person_name:
         $given_names: COMMIT_FNAME
         $surname: COMMIT_LNAME
+    gender: $literal_enum(StateGender.INTERNAL_UNKNOWN)
