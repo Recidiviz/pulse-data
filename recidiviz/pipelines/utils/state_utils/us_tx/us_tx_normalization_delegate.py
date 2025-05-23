@@ -32,6 +32,7 @@ class UsTxNormalizationDelegate(StateSpecificNormalizationDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
+        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:

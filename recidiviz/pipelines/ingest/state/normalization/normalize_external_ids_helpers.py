@@ -17,6 +17,8 @@
 """Helpers for normalizing external id entities."""
 import datetime
 
+from more_itertools import one
+
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 
 
@@ -110,3 +112,75 @@ def select_alphabetically_highest_person_external_id(
         found_external_ids.add(pei.external_id)
 
     return list(reversed(sorted(external_ids, key=lambda pei: pei.external_id)))[0]
+
+
+def select_single_external_id_with_is_current_display_id(
+    external_ids: list[StatePersonExternalId],
+) -> StatePersonExternalId:
+    """Given a list of StatePersonExternalId all with the same id_type, returns the
+    single StatePersonExternalId with the external_id that has
+    is_current_display_id_for_type=True.
+
+    Throws if:
+    * Given an empty list
+    * Not all external ids have the same id_type
+    * There are multiple external ids with the same external_id value.
+    * Any is_current_display_id_for_type value is None
+    * More than one external id has is_current_display_id_for_type=True
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_single_external_id_with_is_current_display_id() with "
+            "an empty external_ids list"
+        )
+
+    id_types = {pei.id_type for pei in external_ids}
+    if len(id_types) > 1:
+        raise ValueError(
+            f"Found multiple id_types in the provided external_ids list: "
+            f"{sorted(id_types)}. Expected external_ids only of a single type."
+        )
+    id_type = one(id_types)
+
+    found_external_ids = set()
+    for pei in external_ids:
+        if pei.external_id in found_external_ids:
+            raise ValueError(
+                f"Found multiple external ids with external_id [{pei.external_id}] "
+                f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
+                f"this point."
+            )
+        found_external_ids.add(pei.external_id)
+
+    all_have_is_display_id_flags_set = all(
+        pei.is_current_display_id_for_type is not None for pei in external_ids
+    )
+
+    if not all_have_is_display_id_flags_set:
+        raise ValueError(
+            f"Found person who has at least one StatePersonExternalId with a null "
+            f"is_current_display_id_for_type value. If you are going to rely on "
+            f"directly hydrated is_current_display_id_for_type values, you must hydrate "
+            f"it for ALL external ids of this type ({id_type}). External ids: "
+            f"{external_ids}"
+        )
+
+    display_ids = [pei for pei in external_ids if pei.is_current_display_id_for_type]
+    if len(display_ids) > 1:
+        raise ValueError(
+            f"Found more than one external_id with is_current_display_id_for_type=True. "
+            f"Either update ingest logic to ensure there is only one "
+            f"is_current_display_id_for_type=True value per merged person OR implement "
+            f"custom logic to select the external id that is the display id. External "
+            f"ids: {external_ids}"
+        )
+
+    if not display_ids:
+        raise ValueError(
+            "Did not find any external_id with is_current_display_id_for_type=True. "
+            "Either update ingest logic to ensure there is exactly one "
+            "is_current_display_id_for_type=True value per merged person OR implement "
+            f"custom logic to select the external id that is the display id. External "
+            f"ids: {external_ids}"
+        )
+    return one(display_ids)

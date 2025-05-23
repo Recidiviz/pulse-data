@@ -17,6 +17,9 @@
 """Tests for normalize_person_external_ids.py"""
 
 import unittest
+from unittest.mock import patch
+
+import mock
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
@@ -34,10 +37,15 @@ from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization
 )
 
 
+class DefaultDelegate(StateSpecificNormalizationDelegate):
+    pass
+
+
 class PickAlphabeticallyHighestDelegate(StateSpecificNormalizationDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
+        person_id: int,
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
@@ -170,7 +178,15 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         self.assertEqual(expected_result, result)
 
-    def test_raises_if_some_ids_have_display_flag_and_others_do_not(self) -> None:
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "person_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_raises_if_some_ids_have_display_flag_and_others_do_not_with_default_delegate(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
         ids = [
             self._make_unnormalized_external_id(
                 external_id="ID1", is_current_display_id_for_type=True
@@ -181,17 +197,27 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         ]
         with self.assertRaisesRegex(
             ValueError,
-            r"If you hydrate is_current_display_id_for_type at ingest mappings time, "
-            r"you must hydrate it for ALL external ids of this type \(US_XX_ID_TYPE\).",
+            r"If you are going to rely on directly hydrated "
+            r"is_current_display_id_for_type values, you must hydrate it for ALL "
+            r"external ids of this type \(US_XX_ID_TYPE\).",
         ):
             get_normalized_person_external_ids(
                 state_code=StateCode.US_XX,
                 person_id=12345,
                 external_ids=ids,
-                delegate=PickAlphabeticallyHighestDelegate(),
+                delegate=DefaultDelegate(),
             )
 
-    def test_all_ids_have_display_flags_preserved(self) -> None:
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "person_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_all_ids_have_display_flags_preserved_default_delegate(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
+
         ids = [
             self._make_unnormalized_external_id(
                 external_id="ID1", is_current_display_id_for_type=True
@@ -204,7 +230,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             state_code=StateCode.US_XX,
             person_id=12345,
             external_ids=ids,
-            delegate=PickAlphabeticallyHighestDelegate(),
+            delegate=DefaultDelegate(),
         )
         expected_result = [
             self._make_normalized_external_id(

@@ -80,24 +80,6 @@ def _convert_person_external_ids_of_type(
     already defined. If there are multiple external ids, state-specific logic defined in
     the |delegate| is used to select the correct display id.
     """
-    has_any_is_display_id_flags_set = any(
-        pei.is_current_display_id_for_type is not None for pei in external_ids_of_type
-    )
-
-    if has_any_is_display_id_flags_set:
-        for pei in external_ids_of_type:
-            if pei.is_current_display_id_for_type is not None:
-                continue
-            raise ValueError(
-                f"Found null is_current_display_id_for_type for external_id [{pei}] on "
-                f"person with person_id [{person_id}] who has at least one "
-                f"StatePersonExternalId with a nonnull is_current_display_id_for_type "
-                f"value. If you hydrate is_current_display_id_for_type at ingest "
-                f"mappings time, you must hydrate it for ALL external ids of this type "
-                f"({id_type})."
-            )
-        return [_convert_person_external_id_strict(pei) for pei in external_ids_of_type]
-
     if len(external_ids_of_type) == 1:
         pei = one(external_ids_of_type)
         pei.is_current_display_id_for_type = True
@@ -105,6 +87,7 @@ def _convert_person_external_ids_of_type(
 
     display_id_of_type = delegate.select_display_id_for_person_external_ids_of_type(
         state_code=state_code,
+        person_id=person_id,
         id_type=id_type,
         person_external_ids_of_type=external_ids_of_type,
     )

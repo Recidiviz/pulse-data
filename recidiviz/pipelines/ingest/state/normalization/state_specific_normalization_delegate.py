@@ -24,6 +24,9 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_single_external_id_with_is_current_display_id,
+)
 from recidiviz.pipelines.ingest.state.validator import (
     person_external_id_types_with_allowed_multiples_per_person,
 )
@@ -40,6 +43,7 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
+        person_id: int,
         id_type: str,
         # pylint: disable=unused-argument
         person_external_ids_of_type: list[StatePersonExternalId],
@@ -56,11 +60,21 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         ):
             raise ValueError(
                 f"Person external_id type [{id_type}] should never have multiple ids "
-                f"of a given type. We should have never called "
+                f"of a given type, but found multiple for person [{person_id}]. We "
+                f"should have never called "
                 f"select_display_id_for_person_external_ids_of_type(). If you expect "
                 f"that a single person can have multiple {id_type} ids, update the "
                 f"exemptions list in "
                 f"person_external_id_types_with_allowed_multiples_per_person()."
+            )
+        has_any_is_display_id_flags_set = any(
+            pei.is_current_display_id_for_type is not None
+            for pei in person_external_ids_of_type
+        )
+
+        if has_any_is_display_id_flags_set:
+            return select_single_external_id_with_is_current_display_id(
+                person_external_ids_of_type
             )
 
         raise NotImplementedError(
@@ -69,7 +83,9 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
             f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
             f"allow multiple per person, this function must be implemented in the "
             f"appropriate state-specific subclass of "
-            f"StateSpecificNormalizationDelegate."
+            f"StateSpecificNormalizationDelegate OR is_current_display_id_for_type "
+            f"must be set to True at ingest time for exactly one external id of this "
+            f"type per person."
         )
 
     def extra_entities_generated_via_normalization(
