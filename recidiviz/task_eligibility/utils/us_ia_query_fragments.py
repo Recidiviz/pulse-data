@@ -47,3 +47,86 @@ def is_other_ed_ineligible_offense() -> str:
       OR clean_statute = '902.12' OR clean_statute = '902.14' -- felony guidelines for the above crimes, sometimes used as a statute code
       OR classification_subtype = 'A FELONY' -- per section 902.1, all class A felonies should result in lifetime supervision and thus be excluded from this early discharge policy. this clause handles any edge cases where a client has a class A felony and is not caught by the not_serving_life_sentence criterion
     )"""
+
+
+def case_notes_helper() -> str:
+    return """
+    -- All active warrants/detainers 
+    SELECT DISTINCT pei.external_id,
+        'Active Warrants & Detainers' AS criteria,
+        ReleaseNotificationType AS note_title,
+        COALESCE(ContactAgency, JurisdictionType) AS note_body,
+        CAST(CAST(IssuingDt AS DATETIME) AS DATE) AS event_date,
+    FROM `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_ReleaseNotifications_latest` d
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+      ON d.OffenderCd = pei.external_id
+      AND pei.id_type = 'US_IA_OFFENDERCD'
+    WHERE (ReleaseNotificationType = 'Warrant/No Hold' OR ReleaseNotificationType LIKE 'Detainer%')
+        AND CloseDt IS NULL
+    
+    UNION ALL 
+    
+    -- All required programs that were referred since the start of supervision, as defined by prioritized supervision super sessions
+    SELECT DISTINCT pei.external_id,
+        'Required Programs & Interventions' AS criteria,
+        CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%' 
+            THEN SPLIT(program_id, '##')[OFFSET(1)]
+            WHEN pa.external_id LIKE '%INTERVENTION%'
+            THEN program_id
+            ELSE CAST(NULL AS STRING)
+            END AS note_title,
+        CONCAT('LAST KNOWN STATUS: ',
+            CASE WHEN participation_status_raw_text IS NOT NULL THEN participation_status_raw_text
+                WHEN participation_status = 'IN_PROGRESS' THEN 'IN PROGRESS'
+                WHEN participation_status = 'PENDING' THEN 'PENDING'
+                ELSE 'UNKNOWN'
+                END) AS note_body,
+        referral_date AS event_date,
+    FROM `{project_id}.{normalized_state_dataset}.state_program_assignment` pa
+    LEFT JOIN `{project_id}.{sessions_dataset}.prioritized_supervision_super_sessions_materialized` sss
+        USING(person_id, state_code)
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        ON pa.person_id = pei.person_id
+        AND pei.id_type = 'US_IA_OFFENDERCD'
+    WHERE pa.state_code = 'US_IA' 
+        -- Only include programs that are required
+        AND (
+            JSON_EXTRACT_SCALAR(referral_metadata, '$.InterventionProgramRequired') = "RQ" OR
+            JSON_EXTRACT_SCALAR(referral_metadata, '$.InterventionRequired') = "RQ"
+        )
+        -- Only include programs that were referred during the current supervision super session
+        AND pa.referral_date >= sss.start_date AND sss.end_date_exclusive IS NULL
+
+    UNION ALL 
+    
+    -- List of violation incidents that occurred in the last six months that don't have an associated report
+    (WITH violations AS (
+        SELECT pei.external_id,
+            NULLIF(SPLIT(c.condition_raw_text, "@@")[OFFSET(1)], "NONE") AS condition_description, -- description is sometimes unavailable and in those cases I had hydrated it as a placeholder "NONE" in ingest
+            CASE WHEN c.condition = 'SUBSTANCE' THEN 'DRUG VIOLATION'
+                WHEN c.condition = 'EMPLOYMENT' THEN 'EMPLOYMENT VIOLATION'
+                ELSE 'NO CONDITION PROVIDED' END AS violation_type, -- violation type (employment, substance, or internal_unknown for other sources)
+            ViolationComments,
+            violation_date,
+        FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation_response` svr
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violation` sv 
+            USING(supervision_violation_id, person_id, state_code)
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violated_condition_entry` c 
+            USING(supervision_violation_id, person_id, state_code)
+        LEFT JOIN `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_FieldRuleViolationIncidents_latest` fr
+            ON REPLACE(svr.external_id, 'INCIDENT-ONLY-', '') = fr.FieldRuleViolationIncidentId 
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON svr.person_id = pei.person_id
+            AND pei.id_type = 'US_IA_OFFENDERCD'
+        WHERE svr.state_code = 'US_IA'
+            AND response_type = 'CITATION' -- only include incidents
+            AND svr.external_id LIKE 'INCIDENT-ONLY%' -- AND only include incidents that don't have an associated report for now
+            AND violation_date BETWEEN DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) AND CURRENT_DATE('US/Eastern')
+        )
+    SELECT DISTINCT external_id,
+        'Violation Incidents in the Past 6 Months',
+        REPLACE(COALESCE(condition_description, violation_type, 'NO CONDITION PROVIDED'), '‡', ' ') AS note_title,
+        REPLACE(COALESCE(ViolationComments, 'NO DESCRIPTION PROVIDED'), '‡', ' ') AS note_body,
+        violation_date AS event_date,
+    FROM violations)
+  """

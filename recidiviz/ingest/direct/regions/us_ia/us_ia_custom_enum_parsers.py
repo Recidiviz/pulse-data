@@ -27,6 +27,9 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 
 
 def map_to_probation_but_retain_raw_text(
@@ -49,5 +52,26 @@ def map_to_residential_but_retain_raw_text(
 
     if raw_text:
         return StateSupervisionLevel.RESIDENTIAL_PROGRAM
+
+    raise ValueError("This parser should never be called on missing raw text.")
+
+
+def map_violated_condition_type_with_extra_raw_text(
+    raw_text: str,
+) -> StateSupervisionViolatedConditionType:
+    """Maps violated conditions type using IncidentSource but also retains the full raw text
+    (which is IncidentSource-ConditionDescription) so that we can retain the condition description
+    in the raw text if available"""
+
+    IncidentSource = raw_text.split("@@")[0]
+
+    if IncidentSource == "EI":
+        return StateSupervisionViolatedConditionType.EMPLOYMENT
+
+    if IncidentSource in ("SST", "SSNT"):
+        return StateSupervisionViolatedConditionType.SUBSTANCE
+
+    if raw_text:
+        return StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN
 
     raise ValueError("This parser should never be called on missing raw text.")

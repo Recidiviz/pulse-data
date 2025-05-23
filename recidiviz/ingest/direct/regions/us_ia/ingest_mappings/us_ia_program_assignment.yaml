@@ -15,6 +15,7 @@ input_columns:
   InterventionStartDt: DATE
   InterventionEndDt: DATE
   InterventionClosureType: STRING
+  EligibilityDt: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -76,6 +77,7 @@ output:
                   $not_null: InterventionProgram
                 $then: InterventionProgram
               - $else: Intervention
+          referral_date: EligibilityDt
           referring_staff_external_id: ReferringStaffId
           referring_staff_external_id_type:
             $conditional:

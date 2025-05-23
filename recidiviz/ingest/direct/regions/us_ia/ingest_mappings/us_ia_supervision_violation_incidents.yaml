@@ -7,6 +7,7 @@ input_columns:
   FieldRuleViolationIncidentId: STRING
   IncidentDt: DATETIME
   EnteredDt: DATETIME
+  conditions: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -31,3 +32,22 @@ output:
                       - FieldRuleViolationIncidentId
                 response_date: EnteredDt
                 response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable:
+                  $split_json: conditions
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $concat:
+                            $values:
+                              - $json_extract:
+                                  $key: IncidentSource
+                                  $json: $iter_item
+                              - $json_extract:
+                                  $key: RuleShortText
+                                  $json: $iter_item
+                            $separator: "@@"
+                        $custom_parser: us_ia_custom_enum_parsers.map_violated_condition_type_with_extra_raw_text
