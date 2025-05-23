@@ -34,6 +34,7 @@ components:
         auto_create_network: true
         activate_apis:
           - run.googleapis.com # Cloud Run
+          - scheduler.googleapis.com # Cloud Scheduler
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
 
@@ -52,3 +53,17 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         state_code: "{{ .settings.context.state_code }}"
         ingest_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication recidiviz-ingest-us-ne bucket_name
+
+    # Cloud Run job to export NE's SQL server tables to the isolated-direct-ingest-bucket-with-replication bucket
+    us-ne-cloudrun-sql-export:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        ingest_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication recidiviz-ingest-us-ne bucket_name
+        service_account_email: !terraform.output direct-ingest-gcs-service-account recidiviz-ingest-us-ne service_account_email
+        # NE resources will deploy as a part of the prod deploy
+        # so use docker image from the recidiviz-123 project
+        registry_project_id: recidiviz-123
+        vpc_network: recidiviz-ingest-us-ne-vpc
+        vpc_subnetwork: recidiviz-ingest-us-ne-vpc-us-central-1
+        run_schedule: "0 7 * * *" # Daily at 2am central time

@@ -24,13 +24,14 @@ with an update_datetime of the script's start time.
 The bucket is synced with US_NE's ingest bucket in prod and staging through a separate storage transfer job.
 
 Usage:
-    python -m recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs
+    python -m recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs [--destination-bucket raw-files-bucket] [--dry-run True]
 """
+import argparse
 import csv
 import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -54,6 +55,7 @@ from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
     UsNeSqltoGCSExportTask,
     sql_to_gcs_export_tasks_by_db,
 )
+from recidiviz.tools.ingest.regions.us_ut.export_bq_to_ingest_bucket import str_to_bool
 from recidiviz.utils.log_helpers import log_info_with_fill
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -160,19 +162,24 @@ class UsNeSqlTableToRawFileExporter:
 
     region_raw_file_config: DirectIngestRegionRawFileConfig
     connection_manager: UsNeSqlServerConnectionManager
+    dry_run: bool
 
     @classmethod
     def build(
         cls,
+        *,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
         db_name: UsNeDatabaseName,
         db_connection_config: UsNeDatabaseConnectionConfigProvider,
+        dry_run: bool,
     ) -> "UsNeSqlTableToRawFileExporter":
         return cls(
             region_raw_file_config=region_raw_file_config,
             connection_manager=UsNeSqlServerConnectionManager(
-                db_name=db_name, db_connection_config=db_connection_config
+                db_name=db_name,
+                db_connection_config=db_connection_config,
             ),
+            dry_run=dry_run,
         )
 
     def open_connection(self) -> None:
@@ -194,6 +201,13 @@ class UsNeSqlTableToRawFileExporter:
     def export_data_to_csv(self, export_task: UsNeSqltoGCSExportTask) -> str:
         """Export data from the specified table to a CSV file.
         Returns the local path of the exported file."""
+        output_path = Path(export_task.file_name)
+        if self.dry_run:
+            return str(output_path)
+
+        # Ensure the directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
         raw_file_config = self.region_raw_file_config.raw_file_configs[
             export_task.table_name
         ]
@@ -203,10 +217,6 @@ class UsNeSqlTableToRawFileExporter:
             columns=",".join(col.name for col in raw_file_config.current_columns),
             table_name=export_task.table_name,
         )
-
-        # Ensure the directory exists
-        output_path = Path(export_task.file_name)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(
             output_path,
@@ -250,9 +260,12 @@ class UsNeGCSFileUploader:
 
     gcsfs: GCSFileSystem
     destination_bucket: GcsfsBucketPath
+    dry_run: bool
 
     def upload_csv_raw_file(self, local_file_path: str, gcs_file_name: str) -> None:
         """Upload a local csv raw data file to GCS with normalized raw file name format."""
+        if self.dry_run:
+            return
         self.gcsfs.upload_from_contents_handle_stream(
             path=GcsfsFilePath.from_directory_and_file_name(
                 self.destination_bucket,
@@ -270,6 +283,10 @@ def exporter_connection(exporter: UsNeSqlTableToRawFileExporter) -> Iterator[Non
     """Manage the connection to the database for the exporter in order to ensure
     that the connection is opened and closed properly.
     """
+    if exporter.dry_run:
+        yield
+        return
+
     exporter.open_connection()
     try:
         yield
@@ -344,6 +361,7 @@ def export_us_ne_sql_tables_to_gcs(
     destination_bucket_name: str,
     db_connection_config: UsNeDatabaseConnectionConfigProvider,
     update_datetime: datetime.datetime,
+    dry_run: bool,
 ) -> None:
     """For each US_NE file tag, export the SQL server table to a CSV file according to
     its raw file config, then upload it to a raw files GCS bucket in the recidiviz-us-ne-ingest project.
@@ -355,6 +373,7 @@ def export_us_ne_sql_tables_to_gcs(
     uploader = UsNeGCSFileUploader(
         gcsfs=GcsfsFactory.build(),
         destination_bucket=GcsfsBucketPath(destination_bucket_name),
+        dry_run=dry_run,
     )
 
     # TODO(#41296) Make table list configurable
@@ -364,7 +383,13 @@ def export_us_ne_sql_tables_to_gcs(
         list(region_raw_file_config.raw_file_tags), update_datetime
     )
 
-    with SSHTunnelForwarder(**db_connection_config.ssh_tunnel_config):
+    ssh_tunnel = (
+        SSHTunnelForwarder(**db_connection_config.ssh_tunnel_config)
+        if not dry_run
+        else nullcontext()
+    )
+
+    with ssh_tunnel:
         all_successful_exports: list[UsNeSqltoGCSExportTask] = []
         all_failed_exports: list[tuple[UsNeSqltoGCSExportTask, Exception]] = []
 
@@ -377,7 +402,10 @@ def export_us_ne_sql_tables_to_gcs(
                     process_us_ne_database_export,
                     export_tasks=tasks,
                     exporter=UsNeSqlTableToRawFileExporter.build(
-                        region_raw_file_config, db_name, db_connection_config
+                        region_raw_file_config=region_raw_file_config,
+                        db_name=db_name,
+                        db_connection_config=db_connection_config,
+                        dry_run=dry_run,
                     ),
                     uploader=uploader,
                 )
@@ -405,18 +433,41 @@ def export_us_ne_sql_tables_to_gcs(
         )
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Export SQL tables to GCS")
+    parser.add_argument(
+        "--destination-bucket",
+        type=str,
+        default=US_NE_RAW_FILES_BUCKET,
+        help="GCS bucket name for the raw files",
+    )
+    parser.add_argument(
+        "--dry-run",
+        default=True,
+        type=str_to_bool,
+        help="Runs script in dry-run mode, only prints the operations it would perform.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     """Main entry point for the script."""
+    args = parse_args()
+
+    log_prefix = "[DRY RUN]" if args.dry_run else ""
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format=f"%(asctime)s - %(levelname)s - {log_prefix}%(message)s",
     )
 
     export_us_ne_sql_tables_to_gcs(
-        destination_bucket_name=US_NE_RAW_FILES_BUCKET,
+        destination_bucket_name=args.destination_bucket,
         db_connection_config=UsNeDatabaseConnectionConfigProvider(
             US_NE_INGEST_PROJECT_ID
         ),
         update_datetime=datetime.datetime.now(tz=datetime.UTC),
+        dry_run=args.dry_run,
     )
     logging.info("Export completed successfully!")
 

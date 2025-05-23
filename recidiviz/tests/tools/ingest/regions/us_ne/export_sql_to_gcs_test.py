@@ -48,6 +48,7 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         )
 
         mock_exporter = MagicMock(spec=UsNeSqlTableToRawFileExporter)
+        mock_exporter.dry_run = False
         mock_uploader = MagicMock(spec=UsNeGCSFileUploader)
 
         export_tasks = [
