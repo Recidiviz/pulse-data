@@ -1,9 +1,7 @@
 address:
   dataset_id: auth0_prod_action_logs
   table_id: success_login
-description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+description: "Login data is managed outside of our view DAG through auth0"
 schema:
   - name: allowed_supervision_location_ids
     type: STRING
@@ -150,6 +148,9 @@ schema:
     type: BOOLEAN
     mode: NULLABLE
   - name: routes_workflows_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_tasks
     type: BOOLEAN
     mode: NULLABLE
 clustering_fields: null

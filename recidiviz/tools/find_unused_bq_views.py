@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.analyst_data.population_density_by_s
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.tasks_provisioned_user_registration_sessions import (
+    TASKS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
@@ -488,6 +491,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Ryan Guan 05/07/2025)"
+    ),
+    TASKS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.address: (
+        "Will be referenced by observations views in follow-up PR (Mayuka Sarukkai 5/14/25)"
     ),
 }
 

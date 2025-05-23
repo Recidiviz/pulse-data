@@ -45,6 +45,9 @@ schema:
   - name: routes_insights
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_tasks
+    type: BOOLEAN
+    mode: NULLABLE
   - name: default_feature_variants
     type: STRING
     mode: NULLABLE
