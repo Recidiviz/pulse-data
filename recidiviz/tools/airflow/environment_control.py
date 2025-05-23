@@ -36,7 +36,10 @@ import logging
 import webbrowser
 
 import google.cloud.orchestration.airflow.service_v1beta1 as service
-from google.cloud.orchestration.airflow.service_v1beta1 import types
+from google.cloud.orchestration.airflow.service_v1beta1 import (
+    TaskLogsRetentionConfig,
+    types,
+)
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
 from recidiviz.tools.airflow.copy_source_files_to_experiment_composer import (
@@ -131,6 +134,11 @@ def action_create() -> None:
                 service_account=get_default_compute_engine_service_account_email(
                     project_id=GCP_PROJECT_STAGING
                 ),
+            ),
+            data_retention=types.DataRetentionConfig(
+                task_logs_retention_config=TaskLogsRetentionConfig(
+                    storage_mode=TaskLogsRetentionConfig.TaskLogsStorageMode.CLOUD_LOGGING_AND_CLOUD_STORAGE
+                )
             ),
         ),
     )
