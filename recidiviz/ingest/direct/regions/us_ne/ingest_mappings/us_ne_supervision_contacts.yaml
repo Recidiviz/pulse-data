@@ -10,6 +10,7 @@ input_columns:
   contactType: STRING
   contactLocation: STRING
   status: STRING
+  lawEnforcement: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -86,3 +87,6 @@ output:
                   - Fax
                 StateSupervisionContactLocation.RESIDENCE:
                   - Residence
+          supervision_contact_metadata:
+            $normalized_values_json_dict:
+              lawEnforcement: lawEnforcement
