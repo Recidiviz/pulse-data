@@ -51,6 +51,9 @@ from recidiviz.tests.big_query.big_query_emulator_input_schema_json import (
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.tests.utils.big_query_emulator_control import BigQueryEmulatorControl
+from recidiviz.tests.utils.big_query_emulator_log_parser import (
+    BigQueryEmulatorLogParser,
+)
 from recidiviz.utils import environment, metadata
 
 DTYPES = {
@@ -160,8 +163,18 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
+        logs = cls.control.get_logs()
+
+        parser = BigQueryEmulatorLogParser()
+        parser.parse_logs(logs)
+        print(f"\n\nStats for {cls.__name__}")
+        print("=" * 80)
+        parser.print_stats(n=10)
+        print("=" * 80)
+
         if cls.show_emulator_logs_on_failure:
-            print(cls.control.get_logs())
+            print(logs)
+
         cls.control.stop_emulator()
 
         if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
