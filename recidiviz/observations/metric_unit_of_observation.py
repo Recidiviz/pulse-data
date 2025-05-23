@@ -62,6 +62,10 @@ class MetricUnitOfObservation:
                 return frozenset(["state_code", "email_address"])
             case MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER:
                 return frozenset(["state_code", "email_address"])
+            case MetricUnitOfObservationType.TASKS_PRIMARY_USER:
+                return frozenset(["state_code", "email_address"])
+            case MetricUnitOfObservationType.TASKS_PROVISIONED_USER:
+                return frozenset(["state_code", "email_address"])
 
     @property
     def primary_key_columns_ordered(self) -> list[str]:

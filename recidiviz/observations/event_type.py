@@ -62,6 +62,7 @@ class EventType(Enum):
     TASK_ELIGIBILITY_START = "TASK_ELIGIBILITY_START"
     TASK_ELIGIBLE_30_DAYS = "TASK_ELIGIBLE_30_DAYS"
     TASK_ELIGIBLE_7_DAYS = "TASK_ELIGIBLE_7_DAYS"
+    TASKS_USER_LOGIN = "TASKS_USER_LOGIN"
     # TODO(#34511): Figure out how to consolidate TRANSITIONS_TO_LIBERTY_ALL and
     #  TRANSITIONS_TO_LIBERTY_FROM_IN_STATE into a single event type.
     TRANSITIONS_TO_LIBERTY_ALL = "TRANSITIONS_TO_LIBERTY_ALL"
@@ -166,6 +167,10 @@ class EventType(Enum):
             return MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER
         if self in [EventType.WORKFLOWS_CASELOAD_SURFACED]:
             return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
+        if self in [
+            EventType.TASKS_USER_LOGIN,
+        ]:
+            return MetricUnitOfObservationType.TASKS_PRIMARY_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"
