@@ -16,8 +16,8 @@
 # =============================================================================
 """Configuration module for US_NE's SQL Server to GCS export tasks, with a task
 representing a single table export/upload."""
+import csv
 import datetime
-from collections import defaultdict
 from enum import Enum
 
 import attr
@@ -25,6 +25,10 @@ import attr
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
 )
 
 # Most of the file tags are found in the DCS_WEB db
@@ -62,20 +66,39 @@ class UsNeSqltoGCSExportTask:
 
     file_tag: str = attr.ib(validator=attr_validators.is_str)
     table_name: str = attr.ib(validator=attr_validators.is_str)
+    columns: list[str] = attr.ib(validator=attr_validators.is_list)
+
+    encoding: str = attr.ib(validator=attr_validators.is_str)
+    line_terminator: str = attr.ib(validator=attr_validators.is_str)
+    delimiter: str = attr.ib(validator=attr_validators.is_str)
+    quoting_mode: int = attr.ib(validator=attr_validators.is_int)
+
     db: UsNeDatabaseName = attr.ib(
         validator=attr.validators.instance_of(UsNeDatabaseName)
     )
     update_datetime: datetime.datetime = attr.ib(validator=attr_validators.is_datetime)
 
     @classmethod
-    def from_file_tag_and_update_dt(
-        cls, file_tag: str, update_datetime: datetime.datetime
+    def for_file_tag(
+        cls,
+        file_tag: str,
+        update_datetime: datetime.datetime,
+        raw_file_config: DirectIngestRawFileConfig,
     ) -> "UsNeSqltoGCSExportTask":
-        """Factory to create export tasks for the given file tag and update_datetime.
+        """Factory to create export tasks for the given file tag, update_datetime, and raw_file_config.
 
         We assume that file tags are found in DCS_WEB and have table names
         that match the file tag by default.
+
+        If we do not have a raw file config for the file tag, we use the default
+        config for the region.
         """
+        # TODO(#41296): Also add a unittest that prevents this flag from being set for NE
+        if raw_file_config.infer_columns_from_config:
+            raise ValueError(
+                "Did not expect any files with infer_columns_from_config=True in NE"
+            )
+
         table_name = FILE_TAG_TO_TABLE_NAME.get(file_tag, file_tag)
         db = (
             UsNeDatabaseName.DCS_MVS
@@ -87,6 +110,58 @@ class UsNeSqltoGCSExportTask:
             table_name=table_name,
             db=db,
             update_datetime=update_datetime,
+            encoding=raw_file_config.encoding,
+            line_terminator=raw_file_config.line_terminator,
+            delimiter=raw_file_config.separator,
+            quoting_mode=raw_file_config.quoting_mode,
+            columns=[col.name for col in raw_file_config.current_columns],
+        )
+
+    @classmethod
+    def for_qualified_table_name(
+        cls,
+        qualified_table_name: str,
+        update_datetime: datetime.datetime,
+        region_raw_file_config: DirectIngestRegionRawFileConfig,
+    ) -> "UsNeSqltoGCSExportTask":
+        """Factory to create export tasks for the given qualified table name and update_datetime.
+
+        The qualified table name is expected to be in the format 'db_name.table_name'.
+
+        If the table name is not found in the raw file tags, we select all columns by default and use
+        the region's default config for the encoding, line terminator, and delimiter. If there is no
+        default line terminator, we use '\n' as the default.
+        """
+        parts = qualified_table_name.split(".")
+        if len(parts) != 2:
+            raise ValueError(
+                f"Qualified table name must be in the format 'db_name.table_name', got {qualified_table_name}"
+            )
+
+        db_name = parts[0]
+        table_name = parts[1]
+        if table_name in region_raw_file_config.raw_file_tags:
+            return cls.for_file_tag(
+                file_tag=table_name,
+                update_datetime=update_datetime,
+                raw_file_config=region_raw_file_config.raw_file_configs[table_name],
+            )
+
+        default_region_config = region_raw_file_config.default_config()
+        return cls(
+            file_tag=table_name,
+            table_name=table_name,
+            db=UsNeDatabaseName(db_name),
+            update_datetime=update_datetime,
+            encoding=default_region_config.default_encoding,
+            line_terminator=default_region_config.default_line_terminator or "\n",
+            delimiter=default_region_config.default_separator,
+            quoting_mode=(
+                csv.QUOTE_NONE
+                if default_region_config.default_ignore_quotes
+                else csv.QUOTE_MINIMAL
+            ),
+            columns=["*"],
         )
 
     @property
@@ -97,20 +172,3 @@ class UsNeSqltoGCSExportTask:
 
     def to_str(self) -> str:
         return f"File Tag: {self.file_tag}, Table: {self.db.value}.{self.table_name}"
-
-
-def sql_to_gcs_export_tasks_by_db(
-    file_tags: list[str], update_datetime: datetime.datetime
-) -> dict[UsNeDatabaseName, list[UsNeSqltoGCSExportTask]]:
-    """Group export tasks by database. Assumes all files have the same update_datetime."""
-    export_tasks = [
-        UsNeSqltoGCSExportTask.from_file_tag_and_update_dt(file_tag, update_datetime)
-        for file_tag in file_tags
-    ]
-    tasks_by_db: dict[UsNeDatabaseName, list[UsNeSqltoGCSExportTask]] = defaultdict(
-        list
-    )
-    for task in export_tasks:
-        tasks_by_db[task.db].append(task)
-
-    return tasks_by_db

@@ -23,8 +23,15 @@ with an update_datetime of the script's start time.
 
 The bucket is synced with US_NE's ingest bucket in prod and staging through a separate storage transfer job.
 
+If you want to export a table that does not have a raw file config, you can run the script ad hoc and provide
+the qualified table name as a command line argument. The table name should be in the format {database}.{table},
+and it will be exported using the default raw file config for the state. If you want the table to become a
+part of the regular export process, you need to add a raw file config for it.
+
 Usage:
-    python -m recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs [--destination-bucket raw-files-bucket] [--dry-run True]
+    python -m recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs [--destination-bucket raw-files-bucket] \
+        [--dry-run True] [--qualified-table-names DCS_WEB.table1,DCS_MVS.table2]
+
 """
 import argparse
 import csv
@@ -42,6 +49,7 @@ from sshtunnel import SSHTunnelForwarder
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -53,10 +61,10 @@ from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_config import (
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
     UsNeDatabaseName,
     UsNeSqltoGCSExportTask,
-    sql_to_gcs_export_tasks_by_db,
 )
-from recidiviz.tools.ingest.regions.us_ut.export_bq_to_ingest_bucket import str_to_bool
+from recidiviz.utils.list_helpers import group_by
 from recidiviz.utils.log_helpers import log_info_with_fill
+from recidiviz.utils.params import str_to_bool, str_to_list
 from recidiviz.utils.string import StrictStringFormatter
 
 CSV_CONTENT_TYPE = "text/csv"
@@ -78,9 +86,15 @@ COMMIT_TRANSACTION_QUERY = "COMMIT"
 class UsNeSqlServerConnectionManager:
     """Handles SQL query execution and connection management to a US_NE SQL server db."""
 
-    db_name: UsNeDatabaseName
-    db_connection_config: UsNeDatabaseConnectionConfigProvider
-    _db_connection: pymssql.Connection | None = attr.ib(default=None)
+    db_name: UsNeDatabaseName = attr.ib(
+        validator=attr.validators.instance_of(UsNeDatabaseName)
+    )
+    db_connection_config: UsNeDatabaseConnectionConfigProvider = attr.ib(
+        validator=attr.validators.instance_of(UsNeDatabaseConnectionConfigProvider)
+    )
+    _db_connection: pymssql.Connection | None = attr.ib(
+        default=None, validator=attr_validators.is_opt(pymssql.Connection)
+    )
 
     def execute_procedural_query(self, query: str) -> None:
         """Execute a procedural SQL query with no expected results."""
@@ -160,21 +174,20 @@ class UsNeSqlServerConnectionManager:
 class UsNeSqlTableToRawFileExporter:
     """Exports SQL Server tables to raw CSV files."""
 
-    region_raw_file_config: DirectIngestRegionRawFileConfig
-    connection_manager: UsNeSqlServerConnectionManager
-    dry_run: bool
+    connection_manager: UsNeSqlServerConnectionManager = attr.ib(
+        validator=attr.validators.instance_of(UsNeSqlServerConnectionManager)
+    )
+    dry_run: bool = attr.ib(validator=attr_validators.is_bool)
 
     @classmethod
     def build(
         cls,
         *,
-        region_raw_file_config: DirectIngestRegionRawFileConfig,
         db_name: UsNeDatabaseName,
         db_connection_config: UsNeDatabaseConnectionConfigProvider,
         dry_run: bool,
     ) -> "UsNeSqlTableToRawFileExporter":
         return cls(
-            region_raw_file_config=region_raw_file_config,
             connection_manager=UsNeSqlServerConnectionManager(
                 db_name=db_name,
                 db_connection_config=db_connection_config,
@@ -208,13 +221,9 @@ class UsNeSqlTableToRawFileExporter:
         # Ensure the directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        raw_file_config = self.region_raw_file_config.raw_file_configs[
-            export_task.table_name
-        ]
-
         query = StrictStringFormatter().format(
             EXPORT_QUERY,
-            columns=",".join(col.name for col in raw_file_config.current_columns),
+            columns=",".join(export_task.columns),
             table_name=export_task.table_name,
         )
 
@@ -222,13 +231,13 @@ class UsNeSqlTableToRawFileExporter:
             output_path,
             mode="w",
             newline="",
-            encoding=raw_file_config.encoding,
+            encoding=export_task.encoding,
         ) as f:
             writer = csv.writer(
                 f,
-                lineterminator=raw_file_config.line_terminator,
-                delimiter=raw_file_config.separator,
-                quoting=raw_file_config.quoting_mode,
+                lineterminator=export_task.line_terminator,
+                delimiter=export_task.delimiter,
+                quoting=export_task.quoting_mode,
             )
             # Process the results in batches
             result_generator = self.connection_manager.execute_query_with_batched_fetch(
@@ -239,13 +248,9 @@ class UsNeSqlTableToRawFileExporter:
             columns = next(result_generator, None)
             if not columns:
                 raise ValueError(
-                    f"Found no columns in the exported file for file [{raw_file_config.file_tag}]. Expected every file to at least have a columns row."
+                    f"Found no columns in the exported file for file [{export_task.file_tag}]. Expected every file to at least have a columns row."
                 )
-            # TODO(#41296): Also add a unittest that prevents this flag from being set for NE
-            if raw_file_config.infer_columns_from_config:
-                raise ValueError(
-                    "Did not expect any files with infer_columns_from_config=True in NE"
-                )
+
             writer.writerow(columns)
 
             for rows in result_generator:
@@ -259,8 +264,10 @@ class UsNeGCSFileUploader:
     """Manages uploading local csv raw data files to GCS."""
 
     gcsfs: GCSFileSystem
-    destination_bucket: GcsfsBucketPath
-    dry_run: bool
+    destination_bucket: GcsfsBucketPath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsBucketPath)
+    )
+    dry_run: bool = attr.ib(validator=attr_validators.is_bool)
 
     def upload_csv_raw_file(self, local_file_path: str, gcs_file_name: str) -> None:
         """Upload a local csv raw data file to GCS with normalized raw file name format."""
@@ -360,27 +367,18 @@ def process_us_ne_database_export(
 def export_us_ne_sql_tables_to_gcs(
     destination_bucket_name: str,
     db_connection_config: UsNeDatabaseConnectionConfigProvider,
-    update_datetime: datetime.datetime,
+    export_tasks_by_db: dict[UsNeDatabaseName, list[UsNeSqltoGCSExportTask]],
     dry_run: bool,
 ) -> None:
-    """For each US_NE file tag, export the SQL server table to a CSV file according to
-    its raw file config, then upload it to a raw files GCS bucket in the recidiviz-us-ne-ingest project.
-    This bucket synced with US_NE's ingest bucket in prod and staging through a storage transfer job.
+    """For each US_NE file tag, export the SQL server table to a CSV file, then upload
+    it to a raw files GCS bucket in the recidiviz-us-ne-ingest project. This bucket is
+    synced with US_NE's ingest bucket in prod and staging through a storage transfer job.
     """
-    region_raw_file_config = DirectIngestRegionRawFileConfig(
-        region_code=StateCode.US_NE.value,
-    )
+
     uploader = UsNeGCSFileUploader(
         gcsfs=GcsfsFactory.build(),
         destination_bucket=GcsfsBucketPath(destination_bucket_name),
         dry_run=dry_run,
-    )
-
-    # TODO(#41296) Make table list configurable
-    export_tasks_by_db: dict[
-        UsNeDatabaseName, list[UsNeSqltoGCSExportTask]
-    ] = sql_to_gcs_export_tasks_by_db(
-        list(region_raw_file_config.raw_file_tags), update_datetime
     )
 
     ssh_tunnel = (
@@ -402,7 +400,6 @@ def export_us_ne_sql_tables_to_gcs(
                     process_us_ne_database_export,
                     export_tasks=tasks,
                     exporter=UsNeSqlTableToRawFileExporter.build(
-                        region_raw_file_config=region_raw_file_config,
                         db_name=db_name,
                         db_connection_config=db_connection_config,
                         dry_run=dry_run,
@@ -443,6 +440,14 @@ def parse_args() -> argparse.Namespace:
         help="GCS bucket name for the raw files",
     )
     parser.add_argument(
+        "--qualified-table-names",
+        type=str_to_list,
+        default=None,
+        help="Comma separated list of qualified table names ({database}.{table}) to export."
+        "Tables do not need to have a raw file config in order to be exported."
+        "If not provided, tables for all file tags for which we do have config will be exported.",
+    )
+    parser.add_argument(
         "--dry-run",
         default=True,
         type=str_to_bool,
@@ -461,12 +466,36 @@ def main() -> None:
         format=f"%(asctime)s - %(levelname)s - {log_prefix}%(message)s",
     )
 
+    region_raw_file_config = DirectIngestRegionRawFileConfig(
+        region_code=StateCode.US_NE.value,
+    )
+    update_datetime = datetime.datetime.now(tz=datetime.UTC)
+    if args.qualified_table_names:
+        export_tasks = [
+            UsNeSqltoGCSExportTask.for_qualified_table_name(
+                table, update_datetime, region_raw_file_config
+            )
+            for table in args.qualified_table_names
+        ]
+    else:
+        export_tasks = [
+            UsNeSqltoGCSExportTask.for_file_tag(
+                file_tag=file_tag,
+                update_datetime=update_datetime,
+                raw_file_config=region_raw_file_config.raw_file_configs[file_tag],
+            )
+            for file_tag in list(region_raw_file_config.raw_file_tags)
+        ]
+
+    logging.info(
+        "Exporting tables for file tags: %s", [task.file_tag for task in export_tasks]
+    )
     export_us_ne_sql_tables_to_gcs(
         destination_bucket_name=args.destination_bucket,
         db_connection_config=UsNeDatabaseConnectionConfigProvider(
             US_NE_INGEST_PROJECT_ID
         ),
-        update_datetime=datetime.datetime.now(tz=datetime.UTC),
+        export_tasks_by_db=group_by(items=export_tasks, key_fn=lambda x: x.db),
         dry_run=args.dry_run,
     )
     logging.info("Export completed successfully!")

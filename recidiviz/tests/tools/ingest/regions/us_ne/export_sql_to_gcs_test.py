@@ -22,6 +22,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
     UsNeSqltoGCSExportTask,
 )
@@ -52,10 +56,14 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         mock_uploader = MagicMock(spec=UsNeGCSFileUploader)
 
         export_tasks = [
-            UsNeSqltoGCSExportTask.from_file_tag_and_update_dt(
-                file_tag=f, update_datetime=datetime.datetime(2023, 1, 1)
+            UsNeSqltoGCSExportTask.for_qualified_table_name(
+                qualified_table_name=f,
+                update_datetime=datetime.datetime(2023, 1, 1),
+                region_raw_file_config=DirectIngestRegionRawFileConfig(
+                    StateCode.US_NE.value
+                ),
             )
-            for f in ["table_1", "table_2"]
+            for f in ["DCS_WEB.table_1", "DCS_WEB.table_2"]
         ]
 
         # Simulate an exception during export

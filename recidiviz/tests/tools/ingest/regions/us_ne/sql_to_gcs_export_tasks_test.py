@@ -15,9 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the SQL to GCS export tasks."""
+import csv
 import datetime
 import unittest
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
     UsNeDatabaseName,
     UsNeSqltoGCSExportTask,
@@ -28,35 +33,65 @@ class TestUsNeSqltoGCSExportTasks(unittest.TestCase):
     """Tests for the SQL to GCS export task factory."""
 
     def test_sql_to_gcs_export_task_factory(self) -> None:
-        file_tags = ["test_file_1", "PIMSSanctions", "E04_LOCT_PRFX"]
+        file_tags = ["PIMSSanctions", "E04_LOCT_PRFX"]
         update_dt = datetime.datetime(2023, 1, 1)
+        region_raw_file_config = DirectIngestRegionRawFileConfig(StateCode.US_NE.value)
         tasks = [
-            UsNeSqltoGCSExportTask.from_file_tag_and_update_dt(file_tag, update_dt)
+            UsNeSqltoGCSExportTask.for_file_tag(
+                file_tag,
+                update_dt,
+                raw_file_config=region_raw_file_config.raw_file_configs[file_tag],
+            )
             for file_tag in file_tags
         ]
 
-        self.assertEqual(len(tasks), 3)
-        # Should default to DCS_WEB and table name same as file tag
-        self.assertEqual(tasks[0].file_tag, "test_file_1")
-        self.assertEqual(tasks[0].table_name, "test_file_1")
+        self.assertEqual(len(tasks), 2)
+
+        self.assertEqual(tasks[0].file_tag, "PIMSSanctions")
+        self.assertEqual(tasks[0].table_name, "view_PIMSSanctions")
+        # DCS_WEB is the default database
         self.assertEqual(tasks[0].db, UsNeDatabaseName.DCS_WEB)
         self.assertEqual(
             tasks[0].file_name,
-            "unprocessed_2023-01-01T00:00:00:000000_raw_test_file_1.csv",
-        )
-
-        self.assertEqual(tasks[1].file_tag, "PIMSSanctions")
-        self.assertEqual(tasks[1].table_name, "view_PIMSSanctions")
-        self.assertEqual(tasks[1].db, UsNeDatabaseName.DCS_WEB)
-        self.assertEqual(
-            tasks[1].file_name,
             "unprocessed_2023-01-01T00:00:00:000000_raw_PIMSSanctions.csv",
         )
 
-        self.assertEqual(tasks[2].file_tag, "E04_LOCT_PRFX")
-        self.assertEqual(tasks[2].table_name, "E04_LOCT_PRFX")
-        self.assertEqual(tasks[2].db, UsNeDatabaseName.DCS_MVS)
+        self.assertEqual(tasks[1].file_tag, "E04_LOCT_PRFX")
+        # Defaults to table name the same as file tag
+        self.assertEqual(tasks[1].table_name, "E04_LOCT_PRFX")
+        self.assertEqual(tasks[1].db, UsNeDatabaseName.DCS_MVS)
         self.assertEqual(
-            tasks[2].file_name,
+            tasks[1].file_name,
             "unprocessed_2023-01-01T00:00:00:000000_raw_E04_LOCT_PRFX.csv",
+        )
+
+        task = UsNeSqltoGCSExportTask.for_qualified_table_name(
+            qualified_table_name="DCS_MVS.test_file_1",
+            update_datetime=update_dt,
+            region_raw_file_config=region_raw_file_config,
+        )
+        # Should set file tag the same as table name
+        self.assertEqual(task.file_tag, "test_file_1")
+        self.assertEqual(task.table_name, "test_file_1")
+        self.assertEqual(task.db, UsNeDatabaseName.DCS_MVS)
+        self.assertEqual(
+            task.file_name,
+            "unprocessed_2023-01-01T00:00:00:000000_raw_test_file_1.csv",
+        )
+        self.assertEqual(task.columns, ["*"])
+
+        default_region_config = region_raw_file_config.default_config()
+        self.assertEqual(task.encoding, default_region_config.default_encoding)
+        self.assertEqual(
+            task.line_terminator,
+            default_region_config.default_line_terminator,
+        )
+        self.assertEqual(task.delimiter, default_region_config.default_separator)
+        self.assertEqual(
+            task.quoting_mode,
+            (
+                csv.QUOTE_NONE
+                if default_region_config.default_ignore_quotes
+                else csv.QUOTE_MINIMAL
+            ),
         )
