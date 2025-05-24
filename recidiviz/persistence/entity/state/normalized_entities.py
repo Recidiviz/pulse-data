@@ -2947,10 +2947,78 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
 
     # Attributes
     #   - When
-    start_date: date = attr.ib(validator=attr_validators.is_date)
-    end_date: date | None = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    start_date: date = attr.ib(
+        # TODO(#42889): Reset validator to just `attr_validators.is_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_date,
+            state_exempted_validator(
+                attr_validators.is_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#42890): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1000-01-01.
+                    #  - Found dates as high as 9999-12-31.
+                    StateCode.US_AR,
+                    # TODO(#42891): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as high as 2328-08-20.
+                    StateCode.US_CA,
+                    # TODO(#42892): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1108-11-08.
+                    #  - Found dates as high as 9999-07-15.
+                    StateCode.US_IX,
+                    # TODO(#42894): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1780-01-01.
+                    #  - Found dates as high as 9999-12-28.
+                    StateCode.US_MI,
+                    # TODO(#42895): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0001-01-22.
+                    #  - Found dates as high as 3012-08-30.
+                    StateCode.US_UT,
+                },
+            ),
+        )
+    )
+    end_date: date | None = attr.ib(
+        default=None,
+        # TODO(#42889): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        #  once all state exemptions have been fixed.
+        validator=attr.validators.and_(
+            attr_validators.is_opt_date,
+            state_exempted_validator(
+                attr_validators.is_opt_reasonable_date(
+                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+                ),
+                exempted_states={
+                    # TODO(#42890): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1000-01-01.
+                    #  - Found dates as high as 9999-12-20.
+                    StateCode.US_AR,
+                    # TODO(#42892): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1900-01-01.
+                    #  - Found dates as high as 4201-01-01.
+                    StateCode.US_IX,
+                    # TODO(#42894): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 1753-01-01.
+                    #  - Found dates as high as 9999-12-01.
+                    StateCode.US_MI,
+                    # TODO(#42895): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                    #  - Found dates as low as 0020-10-12.
+                    #  - Found dates as high as 8201-09-12.
+                    StateCode.US_UT,
+                },
+            ),
+        ),
+    )
     last_verified_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
     )
 
     #   - What
