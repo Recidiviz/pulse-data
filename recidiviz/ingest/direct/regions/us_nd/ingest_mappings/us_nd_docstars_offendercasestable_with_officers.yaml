@@ -257,7 +257,6 @@ output:
                         - "12" # Terminated - Returned to Original State-Voluntary
                         - "15" # Terminated - Released from Custody
                         - "16" # Terminated - CCC
-                        - "17" # Terminated - Returned to Original State-Violation
                         - "29" # Early Termination
                         - "23" # Not Guilty
                         - "24" # Dismissed
@@ -278,6 +277,7 @@ output:
                         - "9" # Terminated - Revocation
                         - "10" # Terminated - Revocation with Continuation
                         - "18" # Terminated - Returned to Custody from CPP
+                        - "17" # Terminated - Returned to Original State-Violation
                       StateSupervisionPeriodTerminationReason.SUSPENSION:
                         - "3" # Terminated - Termination (Deferred Imp.)
                         - "6" # Terminated - Termination-Negative (Susp. Sent)
