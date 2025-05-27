@@ -55,7 +55,6 @@ IN_CUSTODY_REGEX = re.compile(
             "IN CUSTODY",
             "REVOKED",
             "PRE-REVOCATION",
-            "PENDING WARRANT CLOSURE",
         ]
     )
 )
@@ -67,6 +66,8 @@ NOT_IN_CUSTODY_REGEX = re.compile(
         ]
     )
 )
+
+WARRANT_STATUSES = {"PENDING WARRANT CLOSURE", "PRE-REVOCATION - NOT IN CUSTODY"}
 
 
 def parse_supervision_level(
@@ -86,6 +87,9 @@ def parse_supervision_level(
         status,
         assessment_level,
     ) = raw_text.split("@@")
+
+    if status in WARRANT_STATUSES:
+        return StateSupervisionLevel.WARRANT
 
     if IN_CUSTODY_REGEX.search(status) and not NOT_IN_CUSTODY_REGEX.search(status):
         return StateSupervisionLevel.IN_CUSTODY
