@@ -30,6 +30,7 @@ Example usage:
 from collections import namedtuple
 from queue import Queue
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -120,7 +121,7 @@ def _get_config_filter(
 def build_root_entity_filtered_raw_data_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
-    external_id_values: set[str],
+    external_id_values: list[str],
     dataset: str,
     project_id: str,
     file_tags_to_skip_with_reason: dict[str, str] | None = None,
@@ -138,7 +139,7 @@ def build_root_entity_filtered_raw_data_queries(
             subset_queries[file_tag] = file_tags_to_skip_with_reason[file_tag]
         else:
             external_id_sql_arr = (
-                "(" + ", ".join(sorted(f"'{id_}'" for id_ in external_id_values)) + ")"
+                f"({list_to_query_string(external_id_values, quoted=True)})"
             )
             subset_queries[file_tag] = (
                 f"SELECT DISTINCT {file_tag}.* "

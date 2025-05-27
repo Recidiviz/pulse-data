@@ -23,7 +23,7 @@ Usage:
 python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest_view_fixtures_for_test \
     --state_code US_MO \
     --external_id_type US_MO_DOC \
-    --external_id_value 12345 \
+    --external_id_values 12345 [45678] \
     --ingest_view_name sentence \
     --test_characteristic revocation \
     [--files_to_make_empty <file tags to skip>]
@@ -48,7 +48,6 @@ python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest
 """
 import argparse
 import os
-import sys
 
 from tabulate import tabulate
 
@@ -125,9 +124,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--external_id_values",
-        type=lambda x: set(x.split(" ")),
+        nargs="+",
         required=True,
-        help="The external ID values to filter on, quoted and separated by a space (e.g., '12345 6543').",
+        help="The external ID values to filter on, separated by a space (e.g., '12345 6543').",
     )
     parser.add_argument(
         "--test_characteristic",
@@ -158,19 +157,7 @@ def _parse_args() -> argparse.Namespace:
             "Please only use this as a last resort!"
         ),
     )
-    try:
-        args = parser.parse_args()
-    except SystemExit:
-        parser.print_help()
-        print(
-            "\n*********************************************\n"
-            "Failed to parse commandline arguments.\n"
-            "NOTE: If you passed MULTIPLE values for --external_id_values "
-            "you need to quote the value like this:\n"
-            '--external_id_values "12345 6543"\n\n'
-        )
-        sys.exit(1)
-
+    args = parser.parse_args()
     state_id_types = external_id_types_by_state_code()[args.state_code]
     if args.external_id_type not in state_id_types:
         raise ValueError(
@@ -186,7 +173,7 @@ def _validate_and_preview_external_id(
     state_code: StateCode,
     ingest_view_name: str,
     external_id_type: str,
-    external_id_values: set[str],
+    external_id_values: list[str],
 ) -> DirectIngestViewQueryBuilder:
     """
     Checks if the external ID type is valid for the given ingest view and state code.
@@ -275,7 +262,7 @@ def _validate_and_preview_file_paths(
 def _validate_and_preview_queries(
     view_builder: DirectIngestViewQueryBuilder,
     external_id_type: str,
-    external_id_values: set[str],
+    external_id_values: list[str],
     dataset: str,
     project_id: str,
     file_tags_to_skip_with_reason: dict[str, str],

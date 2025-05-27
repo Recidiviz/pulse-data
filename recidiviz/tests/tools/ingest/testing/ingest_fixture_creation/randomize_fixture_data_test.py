@@ -43,10 +43,14 @@ def test_randomize_string() -> None:
         ("Recidiviz", "Cfrbqtvlb"),
         ("Test-123-XyZ", "Zifr-082-HtT"),
         ("example@@concat", "mygwgjp@@xaihhj"),
+        ("null", "null"),
+        ("dont", "dont"),
     ]
     # Run each one twice to ensure that the randomization is consistent
     for value, expected in pure_text + pure_text:
-        randomized_value = FAKER.randomize_string(value)
+        randomized_value = FAKER.randomize_string(
+            value, null_values_to_skip=["null", "dont"]
+        )
         assert len(randomized_value) == len(value)
         assert randomized_value == expected
 
@@ -55,7 +59,7 @@ def test_randomize_string() -> None:
     # and in the expected format
     digits = ["12345", "19665", "123", "970"]
     for value in digits + digits:
-        randomized_value = FAKER.randomize_string(value)
+        randomized_value = FAKER.randomize_string(value, null_values_to_skip=None)
         assert len(randomized_value) == len(value)
         assert randomized_value != value
         assert randomized_value.isdigit()
@@ -73,7 +77,9 @@ def test_randomize_name() -> None:
     ]
     # Run each one twice to ensure that the randomization is consistent
     for (value, expected), name_type in pairs + pairs:
-        randomized_value = FAKER.randomize_name(value, name_type)
+        randomized_value = FAKER.randomize_name(
+            value, name_type, null_values_to_skip=["null"]
+        )
         assert randomized_value == expected
 
 
@@ -99,13 +105,21 @@ def test_randomize_birthdate() -> None:
         (("1495-04-30", ["DATE_PARSE('%Y-%m-%d', {col_name})"]), "1496-04-02"),
         (("1495/04/30", ["DATE_PARSE('%Y/%m/%d', {col_name})"]), "1496/04/02"),
         (("1495.04.30", ["DATE_PARSE('%Y.%m.%d', {col_name})"]), "1496.04.02"),
+        (("1900.01.01", ["DATE_PARSE('%Y.%m.%d', {col_name})"]), "1900.01.01"),
     ]
     # Run each one twice to ensure that the randomization is consistent
     for (value, parsers), expected in pairs + pairs:
-        randomized_value = FAKER.randomize_birthdate(value, parsers)
+        randomized_value = FAKER.randomize_birthdate(
+            value, parsers, null_values_to_skip=["1900.01.01"]
+        )
         assert randomized_value == expected
 
-    assert FAKER.randomize_birthdate("", ["DATE_PARSE('%Y-%m-%d', {col_name})"]) == ""
+    assert (
+        FAKER.randomize_birthdate(
+            "", ["DATE_PARSE('%Y-%m-%d', {col_name})"], null_values_to_skip=None
+        )
+        == ""
+    )
 
     with pytest.raises(
         ValueError,
@@ -116,6 +130,7 @@ def test_randomize_birthdate() -> None:
             [
                 "DATE_PARSE('%Y/%m/%d', {col_name})",
             ],
+            null_values_to_skip=None,
         )
 
 

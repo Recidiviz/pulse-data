@@ -102,16 +102,24 @@ class RecidivizFixtureFaker(Faker):
         super().__init__(locale=["en-US"])
         self.add_provider(self.StringWithSameCharPatternProvider)
 
-    def randomize_string(self, value: str) -> str:
+    def randomize_string(
+        self, value: str, null_values_to_skip: list[str] | None
+    ) -> str:
         if not value:
             return ""
+        if null_values_to_skip and value in null_values_to_skip:
+            return value
         self.seed_instance(value)
         return self.patterned_string(value)
 
-    def randomize_name(self, value: str, name_type: NameType) -> str:
+    def randomize_name(
+        self, value: str, name_type: NameType, null_values_to_skip: list[str] | None
+    ) -> str:
         """Returns a random first name, last name, or full name based on the input value."""
         if not value:
             return ""
+        if null_values_to_skip and value in null_values_to_skip:
+            return value
         self.seed_instance(value)
         match name_type:
             case NameType.FIRST_NAME:
@@ -126,10 +134,14 @@ class RecidivizFixtureFaker(Faker):
         self.seed_instance(dt_value.isoformat())
         return dt_value + timedelta(days=self.random_int(-365, 365))
 
-    def randomize_birthdate(self, value: str, sql_parsers: list[str]) -> str:
+    def randomize_birthdate(
+        self, value: str, sql_parsers: list[str], null_values_to_skip: list[str] | None
+    ) -> str:
         """Moves the given date by a random number of days and returns the new date as a string in the original format."""
         if not value:
             return ""
+        if null_values_to_skip and value in null_values_to_skip:
+            return value
         for statement in sql_parsers:
             # sql_parser statements start with the function name, e.g.: SAFE.DATE_PARSE('format string', text arg)
             # This regext grabs the format string because it is the first argument.
@@ -156,13 +168,18 @@ def _randomize_string_column(
     df: pd.DataFrame,
     col: RawTableColumnInfo,
     faker: RecidivizFixtureFaker,
+    null_values: list[str] | None,
 ) -> pd.Series:
     """Randomizes the values in a string column based on the column name."""
     # TODO(#40727) No longer do this when name types are well defined in configs
     for name_type in NameType:
         if any(sub in col.name.lower() for sub in KNOWN_NAME_SUBSTRINGS[name_type]):
-            return df[col.name].apply(faker.randomize_name, name_type=name_type)
-    return df[col.name].apply(faker.randomize_string)
+            return df[col.name].apply(
+                faker.randomize_name,
+                name_type=name_type,
+                null_values_to_skip=null_values,
+            )
+    return df[col.name].apply(faker.randomize_string, null_values_to_skip=null_values)
 
 
 # TODO(#40717) Update when BIRTHDATE exists
@@ -170,6 +187,7 @@ def _randomize_datetime_column(
     df: pd.DataFrame,
     col: RawTableColumnInfo,
     faker: RecidivizFixtureFaker,
+    null_values: list[str] | None,
 ) -> pd.Series:
     """Randomizes the values in a datetime column based on the column name."""
     if any(sub in col.name.lower() for sub in KNOWN_BIRTHDATE_SUBSTRINGS):
@@ -179,7 +197,9 @@ def _randomize_datetime_column(
                 f"Please add datetime_sql_parsers to {col.name}."
             )
         return df[col.name].apply(
-            faker.randomize_birthdate, sql_parsers=col.datetime_sql_parsers
+            faker.randomize_birthdate,
+            sql_parsers=col.datetime_sql_parsers,
+            null_values_to_skip=null_values,
         )
     raise ValueError(
         "Birthdates are currently the only datetime values we allow as PII. "
@@ -209,9 +229,9 @@ def randomize_fixture_data(
     faker = RecidivizFixtureFaker()
     for col in config.current_pii_columns:
         if col.field_type == RawTableColumnFieldType.DATETIME:
-            df[col.name] = _randomize_datetime_column(df, col, faker)
+            df[col.name] = _randomize_datetime_column(df, col, faker, col.null_values)
         elif col.field_type == RawTableColumnFieldType.STRING:
-            df[col.name] = _randomize_string_column(df, col, faker)
+            df[col.name] = _randomize_string_column(df, col, faker, col.null_values)
         elif col.field_type in (
             # TODO(#39681) Encrypt IDs instead to match raw fixture configs
             RawTableColumnFieldType.PERSON_EXTERNAL_ID,
