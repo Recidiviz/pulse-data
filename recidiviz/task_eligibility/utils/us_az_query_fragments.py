@@ -391,8 +391,7 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
         END AS metadata_tab_name,
     FROM acis_{opp_name.lower()}_date_approaching,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
-    WHERE "US_AZ_INCARCERATION_PAST_ACIS_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_{opp_name.upper()}_DATE"
+    WHERE SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_WITHIN_6_MONTHS_OF_ACIS_{opp_name.upper()}_DATE"
         AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_{opp_name.lower()}_date') AS DATE) BETWEEN 
             DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
 

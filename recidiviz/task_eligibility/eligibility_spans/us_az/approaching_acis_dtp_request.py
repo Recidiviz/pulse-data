@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the eligibility spans for residents in AZ who are overdue for a 
+"""Shows the eligibility spans for residents in AZ who are within 6 months of their
 Drug Transition Program (DTP) release.
 """
 from recidiviz.common.constants.states import StateCode
@@ -22,11 +22,15 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
-    early_release_to_drug_program_overdue,
+    early_release_to_drug_program_not_overdue,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     incarceration_past_acis_dtp_date,
+    incarceration_within_6_months_of_acis_dtp_date,
     no_dtp_denial_or_previous_dtp_release,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -36,15 +40,21 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
-    task_name="OVERDUE_FOR_ACIS_DTP_REQUEST",
+    task_name="APPROACHING_ACIS_DTP_REQUEST",
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        incarceration_past_acis_dtp_date.VIEW_BUILDER,
+        # Within 6 months of the ACIS DTP date
+        incarceration_within_6_months_of_acis_dtp_date.VIEW_BUILDER,
+        # Not past the DTP date
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=incarceration_past_acis_dtp_date.VIEW_BUILDER,
+            invert_meets_criteria_default=False,
+        ),
         # This is a catch for denials for DTP
         no_dtp_denial_or_previous_dtp_release.VIEW_BUILDER,
     ],
-    completion_event_builder=early_release_to_drug_program_overdue.VIEW_BUILDER,
+    completion_event_builder=early_release_to_drug_program_not_overdue.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

@@ -17,7 +17,6 @@
 """Shows the eligibility spans for residents in AZ who are overdue for a 
 Transition Program Release (TPR) release.
 """
-from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -31,7 +30,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_tpr_denial_or_release_in_current_incarceration,
     not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
 )
-from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
@@ -60,13 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_tpr_denial_or_release_in_current_incarceration.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_community_confinement_supervision_overdue.VIEW_BUILDER,
-    almost_eligible_condition=TimeDependentCriteriaCondition(
-        criteria=incarceration_past_acis_tpr_date.VIEW_BUILDER,
-        reasons_date_field="acis_tpr_date",
-        interval_length=6,
-        interval_date_part=BigQueryDateInterval.MONTH,
-        description="Within 6 months of ACIS TPR date",
-    ),
 )
 
 if __name__ == "__main__":
