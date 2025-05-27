@@ -260,6 +260,11 @@ class TestRealProductConfigs(unittest.TestCase):
         """Ensures that all minimum required metric pipelines are running before any
         product metric export is enabled for a given state.
         """
+
+        # TODO(#42928): MA JII pilot uses highly constrained raw data. Once we can ingest
+        # incarceration periods we can enable required pipelines and remove this exemption
+        state_code_exemptions = [StateCode.US_MA]
+
         for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
@@ -268,6 +273,9 @@ class TestRealProductConfigs(unittest.TestCase):
                 )
 
                 for state_code in StateCode:
+                    if state_code in state_code_exemptions:
+                        continue
+
                     state_code_export_configs = [
                         c
                         for c in product_configs.get_export_configs_for_job_filter(
