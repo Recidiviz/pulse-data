@@ -19,6 +19,9 @@
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 
+# Maximum length for any column name
+BQ_TABLE_COLUMN_NAME_MAX_LENGTH = 300
+
 # Maximum length for any column description on any column.
 BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
 

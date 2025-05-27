@@ -21,6 +21,7 @@ from typing import IO, Any, Dict, List
 import attr
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_NAME_MAX_LENGTH
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
@@ -39,7 +40,8 @@ class DirectIngestRawFileHeaderReader:
         fs: GCSFileSystem object for reading the file.
         file_config: DirectIngestRawFileConfig object containing the file configuration.
         infer_schema_from_csv: If False, will raise a ValueError if a column found in the raw
-            file is not found in the raw file config. Defaults to False."""
+            file is not found in the raw file config. Defaults to False.
+    """
 
     fs: GCSFileSystem
     file_config: DirectIngestRawFileConfig
@@ -58,18 +60,33 @@ class DirectIngestRawFileHeaderReader:
             List[str]: the column names as they appeared in the raw file config (normalized for BQ column name
               standards) at the time of file upload, in the order they appear in the file if a header row is present.
         """
-        csv_first_row = self._read_csv_first_row(gcs_file_path)
 
         file_upload_datetime = filename_parts_from_path(
             gcs_file_path
         ).utc_upload_datetime
-        expected_column_names = self.file_config.column_names_at_datetime(
-            file_upload_datetime
-        )
 
-        return self._normalize_and_validate_column_headers(
+        lowercase_col_name_to_expected_col_name = {
+            col.lower(): col
+            for col in self.file_config.column_names_at_datetime(file_upload_datetime)
+        }
+
+        if not lowercase_col_name_to_expected_col_name:
+            raise ValueError(
+                f"Found raw file config [{self.file_config.file_tag}] that had no valid "
+                f"columns at [{file_upload_datetime.isoformat()}]."
+            )
+
+        csv_first_row = self._read_csv_first_row(gcs_file_path)
+
+        if self.file_config.infer_columns_from_config:
+            self._validate_csv_no_expected_header_row(
+                csv_first_row, lowercase_col_name_to_expected_col_name
+            )
+            return list(lowercase_col_name_to_expected_col_name.values())
+
+        return self._validate_and_normalize_column_headers(
             csv_first_row,
-            expected_column_names,
+            lowercase_col_name_to_expected_col_name,
         )
 
     def _read_csv_first_row(self, gcs_file_path: GcsfsFilePath) -> List[str]:
@@ -110,20 +127,15 @@ class DirectIngestRawFileHeaderReader:
 
         return csv_first_row
 
-    def _normalize_and_validate_column_headers(
-        self, csv_first_row: List[str], expected_column_names: List[str]
+    def _validate_and_normalize_column_headers(
+        self,
+        csv_first_row: List[str],
+        lowercase_col_name_to_expected_col_name: dict[str, str],
     ) -> List[str]:
         """
-        If file_config.infer_columns_from_config is True:
-            Validate that all of the columns found in |expected_column_names| are present
-            in the file and that there are no duplicate column names.
-            If infer_schema_from_csv is False, will also validate that all columns
-            found in the file are present in |expected_column_names|.
-
-        If file_config.infer_columns_from_config is False:
-            We do not expect the file to contain a header row, so validate that none of the values
-            in the first row are found in |expected_column_names|, and validate that the number of columns
-            found in the file match the number of columns found in |expected_column_names|.
+        Validate that all of the columns found in |expected_column_names| are present in
+        the raw file and that there are no duplicate column names. If infer_schema_from_csv
+        is False, will also validate that all columns found in the file are present in |expected_column_names|.
 
         Args:
             csv_first_row: The first row of the CSV file.
@@ -132,27 +144,44 @@ class DirectIngestRawFileHeaderReader:
         Returns:
             List[str]: the column names as they appear in the raw file config (normalized for BQ
             column name standards), in the order they appear in the file if a header row is present.
+
         """
 
-        lowercase_col_name_to_expected_col_name = {
-            col_name.lower(): col_name for col_name in expected_column_names
-        }
-        if self.file_config.infer_columns_from_config:
-            self._validate_csv_no_expected_header_row(
-                csv_first_row, lowercase_col_name_to_expected_col_name
+        if len(csv_first_row) > len(lowercase_col_name_to_expected_col_name) * 4:
+            raise ValueError(
+                "Found at least four times more columns in the first row of the raw file "
+                "than we there are columns in the config. This typically is an indication "
+                "that the file was sent with the wrong delimiters, line terminators or "
+                "encoding which meant we could not properly parse the file."
             )
-            return expected_column_names
 
+        header_validation_errors: list[Exception] = []
         normalized_csv_columns = set()
         for i, column_name in enumerate(csv_first_row):
-            normalized_col = normalize_column_name_for_bq(column_name)
+            try:
+                normalized_col = normalize_column_name_for_bq(column_name)
+            except Exception as e:
+                header_validation_errors.append(e)
+                continue
+
+            if len(normalized_col) > BQ_TABLE_COLUMN_NAME_MAX_LENGTH:
+                raise ValueError(
+                    f"Found a column longer than max column length of [{BQ_TABLE_COLUMN_NAME_MAX_LENGTH}]. "
+                    f"This typically is an indication that the file was sent with the "
+                    f"wrong delimiters, line terminators or encoding which meant we "
+                    f"could not properly parse the file."
+                )
+
             caps_normalized_col = lowercase_col_name_to_expected_col_name.get(
                 normalized_col.lower()
             )
             if not caps_normalized_col and not self.infer_schema_from_csv:
-                raise ValueError(
-                    f"Column name [{normalized_col}] not found in config for [{self.file_config.file_tag}]."
+                header_validation_errors.append(
+                    ValueError(
+                        f"Column name [{normalized_col}] not found in config for [{self.file_config.file_tag}]."
+                    )
                 )
+                continue
 
             column_name = (
                 caps_normalized_col
@@ -160,8 +189,10 @@ class DirectIngestRawFileHeaderReader:
                 else normalized_col
             )
             if column_name in normalized_csv_columns:
-                raise ValueError(
-                    f"Multiple columns with name [{column_name}] after normalization."
+                header_validation_errors.append(
+                    ValueError(
+                        f"Multiple columns with name [{column_name}] after normalization."
+                    )
                 )
 
             normalized_csv_columns.add(column_name)
@@ -171,9 +202,20 @@ class DirectIngestRawFileHeaderReader:
             difference := set(lowercase_col_name_to_expected_col_name.values())
             - normalized_csv_columns
         ):
-            raise ValueError(
-                f"Columns [{', '.join(difference)}] found in config for [{self.file_config.file_tag}] "
-                f"were not found in the raw data file."
+            header_validation_errors.append(
+                ValueError(
+                    f"Columns [{', '.join(difference)}] found in config for [{self.file_config.file_tag}] "
+                    f"were not found in the raw data file."
+                )
+            )
+
+        if header_validation_errors:
+            if len(header_validation_errors) == 1:
+                raise header_validation_errors[0]
+
+            raise ExceptionGroup(
+                "CSV Headers did not match specification in raw file config",
+                header_validation_errors,
             )
 
         return csv_first_row
@@ -218,7 +260,7 @@ class DirectIngestRawFileHeaderReader:
 
     @staticmethod
     def _read_custom_terminated_line(f: IO, line_terminator: str) -> List[str]:
-        """Python csv reader is hard-coded to recognise either '\r' or '\n' as end-of-line
+        """Python csv reader is hard-coded to recognize either '\r' or '\n' as end-of-line
         https://docs.python.org/3/library/csv.html#csv.Dialect.lineterminator
 
         So if there is a custom line terminator manually parse until we encounter it or EOF,
@@ -228,7 +270,17 @@ class DirectIngestRawFileHeaderReader:
         while True:
             char = f.read(1)
             if not char:
+                # if we read nothing, we're at the end of the file
                 break
+
+            if len(line) >= DEFAULT_READ_CHUNK_SIZE:
+                raise ValueError(
+                    f"Could not find a line terminator after reading more than "
+                    f"[{DEFAULT_READ_CHUNK_SIZE}] characters. This is likely an indication "
+                    f"that this file was sent with the wrong line terminators or encoding "
+                    f"which meant we could not properly parse the file."
+                )
+
             line += char
             if line.endswith(line_terminator):
                 break

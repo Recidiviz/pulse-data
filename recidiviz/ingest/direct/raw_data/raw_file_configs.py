@@ -49,6 +49,7 @@ from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
+MAX_NUM_COLS = 300
 
 
 class RawDataClassification(Enum):

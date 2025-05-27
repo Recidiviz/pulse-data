@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: tagNoCols
+file_description: |-
+  tagNoCols file description
+data_classification: source
+primary_key_cols: []
+columns: []
+custom_line_terminator: "\n"

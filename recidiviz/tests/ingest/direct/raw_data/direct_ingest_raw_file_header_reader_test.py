@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test for direct_ingest_raw_file_header_reader.py"""
+import datetime
 import os
+import re
 import unittest
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import attr
@@ -35,6 +36,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 
 
 class ValidateRawFileColumnHeadersTest(unittest.TestCase):
@@ -54,12 +56,24 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
             file_tag
         ]
         self.filename_parts = MagicMock()
-        self.filename_parts.utc_upload_datetime = datetime.now()
+        self.filename_parts.utc_upload_datetime = datetime.datetime.now(tz=datetime.UTC)
         self.filename_patcher = patch(
             "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader.filename_parts_from_path",
             return_value=self.filename_parts,
         ).start()
         self.addCleanup(self.filename_patcher.stop)
+
+    def test_no_valid_columns(self) -> None:
+
+        header_reader = DirectIngestRawFileHeaderReader(
+            self.fs, self.region_raw_file_config.raw_file_configs["tagNoCols"]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found raw file config \[tagNoCols\] that had no valid columns at \[.*\]",
+        ):
+            header_reader.read_and_validate_column_headers(self.file_path)
 
     def test_no_valid_encoding(self) -> None:
         updated_file_config = attr.evolve(
@@ -87,18 +101,47 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         header_reader = DirectIngestRawFileHeaderReader(self.fs, updated_file_config)
 
         with self.assertRaisesRegex(
-            ValueError, r"^Column name \[COL4_1000\] not found in config"
+            ValueError,
+            r"Found at least four times more columns in the first row of the raw file",
         ):
             header_reader.read_and_validate_column_headers(self.file_path)
+
+    def test_too_long(self) -> None:
+        file_tag = "tagColumnRenamed"
+        file_config = attr.evolve(
+            self.region_raw_file_config.raw_file_configs[file_tag],
+            custom_line_terminator="00",
+            separator="@",
+        )
+        file_path = self._get_and_register_csv_gcs_path(file_tag)
+
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found a column longer than max column length of [300]. This typically is an indication that the file was sent with the wrong delimiters, line terminators or encoding which meant we could not properly parse the file."
+            ),
+        ):
+            header_reader.read_and_validate_column_headers(file_path)
 
     def test_wrong_column_separator(self) -> None:
         updated_file_config = attr.evolve(self.default_file_config, separator="#")
 
         header_reader = DirectIngestRawFileHeaderReader(self.fs, updated_file_config)
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Column name \[PRIMARY_COL1_COL2_COL3_COL4\] not found in config",
+        with assert_group_contains_regex(
+            "CSV Headers did not match specification in raw file config",
+            [
+                (
+                    ValueError,
+                    r"Column name \[PRIMARY_COL1_COL2_COL3_COL4\] not found in config for \[tagCustomLineTerminatorNonUTF8\]\.",
+                ),
+                (
+                    ValueError,
+                    r"Columns \[.*\] found in config for \[tagCustomLineTerminatorNonUTF8\] were not found in the raw data file",
+                ),
+            ],
         ):
             header_reader.read_and_validate_column_headers(self.file_path)
 
@@ -205,7 +248,8 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
         with self.assertRaisesRegex(
-            ValueError, r"^Column name \[_COL2\] not found in config"
+            ValueError,
+            r"Found at least four times more columns in the first row of the raw file ",
         ):
             header_reader.read_and_validate_column_headers(file_path)
 
