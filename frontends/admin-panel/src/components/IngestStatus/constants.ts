@@ -123,10 +123,10 @@ export type RawFileConfigSummary = {
   encoding: string;
   separator: string;
   lineTerminator: string;
-  alwaysHistoricalExport: boolean;
+  exportLookbackWindow: string;
   isCodeFile: boolean;
   isChunkedFile: boolean;
-  isPruned: boolean;
+  manuallyPruned: boolean;
   inferColumns: boolean;
 };
 

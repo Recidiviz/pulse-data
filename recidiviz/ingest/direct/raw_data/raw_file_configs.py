@@ -1040,14 +1040,16 @@ class DirectIngestRawFileConfig:
         return {
             "fileTag": self.file_tag,
             "fileDescription": self.file_description,
-            "updateCadence": self.update_cadence.value,
+            "updateCadence": self.update_cadence.value.title(),
             "encoding": self.encoding,
             "separator": self.separator,
             "lineTerminator": self.line_terminator,
-            "alwaysHistoricalExport": self.always_historical_export,
+            "exportLookbackWindow": self.export_lookback_window.value.replace(
+                "_", " "
+            ).title(),
             "isCodeFile": self.is_code_file,
             "isChunkedFile": self.is_chunked_file,
-            "isPruned": self.is_exempt_from_raw_data_pruning(),
+            "manuallyPruned": not self.is_exempt_from_raw_data_pruning(),
             "inferColumns": self.infer_columns_from_config,
         }
 

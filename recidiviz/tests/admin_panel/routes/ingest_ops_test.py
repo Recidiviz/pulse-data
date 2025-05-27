@@ -385,17 +385,17 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(
             response.json,
             {
-                "alwaysHistoricalExport": False,
                 "encoding": "UTF-8",
+                "exportLookbackWindow": "Two Week Incremental Lookback",
                 "fileDescription": "tagBasicData file description",
                 "fileTag": "tagBasicData",
                 "inferColumns": False,
-                "isPruned": True,
+                "manuallyPruned": False,
                 "lineTerminator": "\n",
                 "isChunkedFile": False,
                 "isCodeFile": False,
                 "separator": ",",
-                "updateCadence": "WEEKLY",
+                "updateCadence": "Weekly",
             },
         )
 

@@ -113,12 +113,10 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
                 {rawFileConfigSummary.separator}
               </Descriptions.Item>
               <Descriptions.Item label="Line Terminator">
-                {rawFileConfigSummary.lineTerminator}
+                {rawFileConfigSummary.lineTerminator.replace("\n", "\\n")}
               </Descriptions.Item>
-              <Descriptions.Item label="Export Type">
-                {rawFileConfigSummary.alwaysHistoricalExport
-                  ? "Always Historical"
-                  : "Incremental"}
+              <Descriptions.Item label="Export Lookback Window">
+                {rawFileConfigSummary.exportLookbackWindow}
               </Descriptions.Item>
               <Descriptions.Item label="Code File?">
                 {rawFileConfigSummary.isCodeFile ? "Yes" : "No"}
@@ -126,8 +124,8 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
               <Descriptions.Item label="Chunked File?">
                 {rawFileConfigSummary.isChunkedFile ? "Yes" : "No"}
               </Descriptions.Item>
-              <Descriptions.Item label="Pruned?">
-                {rawFileConfigSummary.isPruned ? "Yes" : "No"}
+              <Descriptions.Item label="Manually, Loss-ily Pruned?">
+                {rawFileConfigSummary.manuallyPruned ? "Yes" : "No"}
               </Descriptions.Item>
               <Descriptions.Item label="Has Headers?">
                 {rawFileConfigSummary.inferColumns ? "Yes" : "No"}
