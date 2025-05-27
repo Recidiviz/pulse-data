@@ -3,6 +3,10 @@ manifest_language: 1.0.0
 input_columns:
   inmateNumber: STRING
   prevInmateNumber: STRING
+  is_current_display_id_for_type: BOOLEAN
+  prev_is_current_display_id_for_type: BOOLEAN
+  receivedDate: DATE
+  prev_receivedDate: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -10,6 +14,11 @@ output:
       - StatePersonExternalId:
           external_id: inmateNumber
           id_type: $literal("US_NE_ID_NBR")
+          id_active_from_datetime: receivedDate
+          is_current_display_id_for_type:
+            $equal:
+              - is_current_display_id_for_type
+              - $literal("True")
       - $conditional:
           - $if:
               $not_null: prevInmateNumber
@@ -17,3 +26,8 @@ output:
               StatePersonExternalId:
                 external_id: prevInmateNumber
                 id_type: $literal("US_NE_ID_NBR")
+                id_active_from_datetime: prev_receivedDate
+                is_current_display_id_for_type:
+                  $equal:
+                    - prev_is_current_display_id_for_type
+                    - $literal("True")

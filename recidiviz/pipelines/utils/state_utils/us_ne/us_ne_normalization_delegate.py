@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_NE implementation of the StateSpecificNormalizationDelegate."""
+from datetime import datetime
+
 from recidiviz.common.constants.state.external_id_types import US_NE_ID_NBR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
-from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_person_external_id,
-)
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 
 class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
@@ -36,13 +36,30 @@ class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
         id_type: str,
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
-        # TODO(#41840): Translate logic that is currently in the
-        #  product_display_person_external_ids view here and then remove this block - we
-        #  should not need to do any normalization to choose the correct ID.
         if id_type == US_NE_ID_NBR:
-            return select_alphabetically_highest_person_external_id(
-                person_external_ids_of_type
-            )
+            # In NE we do our best to pick a single is_current_display_id_for_type for
+            # each person, but we can't always do this reasonably before we make it to
+            # normalization because there may be inmate number links that span
+            # internalId values and entity merging ends up merging two clusters of ids
+            # together, each with one id that is_current_display_id_for_type=True. Here
+            # we pick the id where is_current_display_id_for_type=True that was active
+            # most recently.
+            ids_marked_as_current_display = [
+                pei
+                for pei in person_external_ids_of_type
+                if pei.is_current_display_id_for_type
+            ]
+
+            return list(
+                reversed(
+                    sorted(
+                        ids_marked_as_current_display,
+                        key=lambda pei: assert_type(
+                            pei.id_active_from_datetime, datetime
+                        ),
+                    )
+                )
+            )[0]
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per person and no "
