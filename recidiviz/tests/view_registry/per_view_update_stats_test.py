@@ -192,6 +192,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
                 graph_depth=0,
                 longest_path=[self.view],
                 longest_path_runtime_seconds=16.3,
+                distinct_paths_to_view=10,
             ),
             ancestor_view_addresses=set(),
             state_code_literal_references=set(),
@@ -264,6 +265,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
                 graph_depth=2,
                 longest_path=[self.view],
                 longest_path_runtime_seconds=16.3,
+                distinct_paths_to_view=10,
             ),
             ancestor_view_addresses={
                 BigQueryAddress.from_str("some_dataset.raw_latest_view"),

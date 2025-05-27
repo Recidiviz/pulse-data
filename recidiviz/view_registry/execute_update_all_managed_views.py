@@ -24,7 +24,6 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -74,18 +73,22 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
 
     def record_success_in_bq(
         self,
+        *,
         success_datetime: datetime.datetime,
-        deployed_builders: list[BigQueryViewBuilder],
+        num_deployed_views: int,
         dataset_override_prefix: str | None,
         runtime_sec: int,
+        num_edges: int,
+        num_distinct_paths: int,
     ) -> None:
-        num_deployed_views = len(deployed_builders)
 
         success_row = {
             "success_timestamp": success_datetime.isoformat(),
             "dataset_override_prefix": dataset_override_prefix,
             "num_deployed_views": num_deployed_views,
             "view_update_runtime_sec": runtime_sec,
+            "num_edges": num_edges,
+            "num_distinct_paths": num_distinct_paths,
         }
 
         self.stream_rows([success_row])
@@ -150,10 +153,12 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         bq_client=BigQueryClientImpl()
     )
     job_level_success_persister.record_success_in_bq(
-        deployed_builders=view_builders,
+        num_deployed_views=len(view_builders),
         success_datetime=success_time,
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
+        num_edges=dag_walker.get_number_of_edges(),
+        num_distinct_paths=update_views_result.get_distinct_paths_to_leaf_nodes(),
     )
     view_level_success_persister = PerViewUpdateStatsPersister(
         bq_client=BigQueryClientImpl()

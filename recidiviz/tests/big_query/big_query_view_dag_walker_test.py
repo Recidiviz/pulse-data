@@ -285,10 +285,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         ) -> List[str]:
             return sorted([f"{p.dataset_id}.{p.table_id}" for p in parent_results])
 
-        results = walker.process_dag(
+        forward_results = walker.process_dag(
             processing_ordered_string, synchronous=self.synchronous
         )
-        assert results.view_results == {
+        assert forward_results.view_results == {
             view_1: [],
             view_2: [],
             view_3: ["dataset_1.table_1", "dataset_2.table_2"],
@@ -297,10 +297,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_6: ["dataset_4.table_4", "dataset_5.table_5"],
         }
 
-        results = walker.process_dag(
+        backwards_results = walker.process_dag(
             processing_ordered_string, synchronous=self.synchronous, reverse=True
         )
-        assert results.view_results == {
+        assert backwards_results.view_results == {
             view_6: [],
             view_5: ["dataset_6.table_6"],
             view_4: ["dataset_6.table_6"],
@@ -308,6 +308,12 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_2: ["dataset_3.table_3"],
             view_1: ["dataset_3.table_3"],
         }
+
+        assert (
+            forward_results.get_distinct_paths_to_leaf_nodes()
+            == backwards_results.get_distinct_paths_to_leaf_nodes()
+            == 4
+        )
 
     def test_dag_exception_handling(self) -> None:
         """Test that exceptions during processing propagate properly."""
@@ -1346,6 +1352,81 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 f"this table will not be created until these are defined. Cannot reference "
                 f"[{raw_data_view_key}] in another BQ view."
             )
+
+    def test_edges(self) -> None:
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        assert walker.get_number_of_edges() == 6
+
+        walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+        assert walker.get_number_of_edges() == 4
+
+    def test_distinct_paths(self) -> None:
+        # in a DAG like
+        #  1     2       11
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #  |\   / |\
+        #  |  6   | \
+        #  |/   \ |  \
+        #  7      8   \
+        #  |        \  |
+        #  9         10
+        #
+        # we want to make sure we are counting 11 as a "single" path to it (from itself)
+        views_for_path = [
+            *DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST.copy(),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_7",
+                view_id="table_7",
+                description="table_7 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_4.table_4`
+            JOIN `{project_id}.dataset_6.table_6`
+            USING (col)""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_8",
+                view_id="table_8",
+                description="table_8 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_5.table_5`
+            JOIN `{project_id}.dataset_6.table_6`
+            USING (col)""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_9",
+                view_id="table_9",
+                description="table_9 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_7.table_7`""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_10",
+                view_id="table_10",
+                description="table_10 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_5.table_5`
+            JOIN `{project_id}.dataset_8.table_8`
+            USING (col)""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_11",
+                view_id="table_11",
+                description="table_11 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_not_in_graph.table`""",
+            ),
+        ]
+
+        walker = BigQueryViewDagWalker([v.build() for v in views_for_path])
+        assert (
+            walker.process_dag(
+                lambda _, __: None, synchronous=self.synchronous
+            ).get_distinct_paths_to_leaf_nodes()
+            == 15
+        )
 
 
 class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):

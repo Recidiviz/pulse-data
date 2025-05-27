@@ -2,19 +2,37 @@ address:
   dataset_id: view_update_metadata
   table_id: view_update_tracker
 description: >-
-  Table that holds information summary information about each successful view update. A new row is added each time we
-  successfully update our full graph of BigQuery views.
+  Table that holds information summary information about each successful view
+  update. A new row is added each time we successfully update our full graph of
+  BigQuery views.
 schema:
   - name: success_timestamp
     type: TIMESTAMP
     mode: REQUIRED
+    description: >-
+      The timestamp when the overall view update completed. This can be used to join to 
+      per-view update stats in view_update_metadata.per_view_update_stats.
   - name: num_deployed_views
     type: INTEGER
     mode: REQUIRED
+    description: Number of successfully deployed views in this view update run.
   - name: view_update_runtime_sec
     type: INTEGER
     mode: REQUIRED
+    description: Total end-to-end runtime of the view update.
   - name: dataset_override_prefix
     type: STRING
     mode: NULLABLE
+    description: The sandbox prefix applied at the dataset level during this view update run.
+  - name: num_edges
+    type: INTEGER
+    mode: NULLABLE
+    description: The number of total edges in the updated view DAG.
+  - name: num_distinct_paths
+    type: INTEGER
+    mode: NULLABLE
+    description: >-
+      The total number of different "paths" you can take to get to all leaf nodes, when 
+      starting at a root node. A "path" is defined as any way you can get to a leaf 
+      node starting from a root node, given 0-N moves across edges.
 clustering_fields: null

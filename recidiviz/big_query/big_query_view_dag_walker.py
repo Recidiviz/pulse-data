@@ -27,6 +27,7 @@ from enum import Enum, auto
 from types import TracebackType
 from typing import (
     Callable,
+    Collection,
     Deque,
     Dict,
     Generator,
@@ -60,15 +61,24 @@ class TraversalDirection(Enum):
 
 @attr.s(auto_attribs=True, kw_only=True)
 class ViewProcessingMetadata:
+    """Useful processing metadata about each view."""
+
     # The time it took to actually run the view_process_fn for this view.
     view_processing_runtime_sec: float
     # The total time between when this view was added to the queue for processing and
     # when it finishes processing. May include wait time, during which the job for this
     # view wasn't actually started yet.
     total_node_processing_time_sec: float
+    # number of nodes in the shortest path between this view and the root-level node set
     graph_depth: int
+    # longest possible path between this view and the root-level node set
     longest_path: List[BigQueryView]
+    # the combined |view_processing_runtime_sec| of views in |longest_path|. is not
+    # necessarily the path with the longest runtime.
     longest_path_runtime_seconds: float
+    # the number of possible distinct (unique) paths to this view starting from the root-level
+    # node set, given 0-N moves across edges
+    distinct_paths_to_view: int
 
     @property
     def queue_wait_time_sec(self) -> float:
@@ -76,6 +86,52 @@ class ViewProcessingMetadata:
         starts view processing.
         """
         return self.total_node_processing_time_sec - self.view_processing_runtime_sec
+
+    @classmethod
+    def from_result_and_previous_metadata(
+        cls,
+        *,
+        view: BigQueryView,
+        processing_time: float,
+        queue_time: float,
+        parents: Collection[BigQueryView],
+        ancestor_metadata: Dict[BigQueryView, "ViewProcessingMetadata"],
+    ) -> "ViewProcessingMetadata":
+        """Builds a ViewProcessingMetadata from the current results"""
+        graph_depth = (
+            0
+            if not parents
+            else max({ancestor_metadata[p].graph_depth for p in parents}) + 1
+        )
+
+        if parents:
+            parent_with_longest_path = max(
+                (ancestor_metadata[parent_view] for parent_view in parents),
+                key=lambda parent_metadata: parent_metadata.longest_path_runtime_seconds,
+            )
+            parent_longest_path = parent_with_longest_path.longest_path
+            parent_longest_path_runtime_seconds = (
+                parent_with_longest_path.longest_path_runtime_seconds
+            )
+            distinct_paths_to_view = sum(
+                ancestor_metadata[parent_view].distinct_paths_to_view
+                for parent_view in parents
+            )
+        else:
+            parent_longest_path = []
+            parent_longest_path_runtime_seconds = 0
+            distinct_paths_to_view = 1
+
+        return cls(
+            view_processing_runtime_sec=processing_time,
+            total_node_processing_time_sec=queue_time,
+            graph_depth=graph_depth,
+            longest_path=[*parent_longest_path, view],
+            longest_path_runtime_seconds=(
+                parent_longest_path_runtime_seconds + processing_time
+            ),
+            distinct_paths_to_view=distinct_paths_to_view,
+        )
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -111,8 +167,7 @@ class ProcessDagResult(Generic[ViewResultT]):
     view_results: Dict[BigQueryView, ViewResultT]
     view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata]
     total_runtime: float
-    # The set of nodes that were processed last
-    edge_nodes: Set["BigQueryViewDagNode"]
+    leaf_nodes: Set["BigQueryViewDagNode"]
 
     def log_processing_stats(self, n_slowest: int) -> None:
         """Logs various stats about a DAG processing run.
@@ -174,7 +229,7 @@ class ProcessDagResult(Generic[ViewResultT]):
 
     def _get_longest_path(self) -> Tuple[float, List[BigQueryView]]:
         edge_node_stats = [
-            self.view_processing_stats[node.view] for node in self.edge_nodes
+            self.view_processing_stats[node.view] for node in self.leaf_nodes
         ]
 
         end_of_longest_path_stats = sorted(
@@ -183,6 +238,19 @@ class ProcessDagResult(Generic[ViewResultT]):
         return (
             end_of_longest_path_stats.longest_path_runtime_seconds,
             end_of_longest_path_stats.longest_path,
+        )
+
+    def get_distinct_paths_to_leaf_nodes(self) -> int:
+        """The total number of full-graph 'paths' to all leaf nodes, where a path is
+        defined as any way you can get to a leaf node starting from a root node,
+        given 0-N moves across edges. If a node is both a root and a leaf node (i.e.
+        disconnected from the graph), we deem there being exactly 1 path to it - we start
+        at the disconnected node (a root node), move across 0 edges and arrive at the
+        disconnected node (a leaf node).
+        """
+        return sum(
+            self.view_processing_stats[edge_node.view].distinct_paths_to_view
+            for edge_node in self.leaf_nodes
         )
 
 
@@ -553,7 +621,7 @@ class BigQueryViewDagWalker:
     def node_for_view(self, view: BigQueryView) -> BigQueryViewDagNode:
         return self.nodes_by_address[view.address]
 
-    def _adjacent_dag_verticies(
+    def _adjacent_dag_vertices(
         self,
         node: BigQueryViewDagNode,
         view_results: Dict[BigQueryView, ViewResultT],
@@ -597,7 +665,7 @@ class BigQueryViewDagWalker:
                 if not previous_level_results:
                     raise ValueError(
                         f"Expected adjacent node [{adjacent_node.view.address}] "
-                        f"to have previously processed ancesters."
+                        f"to have previously processed ancestors."
                     )
                 yield adjacent_node, previous_level_results
 
@@ -642,43 +710,6 @@ class BigQueryViewDagWalker:
             )
             raise e
         return execution_sec, view_result
-
-    @staticmethod
-    def _view_processing_statistics(
-        view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata],
-        view: BigQueryView,
-        parent_results: Dict[BigQueryView, ViewResultT],
-        processing_time: float,
-        queue_time: float,
-    ) -> ViewProcessingMetadata:
-        graph_depth = (
-            0
-            if not parent_results
-            else max({view_processing_stats[p].graph_depth for p in parent_results}) + 1
-        )
-
-        if parent_results:
-            parent_with_longest_path = max(
-                (view_processing_stats[parent_view] for parent_view in parent_results),
-                key=lambda parent_metadata: parent_metadata.longest_path_runtime_seconds,
-            )
-            parent_longest_path = parent_with_longest_path.longest_path
-            parent_longest_path_runtime_seconds = (
-                parent_with_longest_path.longest_path_runtime_seconds
-            )
-        else:
-            parent_longest_path = []
-            parent_longest_path_runtime_seconds = 0
-
-        return ViewProcessingMetadata(
-            view_processing_runtime_sec=processing_time,
-            total_node_processing_time_sec=queue_time,
-            graph_depth=graph_depth,
-            longest_path=[*parent_longest_path, view],
-            longest_path_runtime_seconds=(
-                parent_longest_path_runtime_seconds + processing_time
-            ),
-        )
 
     def process_dag(
         self,
@@ -741,12 +772,12 @@ class BigQueryViewDagWalker:
                         view=node.view,
                         processing_time=execution_sec,
                     )
-                view_stats = self._view_processing_statistics(
-                    view_processing_stats=view_processing_stats,
+                view_stats = ViewProcessingMetadata.from_result_and_previous_metadata(
                     view=node.view,
-                    parent_results=parent_results,
                     processing_time=execution_sec,
                     queue_time=end - entered_queue_time,
+                    parents=parent_results.keys(),
+                    ancestor_metadata=view_processing_stats,
                 )
                 view_results[node.view] = view_result
                 view_processing_stats[node.view] = view_stats
@@ -759,7 +790,7 @@ class BigQueryViewDagWalker:
                 for (
                     adjacent_node,
                     previous_level_results,
-                ) in self._adjacent_dag_verticies(
+                ) in self._adjacent_dag_vertices(
                     node=node,
                     view_results=view_results,
                     visited_set=processed,
@@ -773,7 +804,7 @@ class BigQueryViewDagWalker:
             view_results=view_results,
             view_processing_stats=view_processing_stats,
             total_runtime=(time.perf_counter() - dag_processing_start),
-            edge_nodes=bottom_level_set,
+            leaf_nodes=bottom_level_set,
         )
 
     def _check_sub_dag_input_views(self, *, input_views: List[BigQueryView]) -> None:
@@ -1251,4 +1282,10 @@ class BigQueryViewDagWalker:
             end_ancestors.intersection(start_descendants)
             | all_start_node_addresses
             | end_node_addresses
+        )
+
+    def get_number_of_edges(self) -> int:
+        """Returns the number of unique edges for this DAG"""
+        return sum(
+            len(node.parent_node_addresses) for node in self.nodes_by_address.values()
         )

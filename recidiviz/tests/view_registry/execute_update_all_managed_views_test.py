@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResu
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
+    ProcessDagResult,
     ViewProcessingMetadata,
 )
 from recidiviz.big_query.view_update_manager import (
@@ -68,9 +69,11 @@ class TestAllViewsUpdateSuccessPersister(BigQueryEmulatorTestCase):
         # Just shouldn't crash
         persister.record_success_in_bq(
             success_datetime=datetime.datetime.now(tz=pytz.UTC),
-            deployed_builders=[],
+            num_deployed_views=0,
             dataset_override_prefix=None,
             runtime_sec=100,
+            num_edges=10,
+            num_distinct_paths=10,
         )
 
 
@@ -125,6 +128,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                     graph_depth=0,
                     longest_path=[view],
                     longest_path_runtime_seconds=16.3,
+                    distinct_paths_to_view=10,
                 ),
                 ancestor_view_addresses=set(),
                 state_code_literal_references=set(),
@@ -151,6 +155,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                     graph_depth=2,
                     longest_path=[view_2],
                     longest_path_runtime_seconds=16.3,
+                    distinct_paths_to_view=10,
                 ),
                 ancestor_view_addresses={
                     BigQueryAddress.from_str("some_dataset.raw_latest_view"),
@@ -238,14 +243,24 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         _mock_bq_client: MagicMock,
         _mock_view_builders: MagicMock,
     ) -> None:
-        mock_create.return_value = ([], BigQueryViewDagWalker(views=[]))
+        mock_create.return_value = (
+            ProcessDagResult(
+                view_results={},
+                view_processing_stats={},
+                total_runtime=0,
+                leaf_nodes=set(),
+            ),
+            BigQueryViewDagWalker(views=[]),
+        )
         execute_update_all_managed_views(sandbox_prefix=None)
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             success_datetime=mock.ANY,
-            deployed_builders=mock.ANY,
+            num_deployed_views=mock.ANY,
             dataset_override_prefix=None,
             runtime_sec=mock.ANY,
+            num_edges=mock.ANY,
+            num_distinct_paths=mock.ANY,
         )
         self.mock_per_view_update_success_persister.record_success_in_bq.assert_called()
 
@@ -264,13 +279,23 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         _mock_bq_client: MagicMock,
         _mock_view_builders: MagicMock,
     ) -> None:
-        mock_create.return_value = ([], BigQueryViewDagWalker(views=[]))
+        mock_create.return_value = (
+            ProcessDagResult(
+                view_results={},
+                view_processing_stats={},
+                total_runtime=0,
+                leaf_nodes=set(),
+            ),
+            BigQueryViewDagWalker(views=[]),
+        )
         execute_update_all_managed_views(sandbox_prefix="test_prefix")
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             success_datetime=mock.ANY,
-            deployed_builders=mock.ANY,
+            num_deployed_views=mock.ANY,
             dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
+            num_edges=mock.ANY,
+            num_distinct_paths=mock.ANY,
         )
         self.mock_per_view_update_success_persister.record_success_in_bq.assert_called()
