@@ -352,9 +352,15 @@ export function getResourceLockAdHocCumulativeState(
       if (acc === ResourceLockState.UNKNOWN) {
         return lockState;
       }
+
       if (acc === lockState) {
         return acc;
       }
+
+      if (lockState === ResourceLockState.FREE) {
+        return acc;
+      }
+
       return ResourceLockState.MIXED;
     }, ResourceLockState.UNKNOWN);
 }

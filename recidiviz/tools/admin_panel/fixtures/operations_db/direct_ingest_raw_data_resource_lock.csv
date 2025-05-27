@@ -1,15 +1,16 @@
 lock_id,lock_actor,lock_resource,region_code,raw_data_source_instance,released,lock_acquisition_time,lock_ttl_seconds,lock_description
 1,ADHOC,BUCKET,US_CA,PRIMARY,true,2024-02-09T19:06:00.000000+00,,we held this lock just bc we could
 2,ADHOC,BUCKET,US_CA,PRIMARY,false,2024-02-10T19:06:00.000000+00,,we holding this lock just bc we can
-3,PROCESS,BUCKET,US_AZ,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-4,PROCESS,OPERATIONS_DATABASE,US_AZ,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-5,PROCESS,BIG_QUERY_RAW_DATA_DATASET,US_AZ,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-6,PROCESS,BUCKET,US_IX,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-7,PROCESS,OPERATIONS_DATABASE,US_IX,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-8,PROCESS,BIG_QUERY_RAW_DATA_DATASET,US_IX,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-9,PROCESS,BUCKET,US_ME,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-10,PROCESS,OPERATIONS_DATABASE,US_ME,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
-11,PROCESS,BIG_QUERY_RAW_DATA_DATASET,US_ME,PRIMARY,false,2024-08-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+15,ADHOC,OPERATIONS_DATABASE,US_CA,PRIMARY,true,2024-02-10T19:06:00.000000+00,,we held this lock just bc we can
+3,PROCESS,BUCKET,US_AZ,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+4,PROCESS,OPERATIONS_DATABASE,US_AZ,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+5,ADHOC,BIG_QUERY_RAW_DATA_DATASET,US_AZ,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+6,PROCESS,BUCKET,US_IX,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+7,PROCESS,OPERATIONS_DATABASE,US_IX,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+8,PROCESS,BIG_QUERY_RAW_DATA_DATASET,US_IX,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+9,PROCESS,BUCKET,US_ME,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+10,PROCESS,OPERATIONS_DATABASE,US_ME,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
+11,PROCESS,BIG_QUERY_RAW_DATA_DATASET,US_ME,PRIMARY,false,2025-04-10T19:06:00.000000+00,10000000,we holding this lock just bc we can
 12,ADHOC,BUCKET,US_MO,PRIMARY,false,2024-08-10T19:06:00.000000+00,,we holding this lock just bc we can
 13,ADHOC,OPERATIONS_DATABASE,US_MO,PRIMARY,false,2024-08-10T19:06:00.000000+00,,we holding this lock just bc we can
 14,ADHOC,BIG_QUERY_RAW_DATA_DATASET,US_MO,PRIMARY,false,2024-08-10T19:06:00.000000+00,,we holding this lock just bc we can

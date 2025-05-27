@@ -21,7 +21,11 @@ import {
   acquireResourceLocksForStateAndInstance,
   releaseResourceLocksForStateById,
 } from "../../AdminPanelAPI/IngestOperations";
-import { DirectIngestInstance, ResourceLockStatus } from "./constants";
+import {
+  DirectIngestInstance,
+  ResourceLockState,
+  ResourceLockStatus,
+} from "./constants";
 
 export enum LockAction {
   AcquireRawDataResourceLocks = "Acquire Locks",
@@ -47,6 +51,7 @@ interface LockActionButtonProps {
   style: React.CSSProperties;
   currentLocks: ResourceLockStatus[];
   onActionConfirmed: () => void;
+  lockState: ResourceLockState;
 }
 
 const LockActionButton: React.FC<LockActionButtonProps> = ({
@@ -58,6 +63,7 @@ const LockActionButton: React.FC<LockActionButtonProps> = ({
   style,
   currentLocks,
   onActionConfirmed,
+  lockState,
 }) => {
   const [form] = Form.useForm();
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
@@ -80,7 +86,9 @@ const LockActionButton: React.FC<LockActionButtonProps> = ({
         await releaseResourceLocksForStateById(
           stateCode,
           rawDataInstance,
-          currentLocks.map((lock) => lock.lockId)
+          currentLocks
+            .filter((lock) => !lock.released) // only release locks that have not yet been released
+            .map((lock) => lock.lockId)
         );
         onActionConfirmed();
         break;
@@ -122,12 +130,11 @@ const LockActionButton: React.FC<LockActionButtonProps> = ({
             },
           ]}
         >
-          <Input placeholder="i.e. grabbing lock for a some non-anna approved maneuver...." />
+          <Input placeholder="i.e. grabbing lock for some non-anna approved maneuver...." />
         </Form.Item>
       </Form>
     </>
   );
-
   const releaseLockForm = (
     <>
       <b> {action} </b>
@@ -137,7 +144,26 @@ const LockActionButton: React.FC<LockActionButtonProps> = ({
       <b> {rawDataInstance}</b>?
       <Form form={form} layout="vertical" name="form_in_modal">
         <p>
-          Type <b>RELEASE</b> below to confirm.
+          Type <b>RELEASE</b> below to confirm releasing the following locks:
+          <br />
+        </p>
+        <ul>
+          {currentLocks
+            .filter((lock) => !lock.released)
+            .map((lock) => (
+              <li>
+                {lock.resource} held by {lock.actor}
+              </li>
+            ))}
+        </ul>
+
+        <p>
+          <em>
+            {lockState === ResourceLockState.MIXED ||
+            lockState === ResourceLockState.PROCESS_HELD
+              ? "CAUTION: There are some locks that are held by a platform process. If a platform process has sole read/write access to the listed raw data resources, releasing them may have unintended side effects. Please only proceed if you are sure that the process has completed without releasing locks successfully."
+              : ""}
+          </em>
         </p>
         <Form.Item
           name="validation"

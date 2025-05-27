@@ -21,6 +21,7 @@ import classNames from "classnames";
 
 import {
   DirectIngestInstance,
+  resourceLockHeldStates,
   ResourceLockState,
   ResourceLockStatus,
 } from "./constants";
@@ -49,7 +50,7 @@ const ResourceLockActionButtonTooltipFromState: {
     acquireTooltip:
       "You cannot acquire locks while they are being held by a platform process; please wait until the process is completed using the resource.",
     releaseTooltip:
-      "You cannot release locks that are held by a non-adhoc actor.",
+      "CAUTION: A platform process has sole read/write access to the listed raw data resources, releasing them may have unintended side effects. Please only proceed if you are sure that the process has completed without releasing locks successfully.",
   },
   FREE: {
     acquireTooltip:
@@ -60,7 +61,7 @@ const ResourceLockActionButtonTooltipFromState: {
     acquireTooltip:
       "You cannot acquire all resource locks when some are that are held.",
     releaseTooltip:
-      "You cannot release locks that are held by a non-adhoc actor.",
+      "CAUTION: Locks are held by both ad-hoc/manual and platform process actors. If a platform process has sole read/write access to the listed raw data resources, releasing them may have unintended side effects. Please only proceed if you are sure that the process has completed without releasing locks successfully.",
   },
   UNKNOWN: {
     acquireTooltip:
@@ -102,6 +103,7 @@ const RawDataResourceLockActionTableHeader: React.FC<
                 }}
                 currentLocks={lockStatus}
                 key={LockAction.AcquireRawDataResourceLocks}
+                lockState={lockState}
               />
             </div>
           </Tooltip>
@@ -110,7 +112,7 @@ const RawDataResourceLockActionTableHeader: React.FC<
               <LockActionButton
                 style={{ display: "block", textAlign: "center", width: "auto" }}
                 action={LockAction.ReleaseRawDataResourceLocks}
-                disabled={lockState !== ResourceLockState.ADHOC_HELD} // only enabled when all locks are ADHOC HELD
+                disabled={!resourceLockHeldStates.has(lockState)} // enabled when any kind of lock is held
                 stateCode={stateCode}
                 rawDataInstance={rawDataInstance}
                 buttonText={`${LockAction.ReleaseRawDataResourceLocks} for ${rawDataInstance}`}
@@ -119,6 +121,7 @@ const RawDataResourceLockActionTableHeader: React.FC<
                 }}
                 currentLocks={lockStatus}
                 key={LockAction.ReleaseRawDataResourceLocks}
+                lockState={lockState}
               />
             </div>
           </Tooltip>

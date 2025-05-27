@@ -151,6 +151,12 @@ export enum ResourceLockState {
   UNKNOWN = "UNKNOWN",
 }
 
+export const resourceLockHeldStates = new Set<ResourceLockState>([
+  ResourceLockState.ADHOC_HELD,
+  ResourceLockState.PROCESS_HELD,
+  ResourceLockState.MIXED,
+]);
+
 export type ResourceLockMetadata = {
   actors: ResourceLockActorDescription;
   resources: ResourceLockResourceDescription;
