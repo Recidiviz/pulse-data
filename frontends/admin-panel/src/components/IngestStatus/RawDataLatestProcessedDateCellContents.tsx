@@ -23,14 +23,15 @@ import {
 } from "./constants";
 import { getGCPBucketURL } from "./ingestStatusUtils";
 
-interface RawDataLatestProcessedDateCellContentsProps {
+interface RawDataLatestDatetimeCellContentsProps {
+  datetime: string | null;
   status: IngestRawFileProcessingStatus;
   storageDirectoryPath: string | undefined;
 }
 
-const RawDataLatestProcessedDateCellContents: React.FC<
-  RawDataLatestProcessedDateCellContentsProps
-> = ({ status, storageDirectoryPath }) => {
+const RawDataLatestDatetimeCellContents: React.FC<
+  RawDataLatestDatetimeCellContentsProps
+> = ({ datetime, status, storageDirectoryPath }) => {
   const { fileTag, hasConfig, latestProcessedTime, latestUpdateDatetime } =
     status;
 
@@ -48,21 +49,19 @@ const RawDataLatestProcessedDateCellContents: React.FC<
       <NewTabLink
         href={getIngestStorageBucketPath(storageDirectoryPath, fileTag, date)}
       >
-        {latestProcessedTime}
+        {datetime}
       </NewTabLink>
     ) : (
-      <div>{latestProcessedTime}</div>
+      <div>{datetime}</div>
     );
   }
 
   return (
-    <div>
-      {hasConfig ? latestProcessedTime : "N/A - No Raw Config File Available"}
-    </div>
+    <div>{hasConfig ? datetime : "N/A - No Raw Config File Available"}</div>
   );
 };
 
-export default RawDataLatestProcessedDateCellContents;
+export default RawDataLatestDatetimeCellContents;
 
 function normalizeRelativePath(path: string): string {
   if (path[path.length - 1] !== "/") {

@@ -30,7 +30,7 @@ import {
 } from "./constants";
 import RawDataFileTagCellContents from "./RawDataFileTagCellContents";
 import RawDataHasConfigFileCellContents from "./RawDataHasConfigFileCellContents";
-import RawDataLatestProcessedDateCellContents from "./RawDataLatestProcessedDateCellContents";
+import RawDataLatestDatetimeCellContents from "./RawDataLatestProcessedDateCellContents";
 
 interface IngestRawFileProcessingStatusTableProps {
   ingestInstanceResources: IngestInstanceResources | undefined;
@@ -88,13 +88,28 @@ const IngestRawFileProcessingStatusTable: React.FC<
       dataIndex: "latestProcessedTime",
       key: "latestProcessedTime",
       render: (_, record) => (
-        <RawDataLatestProcessedDateCellContents
+        <RawDataLatestDatetimeCellContents
+          datetime={record.latestProcessedTime}
           status={record}
           storageDirectoryPath={ingestInstanceResources?.storageDirectoryPath}
         />
       ),
       sorter: (a, b) =>
         optionalStringSort(a.latestProcessedTime, b.latestProcessedTime),
+    },
+    {
+      title: "Max Update Datetime",
+      dataIndex: "latestUpdateDatetime",
+      key: "latestUpdateDatetime",
+      render: (_, record) => (
+        <RawDataLatestDatetimeCellContents
+          datetime={record.latestUpdateDatetime}
+          status={record}
+          storageDirectoryPath={ingestInstanceResources?.storageDirectoryPath}
+        />
+      ),
+      sorter: (a, b) =>
+        optionalStringSort(a.latestUpdateDatetime, b.latestUpdateDatetime),
     },
     {
       title: "# Pending Upload",
