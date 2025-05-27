@@ -201,6 +201,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             composite_complexity_score_2025=1,
             post_infra_library_composite_complexity_score_2025=1,
             referenced_raw_data_tables=[],
+            is_leaf_node=False,
         )
 
         expected_column_names = set(self.source_table_config.column_names)
@@ -234,6 +235,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "states_referenced": [],
             "state_code_specific_to_view": None,
             "referenced_raw_data_tables": [],
+            "is_leaf_node": False,
         }
         self.assertEqual(expected_table_row, table_row)
 
@@ -279,6 +281,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             referenced_raw_data_tables=[
                 BigQueryAddress.from_str("some_dataset.raw_latest_view")
             ],
+            is_leaf_node=False,
         )
 
         expected_column_names = set(self.source_table_config.column_names)
@@ -312,6 +315,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "states_referenced": ["US_XX", "US_YY"],
             "state_code_specific_to_view": None,
             "referenced_raw_data_tables": ["some_dataset.raw_latest_view"],
+            "is_leaf_node": False,
         }
         self.assertEqual(expected_table_row, table_row)
 
@@ -467,6 +471,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": 0,
                 "total_bytes_processed": 0,
                 "job_id": "job_0",
+                "is_leaf_node": False,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -493,6 +498,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": None,
                 "total_bytes_processed": None,
                 "job_id": None,
+                "is_leaf_node": False,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -522,6 +528,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": 2000,
                 "total_bytes_processed": 4000,
                 "job_id": "job_2",
+                "is_leaf_node": False,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -549,6 +556,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": 3000,
                 "total_bytes_processed": 6000,
                 "job_id": "job_3",
+                "is_leaf_node": False,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -576,6 +584,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": 4000,
                 "total_bytes_processed": 8000,
                 "job_id": "job_4",
+                "is_leaf_node": False,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -602,6 +611,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "total_bytes_billed": 5000,
                 "total_bytes_processed": 10000,
                 "job_id": "job_5",
+                "is_leaf_node": True,
             },
         ]
 

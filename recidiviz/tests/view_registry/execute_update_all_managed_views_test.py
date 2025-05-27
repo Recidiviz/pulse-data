@@ -137,6 +137,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 composite_complexity_score_2025=1,
                 post_infra_library_composite_complexity_score_2025=1,
                 referenced_raw_data_tables=[],
+                is_leaf_node=True,
             ),
             PerViewUpdateStats(
                 success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
@@ -171,6 +172,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 referenced_raw_data_tables=[
                     BigQueryAddress.from_str("some_dataset.raw_latest_view")
                 ],
+                is_leaf_node=False,
             ),
         ]
 

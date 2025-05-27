@@ -127,6 +127,12 @@ schema:
       are also designated "library" status if they provide a meaningful, state- and product-agnostic abstraction on top 
       of ingested data (see recidiviz/view_registry/infra_library.py). This field essentially tells us how much 
       complexity is added outside of the abstractions provided by core Doppler/DSI-managed libraries.
+  - name: is_leaf_node
+    type: BOOLEAN
+    mode: NULLABLE
+    description: >-
+      Boolean flag for whether this view is a "leaf node", or an view in our view graph that
+      has no child views.
 
   # State-specific logic
   - name: has_state_specific_logic

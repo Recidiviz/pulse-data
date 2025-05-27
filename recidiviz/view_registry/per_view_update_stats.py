@@ -189,6 +189,7 @@ class PerViewUpdateStats:
     referenced_raw_data_tables: list[BigQueryAddress] = attr.ib(
         validator=attr_validators.is_list_of(BigQueryAddress)
     )
+    is_leaf_node: bool = attr.ib(validator=attr_validators.is_bool)
 
     def as_table_row(self) -> dict[str, Any]:
         """Converts this object to a dictionary that can be used to generate a single
@@ -224,6 +225,7 @@ class PerViewUpdateStats:
             "referenced_raw_data_tables": sorted(
                 a.to_str() for a in self.referenced_raw_data_tables
             ),
+            "is_leaf_node": self.is_leaf_node,
         }
 
 
@@ -308,6 +310,7 @@ def per_view_update_stats_for_view_update_result(
             referenced_raw_data_tables=sorted(
                 raw_data_parent_addresses, key=lambda a: a.to_str()
             ),
+            is_leaf_node=node in update_views_result.leaf_nodes,
         )
 
     per_view_stats_results = view_update_dag_walker.process_dag(
