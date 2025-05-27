@@ -229,8 +229,6 @@ def sftp_dag() -> None:
 
     project_id = get_project_id()
 
-    # TODO(#9641): We should add a task that handles locking of the operations database
-    # when we move to a resource-based locking model.
     start_sftp = EmptyOperator(task_id=START_SFTP)
     rm_dags = remove_queued_up_dags()
     start_sftp >> rm_dags
