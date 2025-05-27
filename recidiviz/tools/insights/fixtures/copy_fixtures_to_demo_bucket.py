@@ -21,6 +21,7 @@ Script that copies fixutre files to a demo GCP bucket.
 pipenv run python -m recidiviz.tools.insights.fixtures.copy_fixtures_to_demo_bucket
 """
 from google.cloud import storage
+
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -38,7 +39,6 @@ for state_code in get_outliers_enabled_states():
         "supervision_officer_outlier_status.json",
         "supervision_officer_supervisors.json",
         "supervision_officers.json",
-        "supervision_state_metrics.json",
         "metric_benchmarks.json",
     ]:
         blob = bucket.blob(f"{state_code}/{file_name}")
