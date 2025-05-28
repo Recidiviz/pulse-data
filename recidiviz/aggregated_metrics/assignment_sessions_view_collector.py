@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -103,6 +103,7 @@ def _get_person_population_selector(
                     "compartment_level_2": [
                         StateSpecializedPurposeForIncarceration.GENERAL.value,
                         StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD.value,
+                        StateSpecializedPurposeForIncarceration.SAFEKEEPING.value,
                         StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value,
                         StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value,
                         StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.value,
