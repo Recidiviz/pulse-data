@@ -9,11 +9,17 @@ import os
 import re
 import subprocess
 import sys
-from typing import List
+import time
+from copy import copy
+from typing import Iterable, List
 
 import google.generativeai as genai  # type: ignore # pylint: disable = no-name-in-module
 import requests
 from tabulate import tabulate
+
+# NOTE: If you change the model, you may need to change update the token limit!
+MODEL_NAME = "gemini-2.5-pro-preview-05-06"
+MODEL_INPUT_TOKEN_LIMIT = 1_048_576
 
 FIND_PII_GEMINI_PROMPT = """
 Review the following code changes for Personally Identifiable Information (PII). For each potential piece of PII found, determine:
@@ -31,19 +37,19 @@ We really want to avoid false positives. Please carefully consider whether the d
 
 Also, we frequently have files that reference data fields names and descriptions, and files that describe data schemas but do not actually contain PII. Please do not report on these metadata findings but only files whose content themselves constitute PII.
 
-Return your findings as a JSON array where each object has the following keys:
+If you find PII, return your findings as a JSON array where each object has the following keys:
 - "content": The potential PII content.
 - "type": The type of PII detected.
 - "risk": The risk ranking.
 - "rationale":  A very short, 1 sentence explanation of why this is considered PII and why it has the risk ranking.
-- "context": the context in which the PII was found (e.g., "in a comment", "in a string literal", "in a csv file", "in avariable in a Pyhton file").
+- "context": the context in which the PII was found (e.g., "in a comment", "in a string literal", "in a csv file", "in a variable in a Python file").
 - "file": name of the file.
 - "line": line number in the file.
 
+If you find NO PII, return exactly: "NO PII FOUND"
+
 Code Changes to Analyze:
-```python
-{all_diffs}
-```"""
+"""
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
@@ -55,10 +61,25 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
 
 def extract_json_from_markdown(text: str) -> str:
     """
-    Extracts JSON content from a markdown code block.
+    Extracts JSON content from a markdown code block or returns the text if it's already JSON.
     """
+    text = text.strip()
+
+    # Check for explicit "no PII found" response
+    if "NO PII FOUND" in text.upper():
+        return "[]"
+
+    # First try to extract from markdown code block
     match = re.search(r"```json\n(.*?)```", text, re.DOTALL)
-    return match.group(1).strip() if match else ""
+    if match:
+        return match.group(1).strip()
+
+    # If no markdown block found, check if the text itself is valid JSON
+    if text.startswith("[") or text.startswith("{"):
+        return text
+
+    # Return empty array as fallback
+    return "[]"
 
 
 def write_output(name: str, value: str) -> None:
@@ -186,12 +207,96 @@ def _get_changed_file_path_to_diff(base_ref: str, head_ref: str) -> dict[str, st
     return file_to_diff
 
 
+def generate_prompts(
+    changed_file_to_diff: dict[str, str],
+) -> Iterable[str]:
+    """
+    Generates one or more prompts for the model based on the changed files and their diffs.
+    We continually add diffs to the prompt until we reach the token limit.
+    If a single diff is larger than the token limit, we raise an error.
+    """
+    prompt = copy(FIND_PII_GEMINI_PROMPT)
+    for file_path, diff in changed_file_to_diff.items():
+        this_diff = f"\n# File: {file_path}\n{diff}"
+        if len(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
+            raise ValueError(
+                f"Diff for {file_path} exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens."
+            )
+        if len(prompt) + len(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
+            yield prompt
+            prompt = copy(FIND_PII_GEMINI_PROMPT)
+        else:
+            prompt += this_diff
+    # This case is if all unprompted diffs haven't reached the size limit by the end
+    if prompt != FIND_PII_GEMINI_PROMPT:
+        yield prompt
+
+
+def run_prompt_and_collect_findings(
+    model: genai.GenerativeModel, prompt: str
+) -> list[dict]:
+    """
+    Runs a prompt against the Gemini model and collects PII findings.
+    Retries on transient errors with exponential backoff.
+    """
+    if len(prompt) > MODEL_INPUT_TOKEN_LIMIT:
+        raise ValueError(
+            f"Prompt exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens."
+        )
+
+    # Retry with exponential backoff for transient errors
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = model.generate_content(prompt)
+            gemini_output = response.text
+            print(f"📨 Gemini API Response (attempt {attempt}):")
+            print(f"Raw response: {repr(gemini_output)}")
+
+            json_text = extract_json_from_markdown(gemini_output)
+            print(f"Extracted JSON: {repr(json_text)}")
+
+            findings = json.loads(json_text) or []
+            if not isinstance(findings, list):
+                raise ValueError(f"Unexpected type for findings: {type(findings)}")
+            return findings
+
+        except Exception as e:
+            error_msg = str(e).lower()
+
+            # Check for timeout/internal errors - retry these
+            if any(
+                keyword in error_msg for keyword in ["timeout", "internal error", "500"]
+            ):
+                if attempt < max_attempts:
+                    backoff_time = 2**attempt
+                    print(
+                        f"::warning::Gemini timeout/error on attempt {attempt}: {e}. Retrying in {backoff_time}s..."
+                    )
+                    time.sleep(backoff_time)
+                    continue
+
+                # Max retries exceeded for timeout - treat as no findings
+                print(
+                    "::warning::Gemini consistently timing out. Treating as no PII found."
+                )
+                return []
+
+            # For other errors (token limit, JSON parse, etc.), re-raise immediately
+            raise RuntimeError(
+                f"PII detection failed after {attempt} attempts: {e}"
+            ) from e
+
+    # This should never be reached due to the logic above, but satisfies mypy
+    return []
+
+
 def main(head: str, pr_number: str) -> int:
     """
     Main function to analyze code changes for PII and update the pull request with findings.
     """
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel("gemini-2.5-pro-preview-03-25")
+    model = genai.GenerativeModel(MODEL_NAME)
 
     repo = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
@@ -205,54 +310,52 @@ def main(head: str, pr_number: str) -> int:
         write_output("pii_found", "false")
         return 0
 
-    all_diffs = "\n".join(
-        f"# File: {file_path}\n{diff}"
-        for file_path, diff in changed_file_to_diff.items()
-    )
+    findings = []
+    for prompt in generate_prompts(changed_file_to_diff):
+        try:
+            findings.extend(run_prompt_and_collect_findings(model, prompt))
+        except Exception as e:
+            error_msg = str(e).lower()
 
-    prompt = FIND_PII_GEMINI_PROMPT.replace("{all_diffs}", all_diffs)
+            # Handle token limit specifically
+            if "exceeds the maximum number of tokens" in error_msg:
+                print(
+                    "::warning::Input too large for PII detection; posting manual-inspect comment."
+                )
+                write_output("pii_found", "false")
+                manual_body = """<!-- pii-bot-comment -->
+🚧 The diff was too large to be processed by our PII detection tool.
+Please manually review these files for potential PII."""
+                update_pr_comment(True, pr_number, manual_body, repo, token)
+                return 0
 
-    try:
-        response = model.generate_content(prompt)
-        gemini_output = response.text
-        print(f"📨 Gemini API Response:\n{gemini_output}")
-
-        json_text = extract_json_from_markdown(gemini_output)
-        findings = json.loads(json_text)
-
-        if not findings:
-            print("\033[32m✔ No potential PII found.")
+            # For other errors, fail the check
+            print(f"::error::PII check failed: {e}")
             write_output("pii_found", "false")
-            update_pr_comment(
-                False,
-                pr_number,
-                "<!-- pii-bot-comment -->🧼 No PII found in this PR.",
-                repo,
-                token,
-            )
-            return 0
+            return 1
 
-        if not isinstance(findings, list):
-            raise ValueError(f"Unexpected type for findings: {type(findings)}")
-
-        print("\033[33m⚠ Potential PII DETECTED (non-blocking).\033[0m")
-        print_table(findings)
-        write_output("pii_found", "true")
-        write_output("gemini_pii_findings", json.dumps(findings))
-
-        markdown_body = build_markdown_comment(findings, repo, head)
-        update_pr_comment(True, pr_number, markdown_body, repo, token)
-
-        print(
-            "::warning::Potential PII found — please review the PR comment for details."
-        )
-        return 1
-    except Exception as e:
-        print(f"::error::Error: {e}")
+    if not findings:
+        print("\033[32m✔ No potential PII found.")
         write_output("pii_found", "false")
-        return 1  # Exit with a non-zero error code to indicate failure
+        update_pr_comment(
+            False,
+            pr_number,
+            "<!-- pii-bot-comment -->🧼 No PII found in this PR.",
+            repo,
+            token,
+        )
+        return 0
 
-    return 0
+    print("\033[33m⚠ Potential PII DETECTED (non-blocking).\033[0m")
+    print_table(findings)
+    write_output("pii_found", "true")
+    write_output("gemini_pii_findings", json.dumps(findings))
+
+    markdown_body = build_markdown_comment(findings, repo, head)
+    update_pr_comment(True, pr_number, markdown_body, repo, token)
+
+    print("::warning::Potential PII found — please review the PR comment for details.")
+    return 1
 
 
 if __name__ == "__main__":
