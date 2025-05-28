@@ -237,7 +237,9 @@ def randomize_fixture_data(
             RawTableColumnFieldType.PERSON_EXTERNAL_ID,
             RawTableColumnFieldType.STAFF_EXTERNAL_ID,
         ):
-            df[col.name] = df[col.name].apply(faker.randomize_string)
+            df[col.name] = df[col.name].apply(
+                faker.randomize_string, null_values_to_skip=col.null_values
+            )
         else:
             raise ValueError(
                 f"Field type {col.field_type} is not supported for randomization."
