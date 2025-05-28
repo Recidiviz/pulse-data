@@ -18,11 +18,13 @@
 import abc
 import logging
 from collections import defaultdict
+from enum import Enum, auto
 from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 from sqlalchemy import text
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -37,11 +39,13 @@ from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.string import StrictStringFormatter
 
 SELECT_FILES_QUERY = """
-SELECT file_tag, file_id, normalized_file_name, gcs_file_id
-FROM direct_ingest_raw_gcs_file_metadata
-WHERE region_code = '{region_code}' 
-    AND raw_data_instance = '{raw_data_instance}' 
-    AND is_invalidated IS NOT True
+SELECT g.file_tag, b.file_id, g.normalized_file_name, g.gcs_file_id
+FROM direct_ingest_raw_gcs_file_metadata g
+LEFT JOIN direct_ingest_raw_big_query_file_metadata b
+USING (file_id)
+WHERE g.region_code = '{region_code}' 
+    AND g.raw_data_instance = '{raw_data_instance}' 
+    AND g.is_invalidated IS NOT True
     {query_filters}
 """
 
@@ -139,43 +143,111 @@ class RawFilesGroupedByTagAndId:
         }
 
 
-@attr.define
+class OperationsMetadataTable(Enum):
+    BigQueryMetadata = auto()
+    GCSMetadata = auto()
+
+    def table_prefix(self) -> str:
+        match self:
+            case OperationsMetadataTable.BigQueryMetadata:
+                return "b"
+            case OperationsMetadataTable.GCSMetadata:
+                return "g"
+
+
+@attr.define(kw_only=True)
 class MetadataTableQueryFilter:
+
+    # Which metadata table we want to apply this query filter on
+    table_to_filter: OperationsMetadataTable = attr.ib(
+        validator=attr.validators.in_(OperationsMetadataTable)
+    )
+
     @abc.abstractmethod
     def get_filter_clause(self) -> str:
         """Returns a string representing the filter clause to include in querying
         a metadata table in the operations database."""
 
 
-@attr.define
+@attr.define(kw_only=True)
 class FilenameFilter(MetadataTableQueryFilter):
+
     normalized_filenames_filter: List[str] = attr.ib(validator=attr_validators.is_list)
 
+    def __attrs_post_init__(self) -> None:
+        if self.table_to_filter != OperationsMetadataTable.GCSMetadata:
+            raise ValueError(
+                "Can only apply a filename filter on the direct_ingest_raw_gcs_file_metadata table"
+            )
+
     def get_filter_clause(self) -> str:
-        filename_str = ",".join(
-            f"'{filename}'" for filename in self.normalized_filenames_filter
-        )
-        return f"AND normalized_file_name IN ({filename_str})"
+        return f"AND {self.table_to_filter.table_prefix()}.normalized_file_name IN ({list_to_query_string(self.normalized_filenames_filter, quoted=True)})"
 
 
-@attr.define
+class ProcessingStatusFilterType(Enum):
+    """Enum that represents the different ways we can filter on a raw file's processing
+    status:
+
+        - ALL: all files will be included; this filter is a no-op
+        - PROCESSED_ONLY: only files that have been successfully processed will be included
+            in the results set
+        - UNPROCESSED_ONLY: only files that have not yet been processed will be included
+            in the result set.
+    """
+
+    ALL = auto()
+    PROCESSED_ONLY = auto()
+    UNPROCESSED_ONLY = auto()
+
+
+@attr.define(kw_only=True)
+class ProcessedFilter(MetadataTableQueryFilter):
+
+    processing_status_filter: ProcessingStatusFilterType = attr.ib(
+        validator=attr.validators.in_(ProcessingStatusFilterType)
+    )
+
+    def __attrs_post_init__(self) -> None:
+        if self.table_to_filter != OperationsMetadataTable.BigQueryMetadata:
+            raise ValueError(
+                "Can only apply a processed status on the direct_ingest_raw_big_query_file_metadata table"
+            )
+
+    def get_filter_clause(self) -> str:
+        match self.processing_status_filter:
+            case ProcessingStatusFilterType.ALL:
+                # if we want all processed statuses, we just want to select all rows
+                return "AND TRUE"
+            case ProcessingStatusFilterType.PROCESSED_ONLY:
+                # if we want processed only, we want file_processed_time to be not null
+                processed_bool = "NOT"
+            case ProcessingStatusFilterType.UNPROCESSED_ONLY:
+                # if want unprocessed only, we want file_processed_time to be null
+                processed_bool = ""
+
+        return f"AND {self.table_to_filter.table_prefix()}.file_processed_time IS {processed_bool} NULL"
+
+
+@attr.define(kw_only=True)
 class FileTagFilter(MetadataTableQueryFilter):
+
     file_tag_filters: List[str] = attr.ib(validator=attr_validators.is_list)
 
     def get_filter_clause(self) -> str:
         file_tag_str = ",".join(f"'{tag}'" for tag in self.file_tag_filters)
-        return f"AND file_tag IN ({file_tag_str})"
+        return f"AND {self.table_to_filter.table_prefix()}.file_tag IN ({file_tag_str})"
 
 
-@attr.define
+@attr.define(kw_only=True)
 class FileTagRegexFilter(MetadataTableQueryFilter):
+
     file_tag_regex: str = attr.ib(validator=attr_validators.is_str)
 
     def get_filter_clause(self) -> str:
-        return f"AND file_tag ~ '{self.file_tag_regex}'"
+        return f"AND {self.table_to_filter.table_prefix()}.file_tag ~ '{self.file_tag_regex}'"
 
 
-@attr.define
+@attr.define(kw_only=True)
 class UpdateDateFilter(MetadataTableQueryFilter):
     """Filters by the update_datetime column in the metadata tables."""
 
@@ -189,29 +261,25 @@ class UpdateDateFilter(MetadataTableQueryFilter):
     def get_filter_clause(self) -> str:
         datetime_filter_clause = ""
         if self.start_date_bound:
-            datetime_filter_clause = (
-                f"AND DATE(update_datetime) >= '{self.start_date_bound}' "
-            )
+            datetime_filter_clause = f"AND DATE({self.table_to_filter.table_prefix()}.update_datetime) >= '{self.start_date_bound}' "
         if self.end_date_bound:
-            datetime_filter_clause += (
-                f"AND DATE(update_datetime) <= '{self.end_date_bound}'"
-            )
+            datetime_filter_clause += f"AND DATE({self.table_to_filter.table_prefix()}.update_datetime) <= '{self.end_date_bound}'"
         return datetime_filter_clause
 
 
 @attr.define
 class InvalidateOperationsDBFilesController(CloudSqlConnectionMixin):
     """Invalidates entries in the operations db corresponding to the files that match
-    the provided filters. Requires a CloudSql proxy to be already running.
+    the provided filters. Requires a CloudSql proxy to already be running.
 
     Args:
-        project_id: The GCP project ID.
-        state_code: The state code.
-        ingest_instance: The ingest instance.
-        query_filters: A list of MetadataTableQueryFilter objects to filter by.
-        log_output_path: The path to write the log output to.
+        project_id: The GCP project ID we are running in.
+        ingest_instance: The ingest instance of the files we are invalidating.
+        state_code: The state code of the files we are invalidating.
         dry_run: Whether to perform a dry run.
         skip_prompts: Whether to skip confirmation prompts.
+        query_filters: A list of MetadataTableQueryFilter objects to filter by.
+        log_output_path: The path to write the log output to.
         with_proxy: Whether or not to use a cloudsql proxy when connecting to the
             operations database. Will be necessary when connecting from a local script env.
     """
@@ -245,21 +313,26 @@ class InvalidateOperationsDBFilesController(CloudSqlConnectionMixin):
         file_tag_filters: Optional[List[str]] = None,
         file_tag_regex: Optional[str] = None,
         normalized_filenames_filter: Optional[List[str]] = None,
+        processing_status_filter: ProcessingStatusFilterType = ProcessingStatusFilterType.ALL,
         with_proxy: bool = True,
     ) -> "InvalidateOperationsDBFilesController":
         """Factory method to create an instance of InvalidateOperationsDBFilesController.
 
         Args:
-            project_id: The GCP project ID.
-            state_code: The state code.
-            ingest_instance: The ingest instance.
-            normalized_filenames_filter: A list of normalized filenames to filter by.
-            file_tag_filters: A list of file tags to filter by.
-            file_tag_regex: A regex pattern to filter by.
-            start_date_bound: The isoformatted start date bound for the update_datetime column.
-            end_date_bound: The isoformatted end date bound for the update_datetime column.
+            project_id: The GCP project ID we are running in.
+            ingest_instance: The ingest instance of the files we are invalidating.
+            state_code: The state code of the files we are invalidating.
             dry_run: Whether to perform a dry run.
             skip_prompts: Whether to skip confirmation prompts.
+
+            start_date_bound: The iso-formatted start date bound for the update_datetime column.
+            end_date_bound: The iso-formatted end date bound for the update_datetime column.
+            file_tag_filters: A list of file_tags to explicitly filter by.
+            file_tag_regex: A regex pattern to filter file_tag names by.
+            normalized_filenames_filter: A list of normalized filenames to filter by.
+            processing_status_filter: The processing status filter type to apply to the query.
+                By default, the ALL filter does not filter by processing status.
+            with_proxy: Whether or not to use a cloudsql proxy when executing the invalidation.
         """
         if normalized_filenames_filter and (
             file_tag_filters or file_tag_regex or start_date_bound or end_date_bound
@@ -274,19 +347,41 @@ class InvalidateOperationsDBFilesController(CloudSqlConnectionMixin):
 
         query_filters: List[MetadataTableQueryFilter] = []
         if file_tag_filters:
-            query_filters.append(FileTagFilter(file_tag_filters=file_tag_filters))
+            query_filters.append(
+                FileTagFilter(
+                    file_tag_filters=file_tag_filters,
+                    table_to_filter=OperationsMetadataTable.GCSMetadata,
+                )
+            )
         if file_tag_regex:
-            query_filters.append(FileTagRegexFilter(file_tag_regex=file_tag_regex))
+            query_filters.append(
+                FileTagRegexFilter(
+                    file_tag_regex=file_tag_regex,
+                    table_to_filter=OperationsMetadataTable.GCSMetadata,
+                )
+            )
         if start_date_bound or end_date_bound:
             query_filters.append(
                 UpdateDateFilter(
-                    start_date_bound=start_date_bound, end_date_bound=end_date_bound
+                    start_date_bound=start_date_bound,
+                    end_date_bound=end_date_bound,
+                    table_to_filter=OperationsMetadataTable.GCSMetadata,
                 )
             )
         if normalized_filenames_filter:
             query_filters.append(
-                FilenameFilter(normalized_filenames_filter=normalized_filenames_filter)
+                FilenameFilter(
+                    normalized_filenames_filter=normalized_filenames_filter,
+                    table_to_filter=OperationsMetadataTable.GCSMetadata,
+                )
             )
+
+        query_filters.append(
+            ProcessedFilter(
+                processing_status_filter=processing_status_filter,
+                table_to_filter=OperationsMetadataTable.BigQueryMetadata,
+            )
+        )
 
         log_output_path = make_log_output_path(
             operation_name="invalidate_operations_db_files",

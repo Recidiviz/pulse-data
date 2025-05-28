@@ -62,6 +62,7 @@ from recidiviz.tools.ingest.operations.helpers.delete_bq_raw_table_rows_controll
 )
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
+    ProcessingStatusFilterType,
 )
 from recidiviz.tools.ingest.operations.helpers.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
@@ -137,6 +138,11 @@ class MoveFilesToDeprecatedController:
             end_date_bound=self.end_date_bound,
             dry_run=self.dry_run,
             skip_prompts=self.skip_prompts,
+            # we only want to invalidate files that have been processed -- if there are
+            # file tags that are pending import (i.e. not yet imported or have failed)
+            # to import, we want to be sure those are not unintentionally affected by
+            # this operation
+            processing_status_filter=ProcessingStatusFilterType.PROCESSED_ONLY,
         ).run()
 
         if invalidated_files:

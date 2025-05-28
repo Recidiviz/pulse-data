@@ -51,6 +51,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
+    ProcessingStatusFilterType,
 )
 from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller import (
     MoveIngestBucketRawFilesToDeprecatedController,
@@ -164,6 +165,10 @@ def main(
                 f.file_name for f in successful_gcsfs_file_paths
             ],
             dry_run=dry_run,
+            # only invalidate file entries that have not been successfully imported --
+            # if there are files stuck in the ingest bucket that have been processed
+            # it is likely the move failed after import
+            processing_status_filter=ProcessingStatusFilterType.UNPROCESSED_ONLY,
         ).run()
 
     if failed_gcsfs_file_paths:
