@@ -8,6 +8,7 @@ input_columns:
   IncidentDt: DATETIME
   EnteredDt: DATETIME
   conditions: STRING
+  ViolationComments: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -23,6 +24,9 @@ output:
                 - $literal("INCIDENT-ONLY")
                 - FieldRuleViolationIncidentId
           violation_date: IncidentDt
+          violation_metadata:
+            $normalized_values_json_dict:
+              ViolationComments: ViolationComments
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:

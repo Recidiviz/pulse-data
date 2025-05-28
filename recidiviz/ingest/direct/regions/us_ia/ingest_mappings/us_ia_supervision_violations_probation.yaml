@@ -18,6 +18,7 @@ input_columns:
   decision_EnteredDt: DATETIME
 
   conditions: STRING
+  ViolationComments: STRING
 
 unused_columns: [WarrantRequested] #If we want we can also use this column, though warrants are sometimes noted as "Decision"
 
@@ -53,6 +54,9 @@ output:
                   $not_null: ProbationReportOfViolationId
                 $then: IncidentDt
               - $else: ReportDt
+          violation_metadata:
+            $normalized_values_json_dict:
+              ViolationComments: ViolationComments
           supervision_violation_responses:
             - $conditional:
                 - $if:

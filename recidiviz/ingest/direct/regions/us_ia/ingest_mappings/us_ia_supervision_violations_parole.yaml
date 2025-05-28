@@ -20,6 +20,7 @@ input_columns:
   HearingDt: DATETIME
 
   conditions: STRING
+  ViolationComments: STRING
 
 unused_columns: []
 
@@ -52,6 +53,9 @@ output:
                   $not_null: IncidentDt
                 $then: IncidentDt
               - $else: ReportDt
+          violation_metadata:
+            $normalized_values_json_dict:
+              ViolationComments: ViolationComments
           supervision_violation_responses:
             - $conditional:
                 - $if:
