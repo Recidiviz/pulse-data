@@ -128,7 +128,7 @@ US_IX_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionCaseType.GENERAL: {
         StateSupervisionLevel.MINIMUM: (1, 365),
         StateSupervisionLevel.MEDIUM: (1, 365),
-        StateSupervisionLevel.HIGH: (1, 180),
+        StateSupervisionLevel.HIGH: (1, 90),
     },
     StateSupervisionCaseType.SEX_OFFENSE: {
         StateSupervisionLevel.MINIMUM: (1, 90),

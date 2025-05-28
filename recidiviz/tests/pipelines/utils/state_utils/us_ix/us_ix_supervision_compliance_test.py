@@ -1096,8 +1096,8 @@ class TestNextRecommendedContactDate(unittest.TestCase):
                 StateSupervisionCaseType.GENERAL,
                 StateSupervisionLevel.HIGH,
                 date(2018, 4, 1),
-                date(2018, 9, 28),
-            ),  # 180 days
+                date(2018, 6, 30),
+            ),  # 90 days
             (
                 StateSupervisionCaseType.SEX_OFFENSE,
                 StateSupervisionLevel.MINIMUM,
