@@ -537,7 +537,7 @@ def contact_compliance_builder_type_agnostic(
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
           USING(supervision_period_id)
         WHERE sp.state_code = "US_TX"
-            AND supervision_level IS DISTINCT FROM 'IN_CUSTODY'
+            AND supervision_level NOT IN ('IN_CUSTODY', 'WARRANT')
     ),
     -- Aggregate above periods by supervision_level and case_type
     person_info_agg AS (
