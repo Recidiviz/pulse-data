@@ -56,6 +56,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.operations.helpers.delete_bq_raw_table_rows_controller import (
     DeleteBQRawTableRowsController,
 )
@@ -66,6 +67,7 @@ from recidiviz.tools.ingest.operations.helpers.operate_on_storage_raw_files_cont
     IngestFilesOperationType,
     OperateOnStorageRawFilesController,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -240,19 +242,19 @@ def main() -> None:
     """Runs the move_state_files_to_deprecated script."""
     args = parse_arguments()
     logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
-
     with local_project_id_override(args.project_id):
-        MoveFilesToDeprecatedController(
-            region_code=args.region,
-            ingest_instance=DirectIngestInstance(args.ingest_instance),
-            start_date_bound=args.start_date_bound,
-            end_date_bound=args.end_date_bound,
-            project_id=args.project_id,
-            dry_run=args.dry_run,
-            file_tag_filters=args.file_tag_filters,
-            file_tag_regex=args.file_tag_regex,
-            skip_prompts=args.skip_prompts,
-        ).run()
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            MoveFilesToDeprecatedController(
+                region_code=args.region,
+                ingest_instance=DirectIngestInstance(args.ingest_instance),
+                start_date_bound=args.start_date_bound,
+                end_date_bound=args.end_date_bound,
+                project_id=args.project_id,
+                dry_run=args.dry_run,
+                file_tag_filters=args.file_tag_filters,
+                file_tag_regex=args.file_tag_regex,
+                skip_prompts=args.skip_prompts,
+            ).run()
 
 
 if __name__ == "__main__":

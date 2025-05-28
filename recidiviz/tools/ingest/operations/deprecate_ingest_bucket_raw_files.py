@@ -48,12 +48,14 @@ import logging
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import parse_opt_datetime_maybe_add_tz
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
 )
 from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller import (
     MoveIngestBucketRawFilesToDeprecatedController,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -177,16 +179,17 @@ if __name__ == "__main__":
     args = _parse_arguments()
 
     with local_project_id_override(args.project_id):
-        main(
-            project_id=args.project_id,
-            state_code=args.state_code,
-            ingest_instance=args.ingest_instance,
-            start_datetime_inclusive=parse_opt_datetime_maybe_add_tz(
-                args.start_datetime_inclusive, tz_to_add=datetime.UTC
-            ),
-            end_datetime_exclusive=parse_opt_datetime_maybe_add_tz(
-                args.end_datetime_exclusive, tz_to_add=datetime.UTC
-            ),
-            file_tag_filters=args.file_tag_filters,
-            dry_run=args.dry_run,
-        )
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            main(
+                project_id=args.project_id,
+                state_code=args.state_code,
+                ingest_instance=args.ingest_instance,
+                start_datetime_inclusive=parse_opt_datetime_maybe_add_tz(
+                    args.start_datetime_inclusive, tz_to_add=datetime.UTC
+                ),
+                end_datetime_exclusive=parse_opt_datetime_maybe_add_tz(
+                    args.end_datetime_exclusive, tz_to_add=datetime.UTC
+                ),
+                file_tag_filters=args.file_tag_filters,
+                dry_run=args.dry_run,
+            )

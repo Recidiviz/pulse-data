@@ -30,7 +30,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.string import StrictStringFormatter
@@ -200,8 +199,8 @@ class UpdateDateFilter(MetadataTableQueryFilter):
 
 @attr.define
 class InvalidateOperationsDBFilesController:
-    """Invalidates entries in the operations db corresponding to the files that match the provided filters.
-    This class only supports updating operations tables for states/ingest_instances with the raw data import DAG enabled.
+    """Invalidates entries in the operations db corresponding to the files that match
+    the provided filters. Requires a CloudSql proxy to be already running.
 
     Args:
         project_id: The GCP project ID.
@@ -360,42 +359,39 @@ class InvalidateOperationsDBFilesController:
         """
         schema_type = SchemaType.OPERATIONS
         database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-        with cloudsql_proxy_control.connection(
-            schema_type=schema_type,
-        ):
-            with SessionFactory.for_proxy(
-                database_key=database_key,
-                autocommit=False,
-            ) as session:
-                files_to_be_invalidated = self._fetch_files_to_be_invalidated(session)
-                if files_to_be_invalidated.empty():
-                    logging.info("No files to invalidate.")
-                    return None
+        with SessionFactory.for_proxy(
+            database_key=database_key,
+            autocommit=False,
+        ) as session:
+            files_to_be_invalidated = self._fetch_files_to_be_invalidated(session)
+            if files_to_be_invalidated.empty():
+                logging.info("No files to invalidate.")
+                return None
 
-                if not self.skip_prompts:
-                    prompt_for_confirmation(
-                        f"This operation will invalidate [{len(files_to_be_invalidated.normalized_file_names)}] files.",
-                        dry_run=self.dry_run,
-                    )
+            if not self.skip_prompts:
+                prompt_for_confirmation(
+                    f"This operation will invalidate [{len(files_to_be_invalidated.normalized_file_names)}] files.",
+                    dry_run=self.dry_run,
+                )
 
-                if not self.dry_run:
-                    self._execute_invalidation(
-                        session,
-                        file_ids=files_to_be_invalidated.file_ids,
-                        gcs_file_ids=files_to_be_invalidated.gcs_file_ids,
-                    )
+            if not self.dry_run:
+                self._execute_invalidation(
+                    session,
+                    file_ids=files_to_be_invalidated.file_ids,
+                    gcs_file_ids=files_to_be_invalidated.gcs_file_ids,
+                )
 
-                invalidated_files = files_to_be_invalidated
-                self._write_log_file(self.log_output_path, invalidated_files)
-                if self.dry_run:
-                    logging.info(
-                        "[DRY RUN] See results in [%s].\n"
-                        "Rerun with [--dry-run False] to execute invalidation.",
-                        self.log_output_path,
-                    )
-                else:
-                    logging.info(
-                        "Invalidation complete! See results in [%s].\n",
-                        self.log_output_path,
-                    )
-                return invalidated_files
+            invalidated_files = files_to_be_invalidated
+            self._write_log_file(self.log_output_path, invalidated_files)
+            if self.dry_run:
+                logging.info(
+                    "[DRY RUN] See results in [%s].\n"
+                    "Rerun with [--dry-run False] to execute invalidation.",
+                    self.log_output_path,
+                )
+            else:
+                logging.info(
+                    "Invalidation complete! See results in [%s].\n",
+                    self.log_output_path,
+                )
+            return invalidated_files
