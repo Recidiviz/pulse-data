@@ -22,26 +22,6 @@ module "external_reference_tables_bucket" {
   name_suffix = "external-reference-data"
 }
 
-module "county_resident_adult_populations_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "county_resident_adult_populations.csv"
-}
-
-module "county_resident_populations_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "county_resident_populations.csv"
-}
-
 module "county_fips_table" {
   source = "./modules/local-csv-backed-gcs-file"
 

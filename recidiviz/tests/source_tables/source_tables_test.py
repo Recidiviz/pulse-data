@@ -46,11 +46,8 @@ COMMON_VESTIGES = [
     "static_reference_tables.zip_city_county_state",
     # This is used from time to time for oneoff validation
     "static_reference_tables.us_tn_standards_due",
-    # These Justice Counts V1 reference tables are managed by Terraform so must have schema definitions.
-    # TODO(#29814): Determine whether we can delete these tables
+    # These reference tables are managed by Terraform so must have schema definitions.
     "gcs_backed_tables.county_fips",
-    "gcs_backed_tables.county_resident_adult_populations",
-    "gcs_backed_tables.county_resident_populations",
     "gcs_backed_tables.us_tn_incarceration_facility_names",
     "gcs_backed_tables.us_tn_supervision_facility_names",
     # TODO(#16661): Remove this section once US_ID fully deprecated

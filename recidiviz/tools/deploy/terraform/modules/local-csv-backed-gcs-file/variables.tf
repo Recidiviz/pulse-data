@@ -25,7 +25,7 @@ variable "bucket_name" {
   type = string
 }
 
-# The name of the file to load (ex: "county_resident_populations.csv")
+# The name of the file to load (ex: "county_fips.csv")
 # This file must be present in the recidiviz/datasets/static_data/ directory.
 variable "file_name" {
   type = string
