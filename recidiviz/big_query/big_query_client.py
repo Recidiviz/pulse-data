@@ -2248,15 +2248,6 @@ class BigQueryClientImpl(BigQueryClient):
         create_job.result()
 
         table = self.get_table(destination_address)
-        try:
-            self.apply_row_level_permissions(table)
-        except Exception:
-            logging.error(
-                "Failed to apply row-level permissions to table [%s]. "
-                "The view creation query was successful, but row-level permissions were not applied.",
-                view.materialized_address.to_str(),
-            )
-
         description = view.materialized_table_bq_description
         if description == table.description:
             return BigQueryViewMaterializationResult(
@@ -2265,9 +2256,6 @@ class BigQueryClientImpl(BigQueryClient):
                 completed_materialization_job=create_job,
             )
 
-        # Grab a new table reference after applying row level permissions for the new update
-        # https://stackoverflow.com/questions/68362833/bigquery-patch-precondition-check-failed/77287376#77287376
-        table = self.get_table(destination_address)
         table.description = description
         updated_table = self.client.update_table(
             table, ["description"], retry=UPDATE_DESCRIPTION_RETRY
