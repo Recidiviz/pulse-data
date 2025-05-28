@@ -58,7 +58,7 @@ def _fake_eq(e1: Entity, e2: Entity) -> bool:
     return entity_graph_eq(e1, e2, _should_ignore_field_cb)
 
 
-def _make_unprocessed_raw_data_path(
+def make_unprocessed_raw_data_path(
     path_str: str,
     dt: datetime.datetime = datetime.datetime(2015, 1, 2, 3, 3, 3, 3),
 ) -> GcsfsFilePath:
@@ -68,8 +68,8 @@ def _make_unprocessed_raw_data_path(
     return GcsfsFilePath.from_absolute_path(normalized_path_str)
 
 
-def _make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
-    path = _make_unprocessed_raw_data_path(path_str)
+def make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
+    path = make_unprocessed_raw_data_path(path_str)
     # pylint:disable=protected-access
     return DirectIngestGCSFileSystem._to_processed_file_path(path)
 
@@ -122,7 +122,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     def test_register_processed_path_crashes(self) -> None:
-        raw_processed_path = _make_processed_raw_data_path("bucket/file_tag.csv")
+        raw_processed_path = make_processed_raw_data_path("bucket/file_tag.csv")
 
         with self.assertRaises(ValueError):
             self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
@@ -130,14 +130,14 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
 
     def test_get_raw_file_metadata_when_not_yet_registered(self) -> None:
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
         with self.assertRaises(ValueError):
             self.raw_metadata_manager.get_raw_gcs_file_metadata(raw_unprocessed_path)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_gcs_file_metadata(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(raw_unprocessed_path)
@@ -169,7 +169,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
     @freeze_time("2015-01-02T03:04:06")
     def test_get_raw_gcs_file_metadata_unique_to_state(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         self.raw_metadata_manager_other_region.mark_raw_gcs_file_as_discovered(
             raw_unprocessed_path
@@ -203,7 +203,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_gcs_file_been_discovered(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
@@ -230,7 +230,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # discover all chunks
         file_paths_of_same_file_tag: List[GcsfsFilePath] = []
         for i in range(7):
-            file_path = _make_unprocessed_raw_data_path(
+            file_path = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag.csv",
                 dt=fixed_datetime + timedelta(hours=i),
             )
@@ -247,7 +247,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
 
         # also make a file path of a different file tag
-        file_path_diff_tag = _make_unprocessed_raw_data_path(
+        file_path_diff_tag = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_two_point_oh.csv",
             dt=fixed_datetime,
         )
@@ -304,7 +304,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_gcs_file_been_discovered_chunked_multiple(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
@@ -338,7 +338,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_gcs_file_been_discovered_returns_false_for_no_rows(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Assert
         self.assertFalse(
@@ -354,7 +354,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_gcs_file_been_processed(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
@@ -384,7 +384,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     def test_has_raw_gcs_file_been_processed_chunked(self) -> None:
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         self.assertFalse(
             self.raw_metadata_manager.has_raw_gcs_file_been_processed(
@@ -433,7 +433,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_has_raw_file_been_processed_returns_false_for_no_rows(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Assert
         self.assertFalse(
@@ -451,7 +451,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(raw_unprocessed_path)
@@ -475,7 +475,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_mark_raw_file_as_processed(self) -> None:
         # Arrange
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         # Act
         metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
@@ -491,7 +491,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
 
     def test_mark_raw_file_as_processed_but_is_invalidated(self) -> None:
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
             raw_unprocessed_path
@@ -511,7 +511,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def test_get_raw_file_metadata_for_file_id(self) -> None:
 
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         old_metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
             raw_unprocessed_path
@@ -529,7 +529,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             self.assertEqual(metadata.file_id, old_metadata.file_id)
 
     def test_raw_file_metadata_mark_as_invalidated(self) -> None:
-        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+        raw_unprocessed_path = make_unprocessed_raw_data_path("bucket/file_tag.csv")
 
         old_metadata = self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
             raw_unprocessed_path
@@ -569,7 +569,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     def test_get_non_invalidated_raw_files(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -596,7 +596,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     @freeze_time(datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC))
     def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -705,7 +705,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         expected_gcs: List[DirectIngestRawGCSFileMetadata] = []
         expected_bq: List[DirectIngestRawBigQueryFileMetadata] = []
         for i in range(0, 3):
-            raw_unprocessed_path = _make_unprocessed_raw_data_path(
+            raw_unprocessed_path = make_unprocessed_raw_data_path(
                 "bucket/file_tag.csv",
                 dt=datetime.datetime.now(tz=datetime.UTC) + timedelta(hours=i),
             )
@@ -827,7 +827,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_primary_to_primary(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -846,7 +846,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_secondary_to_secondary(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -865,7 +865,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_different_states(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -889,7 +889,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_existing_raw_data(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -907,7 +907,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 )
 
     def test_mark_instance_as_invalidated(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -930,14 +930,14 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     def test_mark_instance_as_invalidated_ungrouped(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
         self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
             raw_unprocessed_path_1
         )
-        raw_ungrouped_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_ungrouped_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
             dt=datetime.datetime.now(tz=datetime.UTC),
         )
@@ -972,7 +972,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
         )
         # Arrange
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
         )
 
@@ -996,7 +996,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Generate four files of the same file_tag and mark each as discovered
         file_ids: List[int] = []
         for i in range(0, 4):
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag.csv",
                 dt=fixed_datetime + timedelta(hours=i),
             )
@@ -1031,12 +1031,12 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
         # Generate a number of files for two different file_tags at different steps of discovery and processing
         for i in range(1, 5):
-            file_tag_1_path = _make_unprocessed_raw_data_path(
+            file_tag_1_path = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_1.csv",
                 dt=fixed_datetime + timedelta(hours=i),
             )
 
-            file_tag_2_path = _make_unprocessed_raw_data_path(
+            file_tag_2_path = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_2.csv",
                 dt=fixed_datetime + timedelta(hours=i),
             )
@@ -1078,18 +1078,18 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         day_2 = datetime.datetime(2022, 10, 2, 0, 0, 0, tzinfo=datetime.UTC)
         day_3 = datetime.datetime(2022, 10, 3, 0, 0, 0, tzinfo=datetime.UTC)
 
-        file_tag_1_path = _make_unprocessed_raw_data_path(
+        file_tag_1_path = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_1.csv",
             dt=day_1,
         )
-        file_tag_1_path_2 = _make_unprocessed_raw_data_path(
+        file_tag_1_path_2 = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_1.csv", dt=day_3
         )
-        file_tag_2_path = _make_unprocessed_raw_data_path(
+        file_tag_2_path = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_2.csv",
             dt=day_2,
         )
-        file_tag_3_path = _make_unprocessed_raw_data_path(
+        file_tag_3_path = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_3.csv",
             dt=day_3,
         )
@@ -1148,7 +1148,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # case: all processed, no unprocessed
         for day in range(0, 3):
             update_dt = dt + timedelta(days=day)
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_1.csv",
                 dt=update_dt,
             )
@@ -1164,7 +1164,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # case: some processed, some unprocessed
         for day in range(0, 3):
             update_dt = dt + timedelta(days=day)
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_2.csv",
                 dt=update_dt,
             )
@@ -1182,7 +1182,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # case: none processed, some unprocessed
         for day in range(0, 3):
             update_dt = dt + timedelta(days=day)
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_3.csv",
                 dt=update_dt,
             )
@@ -1194,7 +1194,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # case: some processed, some unprocessed, but max values are invalidated
         for day in range(0, 4):
             update_dt = dt + timedelta(days=day)
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_4.csv",
                 dt=update_dt,
             )
@@ -1290,7 +1290,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # case: not chunked, all processed, no unprocessed
         for day in range(0, 3):
             update_dt = dt + timedelta(days=day)
-            file = _make_unprocessed_raw_data_path(
+            file = make_unprocessed_raw_data_path(
                 path_str="bucket/file_tag_0.csv",
                 dt=update_dt,
             )
@@ -1311,7 +1311,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_1-{chunk_num}.csv",
                     dt=update_dt,
                 )
@@ -1338,7 +1338,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_2-{chunk_num}.csv",
                     dt=update_dt,
                 )
@@ -1367,7 +1367,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_3-{chunk_num}.csv",
                     dt=update_dt,
                 )
@@ -1387,7 +1387,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_4-{chunk_num}.csv",
                     dt=update_dt,
                 )
@@ -1422,7 +1422,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_5-{chunk_num}.csv",
                     dt=update_dt,
                 )
@@ -1561,7 +1561,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             # chunked not grouped, make sure they don't show up in anywhere else
             paths = []
             for chunk_num in range(num_chunks):
-                file = _make_unprocessed_raw_data_path(
+                file = make_unprocessed_raw_data_path(
                     path_str=f"bucket/file_tag_0-{chunk_num}.csv",
                     dt=curr_dt,
                 )
@@ -1646,7 +1646,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
         self.raw_metadata_manager_secondary.stale_secondary_raw_data()
 
-        file = _make_unprocessed_raw_data_path(
+        file = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_0.csv",
             dt=dt,
         )
@@ -1661,7 +1661,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 assert_type(gcs_file.file_id, int)
             )
 
-        file_ii = _make_unprocessed_raw_data_path(
+        file_ii = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_0.csv",
             dt=dt + timedelta(hours=1),
         )
@@ -1676,7 +1676,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.assertEqual(missing_files_i, [])
 
         # is invalidated in secondary but is before timestamp
-        file_iii = _make_unprocessed_raw_data_path(
+        file_iii = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_0.csv", dt=dt
         )
 
@@ -1691,7 +1691,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
         self.assertEqual(missing_files_ii, [])
 
-        file_iv = _make_unprocessed_raw_data_path(
+        file_iv = make_unprocessed_raw_data_path(
             path_str="bucket/file_tag_0.csv", dt=dt + timedelta(hours=4)
         )
 

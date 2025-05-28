@@ -26,9 +26,11 @@ from sqlalchemy import text
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.cloud_sql_connection_mixin import (
+    CloudSqlConnectionMixin,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.log_helpers import make_log_output_path
@@ -198,7 +200,7 @@ class UpdateDateFilter(MetadataTableQueryFilter):
 
 
 @attr.define
-class InvalidateOperationsDBFilesController:
+class InvalidateOperationsDBFilesController(CloudSqlConnectionMixin):
     """Invalidates entries in the operations db corresponding to the files that match
     the provided filters. Requires a CloudSql proxy to be already running.
 
@@ -210,6 +212,8 @@ class InvalidateOperationsDBFilesController:
         log_output_path: The path to write the log output to.
         dry_run: Whether to perform a dry run.
         skip_prompts: Whether to skip confirmation prompts.
+        with_proxy: Whether or not to use a cloudsql proxy when connecting to the
+            operations database. Will be necessary when connecting from a local script env.
     """
 
     project_id: str = attr.ib(validator=attr_validators.is_str)
@@ -225,6 +229,7 @@ class InvalidateOperationsDBFilesController:
     skip_prompts: Optional[bool] = attr.ib(
         default=False, validator=attr_validators.is_bool
     )
+    with_proxy: bool = attr.ib(default=True, validator=attr_validators.is_bool)
 
     @classmethod
     def create_controller(
@@ -240,6 +245,7 @@ class InvalidateOperationsDBFilesController:
         file_tag_filters: Optional[List[str]] = None,
         file_tag_regex: Optional[str] = None,
         normalized_filenames_filter: Optional[List[str]] = None,
+        with_proxy: bool = True,
     ) -> "InvalidateOperationsDBFilesController":
         """Factory method to create an instance of InvalidateOperationsDBFilesController.
 
@@ -296,6 +302,7 @@ class InvalidateOperationsDBFilesController:
             dry_run=dry_run,
             skip_prompts=skip_prompts,
             log_output_path=log_output_path,
+            with_proxy=with_proxy,
         )
 
     def _write_log_file(
@@ -334,7 +341,11 @@ class InvalidateOperationsDBFilesController:
             )
             session.execute(text(bq_metadata_query_str))
 
-        session.commit()
+        try:
+            session.commit()
+        except Exception as e:
+            logging.exception(e)
+            session.rollback()
 
     def _fetch_files_to_be_invalidated(
         self, session: Session
@@ -357,11 +368,9 @@ class InvalidateOperationsDBFilesController:
         Returns a RawFilesGroupedByTagAndId object representing the files that were invalidated or None if no
         files were invalidated.
         """
-        schema_type = SchemaType.OPERATIONS
-        database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-        with SessionFactory.for_proxy(
-            database_key=database_key,
-            autocommit=False,
+        database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        with self.get_session(
+            database_key=database_key, with_proxy=self.with_proxy, autocommit=False
         ) as session:
             files_to_be_invalidated = self._fetch_files_to_be_invalidated(session)
             if files_to_be_invalidated.empty():

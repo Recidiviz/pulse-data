@@ -15,16 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the invalidate_operations_db_files_controller module."""
+import datetime
 import unittest
 from collections import defaultdict
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_test import (
+    make_unprocessed_raw_data_path,
+)
 from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
     RawFilesGroupedByTagAndId,
 )
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.types import assert_type
 
 
 class TestRawFilesGroupedByTagAndId(unittest.TestCase):
@@ -99,15 +112,97 @@ class TestRawFilesGroupedByTagAndId(unittest.TestCase):
         self.assertSetEqual({11, 12, 13, 14, 15}, grouped_files.gcs_file_ids)
 
 
+@pytest.mark.uses_db
 class TestInvalidateOperationsDBFilesController(unittest.TestCase):
     """Tests for the InvalidateOperationsDBFilesController class"""
 
+    temp_db_dir: str | None
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
         self.project_id_patcher = patch(
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-testing"
         )
         self.project_id_patcher.start()
-        self.controller = InvalidateOperationsDBFilesController.create_controller(
+
+        self.raw_metadata_manager = DirectIngestRawFileMetadataManager(
+            region_code="us_xx",
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    def test_run_no_files_to_invalidate(self) -> None:
+        with patch(
+            "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.logging.info"
+        ) as mock_logging:
+            controller = InvalidateOperationsDBFilesController.create_controller(
+                project_id="test-project",
+                state_code=StateCode.US_XX,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                file_tag_filters=["tag1"],
+                file_tag_regex=None,
+                start_date_bound="2024-11-01",
+                end_date_bound="2024-11-10",
+                dry_run=True,
+                skip_prompts=True,
+                with_proxy=False,
+            )
+            controller.run()
+            mock_logging.assert_called_with("No files to invalidate.")
+
+    def test_run_execute_invalidation_date_bounds(self) -> None:
+        processed_tag_1_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 2, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_1_path
+                ).file_id,
+                int,
+            )
+        )
+        processed_tag_1_outside_date_bounds_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 12, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_1_outside_date_bounds_path
+                ).file_id,
+                int,
+            )
+        )
+
+        processed_tag_2_path = make_unprocessed_raw_data_path(
+            "bucket/tag2", dt=datetime.datetime(2024, 11, 4, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_2_path
+                ).file_id,
+                int,
+            )
+        )
+
+        controller = InvalidateOperationsDBFilesController.create_controller(
             project_id="test-project",
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -115,173 +210,176 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
             file_tag_regex=None,
             start_date_bound="2024-11-01",
             end_date_bound="2024-11-10",
-            dry_run=True,
+            dry_run=False,
             skip_prompts=True,
+            with_proxy=False,
+        )
+        # these are currently valid, will be invalidated
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert not processed_tag_1.is_invalidated
+        # these are currently valid, will be filtered out by invalidator
+        processed_tag_2 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_2_path
+        )
+        assert not processed_tag_2.is_invalidated
+        processed_tag_1_outside_date_bounds = (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                processed_tag_1_outside_date_bounds_path
+            )
+        )
+        assert not processed_tag_1_outside_date_bounds.is_invalidated
+
+        # run the invalidation
+        controller.run()
+
+        # these are currently invalid, were valid before
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert processed_tag_1.is_invalidated
+        # these are currently valid, were filtered out by invalidator
+        processed_tag_2 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_2_path
+        )
+        assert not processed_tag_2.is_invalidated
+        processed_tag_1_outside_date_bounds = (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                processed_tag_1_outside_date_bounds_path
+            )
+        )
+        assert not processed_tag_1_outside_date_bounds.is_invalidated
+
+    def test_run_execute_invalidation_gcs_file_ids_only(self) -> None:
+
+        not_grouped_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 4, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+            not_grouped_path, is_chunked_file=True
+        )
+        not_grouped_excluded_path = make_unprocessed_raw_data_path(
+            "bucket/tag2", dt=datetime.datetime(2024, 11, 22, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+            not_grouped_excluded_path, is_chunked_file=True
         )
 
-    def tearDown(self) -> None:
-        self.project_id_patcher.stop()
-
-    @patch(
-        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
-    )
-    def test_run_no_files_to_invalidate(self, mock_session_factory: MagicMock) -> None:
-        mock_session = MagicMock()
-        mock_session.execute.return_value.fetchall.return_value = []
-        mock_session_factory.return_value.__enter__.return_value = mock_session
-
-        with patch(
-            "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.logging.info"
-        ) as mock_logging:
-            self.controller.run()
-            mock_logging.assert_called_with("No files to invalidate.")
-
-    @patch(
-        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
-    )
-    def test_run_execute_invalidation(self, mock_session_factory: MagicMock) -> None:
-        file_data = [
-            ("tag1", 1, "file1.csv", 6),
-            ("tag1", None, "file3.csv", 7),
-            ("tag2", 2, "file2.csv", 8),
-        ]
-        mock_session = MagicMock()
-        mock_session.execute.side_effect = [
-            MagicMock(fetchall=lambda: file_data),
-            None,
-            None,
-        ]
-        mock_session_factory.return_value.__enter__.return_value = mock_session
-        self.controller.dry_run = False
-
-        self.controller.run()
-
-        expected_bq_query = """
-UPDATE direct_ingest_raw_big_query_file_metadata
-SET is_invalidated = True
-WHERE file_id in (1, 2)
-"""
-        expected_gcs_query = """
-UPDATE direct_ingest_raw_gcs_file_metadata
-SET is_invalidated = True
-WHERE gcs_file_id in (8, 6, 7)
-"""
-
-        # Assertions to check if both queries are in the captured execute calls
-        actual_queries = [
-            call[0][0].text for call in mock_session.execute.call_args_list
-        ]
-        assert any(
-            expected_bq_query in query for query in actual_queries
-        ), "BQ query not found in execute calls."
-        assert any(
-            expected_gcs_query in query for query in actual_queries
-        ), "GCS query not found in execute calls."
-
-    @patch(
-        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
-    )
-    def test_run_execute_invalidation_gcs_file_ids_only(
-        self, mock_session_factory: MagicMock
-    ) -> None:
-        file_data = [
-            ("tag1", None, "file1.csv", 6),
-            ("tag1", None, "file3.csv", 7),
-            ("tag2", None, "file2.csv", 8),
-        ]
-        mock_session = MagicMock()
-        mock_session.execute.side_effect = [
-            MagicMock(fetchall=lambda: file_data),
-            None,
-            None,
-        ]
-        mock_session_factory.return_value.__enter__.return_value = mock_session
-        self.controller.dry_run = False
-
-        self.controller.run()
-
-        expected_select_query = """
-SELECT file_tag, file_id, normalized_file_name, gcs_file_id
-FROM direct_ingest_raw_gcs_file_metadata
-WHERE region_code = 'US_XX' 
-    AND raw_data_instance = 'PRIMARY' 
-    AND is_invalidated IS NOT True
-    AND file_tag IN ('tag1')
-    AND DATE(update_datetime) >= '2024-11-01' AND DATE(update_datetime) <= '2024-11-10'
-"""
-        expected_gcs_query = """
-UPDATE direct_ingest_raw_gcs_file_metadata
-SET is_invalidated = True
-WHERE gcs_file_id in (8, 6, 7)
-"""
-
-        # Assertions to check if both queries are in the captured execute calls
-        actual_queries = [
-            call[0][0].text for call in mock_session.execute.call_args_list
-        ]
-        assert len(actual_queries) == 2
-
-        # We query and run the deprecation query for direct_ingest_raw_gcs_file_metadata
-        # but not direct_ingest_raw_big_query_file_metadata
-        assert [expected_select_query, expected_gcs_query] == sorted(actual_queries)
-
-    @patch(
-        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
-    )
-    def test_run_execute_invalidation_filename_filter(
-        self, mock_session_factory: MagicMock
-    ) -> None:
-        file_data = [
-            ("tag1", 1, "file1.csv", 6),
-        ]
-        mock_session = MagicMock()
-        mock_session.execute.side_effect = [
-            MagicMock(fetchall=lambda: file_data),
-            None,
-            None,
-        ]
-        mock_session_factory.return_value.__enter__.return_value = mock_session
         controller = InvalidateOperationsDBFilesController.create_controller(
             project_id="test-project",
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
-            normalized_filenames_filter=["file1.csv"],
+            file_tag_filters=["tag1"],
+            file_tag_regex=None,
+            start_date_bound="2024-11-01",
+            end_date_bound="2024-11-10",
             dry_run=False,
             skip_prompts=True,
+            with_proxy=False,
         )
+        # these are currently valid, will be invalidated
+        not_grouped = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            not_grouped_path
+        )
+        assert not not_grouped.is_invalidated
+        # these are currently valid, will be filtered out by invalidator
+        not_grouped_excluded = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            not_grouped_excluded_path
+        )
+        assert not not_grouped_excluded.is_invalidated
 
+        # run the invalidation
         controller.run()
 
-        expected_file_query = """
-SELECT file_tag, file_id, normalized_file_name, gcs_file_id
-FROM direct_ingest_raw_gcs_file_metadata
-WHERE region_code = 'US_XX' 
-    AND raw_data_instance = 'PRIMARY' 
-    AND is_invalidated IS NOT True
-    AND normalized_file_name IN ('file1.csv')
-"""
+        # these are currently invalid, were valid before
+        not_grouped = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            not_grouped_path
+        )
+        assert not_grouped.is_invalidated
+        # these are currently valid, were filtered out by invalidator
+        not_grouped_excluded = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            not_grouped_excluded_path
+        )
+        assert not not_grouped_excluded.is_invalidated
 
-        expected_bq_query = """
-UPDATE direct_ingest_raw_big_query_file_metadata
-SET is_invalidated = True
-WHERE file_id in (1)
-"""
-        expected_gcs_query = """
-UPDATE direct_ingest_raw_gcs_file_metadata
-SET is_invalidated = True
-WHERE gcs_file_id in (6)
-"""
+    def test_run_execute_invalidation_filename_filter(self) -> None:
+        processed_tag_1_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 2, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_1_path
+                ).file_id,
+                int,
+            )
+        )
+        processed_tag_2_path = make_unprocessed_raw_data_path(
+            "bucket/tag2", dt=datetime.datetime(2024, 11, 9, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_2_path
+                ).file_id,
+                int,
+            )
+        )
 
-        # Assertions to check if both queries are in the captured execute calls
-        actual_queries = [
-            call[0][0].text for call in mock_session.execute.call_args_list
-        ]
-        assert any(
-            expected_file_query in query for query in actual_queries
-        ), "File query not found in execute calls."
-        assert any(
-            expected_bq_query in query for query in actual_queries
-        ), "BQ query not found in execute calls."
-        assert any(
-            expected_gcs_query in query for query in actual_queries
-        ), "GCS query not found in execute calls."
+        processed_tag_3_path = make_unprocessed_raw_data_path(
+            "bucket/tag3", dt=datetime.datetime(2024, 11, 4, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_3_path
+                ).file_id,
+                int,
+            )
+        )
+
+        controller = InvalidateOperationsDBFilesController.create_controller(
+            project_id="test-project",
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            file_tag_filters=None,
+            file_tag_regex="tag1|tag2",
+            start_date_bound="2024-11-01",
+            end_date_bound="2024-11-10",
+            dry_run=False,
+            skip_prompts=True,
+            with_proxy=False,
+        )
+        # these are currently valid, will be invalidated
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert not processed_tag_1.is_invalidated
+        processed_tag_2 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_2_path
+        )
+        assert not processed_tag_2.is_invalidated
+        # these are currently valid, will be filtered out by invalidator
+        processed_tag_3 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_3_path
+        )
+        assert not processed_tag_3.is_invalidated
+
+        # run the invalidation
+        controller.run()
+
+        # these are currently invalid, were valid before
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert processed_tag_1.is_invalidated
+        processed_tag_2 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_2_path
+        )
+        assert processed_tag_2.is_invalidated
+        # these are currently valid, were filtered out by invalidator
+        processed_tag_3 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_3_path
+        )
+        assert not processed_tag_3.is_invalidated
