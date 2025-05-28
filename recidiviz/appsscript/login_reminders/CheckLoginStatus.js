@@ -16,6 +16,8 @@
 // =============================================================================
 /* Apps Script for checking whether users have logged in based on auth0. */
 
+const NUM_SHEETS_TO_CHECK_LOGIN_STATUS = 3;
+
 /**
  * Checks whether the users whose information is listed in SENT_EMAILS_SHEET have logged
  * in by querying auth0.
@@ -31,7 +33,9 @@ function checkLoginStatus() {
   const statements = [];
   // The first two sheets returned by getSheets() are the leftmost in viewing order.
   // We assume these were the most recently added by sending email reminders
-  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(0, 2);
+  const sheets = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheets()
+    .slice(0, NUM_SHEETS_TO_CHECK_LOGIN_STATUS);
   // Adding all the login summaries to statements array
   for (const sheet of sheets) {
     console.log(`Getting login statuses for sheet "${sheet.getName()}"`);
@@ -94,8 +98,8 @@ function writeLoginStatusToSheet_(sheet, authToken) {
   sheet
     .getRange(1, colToWrite)
     .setValue(`Most Recent Login as of ${formattedToday}`);
-
-  const numEmailsSent = emailData.getNumRows();
+  // Account for the header row in determining the number of emails sent
+  const numEmailsSent = emailData.getNumRows() - 1;
 
   const loginSummary = `As of ${formattedToday}, ${loginsAfterEmailSent} out of ${numEmailsSent} emailed users in "${sheet.getName()}" had logged in after the reminder email was sent to them.`;
   console.log(loginSummary);

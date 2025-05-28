@@ -98,6 +98,12 @@ function stateSpecificText(
         timeZone: "America/Chicago",
         supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
       };
+    case "US_PA":
+      return {
+        toolName: "the Recidiviz Supervision Assistant",
+        timeZone: "America/New_York",
+        supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for Admin Supervision or Special Circumstances Supervision.`,
+      };
     case "US_TN":
       return {
         toolName: "the Compliant Reporting Recidiviz Tool",
@@ -299,7 +305,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
 
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
-
+  const isSupervisors = userType === SUPERVISORS;
   const dataByEmail = Object.fromEntries(
     data.map((row) => [
       row[3].toLowerCase(), // email address, case normalized
@@ -459,7 +465,9 @@ function sendFacilitiesLinestaffEmailRemindersMenuItem() {
 
   if (confirmation) {
     sendFacilitiesLinestaffEmailReminders_();
-    sheet.alert("Facilities Line staff emails sent successfully!");
+    sheet.alert(
+      "Facilities Line staff emails sent successfully! Please hide the previous month's sheet."
+    );
   }
 }
 
@@ -472,7 +480,9 @@ function sendSupervisionLinestaffEmailRemindersMenuItem() {
 
   if (confirmation) {
     sendSupervisionLinestaffEmailReminders_();
-    sheet.alert("Supervision line staff emails sent successfully!");
+    sheet.alert(
+      "Supervision line staff emails sent successfully! Please hide the previous month's sheet."
+    );
   }
 }
 
@@ -485,7 +495,9 @@ function sendSupervisorEmailRemindersMenuItem() {
 
   if (confirmation) {
     sendSupervisorEmailReminders_();
-    sheet.alert("Supervisor emails sent successfully!");
+    sheet.alert(
+      "Supervisor emails sent successfully! Please hide the previous month's sheet."
+    );
   }
 }
 
@@ -494,12 +506,16 @@ function sendSupervisorEmailRemindersMenuItem() {
  */
 function checkLoginStatusMenuItem() {
   const sheetUI = SpreadsheetApp.getUi();
-  const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().slice(0, 2);
+  const sheets = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheets()
+    .slice(0, NUM_SHEETS_TO_CHECK_LOGIN_STATUS);
 
   // Confirms with user if these are the two sheets they want to check login status for
   const response = sheetUI.alert(
-    "Checking the login status for the leftmost two sheets.",
-    `The sheets are ${sheets[0].getName()} and ${sheets[1].getName()}. \n Do you wish to proceed?`,
+    `Checking the login status for the leftmost ${NUM_SHEETS_TO_CHECK_LOGIN_STATUS} sheets.`,
+    `The sheets are: ${sheets
+      .map((s) => s.getName())
+      .join()}. \n Do you wish to proceed?`,
     sheetUI.ButtonSet.YES_NO
   );
 
@@ -510,7 +526,9 @@ function checkLoginStatusMenuItem() {
       "Checked login status successfully!\n" + statements.join(" \n")
     );
   } else {
-    sheetUI.alert("Move the two sheets you want to check to the left");
+    sheetUI.alert(
+      `Move the ${NUM_SHEETS_TO_CHECK_LOGIN_STATUS} sheets you want to check to the left`
+    );
   }
 }
 
