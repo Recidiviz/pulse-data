@@ -113,12 +113,7 @@ class RecidivizGitHubService(RecidivizAlertingService):
         )
 
         for issue in matching_issues:
-            # TODO(#39156) remove match by unique_incident_id legacy 42 days after
-            # creating new issues using _get_issue_title_from_incident is merged
-            if (
-                issue.title == incident.unique_incident_id
-                or issue.title == self._get_issue_title_from_incident(incident)
-            ):
+            if issue.title == self._get_issue_title_from_incident(incident):
                 return issue
 
         return None

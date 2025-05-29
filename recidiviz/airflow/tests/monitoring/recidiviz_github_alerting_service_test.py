@@ -84,79 +84,6 @@ class RecidivizGitHubServiceTest(TestCase):
             "Staging",
         }
 
-    def test_search_past_incident_match_on_unique_id(self) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
-            project_id="recidiviz-test", state_code=StateCode.US_XX
-        )
-
-        mock_incident = AirflowAlertingIncident(
-            dag_id="test_dag",
-            dag_run_config="{}",
-            job_id="a.job.id",
-            failed_execution_dates=[
-                datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
-                datetime.datetime(2024, 1, 2, tzinfo=datetime.UTC),
-                datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
-            ],
-            previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
-        )
-
-        mock_issues = [
-            self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
-            ),
-            self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
-            ),
-        ]
-
-        self.github_repo_mock.get_issues.return_value = mock_issues
-
-        # pylint: disable=protected-access
-        result = service._search_past_issues_for_incident(mock_incident)
-
-        assert result is None
-
-        self.github_repo_mock.get_issues.assert_called_with(
-            sort="created",
-            direction="desc",
-            labels=[
-                "Raw Data Import Failure",
-                "Team: State Pod",
-                "Region: US_XX",
-                "Staging",
-            ],
-            creator="helperbot-recidiviz",
-            state="all",
-            since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
-        )
-
-        mock_issues.append(
-            self._create_issue("test_dag.a.job.id, started: 2024-01-01 00:00 UTC")
-        )
-
-        self.github_repo_mock.get_issues.return_value = mock_issues
-
-        # pylint: disable=protected-access
-        result = service._search_past_issues_for_incident(mock_incident)
-
-        self.github_repo_mock.get_issues.assert_called_with(
-            sort="created",
-            direction="desc",
-            labels=[
-                "Raw Data Import Failure",
-                "Team: State Pod",
-                "Region: US_XX",
-                "Staging",
-            ],
-            creator="helperbot-recidiviz",
-            state="all",
-            since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
-        )
-
-        assert result is not None
-        assert result.title == mock_incident.unique_incident_id
-
     def test_search_past_incident_match_on_github_formatted(self) -> None:
         service = RecidivizGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-test", state_code=StateCode.US_XX
@@ -335,7 +262,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC", issue_id=54321
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC", issue_id=54321
         )
 
         mock_issues = [
@@ -397,7 +324,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC", issue_id=54321
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC", issue_id=54321
         )
 
         mock_issues = [
@@ -464,7 +391,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             issue_id=54321,
             state="closed",
         )
@@ -535,7 +462,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             issue_id=54321,
         )
 
@@ -610,7 +537,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         incident_issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             issue_id=54321,
         )
 
@@ -675,7 +602,7 @@ class RecidivizGitHubServiceTest(TestCase):
         )
 
         incident_issue = self._create_issue(
-            "test_dag.a.job.id, started: 2024-01-01 00:00 UTC",
+            "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
             issue_id=54321,
             state="closed",
         )
