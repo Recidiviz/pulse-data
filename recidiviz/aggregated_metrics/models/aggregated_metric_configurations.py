@@ -783,7 +783,7 @@ AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED = DailyAvgSpanCountMetric(
     description="Average daily population of clients requiring a risk assessment based on their "
     "supervision level",
     span_selector=SpanSelector(
-        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_type=SpanType.SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN,
         span_conditions_dict={"assessment_required": ["true"]},
     ),
 )
@@ -794,7 +794,7 @@ AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE = DailyAvgSpanCountMetric(
     description="Average daily population of clients requiring a risk assessment based on their "
     "supervision level who are overdue to receive one",
     span_selector=SpanSelector(
-        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_type=SpanType.SUPERVISION_ASSESSMENT_COMPLIANCE_SPAN,
         span_conditions_dict={
             "assessment_required": ["true"],
             "assessment_overdue": ["true"],
@@ -808,7 +808,7 @@ AVG_DAILY_POPULATION_CONTACT_REQUIRED = DailyAvgSpanCountMetric(
     description="Average daily population of clients requiring a face-to-face contact based on "
     "their supervision level",
     span_selector=SpanSelector(
-        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_type=SpanType.SUPERVISION_CONTACT_COMPLIANCE_SPAN,
         span_conditions_dict={"contact_required": ["true"]},
     ),
 )
@@ -820,7 +820,7 @@ AVG_DAILY_POPULATION_CONTACT_OVERDUE = DailyAvgSpanCountMetric(
     description="Average daily population of clients requiring a face-to-face contact based on "
     "their supervision level who are overdue to receive one",
     span_selector=SpanSelector(
-        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_type=SpanType.SUPERVISION_CONTACT_COMPLIANCE_SPAN,
         span_conditions_dict={
             "contact_required": ["true"],
             "contact_overdue": ["true"],
