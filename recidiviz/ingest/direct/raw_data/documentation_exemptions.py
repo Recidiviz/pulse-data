@@ -904,7 +904,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "TG_COMMRES",
             ],
             "When this record was first created in the source system.": [
-                "RECORDCRDATE",
                 "RecDate",
             ],
         },

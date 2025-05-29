@@ -100,6 +100,7 @@ output:
                   - "IC Probation"
                   - "Suspended"
           # Use the RECORDCRDATE as the sentence imposed date when hydrated, since that is when the supervision "case" was entered/imposed.
+          # If a sentence is retroactively amended, the date of the amendment will appear in the RECORDCRDATE field.
           # Fall back to the PAROLE_FR otherwise, since RECORDCRDATE is not hydrated for sentences imposed before the docstars migration.
           imposed_date:
             $conditional:
