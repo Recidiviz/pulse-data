@@ -25,3 +25,8 @@ spec:
         - "**/README.md"
       targets:
         - components/terraform/vendor/{{.Component}}
+    - component: "cloud-sql-instance"
+      source: "github.com/terraform-google-modules/terraform-google-sql-db.git?ref={{.Version}}"
+      version: "v25.2.2"
+      targets:
+        - components/terraform/vendor/{{.Component}}
