@@ -64,9 +64,9 @@ from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_co
     InvalidateOperationsDBFilesController,
     ProcessingStatusFilterType,
 )
-from recidiviz.tools.ingest.operations.helpers.operate_on_storage_raw_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directories_controller import (
     IngestFilesOperationType,
-    OperateOnStorageRawFilesController,
+    OperateOnRawStorageDirectoriesController,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -154,7 +154,7 @@ class MoveFilesToDeprecatedController:
                 skip_prompts=self.skip_prompts,
             ).run(file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids)
 
-        OperateOnStorageRawFilesController.create_controller(
+        OperateOnRawStorageDirectoriesController.create_controller(
             region_code=self.region_code,
             operation_type=IngestFilesOperationType.MOVE,
             source_region_storage_dir_path=self.region_storage_dir_path,

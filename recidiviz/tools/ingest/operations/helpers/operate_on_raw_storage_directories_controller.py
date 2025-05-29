@@ -44,16 +44,20 @@ class IngestFilesOperationType(Enum):
     COPY = "COPY"
     MOVE = "MOVE"
 
-    def gerund(self) -> str:
+    def present_participle(self) -> str:
         return self.value.rstrip("E") + "ING"
+
+    def past_participle(self) -> str:
+        return self.value.replace("Y", "I").rstrip("E") + "ED"
 
 
 # TODO(#37517) make start_date_bound -> state_datetime_inclusive and make it datetime | None instead of string
 # TODO(#37517) in _do_file_operation filter by datetime too
 @attr.define
-class OperateOnStorageRawFilesController:
-    """Class with functionality to copy or move raw files consumed by ingest from
-    storage buckets across different paths.
+class OperateOnRawStorageDirectoriesController:
+    """Class with functionality to copy or move raw directories consumed by ingest from
+    storage buckets across different paths, with options of applying filters on update_date
+    and file tag names.
 
     Attributes:
         operation_type - Whether to perform a copy or to fully move the files.
@@ -113,7 +117,7 @@ class OperateOnStorageRawFilesController:
         end_date_bound: Optional[str] = None,
         file_tags: Optional[List[str]] = None,
         file_tag_regex: Optional[str] = None,
-    ) -> "OperateOnStorageRawFilesController":
+    ) -> "OperateOnRawStorageDirectoriesController":
         """Creates a controller responsible for copying or moving ingest files from
         storage buckets across different paths."""
         file_tag_filters = (
@@ -235,7 +239,7 @@ class OperateOnStorageRawFilesController:
             from_path, to_path = operation_paths
             logging.debug(
                 "%s FROM %s TO %s",
-                self.operation_type.gerund().capitalize(),
+                self.operation_type.present_participle().capitalize(),
                 from_path,
                 to_path,
             )
@@ -282,7 +286,7 @@ class OperateOnStorageRawFilesController:
         all_operations = list(itertools.chain(*operations_lists))
         logging.debug("ALL OPERATIONS: %s", all_operations)
         dry_run_str = "[DRY_RUN] " if self.dry_run else ""
-        progress_bar_message = f"{dry_run_str}{self.operation_type.gerund().capitalize()} files from subdirectories..."
+        progress_bar_message = f"{dry_run_str}{self.operation_type.present_participle().capitalize()} files from subdirectories..."
         result = map_fn_with_progress_bar_results(
             work_items=all_operations,
             work_fn=self._do_file_operation,

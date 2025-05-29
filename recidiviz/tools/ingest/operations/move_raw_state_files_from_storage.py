@@ -18,13 +18,13 @@
 Script for moving files from storage back into an ingest bucket to be re-ingested. Should be run in the pipenv shell.
 
 Steps:
-1. Finds all sub-folders in storage for dates we want to re-ingest, based on start-date-bound, end-date-bound, and
-    file-type-to-move.
+1. Finds all sub-folders in storage for dates we want to re-ingest, based on 
+   start-date-bound, end-date-bound and file tag filters.
 2. Finds all files in those sub-folders.
-3. Acquires raw data resource lock for the ingest bucket
-4. Moves all found files to the ingest bucket, updating the file type to destination-file-type.
-5. Writes moves to a logfile.
-6. release raw data resource lock for the ingest bucket
+3. Acquires raw data resource lock for the destination ingest bucket
+4. Executes all operations on all found files to the ingest bucket, updating the file type to destination-file-type.
+5. Writes operations to a logfile.
+6. Release raw data resource lock for the ingest bucket
 
 Example usage (run from `pipenv shell`):
 
@@ -32,13 +32,25 @@ python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
     --source-project-id recidiviz-staging --source-raw-data-instance PRIMARY \
     --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
     --region us_tn --start-date-bound 2025-03-10 --dry-run True
+
+
+If you wanted to *copy* instead of *move* the files over, consider running the following command:
+
+python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
+    --source-project-id recidiviz-staging --source-raw-data-instance PRIMARY \
+    --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
+    --region us_tn --start-date-bound 2025-03-10 --operation-type COPY --dry-run True
+
+you might want to do this in cases where you are doing a secondary re-import or partially 
+re-ingesting a specific file in primary and want the files to remain in primary storage 
+for the duration of the re-import.
 """
 
 import argparse
 import logging
 import os
 import re
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
@@ -62,9 +74,13 @@ from recidiviz.persistence.entity.operations.entities import (
 )
 from recidiviz.tools.gsutil_shell_helpers import (
     GSUTIL_DEFAULT_TIMEOUT_SEC,
+    gsutil_cp,
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
     gsutil_mv,
+)
+from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directories_controller import (
+    IngestFilesOperationType,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -74,15 +90,13 @@ from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-# pylint: disable=not-callable
 
-
-class MoveFilesFromStorageController:
-    """Class that executes file moves from a direct ingest Google Cloud Storage bucket to the appropriate ingest
-    bucket.
+class OperateOnRawStorageFilesController:
+    """Class that executes file operations from direct ingest state storage to the
+    appropriate state ingest bucket.
     """
 
-    FILE_TO_MOVE_RE = re.compile(
+    FILE_TO_OPERATE_ON_RE = re.compile(
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
     RESOURCE_LOCKS_REQUIRED = (DirectIngestRawDataResourceLockResource.BUCKET,)
@@ -98,6 +112,7 @@ class MoveFilesFromStorageController:
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
+        operation_type: IngestFilesOperationType,
         file_filter: Optional[str],
     ):
         self.source_project_id = source_project_id
@@ -108,6 +123,7 @@ class MoveFilesFromStorageController:
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
         self.file_filter = file_filter
+        self.operation_type = operation_type
 
         self.source_raw_data_instance = source_raw_data_instance
         self.destination_raw_data_instance = destination_raw_data_instance
@@ -125,8 +141,8 @@ class MoveFilesFromStorageController:
             project_id=self.destination_project_id,
         )
 
-        self.successful_moves_list: List[Tuple[str, str]] = []
-        self.failed_moves_list: List[Tuple[str, str]] = []
+        self.successful_operations_list: List[Tuple[str, str]] = []
+        self.failed_operations_list: List[Tuple[str, str]] = []
 
         self.lock_manager = DirectIngestRawDataResourceLockManager(
             region_code=self.region,
@@ -135,29 +151,41 @@ class MoveFilesFromStorageController:
         )
 
         self.log_output_path = make_log_output_path(
-            operation_name="move",
+            operation_name=operation_type.value.lower(),
             region_code=region,
             date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
             dry_run=dry_run,
         )
 
-    def run_move(self) -> None:
-        """Main method of script - executes move, or runs a dry run of a move."""
+    @property
+    def file_operation_fn(self) -> Callable[[str, str], None]:
+        match self.operation_type:
+            case IngestFilesOperationType.COPY:
+                return gsutil_cp
+            case IngestFilesOperationType.MOVE:
+                return gsutil_mv
+
+    def run(self) -> None:
+        """Main method of script - executes operations, or runs a dry run of the
+        operations
+        """
+
         if self.dry_run:
             logging.info("Running in DRY RUN mode for region [%s]", self.region)
 
         prompt_for_confirmation(
-            f"This will move [{self.region}] files from [{self.source_project_id}] storage that were uploaded starting "
-            f"on date [{self.start_date_bound}] and ending on date [{self.end_date_bound}] to ingest bucket in "
-            f"[{self.destination_project_id}].",
+            f"This will {self.operation_type.value.lower()} [{self.region}] files from "
+            f"[{self.source_project_id}] storage that were uploaded starting on date "
+            f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}] to "
+            f"ingest bucket in [{self.destination_project_id}].",
             dry_run=self.dry_run,
         )
 
-        logging.info("Finding files to move...")
+        logging.info("Finding files to %s...", self.operation_type.value.lower())
         date_subdir_paths = self.get_date_subdir_paths()
 
         prompt_for_confirmation(
-            f"Found [{len(date_subdir_paths)}] dates to move - continue?",
+            f"Found [{len(date_subdir_paths)}] dates to {self.operation_type.value.lower()} - continue?",
             dry_run=self.dry_run,
         )
 
@@ -171,24 +199,26 @@ class MoveFilesFromStorageController:
                 resources=list(self.RESOURCE_LOCKS_REQUIRED),
                 actor=DirectIngestRawDataLockActor.ADHOC,
                 description="Holding locks during the ingest file upload step of the move_raw_state_files_from_storage script",
-                ttl_seconds=3 * 60 * 60,  # 3 hours
+                ttl_seconds=4 * 60 * 60,  # 4 hours
             )
 
         try:
-            files_to_move = self.collect_files_to_move(date_subdir_paths)
-            self.move_files(files_to_move)
-            self.write_moves_to_log_file()
+            files_to_operate_on = self.collect_files_to_operate_on(date_subdir_paths)
+            self.execute_operations(files_to_operate_on)
+            self.write_operations_to_log_file()
 
             if self.dry_run:
                 logging.info(
                     "[DRY RUN] See results in [%s].\n"
-                    "Rerun with [--dry-run False] to execute move.",
+                    "Rerun with [--dry-run False] to execute %s.",
                     self.log_output_path,
+                    self.operation_type.value.lower(),
                 )
             else:
                 logging.info(
-                    "Move complete! See results in [%s].\n",
+                    "%s complete! See results in [%s].\n",
                     self.log_output_path,
+                    self.operation_type.value.title(),
                 )
         finally:
             if self.dry_run:
@@ -205,16 +235,17 @@ class MoveFilesFromStorageController:
             lower_bound_date=self.start_date_bound,
         )
 
-    def collect_files_to_move(self, date_subdir_paths: List[str]) -> List[str]:
-        """Searches the given list of directory paths for files directly in those directories that should be moved to
-        the ingest directory and returns a list of string paths to those files.
+    def collect_files_to_operate_on(self, date_subdir_paths: List[str]) -> List[str]:
+        """Searches the given list of directory paths for files directly in those directories
+        that should be moved /copied to the ingest directory and returns a list of string
+        paths to those files.
         """
         msg_prefix = "[DRY RUN] " if self.dry_run else ""
 
         result = map_fn_with_progress_bar_results(
             work_items=date_subdir_paths,
-            work_fn=self.get_files_to_move_from_path,
-            progress_bar_message=f"{msg_prefix}Gathering paths to move...",
+            work_fn=self.get_files_to_operate_on_from_path,
+            progress_bar_message=f"{msg_prefix} Gathering paths to {self.operation_type.value.lower()}...",
             # Add a timeout that is generously longer than the timeout for the
             # GSUTIL ls call
             single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
@@ -224,30 +255,32 @@ class MoveFilesFromStorageController:
 
         return [f for _subdir, sublist in result.successes for f in sublist]
 
-    def move_files(self, files_to_move: List[str]) -> None:
-        """Moves files at the given paths to the ingest directory, changing the prefix to 'unprocessed' as necessary.
+    def execute_operations(self, files_to_operate_on: List[str]) -> None:
+        """Executes file operations on |files_to_operate_on| from storage to the ingest
+        bucket, changing the prefix to 'unprocessed' as necessary.
 
         For the given list of file paths:
 
-        files_to_move = [
+        files_to_operate_on = [
             'storage_bucket/path/to/processed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv'
         ]
 
         Will run:
-        gsutil mv
+        gsutil mv/cp
             gs://storage_bucket/path/to/processed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv \
             unprocessed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv
-
-        Note: Move order is not guaranteed - file moves are parallelized.
         """
         msg_prefix = "[DRY RUN] " if self.dry_run else ""
         result = map_fn_with_progress_bar_results(
             work_items=[
-                (original_file_path, self.build_moved_file_path(original_file_path))
-                for original_file_path in files_to_move
+                (
+                    original_file_path,
+                    self.build_destination_file_path(original_file_path),
+                )
+                for original_file_path in files_to_operate_on
             ],
-            work_fn=self.move_file,
-            progress_bar_message=f"{msg_prefix}Moving files...",
+            work_fn=self.execute_operation,
+            progress_bar_message=f"{msg_prefix} {self.operation_type.present_participle().title()} files...",
             # Add a timeout that is generously longer than the timeout for the
             # GSUTIL mv call
             single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
@@ -255,33 +288,35 @@ class MoveFilesFromStorageController:
             overall_timeout_sec=60 * 60 * 4,
         )
 
-        self.successful_moves_list.extend(paths for paths, _ in result.successes)
-        self.failed_moves_list.extend(paths for paths, _ in result.exceptions)
+        self.successful_operations_list.extend(paths for paths, _ in result.successes)
+        self.failed_operations_list.extend(paths for paths, _ in result.exceptions)
 
-    def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
-        """Returns files directly in the given directory that should be moved back into the ingest directory."""
+    def get_files_to_operate_on_from_path(self, gs_dir_path: str) -> List[str]:
+        """Returns files in the provided |gs_dir_path| that should be moved/copied back
+        into the ingest bucket.
+        """
         file_paths = gsutil_ls(gs_dir_path)
 
         result = []
         for file_path in file_paths:
             _, file_name = os.path.split(file_path)
-            if re.match(self.FILE_TO_MOVE_RE, file_name):
+            if re.match(self.FILE_TO_OPERATE_ON_RE, file_name):
                 if not self.file_filter or re.search(self.file_filter, file_name):
                     result.append(file_path)
         return result
 
-    def move_file(self, original_and_new_file_paths: tuple[str, str]) -> None:
-        """Moves a file at the given path into the ingest directory, updating the name
-        to always have an prefix of 'unprocessed'. The result of the file move will
-        later be written to a log file.
+    def execute_operation(self, original_and_new_file_paths: tuple[str, str]) -> None:
+        """Executes the operation on a file at the given path into the ingest bucket,
+        updating the name to always have an prefix of 'unprocessed'. The result of the
+        file operation will later be written to a log file.
 
-        If in dry_run mode, merely logs the move, but does not execute it.
+        If in dry_run mode, merely logs the operation, but does not execute it.
         """
         original_file_path, new_file_path = original_and_new_file_paths
         if not self.dry_run:
-            gsutil_mv(original_file_path, new_file_path)
+            self.file_operation_fn(original_file_path, new_file_path)
 
-    def build_moved_file_path(self, original_file_path: str) -> str:
+    def build_destination_file_path(self, original_file_path: str) -> str:
         """Builds the desired path for the given file in the ingest bucket, changing the
         prefix to 'unprocessed' as is necessary.
         """
@@ -292,29 +327,29 @@ class MoveFilesFromStorageController:
 
         _, file_name = os.path.split(path_as_unprocessed)
 
-        if not re.match(self.FILE_TO_MOVE_RE, file_name):
+        if not re.match(self.FILE_TO_OPERATE_ON_RE, file_name):
             raise ValueError(f"Invalid file name {file_name}")
 
         return os.path.join(
             "gs://", self.destination_ingest_bucket.abs_path(), file_name
         )
 
-    def write_moves_to_log_file(self) -> None:
-        self.successful_moves_list.sort()
-        self.failed_moves_list.sort()
+    def write_operations_to_log_file(self) -> None:
+        self.successful_operations_list.sort()
+        self.failed_operations_list.sort()
         with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
-                prefix = "[DRY RUN] Would move"
+                prefix = f"[DRY RUN] Would {self.operation_type.value.lower()}"
             else:
-                prefix = "Moved"
+                prefix = self.operation_type.past_participle().title()
 
             f.writelines(
                 f"{prefix} {original_path} -> {new_path}\n"
-                for original_path, new_path in self.successful_moves_list
+                for original_path, new_path in self.successful_operations_list
             )
             f.writelines(
-                f"⚠️FAILED TO MOVE {original_path} -> {new_path}\n"
-                for original_path, new_path in self.failed_moves_list
+                f"⚠️⚠️⚠️FAILED TO {self.operation_type.value} {original_path} -> {new_path}\n"
+                for original_path, new_path in self.failed_operations_list
             )
 
 
@@ -379,13 +414,20 @@ def main() -> None:
         default=None,
         help="Regex name filter - when set, will only move files that match this regex.",
     )
+
+    parser.add_argument(
+        "--operation-type",
+        default=IngestFilesOperationType.MOVE,
+        type=IngestFilesOperationType,
+        help="Whether the files should be moved or copied. By default, we will move the files.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     with local_project_id_override(args.destination_project_id):
         with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
-            MoveFilesFromStorageController(
+            OperateOnRawStorageFilesController(
                 source_project_id=args.source_project_id,
                 destination_project_id=args.destination_project_id,
                 source_raw_data_instance=args.source_raw_data_instance,
@@ -395,7 +437,8 @@ def main() -> None:
                 start_date_bound=args.start_date_bound,
                 dry_run=args.dry_run,
                 file_filter=args.file_filter,
-            ).run_move()
+                operation_type=args.operation_type,
+            ).run()
 
 
 if __name__ == "__main__":
