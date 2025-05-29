@@ -16,5 +16,5 @@ components:
       vars:
         location: "{{ .settings.context.location }}"
         project_id: "{{ .settings.context.project_id }}"
-        sql_instance_name: "resource-source-staging"
+        sql_instance_name: "resource-search-staging"
         is_backup_enabled: false
