@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_report_within_6_months_using_response_date,
     not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
     supervision_case_type_is_not_sex_offense,
+    supervision_level_is_not_residential_program,
     supervision_past_full_term_completion_date_or_upcoming_30_days,
     supervision_type_is_not_investigation,
 )
@@ -66,6 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_type_is_not_investigation.VIEW_BUILDER,
         serving_supervision_case_at_least_90_days.VIEW_BUILDER,
         not_excluded_from_early_discharge_by_parole_condition.VIEW_BUILDER,
+        supervision_level_is_not_residential_program.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
