@@ -39,6 +39,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants import (
     SUPERVISION_LEGAL_STATUS_CODES_SET,
 )
@@ -183,3 +186,43 @@ def parse_supervision_level(raw_text: str) -> StateSupervisionLevel:
             return StateSupervisionLevel.EXTERNAL_UNKNOWN
         return StateSupervisionLevel.INTERNAL_UNKNOWN
     return StateSupervisionLevel.PRESENT_WITHOUT_INFO
+
+
+def parse_supervision_violation_type_from_description(
+    raw_text: str,
+) -> StateSupervisionViolationType:
+    """
+    Determines the type of violations based on the description of the violation provided.
+    Violations that stem from controlled substance use or possession are not labeled as
+    new crimes in any way in the raw data, and there are not criminal charges documented
+    in other raw data that relate to those violations; substance-related violations are
+    therefore mapped to TECHNICAL.
+    """
+    if raw_text:
+        violation_desc = raw_text.lower()
+        if (
+            "crime" in violation_desc
+            or "arrest" in violation_desc
+            or "convict" in violation_desc
+            or "new charge" in violation_desc
+            or "new criminal offense" in violation_desc
+        ):
+            if (
+                "non crime" not in violation_desc
+                # These extra conditions ensure that violations that involve *both* a new
+                # crime and a technical violation are parsed as a new crime. It also ensures
+                # that violations that only involve associating with people with a criminal
+                # record are not parsed as new crimes.
+                and not (
+                    "by having associated" in violation_desc
+                    and (
+                        "new criminal offense" not in violation_desc
+                        and "by having committed" not in violation_desc
+                    )
+                )
+            ):
+                return StateSupervisionViolationType.LAW
+        if "abscond" in violation_desc:
+            return StateSupervisionViolationType.ABSCONDED
+        return StateSupervisionViolationType.TECHNICAL
+    return StateSupervisionViolationType.INTERNAL_UNKNOWN

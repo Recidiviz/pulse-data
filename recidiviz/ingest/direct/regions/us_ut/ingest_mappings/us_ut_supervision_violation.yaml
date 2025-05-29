@@ -31,6 +31,14 @@ output:
               sanction_level: sanction_level
               # TODO(#37772) -- this could possibly be parsed into violated conditions
               violation_description: violation_desc
+          # TODO(#43035): Ensure that we are mapping substance-related violations to the
+          # correct supervision type.
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: violation_desc
+                    $custom_parser: us_ut_custom_enum_parsers.parse_supervision_violation_type_from_description
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id: rim_violation_rove_id
