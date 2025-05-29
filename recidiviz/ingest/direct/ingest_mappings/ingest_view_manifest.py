@@ -602,6 +602,13 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
         if values is None:
             raise ValueError("Unexpected null list value.")
 
+        if sorted(values) != sorted(set(values)):
+            raise ValueError(
+                f"Found duplicate values in $iterable when building entities of type "
+                f"{self.child_entity_manifest.result_type.__name__}. Input values must "
+                f"be deduplicated. Found duplicates in row: {row}"
+            )
+
         result = []
         if self.FOREACH_LOOP_VALUE_NAME in row:
             raise ValueError(

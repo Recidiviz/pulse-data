@@ -486,6 +486,16 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_unpack_list_into_field_with_duplicates(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found duplicate values in \$iterable when building entities of type "
+            r"FakePersonExternalId. Input values must be deduplicated. Found "
+            r"duplicates in row: \{'PERSONNAME': 'Elaine Benes', "
+            r"'PERSONIDS': '789,123,456,789'\}",
+        ):
+            _ = self._run_parse_for_ingest_view("list_field_from_list_col_duplicates")
+
     def test_unpack_multiple_lists_into_field(self) -> None:
         # Arrange
         expected_output = [

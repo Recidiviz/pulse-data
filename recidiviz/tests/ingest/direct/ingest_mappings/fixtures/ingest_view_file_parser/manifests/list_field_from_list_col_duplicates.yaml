@@ -1,0 +1,15 @@
+manifest_language: 1.0.0
+input_columns:
+  PERSONNAME: STRING
+  PERSONIDS: STRING
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    external_ids:
+      - $foreach:
+          $iterable: PERSONIDS
+          $result:
+            FakePersonExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_XX_ID_TYPE")
