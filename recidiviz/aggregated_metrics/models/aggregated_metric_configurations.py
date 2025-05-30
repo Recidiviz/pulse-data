@@ -2997,6 +2997,70 @@ DISTINCT_OUTLIER_OFFICERS = SpanDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_PROVISIONED_TASKS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_tasks_users",
+    display_name="Distinct Provisioned Tasks Users",
+    description="Number of distinct Tasks users who are provisioned to have tool access (regardless of role type)",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_REGISTERED_PROVISIONED_TASKS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_provisioned_tasks_users",
+    display_name="Distinct Registered Provisioned Tasks Users",
+    description=(
+        "Number of distinct Tasks users who are provisioned to have tool access (regardless of role type) "
+        "who have signed up/logged into the Tasks tool at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+
+DISTINCT_PROVISIONED_PRIMARY_TASKS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_tasks_users",
+    display_name="Distinct Provisioned Primary Tasks Users",
+    description="Number of distinct primary Tasks users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_TASKS_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_tasks_users",
+    display_name="Distinct Total Registered Primary Tasks Users",
+    description="Number of distinct primary Tasks users who have signed up/logged into the Tasks tool at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_TASKS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_tasks_users",
+    display_name="Distinct Logged In Primary Tasks Users",
+    description="Number of distinct primary Tasks users who logged into Tasks",
+    event_selector=EventSelector(
+        event_type=EventType.TASKS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
+
+LOGINS_PRIMARY_TASKS_USERS = EventCountMetric(
+    name="logins_primary_tasks_user",
+    display_name="Logins, Primary Tasks Users",
+    description="Number of logins performed by primary Tasks users",
+    event_selector=EventSelector(
+        event_type=EventType.TASKS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",

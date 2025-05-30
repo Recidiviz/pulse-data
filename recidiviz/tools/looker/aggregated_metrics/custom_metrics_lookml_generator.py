@@ -54,6 +54,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     build_custom_metrics_lookml_view,
     build_time_periods_lookml_view,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_tasks_metrics_configurations import (
+    TASKS_ASSIGNMENT_NAMES_TO_TYPES,
+    TASKS_IMPACT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations import (
     WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
     WORKFLOWS_IMPACT_LOOKER_METRICS,
@@ -148,5 +152,14 @@ if __name__ == "__main__":
         output_directory=args.save_dir,
         metrics=INSIGHTS_IMPACT_LOOKER_METRICS,
         assignment_types_dict=INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
+        json_field_filters_with_suggestions={},
+    )
+
+    # TASKS
+    collect_and_build_custom_metrics_views_for_package(
+        lookml_views_package_name="tasks_impact_metrics",
+        output_directory=args.save_dir,
+        metrics=TASKS_IMPACT_LOOKER_METRICS,
+        assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
         json_field_filters_with_suggestions={},
     )
