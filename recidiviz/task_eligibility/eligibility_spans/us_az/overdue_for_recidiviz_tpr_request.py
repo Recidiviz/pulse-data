@@ -129,11 +129,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         sub_conditions_list=[
                             EligibleCriteriaCondition(
                                 criteria=no_active_felony_detainers.VIEW_BUILDER,
-                                description="Missing Felony Detainer criteria",
+                                description="Has Felony Detainer criteria",
                             ),
                             EligibleCriteriaCondition(
                                 criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
-                                description="Missing Mandatory Literacy criteria",
+                                description="Has Mandatory Literacy criteria",
                             ),
                         ],
                         at_least_n_conditions_true=2,

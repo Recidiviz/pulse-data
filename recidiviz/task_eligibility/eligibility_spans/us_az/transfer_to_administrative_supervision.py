@@ -38,6 +38,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     risk_release_assessment_is_completed,
     risk_release_assessment_level_is_minimum,
 )
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -69,16 +73,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
         # 1.4 Not classified as homeless in their home release plan
-        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         not_homeless_in_release_plan.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
-        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
         # # TODO(#42752): Re-enable mental health criteria once all assessments are available in prod
         # # 1.6 Mental Health Score of 3 or below.
         # mental_health_score_3_or_below.VIEW_BUILDER,
         # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
-        # TODO(#41739): Discuss capability/relevancy of alternate eligibility via other part of criteria
         oras_has_substance_use_issues.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
@@ -100,6 +101,23 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            NotEligibleCriteriaCondition(
+                criteria=not_homeless_in_release_plan.VIEW_BUILDER,
+                description="Missing ORAS-assessed homelessness criteria",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=oras_employed_disabled_retired_or_student.VIEW_BUILDER,
+                description="Missing ORAS-assessed employment criteria",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=oras_has_substance_use_issues.VIEW_BUILDER,
+                description="Missing ORAS-assessed substance use criteria",
+            ),
+        ],
+        at_least_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":
