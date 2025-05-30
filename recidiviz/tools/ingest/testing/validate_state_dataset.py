@@ -21,9 +21,10 @@ schemes.
 Usage:
     python -m recidiviz.tools.ingest.testing.validate_state_dataset \
         --output_sandbox_prefix PREFIX \
-        --state_code_filter STATE_CODE
+        --state_code_filter STATE_CODE \
         --reference_state_dataset DATASET_ID \
         --sandbox_state_dataset DATASET_ID \
+        --schema_type {state,normalized_state} \
         [--sandbox_state_project_id PROJECT_ID] \
         [--reference_state_project_id PROJECT_ID]
 

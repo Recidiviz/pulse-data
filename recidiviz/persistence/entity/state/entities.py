@@ -534,10 +534,6 @@ class StatePerson(
                     min_allowed_date_inclusive=BIRTHDATE_REASONABLE_LOWER_BOUND
                 ),
                 exempted_states={
-                    # TODO(#40485): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                    #  - Found dates as low as 1000-01-01.
-                    #  - Found dates as high as 2076-05-14.
-                    StateCode.US_AR,
                     # TODO(#36562): Stop hydrating CO ingest data
                     StateCode.US_CO,
                     # TODO(#40486): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
