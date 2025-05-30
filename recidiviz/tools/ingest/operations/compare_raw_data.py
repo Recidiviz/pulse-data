@@ -85,7 +85,7 @@ def _log_successes(succeeded_tables: List[str]) -> str:
     success_log += "SUCCESSES".ljust(LINE_WIDTH, FILL_CHAR)
     success_log += "\n"
     for file_tag in succeeded_tables:
-        success_log += f"\t- {file_tag}"
+        success_log += f"\t- {file_tag}\n"
     success_log += LINE_SEPARATOR
     logging.info(success_log)
     return success_log

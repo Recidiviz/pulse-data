@@ -237,7 +237,7 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
     def test_diff_file_count_missing_src(self) -> None:
         expected_msg = """
 The following comparison table update_datetimes have no entries in the source table:
-	2024-02-26T00:00:00"""
+\t- 2024-02-26T00:00:00"""
         src_data = [
             {
                 "file_id": "1",
@@ -279,7 +279,7 @@ The following comparison table update_datetimes have no entries in the source ta
     def test_diff_file_count_missing_cmp(self) -> None:
         expected_msg = """
 The following source table update_datetimes have no entries in the comparison table:
-	2024-02-26T00:00:00"""
+\t- 2024-02-26T00:00:00"""
         src_data = [
             {
                 "file_id": "1",

@@ -113,15 +113,15 @@ class RawTableDistinctFileCountsQueryResult(RawTableDiffQueryResult):
         )
         s = ""
         if self.rows_missing_from_cmp:
-            s += "\nThe following source table update_datetimes have no entries in the comparison table:\n\t"
-            s += "\n\t".join(
-                row.update_datetime.isoformat()
+            s += "\nThe following source table update_datetimes have no entries in the comparison table:\n"
+            s += "\n".join(
+                f"\t- {row.update_datetime.isoformat()}"
                 for row in self.rows_missing_from_cmp[:limit]
             )
         if self.rows_missing_from_src:
-            s += "\nThe following comparison table update_datetimes have no entries in the source table:\n\t"
-            s += "\n\t".join(
-                row.update_datetime.isoformat()
+            s += "\nThe following comparison table update_datetimes have no entries in the source table:\n"
+            s += "\n".join(
+                f"\t- {row.update_datetime.isoformat()}"
                 for row in self.rows_missing_from_src[:limit]
             )
         if self.rows_with_differences:
@@ -153,7 +153,7 @@ class RawTableFileCountsDiffQueryGenerator(RawTableDiffQueryGenerator):
 
     @staticmethod
     def parse_query_result(
-        query_result: List[Dict[str, Any]]
+        query_result: List[Dict[str, Any]],
     ) -> RawTableDiffQueryResult:
         """Parse the raw query result into a RawTableDistinctFileCountsQueryResult"""
 

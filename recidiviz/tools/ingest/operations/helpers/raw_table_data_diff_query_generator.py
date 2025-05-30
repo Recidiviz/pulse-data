@@ -119,7 +119,9 @@ class RawTableDataDiffQueryResult(RawTableDiffQueryResult):
         )
         s = ""
         if self.columns_with_differences:
-            formatted_columns = "\n\t- ".join(self.columns_with_differences)
+            formatted_columns = "\n".join(
+                f"\t- {col}" for col in self.columns_with_differences
+            )
             s += f"The following {len(self.columns_with_differences)} columns had differences:\n{formatted_columns}\n\n"
         if self.rows_with_differences:
             formatted_rows = "\n".join(

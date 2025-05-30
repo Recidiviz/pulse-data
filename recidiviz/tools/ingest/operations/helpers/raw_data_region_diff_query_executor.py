@@ -103,12 +103,12 @@ class RawDataRegionDiffQueryExecutor:
                 self.bq_client.create_table_from_query_async(
                     address=self._get_table_address(file_tag),
                     query=query_str,
-                    use_query_cache=True,
+                    use_query_cache=False,
                 )
                 if self.save_to_table
                 else self.bq_client.run_query_async(
                     query_str=query_str,
-                    use_query_cache=True,
+                    use_query_cache=False,
                 )
             )
 

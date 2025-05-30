@@ -113,7 +113,7 @@ class RawTableDataDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
 
     def test_diff_data_failure(self) -> None:
         expected_msg = """The following 1 columns had differences:
-COL2
+\t- COL2
 
 In the following 1 rows:
 update_datetime: 2024-01-26T00:00:00
