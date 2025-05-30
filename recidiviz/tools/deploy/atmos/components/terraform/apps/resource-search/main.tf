@@ -14,8 +14,8 @@ module "postgresql" {
   project_id                  = var.project_id
   region                      = var.location
   zone                        = "us-central1-a"
-  database_version            = "POSTGRES_16"
-  tier                        = "db-custom-1-3840"
+  database_version            = "POSTGRES_13"
+  tier                        = "db-custom-1-3840
 
   enable_default_user = true
   user_name           = data.google_secret_manager_secret_version.db_user.secret_data
