@@ -148,6 +148,14 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="If this flag is included, the script will skip code files if they already exist.",
     )
+    # By default, we prune raw data files down to the earliest and most recent rows per PK.
+    # Passing this option at the commandline will skip this, and should only be used if pruning
+    # is meaningfully impacting your test case that uses @ALL fixtures.
+    parser.add_argument(
+        "--skip_pruning",
+        action="store_true",
+        help="If this flag is included, the script will not prune raw data fixtures.",
+    )
     parser.add_argument(
         "--files_to_make_empty",
         nargs="+",
@@ -357,7 +365,8 @@ def main() -> None:
                     pks = [c.name for c in dependency.raw_file_config.current_columns]
                 else:
                     pks = dependency.raw_file_config.primary_key_cols
-                df = prune_fixture_data(df, pks)
+                if not args.skip_pruning:
+                    df = prune_fixture_data(df, pks)
             fixture.write_dataframe_into_fixture_file(
                 df,
                 args.test_characteristic,
