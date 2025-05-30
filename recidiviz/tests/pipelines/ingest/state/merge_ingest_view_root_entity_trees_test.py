@@ -42,7 +42,9 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
 )
-from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import (
+    MergeIngestViewRootEntityTrees,
+)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -160,7 +162,7 @@ class TestMergeIngestViewRootEntityTrees(
                     file_name_w_suffix="for_merge_ingest_view_root_entity_trees_test.csv",
                 )
             )
-            | pipeline.MergeIngestViewRootEntityTrees(
+            | MergeIngestViewRootEntityTrees(
                 "ingestMultipleChildren",
                 self.state_code(),
             )
@@ -228,7 +230,7 @@ class TestMergeIngestViewRootEntityTrees(
         output = (
             self.test_pipeline
             | beam.Create(expected_input)
-            | pipeline.MergeIngestViewRootEntityTrees(
+            | MergeIngestViewRootEntityTrees(
                 "test_ingest_view",
                 self.state_code(),
             )
@@ -341,7 +343,7 @@ class TestMergeIngestViewRootEntityTrees(
         output = (
             self.test_pipeline
             | beam.Create(expected_input)
-            | pipeline.MergeIngestViewRootEntityTrees(
+            | MergeIngestViewRootEntityTrees(
                 "test_ingest_view",
                 self.state_code(),
             )
@@ -387,9 +389,7 @@ class TestMergeIngestViewRootEntityTrees(
         _ = (
             self.test_pipeline
             | beam.Create(expected_input)
-            | pipeline.MergeIngestViewRootEntityTrees(
-                "test_ingest_view", self.state_code()
-            )
+            | MergeIngestViewRootEntityTrees("test_ingest_view", self.state_code())
         )
         with self.assertRaisesRegex(RuntimeError, r".*EntityMergingError.*"):
             self.test_pipeline.run()

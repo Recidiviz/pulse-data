@@ -150,7 +150,9 @@ def run_test_pipeline(
             f"recidiviz.pipelines.supplemental.{class_name}.pipeline.WriteToBigQuery"
         )
     elif issubclass(pipeline_cls, StateIngestPipeline):
-        write_to_bq_class = "recidiviz.pipelines.ingest.state.pipeline.WriteToBigQuery"
+        write_to_bq_class = (
+            "recidiviz.pipelines.ingest.state.process_ingest_view.WriteToBigQuery"
+        )
     else:
         raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
 

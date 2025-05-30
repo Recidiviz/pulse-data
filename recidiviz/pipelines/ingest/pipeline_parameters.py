@@ -102,6 +102,7 @@ class IngestPipelineParameters(PipelineParameters):
         raw_json = json.loads(self.raw_data_upper_bound_dates_json)
         return dict(raw_json.items())
 
+    # This is the user-provided filter for which ingest views to run
     ingest_views_to_run: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -113,6 +114,18 @@ class IngestPipelineParameters(PipelineParameters):
                 "Can only set the ingest_view_results_only or pre_normalization_only "
                 "but not both"
             )
+
+    def launchable_ingest_views_to_run(
+        self, all_launchable_views: list[str]
+    ) -> list[str]:
+        """This is the full list of ingest views to process in this pipeline, with any
+        user filter applied, if relevant.
+        """
+        return (
+            self.ingest_views_to_run.split(" ")
+            if self.ingest_views_to_run
+            else all_launchable_views
+        )
 
     @property
     def flex_template_name(self) -> str:

@@ -36,7 +36,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
 )
-from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -116,7 +116,7 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
                     "for_generate_entities_test.csv",
                 ).to_dict("records")
             )
-            | pipeline.GenerateEntities(
+            | GenerateEntities(
                 ingest_view_manifest=ingest_view_manifest,
                 ingest_view_context=IngestViewContentsContext.build_for_tests(),
             )

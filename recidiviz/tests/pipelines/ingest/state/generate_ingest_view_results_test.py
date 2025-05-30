@@ -34,7 +34,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
-from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    GenerateIngestViewResults,
+)
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
@@ -96,7 +98,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             ValueError,
             r"Ingest View \[ingest12\] has raw data dependencies with missing upper bound datetimes: table1",
         ):
-            pipeline.GenerateIngestViewResults(
+            GenerateIngestViewResults(
                 ingest_view_builder=view_builder,
                 raw_data_tables_to_upperbound_dates={
                     # MyPy doesn't like this, but we want to double check
@@ -119,7 +121,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
         output = (
             self.test_pipeline
-            | pipeline.GenerateIngestViewResults(
+            | GenerateIngestViewResults(
                 ingest_view_builder=view_builder,
                 raw_data_tables_to_upperbound_dates={
                     "table1": DEFAULT_UPDATE_DATETIME.isoformat(),
@@ -164,7 +166,7 @@ class TestGenerateIngestViewQuery(unittest.TestCase):
         self.metadata_patcher.stop()
 
     def test_dataflow_query_for_args(self) -> None:
-        dataflow_query = pipeline.GenerateIngestViewResults.generate_ingest_view_query(
+        dataflow_query = GenerateIngestViewResults.generate_ingest_view_query(
             self.ingest_view_query_builder,
             DirectIngestInstance.PRIMARY,
             upper_bound_datetime_inclusive=datetime(
@@ -234,7 +236,7 @@ FROM view_results;
     def test_dataflow_query_for_args_handles_materialization_correctly(
         self,
     ) -> None:
-        dataflow_query = pipeline.GenerateIngestViewResults.generate_ingest_view_query(
+        dataflow_query = GenerateIngestViewResults.generate_ingest_view_query(
             self.ingest_view_query_builder,
             DirectIngestInstance.PRIMARY,
             upper_bound_datetime_inclusive=datetime(
