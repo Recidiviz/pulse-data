@@ -288,7 +288,7 @@ def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
             message=message,
             gcs_bucket=expected_insights_bucket,
             import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
-            task_prefix="import-insights",
+            task_prefix=f"import-insights{'-demo' if load_demo_data_into_insights else ''}",
             task_url="/import/insights",
         )
     except ValueError as e:
