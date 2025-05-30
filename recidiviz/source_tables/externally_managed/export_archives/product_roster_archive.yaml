@@ -18,6 +18,9 @@ schema:
   - name: external_id
     type: STRING
     mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
   - name: first_name
     type: STRING
     mode: NULLABLE
@@ -33,6 +36,33 @@ schema:
   - name: district
     type: STRING
     mode: NULLABLE
+  - name: default_routes
+    type: STRING
+    mode: NULLABLE
+  - name: override_routes
+    type: STRING
+    mode: NULLABLE
+  - name: routes_system_libertyToPrison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prisonToSupervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervisionToPrison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervisionToLiberty
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_operations
+    type: BOOLEAN
+    mode: NULLABLE
   - name: routes_workflows
     type: BOOLEAN
     mode: NULLABLE
@@ -45,7 +75,16 @@ schema:
   - name: routes_insights
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_insights_supervision_supervisors_list
+    type: BOOLEAN
+    mode: NULLABLE
   - name: routes_tasks
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_psi
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_lantern
     type: BOOLEAN
     mode: NULLABLE
   - name: default_feature_variants
