@@ -135,7 +135,7 @@ def action_create() -> None:
                     project_id=GCP_PROJECT_STAGING
                 ),
             ),
-            data_retention=types.DataRetentionConfig(
+            data_retention_config=types.DataRetentionConfig(
                 task_logs_retention_config=TaskLogsRetentionConfig(
                     storage_mode=TaskLogsRetentionConfig.TaskLogsStorageMode.CLOUD_LOGGING_AND_CLOUD_STORAGE
                 )
