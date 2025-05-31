@@ -414,6 +414,91 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
         )
         assert not processed_tag_1_outside_date_bounds.is_invalidated
 
+    def test_invalidation_filename_filter(self) -> None:
+        unprocessed_tag_1_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 2, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+            unprocessed_tag_1_path
+        )
+        processed_tag_1_outside_date_bounds_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 12, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_1_outside_date_bounds_path
+                ).file_id,
+                int,
+            )
+        )
+
+        processed_tag_1_path = make_unprocessed_raw_data_path(
+            "bucket/tag1", dt=datetime.datetime(2024, 11, 4, 3, 3, 3, 3)
+        )
+        self.raw_metadata_manager.mark_raw_big_query_file_as_processed(
+            assert_type(
+                self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                    processed_tag_1_path
+                ).file_id,
+                int,
+            )
+        )
+
+        controller = InvalidateOperationsDBFilesController.create_controller(
+            project_id="test-project",
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            file_tag_filters=None,
+            file_tag_regex=None,
+            start_date_bound=None,
+            end_date_bound=None,
+            normalized_filenames_filter=[
+                unprocessed_tag_1_path.file_name,
+                processed_tag_1_outside_date_bounds_path.file_name,
+                processed_tag_1_path.file_name,
+            ],
+            dry_run=False,
+            skip_prompts=True,
+            processing_status_filter=ProcessingStatusFilterType.PROCESSED_ONLY,
+            with_proxy=False,
+        )
+        # these are currently valid, will be invalidated
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert not processed_tag_1.is_invalidated
+        unprocessed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            unprocessed_tag_1_path
+        )
+        assert not unprocessed_tag_1.is_invalidated
+        processed_tag_1_outside_date_bounds = (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                processed_tag_1_outside_date_bounds_path
+            )
+        )
+        assert not processed_tag_1_outside_date_bounds.is_invalidated
+
+        # run the invalidation
+        controller.run()
+
+        # these are currently invalid, were valid before
+        processed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            processed_tag_1_path
+        )
+        assert processed_tag_1.is_invalidated
+        processed_tag_1_outside_date_bounds = (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                processed_tag_1_outside_date_bounds_path
+            )
+        )
+        assert processed_tag_1_outside_date_bounds.is_invalidated
+        # these are currently valid, were filtered out by invalidator
+        unprocessed_tag_1 = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            unprocessed_tag_1_path
+        )
+        assert not unprocessed_tag_1.is_invalidated
+
     def test_run_execute_invalidation_gcs_file_ids_only(self) -> None:
 
         not_grouped_path = make_unprocessed_raw_data_path(

@@ -181,7 +181,10 @@ class FilenameFilter(MetadataTableQueryFilter):
             )
 
     def get_filter_clause(self) -> str:
-        return f"AND {self.table_to_filter.table_prefix()}.normalized_file_name IN ({list_to_query_string(self.normalized_filenames_filter, quoted=True)})"
+        filename_list_str = list_to_query_string(
+            self.normalized_filenames_filter, quoted=True, single_quote=True
+        )
+        return f"AND {self.table_to_filter.table_prefix()}.normalized_file_name IN ({filename_list_str})"
 
 
 class ProcessingStatusFilterType(Enum):
@@ -338,7 +341,7 @@ class InvalidateOperationsDBFilesController(CloudSqlConnectionMixin):
             file_tag_filters or file_tag_regex or start_date_bound or end_date_bound
         ):
             raise ValueError(
-                "If providing normalized_filenames_filter, do not provide any other filters."
+                "If providing normalized_filenames_filter, do not provide any non-processed status filters."
             )
         if file_tag_filters and file_tag_regex:
             raise ValueError(
