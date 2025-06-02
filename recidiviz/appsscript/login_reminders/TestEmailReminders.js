@@ -24,7 +24,18 @@ const TESTING_NAME = "Firstname Lastname";
 const TESTING_DISTRICT = "Fake District";
 const TEST_NUM_OUTLIERS = 123;
 const TEST_NUM_OPPORTUNITIES = 456;
+const TEST_NUM_ELIGIBLE_OPPORTUNITIES = 15;
 const TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES = 20;
+const TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY = [
+  { opportunityName: "Early Discharge", numClients: 6 },
+  { opportunityName: "Supervision Level Mismatch", numClients: 2 },
+  { opportunityName: "Classification Review", numClients: 5},
+];
+const TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY = [
+  { opportunityName: "Early Discharge", numClients: 3 },
+  { opportunityName: "Supervision Level Mismatch", numClients: 4 },
+  { opportunityName: "Minimum Telephone Reporting", numClients: 1},
+];
 
 const BASE_INFO = {
   name: TESTING_NAME,
@@ -33,7 +44,10 @@ const BASE_INFO = {
   lastLogin: null,
   outliers: TEST_NUM_OUTLIERS,
   totalOpportunities: TEST_NUM_OPPORTUNITIES,
+  eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
   almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
+  eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+  almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
 };
 
 function testSendFacilitiesLinestaffEmails() {
@@ -115,6 +129,10 @@ function testGetUserLoginInfo() {
   console.log("Successfully fetched login information:", userLoginInfo);
 }
 
+function testParseClientsByOpportunity() {
+  testParseClientsByOpportunity_(SUPERVISION_LINESTAFF_QUERY);
+}
+
 // =============================================================================
 // Private functions, indicated by the underscore at the end of the name, will not
 // show up in the Apps Script UI.
@@ -154,4 +172,24 @@ function testQuery_(query) {
     `Found ${data.length} users with opportunities/outliers. Sample:`
   );
   console.log(data.slice(0, 20));
+}
+
+function testParseClientsByOpportunity_(query) {
+  console.log("Query: ");
+  console.log(query);
+  console.log("Running query...");
+  const data = RecidivizHelpers.runQuery(query);
+  if (!data) {
+    console.log("Found no data.");
+    return;
+  }
+
+  const sampleData = data.slice(0, 20);
+  const parsedData = sampleData.map((row) => {
+    stateCode = row[0];
+    column = row[9];
+    return parseClientsByOpportunity(stateCode, column);
+  });
+  console.log("Sample of parsed data:");
+  console.log(parsedData);
 }

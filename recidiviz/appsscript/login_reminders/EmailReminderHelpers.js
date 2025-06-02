@@ -52,6 +52,129 @@ const EMAIL_SETTINGS = {
 
 /**
  * @param {string} stateCode the state of the person being emailed
+ * @returns an object that maps task completion events with the state-specific
+ * human-readable opportunity name, with type
+ * {
+ *  [event: string]: string
+ * }
+ */
+function stateSpecificOpportunities(stateCode) {
+  switch (stateCode) {
+    case "US_IX":
+      return {
+        EARLY_DISCHARGE: "Earned Discharge",
+        TRANSFER_TO_LIMITED_SUPERVISION: "Limited Supervision Unit",
+        FULL_TERM_DISCHARGE: "Release from Supervision",
+        SUPERVISION_LEVEL_DOWNGRADE: "Supervision Level Mismatch",
+      };
+    case "US_ME":
+      return {
+        EARLY_DISCHARGE: "Early Termination",
+      };
+    case "US_MI":
+      return {
+        SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE:
+          "Classification Review",
+        EARLY_DISCHARGE: "Early Discharge",
+        TRANSFER_TO_LIMITED_SUPERVISION: "Minimum Telephone Reporting",
+        FULL_TERM_DISCHARGE: "Overdue for Discharge",
+        SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE:
+          "Supervision Level Mismatch",
+      };
+    case "US_ND":
+      return {
+        EARLY_DISCHARGE: "Early Termination",
+      };
+    case "US_TN":
+      return {
+        TRANSFER_TO_LIMITED_SUPERVISION: "Compliant Reporting",
+        FULL_TERM_DISCHARGE: "Expiration",
+        SUPERVISION_LEVEL_DOWNGRADE: "Supervision Level Downgrade",
+        TRANSFER_TO_NO_CONTACT_PAROLE: "Suspension of Direct Supervision",
+      };
+  }
+}
+
+/**
+ * Parses the clients by opportunity data into a simpler format because BQ
+ * returns it in a deeply nested/hard to work with format. Also filters out
+ * opportunities without any eligible clients.
+ * @param {string} stateCode the state of the person being emailed
+ * @param {array} structArray an array of structs representing the number of clients
+ * by opportunity
+ * @returns an object with state-specific opportunity names and number of clients, with type
+ * {
+ *  opportunityName: string;
+ *  numClients: number;
+ * }
+ */
+function parseClientsByOpportunity(stateCode, structArray) {
+  const opportunityTypes = stateSpecificOpportunities(stateCode);
+
+  return structArray
+    .map((struct) => {
+      const values = struct.v.f;
+
+      const typeKey = values[0].v;
+      const label = opportunityTypes[typeKey] || typeKey;
+      const value = parseInt(values[1].v);
+
+      return {
+        opportunityName: label,
+        numClients: value,
+      };
+    })
+    .filter((item) => item.numClients !== 0);
+}
+
+/**
+ * Logic to determine whether to use plural or singular verb/noun.
+ * @param {number} count the number of nouns
+ * @param {string} noun the name of the noun to pluralize
+ * @returns an object with with type
+ * {
+ *  verb: string;
+ *  pluralNoun: string;
+ * }
+ */
+function pluralize(count, noun = "client") {
+  const verb = count === 1 ? "is" : "are";
+  const pluralNoun = count === 1 ? noun : `${noun}s`;
+  return { verb, pluralNoun };
+}
+
+/**
+ * @param {array} eligibleClients the opportunities with eligible clients
+ * @param {array} almostEligibleClients the opportunities with almost eligible clients
+ * @returns an array of strings with opportunity-specific text
+ */
+function generateOpportunitySpecificText(eligibleClients, almostEligibleClients) {
+  const opportunityNames = new Set([
+    ...eligibleClients.map(c => c.opportunityName),
+    ...almostEligibleClients.map(c => c.opportunityName),
+  ]);
+
+  return Array.from(opportunityNames).map((opportunityName) => {
+    const numEligible = eligibleClients.find(o => o.opportunityName === opportunityName)?.numClients;
+    const numAlmostEligible = almostEligibleClients.find(o => o.opportunityName === opportunityName)?.numClients;
+
+    const eligible = pluralize(numEligible);
+    const almost = pluralize(numAlmostEligible);
+    
+    if (numEligible && numAlmostEligible) {
+      return `There ${eligible.verb} ${numEligible} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}. There ${almost.verb} ${numAlmostEligible} additional ${almost.pluralNoun} who ${almost.verb} almost eligible for ${opportunityName}.`;
+    } else if (numEligible && !numAlmostEligible) {
+      return `There ${eligible.verb} ${numEligible} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}.`;
+    } else if (!numEligible && numAlmostEligible) {
+      return `There ${almost.verb} ${numAlmostEligible} ${almost.pluralNoun} under your supervision who ${almost.verb} almost eligible for ${opportunityName}.`;
+    } else {
+      return "";
+    }
+  });
+}
+
+/**
+ * @param {string} stateCode the state of the person being emailed
  * @param {number} totalOpportunities the sum of almost eligible and eligible opportunities
  * @param {number} almostEligibleOpportunities the number of almost eligible opportunities
  * @param {number} totalOutliers the number of outliers surfaced for them
@@ -68,8 +191,13 @@ function stateSpecificText(
   stateCode,
   totalOpportunities,
   almostEligibleOpportunities,
-  totalOutliers
+  totalOutliers,
+  eligibleClientsByOpportunity,
+  almostEligibleClientsByOpportunity
 ) {
+  const supervisionOpportunitySpecificText =
+    generateOpportunitySpecificText(eligibleClientsByOpportunity, almostEligibleClientsByOpportunity);
+
   // Note: Many states are in multiple timezones. We use the zone with more people.
   switch (stateCode) {
     case "US_IX":
@@ -77,6 +205,7 @@ function stateSpecificText(
         toolName: "the P&P Assistant Tool",
         timeZone: "America/Boise",
         supervisionOpportunitiesText: `There are ${totalOpportunities} potential opportunities for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
+        supervisionOpportunitySpecificText,
         outliersText: `${totalOutliers} of your officers have been flagged as having very high absconsion or incarceration rates.`,
       };
     case "US_ME":
@@ -84,12 +213,14 @@ function stateSpecificText(
         toolName: "the Recidiviz tool",
         timeZone: "America/New_York",
         supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
+        supervisionOpportunitySpecificText,
       };
     case "US_MI":
       return {
         toolName: "Recidiviz",
         timeZone: "America/Detroit",
         supervisionOpportunitiesText: `There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as early discharge or classification review.`,
+        supervisionOpportunitySpecificText,
         outliersText: `${totalOutliers} of your agents have been flagged as having very high absconder warrant or incarceration rates.`,
       };
     case "US_ND":
@@ -97,6 +228,7 @@ function stateSpecificText(
         toolName: "the Recidiviz early termination tool",
         timeZone: "America/Chicago",
         supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
+        supervisionOpportunitySpecificText,
       };
     case "US_PA":
       return {
@@ -109,6 +241,7 @@ function stateSpecificText(
         toolName: "the Compliant Reporting Recidiviz Tool",
         timeZone: "America/Chicago",
         supervisionOpportunitiesText: `There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as compliant reporting or supervision level downgrade.`,
+        supervisionOpportunitySpecificText,
       };
     case "US_AZ":
       return {
@@ -128,7 +261,10 @@ function buildLoginReminderBody(info, userType, settings) {
     name,
     outliers,
     totalOpportunities,
+    eligibleOpportunities,
     almostEligibleOpportunities,
+    eligibleClientsByOpportunity,
+    almostEligibleClientsByOpportunity
   } = info;
   const { RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL } = settings;
   const isSupervisors = userType === SUPERVISORS;
@@ -138,11 +274,14 @@ function buildLoginReminderBody(info, userType, settings) {
     supervisionOpportunitiesText,
     facilitiesOpportunitiesText,
     outliersText,
+    supervisionOpportunitySpecificText,
   } = stateSpecificText(
     stateCode,
     totalOpportunities,
     almostEligibleOpportunities,
-    outliers
+    outliers,
+    eligibleClientsByOpportunity,
+    almostEligibleClientsByOpportunity
   );
 
   const now = new Date();
@@ -159,31 +298,42 @@ function buildLoginReminderBody(info, userType, settings) {
     timeZone,
     month: "long",
   });
-  const facilitiesOpportunitiesBulletPoint =
-    facilitiesOpportunitiesText && totalOpportunities > 0
-      ? `<li>${facilitiesOpportunitiesText}</li>`
+
+  let bulletPoints = "";
+  let additionalContent = "";
+
+  if (userType === SUPERVISION_LINESTAFF) {
+    if (supervisionOpportunitySpecificText && totalOpportunities > 0) {
+      bulletPoints = supervisionOpportunitySpecificText
+        .map(text => `<li>${text}</li>`)
+        .join("");
+        
+      const eligible = pluralize(eligibleOpportunities);
+      const almost = pluralize(almostEligibleOpportunities);
+      additionalContent = `There ${eligible.verb} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.pluralNoun} almost eligible for opportunities.<br><br>`;
+    }
+  } else if (userType === FACILITIES_LINESTAFF) {
+    if (facilitiesOpportunitiesText && totalOpportunities > 0) {
+      bulletPoints = `<li>${facilitiesOpportunitiesText}</li>`;
+    }
+  } else if (isSupervisors) {
+    const outliersBulletPoint = outliersText && outliers > 0 
+      ? `<li>${outliersText}</li>` 
       : "";
-  const supervisionOpportunitiesBulletPoint =
-    supervisionOpportunitiesText && totalOpportunities > 0
-      ? `<li>${supervisionOpportunitiesText}</li>`
+    const supervisionBulletPoint = supervisionOpportunitiesText && totalOpportunities > 0 
+      ? `<li>${supervisionOpportunitiesText}</li>` 
       : "";
-  const opportunitiesBulletPoint =
-    userType === FACILITIES_LINESTAFF
-      ? facilitiesOpportunitiesBulletPoint
-      : supervisionOpportunitiesBulletPoint;
-  const outliersBulletPoint =
-    outliersText && isSupervisors && outliers > 0
-      ? `<li>${outliersText}</li>`
-      : "";
+    bulletPoints = outliersBulletPoint + supervisionBulletPoint;
+  }
 
   return (
     `Hi ${name},<br><br>` +
     `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>` +
     `As of ${formattedDate}:<br>` +
     "<ul>" +
-    outliersBulletPoint +
-    opportunitiesBulletPoint +
+    bulletPoints +
     "</ul>" +
+    additionalContent +
     `<a href="${RECIDIVIZ_LINK}">${RECIDIVIZ_LINK_TEXT}</a><br><br>` +
     "Thank you for your dedication, and we look forward to seeing you back on Recidiviz soon!<br><br>" +
     "Best,<br>" +
@@ -318,6 +468,12 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
         eligibleOpportunities: parseInt(row[6]),
         almostEligibleOpportunities: parseInt(row[7]),
         outliers: isSupervisors ? parseInt(row[8]) : 0,
+        eligibleClientsByOpportunity: isSupervisors
+          ? []
+          : parseClientsByOpportunity(row[0], row[8]),
+        almostEligibleClientsByOpportunity: isSupervisors
+          ? []
+          : parseClientsByOpportunity(row[0], row[9]),
       },
     ])
   );

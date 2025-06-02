@@ -41,7 +41,9 @@ const SUPERVISION_LINESTAFF_QUERY = `SELECT
   location_name,
   total_opportunities,
   eligible_opportunities,
-  almost_eligible_opportunities
+  almost_eligible_opportunities,
+  eligible_clients_by_opportunity,
+  almost_eligible_clients_by_opportunity
 FROM
   \`recidiviz-123.user_metrics.workflows_supervision_user_available_actions_materialized\`
 WHERE
