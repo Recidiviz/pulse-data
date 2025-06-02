@@ -18,8 +18,8 @@ import { FormInstance } from "antd";
 
 import { Route, StateUserPermissionsResponse } from "../../types";
 import {
+  INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
-  OUTLIERS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
@@ -98,11 +98,11 @@ export const CustomPermissionsPanel = ({
       selectedUsers={selectedUsers}
     />
 
-    <h4>Outliers:</h4>
+    <h4>Supervisor Homepage (Insights):</h4>
     <PermissionSelect
       permission={{
         name: "insights",
-        label: OUTLIERS_PERMISSIONS_LABELS.insights,
+        label: INSIGHTS_PERMISSIONS_LABELS.insights,
       }}
       disabled={hidePermissions}
       placeholder={
@@ -115,7 +115,7 @@ export const CustomPermissionsPanel = ({
         ({ getFieldValue }) => ({
           // require an explicit value to ensure no conflict with this field
           required: getFieldValue("insights_supervision_supervisors-list"),
-          message: `${OUTLIERS_PERMISSIONS_LABELS.insights} is required when ${OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} is enabled`,
+          message: `${INSIGHTS_PERMISSIONS_LABELS.insights} is required when ${INSIGHTS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} is enabled`,
         }),
       ]}
     />
@@ -124,7 +124,7 @@ export const CustomPermissionsPanel = ({
       permission={{
         name: "insights_supervision_supervisors-list",
         label:
-          OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"],
+          INSIGHTS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"],
       }}
       disabled={hidePermissions}
       placeholder={
@@ -146,7 +146,7 @@ export const CustomPermissionsPanel = ({
             if (getFieldValue("insights") === false && value !== false) {
               return Promise.reject(
                 new Error(
-                  `${OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} must be False if ${OUTLIERS_PERMISSIONS_LABELS.insights} is False`
+                  `${INSIGHTS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} must be False if ${INSIGHTS_PERMISSIONS_LABELS.insights} is False`
                 )
               );
             }

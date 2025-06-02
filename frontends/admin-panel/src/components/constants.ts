@@ -33,9 +33,10 @@ export const VITALS_PERMISSIONS_LABELS = {
   operations: "Vitals",
 };
 
-export const OUTLIERS_PERMISSIONS_LABELS = {
-  insights: "Outliers",
-  "insights_supervision_supervisors-list": "Outliers Leadership Navigator",
+export const INSIGHTS_PERMISSIONS_LABELS = {
+  insights: "Supervisor Homepage (Insights)",
+  "insights_supervision_supervisors-list":
+    "Supervisor Homepage Leadership Navigator",
 };
 
 export const PATHWAYS_PERMISSIONS_LABELS = {
@@ -59,7 +60,7 @@ export const LANTERN_PERMISSIONS_LABELS = {
 export const ROUTES_PERMISSIONS_LABELS = {
   ...WORKFLOWS_PERMISSIONS_LABELS,
   ...VITALS_PERMISSIONS_LABELS,
-  ...OUTLIERS_PERMISSIONS_LABELS,
+  ...INSIGHTS_PERMISSIONS_LABELS,
   ...PATHWAYS_PERMISSIONS_LABELS,
   ...PSI_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
