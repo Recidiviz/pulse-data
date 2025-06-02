@@ -280,6 +280,13 @@ def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
     if expected_insights_bucket != f"gs://{actual_bucket_id}":
         error_str = f"loadDemoDataIntoInsights is {load_demo_data_into_insights} but triggering notification is from bucket {actual_bucket_id}"
         logging.error(error_str)
+        if load_demo_data_into_insights:
+            # If we're planning on loading demo data in, then we expect that the regular exports
+            # would still get triggered daily and reach this point- return OK so the pub/sub
+            # message is acked.
+            return error_str, HTTPStatus.OK
+        # If we weren't planning on loading demo data in and we got data in that bucket, return an
+        # error so we find out about it.
         return error_str, HTTPStatus.BAD_REQUEST
 
     try:

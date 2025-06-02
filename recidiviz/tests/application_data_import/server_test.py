@@ -531,7 +531,7 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
                 b"loadDemoDataIntoInsights is True but triggering notification is from bucket test-project-insights-etl-data",
                 response.data,
             )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
 
     def test_import_trigger_insights_invalid_object(self) -> None:
         with self.app.test_request_context():
