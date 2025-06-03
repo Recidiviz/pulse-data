@@ -72,6 +72,7 @@ class ViewManagerTest(unittest.TestCase):
             view: BigQueryView,
             # pylint: disable=unused-argument
             use_query_cache: bool,
+            view_configuration_changed: bool,
             job_labels: Optional[list[ResourceLabel]] = None,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(
@@ -190,6 +191,19 @@ class ViewManagerTest(unittest.TestCase):
         ]
 
         def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            schema = [bigquery.SchemaField("some_field", "STRING", "REQUIRED")]
+
+            if address in {
+                mock_view_builders[0].materialized_address,
+                mock_view_builders[1].materialized_address,
+                mock_view_builders[2].materialized_address,
+            }:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                )
+
             if mock_view_builders[0].view_id == address.table_id:
                 view_builder = mock_view_builders[0]
             elif mock_view_builders[1].view_id == address.table_id:
@@ -201,7 +215,7 @@ class ViewManagerTest(unittest.TestCase):
             view = view_builder.build()
             return mock.MagicMock(
                 view_query=view.view_query,
-                schema=[bigquery.SchemaField("some_field", "STRING", "REQUIRED")],
+                schema=schema,
                 clustering_fields=None,
                 time_partitioning=None,
             )
@@ -296,6 +310,19 @@ class ViewManagerTest(unittest.TestCase):
         ]
 
         def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            schema = [bigquery.SchemaField("some_field", "STRING", "REQUIRED")]
+
+            if address in {
+                mock_view_builders[0].materialized_address,
+                mock_view_builders[1].materialized_address,
+                mock_view_builders[2].materialized_address,
+            }:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                )
+
             if mock_view_builders[0].view_id == address.table_id:
                 view_builder = mock_view_builders[0]
             elif mock_view_builders[1].view_id == address.table_id:
@@ -312,7 +339,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query = "SELECT 1 LIMIT 0"
             return mock.MagicMock(
                 view_query=view_query,
-                schema=[bigquery.SchemaField("some_field", "STRING", "REQUIRED")],
+                schema=schema,
             )
 
         # Create/Update returns the table that was already there
@@ -354,9 +381,17 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
                 # This view was updated
-                mock.call(view=mock_view_builders[1].build(), use_query_cache=True),
+                mock.call(
+                    view=mock_view_builders[1].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
                 # Child view of updated view is also materialized
-                mock.call(view=mock_view_builders[2].build(), use_query_cache=True),
+                mock.call(
+                    view=mock_view_builders[2].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
             ],
             any_order=True,
         )
@@ -553,6 +588,7 @@ class ViewManagerTest(unittest.TestCase):
                         sandbox_context=expected_sandbox_context
                     ),
                     use_query_cache=True,
+                    view_configuration_changed=True,
                 )
             ],
             any_order=True,

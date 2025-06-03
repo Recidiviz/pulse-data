@@ -827,6 +827,7 @@ class BigQueryClient:
         self,
         view: BigQueryView,
         use_query_cache: bool,
+        view_configuration_changed: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
     ) -> BigQueryViewMaterializationResult:
         """Materializes the result of a view's view_query into a table and applies row-level permissions
@@ -840,6 +841,9 @@ class BigQueryClient:
             view: The BigQueryView to materialize into a table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            view_configuration_changed: Whether the view configuration changed since the last materialization.
+                If True, the materialized table will be fully deleted and recreated (wiping things like row-level permissions).
+                If False, the data will just be dropped and overwritten.
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
         """
 
@@ -1293,7 +1297,18 @@ class BigQueryClientImpl(BigQueryClient):
             if existing_policies and row_access_policy_lists_are_equivalent(
                 existing_policies, access_policies
             ):
+                logging.info(
+                    "No changes to row-level permissions for table [%s.%s]",
+                    table.dataset_id,
+                    table.table_id,
+                )
                 return
+            if not existing_policies:
+                logging.info(
+                    "No existing row-level permissions for table [%s.%s]",
+                    table.dataset_id,
+                    table.table_id,
+                )
         except Exception as e:
             logging.warning(
                 "Failed to list row level permissions for table [%s.%s]: %s",
@@ -1321,6 +1336,11 @@ class BigQueryClientImpl(BigQueryClient):
             predicate=lambda e: isinstance(e, exceptions.BadRequest)
         )
         job.result(retry=retry_policy)
+        logging.info(
+            "Applied row-level permissions for table [%s.%s]",
+            table.dataset_id,
+            table.table_id,
+        )
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
@@ -1926,13 +1946,13 @@ class BigQueryClientImpl(BigQueryClient):
         destination_address: BigQueryAddress,
         query: str,
         write_disposition: str,
-        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]],
         allow_field_additions: bool = False,
-        clustering_fields: Optional[List[str]] = None,
-        time_partitioning: bigquery.TimePartitioning | None = None,
+        clustering_fields: Optional[List[str]],
+        time_partitioning: bigquery.TimePartitioning | None,
         use_query_cache: bool,
-        job_labels: Optional[list[ResourceLabel]] = None,
-        output_schema: Optional[list[bigquery.SchemaField]] = None,
+        job_labels: Optional[list[ResourceLabel]],
+        output_schema: Optional[list[bigquery.SchemaField]],
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -2044,7 +2064,9 @@ class BigQueryClientImpl(BigQueryClient):
             ]
 
         logging.info(
-            "Inserting into table [%s] result of query", destination_address.to_str()
+            "Inserting into table [%s] result of query (%s)",
+            destination_address.to_str(),
+            write_disposition,
         )
 
         return self.client.query(
@@ -2075,6 +2097,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
+            output_schema=None,
         )
 
     def insert_into_table_from_query(
@@ -2100,6 +2123,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
+            output_schema=None,
         )
         try:
             result = query_job.result()
@@ -2220,6 +2244,7 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         view: BigQueryView,
         use_query_cache: bool,
+        view_configuration_changed: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
     ) -> BigQueryViewMaterializationResult:
         if view.materialized_address is None:
@@ -2235,17 +2260,23 @@ class BigQueryClientImpl(BigQueryClient):
             destination_address.to_str(),
         )
 
-        create_job = self.create_table_from_query_async(
-            address=view.materialized_address,
+        write_disposition = (
+            bigquery.job.WriteDisposition.WRITE_TRUNCATE
+            if view_configuration_changed
+            else bigquery.job.WriteDisposition.WRITE_TRUNCATE_DATA
+        )
+        materialize_job = self._insert_into_table_from_query_async(
+            destination_address=view.materialized_address,
             query=view.direct_select_query,
-            overwrite=True,
+            query_parameters=None,
+            write_disposition=write_disposition,
             clustering_fields=view.clustering_fields,
             time_partitioning=view.time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
             output_schema=view.materialized_table_schema,
         )
-        create_job.result()
+        materialize_job.result()
 
         table = self.get_table(destination_address)
         try:
@@ -2262,7 +2293,7 @@ class BigQueryClientImpl(BigQueryClient):
             return BigQueryViewMaterializationResult(
                 view_address=view.address,
                 materialized_table=table,
-                completed_materialization_job=create_job,
+                completed_materialization_job=materialize_job,
             )
 
         # Grab a new table reference after applying row level permissions for the new update
@@ -2275,7 +2306,7 @@ class BigQueryClientImpl(BigQueryClient):
         return BigQueryViewMaterializationResult(
             view_address=view.address,
             materialized_table=updated_table,
-            completed_materialization_job=create_job,
+            completed_materialization_job=materialize_job,
         )
 
     def create_table_with_schema(

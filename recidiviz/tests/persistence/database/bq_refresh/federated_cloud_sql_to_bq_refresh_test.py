@@ -80,6 +80,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             view: BigQueryView,
             # pylint: disable=unused-argument
             use_query_cache: bool,
+            view_configuration_changed: bool,
             job_labels: Optional[list[ResourceLabel]] = None,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(

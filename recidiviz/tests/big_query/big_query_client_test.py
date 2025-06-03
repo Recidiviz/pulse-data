@@ -1372,7 +1372,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.return_value = mock_table
 
         self.bq_client.materialize_view_to_table(
-            view=self.mock_view, use_query_cache=False
+            view=self.mock_view, use_query_cache=False, view_configuration_changed=True
         )
 
         expected_job_config_matcher = MaterializeTableJobConfigMatcher(
@@ -1417,7 +1417,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             ),
         ).build()
 
-        self.bq_client.materialize_view_to_table(view=mock_view, use_query_cache=False)
+        self.bq_client.materialize_view_to_table(
+            view=mock_view, use_query_cache=False, view_configuration_changed=True
+        )
 
         expected_job_config_matcher = MaterializeTableJobConfigMatcher(
             expected_destination="fake-recidiviz-project.custom_dataset.custom_view"
@@ -1453,7 +1455,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Trying to materialize a view that does not have a set materialized_address.",
         ):
             self.bq_client.materialize_view_to_table(
-                view=invalid_view, use_query_cache=False
+                view=invalid_view,
+                use_query_cache=False,
+                view_configuration_changed=True,
             )
         self.mock_client.query.assert_not_called()
 
@@ -1490,7 +1494,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_table.side_effect = create_side_effect
 
         self.bq_client.materialize_view_to_table(
-            view=self.mock_view, use_query_cache=False
+            view=self.mock_view, use_query_cache=False, view_configuration_changed=True
         )
 
         # Should have deleted the table, recreated it, and then run the query with WRITE_APPEND

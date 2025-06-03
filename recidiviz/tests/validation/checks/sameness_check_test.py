@@ -409,7 +409,9 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
     def _create_view(self, view: BigQueryView) -> None:
         self.bq_client.create_or_update_view(view)
         if view.materialized_address:
-            self.bq_client.materialize_view_to_table(view, use_query_cache=True)
+            self.bq_client.materialize_view_to_table(
+                view, use_query_cache=True, view_configuration_changed=True
+            )
 
     def tearDown(self) -> None:
         for dataset in self.bq_client.list_datasets():
@@ -901,7 +903,9 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
         )
         view = view_builder.build()
         self.bq_client.create_or_update_view(view)
-        self.bq_client.materialize_view_to_table(view, use_query_cache=True)
+        self.bq_client.materialize_view_to_table(
+            view, use_query_cache=True, view_configuration_changed=True
+        )
         return view_builder
 
     def _check_error_view_returns_expected_values(

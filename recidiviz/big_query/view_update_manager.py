@@ -340,6 +340,13 @@ def _create_or_update_view_and_materialize_if_necessary(
         except exceptions.NotFound:
             pass
 
+    existing_materialized_table = None
+    if might_exist and view.materialized_address:
+        try:
+            existing_materialized_table = bq_client.get_table(view.materialized_address)
+        except exceptions.NotFound:
+            pass
+
     # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to
     # delete and recreate the view for changes from underlying tables to be reflected in
     # its schema.
@@ -354,19 +361,26 @@ def _create_or_update_view_and_materialize_if_necessary(
 
     updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
 
+    view_configuration_changed = (
+        existing_view is None
+        # Update the view if clustering fields have changed
+        or existing_view.clustering_fields != updated_view.clustering_fields
+        # Update the view if time partitioning configuration has changed
+        or existing_view.time_partitioning != updated_view.time_partitioning
+        # We also check for schema changes, just in case a parent view or table has
+        # added a column
+        or existing_view.schema != updated_view.schema
+        or existing_materialized_table is None
+        # If the updated view's schema doesn't match the materialized table's data,
+        # we're also in a state where schema changes haven't been fully reflected.
+        or updated_view.schema != existing_materialized_table.schema
+    )
+
     view_changed = (
         existing_view is None
-        or (
-            # If the view query has changed, the view has changed
-            existing_view.view_query != updated_view.view_query
-            # Also update the view if clustering fields have changed
-            or existing_view.clustering_fields != updated_view.clustering_fields
-            # Also update the view if time partitioning configuration has changed
-            or existing_view.time_partitioning != updated_view.time_partitioning
-            # We also check for schema changes, just in case a parent view or table has
-            # added a column
-            or existing_view.schema != updated_view.schema
-        )
+        # If the view query has changed, the view has changed
+        or existing_view.view_query != updated_view.view_query
+        or view_configuration_changed
         or parent_changed
     )
 
@@ -378,7 +392,9 @@ def _create_or_update_view_and_materialize_if_necessary(
             or not bq_client.table_exists(view.materialized_address)
         ):
             materialization_result = bq_client.materialize_view_to_table(
-                view=view, use_query_cache=True
+                view=view,
+                use_query_cache=True,
+                view_configuration_changed=view_configuration_changed,
             )
         else:
             logging.info(
