@@ -615,7 +615,6 @@ def main() -> int:
                 "recidiviz.auth",
                 "recidiviz.cloud_storage",
                 "recidiviz.monitoring",
-                "recidiviz.reporting",
             }
         ),
     )

@@ -24,7 +24,6 @@ import sentry_sdk
 from flask import Flask, Response, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -33,7 +32,6 @@ from recidiviz.justice_counts.control_panel.error_handlers import (
     register_error_handlers,
 )
 from recidiviz.justice_counts.control_panel.routes.admin import get_admin_blueprint
-from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.justice_counts.control_panel.utils import (
     initialize_flask_server_debugger,
@@ -106,29 +104,11 @@ def create_app(config: Optional[Config] = None) -> Flask:
     config = config or Config()
     app.config.from_object(config)
     app.secret_key = get_secret("justice_counts_secret_key")
-    csrf = CSRFProtect(app)
-    recidiviz_service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL", "")
-    justice_counts_service_account_email = os.getenv(
-        "JUSTICE_COUNTS_SERVICE_ACCOUNT_EMAIL", ""
-    )
     setup_scoped_sessions(
         app=app,
         schema_type=config.SCHEMA_TYPE,
         database_url_override=config.DB_URL,
         secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-    )
-    app.register_blueprint(
-        get_api_blueprint(
-            auth_decorator=config.AUTH_DECORATOR,
-            auth0_client=config.AUTH0_CLIENT,
-            secret_key=app.secret_key,
-            csrf=csrf,
-            service_account_emails={
-                recidiviz_service_account_email,
-                justice_counts_service_account_email,
-            },
-        ),
-        url_prefix="/api",
     )
     app.register_blueprint(
         get_auth_blueprint(

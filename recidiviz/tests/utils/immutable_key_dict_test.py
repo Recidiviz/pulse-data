@@ -30,7 +30,7 @@ class TestImmutableKeyDict(unittest.TestCase):
         d["A"] = 1
         d["B"] = 2
         d.update({"C": 3, "D": 4})
-        d.update(E=5)
+        d.update({"E": 5})
         d.update([("F", 6), ("H", 7)])
 
         self.assertEqual({"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6, "H": 7}, d)
@@ -69,9 +69,7 @@ class TestImmutableKeyDict(unittest.TestCase):
         ):
             d.update({"A": 2, "B": 2})
 
-        with self.assertRaisesRegex(
-            KeyError, "Key 'A' already exists and cannot be overwritten."
-        ):
+        with self.assertRaisesRegex(ValueError, r"kwargs not supported in update\(\)"):
             d.update(A=2)
 
         with self.assertRaisesRegex(

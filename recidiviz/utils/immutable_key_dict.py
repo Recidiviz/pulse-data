@@ -60,6 +60,5 @@ class ImmutableKeyDict(Generic[KT, VT], dict[KT, VT]):
                     f"update() argument must be a mapping or iterable, not {type(arg)}"
                 )
 
-        # Process keyword arguments
-        for key, value in kwargs.items():
-            self[key] = value
+        if kwargs:
+            raise ValueError("kwargs not supported in update()")
