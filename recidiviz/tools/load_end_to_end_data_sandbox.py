@@ -157,9 +157,10 @@ def _build_sandbox_post_ingest_pipeline_params(
     """Builds parameters for a single pipeline that will read from the output of the
     sandbox ingest pipeline with the provided parameters.
     """
-
+    state_code = StateCode(sandbox_ingest_pipeline_params.state_code)
     standard_params = params_cls(
         project=sandbox_ingest_pipeline_params.project,
+        region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
         **pipeline_config_dict.get(),  # type: ignore
     )
     pipeline_cls = pipeline_cls_for_pipeline_name(standard_params.pipeline)
@@ -184,6 +185,7 @@ def _build_sandbox_post_ingest_pipeline_params(
     }
     sandbox_params = params_cls(
         project=sandbox_ingest_pipeline_params.project,
+        region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
         sandbox_username=sandbox_ingest_pipeline_params.sandbox_username,
         output_sandbox_prefix=sandbox_ingest_pipeline_params.output_sandbox_prefix,
         input_dataset_overrides_json=json.dumps(valid_input_overrides),

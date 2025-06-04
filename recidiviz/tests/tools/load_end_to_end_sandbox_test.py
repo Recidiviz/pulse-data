@@ -32,6 +32,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
@@ -51,6 +54,12 @@ from recidiviz.tools.load_end_to_end_data_sandbox import (
     get_view_update_input_dataset_overrides_dict,
 )
 from recidiviz.utils.metadata import local_project_id_override
+
+FAKE_DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE = {
+    **DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+    StateCode.US_XX: "us-east1",
+    StateCode.US_YY: "us-west1",
+}
 
 
 class _TestMetricPipeline(MetricPipeline):
@@ -126,6 +135,12 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
         )
         self.pipeline_config_patcher.start()
 
+        self.default_regions_patcher = mock.patch(
+            "recidiviz.tools.load_end_to_end_data_sandbox.DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE",
+            FAKE_DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+        )
+        self.default_regions_patcher.start()
+
         self.pipeline_cls_for_name_patcher = mock.patch(
             "recidiviz.tools.load_end_to_end_data_sandbox.pipeline_cls_for_pipeline_name",
             fake_pipeline_cls_for_pipeline_name,
@@ -156,6 +171,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.pipeline_config_patcher.stop()
+        self.default_regions_patcher.stop()
         self.pipeline_cls_for_name_patcher.stop()
 
     def test_get_sandbox_post_ingest_pipeline_params_us_xx(self) -> None:
@@ -177,7 +193,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 output_sandbox_prefix="my_prefix",
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
-                region="us-west1",
+                region="us-east1",
                 worker_zone=ANY,
                 metric_types="METRIC_1",
             ),
@@ -215,7 +231,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 output_sandbox_prefix="my_prefix",
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
-                region="us-east1",
+                region="us-west1",
                 worker_zone=ANY,
                 metric_types="METRIC_2 METRIC_3",
                 calculation_month_count=24,
@@ -227,7 +243,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 output_sandbox_prefix="my_prefix",
                 sandbox_username="my_username",
                 input_dataset_overrides_json=expected_input_dataset_overrides_json,
-                region="us-east1",
+                region="us-west1",
                 worker_zone=ANY,
                 staging_only=True,
                 metric_types="METRIC_3",
@@ -242,7 +258,7 @@ class TestGetSandboxPostIngestPipelineParams(unittest.TestCase):
                 # This pipeline does not read from any of the ingest outputs so we have
                 # empty input overrides.
                 input_dataset_overrides_json=json.dumps({}),
-                region="us-east1",
+                region="us-west1",
                 worker_zone=ANY,
             ),
         ]

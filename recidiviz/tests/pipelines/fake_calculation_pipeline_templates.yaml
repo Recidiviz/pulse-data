@@ -1,45 +1,30 @@
 # Mock file to test utils that reference the calculation_pipeline_templates.yaml
 # file
-
-normalization_pipelines:
-  # US_XX entity normalization pipeline
-  - pipeline: normalization_pipeline
-    state_code: US_XX
-    region: us-west1
-  - pipeline: normalization_pipeline_2
-    state_code: US_YY
-    region: us-east2
-
 metric_pipelines:
   # Full US_XX calculations with no time limit
   - pipeline: pipeline_no_limit
     state_code: US_XX
     metric_types: METRIC_1
-    region: us-west1
 
   # Daily US_XX calculations
   - pipeline: pipeline_with_limit
     state_code: US_XX
     calculation_month_count: 36
     metric_types: METRIC_2 METRIC_3
-    region: us-east1
 
   # Daily US_YY calculations
   - pipeline: pipeline_with_limit
     state_code: US_YY
     calculation_month_count: 24
     metric_types: METRIC_2 METRIC_3
-    region: us-east1
 
   # Daily US_YY calculations
   - pipeline: pipeline_staging_only
     state_code: US_YY
     calculation_month_count: 36
     metric_types: METRIC_3
-    region: us-east1
     staging_only: True
 
 supplemental_dataset_pipelines:
   - pipeline: pipeline_to_run_supplemental
     state_code: US_YY
-    region: us-east1

@@ -22,7 +22,11 @@ from typing import Any, List, Type
 import attr
 
 import recidiviz
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
@@ -71,7 +75,12 @@ class TestValidPipelineParameters(unittest.TestCase):
 
         for pipeline in metric_pipelines:
             d: dict[str, Any] = pipeline.get()
-            parameters = MetricsPipelineParameters(project=self.PROJECT_ID, **d)
+            state_code = StateCode(pipeline.peek("state_code", str))
+            parameters = MetricsPipelineParameters(
+                project=self.PROJECT_ID,
+                region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
+                **d,
+            )
             self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
 
     def test_supplemental_pipelines_for_valid_parameters(self) -> None:
@@ -81,7 +90,13 @@ class TestValidPipelineParameters(unittest.TestCase):
 
         for pipeline in supplemental_pipelines:
             d: dict[str, Any] = pipeline.get()
-            parameters = SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
+            state_code = StateCode(pipeline.peek("state_code", str))
+
+            parameters = SupplementalPipelineParameters(
+                project=self.PROJECT_ID,
+                region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
+                **d,
+            )
             self.assertIn(parameters.worker_zone, C4A_MACHINE_TYPE_AVAILABILITY)
 
     def test_valid_get_input_dataset_property_names(self) -> None:

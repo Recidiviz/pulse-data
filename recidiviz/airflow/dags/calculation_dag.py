@@ -225,7 +225,9 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
                 state_code.value, {}
             ):
                 metric_pipeline_group = build_dataflow_pipeline_task_group(
-                    delegate=MetricsDataflowPipelineTaskGroupDelegate(pipeline_config),
+                    delegate=MetricsDataflowPipelineTaskGroupDelegate(
+                        state_code, pipeline_config
+                    ),
                 )
                 ingest_group >> metric_pipeline_group
 
@@ -234,7 +236,7 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
             ):
                 supplemental_pipeline_group = build_dataflow_pipeline_task_group(
                     delegate=SupplementalDataflowPipelineTaskGroupDelegate(
-                        pipeline_config
+                        state_code, pipeline_config
                     ),
                 )
                 ingest_group >> supplemental_pipeline_group

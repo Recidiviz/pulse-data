@@ -26,6 +26,10 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     UpstreamTaskOutputs,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -37,12 +41,14 @@ class MetricsDataflowPipelineTaskGroupDelegate(
     task groups.
     """
 
-    def __init__(self, pipeline_config: YAMLDict) -> None:
+    def __init__(self, state_code: StateCode, pipeline_config: YAMLDict) -> None:
+        self._state_code = state_code
         self._pipeline_config = pipeline_config
 
     def get_default_parameters(self) -> MetricsPipelineParameters:
         return MetricsPipelineParameters(
             project=get_project_id(),
+            region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[self._state_code],
             **self._pipeline_config.get(),  # type: ignore
         )
 

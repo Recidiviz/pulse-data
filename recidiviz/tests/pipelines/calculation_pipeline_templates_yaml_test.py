@@ -25,6 +25,9 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -45,8 +48,11 @@ class TestConfiguredPipelines(unittest.TestCase):
         metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
         production_pipelines_by_state: Dict[StateCode, List[str]] = defaultdict(list)
         for pipeline in metric_pipelines:
+            state_code = StateCode(pipeline.peek("state_code", str))
+
             pipeline_params = MetricsPipelineParameters(
                 project=GCP_PROJECT_PRODUCTION,
+                region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code],
                 **pipeline.get(),  # type: ignore
             )
             state_code = StateCode(pipeline_params.state_code)
