@@ -1,0 +1,44 @@
+address:
+  dataset_id: google_sheet_backed_tables
+  table_id: feature_variants
+description: "Existing feature variant values being pulled from a Google Sheet."
+schema:
+  - name: feature_variant
+    type: STRING
+    mode: NULLABLE
+    description: Name of the feature variant
+  - name: date_added
+    type: DATE
+    mode: NULLABLE
+    description: Date the feature variant was added to the sheet
+  - name: status
+    type: STRING
+    mode: NULLABLE
+    description: Current status of the feature variant
+  - name: opportunity
+    type: STRING
+    mode: NULLABLE
+    description: The opportunity/product to which the feature variant applies
+  - name: effect
+    type: STRING
+    mode: NULLABLE
+    description: Description of the effect of the feature variant
+  - name: external_users_affected
+    type: STRING
+    mode: NULLABLE
+    description: Number or description of external users affected by the feature variant as of the specified date
+  - name: notes
+    type: STRING
+    mode: NULLABLE
+    description: Other notes or comments regarding the feature variant
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1Nq1SAngNNMiNKnOjNMyI_hl-fd5dr-RrrrfwPsBwMJ4/edit?gid=0#gid=0
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
+  googleSheetsOptions:
+    skipLeadingRows: "1"
+    range: Sheet1

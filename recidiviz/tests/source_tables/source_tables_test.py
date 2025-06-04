@@ -31,6 +31,9 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 COMMON_VESTIGES = [
+    # This table provides a list of active feature variants that will populate dropdown
+    # menus in the admin panel.
+    "google_sheet_backed_tables.feature_variants",
     # These are unused but will be referenced soon in Doppler KPI views.
     #  TODO(#34767): Remove these tracker tables from the list once they're referenced
     #   in downstream views.
