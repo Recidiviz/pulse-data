@@ -18,7 +18,7 @@ COPY ./recidiviz/pipelines/flex_pipeline_runner.py ${WORKDIR}/pipeline_runner.py
 # --no-cache-dir means the pip cache won't be used. Using the pip cache makes the image unnecessarily larger,
 # when the docker cache can be used instead. this flag is needed to prevent worker memory/start up issues
 # we increase the timeout from the default (15s) to avoid 'Connection reset by peer' errors that may be due to a timeout
-RUN pip install --no-cache-dir --timeout=150 apache-beam[gcp]==2.62.0
+RUN pip install --no-cache-dir --timeout=150 apache-beam[gcp]==2.65.0
 RUN pip install --no-cache-dir ${WORKDIR}/.
 
 COPY . ${WORKDIR}

@@ -17,7 +17,7 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = { extras = ["gcp", "test"], version = "==2.62.0" }
+apache-beam = { extras = ["gcp", "test"], version = "==2.65.0" }
 astroid = "*"
 callee = "*"
 debugpy = "*"
@@ -124,8 +124,10 @@ dateparser = "*"
 # TODO(#19995): Remove the <2.0.0 pin
 pandas = "<2.0.0"
 more-itertools = "*"
-opentelemetry-api = "*"
-opentelemetry-sdk = "*"
+# TODO(#43270): Un-pin opentelemetry-* packages once https://github.com/open-telemetry/opentelemetry-python/issues/4615
+#  is resolved.
+opentelemetry-api = "<1.34.0"
+opentelemetry-sdk = "<1.34.0"
 opentelemetry-exporter-gcp-monitoring = "*"
 opentelemetry-exporter-gcp-trace = "*"
 opentelemetry-resourcedetector-gcp = "*"
