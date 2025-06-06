@@ -14,13 +14,6 @@ test_refresh_bq_dataset_task:
 test_validations_task:
   - --entrypoint=ValidationEntrypoint
   - --state_code=US_ND
-  - --ingest_instance=PRIMARY
-
-test_validations_task_secondary:
-  - --entrypoint=ValidationEntrypoint
-  - --state_code=US_ND
-  - --ingest_instance=SECONDARY
-  - --sandbox_prefix=test_prefix
 
 test_trigger_metric_view_data_operator:
   - --entrypoint=MetricViewExportEntrypoint

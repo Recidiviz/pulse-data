@@ -111,7 +111,7 @@ class ValidationResultForStorage:
                 if result.validation_job.sandbox_context
                 else None
             ),
-            ingest_instance=result.validation_job.ingest_instance,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             runtime_seconds=runtime_seconds,
             exception_log=None,
         )
@@ -143,7 +143,7 @@ class ValidationResultForStorage:
                 if job.sandbox_context
                 else None
             ),
-            ingest_instance=job.ingest_instance,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             runtime_seconds=None,
             exception_log=exception_log,
         )

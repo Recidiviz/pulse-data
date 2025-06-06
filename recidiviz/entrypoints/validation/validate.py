@@ -20,7 +20,6 @@ import argparse
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.validation_manager import execute_validation_request
 
 
@@ -37,24 +36,8 @@ class ValidationEntrypoint(EntrypointInterface):
             choices=list(StateCode),
             required=True,
         )
-        parser.add_argument(
-            "--ingest_instance",
-            help="Ingest instance to validate",
-            type=DirectIngestInstance,
-            choices=list(DirectIngestInstance),
-            required=True,
-        )
-        parser.add_argument(
-            "--sandbox_prefix",
-            help="Sandbox prefix to validate",
-            type=str,
-        )
         return parser
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        execute_validation_request(
-            state_code=args.state_code,
-            ingest_instance=args.ingest_instance,
-            sandbox_prefix=args.sandbox_prefix,
-        )
+        execute_validation_request(state_code=args.state_code)

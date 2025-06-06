@@ -28,7 +28,6 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.types import ClsT
 from recidiviz.validation.validation_config import ValidationRegionConfig
@@ -141,18 +140,6 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     # If set, indicates that the validation job should read from views in a sandbox
     # rather than the standard views.
     sandbox_context: BigQueryViewSandboxContext | None = attr.ib(default=None)
-
-    # Optional prefix for which ingest instance was used for the validation
-    ingest_instance: Optional[DirectIngestInstance] = attr.ib(default=None)
-
-    def __attrs_post_init__(self) -> None:
-        if (
-            self.ingest_instance == DirectIngestInstance.SECONDARY
-            and not self.sandbox_context
-        ):
-            raise ValueError(
-                "Must specify sandbox_context when using SECONDARY ingest instance"
-            )
 
     def original_builder_query_str(self) -> str:
         original_table_for_query = self.validation.view_builder.table_for_query

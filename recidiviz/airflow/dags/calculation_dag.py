@@ -41,7 +41,6 @@ from recidiviz.airflow.dags.calculation.dataflow.supplemental_pipeline_task_grou
     SupplementalDataflowPipelineTaskGroupDelegate,
 )
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    INGEST_INSTANCE_JINJA_ARG,
     SANDBOX_PREFIX_JINJA_ARG,
     initialize_calculation_dag_group,
 )
@@ -129,12 +128,7 @@ def execute_validations_operator(state_code: str) -> RecidivizKubernetesPodOpera
     return build_kubernetes_pod_task(
         task_id=f"execute_validations_{state_code}",
         container_name=f"execute_validations_{state_code}",
-        arguments=[
-            "--entrypoint=ValidationEntrypoint",
-            f"--state_code={state_code}",
-            INGEST_INSTANCE_JINJA_ARG,
-            SANDBOX_PREFIX_JINJA_ARG,
-        ],
+        arguments=["--entrypoint=ValidationEntrypoint", f"--state_code={state_code}"],
     )
 
 

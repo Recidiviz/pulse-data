@@ -359,20 +359,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             self.entrypoint_args_fixture["test_validations_task"],
         )
 
-    def test_validations_task_secondary(self) -> None:
-        """Tests that validation triggers the proper endpoint."""
-        from recidiviz.airflow.dags.calculation_dag import execute_validations_operator
-
-        task = execute_validations_operator(state_code="US_ND")
-
-        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
-
-        self.assertEqual(task.task_id, "execute_validations_US_ND")
-        self.assertEqual(
-            task.arguments[4:],
-            self.entrypoint_args_fixture["test_validations_task_secondary"],
-        )
-
     def test_trigger_metric_view_data_operator_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]

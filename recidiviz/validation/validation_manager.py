@@ -32,7 +32,6 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.monitoring import trace
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
@@ -93,21 +92,11 @@ def capture_metrics(
 
 
 @gcp_only
-def execute_validation_request(
-    state_code: StateCode,
-    ingest_instance: DirectIngestInstance,
-    sandbox_prefix: Optional[str] = None,
-) -> None:
-    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
-        raise ValueError(
-            "Sandbox prefix must be specified for secondary ingest instance"
-        )
-
+def execute_validation_request(state_code: StateCode) -> None:
     start_datetime = datetime.datetime.now()
     run_id, num_validations_run = execute_validation(
         region_code=state_code.value,
-        ingest_instance=ingest_instance,
-        sandbox_dataset_prefix=sandbox_prefix,
+        sandbox_dataset_prefix=None,
     )
     end_datetime = datetime.datetime.now()
 
@@ -118,16 +107,15 @@ def execute_validation_request(
         validation_run_id=run_id,
         num_validations_run=num_validations_run,
         validations_runtime_sec=runtime_sec,
-        sandbox_dataset_prefix=sandbox_prefix,
-        ingest_instance=ingest_instance,
+        sandbox_dataset_prefix=None,
     )
 
 
 def execute_validation(
+    *,
     region_code: str,
-    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
-    sandbox_dataset_prefix: Optional[str] = None,
+    sandbox_dataset_prefix: Optional[str],
     file_tickets_on_failure: bool = True,
 ) -> Tuple[str, int]:
     """Executes validation checks for |region_code|.
@@ -145,7 +133,6 @@ def execute_validation(
         region_code=region_code,
         validation_name_filter=validation_name_filter,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        ingest_instance=ingest_instance,
     )
 
     run_datetime = datetime.datetime.now(tz=pytz.UTC)
@@ -228,11 +215,7 @@ def execute_validation(
     logging.info(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
-    if (
-        ingest_instance == DirectIngestInstance.PRIMARY
-        and file_tickets_on_failure
-        and validation_results
-    ):
+    if file_tickets_on_failure and validation_results:
         # Put GitHub filing in a try/except so we don't fail the endpoint completely if we can't
         # talk to GitHub for whatever reason.
         try:
@@ -244,7 +227,6 @@ def execute_validation(
 
 def _get_validations_jobs(
     region_code: str,
-    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJob]:
@@ -265,7 +247,6 @@ def _get_validations_jobs(
         region_code=region_code,
         validation_name_filter=validation_name_filter,
         sandbox_context=sandbox_context,
-        ingest_instance=ingest_instance,
     )
 
 
@@ -313,7 +294,6 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 
 def _fetch_validation_jobs_to_perform(
     region_code: str,
-    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_context: BigQueryViewSandboxContext | None = None,
 ) -> List[DataValidationJob]:
@@ -342,7 +322,6 @@ def _fetch_validation_jobs_to_perform(
                     validation=updated_check,
                     region_code=region_code,
                     sandbox_context=sandbox_context,
-                    ingest_instance=ingest_instance,
                 )
             )
 

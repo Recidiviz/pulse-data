@@ -31,7 +31,6 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 from recidiviz.utils.environment import (
@@ -265,10 +264,7 @@ class TestExecuteValidationRequest(TestCase):
             ),
         )
 
-        execute_validation_request(
-            state_code=StateCode.US_XX,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
+        execute_validation_request(state_code=StateCode.US_XX)
 
         self.assertEqual(5, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
@@ -286,73 +282,8 @@ class TestExecuteValidationRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
-
-    @patch("recidiviz.validation.validation_manager._handle_tickets_for_validations")
-    @patch("recidiviz.validation.validation_manager.capture_metrics")
-    @patch("recidiviz.validation.validation_manager._run_job")
-    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
-    @patch(
-        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
-    )
-    @patch(
-        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
-    )
-    def test_execute_validation_request_happy_path_no_failures_secondary_with_sandbox_prefix(
-        self,
-        mock_store_run_success: MagicMock,
-        mock_store_validation_results: MagicMock,
-        mock_fetch_validations: MagicMock,
-        mock_run_job: MagicMock,
-        mock_capture_metrics: MagicMock,
-        mock_handle_tickets_for_validations: MagicMock,
-    ) -> None:
-        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
-        mock_run_job.return_value = DataValidationJobResult(
-            validation_job=self._TEST_VALIDATIONS[0],
-            result_details=FakeValidationResultDetails(
-                validation_status=ValidationResultStatus.SUCCESS
-            ),
-        )
-
-        execute_validation_request(
-            state_code=StateCode.US_XX,
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            sandbox_prefix="test_prefix",
-        )
-
-        self.assertEqual(5, mock_run_job.call_count)
-        for job in self._TEST_VALIDATIONS:
-            mock_run_job.assert_any_call(job)
-
-        mock_capture_metrics.assert_called_with([], [])
-        mock_handle_tickets_for_validations.assert_not_called()
-        mock_store_validation_results.assert_called_once()
-        ((results,), _kwargs) = mock_store_validation_results.call_args
-        self.assertEqual(5, len(results))
-
-        mock_store_run_success.assert_called_with(
-            state_code=StateCode.US_XX,
-            num_validations_run=5,
-            validations_runtime_sec=mock.ANY,
-            validation_run_id=mock.ANY,
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            sandbox_dataset_prefix="test_prefix",
-        )
-
-    def test_execute_validation_request_should_failure_secondary_with_no_sandbox_prefix(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Sandbox prefix must be specified for secondary ingest instance",
-        ):
-            execute_validation_request(
-                state_code=StateCode.US_XX,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            )
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
     @patch("recidiviz.validation.validation_manager.capture_metrics")
@@ -426,10 +357,7 @@ class TestExecuteValidationRequest(TestCase):
         ]
         logging.basicConfig(level=logging.DEBUG)
 
-        execute_validation_request(
-            state_code=StateCode.US_XX,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
+        execute_validation_request(state_code=StateCode.US_XX)
 
         self.assertEqual(len(self._TEST_VALIDATIONS), mock_run_job.call_count)
 
@@ -449,7 +377,6 @@ class TestExecuteValidationRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
 
@@ -540,10 +467,7 @@ class TestExecuteValidationRequest(TestCase):
             ),
         ]
 
-        execute_validation_request(
-            state_code=StateCode.US_XX,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
+        execute_validation_request(state_code=StateCode.US_XX)
 
         self.assertEqual(5, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
@@ -562,7 +486,6 @@ class TestExecuteValidationRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
 
@@ -602,10 +525,7 @@ class TestExecuteValidationRequest(TestCase):
     ) -> None:
         mock_fetch_validations.return_value = []
 
-        execute_validation_request(
-            state_code=StateCode.US_XX,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
+        execute_validation_request(state_code=StateCode.US_XX)
 
         mock_run_job.assert_not_called()
         mock_capture_metrics.assert_called_with([], [])
@@ -618,7 +538,6 @@ class TestExecuteValidationRequest(TestCase):
             num_validations_run=0,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
 
@@ -673,8 +592,7 @@ class TestExecuteValidationRequest(TestCase):
             ValueError("Job failed to run!"),
         ]
         _ = execute_validation(
-            region_code=StateCode.US_XX.value,
-            ingest_instance=DirectIngestInstance.PRIMARY,
+            region_code=StateCode.US_XX.value, sandbox_dataset_prefix=None
         )
         mock_handle_tickets_for_validations.assert_called()
 
@@ -730,7 +648,7 @@ class TestExecuteValidationRequest(TestCase):
         ]
         _ = execute_validation(
             region_code=StateCode.US_XX.value,
-            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
             file_tickets_on_failure=False,
         )
         mock_handle_tickets_for_validations.assert_not_called()
@@ -786,7 +704,7 @@ class TestFetchValidations(TestCase):
                 len(all_deployed_validations) - num_exclusions_in_staging
             )
             actual_validations_in_staging = _fetch_validation_jobs_to_perform(
-                region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+                region_code=state_code
             )
             self.assertEqual(
                 expected_validations_in_staging, len(actual_validations_in_staging)
@@ -860,7 +778,7 @@ class TestFetchValidations(TestCase):
                 len(all_deployed_validations) - num_exclusions_in_prod
             )
             actual_validations_in_prod = _fetch_validation_jobs_to_perform(
-                region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+                region_code=state_code
             )
             self.assertEqual(
                 expected_validations_in_prod, len(actual_validations_in_prod)
@@ -936,11 +854,7 @@ class TestFetchValidations(TestCase):
 
         actual_jobs = []
         for state_code in region_configs:
-            actual_jobs.extend(
-                _fetch_validation_jobs_to_perform(
-                    state_code, DirectIngestInstance.PRIMARY
-                )
-            )
+            actual_jobs.extend(_fetch_validation_jobs_to_perform(state_code))
 
         expected_jobs = [
             DataValidationJob(
@@ -954,7 +868,6 @@ class TestFetchValidations(TestCase):
                     soft_num_allowed_rows=10,
                 ),
                 region_code="US_XX",
-                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=SamenessDataValidationCheck(
@@ -970,7 +883,6 @@ class TestFetchValidations(TestCase):
                     region_configs=region_configs,
                 ),
                 region_code="US_XX",
-                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=ExistenceDataValidationCheck(
@@ -982,7 +894,6 @@ class TestFetchValidations(TestCase):
                     hard_num_allowed_rows=0,
                 ),  # No override
                 region_code="US_YY",
-                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=SamenessDataValidationCheck(
@@ -998,7 +909,6 @@ class TestFetchValidations(TestCase):
                     region_configs=region_configs,
                 ),
                 region_code="US_YY",
-                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
         ]
         self.assertEqual(expected_jobs, actual_jobs)

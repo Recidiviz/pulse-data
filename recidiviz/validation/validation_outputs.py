@@ -66,7 +66,6 @@ def store_validation_run_completion_in_big_query(
     validation_run_id: str,
     num_validations_run: int,
     validations_runtime_sec: int,
-    ingest_instance: DirectIngestInstance,
     sandbox_dataset_prefix: str | None,
 ) -> None:
     """Persists a row to BQ that indicates that a particular validation run has
@@ -102,7 +101,7 @@ def store_validation_run_completion_in_big_query(
                 "success_timestamp": datetime.datetime.now(tz=pytz.UTC).isoformat(),
                 "num_validations_run": num_validations_run,
                 "validations_runtime_sec": validations_runtime_sec,
-                "ingest_instance": ingest_instance.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
                 "sandbox_dataset_prefix": sandbox_dataset_prefix,
             }
         ]
