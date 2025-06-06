@@ -48,6 +48,7 @@ def trigger_dag_run(dag_id: str, conf: dict) -> None:
         raise ValueError(f"Failed to trigger DAG {dag_id}: {response.error}")
 
 
+# TODO(#25274): Remove ingest_instance/state_code_filter/sandbox_prefix args entirely
 def trigger_calculation_dag(
     ingest_instance: DirectIngestInstance,
     state_code_filter: Optional[StateCode],
@@ -63,17 +64,22 @@ def trigger_calculation_dag(
         sandbox_prefix,
     )
 
-    # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
-    if (
-        ingest_instance == DirectIngestInstance.PRIMARY
-        and state_code_filter
-        and not sandbox_prefix
-    ):
-        logging.warning(
-            "State code filter is not supported for PRIMARY ingest instance without a sandbox prefix."
-            " Will trigger to run for all states."
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    if ingest_instance != DirectIngestInstance.PRIMARY:
+        raise ValueError(
+            f"[ingest_instance] not a supported DirectIngestInstance: {ingest_instance}."
         )
-        state_code_filter = None
+
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    if sandbox_prefix:
+        raise ValueError("The calc DAG does not support non-null sandbox_prefix")
+
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    if state_code_filter:
+        raise ValueError("The calc DAG does not support non-null state_code_filter")
 
     trigger_dag_run(
         f"{project_id()}_calculation_dag",

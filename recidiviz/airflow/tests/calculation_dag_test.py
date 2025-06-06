@@ -945,8 +945,26 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
                 },
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.handle_params_check",
+                ],
+                expected_failure_task_id_regexes=[
+                    # This fails because the state_code_filter/sandbox_prefix args
+                    # aren't supported
+                    r"^initialize_dag.verify_parameters",
+                ],
                 expected_skipped_task_id_regexes=[
-                    r"US[_-]YY",
+                    r"^initialize_dag.wait_to_continue_or_cancel",
+                    r"^initialize_dag.handle_queueing_result",
+                    r"^update_big_query_table_schemata",
+                    r"^dataflow_pipelines.*",
+                    r"^bq_refresh.*",
+                    r"^update_managed_views",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
             self.assertIn(
@@ -968,8 +986,25 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
                 },
+                expected_success_task_id_regexes=[
+                    r"^initialize_dag.handle_params_check",
+                ],
+                expected_failure_task_id_regexes=[
+                    # This fails because the ingest_instance isn't supported
+                    r"^initialize_dag.verify_parameters",
+                ],
                 expected_skipped_task_id_regexes=[
-                    r"US[_-]YY",
+                    r"^initialize_dag.wait_to_continue_or_cancel",
+                    r"^initialize_dag.handle_queueing_result",
+                    r"^update_big_query_table_schemata",
+                    r"^dataflow_pipelines.*",
+                    r"^bq_refresh.*",
+                    r"^update_managed_views",
+                    r"^validations.*",
+                    r"^metric_exports.*",
+                    r"^dataflow_metric_pruning",
+                    r"^dataset_cleanup",
+                    r"^apply_row_access_policies",
                 ],
             )
             self.assertIn(

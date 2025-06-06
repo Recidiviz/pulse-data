@@ -110,35 +110,29 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
             f"Unknown configuration parameters supplied: {unknown_parameters}"
         )
 
-    ingest_instance = get_ingest_instance(dag_run)
-    if not ingest_instance:
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    ingest_instance_str = get_ingest_instance(dag_run)
+    if not ingest_instance_str:
         raise ValueError("[ingest_instance] must be set in dag_run configuration")
 
-    if ingest_instance not in {instance.value for instance in DirectIngestInstance}:
+    if ingest_instance_str != DirectIngestInstance.PRIMARY.value:
         raise ValueError(
-            f"[ingest_instance] not valid DirectIngestInstance: {ingest_instance}."
+            f"[ingest_instance] not a supported DirectIngestInstance: {ingest_instance_str}."
         )
 
     sandbox_prefix: Optional[str] = get_sandbox_prefix(dag_run)
-    state_code_filter = get_state_code_filter(dag_run)
-    if ingest_instance == "SECONDARY":
-        if not state_code_filter:
-            raise ValueError(
-                "[state_code_filter] must be set in dag_run configuration for SECONDARY "
-                "ingest_instance"
-            )
-        if not sandbox_prefix:
-            raise ValueError(
-                "[sandbox_prefix] must be set in dag_run configuration for SECONDARY "
-                "ingest_instance"
-            )
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    if sandbox_prefix:
+        raise ValueError("The calc DAG does not support non-null sandbox_prefix")
 
-    # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
-    if ingest_instance == "PRIMARY" and state_code_filter and not sandbox_prefix:
-        raise ValueError(
-            "[sandbox_prefix] must be set in dag_run configuration for PRIMARY "
-            "ingest_instance when [state_code_filter] is set"
-        )
+    state_code_filter = get_state_code_filter(dag_run)
+
+    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
+    #  read from the calc DAG arg.
+    if state_code_filter:
+        raise ValueError("The calc DAG does not support non-null state_code_filter")
 
     return True
 
