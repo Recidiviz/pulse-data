@@ -128,10 +128,24 @@ class RowAccessPolicyQueryBuilder:
         in the provided |state_code_field| column.
         """
         policies: List[RowAccessPolicy] = []
-        for (
-            state_code,
-            access_group_email,
-        ) in RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP.items():
+        # Create policy to grant admins access to view, edit and copy ALL state data. We
+        # do this first so that if applying permissions fails in the middle, admins
+        # (including service accounts) still will have access.
+        policies.append(
+            RowAccessPolicy(
+                policy_id=f"ADMIN_ACCESS_TO_ALL_STATE_DATA_{state_code_column.upper()}",
+                table=table,
+                access_group_email="s-big-query-admins@recidiviz.org",
+                filter_predicate="TRUE",
+            )
+        )
+
+        for state_code in sorted(
+            RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP, key=lambda s: s.value
+        ):
+            access_group_email = RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP[
+                state_code
+            ]
             # Create explicit row-level policies for states with rigid access control requirements.
             policies.append(
                 RowAccessPolicy(
@@ -147,7 +161,9 @@ class RowAccessPolicyQueryBuilder:
         filtered_states_str = ", ".join(
             [
                 f'"{state_code.value}"'
-                for state_code in RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP
+                for state_code in sorted(
+                    RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP, key=lambda s: s.value
+                )
             ]
         )
         policies.append(
@@ -159,16 +175,6 @@ class RowAccessPolicyQueryBuilder:
             )
         )
 
-        # Create policy to grant admins access to view, edit and copy ALL state data
-        policies.append(
-            RowAccessPolicy(
-                policy_id=f"ADMIN_ACCESS_TO_ALL_STATE_DATA_{state_code_column.upper()}",
-                table=table,
-                access_group_email="s-big-query-admins@recidiviz.org",
-                filter_predicate="TRUE",
-            )
-        )
-
         return policies
 
     @classmethod
@@ -177,6 +183,19 @@ class RowAccessPolicyQueryBuilder:
     ) -> List[RowAccessPolicy]:
         """Builds row-level permissions policy query applying to all rows in the provided table"""
         policies: List[RowAccessPolicy] = []
+
+        # Create policy to grant admins access to view, edit and copy ALL state data. We
+        # do this first so that if applying permissions fails in the middle, admins
+        # (including service accounts) still will have access.
+        policies.append(
+            RowAccessPolicy(
+                policy_id="ADMIN_ACCESS_TO_ALL_ROWS",
+                table=table,
+                access_group_email="s-big-query-admins@recidiviz.org",
+                filter_predicate="TRUE",
+            )
+        )
+
         # Create policy for that allows member of the state data security group
         # to access all records
         policies.append(
@@ -186,15 +205,6 @@ class RowAccessPolicyQueryBuilder:
                 access_group_email=RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP[
                     state_code
                 ],
-                filter_predicate="TRUE",
-            )
-        )
-        # Create policy to grant admins access to view, edit and copy all rows
-        policies.append(
-            RowAccessPolicy(
-                policy_id="ADMIN_ACCESS_TO_ALL_ROWS",
-                table=table,
-                access_group_email="s-big-query-admins@recidiviz.org",
                 filter_predicate="TRUE",
             )
         )

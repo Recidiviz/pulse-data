@@ -46,17 +46,19 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
             len(RowAccessPolicyQueryBuilder.build_row_access_policies(table)),
         )
 
-    def test_build_dataset_based_row_level_policy(self) -> None:
+    def test_build_dataset_based_row_level_policy_for_state_specific_table(
+        self,
+    ) -> None:
         expected_queries = [
-            """CREATE OR REPLACE ROW ACCESS POLICY
-                RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP
-                ON `test_project.us_mi_dataset.test_table`
-                GRANT TO ("group:s-mi-data@recidiviz.org")
-                FILTER USING (TRUE);""",
             """CREATE OR REPLACE ROW ACCESS POLICY
                 ADMIN_ACCESS_TO_ALL_ROWS
                 ON `test_project.us_mi_dataset.test_table`
                 GRANT TO ("group:s-big-query-admins@recidiviz.org")
+                FILTER USING (TRUE);""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP
+                ON `test_project.us_mi_dataset.test_table`
+                GRANT TO ("group:s-mi-data@recidiviz.org")
                 FILTER USING (TRUE);""",
         ]
 
@@ -73,7 +75,86 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
         ]
         table = bigquery.Table(table_ref, schema=schema)
 
-        self.assertListEqual(
+        self.assertEqual(
+            expected_queries,
+            [
+                policy.to_create_query()
+                for policy in RowAccessPolicyQueryBuilder.build_row_access_policies(
+                    table
+                )
+            ],
+        )
+
+    def test_build_dataset_based_row_level_policy_for_state_agnostic_table(
+        self,
+    ) -> None:
+        expected_queries = [
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                ADMIN_ACCESS_TO_ALL_STATE_DATA_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-big-query-admins@recidiviz.org")
+                FILTER USING (TRUE);""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_AZ_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-az-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_AZ");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_ID_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-id-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_ID");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_IX_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-ix-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_IX");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_ME_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-me-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_ME");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_MI_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-mi-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_MI");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_NC_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-nc-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_NC");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_PA_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-pa-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_PA");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_UT_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-ut-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_UT");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
+                NON_RESTRICTIVE_STATE_DATA_ACCESS_STATE_CODE
+                ON `test_project.my_dataset.test_table`
+                GRANT TO ("group:s-default-state-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) NOT IN ("US_AZ", "US_ID", "US_IX", "US_ME", "US_MI", "US_NC", "US_PA", "US_UT"));""",
+        ]
+
+        table_ref = bigquery.TableReference(
+            dataset_ref=bigquery.DatasetReference(
+                project="test_project", dataset_id="my_dataset"
+            ),
+            table_id="test_table",
+        )
+        schema = [
+            # Even with state_code field, the policy should be dataset-based
+            bigquery.SchemaField("state_code", "STRING"),
+            bigquery.SchemaField("value", "STRING"),
+        ]
+        table = bigquery.Table(table_ref, schema=schema)
+
+        self.assertEqual(
             expected_queries,
             [
                 policy.to_create_query()
@@ -97,7 +178,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
         ]
         table = bigquery.Table(table_ref, schema=schema)
 
-        self.assertListEqual(
+        self.assertEqual(
             [],
             RowAccessPolicyQueryBuilder.build_row_access_policies(table),
         )
@@ -114,7 +195,7 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
         ]
         table = bigquery.Table(table_ref, schema=schema)
 
-        self.assertListEqual(
+        self.assertEqual(
             [],
             RowAccessPolicyQueryBuilder.build_row_access_policies(table),
         )
