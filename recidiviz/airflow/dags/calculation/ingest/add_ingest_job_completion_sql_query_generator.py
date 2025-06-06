@@ -24,7 +24,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -46,16 +46,12 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
-        ingest_instance = get_ingest_instance(context["dag_run"])
-
-        if not ingest_instance:
-            raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
         postgres_hook.run(
             self.insert_sql_query(
                 job_id=pipeline["id"],
                 region_code=self.region_code,
-                ingest_instance=ingest_instance,
+                ingest_instance=DirectIngestInstance.PRIMARY.value,
             )
         )
 

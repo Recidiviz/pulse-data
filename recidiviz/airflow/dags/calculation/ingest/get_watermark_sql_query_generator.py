@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
@@ -45,18 +45,14 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
         context: Context,
     ) -> Dict[str, str]:
         """Returns the max watermark from DirectIngestDataflowRawTableUpperBounds."""
-
-        ingest_instance = get_ingest_instance(context["dag_run"])
-        if not ingest_instance:
-            raise ValueError(f"Expected to find ingest_instance argument: {context}")
-
         watermark: Dict[str, str] = {
             row[RAW_DATA_FILE_TAG]: row[WATERMARK_DATETIME].strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             for _, row in postgres_hook.get_pandas_df(
                 self.sql_query(
-                    region_code=self.region_code, ingest_instance=ingest_instance
+                    region_code=self.region_code,
+                    ingest_instance=DirectIngestInstance.PRIMARY.value,
                 )
             ).iterrows()
         }

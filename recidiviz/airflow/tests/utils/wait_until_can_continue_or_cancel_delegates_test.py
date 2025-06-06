@@ -27,139 +27,9 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
 )
 from recidiviz.airflow.dags.utils.config_utils import QueuingActionType
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
-    SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate,
+    NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
     StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate,
 )
-
-
-class TestSingleIngestInstanceWaitUntilCanContinueOrCancelDelegate(unittest.TestCase):
-    """Tests to validate queueing logic of
-    SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate
-    """
-
-    def setUp(self) -> None:
-        self.get_all_active_dag_runs_patcher = mock.patch(
-            "recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async._get_all_active_dag_runs"
-        )
-        self.mock_get_all_active_dag_runs = self.get_all_active_dag_runs_patcher.start()
-        self.operator = WaitUntilCanContinueOrCancelSensorAsync(
-            task_id="test_task",
-            delegate=SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate(),
-        )
-
-    def tearDown(self) -> None:
-        self.get_all_active_dag_runs_patcher.stop()
-
-    def test_first_in_queue(self) -> None:
-        dag_run = Mock()
-        dag_run.conf = {"ingest_instance": "PRIMARY"}
-        dag_run.dag_id = "test_dag"
-        dag_run.run_id = "test_run"
-
-        dag_run_2 = Mock()
-        dag_run_2.run_id = "test_run_2"
-        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
-
-        dag_run_3 = Mock()
-        dag_run_3.run_id = "test_run_3"
-        dag_run_3.conf = {"ingest_instance": "SECONDARY"}
-
-        self.mock_get_all_active_dag_runs.return_value = [dag_run, dag_run_2, dag_run_3]
-
-        results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
-
-        results = self.operator.execute(context={"dag_run": dag_run_3})
-        self.assertEqual(results, "CONTINUE")
-
-    def test_defers_if_last_in_queue(self) -> None:
-        dag_run = Mock()
-        dag_run.conf = {"ingest_instance": "PRIMARY"}
-        dag_run.dag_id = "test_dag"
-        dag_run.run_id = "test_run"
-
-        dag_run_2 = Mock()
-        dag_run_2.run_id = "test_run_2"
-        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
-
-        dag_run_3 = Mock()
-        dag_run_3.run_id = "test_run_3"
-        dag_run_3.conf = {"ingest_instance": "SECONDARY"}
-
-        self.mock_get_all_active_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
-
-        with self.assertRaises(TaskDeferred):
-            self.operator.execute(context={"dag_run": dag_run})
-
-    def test_middle_of_queue(self) -> None:
-        dag_run = Mock()
-        dag_run.conf = {"ingest_instance": "PRIMARY"}
-        dag_run.dag_id = "test_dag"
-        dag_run.run_id = "test_run"
-
-        dag_run_2 = Mock()
-        dag_run_2.run_id = "test_run_2"
-        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
-
-        dag_run_3 = Mock()
-        dag_run_3.run_id = "test_run_3"
-        dag_run_3.conf = {"ingest_instance": "PRIMARY"}
-
-        self.mock_get_all_active_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
-
-        results = self.operator.execute(context={"dag_run": dag_run})
-
-        self.assertEqual(results, "CANCEL")
-
-    def test_secondary_dag_run(self) -> None:
-        dag_run = Mock()
-        dag_run.conf = {"ingest_instance": "SECONDARY"}
-        dag_run.dag_id = "test_dag"
-        dag_run.run_id = "test_run"
-
-        dag_run_2 = Mock()
-        dag_run_2.run_id = "test_run_2"
-        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
-
-        dag_run_3 = Mock()
-        dag_run_3.run_id = "test_run_3"
-        dag_run_3.conf = {"ingest_instance": "PRIMARY"}
-
-        dag_run_4 = Mock()
-        dag_run_4.run_id = "test_run_4"
-        dag_run_4.conf = {"ingest_instance": "SECONDARY"}
-
-        dag_run_5 = Mock()
-        dag_run_5.run_id = "test_run_5"
-        dag_run_5.conf = {"ingest_instance": "SECONDARY"}
-
-        self.mock_get_all_active_dag_runs.return_value = [
-            dag_run,
-            dag_run_2,
-            dag_run_3,
-            dag_run_4,
-            dag_run_5,
-        ]
-
-        # first in secondary q
-        results = self.operator.execute(context={"dag_run": dag_run})
-        self.assertEqual(results, "CONTINUE")
-
-        # first in primary q
-        results = self.operator.execute(context={"dag_run": dag_run_2})
-        self.assertEqual(results, "CONTINUE")
-
-        # last in primary q, defers
-        with self.assertRaises(TaskDeferred):
-            self.operator.execute(context={"dag_run": dag_run_3})
-
-        # middle of secondary q, cancels
-        results = self.operator.execute(context={"dag_run": dag_run_4})
-        self.assertEqual(results, "CANCEL")
-
-        # last in secondary q, defers
-        with self.assertRaises(TaskDeferred):
-            self.operator.execute(context={"dag_run": dag_run_5})
 
 
 class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
@@ -450,3 +320,83 @@ class TestStateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
         self.assertEqual(results, QueuingActionType.CONTINUE.value)
         results = self.operator.execute(context={"dag_run": dag_run_2})
         self.assertEqual(results, QueuingActionType.CONTINUE.value)
+
+
+class TestNoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(unittest.TestCase):
+    """Tests to validate queueing logic of
+    NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate
+    """
+
+    def setUp(self) -> None:
+        self.get_all_active_dag_runs_patcher = mock.patch(
+            "recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async._get_all_active_dag_runs"
+        )
+        self.mock_get_all_active_dag_runs = self.get_all_active_dag_runs_patcher.start()
+        self.operator = WaitUntilCanContinueOrCancelSensorAsync(
+            task_id="test_task",
+            delegate=NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(),
+        )
+
+    def tearDown(self) -> None:
+        self.get_all_active_dag_runs_patcher.stop()
+
+    def _build_mock_dag_run(self, run_id: str) -> Mock:
+        dag_run = Mock()
+        dag_run.conf = {}
+        dag_run.dag_id = "test_dag"
+        dag_run.run_id = run_id
+        return dag_run
+
+    def test_only_in_queue(self) -> None:
+        dag_run_1 = self._build_mock_dag_run("test_run_1")
+
+        self.mock_get_all_active_dag_runs.return_value = [dag_run_1]
+
+        results = self.operator.execute(context={"dag_run": dag_run_1})
+
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
+
+    def test_first_in_queue(self) -> None:
+        dag_run_1 = self._build_mock_dag_run("test_run_1")
+        dag_run_2 = self._build_mock_dag_run("test_run_2")
+        dag_run_3 = self._build_mock_dag_run("test_run_3")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            dag_run_1,
+            dag_run_2,
+            dag_run_3,
+        ]
+
+        results = self.operator.execute(context={"dag_run": dag_run_1})
+
+        self.assertEqual(results, QueuingActionType.CONTINUE.value)
+
+    def test_middle_in_queue(self) -> None:
+        dag_run_1 = self._build_mock_dag_run("test_run_1")
+        dag_run_2 = self._build_mock_dag_run("test_run_2")
+        dag_run_3 = self._build_mock_dag_run("test_run_3")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            dag_run_1,
+            dag_run_2,
+            dag_run_3,
+        ]
+
+        results = self.operator.execute(context={"dag_run": dag_run_2})
+
+        self.assertEqual(results, QueuingActionType.CANCEL.value)
+
+    def test_last_in_queue(self) -> None:
+        dag_run_1 = self._build_mock_dag_run("test_run_1")
+        dag_run_2 = self._build_mock_dag_run("test_run_2")
+        dag_run_3 = self._build_mock_dag_run("test_run_3")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            dag_run_1,
+            dag_run_2,
+            dag_run_3,
+        ]
+
+        # last in queue, will defer
+        with self.assertRaises(TaskDeferred):
+            _ = self.operator.execute(context={"dag_run": dag_run_3})

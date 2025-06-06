@@ -28,15 +28,12 @@ from airflow.utils.task_group import TaskGroup
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_sandbox_prefix
 from recidiviz.airflow.dags.utils.constants import (
     CREATE_FLEX_TEMPLATE_TASK_ID,
     DATAFLOW_OPERATOR_TASK_ID,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.pipelines.pipeline_parameters import (
-    PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
-    PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
     PipelineParameters,
     PipelineParametersT,
 )
@@ -110,17 +107,11 @@ def build_dataflow_pipeline_task_group(
                     "dag_run not provided. This should be automatically set by Airflow."
                 )
 
-            sandbox_prefix = get_sandbox_prefix(dag_run)
-
             dynamic_args = {
                 **attr.asdict(params_no_overrides),
                 **delegate.get_pipeline_specific_dynamic_args(
                     dag_run, UpstreamTaskOutputs(upstream_task_outputs_map)
                 ),
-                PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME: sandbox_prefix,
-                # TODO(#27373): Actually hydrate this based on which pipelines have
-                #  run earlier in the DAG.
-                PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME: None,
             }
 
             parameters_cls = type(params_no_overrides)

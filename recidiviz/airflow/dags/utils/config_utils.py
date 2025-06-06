@@ -86,7 +86,3 @@ def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
 def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
     state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
     return state_code_filter.upper() if state_code_filter else None
-
-
-def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
-    return dag_run.conf.get(SANDBOX_PREFIX)

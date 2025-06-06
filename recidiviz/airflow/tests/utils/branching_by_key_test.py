@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.utils.branch_utils import (
 from recidiviz.airflow.dags.utils.branching_by_key import (
     TaskGroupOrOperator,
     create_branching_by_key,
+    select_all_branches,
     select_state_code_parameter_branch,
 )
 from recidiviz.airflow.dags.utils.config_utils import STATE_CODE_FILTER
@@ -94,7 +95,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 "US_ZZ": EmptyOperator(task_id="US_ZZ"),
             }
 
-            create_branching_by_key(state_codes, select_state_code_parameter_branch)
+            create_branching_by_key(state_codes, select_all_branches)
 
         test_dag = create_test_dag()
         with Session(bind=self.engine) as session:

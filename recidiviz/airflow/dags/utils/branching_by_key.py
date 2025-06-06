@@ -44,6 +44,12 @@ def select_state_code_parameter_branch(dag_run: DagRun) -> Optional[List[str]]:
     return [state_code_filter] if state_code_filter else None
 
 
+def select_all_branches(
+    dag_run: DagRun,  # pylint: disable=unused-argument
+) -> None:
+    return None
+
+
 def create_branching_by_key(
     branch_by_key: Dict[str, Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]],
     select_branches_fn: Callable[[DagRun], Optional[List[str]]],

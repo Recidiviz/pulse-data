@@ -31,14 +31,13 @@ from recidiviz.airflow.dags.utils.config_utils import (
     SANDBOX_PREFIX,
     STATE_CODE_FILTER,
     get_ingest_instance,
-    get_sandbox_prefix,
     get_state_code_filter,
     handle_params_check,
     handle_queueing_result,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
-    SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate,
+    NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -121,7 +120,7 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
             f"[ingest_instance] not a supported DirectIngestInstance: {ingest_instance_str}."
         )
 
-    sandbox_prefix: Optional[str] = get_sandbox_prefix(dag_run)
+    sandbox_prefix: Optional[str] = dag_run.conf.get(SANDBOX_PREFIX)
     # TODO(#25274): Remove this logic entirely once we entirely remove all places that
     #  read from the calc DAG arg.
     if sandbox_prefix:
@@ -140,7 +139,7 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
 @task_group(group_id=INITIALIZE_DAG_GROUP_ID)
 def initialize_calculation_dag_group() -> Any:
     wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
-        delegate=SingleIngestInstanceWaitUntilCanContinueOrCancelDelegate(),
+        delegate=NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(),
         task_id="wait_to_continue_or_cancel",
     )
     (

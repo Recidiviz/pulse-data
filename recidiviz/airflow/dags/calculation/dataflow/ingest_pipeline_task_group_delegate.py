@@ -25,13 +25,13 @@ from airflow.models import BaseOperator, DagRun
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     DataflowPipelineTaskGroupDelegate,
     UpstreamTaskOutputs,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
@@ -62,6 +62,7 @@ class IngestDataflowPipelineTaskGroupDelegate(
             raw_data_upper_bound_dates_json=json.dumps({}),
             pipeline=INGEST_PIPELINE_NAME,
             state_code=self._state_code.value,
+            raw_data_source_instance=DirectIngestInstance.PRIMARY.value,
             # Ingest pipelines require additional memory; use standard family instead of highcpu
             machine_type="c4a-standard-32",
             region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[self._state_code],
@@ -73,8 +74,6 @@ class IngestDataflowPipelineTaskGroupDelegate(
     def get_pipeline_specific_dynamic_args(
         self, dag_run: DagRun, upstream_task_outputs: UpstreamTaskOutputs
     ) -> Dict[str, Any]:
-        ingest_instance = get_ingest_instance(dag_run)
-
         max_update_datetimes = assert_type(
             upstream_task_outputs.get_output_for_operator(
                 self._max_update_datetimes_operator
@@ -85,7 +84,5 @@ class IngestDataflowPipelineTaskGroupDelegate(
         args = {
             "raw_data_upper_bound_dates_json": json.dumps(max_update_datetimes),
         }
-        if ingest_instance:
-            args["raw_data_source_instance"] = ingest_instance
 
         return args

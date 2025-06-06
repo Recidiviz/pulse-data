@@ -50,7 +50,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.branching_by_key import (
     create_branching_by_key,
-    select_state_code_parameter_branch,
+    select_all_branches,
 )
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
@@ -312,7 +312,7 @@ def create_calculation_dag() -> None:
         pipeline_branches_by_state = dataflow_pipeline_branches_by_state()
         create_branching_by_key(
             pipeline_branches_by_state,
-            select_state_code_parameter_branch,
+            select_all_branches,
         )
 
     dataflow_metric_pruning_task_id = "dataflow_metric_pruning"
@@ -354,7 +354,7 @@ def create_calculation_dag() -> None:
             validation_branches_by_state_code(
                 states_to_validate=pipeline_branches_by_state.keys()
             ),
-            select_state_code_parameter_branch,
+            select_all_branches,
         )
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
@@ -369,7 +369,7 @@ def create_calculation_dag() -> None:
                 )
             )
             create_branching_by_key(
-                metric_export_branches_by_state, select_state_code_parameter_branch
+                metric_export_branches_by_state, select_all_branches
             )
 
             # If any dataflow pipeline for a given state fails, do not run the export
