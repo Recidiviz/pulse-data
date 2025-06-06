@@ -121,8 +121,6 @@ def refresh_bq_dataset_operator(
         arguments=[
             "--entrypoint=BigQueryRefreshEntrypoint",
             f"--schema_type={schema_type_str}",
-            INGEST_INSTANCE_JINJA_ARG,
-            SANDBOX_PREFIX_JINJA_ARG,
         ],
     )
 

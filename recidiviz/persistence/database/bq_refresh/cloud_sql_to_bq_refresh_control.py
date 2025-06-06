@@ -16,7 +16,6 @@
 # =============================================================================
 """Control logic for the CloudSQL -> BigQuery refresh."""
 import datetime
-from typing import Optional
 
 import pytz
 
@@ -61,18 +60,12 @@ class RefreshBQDatasetSuccessPersister(BigQueryRowStreamer):
             bq_client, source_table_config.address, source_table_config.schema_fields
         )
 
-    def record_success_in_bq(
-        self,
-        schema_type: SchemaType,
-        direct_ingest_instance: DirectIngestInstance,
-        dataset_override_prefix: Optional[str],
-        runtime_sec: int,
-    ) -> None:
+    def record_success_in_bq(self, schema_type: SchemaType, runtime_sec: int) -> None:
         success_row = {
             "success_timestamp": datetime.datetime.now(tz=pytz.UTC).isoformat(),
             "schema_type": schema_type.value,
-            "direct_ingest_instance": direct_ingest_instance.value,
-            "dataset_override_prefix": dataset_override_prefix,
+            "direct_ingest_instance": DirectIngestInstance.PRIMARY.value,
+            "dataset_override_prefix": None,
             "refresh_bq_dataset_runtime_sec": runtime_sec,
         }
 
@@ -80,11 +73,7 @@ class RefreshBQDatasetSuccessPersister(BigQueryRowStreamer):
 
 
 @gcp_only
-def execute_cloud_sql_to_bq_refresh(
-    schema_type: SchemaType,
-    ingest_instance: DirectIngestInstance,
-    sandbox_prefix: Optional[str],
-) -> None:
+def execute_cloud_sql_to_bq_refresh(schema_type: SchemaType) -> None:
     """Executes the Cloud SQL to BQ refresh for a given schema_type, ingest instance and
     sandbox_prefix.
     """
@@ -94,7 +83,7 @@ def execute_cloud_sql_to_bq_refresh(
     start = datetime.datetime.now()
     federated_bq_schema_refresh(
         schema_type=schema_type,
-        dataset_override_prefix=sandbox_prefix,
+        dataset_override_prefix=None,
     )
 
     end = datetime.datetime.now()
@@ -102,7 +91,5 @@ def execute_cloud_sql_to_bq_refresh(
     success_persister = RefreshBQDatasetSuccessPersister(bq_client=BigQueryClientImpl())
     success_persister.record_success_in_bq(
         schema_type=schema_type,
-        direct_ingest_instance=ingest_instance,
-        dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )

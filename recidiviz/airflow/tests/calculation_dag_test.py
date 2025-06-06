@@ -332,21 +332,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
         )
 
-    def test_refresh_bq_dataset_task_secondary(self) -> None:
-        """Tests that refresh_bq_dataset_task triggers the proper script."""
-        from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
-
-        task = refresh_bq_dataset_operator(SchemaType.OPERATIONS)
-
-        self.assertEqual(task.task_id, "refresh_bq_dataset_OPERATIONS")
-
-        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
-
-        self.assertEqual(
-            task.arguments[4:],
-            self.entrypoint_args_fixture["test_refresh_bq_dataset_task_secondary"],
-        )
-
     def test_validations_task_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -472,7 +457,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             [
                 "--entrypoint=BigQueryRefreshEntrypoint",
                 "--schema_type=OPERATIONS",
-                "--ingest_instance=PRIMARY",
             ],
         )
 

@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for cloud_sql_to_bq_refresh_control.py."""
 import unittest
-from typing import Optional
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -24,7 +23,6 @@ from mock import create_autospec
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     RefreshBQDatasetSuccessPersister,
@@ -72,8 +70,6 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
         def mock_record_success(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
-            direct_ingest_instance: DirectIngestInstance,
-            dataset_override_prefix: Optional[str],
             runtime_sec: int,
         ) -> None:
             return None
@@ -83,9 +79,7 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
         )
 
         cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
-            schema_type=SchemaType.OPERATIONS,
-            ingest_instance=None,
-            sandbox_prefix=None,
+            schema_type=SchemaType.OPERATIONS
         )
 
         mock_federated_bq.assert_called_once_with(
@@ -99,9 +93,7 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
     ) -> None:
         with self.assertRaisesRegex(ValueError, r"Unsupported schema type*"):
             cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
-                schema_type=SchemaType.JUSTICE_COUNTS,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_prefix=None,
+                schema_type=SchemaType.JUSTICE_COUNTS
             )
         mock_federated_bq.assert_not_called()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
@@ -114,9 +106,7 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
-                schema_type=SchemaType.OPERATIONS,
-                ingest_instance=None,
-                sandbox_prefix=None,
+                schema_type=SchemaType.OPERATIONS
             )
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
 
@@ -132,28 +122,14 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
-                schema_type=SchemaType.OPERATIONS,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_prefix=None,
+                schema_type=SchemaType.OPERATIONS
             )
         mock_federated_bq.assert_called()
 
     @parameterized.expand(
         [
-            (
-                "nonstate_with_primary",
-                SchemaType.OPERATIONS,
-                DirectIngestInstance.PRIMARY,
-                None,
-                None,
-            ),
-            (
-                "nonstate_with_secondary",
-                SchemaType.CASE_TRIAGE,
-                DirectIngestInstance.SECONDARY,
-                "sandbox",
-                None,
-            ),
+            ("operations", SchemaType.OPERATIONS),
+            ("case_triage", SchemaType.CASE_TRIAGE),
         ]
     )
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
@@ -161,27 +137,20 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
         self,
         _name: str,
         schema_called_with: SchemaType,
-        instance_called_with: DirectIngestInstance,
-        sandbox_called_with: Optional[str],
-        _instance_in_func_call: DirectIngestInstance,
         mock_federated_bq: mock.MagicMock,
     ) -> None:
         mock_federated_bq.return_value = ["foo_table"]
 
         cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
             schema_type=schema_called_with,
-            ingest_instance=instance_called_with,
-            sandbox_prefix=sandbox_called_with,
         )
 
         mock_federated_bq.assert_called_with(
             schema_type=schema_called_with,
-            dataset_override_prefix=sandbox_called_with,
+            dataset_override_prefix=None,
         )
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_with(
             schema_type=schema_called_with,
-            direct_ingest_instance=instance_called_with,
-            dataset_override_prefix=sandbox_called_with,
             runtime_sec=mock.ANY,
         )
 
@@ -195,7 +164,5 @@ class TestRefreshBQDatasetSuccessPersister(unittest.TestCase):
             # Just shouldn't crash
             persister.record_success_in_bq(
                 schema_type=SchemaType.OPERATIONS,
-                direct_ingest_instance=DirectIngestInstance.PRIMARY,
                 runtime_sec=100,
-                dataset_override_prefix=None,
             )

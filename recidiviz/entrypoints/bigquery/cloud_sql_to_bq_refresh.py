@@ -18,7 +18,6 @@
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     execute_cloud_sql_to_bq_refresh,
 )
@@ -40,25 +39,9 @@ class BigQueryRefreshEntrypoint(EntrypointInterface):
             choices=list(SchemaType),
             required=True,
         )
-        parser.add_argument(
-            "--ingest_instance",
-            help="The ingest instance for the specified STATE refresh",
-            type=DirectIngestInstance,
-            choices=list(DirectIngestInstance),
-            required=True,
-        )
-        parser.add_argument(
-            "--sandbox_prefix",
-            help="The sandbox prefix for which the refresh needs to write to",
-            type=str,
-        )
 
         return parser
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        execute_cloud_sql_to_bq_refresh(
-            schema_type=args.schema_type,
-            ingest_instance=args.ingest_instance,
-            sandbox_prefix=args.sandbox_prefix,
-        )
+        execute_cloud_sql_to_bq_refresh(schema_type=args.schema_type)
