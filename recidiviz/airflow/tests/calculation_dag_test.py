@@ -290,21 +290,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
         )
 
-    def test_update_managed_views_endpoint_sandbox_prefix(self) -> None:
-        from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
-
-        task = update_managed_views_operator()
-        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
-        self.assertEqual(task.task_id, "update_managed_views_all")
-        self.assertEqual(task.trigger_rule, TriggerRule.ALL_SUCCESS)
-
-        self.assertEqual(
-            task.arguments[4:],
-            self.entrypoint_args_fixture[
-                "test_update_all_managed_views_endpoint_sandbox_prefix"
-            ],
-        )
-
     def test_refresh_bq_dataset_task_exists(self) -> None:
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
@@ -386,26 +371,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(
             task.arguments[4:],
             self.entrypoint_args_fixture["test_trigger_metric_view_data_operator"],
-        )
-
-    def test_trigger_metric_view_data_operator_sandbox_prefix(self) -> None:
-        """Tests the trigger_metric_view_data_operator triggers the proper script."""
-        from recidiviz.airflow.dags.calculation_dag import (
-            trigger_metric_view_data_operator,
-        )
-
-        task = trigger_metric_view_data_operator(
-            export_job_name="INGEST_METADATA", state_code=None
-        )
-        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
-
-        self.assertEqual(task.task_id, "export_ingest_metadata_metric_view_data")
-
-        self.assertEqual(
-            task.arguments[4:],
-            self.entrypoint_args_fixture[
-                "test_trigger_metric_view_data_operator_sandbox_prefix"
-            ],
         )
 
     def test_trigger_metric_view_data_operator_state_code(self) -> None:

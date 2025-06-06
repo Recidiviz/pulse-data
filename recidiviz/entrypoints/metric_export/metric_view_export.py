@@ -41,12 +41,6 @@ class MetricViewExportEntrypoint(EntrypointInterface):
             type=str,
             required=True,
         )
-        parser.add_argument(
-            "--sandbox_prefix",
-            help="The sandbox prefix for which the export needs to write to",
-            type=str,
-        )
-
         return parser
 
     @staticmethod
@@ -54,5 +48,4 @@ class MetricViewExportEntrypoint(EntrypointInterface):
         execute_metric_view_data_export(
             state_code=args.state_code,
             export_job_name=args.export_job_name,
-            sandbox_prefix=args.sandbox_prefix,
         )

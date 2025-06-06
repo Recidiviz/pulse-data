@@ -521,13 +521,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="EXPORT",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
         execute_metric_view_data_export(
             export_job_name="export",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
 
@@ -540,17 +538,15 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         export_job_name = "export"
         state_code = StateCode.US_WW
-        sandbox_prefix = "test_sandbox"
         execute_metric_view_data_export(
             export_job_name=export_job_name,
             state_code=state_code,
-            sandbox_prefix=sandbox_prefix,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
         self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
             export_job_name=export_job_name,
             state_code=state_code.value,
-            sandbox_dataset_prefix=sandbox_prefix,
+            sandbox_dataset_prefix=None,
             runtime_sec=mock.ANY,
         )
 
@@ -566,7 +562,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="EXPORT",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_not_called()
 
@@ -580,7 +575,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="MOCK_EXPORT_NAME",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
 
@@ -609,7 +603,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="MOCK_EXPORT_NAME",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
 
         mock_publish_message.assert_called_once_with(
@@ -646,7 +639,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="MOCK_EXPORT_NAME",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
 
         mock_publish_message.assert_called_once_with(
@@ -686,7 +678,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="MOCK_EXPORT_NAME",
             state_code=StateCode.US_WW,
-            sandbox_prefix=None,
         )
 
         mock_publish_message.assert_called_once_with(

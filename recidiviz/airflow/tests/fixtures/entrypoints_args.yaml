@@ -3,10 +3,6 @@
 test_update_all_managed_views_endpoint:
   - --entrypoint=UpdateAllManagedViewsEntrypoint
 
-test_update_all_managed_views_endpoint_sandbox_prefix:
-  - --entrypoint=UpdateAllManagedViewsEntrypoint
-  - --sandbox_prefix=test_prefix
-
 test_refresh_bq_dataset_task:
   - --entrypoint=BigQueryRefreshEntrypoint
   - --schema_type=OPERATIONS
@@ -18,11 +14,6 @@ test_validations_task:
 test_trigger_metric_view_data_operator:
   - --entrypoint=MetricViewExportEntrypoint
   - --export_job_name=INGEST_METADATA
-
-test_trigger_metric_view_data_operator_sandbox_prefix:
-  - --entrypoint=MetricViewExportEntrypoint
-  - --export_job_name=INGEST_METADATA
-  - --sandbox_prefix=test_prefix
 
 test_trigger_metric_view_data_operator_state_code:
   - --entrypoint=MetricViewExportEntrypoint

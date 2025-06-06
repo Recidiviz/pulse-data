@@ -41,7 +41,6 @@ from recidiviz.airflow.dags.calculation.dataflow.supplemental_pipeline_task_grou
     SupplementalDataflowPipelineTaskGroupDelegate,
 )
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    SANDBOX_PREFIX_JINJA_ARG,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import get_calculation_dag_id
@@ -92,7 +91,6 @@ def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
         container_name=task_id,
         arguments=[
             "--entrypoint=UpdateAllManagedViewsEntrypoint",
-            SANDBOX_PREFIX_JINJA_ARG,
         ],
         trigger_rule=TriggerRule.ALL_SUCCESS,
     )
@@ -148,7 +146,6 @@ def trigger_metric_view_data_operator(
         arguments=[
             "--entrypoint=MetricViewExportEntrypoint",
             f"--export_job_name={export_job_name}",
-            SANDBOX_PREFIX_JINJA_ARG,
             *additional_args,
         ],
         retries=1,

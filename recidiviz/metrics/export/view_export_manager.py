@@ -71,9 +71,6 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata, pubsub_helper
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, gcp_only
-from recidiviz.view_registry.address_overrides_factory import (
-    address_overrides_for_view_builders,
-)
 
 
 class ViewExportConfigurationError(Exception):
@@ -124,14 +121,12 @@ class MetricViewDataExportSuccessPersister(BigQueryRowStreamer):
 def execute_metric_view_data_export(
     export_job_name: str,
     state_code: Optional[StateCode],
-    sandbox_prefix: Optional[str],
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets."""
     logging.info(
-        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], sandbox_prefix [%s]",
+        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s]",
         export_job_name,
         state_code,
-        sandbox_prefix,
     )
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
@@ -151,23 +146,11 @@ def execute_metric_view_data_export(
                 f"No export configs matching export name: [{export_job_name.upper()}]"
             )
 
-        view_sandbox_context = None
-        if sandbox_prefix:
-            address_overrides = address_overrides_for_view_builders(
-                view_dataset_override_prefix=sandbox_prefix,
-                view_builders=relevant_export_collection.view_builders_to_export,
-            )
-            view_sandbox_context = BigQueryViewSandboxContext(
-                parent_address_overrides=address_overrides,
-                output_sandbox_dataset_prefix=sandbox_prefix,
-                parent_address_formatter_provider=None,
-            )
-
         export_view_data_to_cloud_storage(
             export_job_name=export_job_name,
             state_code=state_code.value if state_code else None,
-            view_sandbox_context=view_sandbox_context,
-            gcs_output_sandbox_subdir=sandbox_prefix,
+            view_sandbox_context=None,
+            gcs_output_sandbox_subdir=None,
         )
 
     end = datetime.datetime.now()
@@ -179,7 +162,7 @@ def execute_metric_view_data_export(
     success_persister.record_success_in_bq(
         export_job_name=export_job_name,
         state_code=state_code.value if state_code else None,
-        sandbox_dataset_prefix=sandbox_prefix,
+        sandbox_dataset_prefix=None,
         runtime_sec=runtime_sec,
     )
     logging.info("Finished saving success record to database.")
@@ -209,7 +192,7 @@ def execute_metric_view_data_export(
             else metadata.project_id()
         )
 
-        state_code_output: str | None = None
+        state_code_output: str | None
 
         if (
             state_code

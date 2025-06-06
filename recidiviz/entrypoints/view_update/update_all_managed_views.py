@@ -30,16 +30,8 @@ class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
     @staticmethod
     def get_parser() -> argparse.ArgumentParser:
         """Parses arguments for the managed views update process."""
-        parser = argparse.ArgumentParser()
-
-        parser.add_argument(
-            "--sandbox_prefix",
-            help="The sandbox prefix for which the refresh needs to write to",
-            type=str,
-        )
-
-        return parser
+        return argparse.ArgumentParser()
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        execute_update_all_managed_views(sandbox_prefix=args.sandbox_prefix)
+        execute_update_all_managed_views()

@@ -254,48 +254,12 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
             ),
             BigQueryViewDagWalker(views=[]),
         )
-        execute_update_all_managed_views(sandbox_prefix=None)
+        execute_update_all_managed_views()
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             success_datetime=mock.ANY,
             num_deployed_views=mock.ANY,
             dataset_override_prefix=None,
-            runtime_sec=mock.ANY,
-            num_edges=mock.ANY,
-            num_distinct_paths=mock.ANY,
-        )
-        self.mock_per_view_update_success_persister.record_success_in_bq.assert_called()
-
-    @mock.patch(
-        "recidiviz.view_registry.execute_update_all_managed_views.deployed_view_builders",
-    )
-    @mock.patch(
-        "recidiviz.view_registry.execute_update_all_managed_views.BigQueryClientImpl"
-    )
-    @mock.patch(
-        "recidiviz.view_registry.execute_update_all_managed_views.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_execute_update_all_managed_views_with_sandbox_prefix(
-        self,
-        mock_create: MagicMock,
-        _mock_bq_client: MagicMock,
-        _mock_view_builders: MagicMock,
-    ) -> None:
-        mock_create.return_value = (
-            ProcessDagResult(
-                view_results={},
-                view_processing_stats={},
-                total_runtime=0,
-                leaf_nodes=set(),
-            ),
-            BigQueryViewDagWalker(views=[]),
-        )
-        execute_update_all_managed_views(sandbox_prefix="test_prefix")
-        mock_create.assert_called()
-        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            success_datetime=mock.ANY,
-            num_deployed_views=mock.ANY,
-            dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
             num_edges=mock.ANY,
             num_distinct_paths=mock.ANY,

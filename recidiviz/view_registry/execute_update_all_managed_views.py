@@ -20,12 +20,10 @@ import logging
 
 import pytz
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.view_update_manager import (
-    BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -119,21 +117,13 @@ class PerViewUpdateStatsPersister(BigQueryRowStreamer):
 
 
 @gcp_only
-def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
+def execute_update_all_managed_views() -> None:
     """
     Updates all views in the view registry. If sandbox_prefix is provided, all views will be deployed to a sandbox
     dataset.
     """
     start_time = datetime.datetime.now(tz=pytz.UTC)
     view_builders = deployed_view_builders()
-
-    view_update_sandbox_context = None
-    if sandbox_prefix:
-        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
-            output_sandbox_dataset_prefix=sandbox_prefix,
-            input_source_table_overrides=BigQueryAddressOverrides.empty(),
-            parent_address_formatter_provider=None,
-        )
 
     (
         update_views_result,
@@ -142,7 +132,7 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        view_update_sandbox_context=view_update_sandbox_context,
+        view_update_sandbox_context=None,
         materialize_changed_views_only=False,
         allow_slow_views=False,
     )
@@ -155,7 +145,7 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
     job_level_success_persister.record_success_in_bq(
         num_deployed_views=len(view_builders),
         success_datetime=success_time,
-        dataset_override_prefix=sandbox_prefix,
+        dataset_override_prefix=None,
         runtime_sec=runtime_sec,
         num_edges=dag_walker.get_number_of_edges(),
         num_distinct_paths=update_views_result.get_distinct_paths_to_leaf_nodes(),
