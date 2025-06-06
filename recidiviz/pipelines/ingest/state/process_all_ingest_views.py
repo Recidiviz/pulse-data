@@ -18,8 +18,9 @@
 from typing import Dict, Tuple
 
 import apache_beam as beam
-from apache_beam.pvalue import PBegin
+from apache_beam.pvalue import PBegin, PDone
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -46,6 +47,7 @@ from recidiviz.pipelines.ingest.state.constants import (
     UpperBoundDate,
 )
 from recidiviz.pipelines.ingest.state.process_ingest_view import ProcessIngestView
+from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
 
 
 class ProcessAllIngestViews(beam.PTransform):
@@ -124,6 +126,17 @@ class ProcessAllIngestViews(beam.PTransform):
                     f"data: {dependencies_missing_data}"
                 )
 
+        if set(ingest_views_to_run) != set(all_launchable_views):
+            _ = (
+                input_or_inputs
+                | "Clear skipped ingest view results"
+                >> _ClearAllSkippedIngestViews(
+                    all_launchable_views=all_launchable_views,
+                    ingest_views_to_run=ingest_views_to_run,
+                    ingest_view_output_dataset=self.pipeline_parameters.ingest_view_results_output,
+                )
+            )
+
         merged_root_entities_with_dates_per_ingest_view: Dict[
             IngestViewName,
             beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
@@ -160,3 +173,32 @@ class ProcessAllIngestViews(beam.PTransform):
             Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
         ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
         return merged_root_entities_with_dates
+
+
+class _ClearAllSkippedIngestViews(beam.PTransform):
+    """PTransform that clears all the results of ingest views that would be run with a
+    full run of this pipeline (i.e. the table in the us_xx_ingest_view_results dataset
+    exists, but which will not be run as part of this pipeline run).
+    """
+
+    def __init__(
+        self,
+        all_launchable_views: list[str],
+        ingest_views_to_run: list[str],
+        ingest_view_output_dataset: str,
+    ):
+        super().__init__()
+        self.all_launchable_views = all_launchable_views
+        self.ingest_views_to_run = ingest_views_to_run
+        self.ingest_view_output_dataset = ingest_view_output_dataset
+
+    def expand(self, input_or_inputs: PBegin) -> PDone:
+        for ingest_view_name in self.all_launchable_views:
+            if ingest_view_name not in self.ingest_views_to_run:
+                _ = input_or_inputs | f"Clear {ingest_view_name}" >> ClearBQTable(
+                    address=BigQueryAddress(
+                        dataset_id=self.ingest_view_output_dataset,
+                        table_id=ingest_view_name,
+                    )
+                )
+        return PDone(input_or_inputs.pipeline)

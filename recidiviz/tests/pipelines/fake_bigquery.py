@@ -571,18 +571,25 @@ class FakeWriteToBigQueryEmulator(apache_beam.PTransform):
         # which cannot be pickled, so cannot be referenced in a `Map` transform.
         output_dataset = self._output_dataset
         output_table = self._output_table
+        output_address = BigQueryAddress(
+            dataset_id=output_dataset, table_id=output_table
+        )
+        write_disposition = self._write_disposition
 
         def _write_rows(_: None, rows: list[TableRow]) -> None:
             # Create a new client so that we don't have to referenced `self._test_case`
             # from inside the mapped function. Because we're running in the context of
             # a BigQueryEmulatorTestCase, this client will talk to the emulator.
             bq_client = BigQueryClientImpl()
-            bq_client.stream_into_table(
-                address=BigQueryAddress(
-                    dataset_id=output_dataset, table_id=output_table
-                ),
-                rows=rows,
-            )
+
+            if write_disposition == apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE:
+                query_job = bq_client.run_query_async(
+                    query_str=f"DELETE FROM `{bq_client.project_id}.{output_address.to_str()}` WHERE TRUE",
+                    use_query_cache=False,
+                )
+                query_job.result()
+
+            bq_client.stream_into_table(address=output_address, rows=rows)
 
         _ = (
             input_or_inputs.pipeline

@@ -40,6 +40,7 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
+from recidiviz.pipelines.utils.beam_utils import clear_bq_table
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQuery,
@@ -166,6 +167,7 @@ def run_test_pipeline(
             f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
             write_to_bq_constructor,
         ),
+        patch(f"{clear_bq_table.__name__}.WriteToBigQuery", write_to_bq_constructor),
         patch(write_to_bq_class, write_to_bq_constructor),
         patch(
             "recidiviz.pipelines.base_pipeline.Pipeline",

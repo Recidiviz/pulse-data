@@ -17,18 +17,17 @@
 """Helpers for determining the set of expected output entities / tables from a given
 ingest pipeline.
 """
+from types import ModuleType
+
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_entity_class,
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.entity_utils import (
-    entities_have_direct_relationship,
-    get_association_table_id,
     get_entity_class_in_module_with_table_id,
-    is_many_to_many_relationship,
 )
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
@@ -98,35 +97,8 @@ def get_expected_output_normalized_entity_classes(
     return expected_normalized_entity_classes
 
 
-def get_pipeline_output_tables(
-    expected_output_entity_classes: set[type[Entity]],
-) -> set[str]:
+def get_ingest_pipeline_output_tables_for_schema(schema_module: ModuleType) -> set[str]:
     """Returns the set of tables that the pipeline will output to given a list of
     expected entity types that will be produced.
     """
-    expected_output_tables = {
-        entity_cls.get_table_id() for entity_cls in expected_output_entity_classes
-    }
-
-    sorted_entity_classes = sorted(
-        expected_output_entity_classes,
-        key=lambda entity_cls: entity_cls.get_table_id(),
-    )
-
-    for i, entity_class_a in enumerate(sorted_entity_classes):
-        entities_module_context = entities_module_context_for_entity_class(
-            entity_class_a
-        )
-        for entity_class_b in sorted_entity_classes[i + 1 :]:
-            if not entities_have_direct_relationship(entity_class_a, entity_class_b):
-                continue
-
-            if not is_many_to_many_relationship(entity_class_a, entity_class_b):
-                continue
-
-            expected_output_tables.add(
-                get_association_table_id(
-                    entity_class_a, entity_class_b, entities_module_context
-                )
-            )
-    return expected_output_tables
+    return set(get_bq_schema_for_entities_module(schema_module).keys())

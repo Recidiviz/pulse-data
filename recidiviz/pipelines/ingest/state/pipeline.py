@@ -55,7 +55,7 @@ from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
     get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
-    get_pipeline_output_tables,
+    get_ingest_pipeline_output_tables_for_schema,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import string_representation
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
@@ -163,7 +163,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
-        output_state_tables = get_pipeline_output_tables(expected_output_entity_classes)
+        output_state_tables = get_ingest_pipeline_output_tables_for_schema(
+            state_entities
+        )
         pre_normalization_root_entities: beam.PCollection[RootEntity] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
@@ -214,8 +216,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 state_code=state_code,
                 entities_module=normalized_entities,
                 output_dataset=self.pipeline_parameters.normalized_output,
-                output_table_ids=get_pipeline_output_tables(
-                    expected_output_normalized_entity_classes
+                output_table_ids=get_ingest_pipeline_output_tables_for_schema(
+                    normalized_entities
                 ),
             )
         )

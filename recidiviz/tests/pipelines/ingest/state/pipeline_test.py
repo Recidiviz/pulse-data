@@ -143,3 +143,25 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
                     }
                 ),
             )
+
+    def test_state_ingest_pipeline_overwrites_all_tables_each_time(self) -> None:
+        self.setup_region_raw_data_bq_tables(
+            test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
+        )
+
+        # First run a pipeline with ALL views enabled. We should get the same results
+        # as the basic pipeline integration test.
+        self.run_test_ingest_pipeline(
+            test_name="integration_simple",
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
+        )
+
+        # Next, run with a subset of ingest views. The result should match the result
+        # if we had just run with this ingest view without running another pipeline
+        # first, i.e. we should fully overwrite the output dataset.
+        subset_of_ingest_views = ["ingest12"]
+        self.run_test_ingest_pipeline(
+            test_name="integration_ingest_views_to_run_subset",
+            ingest_views_to_run=" ".join(subset_of_ingest_views),
+            raw_data_upper_bound_dates_json_override=self.us_dd_upper_date_bound_overrides,
+        )
