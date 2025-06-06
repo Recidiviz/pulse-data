@@ -85,6 +85,11 @@ function stateSpecificOpportunities(stateCode) {
       return {
         EARLY_DISCHARGE: "Early Termination",
       };
+    case "US_PA":
+      return {
+        TRANSFER_TO_ADMINISTRATIVE_SUPERVISION: "Administrative Supervision",
+        TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION: "Special Circumstances Supervision",
+      };
     case "US_TN":
       return {
         TRANSFER_TO_LIMITED_SUPERVISION: "Compliant Reporting",
@@ -130,47 +135,110 @@ function parseClientsByOpportunity(stateCode, structArray) {
 /**
  * Logic to determine whether to use plural or singular verb/noun.
  * @param {number} count the number of nouns
+ * @param {string[]} additionalVerbs verbs to conjugate other than "is" and "has"
  * @param {string} noun the name of the noun to pluralize
- * @returns an object with with type
+ * @returns an object with type
  * {
- *  verb: string;
+ *  is: string;
+ *  has: string;
+ *  [verbName]: string; // for each additional verb
  *  pluralNoun: string;
  * }
  */
-function pluralize(count, noun = "client") {
-  const verb = count === 1 ? "is" : "are";
+function pluralize(count, additionalVerbs = [], noun = "client") {
   const pluralNoun = count === 1 ? noun : `${noun}s`;
-  return { verb, pluralNoun };
+  
+  const result = {
+    is: count === 1 ? "is" : "are",
+    has: count === 1 ? "has" : "have",
+    pluralNoun
+  };
+  
+  // Add additional verbs as separate keys
+  additionalVerbs.forEach(verb => {
+    if (verb === "is" || verb === "has") {
+      return;
+    } else {
+      result[verb] = count === 1 ? `${verb}s` : verb;
+    }
+  });
+  
+  return result;
+}
+
+function generateClientText(clientCounts, opportunityName) {
+  if (clientCounts.urgentCount) {
+    const urgent = pluralize(clientCounts.urgentCount);
+    return `There ${urgent.is} ${clientCounts.urgentCount} ${urgent.pluralNoun} under your supervision that ${urgent.has} been eligible for ${opportunityName} for over 30 days who ${urgent.has}n’t yet been reviewed in the tool.`;
+  }
+
+  const eligible = pluralize(clientCounts.eligibleCount);
+  const almost = pluralize(clientCounts.almostEligibleCount);
+
+  if (clientCounts.eligibleCount && clientCounts.almostEligibleCount) {
+    return `There ${eligible.is} ${clientCounts.eligibleCount} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}. There ${almost.is} ${clientCounts.almostEligibleCount} additional ${almost.pluralNoun} who ${almost.is} almost eligible for ${opportunityName}.`;
+  } else if (clientCounts.eligibleCount && !clientCounts.almostEligibleCount) {
+    return `There ${eligible.is} ${clientCounts.eligibleCount} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}.`;
+  } else if (!clientCounts.eligibleCount && clientCounts.almostEligibleCount) {
+    return `There ${almost.is} ${clientCounts.almostEligibleCount} ${almost.pluralNoun} under your supervision who ${almost.is} almost eligible for ${opportunityName}.`;
+  } else {
+    return "";
+  }
 }
 
 /**
  * @param {array} eligibleClients the opportunities with eligible clients
  * @param {array} almostEligibleClients the opportunities with almost eligible clients
+ * @param {array} urgentClients the opportunities with urgent clients
  * @returns an array of strings with opportunity-specific text
  */
-function generateOpportunitySpecificText(eligibleClients, almostEligibleClients) {
+function generateOpportunitySpecificText(
+  eligibleClients,
+  almostEligibleClients,
+  urgentClients
+) {
   const opportunityNames = new Set([
-    ...eligibleClients.map(c => c.opportunityName),
-    ...almostEligibleClients.map(c => c.opportunityName),
+    ...eligibleClients.map((c) => c.opportunityName),
+    ...almostEligibleClients.map((c) => c.opportunityName),
   ]);
 
-  return Array.from(opportunityNames).map((opportunityName) => {
-    const numEligible = eligibleClients.find(o => o.opportunityName === opportunityName)?.numClients;
-    const numAlmostEligible = almostEligibleClients.find(o => o.opportunityName === opportunityName)?.numClients;
+  const opportunities = Array.from(opportunityNames).map((opportunityName) => {
+    const clientCounts = {
+      urgentCount:
+        urgentClients?.find((o) => o.opportunityName === opportunityName)
+          ?.numClients ?? 0,
+      eligibleCount:
+        eligibleClients?.find((o) => o.opportunityName === opportunityName)
+          ?.numClients ?? 0,
+      almostEligibleCount:
+        almostEligibleClients?.find(
+          (o) => o.opportunityName === opportunityName
+        )?.numClients ?? 0,
+    };
 
-    const eligible = pluralize(numEligible);
-    const almost = pluralize(numAlmostEligible);
-    
-    if (numEligible && numAlmostEligible) {
-      return `There ${eligible.verb} ${numEligible} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}. There ${almost.verb} ${numAlmostEligible} additional ${almost.pluralNoun} who ${almost.verb} almost eligible for ${opportunityName}.`;
-    } else if (numEligible && !numAlmostEligible) {
-      return `There ${eligible.verb} ${numEligible} ${eligible.pluralNoun} under your supervision eligible for ${opportunityName}.`;
-    } else if (!numEligible && numAlmostEligible) {
-      return `There ${almost.verb} ${numAlmostEligible} ${almost.pluralNoun} under your supervision who ${almost.verb} almost eligible for ${opportunityName}.`;
-    } else {
-      return "";
-    }
+    return {
+      text: generateClientText(clientCounts, opportunityName),
+      clientCounts,
+    };
   });
+
+  // Sort so urgent opportunities appear first, then within non-urgent sort by eligible first, then almost eligible
+  opportunities.sort((a, b) => {
+    if (a.clientCounts.urgentCount && !b.clientCounts.urgentCount) return -1;
+    if (!a.clientCounts.urgentCount && b.clientCounts.urgentCount) return 1;
+
+    if (a.clientCounts.urgentCount && b.clientCounts.urgentCount)
+      return b.clientCounts.urgentCount - a.clientCounts.urgentCount;
+
+    if (a.clientCounts.eligibleCount !== b.clientCounts.eligibleCount)
+      return b.clientCounts.eligibleCount - a.clientCounts.eligibleCount;
+
+    return (
+      b.clientCounts.almostEligibleCount - a.clientCounts.almostEligibleCount
+    );
+  });
+
+  return opportunities.map((opp) => opp.text);
 }
 
 /**
@@ -193,10 +261,14 @@ function stateSpecificText(
   almostEligibleOpportunities,
   totalOutliers,
   eligibleClientsByOpportunity,
-  almostEligibleClientsByOpportunity
+  almostEligibleClientsByOpportunity,
+  urgentClientsByOpportunity
 ) {
-  const supervisionOpportunitySpecificText =
-    generateOpportunitySpecificText(eligibleClientsByOpportunity, almostEligibleClientsByOpportunity);
+  const supervisionOpportunitySpecificText = generateOpportunitySpecificText(
+    eligibleClientsByOpportunity,
+    almostEligibleClientsByOpportunity,
+    urgentClientsByOpportunity
+  );
 
   // Note: Many states are in multiple timezones. We use the zone with more people.
   switch (stateCode) {
@@ -235,6 +307,7 @@ function stateSpecificText(
         toolName: "the Recidiviz Supervision Assistant",
         timeZone: "America/New_York",
         supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for Admin Supervision or Special Circumstances Supervision.`,
+        supervisionOpportunitySpecificText,
       };
     case "US_TN":
       return {
@@ -252,6 +325,14 @@ function stateSpecificText(
   }
 }
 
+function generateIntroText(toolName, currentMonth, urgentClients) {
+  if (urgentClients.length) {
+    return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted for the opportunity or ineligible for the opportunity.<br><br>`;
+  }
+
+  return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>`;
+}
+
 /**
  * @returns the HTML body of the email to be sent to the person described in `info`
  */
@@ -264,7 +345,8 @@ function buildLoginReminderBody(info, userType, settings) {
     eligibleOpportunities,
     almostEligibleOpportunities,
     eligibleClientsByOpportunity,
-    almostEligibleClientsByOpportunity
+    almostEligibleClientsByOpportunity,
+    urgentClientsByOpportunity,
   } = info;
   const { RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL } = settings;
   const isSupervisors = userType === SUPERVISORS;
@@ -281,7 +363,8 @@ function buildLoginReminderBody(info, userType, settings) {
     almostEligibleOpportunities,
     outliers,
     eligibleClientsByOpportunity,
-    almostEligibleClientsByOpportunity
+    almostEligibleClientsByOpportunity,
+    urgentClientsByOpportunity
   );
 
   const now = new Date();
@@ -299,36 +382,48 @@ function buildLoginReminderBody(info, userType, settings) {
     month: "long",
   });
 
+  const introText = generateIntroText(
+    toolName,
+    currentMonth,
+    urgentClientsByOpportunity
+  );
+
   let bulletPoints = "";
   let additionalContent = "";
 
   if (userType === SUPERVISION_LINESTAFF) {
     if (supervisionOpportunitySpecificText && totalOpportunities > 0) {
       bulletPoints = supervisionOpportunitySpecificText
-        .map(text => `<li>${text}</li>`)
+        .map((text) => `<li>${text}</li>`)
         .join("");
-        
+
       const eligible = pluralize(eligibleOpportunities);
-      const almost = pluralize(almostEligibleOpportunities);
-      additionalContent = `There ${eligible.verb} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.pluralNoun} almost eligible for opportunities.<br><br>`;
+      if (urgentClientsByOpportunity.length) {
+        const urgentOpportunities = urgentClientsByOpportunity.reduce((total, opp) => total += opp.numClients, 0);
+        const urgent = pluralize(urgentOpportunities);
+        additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities, and ${urgentOpportunities} ${urgent.has} been unviewed for 30+ days.<br><br>`
+      } else {
+        const almost = pluralize(almostEligibleOpportunities);
+        additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.is} almost eligible for opportunities.<br><br>`;
+      }
     }
   } else if (userType === FACILITIES_LINESTAFF) {
     if (facilitiesOpportunitiesText && totalOpportunities > 0) {
       bulletPoints = `<li>${facilitiesOpportunitiesText}</li>`;
     }
   } else if (isSupervisors) {
-    const outliersBulletPoint = outliersText && outliers > 0 
-      ? `<li>${outliersText}</li>` 
-      : "";
-    const supervisionBulletPoint = supervisionOpportunitiesText && totalOpportunities > 0 
-      ? `<li>${supervisionOpportunitiesText}</li>` 
-      : "";
+    const outliersBulletPoint =
+      outliersText && outliers > 0 ? `<li>${outliersText}</li>` : "";
+    const supervisionBulletPoint =
+      supervisionOpportunitiesText && totalOpportunities > 0
+        ? `<li>${supervisionOpportunitiesText}</li>`
+        : "";
     bulletPoints = outliersBulletPoint + supervisionBulletPoint;
   }
 
   return (
     `Hi ${name},<br><br>` +
-    `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>` +
+    introText +
     `As of ${formattedDate}:<br>` +
     "<ul>" +
     bulletPoints +
@@ -455,7 +550,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
 
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
-  const isSupervisors = userType === SUPERVISORS;
+
   const dataByEmail = Object.fromEntries(
     data.map((row) => [
       row[3].toLowerCase(), // email address, case normalized
@@ -474,6 +569,9 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
         almostEligibleClientsByOpportunity: isSupervisors
           ? []
           : parseClientsByOpportunity(row[0], row[9]),
+        urgentClientsByOpportunity: isSupervisors
+          ? []
+          : parseClientsByOpportunity(row[0], row[10]),
       },
     ])
   );

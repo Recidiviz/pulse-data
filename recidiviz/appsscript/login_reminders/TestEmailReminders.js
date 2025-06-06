@@ -36,6 +36,10 @@ const TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY = [
   { opportunityName: "Supervision Level Mismatch", numClients: 4 },
   { opportunityName: "Minimum Telephone Reporting", numClients: 1},
 ];
+const TEST_URGENT_CLIENTS_BY_OPPORTUNITY = [
+  { opportunityName: "Early Discharge", numClients: 2 },
+  { opportunityName: "Classification Review", numClients: 3},
+];
 
 const BASE_INFO = {
   name: TESTING_NAME,
@@ -48,7 +52,38 @@ const BASE_INFO = {
   almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
   eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
   almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+  urgentClientsByOpportunity: [],
 };
+
+const TEST_USERS = [
+  {
+    testName: "NO_LOGIN_NO_URGENT",
+    ...BASE_INFO
+  },
+  {
+    testName: "NO_LOGIN_URGENT",
+    name: TESTING_NAME,
+    emailAddress: TEST_DESTINATION_EMAIL,
+    district: TESTING_DISTRICT,
+    lastLogin: null,
+    outliers: TEST_NUM_OUTLIERS,
+    totalOpportunities: TEST_NUM_OPPORTUNITIES,
+    eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
+    almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
+    eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    urgentClientsByOpportunity: TEST_URGENT_CLIENTS_BY_OPPORTUNITY,
+  }
+]
+
+const SUPERVISION_LINESTAFF_USER_MAPPING = {
+  "US_IX": "NO_LOGIN_NO_URGENT",
+  "US_ME": "NO_LOGIN_NO_URGENT",
+  "US_MI": "NO_LOGIN_NO_URGENT",
+  "US_ND": "NO_LOGIN_URGENT",
+  "US_PA": "NO_LOGIN_URGENT",
+  "US_TN": "NO_LOGIN_URGENT",
+}
 
 function testSendFacilitiesLinestaffEmails() {
   sendTestEmails_(
@@ -64,7 +99,8 @@ function testSendSupervisionLinestaffEmails() {
     "[TESTING] Sent Emails to Supervision Linestaff",
     EMAIL_SETTINGS,
     SUPERVISION_LINESTAFF_INCLUDED_STATES,
-    SUPERVISION_LINESTAFF
+    SUPERVISION_LINESTAFF,
+    SUPERVISION_LINESTAFF_USER_MAPPING
   );
 }
 
@@ -137,7 +173,7 @@ function testParseClientsByOpportunity() {
 // Private functions, indicated by the underscore at the end of the name, will not
 // show up in the Apps Script UI.
 
-function sendTestEmails_(sheetName, settings, stateCodesToTest, userType) {
+function sendTestEmails_(sheetName, settings, stateCodesToTest, userType, userMapping = null) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet();
   let sentEmailsSheet = sheet.getSheetByName(sheetName);
   if (!sentEmailsSheet) {
@@ -150,7 +186,19 @@ function sendTestEmails_(sheetName, settings, stateCodesToTest, userType) {
       ...settings,
       EMAIL_SUBJECT: `[TESTING ${stateCode}] ${settings.EMAIL_SUBJECT}`,
     };
-    const info = { ...BASE_INFO, stateCode };
+
+    let userInfo;
+    if (userMapping) {
+      if (userMapping[stateCode]) {
+        userInfo = TEST_USERS.find((user) => user.testName === userMapping[stateCode]);
+      } else {
+        throw new Error(`State "${stateCode}" not found in userMapping. Please specify a user for this state.`);
+      }
+    } else {
+      userInfo = BASE_INFO;
+    }
+    
+    const info = { ...userInfo, stateCode };
     const body = buildLoginReminderBody(info, userType, testSettings);
     sendLoginReminder(info, body, sentEmailsSheet, testSettings);
   }
