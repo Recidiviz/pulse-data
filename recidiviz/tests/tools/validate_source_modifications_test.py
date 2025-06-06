@@ -21,7 +21,6 @@ from typing import FrozenSet, List, Tuple
 
 from recidiviz.tools.validate_source_modifications import (
     BUILD_INFRA_KEY,
-    INGEST_DOCS_KEY,
     PIPFILE_KEY,
     check_assertions,
 )
@@ -79,60 +78,6 @@ class CheckAssertionsTest(unittest.TestCase):
         modified_files = ["Pipfile"]
 
         self._run_test(modified_files, [], [PIPFILE_KEY])
-
-    def test_ingest_docs_happy(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml",
-            "docs/ingest/us_nd/raw_data.md",
-        ]
-
-        self._run_test(modified_files, [], [])
-
-    def test_ingest_docs_happy_multiple_regions(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml",
-            "docs/ingest/us_nd/raw_data.md",
-            "recidiviz/ingest/direct/regions/us_mo/us_mo_controller.py",
-            "docs/ingest/us_mo/us_mo.md",
-        ]
-
-        self._run_test(modified_files, [], [])
-
-    def test_ingest_docs_unhappy(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml",
-            "recidiviz/ingest/direct/regions/us_nd/raw_data/something_else.yaml",
-        ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
-            (
-                frozenset(["recidiviz/ingest/direct/regions/us_nd/raw_data/"]),
-                frozenset(["docs/ingest/us_nd/"]),
-                "ingest_docs",
-            )
-        ]
-
-        self._run_test(modified_files, expected_failures, [])
-
-    def test_ingest_docs_unhappy_multiple_regions(self) -> None:
-        modified_files = [
-            "recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml",
-            "docs/ingest/us_nd/raw_data.md",
-            "recidiviz/ingest/direct/regions/us_mo/raw_data/whatever.yaml",
-        ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
-            (
-                frozenset(["recidiviz/ingest/direct/regions/us_mo/raw_data/"]),
-                frozenset(["docs/ingest/us_mo/"]),
-                "ingest_docs",
-            )
-        ]
-
-        self._run_test(modified_files, expected_failures, [])
-
-    def test_ingest_docs_skipped(self) -> None:
-        modified_files = ["../../ingest/direct/regions/us_nd/raw_data/whatever.yaml"]
-
-        self._run_test(modified_files, [], [INGEST_DOCS_KEY])
 
     # TODO(#8217) excluding the admin panel from endpoint documentation,
     #  write new test to test the admin panel routes

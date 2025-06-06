@@ -43,9 +43,6 @@ import attr
 from werkzeug.routing import Rule
 
 from recidiviz.admin_panel.models import validation_pb2
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_codes,
-)
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
     app_rules,
@@ -144,13 +141,8 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
 
 ADMIN_PANEL_KEY = "admin_panel"
 PIPFILE_KEY = "pipfile"
-INGEST_DOCS_KEY = "ingest_docs"
-CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
-ENDPOINTS_DOCS_KEY = "endpoints_docs"
 IGNORE_KEY = "ignore"
 BUILD_INFRA_KEY = "build_infra"
-US_IX_KEY = "us_ix"
-FLEX_KEY = "dataflow_env"
 
 
 @functools.cache
@@ -193,17 +185,6 @@ def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
                 then_modified_files=frozenset({"Pipfile.lock"}),
             )
         ],
-        # ingest docs
-        INGEST_DOCS_KEY: [
-            RequiredModificationSets(
-                if_modified_files=frozenset(
-                    {f"recidiviz/ingest/direct/regions/{region_code}/raw_data/"}
-                ),
-                then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
-            )
-            for region_code in get_existing_region_codes()
-        ],
-        ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
         # ignore files
         IGNORE_KEY: [
             RequiredModificationSets(
@@ -221,17 +202,6 @@ def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
                         "Dockerfile.justice-counts.dockerignore",
                     }
                 )
-            ),
-        ],
-        # Ensure that any files copied from ID are kept in sync between the two regions.
-        US_IX_KEY: [
-            RequiredModificationSets(
-                if_modified_files=frozenset(
-                    {"recidiviz/pipelines/utils/state_utils/us_id/"}
-                ),
-                then_modified_files=frozenset(
-                    {"recidiviz/pipelines/utils/state_utils/us_ix/"}
-                ),
             ),
         ],
     }
