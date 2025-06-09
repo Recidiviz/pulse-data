@@ -86,5 +86,5 @@ num_allowed_rows_overrides:
       This validation is failing due to the way task eligibility spans are structured for MI.
       Bumping threshold for now until it's determined whether this is an issue or not.  See #25100
   - validation_name: officer_monthly_usage_report_actions_without_logins
-    hard_num_allowed_rows_override: 2
+    hard_num_allowed_rows_override: 5
     override_reason: Will be resolved with the Polaris segment ad blocker work around
