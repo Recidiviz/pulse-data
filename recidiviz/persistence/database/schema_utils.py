@@ -45,6 +45,9 @@ from recidiviz.persistence.database.schema.justice_counts import (
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
+from recidiviz.persistence.database.schema.resource_search.schema import (
+    ResourceSearchBase,
+)
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.workflows import schema as workflows_schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -170,5 +173,7 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
             return WorkflowsBase
         case SchemaType.INSIGHTS:
             return InsightsBase
+        case SchemaType.RESOURCE_SEARCH:
+            return ResourceSearchBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")
