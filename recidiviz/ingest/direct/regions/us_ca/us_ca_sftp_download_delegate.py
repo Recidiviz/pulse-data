@@ -40,15 +40,14 @@ class UsCaSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     CURRENT_ROOT = "/"
     TIMESTAMP_FORMAT = "%B %d, %Y"
-    POST_FIX = " Data"
-    SECOND_LEVEL_DIRS_TO_DOWNLOAD = {"PAROLE", "INCUSTODY", "Delta"}
+    POST_FIX = " data"
 
     def _matches(self, path: str) -> bool:
         """File names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/"""
         path_obj = Path(path)
 
         # Directory names must match "/<Month day, Year> Data/"
-        folder = path_obj.name
+        folder = path_obj.name.lower()
 
         # Checks the "<Month day, Year> Data" part
         if folder.endswith(self.POST_FIX):
