@@ -40,10 +40,14 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_sex_offender_alert,
+    not_denied_for_crc,
     not_detainers_for_xcrc_and_crc,
     not_serving_a_rider_sentence,
 )
-from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+)
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
@@ -88,11 +92,21 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
             sub_criteria=crc_work_release_time_based_criteria.VIEW_BUILDER,
         ),
+        not_denied_for_crc.VIEW_BUILDER,
     ],
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
-    almost_eligible_condition=NotEligibleCriteriaCondition(
-        criteria=not_serving_for_violent_offense.VIEW_BUILDER,
-        description="Serving a sentence for a violent offense",
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            NotEligibleCriteriaCondition(
+                criteria=not_serving_for_violent_offense.VIEW_BUILDER,
+                description="Serving a sentence for a violent offense",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=not_denied_for_crc.VIEW_BUILDER,
+                description="Denied for CRC eligibility",
+            ),
+        ],
+        at_least_n_conditions_true=1,
     ),
 )
 
