@@ -33,6 +33,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.gating import FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE
+from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
+    is_column_exempt_from_datetime_parsers,
+)
 from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
     COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS,
     COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS,
@@ -45,7 +48,6 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
-from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
@@ -338,55 +340,6 @@ class RawTableColumnInfo:
         default=None, validator=attr_validators.is_opt_list
     )
 
-    DATETIME_PARSER_EXEMPTIONS: Set[StateCode] = {
-        # TODO(#12174): Hydrate datetime_parsers for US_AZ then remove this exemption
-        StateCode.US_AZ,
-        # TODO(#12174): Hydrate datetime_parsers for US_CA then remove this exemption
-        StateCode.US_CA,
-        # TODO(#12174): Hydrate datetime_parsers for US_CO then remove this exemption
-        StateCode.US_CO,
-        # TODO(#12174): Hydrate datetime_parsers for US_ID and US_IX then remove this exemption
-        StateCode.US_ID,
-        StateCode.US_IX,
-        # TODO(#12174): Hydrate datetime_parsers for US_IA then remove this exemption
-        StateCode.US_IA,
-        # TODO(#12174): Hydrate datetime_parsers for US_ME then remove this exemption
-        StateCode.US_ME,
-        # TODO(#12174): Hydrate datetime_parsers for US_MA then remove this exemption
-        StateCode.US_MA,
-        # TODO(#12174): Hydrate datetime_parsers for US_MI then remove this exemption
-        StateCode.US_MI,
-        # TODO(#12174): Hydrate datetime_parsers for US_MO then remove this exemption
-        StateCode.US_MO,
-        # TODO(#12174): Hydrate datetime_parsers for US_NE then remove this exemption
-        StateCode.US_NE,
-        # TODO(#12174): Hydrate datetime_parsers for US_NC then remove this exemption
-        StateCode.US_NC,
-        # TODO(#12174): Hydrate datetime_parsers for US_ND then remove this exemption
-        StateCode.US_ND,
-        # TODO(#12174): Hydrate datetime_parsers for US_OR then remove this exemption
-        StateCode.US_OR,
-        # TODO(#12174): Hydrate datetime_parsers for US_OZ then remove this exemption
-        StateCode.US_OZ,
-        # TODO(#12174): Hydrate datetime_parsers for US_PA then remove this exemption
-        StateCode.US_PA,
-        # TODO(#12174): Hydrate datetime_parsers for US_TN then remove this exemption
-        StateCode.US_TN,
-        # TODO(#12174): Hydrate datetime_parsers for US_TX then remove this exemption
-        StateCode.US_TX,
-        # TODO(#12174): Hydrate datetime_parsers for US_UT then remove this exemption
-        StateCode.US_UT,
-    }
-
-    if environment.in_test():
-        # TODO(#12174): Fix test raw data config fixture files to include datetime parsers for datetime columns,
-        # then remove these exemptions
-        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_DD)
-        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_LL)
-        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_XX)
-        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_YY)
-        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_WW)
-
     # TODO(#40717) Check BIRTHDATE is PII and DATETIME is not
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -506,11 +459,16 @@ class RawTableColumnInfo:
             return
 
         if not self.datetime_sql_parsers:
-            # TODO(#12174): Remove this if-check once DATETIME_PARSER_EXEMPTIONS is empty.
-            if self.state_code in self.DATETIME_PARSER_EXEMPTIONS:
+            # TODO(#12174): Remove this if-check once all the exemptions in
+            #  datetime_sql_parser_exemptions.py are gone.
+            if is_column_exempt_from_datetime_parsers(
+                self.state_code, self.file_tag, self.name
+            ):
                 return
             raise ValueError(
-                f"State {self.state_code.value}: Expected datetime_sql_parsers to be set for datetime field {self.name} with field type: {self.field_type}"
+                f"State {self.state_code.value}: Expected datetime_sql_parsers to be "
+                f"set for datetime field {self.name} in file {self.file_tag} with field"
+                f"type: {self.field_type}"
             )
 
         # Now we know that the field is a datetime field AND there are parsers defined

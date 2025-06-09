@@ -380,6 +380,7 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory",
         "recidiviz.ingest.direct.raw_data.raw_file_configs",
         "recidiviz.ingest.direct.raw_data.raw_table_relationship_info",
+        "recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions",
         "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader",
         "recidiviz.ingest.direct.raw_data.validations",
         "recidiviz.ingest.direct.regions",  # there is a lot of code here, but is preferable to having to enumerate all region subidrs
