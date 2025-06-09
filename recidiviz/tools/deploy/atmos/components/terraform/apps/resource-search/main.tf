@@ -25,7 +25,7 @@ module "postgresql" {
     enabled                        = var.is_backup_enabled
     start_time                     = "04:00" # UTC
     location                       = var.location
-    point_in_time_recovery_enabled = true
+    point_in_time_recovery_enabled = var.is_backup_enabled
     retained_backups               = 7
     retention_unit                 = "COUNT" 
   
