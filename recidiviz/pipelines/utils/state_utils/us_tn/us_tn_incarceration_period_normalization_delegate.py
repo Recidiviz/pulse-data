@@ -271,7 +271,7 @@ def _us_tn_infer_additional_periods(
     incarceration_period for that time in order to begin sessions at the correct incarceration start.
 
     We then override the custodial authority for certain periods (if the custodial authority changes
-    in a period that has "-T" in the admission reason, and the "T" period comes after a period with "-P"
+    in a period that has "-T" in the admission reason, and the "T" period comes immediately after a period with "-P"
     in the admission reason, then the "T" period will be updated to use the custodial authority from the "P" period).
 
     Finally, infer periods to fill the gaps between certain temporary transfer periods. Periods
@@ -313,92 +313,91 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
 ) -> List[StateIncarcerationPeriod]:
     """
     Override the custodial authority for certain periods (if the custodial authority changes
-    in a period that has "-T" in the admission reason, and the "T" period comes after a period with "-P"
+    in a period that has "-T" in the admission reason, and the "T" period comes immediately after a period with "-P"
     in the admission reason, then the "T" period will be updated to use the custodial authority from the "P" period).
     """
 
     sorted_incarceration_periods = standard_date_sort_for_incarceration_periods(
         incarceration_periods
     )
-    # Get all the periods that don't have a "-T" flag in their admission reason.
-    non_temporary_movement_periods = [
+    # Get all the periods that have a "-P" flag in their admission reason.
+    permanent_movement_periods = [
         ip
         for ip in sorted_incarceration_periods
         if ip.admission_reason_raw_text
-        and not ip.admission_reason_raw_text.endswith("-T")
+        and ip.admission_reason_raw_text.endswith("-P")
         and ip.admission_date
         and ip.release_date
     ]
-    updated_incarceration_periods: List[StateIncarcerationPeriod] = []
+    normalized_temporary_movement_periods: List[StateIncarcerationPeriod] = []
+    all_updated_incarceration_periods: List[StateIncarcerationPeriod] = []
 
-    if len(non_temporary_movement_periods) > 0:
+    if len(permanent_movement_periods) > 0:
         for ip in sorted_incarceration_periods:
+            # This flag will be set to true if period has its custodial authority overwritten.
+            # We store this as a boolean so that we can add the period to a list of periods receiving
+            # the override.
+            receives_override = False
             # Store the period's original custodial authority to use as a default value
             new_custodial_authority = ip.custodial_authority
+            # If the period has a "-T" flag, then we need to look at the preceding "-P" period(s)
+            # to see if we need to override its custodial authority.
             if (
                 ip.admission_reason_raw_text
                 and ip.admission_date
                 and ip.admission_reason_raw_text.endswith("-T")
             ):
-                # If the period has a "-T" flag, retrieve the periods from non_temporary_movement_periods
-                # that start before the "T" period.
-                prior_non_temporary_movement_periods = [
-                    past_ip
-                    for past_ip in non_temporary_movement_periods
-                    if past_ip.custodial_authority
-                    and past_ip.admission_reason_raw_text
-                    and past_ip.admission_date
-                    and past_ip.admission_date < ip.admission_date
-                ]
-
-                # prior_non_temporary_movement_periods is sorted with a custom function that
-                # orders the periods by admission date, then by period length (descending).
-                # This keeps the selection of the most recent period deterministic. Periods
-                # should only share an admission date with one another if one of them is
-                # a zero-day period, so this sorting ensures that if we're ever picking
-                # between two periods with the same admission date, we use the non-zero-day one.
-                # Note that this means that zero-day periods CAN be used to get the custodial
-                # authority override, if they have a more recent admission date than any of
-                # the non-zero-day "P" periods.
-                prior_non_temporary_movement_periods.sort(
-                    key=lambda x: (
-                        x.admission_date,
-                        x.release_date is None,
-                        x.release_date,
-                    ),
-                    reverse=True,
-                )
-                # Get the subset of prior_non_temporary_movement_periods that
-                # have "-P" flags.
-                prior_permanent_movement_periods = [
+                # Get all the periods from a) permanent_movement_periods, and b) the list of periods
+                # that have already been normalized, that end on the same date that the "-T" period begins.
+                # (so that if a T period follows an adjacent P period and has its custodial authority
+                # overwritten, then subsequent adjacent T periods will receive the same override
+                # even though they're not adjacent to the original P period)
+                adjacent_permanent_movement_periods = [
                     pmp
-                    for pmp in prior_non_temporary_movement_periods
-                    if pmp.admission_reason_raw_text
-                    and pmp.admission_reason_raw_text.endswith("-P")
+                    for pmp in permanent_movement_periods
+                    + normalized_temporary_movement_periods
+                    if pmp.custodial_authority and pmp.release_date == ip.admission_date
                 ]
-                if len(prior_permanent_movement_periods) > 0:
-                    # If there are periods with "P" flags before the "T" period, check
-                    # to see if the most recent "P" or unflagged period has a different
-                    # custodial authority than the "T" period.
-                    if (
-                        ip.custodial_authority
-                        != prior_non_temporary_movement_periods[0].custodial_authority
-                    ):
-                        # If the custodial authority has changed since the most recent "P"
-                        # or unflagged period, then get the custodial authority from the most
-                        # recent "P" period to use as an override for the "T" period's custodial
-                        # authority.
-                        new_custodial_authority = prior_permanent_movement_periods[
-                            0
-                        ].custodial_authority
-            # This new period will be the same as the original unless the custodial authority
-            # override occurred.
+                if len(adjacent_permanent_movement_periods) > 0:
+                    # In case there's more than one, sort the adjacent "-P" periods by admission date
+                    # and retrieve the one that started most recently. If multiple "-P" periods
+                    # share an admission date, prioritize the one with the highest IncarcerationPeriodSequenceNumber,
+                    # which is the second part of an incarceration period's external ID and
+                    # is calculated using movement datetimes. This way, we can identify which period
+                    # is actually the most recent, which we can't determine just by looking at
+                    # the admission date since multiple periods can occur on the same date at
+                    # different times.
+
+                    adjacent_permanent_movement_periods.sort(
+                        key=lambda x: (
+                            x.admission_date,
+                            int(x.external_id.split("-")[1]),
+                        ),
+                        reverse=True,
+                    )
+                    most_recent_adjacent_permanent_movement_period = (
+                        adjacent_permanent_movement_periods[0]
+                    )
+
+                    # Regardless of whether or not the custodial authority has actually changed,
+                    # override it with the custodial authority from most_recent_adjacent_permanent_movement_period.
+                    # If the custodial authority hasn't changed, we still want receives_override
+                    # to be true because the period being normalized is contiguous to a "P"
+                    # period, so if the next period being normalized is "T" and adjacent, we want
+                    # to use this period's custodial authority.
+                    receives_override = True
+                    new_custodial_authority = (
+                        most_recent_adjacent_permanent_movement_period.custodial_authority
+                    )
+
             updated_ip = deep_entity_update(
                 ip, custodial_authority=new_custodial_authority
             )
-            updated_incarceration_periods.append(updated_ip)
-        return updated_incarceration_periods
-
+            if receives_override:
+                # Add the updated IP to the list of IPs updated in this loop.
+                normalized_temporary_movement_periods.append(updated_ip)
+            all_updated_incarceration_periods.append(updated_ip)
+        return all_updated_incarceration_periods
     # If non_temporary_movement_periods is empty, then this function will just
     # use the input as output.
     return sorted_incarceration_periods

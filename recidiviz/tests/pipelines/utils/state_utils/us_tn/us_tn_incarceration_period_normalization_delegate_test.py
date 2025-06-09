@@ -134,7 +134,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -146,7 +146,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         updated_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -185,7 +185,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -197,7 +197,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         updated_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -236,7 +236,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -248,7 +248,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         updated_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -287,7 +287,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -300,7 +300,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         updated_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 5, 9),
@@ -416,7 +416,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -428,7 +428,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -481,7 +481,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -493,7 +493,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -546,7 +546,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -558,7 +558,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -608,7 +608,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -622,7 +622,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -636,7 +636,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip3",
+            external_id="123-3",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -650,7 +650,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
-            external_id="ip4",
+            external_id="123-4",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 11, 9),
@@ -664,7 +664,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=555,
-            external_id="ip5",
+            external_id="123-5",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 12, 9),
@@ -712,12 +712,217 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         ]
         self.assertEqual(expected_periods, ips_with_custodial_authority_override)
 
+    def test_override_custodial_authority_contiguity(
+        self,
+    ) -> None:
+        # Similar to above test, but in this case, the second period has the same custodial
+        # authority as the first. Here, we still want to override the third period's custodial
+        # authority with STATE_PRISON, because it's contiguous to the first period, which is
+        # is a "P" STATE_PRISON period. It's considered contiguous to the "P" period even
+        # though it's not adjacent, because the period it IS adjacent to is adjacent to the "P"
+        # period. Even though the second period doesn't receive an override, it's still used
+        # to determine contiguity.
+
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-JAORD-P",
+            release_date=date(2018, 9, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 9, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-MEDTE-T",
+            release_date=date(2018, 10, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="123-3",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 10, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-MEDTE-T",
+            release_date=date(2018, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+        )
+
+        ips_with_custodial_authority_override = self.delegate.infer_additional_periods(
+            person_id=self.person_id,
+            incarceration_periods=deepcopy(
+                [
+                    incarceration_period_1,
+                    incarceration_period_2,
+                    incarceration_period_3,
+                ]
+            ),
+            supervision_period_index=default_normalized_sp_index_for_tests(
+                supervision_periods=[]
+            ),
+        )
+        ip1_normalized = deepcopy(incarceration_period_1)
+        ip2_normalized = deepcopy(incarceration_period_2)
+
+        ip3_normalized = deep_entity_update(
+            deepcopy(incarceration_period_3),
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        expected_periods = [
+            ip1_normalized,
+            ip2_normalized,
+            ip3_normalized,
+        ]
+        self.assertEqual(expected_periods, ips_with_custodial_authority_override)
+
+    def test_override_custodial_authority_use_id_to_prioritize(
+        self,
+    ) -> None:
+        # If a T period is preceded by two P periods with the same admission date but different
+        # custodial authorities, we need to pick one of the P periods to use for the custodial
+        # authority override. We use the P periods' external IDs to prioritize them, since
+        # the IDs contain a sequence number that was calculated during ingest using the movement
+        # datetimes. Therefore, in the first test, the two P periods occur on the same day, but
+        # the STATE_PRISON P period has an external ID of 123-2, which tells us to prioritize it
+        # over the COUNTY P period, which has an external ID of 123-1. As a result, the T period
+        # that follows these P periods has its custodial authority changed from COUNTY to STATE_PRISON.
+
+        # In the second test, the IDs for the P periods are switched, meaning that the STATE_PRISON
+        # P period is more recent than the COUNTY P period, even though the two periods have the
+        # same admission date. In this case, the custodial authority for the T period is unchanged.
+
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-JAORD-P",
+            release_date=date(2017, 4, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="PAFA-PAVOK-P",
+            release_date=date(2017, 4, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-JAORD-P",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+        )
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="123-3",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-MEDTE-T",
+            release_date=date(2018, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+        )
+
+        ips_with_custodial_authority_override = self.delegate.infer_additional_periods(
+            person_id=self.person_id,
+            incarceration_periods=deepcopy(
+                [
+                    incarceration_period_1,
+                    incarceration_period_2,
+                    incarceration_period_3,
+                ]
+            ),
+            supervision_period_index=default_normalized_sp_index_for_tests(
+                supervision_periods=[]
+            ),
+        )
+        ip1_normalized = deepcopy(incarceration_period_1)
+        ip2_normalized = deepcopy(incarceration_period_2)
+
+        ip3_normalized = deep_entity_update(
+            deepcopy(incarceration_period_3),
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        expected_periods = [
+            ip2_normalized,
+            ip1_normalized,
+            ip3_normalized,
+        ]
+        self.assertEqual(expected_periods, ips_with_custodial_authority_override)
+
+        incarceration_period_1_switched_id = deep_entity_update(
+            deepcopy(incarceration_period_1), external_id="123-1"
+        )
+        incarceration_period_2_switched_id = deep_entity_update(
+            deepcopy(incarceration_period_2), external_id="123-2"
+        )
+
+        ips_with_custodial_authority_override_switched_ids = (
+            self.delegate.infer_additional_periods(
+                person_id=self.person_id,
+                incarceration_periods=deepcopy(
+                    [
+                        incarceration_period_1_switched_id,
+                        incarceration_period_2_switched_id,
+                        incarceration_period_3,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[]
+                ),
+            )
+        )
+        ip1_switched_normalized = deepcopy(incarceration_period_1_switched_id)
+        ip2_switched_normalized = deepcopy(incarceration_period_2_switched_id)
+        ip3_switched_normalized = deepcopy(incarceration_period_3)
+
+        expected_periods_switched_ids = [
+            ip1_switched_normalized,
+            ip2_switched_normalized,
+            ip3_switched_normalized,
+        ]
+        self.assertEqual(
+            expected_periods_switched_ids,
+            ips_with_custodial_authority_override_switched_ids,
+        )
+
     def test_only_override_custodial_authority_when_applicable(
         self,
     ) -> None:
         incarceration_period_open_after_permanent_move = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -746,7 +951,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_open_after_temporary_move = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -775,7 +980,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_permanent_admission_to_state_prison = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip3",
+            external_id="123-3",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -789,7 +994,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_temporary_admission_to_state_prison = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
-            external_id="ip4",
+            external_id="123-4",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -830,7 +1035,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_permanent_admission_to_county = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=555,
-            external_id="ip5",
+            external_id="123-5",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 11, 9),
@@ -867,7 +1072,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_permanent_admission_missing_custody = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=666,
-            external_id="ip6",
+            external_id="123-6",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -880,7 +1085,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_temporary_admission_with_custody = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=777,
-            external_id="ip7",
+            external_id="123-7",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -918,17 +1123,64 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             normalized_periods_temporary_after_permanent_with_missing_custody,
         )
 
+        incarceration_period_permanent_admission_gap_after_release = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=888,
+            external_id="123-8",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 9, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-JAORD-P",
+            release_date=date(2018, 10, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-MEDTE-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+        incarceration_period_temporary_admission_gap_before_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=999,
+            external_id="123-9",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 11, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-MEDTE-T",
+            release_date=date(2019, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FAFA-JAORD-P",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+        )
+        normalized_periods_with_gap = self.delegate.infer_additional_periods(
+            person_id=self.person_id,
+            incarceration_periods=deepcopy(
+                [
+                    incarceration_period_permanent_admission_gap_after_release,
+                    incarceration_period_temporary_admission_gap_before_admission,
+                ]
+            ),
+            supervision_period_index=default_normalized_sp_index_for_tests(
+                supervision_periods=[]
+            ),
+        )
+        expected_periods_with_gap = [
+            deepcopy(incarceration_period_permanent_admission_gap_after_release),
+            deepcopy(incarceration_period_temporary_admission_gap_before_admission),
+        ]
+        # Test that infer_additional_periods won't change the custodial authority for an
+        # incarceration period that has a "temporary" admission reason if the preceding period
+        # with a "permanent" admission reason isn't adjacent (i.e. gap between release and admission)
+        self.assertEqual(
+            normalized_periods_with_gap,
+            expected_periods_with_gap,
+        )
+
     def test_override_custodial_authority_edge_cases(
         self,
     ) -> None:
-        # Edge case 1: The period with the "T" admission reason has a different custodial
-        # authority than the most recent period with a "P" admission reason, but the custodial
-        # authority isn't actually changing in the "T" period: it's the same as the custodial
-        # authority for the period between the "P" and "T" periods, which doesn't have a "T"
-        # or "P" flag. Here, we don't override the custodial authority for the "T" period.
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -936,100 +1188,41 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason_raw_text="FAFA-JAORD-P",
             release_date=date(2018, 1, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
-            release_reason_raw_text="CUSTCHANGEFH-CUST_CHANGE",
+            release_reason_raw_text="FAFA-MEDTE-T",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        ip1_zero_day = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 1, 9),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-            admission_reason_raw_text="CUSTCHANGEFH-CUST_CHANGE",
-            release_date=date(2018, 9, 9),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FAFA-JAORD-P",
+            release_date=date(2018, 1, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
             release_reason_raw_text="FAFA-MEDTE-T",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
         )
-        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip3",
+            external_id="123-3",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2018, 9, 9),
+            admission_date=date(2018, 1, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             admission_reason_raw_text="FAFA-MEDTE-T",
             release_date=date(2018, 10, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="FAFA-MEDTE-T",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            custodial_authority=StateCustodialAuthority.COUNTY,
-        )
-        normalized_periods_temporary_after_permanent_with_unflagged_period_in_between = self.delegate.infer_additional_periods(
-            person_id=self.person_id,
-            incarceration_periods=deepcopy(
-                [incarceration_period_1, incarceration_period_2, incarceration_period_3]
-            ),
-            supervision_period_index=default_normalized_sp_index_for_tests(
-                supervision_periods=[]
-            ),
-        )
-        expected_periods_temporary_after_permanent_with_unflagged_period_in_between = (
-            deepcopy(
-                [incarceration_period_1, incarceration_period_2, incarceration_period_3]
-            )
-        )
-        self.assertEqual(
-            expected_periods_temporary_after_permanent_with_unflagged_period_in_between,
-            normalized_periods_temporary_after_permanent_with_unflagged_period_in_between,
-        )
-
-        # Edge case 2: Same as above case, but the custodial authority for the "T" period
-        # is different than it was for both of the preceding periods. As such, it does receive
-        # the override. However, we only ever use the custodial authority from "P" periods
-        # to override the custodial authority for "T" periods, so even though the unflagged
-        # period starts after the "P" period, the "P" period's custodial authority is used for the override.
-        ip3_changed_custodial_authority = deep_entity_update(
-            deepcopy(incarceration_period_3),
             custodial_authority=StateCustodialAuthority.FEDERAL,
         )
-        normalized_periods_temporary_after_permanent_with_unflagged_period_in_between_2 = self.delegate.infer_additional_periods(
-            person_id=self.person_id,
-            incarceration_periods=deepcopy(
-                [
-                    incarceration_period_1,
-                    incarceration_period_2,
-                    ip3_changed_custodial_authority,
-                ]
-            ),
-            supervision_period_index=default_normalized_sp_index_for_tests(
-                supervision_periods=[]
-            ),
-        )
-        expected_periods_temporary_after_permanent_with_unflagged_period_in_between_2 = [
-            deepcopy(incarceration_period_1),
-            deepcopy(incarceration_period_2),
-            deep_entity_update(
-                deepcopy(ip3_changed_custodial_authority),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            ),
-        ]
-        self.assertEqual(
-            expected_periods_temporary_after_permanent_with_unflagged_period_in_between_2,
-            normalized_periods_temporary_after_permanent_with_unflagged_period_in_between_2,
-        )
 
-        # Edge case 3: Another "P" period starts on the same date as the "P" period in the
-        # previous tests, but this one is a zero-day period. When applying the override
-        # to the "T" period, we use the custodial authority from the non-zero-day "P" period.
-        ip1_zero_day = deep_entity_update(
-            deepcopy(incarceration_period_1),
-            release_date=date(2017, 4, 30),
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
-        )
+        # Edge case 1: Two "-P" periods have end dates that make them adjacent to the "-T" period.
+        # Whichever one started more recently (a zero-day period in this case) is used for the override.
         normalized_periods_permanent_period_overlapping_with_zero_day_period = (
             self.delegate.infer_additional_periods(
                 person_id=self.person_id,
@@ -1038,7 +1231,6 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
                         incarceration_period_1,
                         ip1_zero_day,
                         incarceration_period_2,
-                        ip3_changed_custodial_authority,
                     ]
                 ),
                 supervision_period_index=default_normalized_sp_index_for_tests(
@@ -1047,12 +1239,11 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             )
         )
         expected_periods_permanent_period_overlapping_with_zero_day_period = [
-            deepcopy(ip1_zero_day),
             deepcopy(incarceration_period_1),
-            deepcopy(incarceration_period_2),
+            deepcopy(ip1_zero_day),
             deep_entity_update(
-                deepcopy(ip3_changed_custodial_authority),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                deepcopy(incarceration_period_2),
+                custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             ),
         ]
         self.assertEqual(
@@ -1060,10 +1251,8 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             normalized_periods_permanent_period_overlapping_with_zero_day_period,
         )
 
-        # Edge case 4: Same zero-day period as above, but this time there isn't a non-zero
-        # day "P" period preceding the "T" period. When deciding which preceding period to
-        # use for the override, we prioritize non-zero day periods if multiple periods share
-        # an admission date, but if the only option is a zero-day period we'll use it nonetheless.
+        # Edge case 2: Same zero-day period as above, but this time there isn't a non-zero
+        # day "P" period preceding the "T" period. Same override.
         normalized_periods_non_overlapping_zero_day_period = (
             self.delegate.infer_additional_periods(
                 person_id=self.person_id,
@@ -1071,7 +1260,6 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
                     [
                         ip1_zero_day,
                         incarceration_period_2,
-                        ip3_changed_custodial_authority,
                     ]
                 ),
                 supervision_period_index=default_normalized_sp_index_for_tests(
@@ -1081,9 +1269,8 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         expected_periods_non_overlapping_zero_day_period = [
             deepcopy(ip1_zero_day),
-            deepcopy(incarceration_period_2),
             deep_entity_update(
-                deepcopy(ip3_changed_custodial_authority),
+                deepcopy(incarceration_period_2),
                 custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             ),
         ]
@@ -1103,7 +1290,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_ending_in_work_release = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -1118,7 +1305,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_starting_in_work_release_return_after_gap = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 5, 30),
@@ -1133,7 +1320,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_starting_in_work_release_return_no_gap = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip3",
+            external_id="123-3",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 6, 30),
@@ -1148,7 +1335,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_not_work_release_after_gap = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
-            external_id="ip4",
+            external_id="123-4",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 1, 30),
@@ -1173,7 +1360,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         wr_new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4700000000012312345,
-            external_id="ip1-INFERRED-WR",
+            external_id="123-1-INFERRED-WR",
             state_code="US_TN",
             admission_date=date(2018, 4, 30),
             release_date=date(2018, 5, 30),
@@ -1235,7 +1422,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         new_oj_period = deep_entity_update(
             deepcopy(wr_new_period),
-            external_id="ip1-INFERRED-OJ",
+            external_id="123-1-INFERRED-OJ",
             facility="INFERRED_OTHER_JURISDICTION",
         )
         oj_expected_periods = [
@@ -1256,7 +1443,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         # period stops being inferred when certain criteria aren't met.
         ip1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -1271,7 +1458,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         ip2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 5, 30),
@@ -1296,7 +1483,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         new_period_valid_gap = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4700000000012312345,
-            external_id="ip1-INFERRED-OJ",
+            external_id="123-1-INFERRED-OJ",
             state_code="US_TN",
             admission_date=date(2018, 4, 30),
             release_date=date(2018, 5, 30),
@@ -1401,77 +1588,6 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             normalized_periods_ip2_before_ip1,
         )
 
-    def test_custodial_authority_override_then_infer_period(
-        self,
-    ) -> None:
-        # Tests that _us_tn_override_custodial_authority_for_temporary_movements and
-        # _us_tn_infer_periods_between_temporary_transfers work together as expected.
-        # In this test case, the two periods look like they should have a new period inferred
-        # between them, but the custodial authority for the second period is different from
-        # the first period's custodial authority, which would normally prevent _us_tn_infer_periods_between_temporary_transfers
-        # from inferring a new period. However, the first period has a "-P" flag in the
-        # admission reason, so before _us_tn_infer_periods_between_temporary_transfers runs,
-        # _us_tn_override_custodial_authority_for_temporary_movements will override the custodial
-        # authority for the second period to match the first period's custodial authority.
-        # As a result, by the time _us_tn_infer_periods_between_temporary_transfers runs,
-        # the periods will have the same custodial authority and a new period can be inferred
-        # between them.
-        ip1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            state_code="US_TN",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2017, 4, 30),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            admission_reason_raw_text="FAFA-JAORD-P",
-            release_date=date(2018, 4, 30),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
-            release_reason_raw_text="FAOJ-IADDE-T",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            custodial_authority_raw_text="STATE_PRISON_CUSTODIAL_AUTHORITY",
-        )
-        ip2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=222,
-            external_id="ip2",
-            state_code="US_TN",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2018, 5, 30),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            admission_reason_raw_text="OJFA-RTIAD-T",
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            custodial_authority=StateCustodialAuthority.COUNTY,
-            custodial_authority_raw_text="COUNTY_CUSTODIAL_AUTHORITY",
-        )
-        normalized_periods = self.delegate.infer_additional_periods(
-            person_id=self.person_id,
-            incarceration_periods=deepcopy([ip1, ip2]),
-            supervision_period_index=default_normalized_sp_index_for_tests(
-                supervision_periods=[]
-            ),
-        )
-        new_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=4700000000012312345,
-            external_id="ip1-INFERRED-OJ",
-            state_code="US_TN",
-            admission_date=date(2018, 4, 30),
-            release_date=date(2018, 5, 30),
-            custodial_authority=StateCustodialAuthority.STATE_PRISON,
-            custodial_authority_raw_text="STATE_PRISON_CUSTODIAL_AUTHORITY",
-            facility="INFERRED_OTHER_JURISDICTION",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-        )
-        expected_periods = [
-            deepcopy(ip1),
-            new_period,
-            deep_entity_update(
-                deepcopy(ip2), custodial_authority=StateCustodialAuthority.STATE_PRISON
-            ),
-        ]
-
-        self.assertEqual(expected_periods, normalized_periods)
-
     # Test overriding the PFI for periods with "SAREC" in the admission reason, along with all
     # subsequent periods until a period is found with a NEW ADMISSION admission reason.
     # Also tests that the safekeeping-related logic doesn't interfere with the legacy_standardize_purpose_for_incarceration_values
@@ -1481,7 +1597,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -1494,7 +1610,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),
@@ -1506,7 +1622,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip3",
+            external_id="123-3",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -1519,7 +1635,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
-            external_id="ip4",
+            external_id="123-4",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 11, 9),
@@ -1532,7 +1648,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=555,
-            external_id="ip5",
+            external_id="123-5",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 12, 9),
@@ -1545,7 +1661,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_6 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=666,
-            external_id="ip6",
+            external_id="123-6",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 1, 9),
@@ -1558,7 +1674,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_7 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=777,
-            external_id="ip7",
+            external_id="123-7",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 2, 9),
@@ -1571,7 +1687,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_8 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=888,
-            external_id="ip8",
+            external_id="123-8",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 3, 9),
@@ -1583,7 +1699,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_9 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=999,
-            external_id="ip9",
+            external_id="123-9",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 6, 10),
@@ -1696,7 +1812,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -1709,7 +1825,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
@@ -1839,7 +1955,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
-            external_id="ip1",
+            external_id="123-1",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2017, 4, 30),
@@ -1851,7 +1967,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=333,
-            external_id="ip2",
+            external_id="123-2",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 9, 9),

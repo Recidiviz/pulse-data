@@ -231,7 +231,7 @@ output:
                   - PRFA-WKEND-P # Probation to facility - serving weekend
                   - CCFA-WKEND-P # Serving weekend
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
-                  - CUSTCHANGEFH-CUST_CHANGE # Recidiviz made code to track Custody Changes
+                  - CUSTCHANGEFH-CUST_CHANGE-T # Recidiviz made code to track Custody Changes
 
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - CTFA-NEWAD-P # Court to Facility - new admission
@@ -327,7 +327,7 @@ output:
                   - FHFA-INTRS-T # In transit
 
                   # The following are transfers within facility
-                  - UNITMOVEMENTFH-UNIT_MOVEMENT # Unit changes
+                  - UNITMOVEMENTFH-UNIT_MOVEMENT-T # Unit changes
                   # -----------------------------------END SHARED BLOCK--------------------------------------#
 
                 StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
@@ -490,7 +490,7 @@ output:
                         - FHFA-INTRS-T # In transit
                         # These are transfers within a facility
                         #- UNITMOVEMENTFH-UNIT # Unit changes
-                        - UNITMOVEMENTFH-UNIT_MOVEMENT
+                        - UNITMOVEMENTFH-UNIT_MOVEMENT-T
                         # -----------------------------------END SHARED BLOCK--------------------------------------#
 
                         # The following are all movements from court to facility. Because often court movements are
@@ -560,7 +560,7 @@ output:
                         - DVCT-PRVOK-P # Revocation
 
                       StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
-                        - CUSTCHANGEFH-CUST_CHANGE # Recidiviz made code to track Custody Changes
+                        - CUSTCHANGEFH-CUST_CHANGE-T # Recidiviz made code to track Custody Changes
 
                       StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT:
                         - CCFA-WKEND-P
