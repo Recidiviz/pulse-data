@@ -33,7 +33,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1001"
-        expression  = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1})"
+        expression  = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id941120-xss']})"
         description = "Cross-site scripting"
       },
       {
