@@ -843,7 +843,11 @@ compartment_session_metrics AS (
             assignment_start_date
         )),
                     DAY)
-                ) * (IF((TRUE), 1, 0)) / DATE_DIFF(metric_period_end_date_exclusive, metric_period_start_date, DAY)
+                ) * (IF((TRUE), 1, 0))
+            ) / DATE_DIFF(
+                    metric_period_end_date_exclusive,
+                    metric_period_start_date,
+                    DAY
             ) AS my_avg_daily_population
     FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
