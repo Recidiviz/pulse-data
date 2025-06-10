@@ -28,9 +28,6 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
 )
-from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
-    LANTERN_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
     PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
@@ -43,6 +40,9 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_vi
 )
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
     JII_TEXTING_VIEWS_TO_EXPORT,
+)
+from recidiviz.calculator.query.state.views.lantern_revocations_matrix.dashboard_views.lantern_revocations_matrix_dashboard_views import (
+    LANTERN_REVOCATIONS_MATRIX_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
@@ -276,7 +276,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Lantern Dashboard views
     ExportViewCollectionConfig(
-        view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
+        view_builders_to_export=LANTERN_REVOCATIONS_MATRIX_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="LANTERN",
     ),

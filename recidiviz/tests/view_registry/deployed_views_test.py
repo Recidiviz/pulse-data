@@ -484,7 +484,7 @@ class ViewDagInvariantTests(unittest.TestCase):
                 table_id=descendent_table_id,
             ),
             BigQueryAddress(
-                dataset_id="shared_metric_views",
+                dataset_id="lantern_revocations_matrix",
                 table_id="supervision_matrix_by_person",
             ),
         }
