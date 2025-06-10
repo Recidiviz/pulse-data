@@ -12,6 +12,11 @@ input_columns:
   EthnicOrigin: STRING
   BirthDt: DATE
   PhoneNo: STRING
+  Address1: STRING
+  Address2: STRING
+  AddressCity: STRING
+  AddressState: STRING
+  AddressZipCode: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -53,3 +58,14 @@ output:
                 StateEthnicity.EXTERNAL_UNKNOWN: Unknown
                 StateEthnicity.NOT_HISPANIC: Non-Hispanic
     current_phone_number: PhoneNo
+    current_address:
+      $conditional:
+        - $if:
+            $not_null: Address1
+          $then:
+            $physical_address:
+              $address_1: Address1
+              $address_2: Address2
+              $city: AddressCity
+              $state: AddressState
+              $zip: AddressZipCode
