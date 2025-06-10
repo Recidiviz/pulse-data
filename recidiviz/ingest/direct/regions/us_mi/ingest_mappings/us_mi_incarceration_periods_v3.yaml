@@ -99,7 +99,6 @@ output:
                         - "90" # Reparoled While on Same Term
                         - "121" # Discharged from Probation
                         - "119" # Absconder from Probation
-                        - "37" # Released to Court on Writ
                         - "142" # Discharged from Probation Without Improvement
                         - "40" # Death on Temporary Release
                         - "39" # Death on Limited Furlough
@@ -141,6 +140,7 @@ output:
                         - "24" # Sentence Reduced to Misdemeanor
                         - "128" # Held Under Custody - Probation Violation Processing
                         - "141" # Disch. Prison MAX - Transfer for Probation
+                        - "37" # Released to Court on Writ
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
@@ -174,7 +174,6 @@ output:
                               - "141" # Disch. Prison MAX - Transfer for Probation
                               - "120" # Placed on Probation
                             StateIncarcerationPeriodReleaseReason.COURT_ORDER:
-                              - "37" # Released to Court on Writ
                               - "79" # Returned to Court from Bond
                               - "1" # Report to Office
                               - "21" # CRP Additional Felony Out to Court (REP Only)
@@ -277,6 +276,7 @@ output:
                               - "123" # Discharged Sentenced to Jail Only
                               - "42" # Discharged by Transfer to Foreign Country
                               - "7" # Released for Additional Sentencing Processing
+                              - "37" # Released to Court on Writ
                             StateIncarcerationPeriodReleaseReason.VACATED:
                               - "93" # Court Released on Bond
                               - "25" # Conviction Reversed by Court

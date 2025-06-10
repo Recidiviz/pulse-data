@@ -730,6 +730,7 @@ output:
                         - "111" # Out of State Case Transfered Out of Michigan
                         - "153" # Supervision Transferred to District Court
                         - "4" # Transfer Out State
+                        - "37" # Released to Court on Writ
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - "118" # Client Number Reassignment
                         - "5" # Transfer Between Offices in Michigan
@@ -753,7 +754,6 @@ output:
                         - "19" # Out of State Parolee Sentenced in Michigan
                         - "133" # Interstate Compact Case Rejected for Supervision
                         - "137" # Interstate Compact Transfer Request Rescinded
-                        - "37" # Released to Court on Writ
                         - "150" # Reinstated on Parole from TRV
                         - "136" # Jurisdiction Activated in Error
                       StateSupervisionPeriodTerminationReason.VACATED:
