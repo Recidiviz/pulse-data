@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_limited,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    mental_health_score_3_or_below,
     not_homeless_in_release_plan,
     not_serving_ineligible_offense_for_admin_supervision,
     oras_employed_disabled_retired_or_student,
@@ -76,9 +77,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_homeless_in_release_plan.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
-        # # TODO(#42752): Re-enable mental health criteria once all assessments are available in prod
-        # # 1.6 Mental Health Score of 3 or below.
-        # mental_health_score_3_or_below.VIEW_BUILDER,
+        # 1.6 Mental Health Score of 3 or below.
+        mental_health_score_3_or_below.VIEW_BUILDER,
         # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
         oras_has_substance_use_issues.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free

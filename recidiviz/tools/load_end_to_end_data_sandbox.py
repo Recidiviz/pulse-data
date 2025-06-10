@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script that ;oads data into a BigQuery / GCS sandbox that reflects all local
+"""A script that loads data into a BigQuery / GCS sandbox that reflects all local
 changes that impact Dataflow pipelines or BigQuery views.
 
 To see usage info:
