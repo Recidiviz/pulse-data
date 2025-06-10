@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 postgres:13
+FROM postgres:13
 
 # Add PostgreSQL's official repo for additional extensions like pgvector
 RUN apt-get update \
