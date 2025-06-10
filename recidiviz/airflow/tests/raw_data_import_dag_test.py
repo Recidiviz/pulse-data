@@ -2495,6 +2495,10 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
         )
         self.load_bq_mock = self.load_tasks_bq_patcher.start()
+        self.validator_bq_patcher = patch(
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.BigQueryClientImpl",
+        )
+        self.validator_bq_mock = self.validator_bq_patcher.start()
 
         def row_iterator() -> Iterator[Row]:
             mock_row = MagicMock(spec=Row)
@@ -2504,7 +2508,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         single_row_iterator_mock, future_mock = MagicMock(), MagicMock()
         single_row_iterator_mock.__iter__.side_effect = row_iterator
         future_mock.result.return_value = single_row_iterator_mock
-        self.load_bq_mock().run_query_async.return_value = future_mock
+        self.validator_bq_mock().run_query_async.return_value = future_mock
 
         # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
         self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
@@ -2528,6 +2532,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
         self.load_tasks_bq_patcher.stop()
+        self.validator_bq_patcher.stop()
         self.processed_time_patcher.stop()
         super().tearDown()
 

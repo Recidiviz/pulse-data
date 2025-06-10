@@ -22,7 +22,7 @@ from typing import List, Type
 from google.api_core import retry
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
 from recidiviz.cloud_resources.platform_resource_labels import (
     RawDataImportStepResourceLabel,
@@ -67,6 +67,8 @@ COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     DatetimeParsersColumnValidation,
 ]
 
+CLOUDSQL_CONNECTION_REGION = "us_east1"
+
 
 class DirectIngestRawTablePreImportValidator:
     """Validator class responsible for executing import-blocking validations on raw data
@@ -78,13 +80,16 @@ class DirectIngestRawTablePreImportValidator:
         raw_data_instance: DirectIngestInstance,
         region_code: str,
         project_id: str,
-        big_query_client: BigQueryClient,
     ):
         self.region_raw_file_config = region_raw_file_config
         self.region_code = region_code
         self.raw_data_instance = raw_data_instance
         self.project_id = project_id
-        self.big_query_client = big_query_client
+        # Historical stable counts validation uses data from Cloud SQL
+        # so we need the BigQuery client to be in the same region as our Cloud SQL instance.
+        self.big_query_client = BigQueryClientImpl(
+            region_override=CLOUDSQL_CONNECTION_REGION
+        )
 
     def _collect_validations_to_run(
         self,
