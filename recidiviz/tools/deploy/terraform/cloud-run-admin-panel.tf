@@ -106,7 +106,7 @@ resource "google_compute_region_network_endpoint_group" "admin_panel_serverless_
 
 module "admin_panel_load_balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
-  version = "~> 11.0.0"
+  version = "~> 12.0.0"
   name    = local.admin_panel_load_balancer_name
   project = var.project_id
 

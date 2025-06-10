@@ -408,7 +408,7 @@ resource "google_compute_ssl_policy" "restricted-ssl-policy" {
 
 module "unified-product-load-balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
-  version = "~> 11.0.0"
+  version = "~> 12.0.0"
   name    = "unified-product-lb"
   project = var.project_id
 

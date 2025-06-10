@@ -181,7 +181,7 @@ resource "google_sql_database_instance" "data" {
 
     ip_configuration {
       ipv4_enabled = true
-      require_ssl  = var.require_ssl_connection
+      ssl_mode  = var.require_ssl_connection ? "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" : "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
 
     }
 
