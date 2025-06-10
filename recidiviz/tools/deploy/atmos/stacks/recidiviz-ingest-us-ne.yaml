@@ -34,7 +34,7 @@ components:
         auto_create_network: true
         activate_apis:
           - run.googleapis.com # Cloud Run
-          - scheduler.googleapis.com # Cloud Scheduler
+          - cloudscheduler.googleapis.com # Cloud Scheduler
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
 
@@ -65,5 +65,5 @@ components:
         # so use docker image from the recidiviz-123 project
         registry_project_id: recidiviz-123
         vpc_network: recidiviz-ingest-us-ne-vpc
-        vpc_subnetwork: recidiviz-ingest-us-ne-vpc-us-central-1
+        vpc_subnetwork: recidiviz-ingest-us-ne-us-central-1
         run_schedule: "0 7 * * *" # Daily at 2am central time

@@ -197,18 +197,30 @@ class UsNeSqlTableToRawFileExporter:
 
     def open_connection(self) -> None:
         """Open a connection to the database"""
+        if self.dry_run:
+            logging.info("Dry run mode: skipping opening database connection.")
+            return
         self.connection_manager.open_connection()
 
     def close_connection(self) -> None:
         """Close the database connection."""
+        if self.dry_run:
+            logging.info("Dry run mode: skipping closing database connection.")
+            return
         self.connection_manager.close_connection()
 
     def begin_snapshot_transaction(self) -> None:
         """Begin a transaction with snapshot isolation level."""
+        if self.dry_run:
+            logging.info("Dry run mode: skipping beginning snapshot transaction.")
+            return
         self.connection_manager.begin_snapshot_transaction()
 
     def commit_transaction(self) -> None:
         """Commit the current transaction."""
+        if self.dry_run:
+            logging.info("Dry run mode: skipping committing transaction.")
+            return
         self.connection_manager.commit_transaction()
 
     def export_data_to_csv(self, export_task: UsNeSqltoGCSExportTask) -> str:
@@ -460,7 +472,7 @@ def main() -> None:
     """Main entry point for the script."""
     args = parse_args()
 
-    log_prefix = "[DRY RUN]" if args.dry_run else ""
+    log_prefix = "[DRY RUN] " if args.dry_run else ""
     logging.basicConfig(
         level=logging.INFO,
         format=f"%(asctime)s - %(levelname)s - {log_prefix}%(message)s",

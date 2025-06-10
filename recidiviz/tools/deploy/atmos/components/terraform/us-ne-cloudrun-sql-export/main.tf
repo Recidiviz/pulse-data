@@ -15,7 +15,9 @@ resource "google_cloud_run_v2_job" "us_ne_export_sql_server_raw_data_to_gcs" {
         args    = ["run", "python", "-m", "recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs", "--destination-bucket", var.ingest_bucket_name, "--dry-run", "True"]
         resources {
           limits = {
-            cpu    = "1000m"
+            # Need to use 4 CPUs if we want to have > 8Gi memory.
+            # https://cloud.google.com/run/docs/configuring/services/memory-limits#cpu-minimum
+            cpu    = "4000m"
             memory = "12Gi"
           }
         }
