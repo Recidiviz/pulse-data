@@ -668,3 +668,4 @@ output:
           supervision_period_metadata:
             $normalized_values_json_dict:
               specialty: Specialty
+              SupervisionStatus: SupervisionStatus
