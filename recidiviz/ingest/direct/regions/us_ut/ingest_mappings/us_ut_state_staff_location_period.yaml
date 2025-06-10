@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   usr_id: STRING
-  agcy_id: STRING
+  location_name: STRING
   start_date: DATETIME
   end_date: DATETIME
   sequence_num: INTEGER
@@ -22,6 +22,6 @@ output:
               $values:
                 - usr_id
                 - sequence_num
-          location_external_id: agcy_id
+          location_external_id: location_name
           start_date: start_date
           end_date: end_date
