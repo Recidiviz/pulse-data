@@ -24,7 +24,6 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
-    negative_da_within_90_days,
     no_felony_within_24_months,
     on_probation_at_least_one_year,
     supervision_not_past_full_term_completion_date,
@@ -51,7 +50,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         on_probation_at_least_one_year.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
-        negative_da_within_90_days.VIEW_BUILDER,
         lsir_level_low_moderate_for_x_days.VIEW_BUILDER,
         no_felony_within_24_months.VIEW_BUILDER,
     ],

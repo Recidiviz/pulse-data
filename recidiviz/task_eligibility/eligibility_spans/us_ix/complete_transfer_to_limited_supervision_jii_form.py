@@ -19,7 +19,6 @@ someone in ID is eligible or almost eligible to complete the form for transfer t
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.criteria.general import (
-    negative_da_within_90_days,
     not_serving_a_life_sentence_on_supervision,
     not_serving_for_sexual_offense_on_supervision,
     supervision_level_is_not_diversion,
@@ -34,10 +33,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_recent_marked_ineligible_unless_ffr,
     supervision_level_raw_text_is_not_so_or_soto,
 )
-from recidiviz.task_eligibility.criteria_condition import (
-    NotEligibleCriteriaCondition,
-    PickNCompositeCriteriaCondition,
-)
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.eligibility_spans.us_ix import (
     complete_transfer_to_limited_supervision_form,
 )
@@ -62,7 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.candidate_population_view_builder,
     criteria_spans_view_builders=[
-        negative_da_within_90_days.VIEW_BUILDER,
         lsir_level_low_for_90_days.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,
@@ -76,18 +71,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_diversion.VIEW_BUILDER,
     ],
     completion_event_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.completion_event_builder,
-    almost_eligible_condition=PickNCompositeCriteriaCondition(
-        sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=negative_da_within_90_days.VIEW_BUILDER,
-                description="Missing negative drug screen within 90 days",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=income_verified_within_3_months.VIEW_BUILDER,
-                description="Missing employment verification within 90 days",
-            ),
-        ],
-        at_least_n_conditions_true=1,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=income_verified_within_3_months.VIEW_BUILDER,
+        description="Missing employment verification within 90 days",
     ),
 )
 
