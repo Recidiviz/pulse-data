@@ -18,5 +18,5 @@ columns:
       column 2 description
     null_values:
       - "0"
-      - N/A
-      - NONE
+      - "N/A"
+      - "NONE"

@@ -36,6 +36,7 @@ import sys
 from typing import List, Optional
 
 import attr
+from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -64,6 +65,7 @@ DEFAULT_PARSERS_TO_TRY = [
     # hour field if the %I directive is used to parse the hour.
     "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', {col_name})",
     # y-m-d format parsers
+    "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})",
     "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', {col_name})",
     "SAFE.PARSE_DATETIME('%Y-%m-%d %H', {col_name})",
     "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', {col_name})",
@@ -89,34 +91,62 @@ def _update_parsers_in_column(
     """
     # Assemble one query to check all parsers against this column
     formatter = StrictStringFormatter()
-    parsers_query = ", ".join(
-        f"COUNT({formatter.format(datetime_sql_parser, col_name=column.name)}) AS nonnull_parsed_values{i}"
-        for i, datetime_sql_parser in enumerate(parsers_to_try)
-    )
+    column_clauses = [
+        f"COUNT({column.name}) AS nonnull_values",
+        f"MAX(IF({column.name} IS NOT NULL, {column.name}, NULL)) AS example_nonnull_value",
+    ]
+    for i, datetime_sql_parser in enumerate(parsers_to_try):
+        parse_date_clause = formatter.format(datetime_sql_parser, col_name=column.name)
+
+        column_clauses.extend(
+            [
+                f"COUNT({parse_date_clause}) AS nonnull_parsed_values{i}",
+                f"MAX(IF({column.name} IS NOT NULL AND {parse_date_clause} IS NULL, {column.name}, NULL)) AS example_unparsed_value{i}",
+            ]
+        )
+
+    columns = ",\n     ".join(column_clauses)
     query_string = f"""
     SELECT
-     {parsers_query},
-     COUNT({column.name}) AS nonnull_values
+     {columns}
     FROM
      `{project_id}.{raw_data_dataset}.{file_tag}`;
     """
     query_job = bq_client.run_query_async(query_str=query_string, use_query_cache=True)
-    # Last result in the query results is the total number of nonnull values in the column
-    # Other results are the number of nonnull values when parsing the column, in order
-    [query_results] = query_job
-    num_nonnull_values = query_results[-1]
+    query_results = one(query_job.result())
+    num_nonnull_values = query_results["nonnull_values"]
     if not num_nonnull_values:
         print(f"File {file_tag}, column {column.name}: All values are null - skipping")
         return column
-    for i, num_nonnull_parsed_values in enumerate(query_results[:-1]):
+
+    found_partial_parsers = False
+    for i, datetime_sql_parser in enumerate(parsers_to_try):
+        num_nonnull_parsed_values = query_results[f"nonnull_parsed_values{i}"]
+        example_unparsed_value = query_results[f"example_unparsed_value{i}"]
+
         if num_nonnull_values == num_nonnull_parsed_values:
-            working_parser = parsers_to_try[i]
             print(
                 f"File {file_tag}, column {column.name}: Updated parser to "
-                f"{working_parser}"
+                f"{datetime_sql_parser}"
             )
-            return attr.evolve(column, datetime_sql_parsers=[working_parser])
-    print(f"File {file_tag}, column {column.name}: Did not find any working parsers")
+            return attr.evolve(column, datetime_sql_parsers=[datetime_sql_parser])
+
+        if num_nonnull_parsed_values:
+            # If we get here, we found some but not all values that matched this parser
+            found_partial_parsers = True
+            print(
+                f"File {file_tag}, column {column.name}: Found "
+                f"{num_nonnull_parsed_values} out of {num_nonnull_values} matching "
+                f"{datetime_sql_parser}. First non-matching value: "
+                f"{example_unparsed_value}."
+            )
+
+    if not found_partial_parsers:
+        example_nonnull_value = query_results["example_nonnull_value"]
+        print(
+            f"File {file_tag}, column {column.name}: Did not find any working parsers. "
+            f"Example non-null value: {example_nonnull_value}"
+        )
     return column
 
 

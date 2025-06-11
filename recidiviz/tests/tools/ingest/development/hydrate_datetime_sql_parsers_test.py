@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for helper functions for hydrating datetime SQL parsers."""
 import unittest
-from typing import Iterator
+from typing import Any, Iterator
 
 import attr
 from mock import ANY, Mock, patch
@@ -34,6 +34,14 @@ from recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers import (
     update_parsers_in_region,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
+
+
+class FakeQueryJob:
+    def __init__(self, result: Iterator[dict[str, Any]]) -> None:
+        self._result = result
+
+    def result(self) -> Iterator[dict[str, Any]]:
+        return self._result
 
 
 class HydrateDatetimeSqlParsersTest(unittest.TestCase):
@@ -109,15 +117,41 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             default_config=Mock(),
         )
 
-        def mock_run_query_async(query_str: str, use_query_cache: bool) -> Iterator:
+        def mock_run_query_async(query_str: str, use_query_cache: bool) -> FakeQueryJob:
             # pylint: disable=unused-argument
             if "dateCol1" in query_str:
                 # No non-null entries
-                return iter([[0, 0, 0]])
+                return FakeQueryJob(
+                    iter(
+                        [
+                            {
+                                "nonnull_values": 0,
+                                "example_nonnull_value": None,
+                                "nonnull_parsed_values0": 0,
+                                "example_unparsed_value0": None,
+                                "nonnull_parsed_values1": 0,
+                                "example_unparsed_value1": None,
+                            }
+                        ]
+                    )
+                )
             if "dateCol2" in query_str:
                 # Some entries, but no parsers work
-                return iter([[0, 0, 42]])
-            return iter([[]])
+                return FakeQueryJob(
+                    iter(
+                        [
+                            {
+                                "nonnull_values": 42,
+                                "example_nonnull_value": "NULL",
+                                "nonnull_parsed_values0": 0,
+                                "example_unparsed_value0": "NULL",
+                                "nonnull_parsed_values1": 0,
+                                "example_unparsed_value1": "NULL",
+                            }
+                        ]
+                    )
+                )
+            return FakeQueryJob(iter([]))
 
         mock_bq_client.return_value = Mock(run_query_async=mock_run_query_async)
 
@@ -152,15 +186,41 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             default_config=Mock(),
         )
 
-        def mock_run_query_async(query_str: str, use_query_cache: bool) -> Iterator:
+        def mock_run_query_async(query_str: str, use_query_cache: bool) -> FakeQueryJob:
             # pylint: disable=unused-argument
             if "dateCol1" in query_str:
                 # First parser works
-                return iter([[137, 0, 137]])
+                return FakeQueryJob(
+                    iter(
+                        [
+                            {
+                                "nonnull_values": 137,
+                                "example_nonnull_value": "1992-01-01",
+                                "nonnull_parsed_values0": 137,
+                                "example_unparsed_value0": None,
+                                "nonnull_parsed_values1": 0,
+                                "example_unparsed_value1": "1992-01-01",
+                            }
+                        ]
+                    )
+                )
             if "dateCol2" in query_str:
                 # Second parser works
-                return iter([[0, 42, 42]])
-            return iter([[]])
+                return FakeQueryJob(
+                    iter(
+                        [
+                            {
+                                "nonnull_values": 42,
+                                "example_nonnull_value": "1992-01-01",
+                                "nonnull_parsed_values0": 0,
+                                "example_unparsed_value0": "1992-01-01",
+                                "nonnull_parsed_values1": 42,
+                                "example_unparsed_value1": None,
+                            }
+                        ]
+                    )
+                )
+            return FakeQueryJob(iter([]))
 
         mock_bq_client.return_value = Mock(run_query_async=mock_run_query_async)
 

@@ -17,6 +17,7 @@
 """Tests for datetime_sql_parser_exemptions.py"""
 import unittest
 from enum import Enum, auto
+from pprint import pformat
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
@@ -29,6 +30,7 @@ from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
     DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY,
     DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -137,7 +139,41 @@ class TestDatetimeSqlParserExemptions(unittest.TestCase):
             return FileTagReferenceType.DOWNSTREAM_VIEWS_ONLY
         return FileTagReferenceType.NO_REFERENCES
 
-    def _run_test_for_type(self, reference_type: FileTagReferenceType) -> None:
+    def _run_find_unnecessary_exemptions_test_for_type(
+        self, reference_type: FileTagReferenceType
+    ) -> None:
+        exemptions_map = reference_type.exemptions_map()
+        for state_code in get_existing_direct_ingest_states():
+            if state_code not in exemptions_map:
+                continue
+
+            region_raw_file_config = get_region_raw_file_config(
+                region_code=state_code.value.lower(),
+            )
+            bad_exemptions = {}
+            for file_tag, exempt_columns in exemptions_map[state_code].items():
+                bad_exemptions_for_file_tag = [
+                    column.name
+                    for column in region_raw_file_config.raw_file_configs[
+                        file_tag
+                    ].current_columns
+                    if column.datetime_sql_parsers and column.name in exempt_columns
+                ]
+
+                if bad_exemptions_for_file_tag:
+                    bad_exemptions[file_tag] = sorted(bad_exemptions_for_file_tag)
+            if bad_exemptions:
+                raise ValueError(
+                    f"Found file_tags with columns that are exempt from having valid"
+                    f"datetime_sql_parsers but which now DO have valid parsers. Please "
+                    f"remove these from "
+                    f"{reference_type.expected_exemptions_map_name()}:\n"
+                    f"{pformat(bad_exemptions, indent=4)}"
+                )
+
+    def _run_exemptions_categorized_correctly_test_for_type(
+        self, reference_type: FileTagReferenceType
+    ) -> None:
         """Runs a test to check that exemptions in the map associated with raw data
         reference type |reference_type| are actually in the appropriate exemptions map.
         """
@@ -180,13 +216,33 @@ class TestDatetimeSqlParserExemptions(unittest.TestCase):
     def test_exemptions_for_files_referenced_in_ingest_views_and_downstream_views(
         self,
     ) -> None:
-        self._run_test_for_type(FileTagReferenceType.INGEST_VIEW_AND_DOWNSTREAM)
+        self._run_exemptions_categorized_correctly_test_for_type(
+            FileTagReferenceType.INGEST_VIEW_AND_DOWNSTREAM
+        )
+        self._run_find_unnecessary_exemptions_test_for_type(
+            FileTagReferenceType.INGEST_VIEW_AND_DOWNSTREAM
+        )
 
     def test_exemptions_for_files_only_in_ingest_views(self) -> None:
-        self._run_test_for_type(FileTagReferenceType.INGEST_VIEWS_ONLY)
+        self._run_exemptions_categorized_correctly_test_for_type(
+            FileTagReferenceType.INGEST_VIEWS_ONLY
+        )
+        self._run_find_unnecessary_exemptions_test_for_type(
+            FileTagReferenceType.INGEST_VIEWS_ONLY
+        )
 
     def test_exemptions_for_files_only_in_downstream_views(self) -> None:
-        self._run_test_for_type(FileTagReferenceType.DOWNSTREAM_VIEWS_ONLY)
+        self._run_exemptions_categorized_correctly_test_for_type(
+            FileTagReferenceType.DOWNSTREAM_VIEWS_ONLY
+        )
+        self._run_find_unnecessary_exemptions_test_for_type(
+            FileTagReferenceType.DOWNSTREAM_VIEWS_ONLY
+        )
 
     def test_exemptions_for_files_not_referenced_in_any_views(self) -> None:
-        self._run_test_for_type(FileTagReferenceType.NO_REFERENCES)
+        self._run_exemptions_categorized_correctly_test_for_type(
+            FileTagReferenceType.NO_REFERENCES
+        )
+        self._run_find_unnecessary_exemptions_test_for_type(
+            FileTagReferenceType.NO_REFERENCES
+        )

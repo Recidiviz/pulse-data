@@ -44,3 +44,12 @@ class TestGetProperlyQuotedYamlString(unittest.TestCase):
         self.assertEqual(get_properly_quoted_yaml_str("This is true"), "This is true")
         self.assertEqual(get_properly_quoted_yaml_str("123a"), "123a")
         self.assertEqual(get_properly_quoted_yaml_str("2<3"), "2<3")
+        self.assertEqual(
+            get_properly_quoted_yaml_str("foo", always_quote=True), '"foo"'
+        )
+
+    def test_escape_quotes(self) -> None:
+        self.assertEqual(get_properly_quoted_yaml_str('foo"bar'), 'foo"bar')
+        self.assertEqual(
+            get_properly_quoted_yaml_str('foo"bar', always_quote=True), '"foo\\"bar"'
+        )

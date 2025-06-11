@@ -58,12 +58,14 @@ def _contains_word_starting_with_reserved_char(value: str) -> bool:
     return any(word[0] in YAML_RESERVED_CHARS for word in value.split())
 
 
-def get_properly_quoted_yaml_str(value: str) -> str:
+def get_properly_quoted_yaml_str(value: str, always_quote: bool = False) -> str:
     if (
         not value
         or value.lower() in YAML_RESERVED_WORDS
         or _contains_word_starting_with_reserved_char(value)
         or _is_number(value)
+        or always_quote
     ):
+        value = value.replace('"', '\\"')
         return f'"{value}"'
     return f"{value}"

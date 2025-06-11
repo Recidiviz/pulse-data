@@ -89,9 +89,10 @@ class RawDataConfigWriter:
                 column_string += (
                     f"\n      - validation_type: {exemption.validation_type.value}"
                 )
-                column_string += (
-                    f"\n        exemption_reason: {exemption.exemption_reason}"
+                exemption_reason_string = "\n          ".join(
+                    [s.strip() for s in exemption.exemption_reason.splitlines()]
                 )
+                column_string += f"\n        exemption_reason: |-\n          {exemption_reason_string}"
         if column.update_history:
             column_string += "\n    update_history:"
             for update in column.update_history:
@@ -106,7 +107,7 @@ class RawDataConfigWriter:
         if column.null_values:
             column_string += "\n    null_values:"
             for null_value in column.null_values:
-                column_string += f"\n      - {get_properly_quoted_yaml_str(null_value)}"
+                column_string += f"\n      - {get_properly_quoted_yaml_str(null_value, always_quote=True)}"
         return column_string
 
     def _generate_columns_string(self, columns: List[RawTableColumnInfo]) -> str:

@@ -15,7 +15,9 @@ columns:
       - "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
     import_blocking_column_validation_exemptions:
       - validation_type: DATETIME_PARSERS
-        exemption_reason: Exempt to avoid complicated mocking in raw data import dag tests
+        exemption_reason: |-
+          Exempt to avoid complicated mocking in raw data import dag tests
       - validation_type: EXPECTED_TYPE
-        exemption_reason: Exempt to avoid complicated mocking in raw data import dag tests
+        exemption_reason: |-
+          Exempt to avoid complicated mocking in raw data import dag tests
 custom_line_terminator: "\n"

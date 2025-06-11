@@ -16,7 +16,8 @@ columns:
       - value: B
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
-        exemption_reason: reason
+        exemption_reason: |-
+          reason
   - name: col_name_1b
     description: |-
       A column description that is long enough to take up
