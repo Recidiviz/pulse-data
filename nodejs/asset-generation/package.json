@@ -18,7 +18,7 @@
     "@google-cloud/storage": "^7.16.0",
     "@recidiviz/design-system": "^5.8.0",
     "@visx/text": "^3.12.0",
-    "@vitejs/plugin-react-swc": "^3.10.0",
+    "@vitejs/plugin-react-swc": "^3.10.2",
     "d3-array": "^3.2.4",
     "d3-format": "^3.1.0",
     "d3-scale": "^4.0.2",
