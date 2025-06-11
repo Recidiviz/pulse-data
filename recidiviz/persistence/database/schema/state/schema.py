@@ -184,6 +184,7 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_pending,
     state_enum_strings.state_sentence_status_sanctioned,
     state_enum_strings.state_sentence_status_serving,
+    state_enum_strings.state_sentence_status_imposed_pending_serving,
     state_enum_strings.state_sentence_status_suspended,
     state_enum_strings.state_sentence_status_revoked,
     state_enum_strings.state_sentence_status_vacated,

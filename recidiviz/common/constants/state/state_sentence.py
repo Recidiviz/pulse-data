@@ -42,6 +42,9 @@ class StateSentenceStatus(StateEntityEnum):
     SUSPENDED = state_enum_strings.state_sentence_status_suspended
     VACATED = state_enum_strings.state_sentence_status_vacated
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    IMPOSED_PENDING_SERVING = (
+        state_enum_strings.state_sentence_status_imposed_pending_serving
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -75,6 +78,9 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "person’s record.",
     StateSentenceStatus.COMPLETED: "Used when a person has served the entirety of the "
     "sentence.",
+    StateSentenceStatus.IMPOSED_PENDING_SERVING: "Describes a sentence that has been imposed "
+    "consecutively to another sentence, but has not begun serving. This means the parent sentence "
+    "has an initial serving status and no terminating status.",
     StateSentenceStatus.PARDONED: "Describes a sentence associated with a conviction "
     "that has been pardoned. When a person is pardoned, there is immediate release "
     "from any active form of incarceration or supervision related to the pardoned "
@@ -122,6 +128,7 @@ _STATE_SENTENCE_STATUS_VALUE_TERMINATES: Dict[StateEntityEnum, bool] = {
     StateSentenceStatus.SANCTIONED: False,
     StateSentenceStatus.SERVING: False,
     StateSentenceStatus.SUSPENDED: False,
+    StateSentenceStatus.IMPOSED_PENDING_SERVING: False,
     StateSentenceStatus.EXTERNAL_UNKNOWN: False,
     StateSentenceStatus.INTERNAL_UNKNOWN: False,
 }
@@ -134,6 +141,7 @@ _STATE_SENTENCE_STATUS_VALUE_DESIGNATES_SERVING: Dict[StateEntityEnum, bool] = {
     StateSentenceStatus.SERVING: True,
     # We do not consider a sentence as being served while it has one
     # of these statuses
+    StateSentenceStatus.IMPOSED_PENDING_SERVING: False,
     StateSentenceStatus.COMPLETED: False,
     StateSentenceStatus.PARDONED: False,
     StateSentenceStatus.DEATH: False,
