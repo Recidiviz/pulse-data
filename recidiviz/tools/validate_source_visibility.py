@@ -740,6 +740,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
+                "recidiviz.segment",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
                 "recidiviz.utils",

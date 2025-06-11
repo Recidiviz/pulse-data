@@ -50,6 +50,9 @@ from recidiviz.outcome_metrics.view_config import (
     get_transitions_view_builders_for_views_to_update as get_transitions_view_builders,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.segment.view_config import (
+    get_view_builders_for_views_to_update as get_segment_view_builders,
+)
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
 )
@@ -72,6 +75,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             EXTERNALLY_SHARED_VIEW_BUILDERS,
             get_ingest_infra_view_builders(),
             get_observations_view_builders(),
+            get_segment_view_builders(),
             STATE_VIEW_BUILDERS,
             get_task_eligibility_view_builders(),
             get_validation_view_builders(),
@@ -157,6 +161,10 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__tasks_primary_user_span",
     "observations__tasks_provisioned_user_span",
     "reentry",
+    "segment_events__supervisor_homepage_opportunities_module",
+    "segment_events__supervisor_homepage_outcomes_module",
+    "segment_events__tasks",
+    "segment_events__workflows",
     "sessions",
     "sessions_validation",
     "sentence_sessions",

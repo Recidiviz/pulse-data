@@ -228,6 +228,9 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.segment.segment_event_big_query_view_collector import (
+    SegmentEventBigQueryViewCollector,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
@@ -524,6 +527,12 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     *[
         dataset_for_observation_type_cls(unit_of_observation_type, SpanType)
         for unit_of_observation_type in MetricUnitOfObservationType
+    ],
+    # Views in segment event datasets will be used to generate observations that will be
+    # referenced by Looker
+    *[
+        product_type.segment_dataset_name
+        for product_type in SegmentEventBigQueryViewCollector().collect_segment_event_view_builders_by_product()
     ],
 }
 
