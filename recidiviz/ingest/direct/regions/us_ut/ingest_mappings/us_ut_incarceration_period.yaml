@@ -105,16 +105,16 @@ output:
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - COLLECTION ONLY START
                   - COMPACT IN START
-                  - DIAGNOSTIC START
                   - DIVERSION START
                   - INMATE COURTESY HOLD
                   - JAIL ENTRY
                   - NEW COMMITMENT
                   - NEW DIAGNOSTIC REFERRAL
                   - NEW REFERRAL
+                  - ARRESTED
+                  - DIAGNOSTIC START
                   - RET PRSN/REV PEND
                   - RET PRSN/REV PENDING
-                  - ARRESTED
                 StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
                   - JAIL ENTRY-72 HOUR HOLD
                   - JAIL-RIM SANCTION (1-3 DAY)
@@ -132,6 +132,8 @@ output:
                   - COMMUTATION OF SENTENCE
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - DIVERSION START
+                  - DIAGNOSTIC RELEASE
+                  - DIAGNOSTIC START
                 StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                   - CASE DISMISSED BY COURT
                   - INMATE COURT ORDER RELEASE
@@ -152,15 +154,6 @@ output:
                   - DISCHARGED/ABSCOND
                 StateIncarcerationPeriodReleaseReason.PARDONED:
                   - PARDON
-                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
-                  - NOT SUPVSD AFTER APPEAL
-                  - NOT SUPVSD AFTER INVESTIGATION
-                  - NOT SUPVSD AFTER SCREENING
-                  - INMATE COURTESY RELEASE
-                  - COLLECTION ONLY RELEASED
-                  - JAIL RELEASE
-                  - DISCHARGED/HOLD
-                  - DIAGNOSTIC RELEASE
                 StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                   - PAROLE
                   - PAROLE CONT/RELEASE FROM PRISN
@@ -193,7 +186,14 @@ output:
                   - CCC RELEASE
                   - DISCHARGED/OBSCIS DOWNLOAD
                   - DISCHARGED TO PSRB
+                  - DISCHARGED/HOLD
+                  - JAIL RELEASE
                   - DISCHARGED/UNSUCCESSFUL
+                  - NOT SUPVSD AFTER APPEAL
+                  - NOT SUPVSD AFTER INVESTIGATION
+                  - NOT SUPVSD AFTER SCREENING
+                  - INMATE COURTESY RELEASE
+                  - COLLECTION ONLY RELEASED
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - APPEAL AFFIRMED
                   - APPEAL FILED/CASE PENDING
@@ -206,7 +206,6 @@ output:
                   - RET PRSN/REV PEND
                   - RET PRSN/REV PEND/72 HOUR HOLD
                   - RET PRSN/REV PENDING
-                  - COMP RET TO OTHER/NOT COMPLETE
                   - COMP RET TO UTAH/NOT COMPLETE
                   - INMATE COURTESY HOLD
                   - JAIL ENTRY
@@ -239,6 +238,7 @@ output:
                   - FIELD OP TRANSFER
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - COMPACT OUT/UTAH TO OTHR STATE
+                  - COMP RET TO OTHER/NOT COMPLETE
                   - DEPORTED/NOT TERMINATED
                   - MOVE/FEDERAL FACILITY
                   - MOVE/OTHER STATE PRISON
@@ -246,8 +246,6 @@ output:
                   - EXTRADITION
                   - DISCHARGED/DEPORTED
                   - DISCHARGED/OTHER JURISDICTION
-                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
-                  - DIAGNOSTIC START
           incarceration_type:
             $enum_mapping:
               $raw_text: body_loc_desc
