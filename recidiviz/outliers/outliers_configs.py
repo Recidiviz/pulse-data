@@ -358,6 +358,25 @@ Denominator is the average daily caseload for the agent over the given time peri
         supervision_staff_exclusions="""'GENERAL' IN UNNEST(specialized_caseload_type_array)
         AND attrs.officer_id != attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)]""",
     ),
+    StateCode.US_TX: OutliersBackendConfig(
+        metrics=[
+            ################
+            # This is a placeholder metric required because there are various places in
+            # OutliersQuerier where we assume the existence of at least one outcomes metric.
+            # This data has not been validated and is not displayed to users.
+            ################
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_TX,
+                metric=INCARCERATION_STARTS,
+                title_display_name="Incarceration Rate",
+                body_display_name="incarceration rate",
+                event_name="incarcerations",
+                event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
+            ),
+        ],
+        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_CONTACT],
+    ),
 }
 
 METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
