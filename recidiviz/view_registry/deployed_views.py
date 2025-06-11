@@ -166,6 +166,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "state",
     "state_views",
     "shared_metric_views",
+    "tasks_views",
     "task_eligibility",
     "task_eligibility_candidates_general",
     "task_eligibility_candidates_us_mi",

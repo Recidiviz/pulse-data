@@ -166,6 +166,9 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.tasks.case_type_supervision_level_spans import (
+    CASE_TYPE_SUPERVISION_LEVEL_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -488,6 +491,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Ryan Guan 05/07/2025)"
+    ),
+    CASE_TYPE_SUPERVISION_LEVEL_SPANS_VIEW_BUILDER.address: (
+        "Will be used by NE Tasks contact cadence spans very soon, see ticket #43030 (Maggie Taylor 06/09/2025)"
     ),
 }
 
