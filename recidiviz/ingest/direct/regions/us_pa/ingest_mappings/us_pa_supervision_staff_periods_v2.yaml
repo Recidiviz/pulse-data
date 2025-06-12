@@ -82,6 +82,7 @@ output:
                         - "Executive Deputy Secretary for Reentry, Community Corrections, and"
                         - "Corrections Community Center Monitor"
                         - "Community Corrections Center Director 1"
+                        - "Parole Staff Technician 1"
                       StateStaffRoleType.INTERNAL_UNKNOWN:
                         - "Administrative Assistant 1"
                         - "Administrative Officer 5"
@@ -293,6 +294,7 @@ output:
                         - "Prl Agt 1"
                         - "Prl Mgr 1"
                         - "Prl Mgr 2"
+                        - "Parole Staff Technician 1"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                         - "Parole Spvr"
                         - "[RelAgent] Supervisor"
