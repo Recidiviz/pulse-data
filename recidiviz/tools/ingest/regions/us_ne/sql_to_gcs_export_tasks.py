@@ -93,10 +93,13 @@ class UsNeSqltoGCSExportTask:
         If we do not have a raw file config for the file tag, we use the default
         config for the region.
         """
-        # TODO(#41296): Also add a unittest that prevents this flag from being set for NE
         if raw_file_config.infer_columns_from_config:
             raise ValueError(
-                "Did not expect any files with infer_columns_from_config=True in NE"
+                f"File tag [{raw_file_config.file_tag}]: did not expect any files with infer_columns_from_config=True in NE"
+            )
+        if not raw_file_config.ignore_quotes:
+            raise ValueError(
+                f"File tag [{raw_file_config.file_tag}]: did not expect any files with ignore_quotes=False in NE"
             )
 
         table_name = FILE_TAG_TO_TABLE_NAME.get(file_tag, file_tag)

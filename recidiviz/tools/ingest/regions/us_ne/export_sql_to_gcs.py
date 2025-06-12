@@ -34,7 +34,6 @@ Usage:
 
 """
 import argparse
-import csv
 import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -76,9 +75,7 @@ MAX_ROWS_PER_CURSOR_FETCH = 1000
 
 
 EXPORT_QUERY = "SELECT {columns} FROM {table_name}"
-BEGIN_SNAPSHOT_TRANSACTION_QUERY = (
-    "BEGIN TRANSACTION; SET TRANSACTION ISOLATION LEVEL SNAPSHOT"
-)
+BEGIN_TRANSACTION_QUERY = "BEGIN TRANSACTION"
 COMMIT_TRANSACTION_QUERY = "COMMIT"
 
 
@@ -124,12 +121,12 @@ class UsNeSqlServerConnectionManager:
             self._db_connection.close()
             self._db_connection = None
 
-    def begin_snapshot_transaction(self) -> None:
-        """Begin a transaction with snapshot isolation level. Snapshot isolation ensures
-        that data read by any statement in a transaction is the transactionally consistent
-        version of the data that existed at the start of the transaction, without holding locks
+    def begin_transaction(self) -> None:
+        """Begin a transaction. Ideally we would use snapshot isolation level,
+        but this isn't supported by all of NE's databases. Instead, we use the
+        default isolation level of the database, which is typically READ COMMITTED
         """
-        self.execute_procedural_query(BEGIN_SNAPSHOT_TRANSACTION_QUERY)
+        self.execute_procedural_query(BEGIN_TRANSACTION_QUERY)
 
     def commit_transaction(self) -> None:
         """Commit the current transaction."""
@@ -209,12 +206,12 @@ class UsNeSqlTableToRawFileExporter:
             return
         self.connection_manager.close_connection()
 
-    def begin_snapshot_transaction(self) -> None:
-        """Begin a transaction with snapshot isolation level."""
+    def begin_transaction(self) -> None:
+        """Begin a transaction."""
         if self.dry_run:
-            logging.info("Dry run mode: skipping beginning snapshot transaction.")
+            logging.info("Dry run mode: skipping beginning transaction.")
             return
-        self.connection_manager.begin_snapshot_transaction()
+        self.connection_manager.begin_transaction()
 
     def commit_transaction(self) -> None:
         """Commit the current transaction."""
@@ -245,12 +242,6 @@ class UsNeSqlTableToRawFileExporter:
             newline="",
             encoding=export_task.encoding,
         ) as f:
-            writer = csv.writer(
-                f,
-                lineterminator=export_task.line_terminator,
-                delimiter=export_task.delimiter,
-                quoting=export_task.quoting_mode,
-            )
             # Process the results in batches
             result_generator = self.connection_manager.execute_query_with_batched_fetch(
                 query
@@ -263,10 +254,20 @@ class UsNeSqlTableToRawFileExporter:
                     f"Found no columns in the exported file for file [{export_task.file_tag}]. Expected every file to at least have a columns row."
                 )
 
-            writer.writerow(columns)
+            def write_csv_row(row: list[Any]) -> None:
+                """Write a single row to the CSV file using the export_task's delimiter and line terminator.
+                Using a simple write here because the csv module escapes quotes and newlines when using csv.QUOTE_NONE,
+                which we don't want"""
+                f.write(
+                    export_task.delimiter.join(str(field) for field in row)
+                    + export_task.line_terminator
+                )
+
+            write_csv_row(columns)
 
             for rows in result_generator:
-                writer.writerows(rows)
+                for row in rows:
+                    write_csv_row(row)
 
         return str(output_path)
 
@@ -323,7 +324,7 @@ def process_us_ne_database_export(
     """Process exports for a single database.
 
     1. Open a connection to the database
-    2. Begin transaction with snapshot isolation level
+    2. Begin transaction
     3. For each task, export data to CSV and upload to GCS sequentially
     4. Commit the transaction
     5. Close the connection
@@ -367,7 +368,7 @@ def process_us_ne_database_export(
 
     with exporter_connection(exporter):
         try:
-            exporter.begin_snapshot_transaction()
+            exporter.begin_transaction()
             for export_task in export_tasks:
                 process_export_task(export_task)
         finally:

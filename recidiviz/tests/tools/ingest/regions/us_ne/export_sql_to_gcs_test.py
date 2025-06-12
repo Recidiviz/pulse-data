@@ -82,7 +82,7 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         )
 
         mock_exporter.open_connection.assert_called_once()
-        mock_exporter.begin_snapshot_transaction.assert_called_once()
+        mock_exporter.begin_transaction.assert_called_once()
         mock_exporter.export_data_to_csv.assert_any_call(export_tasks[0])
         mock_exporter.export_data_to_csv.assert_any_call(export_tasks[1])
         # Shouldn't call upload_csv_raw_file for the failed export task
@@ -134,7 +134,7 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
 
         # No actual external operations should be called in dry run mode
         mock_connection_manager.open_connection.assert_not_called()
-        mock_connection_manager.begin_snapshot_transaction.assert_not_called()
+        mock_connection_manager.begin_transaction.assert_not_called()
         mock_connection_manager.execute_query_with_batched_fetch.assert_not_called()
         mock_connection_manager.commit_transaction.assert_not_called()
         mock_connection_manager.close_connection.assert_not_called()
