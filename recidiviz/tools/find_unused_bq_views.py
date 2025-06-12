@@ -240,6 +240,12 @@ from recidiviz.task_eligibility.candidate_populations.general.non_temporary_cust
 from recidiviz.task_eligibility.criteria.general.on_minimum_after_unassigned import (
     VIEW_BUILDER as ON_MINIMUM_AFTER_UNASSIGNED,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed import (
+    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
+    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.configured_validations import get_all_validations
@@ -479,6 +485,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_ND_TRANSFER_TO_MIN_ELIGIBLE_WITHOUT_REFERRAL_VIEW_BUILDER.address: (
         "Will be used to power ND transfer to min security unit report for leadership (Maggie Taylor 03/20/2025)"
+    ),
+    US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
+        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
+    ),
+    US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
+        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
     ),
     REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
         "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"

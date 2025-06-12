@@ -26,9 +26,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     add_in_person_security_classification_committee_review,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
-    expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed,
     in_solitary_confinement_at_least_one_year,
-    one_year_past_last_add_in_person_security_classification_committee_review_date,
+    past_add_in_person_review_for_scc_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     EligibleCriteriaCondition,
@@ -38,26 +37,11 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible for an in person
  security classification committee review from the ADD"""
-
-_PAST_ADD_IN_PERSON_REVIEW_DATE_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.OR,
-    criteria_name="US_MI_PAST_ADD_IN_PERSON_REVIEW_FOR_SCC_DATE",
-    sub_criteria_list=[
-        one_year_past_last_add_in_person_security_classification_committee_review_date.VIEW_BUILDER,
-        expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=["next_scc_date"],
-    reasons_aggregate_function_override={"next_scc_date": "MIN"},
-)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
@@ -65,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        _PAST_ADD_IN_PERSON_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+        past_add_in_person_review_for_scc_date.VIEW_BUILDER,
         in_solitary_confinement_at_least_one_year.VIEW_BUILDER,
     ],
     completion_event_builder=add_in_person_security_classification_committee_review.VIEW_BUILDER,
@@ -74,14 +58,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     TimeDependentCriteriaCondition(
-                        criteria=_PAST_ADD_IN_PERSON_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+                        criteria=past_add_in_person_review_for_scc_date.VIEW_BUILDER,
                         reasons_date_field="next_scc_date",
                         interval_length=60,
                         interval_date_part=BigQueryDateInterval.DAY,
                         description="Within 60 days of the next add in person security classification committee review due date",
                     ),
                     EligibleCriteriaCondition(
-                        criteria=_PAST_ADD_IN_PERSON_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+                        criteria=past_add_in_person_review_for_scc_date.VIEW_BUILDER,
                         description="Past the next add in person security classification committee review due date",
                     ),
                 ],
