@@ -128,7 +128,9 @@ def _get_airflow_file_sync_steps(
     copy_airflow_source_files = build_step_for_shell_command(
         command=" ".join(
             gcloud_storage_rsync_airflow_command(
-                AIRFLOW_SOURCE_FILES_DIR, orchestration.config.dag_gcs_prefix
+                AIRFLOW_SOURCE_FILES_DIR,
+                orchestration.config.dag_gcs_prefix,
+                use_gsutil=True,
             )
         ),
         id_="Sync Airflow source files to GCS",

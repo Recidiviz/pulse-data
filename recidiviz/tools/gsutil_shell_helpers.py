@@ -173,9 +173,27 @@ def gcloud_storage_rsync_command(
 
 
 def gcloud_storage_rsync_airflow_command(
-    directory: str, gcs_uri: str, *, dry_run: bool = False
+    directory: str, gcs_uri: str, *, use_gsutil: bool = False, dry_run: bool = False
 ) -> list[str]:
     """Returns the options for rsyncing a composer environment"""
+    if use_gsutil:
+        return [
+            "gsutil",
+            # Enable multiprocessing
+            "-m",
+            "rsync",
+            # Sync subdirectories
+            "-r",
+            # Ignore mtime of files and use checksums to determine if files are different
+            "-c",
+            # Delete files that are no longer in the source manifest
+            "-d",
+            "-x",
+            "airflow_monitoring\\.py",
+            directory,
+            gcs_uri,
+        ]
+
     base_command = gcloud_storage_rsync_command(directory, gcs_uri, dry_run=dry_run)
     additional_options = [
         # Sync subdirectories
