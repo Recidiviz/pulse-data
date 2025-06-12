@@ -101,6 +101,7 @@ class DirectIngestRawFileLoadManager:
             raw_data_instance,
             self.region_code,
             metadata.project_id(),
+            self.big_query_client,
         )
         self.sandbox_dataset_prefix = sandbox_dataset_prefix
 

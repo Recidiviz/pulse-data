@@ -18,7 +18,7 @@
 import textwrap
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import attr
 
@@ -133,21 +133,11 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.region_raw_file_config.raw_file_configs[
             self.file_tag
         ] = self.raw_file_config
-
         self.big_query_client = MagicMock()
-        self.bq_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.BigQueryClientImpl",
-            return_value=self.big_query_client,
-        )
-        self.bq_patcher.start()
-
         self.stable_counts_job = MagicMock()
         self.stable_counts_job.result.return_value = [
             {TEMP_TABLE_ROW_COUNT_KEY: 101, RAW_ROWS_MEDIAN_KEY: 100},
         ]
-
-    def tearDown(self) -> None:
-        self.bq_patcher.stop()
 
     def test_run_raw_table_validations_success(self) -> None:
         nonnull_values_job = MagicMock()
@@ -162,6 +152,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             region_code=self.region_code,
             raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
         )
 
         # should not raise any exceptions
@@ -213,6 +204,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             region_code=self.region_code,
             raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
         )
 
         # should not raise any exceptions
@@ -248,6 +240,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             region_code=self.region_code,
             raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
         )
         expected_error_msg = (
             f"1 pre-import validation(s) failed for file [{self.file_tag}]."

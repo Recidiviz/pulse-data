@@ -44,11 +44,11 @@ WITH historical_data AS (
     SELECT 
         raw_rows
     FROM 
-        `{project_id}.operations_v2_cloudsql_connection.direct_ingest_raw_file_import`
+        `{project_id}.operations.direct_ingest_raw_file_import`
     WHERE 
         file_id IN (
             SELECT file_id 
-            FROM `{project_id}.operations_v2_cloudsql_connection.direct_ingest_raw_big_query_file_metadata`
+            FROM `{project_id}.operations.direct_ingest_raw_big_query_file_metadata`
             WHERE file_tag = '{file_tag}'
             AND is_invalidated = False
             AND region_code = '{region_code}'
