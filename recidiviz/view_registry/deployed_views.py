@@ -193,6 +193,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "task_eligibility_completion_events_us_az",
     "task_eligibility_completion_events_us_tx",
     "task_eligibility_completion_events_us_ar",
+    "task_eligibility_completion_events_us_ia",
     "task_eligibility_criteria_general",
     "task_eligibility_criteria_us_ar",
     "task_eligibility_criteria_us_ia",

@@ -178,6 +178,10 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 table_id="all_tasks__collapsed",
             ),
             BigQueryAddress(
+                dataset_id="task_eligibility_completion_events_us_ia",
+                table_id="all_state_specific_completion_events",
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_ix", table_id="all_tasks"
             ),
             BigQueryAddress(

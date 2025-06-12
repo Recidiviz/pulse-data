@@ -19,7 +19,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_and_supervision_out_of_state_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_ia import (
+    early_discharge,
+)
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_report_within_6_months_using_response_date,
     not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
