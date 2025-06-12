@@ -3061,6 +3061,16 @@ LOGINS_PRIMARY_TASKS_USERS = EventCountMetric(
     ),
 )
 
+DISTINCT_ACTIVE_PRIMARY_TASKS_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_tasks_users",
+    display_name="Distinct Active Primary Tasks Users",
+    description="Number of distinct primary Tasks users having at least one active usage event",
+    event_selector=EventSelector(
+        event_type=EventType.TASKS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",

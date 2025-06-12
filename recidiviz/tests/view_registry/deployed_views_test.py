@@ -384,6 +384,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="observations__person_event", table_id="impact_transition"
             ),
+            BigQueryAddress(
+                dataset_id="observations__tasks_primary_user_event",
+                table_id="tasks_active_usage_event",
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {

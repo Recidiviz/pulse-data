@@ -62,6 +62,7 @@ class EventType(Enum):
     TASK_ELIGIBILITY_START = "TASK_ELIGIBILITY_START"
     TASK_ELIGIBLE_30_DAYS = "TASK_ELIGIBLE_30_DAYS"
     TASK_ELIGIBLE_7_DAYS = "TASK_ELIGIBLE_7_DAYS"
+    TASKS_ACTIVE_USAGE_EVENT = "TASKS_ACTIVE_USAGE_EVENT"
     TASKS_USER_LOGIN = "TASKS_USER_LOGIN"
     # TODO(#34511): Figure out how to consolidate TRANSITIONS_TO_LIBERTY_ALL and
     #  TRANSITIONS_TO_LIBERTY_FROM_IN_STATE into a single event type.
@@ -169,6 +170,7 @@ class EventType(Enum):
             return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
         if self in [
             EventType.TASKS_USER_LOGIN,
+            EventType.TASKS_ACTIVE_USAGE_EVENT,
         ]:
             return MetricUnitOfObservationType.TASKS_PRIMARY_USER
 
