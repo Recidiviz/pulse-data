@@ -36,7 +36,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
     AVG_DAILY_POPULATION_CONTACT_OVERDUE,
     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
-    AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE,
+    AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
@@ -81,7 +81,7 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                     AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
                     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
                     AVG_DAILY_POPULATION_CONTACT_OVERDUE,
-                    AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE,
+                    AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_SUPERVISION,
                     sld_metric,
                 ],
             )

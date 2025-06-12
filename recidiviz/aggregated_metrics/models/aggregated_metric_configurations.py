@@ -459,6 +459,36 @@ AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE = DailyAvgSpanCountMetric(
     ),
 )
 
+AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_SUPERVISION = DailyAvgSpanCountMetric(
+    name="avg_population_past_full_term_release_date_supervision",
+    display_name="Average Supervision Population: Past Full Term Release Date",
+    description="Average daily count of clients beyond their full term release date",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_CRITERIA_SPAN,
+        span_conditions_dict={
+            "criteria": [
+                "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE",
+            ],
+            "meets_criteria": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_INCARCERATION = DailyAvgSpanCountMetric(
+    name="avg_population_past_full_term_release_date_incarceration",
+    display_name="Average Incarceration Population: Past Full Term Release Date",
+    description="Average daily count of residents beyond their full term release date",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_CRITERIA_SPAN,
+        span_conditions_dict={
+            "criteria": [
+                "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE",
+            ],
+            "meets_criteria": ["true"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_PAST_PAROLE_ELIGIBILITY_DATE = DailyAvgSpanCountMetric(
     name="avg_population_past_parole_eligibility_date",
     display_name="Average Population: Past Parole Eligibility Date",
