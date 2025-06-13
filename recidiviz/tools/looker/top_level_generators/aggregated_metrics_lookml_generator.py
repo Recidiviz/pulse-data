@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script for generating a copy-paste-able LookML view file containing measures for
-all configured metrics associated with the specified population and unit of analysis.
+"""A script for generating LookML view files containing measures for
+all configured metrics associated with the incarceration, supervision, and justice-involved
+populations.
 
-To print the contents of a lookml view file for the desired population and unit of analysis, run:
-    python -m recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator \
-       --population [POPULATION] --save_views_to_dir [PATH]
+To generate lookml view files for incarceration, supervision, and justice-involved
+populations, run:
+    python -m recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator \
+       [--looker-repo-root [DIR]]
 """
-import argparse
 from typing import List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.configuration.collections.standard import (
@@ -66,6 +67,13 @@ from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils i
     get_metric_value_dimension,
     get_metric_value_measure,
     measure_for_metric,
+)
+from recidiviz.tools.looker.script_helpers import (
+    get_generated_views_path,
+    parse_and_validate_output_dir_arg,
+)
+from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
+    LookMLGenerator,
 )
 
 _ALLOWED_METRIC_DENOMINATORS: List[AggregatedMetric] = [
@@ -253,44 +261,29 @@ def get_lookml_views_for_metrics(
     return aggregated_metrics_view, aggregated_metrics_menu_view
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses the required arguments."""
-    parser = argparse.ArgumentParser()
+class AggregatedMetricsLookMLGenerator(LookMLGenerator):
+    """Generates LookML views for aggregated metrics."""
 
-    parser.add_argument(
-        "--population",
-        dest="population",
-        help="Name of the population enum used to generate aggregated metrics.",
-        type=MetricPopulationType,
-        choices=list(MetricPopulationType),
-        default=MetricPopulationType.SUPERVISION,
-        required=True,
-    )
+    @staticmethod
+    def generate_lookml(output_dir: str) -> None:
+        output_subdir = get_generated_views_path(
+            output_dir=output_dir, module_name="aggregated_metrics"
+        )
+        for population in [
+            MetricPopulationType.INCARCERATION,
+            MetricPopulationType.SUPERVISION,
+            MetricPopulationType.JUSTICE_INVOLVED,
+        ]:
+            metrics_view, menu_view = get_lookml_views_for_metrics(
+                population_type=population,
+                metrics=METRICS_BY_POPULATION_TYPE[population],
+            )
 
-    parser.add_argument(
-        "--save_views_to_dir",
-        dest="save_dir",
-        help="Specifies name of directory where to save view file",
-        type=str,
-        required=True,
-    )
-
-    return parser.parse_args()
-
-
-def main(
-    population_type: MetricPopulationType,
-    save_dir: str,
-) -> None:
-    metrics_view, menu_view = get_lookml_views_for_metrics(
-        population_type=population_type,
-        metrics=METRICS_BY_POPULATION_TYPE[population_type],
-    )
-
-    metrics_view.write(save_dir, source_script_path=__file__)
-    menu_view.write(save_dir, source_script_path=__file__)
+            metrics_view.write(output_subdir, source_script_path=__file__)
+            menu_view.write(output_subdir, source_script_path=__file__)
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    main(args.population, args.save_dir)
+    AggregatedMetricsLookMLGenerator.generate_lookml(
+        output_dir=parse_and_validate_output_dir_arg()
+    )

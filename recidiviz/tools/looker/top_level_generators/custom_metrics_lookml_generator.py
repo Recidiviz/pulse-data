@@ -18,12 +18,9 @@
 in Looker for all configured packages
 
 Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_generator --save_views_to_dir [DIR]
-
-DIR should end with `looker/views/aggregated_metrics/generated`
+python -m recidiviz.tools.looker.top_level_generators.custom_metrics_lookml_generator [--looker-repo-root [DIR]]
 """
 
-import argparse
 import os
 from typing import Dict, Optional, Tuple
 
@@ -63,6 +60,13 @@ from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configur
     WORKFLOWS_IMPACT_LOOKER_METRICS,
     WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
+from recidiviz.tools.looker.script_helpers import (
+    get_generated_views_path,
+    parse_and_validate_output_dir_arg,
+)
+from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
+    LookMLGenerator,
+)
 
 
 def collect_and_build_custom_metrics_views_for_package(
@@ -74,7 +78,6 @@ def collect_and_build_custom_metrics_views_for_package(
     ],
     json_field_filters_with_suggestions: Optional[dict[str, list[str]]] = None,
 ) -> None:
-
     """Builds and writes views required to build Workflows impact metrics in Looker"""
     if not output_directory:
         raise ValueError("Must supply a non-empty output_directory")
@@ -112,54 +115,57 @@ def collect_and_build_custom_metrics_views_for_package(
     ).write(output_directory, source_script_path=__file__)
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses the required arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--save_views_to_dir",
-        dest="save_dir",
-        help="Specifies name of directory where to save view files",
-        type=str,
-        required=True,
-    )
-    return parser.parse_args()
+class CustomMetricsLookMLGenerator(LookMLGenerator):
+    """Generates a set of LookML views that support custom metrics in Looker for all configured packages."""
+
+    @staticmethod
+    def generate_lookml(output_dir: str) -> None:
+        """
+        Write custom metrics LookML views to the given directory,
+        which should be a path to the local copy of the looker repo
+        """
+        output_subdir = get_generated_views_path(
+            output_dir=output_dir, module_name="aggregated_metrics"
+        )
+
+        # Standard
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="custom_metrics",
+            output_directory=output_subdir,
+            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
+            assignment_types_dict=ASSIGNMENT_NAME_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # Workflows
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="workflows_impact_metrics",
+            output_directory=output_subdir,
+            metrics=WORKFLOWS_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions=WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+        )
+
+        # Insights
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="insights_impact_metrics",
+            output_directory=output_subdir,
+            metrics=INSIGHTS_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # TASKS
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="tasks_impact_metrics",
+            output_directory=output_subdir,
+            metrics=TASKS_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-
-    # Standard
-    collect_and_build_custom_metrics_views_for_package(
-        lookml_views_package_name="custom_metrics",
-        output_directory=args.save_dir,
-        metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
-        assignment_types_dict=ASSIGNMENT_NAME_TO_TYPES,
-        json_field_filters_with_suggestions={},
-    )
-
-    # Workflows
-    collect_and_build_custom_metrics_views_for_package(
-        lookml_views_package_name="workflows_impact_metrics",
-        output_directory=args.save_dir,
-        metrics=WORKFLOWS_IMPACT_LOOKER_METRICS,
-        assignment_types_dict=WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
-        json_field_filters_with_suggestions=WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
-    )
-
-    # Insights
-    collect_and_build_custom_metrics_views_for_package(
-        lookml_views_package_name="insights_impact_metrics",
-        output_directory=args.save_dir,
-        metrics=INSIGHTS_IMPACT_LOOKER_METRICS,
-        assignment_types_dict=INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
-        json_field_filters_with_suggestions={},
-    )
-
-    # TASKS
-    collect_and_build_custom_metrics_views_for_package(
-        lookml_views_package_name="tasks_impact_metrics",
-        output_directory=args.save_dir,
-        metrics=TASKS_IMPACT_LOOKER_METRICS,
-        assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
-        json_field_filters_with_suggestions={},
+    CustomMetricsLookMLGenerator.generate_lookml(
+        output_dir=parse_and_validate_output_dir_arg()
     )

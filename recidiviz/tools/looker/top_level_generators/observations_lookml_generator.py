@@ -18,12 +18,9 @@
 observations at all units of observation.
 
 Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.observations.observations_lookml_generator --save_views_to_dir [DIR]
-
-DIR should end with `looker/views/observations/generated`
+python -m recidiviz.tools.looker.top_level_generators.observations_lookml_generator [--looker-repo-root [DIR]]
 """
 
-import argparse
 import os
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
@@ -48,6 +45,13 @@ from recidiviz.observations.observation_type_utils import (
     date_column_names_for_observation_type,
 )
 from recidiviz.observations.span_type import SpanType
+from recidiviz.tools.looker.script_helpers import (
+    get_generated_views_path,
+    parse_and_validate_output_dir_arg,
+)
+from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
+    LookMLGenerator,
+)
 
 
 def build_single_observation_lookml_view(
@@ -147,55 +151,53 @@ def build_single_observation_lookml_view(
     )
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses the required arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--save_views_to_dir",
-        dest="save_dir",
-        help="Specifies name of directory where to save view files",
-        type=str,
-        required=True,
-    )
-    return parser.parse_args()
+class ObservationsLookMLGenerator(LookMLGenerator):
+    """Generates LookML files for observations at all units of observation"""
+
+    @staticmethod
+    def generate_lookml(output_dir: str) -> None:
+        """
+        Write observation LookML views to the given directory,
+        which should be a path to the local copy of the looker repo
+        """
+        output_subdir = get_generated_views_path(
+            output_dir=output_dir, module_name="observations"
+        )
+
+        for unit_of_observation_type in MetricUnitOfObservationType:
+            sub_dir = os.path.join(
+                output_subdir,
+                "event",
+                unit_of_observation_type.value.lower(),
+            )
+            event_builders_dict = (
+                ObservationBigQueryViewCollector().collect_event_builders_by_unit_of_observation()
+            )
+            if unit_of_observation_type in event_builders_dict:
+                for event_builder in event_builders_dict[unit_of_observation_type]:
+                    observations_view = build_single_observation_lookml_view(
+                        event_builder.event_type
+                    )
+                    observations_view.write(sub_dir, source_script_path=__file__)
+
+        for unit_of_observation_type in MetricUnitOfObservationType:
+            sub_dir = os.path.join(
+                output_subdir,
+                "span",
+                unit_of_observation_type.value.lower(),
+            )
+            span_builders_dict = (
+                ObservationBigQueryViewCollector().collect_span_builders_by_unit_of_observation()
+            )
+            if unit_of_observation_type in span_builders_dict:
+                for span_builder in span_builders_dict[unit_of_observation_type]:
+                    observations_view = build_single_observation_lookml_view(
+                        span_builder.span_type
+                    )
+                    observations_view.write(sub_dir, source_script_path=__file__)
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-
-    if not args.save_dir:
-        raise ValueError("Must supply a non-empty output_directory")
-
-    for unit_of_observation_type in MetricUnitOfObservationType:
-        sub_dir = os.path.join(
-            args.save_dir,
-            "event",
-            unit_of_observation_type.value.lower(),
-        )
-        os.makedirs(sub_dir, exist_ok=True)
-        event_builders_dict = (
-            ObservationBigQueryViewCollector().collect_event_builders_by_unit_of_observation()
-        )
-        if unit_of_observation_type in event_builders_dict:
-            for event_builder in event_builders_dict[unit_of_observation_type]:
-                observations_view = build_single_observation_lookml_view(
-                    event_builder.event_type
-                )
-                observations_view.write(sub_dir, source_script_path=__file__)
-
-    for unit_of_observation_type in MetricUnitOfObservationType:
-        sub_dir = os.path.join(
-            args.save_dir,
-            "span",
-            unit_of_observation_type.value.lower(),
-        )
-        os.makedirs(sub_dir, exist_ok=True)
-        span_builders_dict = (
-            ObservationBigQueryViewCollector().collect_span_builders_by_unit_of_observation()
-        )
-        if unit_of_observation_type in span_builders_dict:
-            for span_builder in span_builders_dict[unit_of_observation_type]:
-                observations_view = build_single_observation_lookml_view(
-                    span_builder.span_type
-                )
-                observations_view.write(sub_dir, source_script_path=__file__)
+    ObservationsLookMLGenerator.generate_lookml(
+        output_dir=parse_and_validate_output_dir_arg()
+    )

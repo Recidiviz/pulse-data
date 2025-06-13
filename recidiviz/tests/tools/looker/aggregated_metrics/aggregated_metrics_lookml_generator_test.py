@@ -24,7 +24,7 @@ from recidiviz.aggregated_metrics.configuration.collections.standard import (
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
+from recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator import (
     get_lookml_views_for_metrics,
 )
 

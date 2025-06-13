@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script for building a set of LookML views, explores and dashboards 
+"""A script for building a set of LookML views, explores and dashboards
 for raw data tables and writing them to files.
 
 Run the following to write files to the specified directory DIR:
-python -m recidiviz.tools.looker.raw_data.person_details_lookml_writer --looker_repo_root [DIR]
+python -m recidiviz.tools.looker.top_level_generators.person_details_lookml_generator [--looker-repo-root [DIR]]
 
 If you are running this for new states, you will also have to add the following lines
 into the `models/recidiviz-123.model.lkml` and `models/recidiviz-staging.model.lkml`
@@ -29,8 +29,6 @@ explore: us_xx_raw_data {
 }
 """
 
-import argparse
-import os
 
 from recidiviz.tools.looker.raw_data.person_details_dashboard_generator import (
     generate_lookml_dashboards,
@@ -41,38 +39,27 @@ from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
 )
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.looker.script_helpers import parse_and_validate_output_dir_arg
+from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
+    LookMLGenerator,
+)
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses the required arguments."""
-    parser = argparse.ArgumentParser()
+class PersonDetailsLookMLGenerator(LookMLGenerator):
+    """Generates LookML files for person details raw data tables."""
 
-    parser.add_argument(
-        "--looker_repo_root",
-        dest="looker_dir",
-        help="Specifies local path to the Looker repo, where all files will be saved to",
-        type=str,
-        required=True,
-    )
-
-    return parser.parse_args()
-
-
-def write_lookml_files(looker_dir: str) -> None:
-    """
-    Write state raw data LookML views, explores and dashboards to the given directory,
-    which should be a path to the local copy of the looker repo
-    """
-    if os.path.basename(looker_dir).lower() != "looker" and not prompt_for_confirmation(
-        f"Warning: .lkml files will be deleted/overwritten in {looker_dir}\nProceed?"
-    ):
-        return
-    all_state_views = generate_lookml_views(looker_dir)
-    all_state_explores = generate_lookml_explores(looker_dir, all_state_views)
-    generate_lookml_dashboards(looker_dir, all_state_views, all_state_explores)
+    @staticmethod
+    def generate_lookml(output_dir: str) -> None:
+        """
+        Write state raw data LookML views, explores and dashboards to the given directory,
+        which should be a path to the local copy of the looker repo
+        """
+        all_state_views = generate_lookml_views(output_dir)
+        all_state_explores = generate_lookml_explores(output_dir, all_state_views)
+        generate_lookml_dashboards(output_dir, all_state_views, all_state_explores)
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    write_lookml_files(args.looker_dir)
+    PersonDetailsLookMLGenerator.generate_lookml(
+        output_dir=parse_and_validate_output_dir_arg()
+    )

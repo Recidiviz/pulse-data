@@ -14,3 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Contains the abstract base class for LookML generators."""
+import abc
+
+
+class LookMLGenerator:
+    """
+    Abstract base class for generating LookML files.
+    """
+
+    @staticmethod
+    @abc.abstractmethod
+    def generate_lookml(output_dir: str) -> None:
+        """Generate LookML files and save them to the specified output directory."""

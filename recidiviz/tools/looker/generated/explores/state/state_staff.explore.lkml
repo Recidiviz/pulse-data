@@ -1,5 +1,5 @@
 # This file was automatically generated using a pulse-data script.
-# To regenerate, see `recidiviz/tools/looker/entity/state_dataset_lookml_writer.py`.
+# To regenerate, see `recidiviz/tools/looker/top_level_generators/state_dataset_lookml_generator.py`.
 
 explore: state_staff_template {
   extension: required

@@ -18,7 +18,7 @@
 in Looker.
 
 Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.breadth_and_depth.breadth_and_depth_lookml_generator --save_views_to_dir [DIR]
+python -m recidiviz.tools.looker.top_level_generators.breadth_and_depth_lookml_generator [--looker-repo-root [DIR]]
 
 """
 
@@ -37,6 +37,13 @@ from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     liquid_wrap_json_field,
+)
+from recidiviz.tools.looker.script_helpers import (
+    get_generated_views_path,
+    parse_and_validate_output_dir_arg,
+)
+from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
+    LookMLGenerator,
 )
 
 BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS = [
@@ -615,41 +622,58 @@ def main(
     view_name: str,
 ) -> None:
     """Builds and writes breadth and depth metrics views in Looker"""
-    if output_directory:
+    attributes_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f"{attribute},", attribute, view_name)
+            for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
+        ]
+    )
 
-        attributes_query_fragment = "".join(
-            [
-                liquid_wrap_json_field(f"{attribute},", attribute, view_name)
-                for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
-            ]
+    partition_by_query_fragment = "".join(
+        [
+            liquid_wrap_json_field(f"{attribute},", attribute, view_name)
+            for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
+            if attribute not in PARTITION_BY_COLUMNS
+        ]
+    )
+
+    generate_baseline_source_view(
+        attributes_query_fragment,
+        partition_by_query_fragment,
+    ).write(output_directory, source_script_path=__file__)
+
+    generate_transitions_breadth_metric_source_view(
+        partition_by_query_fragment,
+    ).write(output_directory, source_script_path=__file__)
+
+    generate_transitions_depth_metric_source_view(
+        attributes_query_fragment,
+        view_name,
+    ).write(output_directory, source_script_path=__file__)
+
+
+class BreadthAndDepthLookMLGenerator(LookMLGenerator):
+    """Generates LookML files for breadth and depth metrics views."""
+
+    @staticmethod
+    def generate_lookml(output_dir: str) -> None:
+        """
+        Write breadth and depth metrics LookML views to the given directory,
+        which should be a path to the local copy of the looker repo
+        """
+        view_name = "breadth_and_depth"
+
+        output_subdir = get_generated_views_path(
+            output_dir=output_dir, module_name=view_name
         )
 
-        partition_by_query_fragment = "".join(
-            [
-                liquid_wrap_json_field(f"{attribute},", attribute, view_name)
-                for attribute in BREADTH_AND_DEPTH_ATTRIBUTE_FIELDS
-                if attribute not in PARTITION_BY_COLUMNS
-            ]
+        main(
+            output_directory=output_subdir,
+            view_name=view_name,
         )
-
-        generate_baseline_source_view(
-            attributes_query_fragment,
-            partition_by_query_fragment,
-        ).write(output_directory, source_script_path=__file__)
-
-        generate_transitions_breadth_metric_source_view(
-            partition_by_query_fragment,
-        ).write(output_directory, source_script_path=__file__)
-
-        generate_transitions_depth_metric_source_view(
-            attributes_query_fragment,
-            view_name,
-        ).write(output_directory, source_script_path=__file__)
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    main(
-        output_directory=args.save_dir,
-        view_name="breadth_and_depth",
+    BreadthAndDepthLookMLGenerator.generate_lookml(
+        output_dir=parse_and_validate_output_dir_arg()
     )
