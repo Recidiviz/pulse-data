@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    no_supervision_sustained_violation_within_2_years,
     supervision_level_is_minimum_for_3_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
@@ -41,13 +40,12 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
-    task_name="TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORTING_STATUS",
+    task_name="TRANSFER_FROM_PAROLE_TO_ANNUAL_REPORT_STATUS",
     description=__doc__,
     candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_is_minimum_for_3_years.VIEW_BUILDER,
         no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
-        no_supervision_sustained_violation_within_2_years.VIEW_BUILDER,
         not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
