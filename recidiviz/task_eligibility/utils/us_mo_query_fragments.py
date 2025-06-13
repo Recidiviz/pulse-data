@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,61 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Helper SQL queries for Missouri
-"""
+"""Create constants and helper SQL query fragments for Missouri."""
+
+# The following charge codes can be used to identify first-degree-assault offenses in
+# Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
+# category (`BE_NC2`) 13 (assault) and reviewing their respective
+# descriptions.
+# The codes come from the field `BE_CD1` in that view, which is a five-digit field with
+# two digits that correspond with the NCIC major category followed by three digits that
+# are the "unique identifier" for the charge in MO.
+MO_CHARGE_CODES_ASSAULT_FIRST_DEGREE = [
+    # These codes are for offenses corresponding with RSMo 565.050, which covers first-
+    # degree assault in general.
+    "13020",
+    "13ACJ",
+    "13011",
+    "13010",
+    "13ACH",
+    # These codes are for offenses corresponding with RSMo 565.081 (repealed by S.B.
+    # 491, 2014), which covered first-degree assault of emergency personnel, public-
+    # safety officials, highway workers, etc. (although that statute evolved over time).
+    "13105",
+    "13100",
+]
+
+# The following charge codes can be used to identify first-degree-murder offenses in
+# Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
+# category (`BE_NC2`) 09 (homicide).
+MO_CHARGE_CODES_MURDER_FIRST_DEGREE = [
+    # These codes correspond with now-repealed/-modified statutes that, when they
+    # existed, defined first-degree murder.
+    "10022",
+    "10020",
+    # These codes are for offenses covered by RSMo 565.020, which (as of June 2025) now
+    # defines first-degree murder.
+    "09AAG",
+    "10021",
+]
+
+# The following charge codes can be used to identify second-degree-murder offenses in
+# Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
+# category (`BE_NC2`) 09 (homicide).
+MO_CHARGE_CODES_MURDER_SECOND_DEGREE = [
+    # This code corresponds with a now-repealed/-modified statute that, when it existed,
+    # defined second-degree murder.
+    "10030",
+    # These codes are for offenses covered by RSMo 565.021, which (as of June 2025) now
+    # defines second-degree murder.
+    "09AAH",
+    "09AAI",
+    "09AAJ",
+    "10031",
+    "10034",
+    "10035",
+    "10036",
+]
 
 
 def classes_cte() -> str:
