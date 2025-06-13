@@ -243,6 +243,9 @@ from recidiviz.task_eligibility.criteria.general.on_minimum_after_unassigned imp
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_security_classification_committee_reviews_greater_than_observed import (
+    VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
@@ -490,6 +493,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
     ),
     US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
+        "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
+    ),
+    US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
     ),
     REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (

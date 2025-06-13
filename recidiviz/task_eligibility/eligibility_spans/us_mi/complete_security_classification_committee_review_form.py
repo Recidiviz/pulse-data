@@ -33,7 +33,7 @@ from recidiviz.task_eligibility.criteria.general import (
     not_admitted_to_temporary_solitary_confinement_in_the_last_3_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
-    expected_number_of_security_classification_committee_reviews_greater_than_observed,
+    eligible_for_initial_security_classification_committee_review,
     one_month_past_last_security_classification_committee_review_date,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
@@ -54,11 +54,14 @@ _PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQuery
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE",
     sub_criteria_list=[
+        eligible_for_initial_security_classification_committee_review.VIEW_BUILDER,
         one_month_past_last_security_classification_committee_review_date.VIEW_BUILDER,
-        expected_number_of_security_classification_committee_reviews_greater_than_observed.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=["next_scc_date"],
-    reasons_aggregate_function_override={"next_scc_date": "MIN"},
+    allowed_duplicate_reasons_keys=["next_scc_date", "latest_scc_review_date"],
+    reasons_aggregate_function_override={
+        "next_scc_date": "MIN",
+        "latest_scc_review_date": "MAX",
+    },
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
