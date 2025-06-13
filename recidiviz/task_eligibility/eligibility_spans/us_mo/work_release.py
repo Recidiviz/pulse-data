@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    mental_health_score_3_or_below_while_incarcerated,
     no_current_or_prior_excluded_offenses_work_release,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -36,13 +37,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="WORK_RELEASE",
     description=__doc__,
-    # TODO(#42982): Ensure that this is the correct candidate population.
+    # TODO(#42983): Ensure that this is the correct candidate population.
     candidate_population_view_builder=incarceration_population_state_prison.VIEW_BUILDER,
-    # TODO(#42982): Finish adding in criteria and filling in stubs.
+    # TODO(#42984): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
+        mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
     ],
-    # TODO(#42982): Update this to be the correct completion event (either general or
+    # TODO(#42985): Update this to be the correct completion event (either general or
     # state-specific) for this opportunity.
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
