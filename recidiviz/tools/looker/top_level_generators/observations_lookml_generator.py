@@ -83,10 +83,12 @@ def build_single_observation_lookml_view(
         for field in builder.attribute_cols
     ]
 
-    unit_of_observation_keys = list(
-        MetricUnitOfObservation(
-            type=observation_type.unit_of_observation_type
-        ).primary_key_columns
+    unit_of_observation_keys = sorted(
+        list(
+            MetricUnitOfObservation(
+                type=observation_type.unit_of_observation_type
+            ).primary_key_columns
+        )
     )
 
     all_unit_of_observation_key_dimensions = [

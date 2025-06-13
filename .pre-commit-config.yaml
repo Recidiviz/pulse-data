@@ -117,7 +117,9 @@ repos:
         files: recidiviz/view_registry/raw_data_reference_reasons.yaml
       - id: generate_entity_lookml
         name: generate_entity_lookml
-        entry: pipenv run python -m recidiviz.tools.looker.entity.state_dataset_lookml_writer
+        entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
-        files: ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/entity/
+        files:
+          ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/models/|
+          ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/
         pass_filenames: false
