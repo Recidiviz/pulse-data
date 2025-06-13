@@ -1770,7 +1770,7 @@ MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
     "(same employer and job) within 1 year of assignment",
     span_selector=SpanSelector(
         span_type=SpanType.EMPLOYMENT_PERIOD,
-        span_conditions_dict={},
+        span_conditions_dict={"is_unemployed": ["false"]},
     ),
 )
 
