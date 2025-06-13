@@ -110,7 +110,6 @@ output:
                   - COMPACT IN START
                   - COMPACT OUT/UTAH TO OTHR STATE
                   - COMPACT DENIED
-                  - COMP RET TO OTHER/NOT COMPLETE
                   - COMP RET TO UTAH/NOT COMPLETE
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                   - MOVE/OTHER STATE PRISON
@@ -163,6 +162,7 @@ output:
                   - DIVERSION START
                   - COLLECTION ONLY START
                   - DISCHARGED TO PSRB
+                  - COMP RET TO OTHER/NOT COMPLETE
                   - 402 AMENDED/REDUCED
                 StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
                   - RETURNED FROM ABSCOND
@@ -231,6 +231,14 @@ output:
                   - RET PRSN/PAR REVOKED
                   - RET PRSN/REV PEND/72 HOUR HOLD
                   - RET PRSN FROM OUT COUNT
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - COMP RET TO OTHER/NOT COMPLETE
+                  - EXTRADITION
+                  - MOVE/OTHER STATE JAIL
+                  - MOVE/OTHER STATE PRISON
+                  - MOVE/FEDERAL FACILITY
+                  - COMPACT OUT/UTAH TO OTHR STATE
+                  - DEPORTED/NOT TERMINATED
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                   - Supervisor Change
                   - Supervision Level Change
@@ -243,13 +251,10 @@ output:
                   - MOVE/UTAH JAIL
                   - OBSCIS LEGAL STATUS CHANGE
                   - FACILITY NAME CHANGE
-                  - MOVE/OTHER STATE JAIL
-                  - MOVE/FEDERAL FACILITY
                   - PROBATION CONTINUED
                   - WARRANT RECALLED
                   - MOVE/STATE HOSPITAL
                   - MOVE/PRISON TEMP HOUSING
-                  - MOVE/OTHER STATE PRISON
                   - MOVE/MEDICAL
                   - PAROLE CONT/RELEASE FROM PRISN
                   - PAROLE CONTINUED
@@ -257,12 +262,9 @@ output:
                   - PAROLE/HALFWAY OUT
                   - PROBATION START
                   - PAROLE
-                  - COMP RET TO OTHER/NOT COMPLETE
                   - COMP RET TO UTAH/NOT COMPLETE
-                  - DEPORTED/NOT TERMINATED
                   - APPEAL-REVERSED ORIGINAL ORDER
                   - MOVE/CCC HOUSING
-                  - COMPACT OUT/UTAH TO OTHR STATE
                   - COMPACT IN START
                   - COMPACT DENIED
                   - FAILED TO APPEAR AT SENTENCING
@@ -284,7 +286,6 @@ output:
                   - NEW DIAGNOSTIC REFERRAL
                   - DIAGNOSTIC START
                   - PROBATION REINSTATED
-                  - EXTRADITION
                   - HALFWAY BACK
                   - REL FM HALFWAY OUT
                   - REL FM HALFWAY BACK
