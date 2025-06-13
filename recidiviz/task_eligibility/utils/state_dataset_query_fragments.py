@@ -786,7 +786,7 @@ def get_supervision_violations_sans_unfounded() -> str:
           ra.state_code,
           ra.person_id,
           ra.supervision_violation_id,
-          ARRAY_AGG(de.decision ORDER BY de.decision) AS latest_decisions
+          ARRAY_AGG(CONCAT(COALESCE(de.decision, ''), COALESCE(de.decision_raw_text, '')) ORDER BY CONCAT(COALESCE(de.decision, ''), COALESCE(de.decision_raw_text, ''))) AS latest_decisions
         FROM
           responses_at_latest AS ra
         JOIN `{project_id}.normalized_state.state_supervision_violation_response_decision_entry` AS de
@@ -806,7 +806,10 @@ def get_supervision_violations_sans_unfounded() -> str:
         WHERE
           NOT EXISTS (
             SELECT 1 FROM UNNEST(dfl.latest_decisions) AS dec
-            WHERE dec = 'VIOLATION_UNFOUNDED'
+            /* for Iowa, use state-specific logic to define which decisions are considered unfounded. otherwise, 
+               take all where the decision is VIOLATION_UNFOUNDED */ 
+            WHERE CASE WHEN state_code = 'US_IA' THEN dec LIKE '%REINSTATE%' OR dec LIKE '%DISMISSED%'
+              ELSE dec LIKE '%VIOLATION_UNFOUNDED%' END
           )
         GROUP BY
           v.state_code,

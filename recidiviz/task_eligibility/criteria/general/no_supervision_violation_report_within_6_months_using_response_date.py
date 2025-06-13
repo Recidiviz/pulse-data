@@ -50,6 +50,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = cast(
         where_clause_addition=_WHERE_CLAUSE_ADDITION,
         violation_date_name_in_reason_blob="latest_violation_report_dates",
         use_response_date=True,
+        exclude_violation_unfounded_decisions=True,
     ),
 )
 

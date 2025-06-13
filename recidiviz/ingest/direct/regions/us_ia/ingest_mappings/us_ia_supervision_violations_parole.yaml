@@ -151,7 +151,6 @@ output:
                                           - "Revoke and Discharge"
                                           - "Revoke and Discharge - Day Reporter"
                                         StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
-                                          - "Probable Cause Found"
                                           - "Probable Cause Not Found"
                                           - "Reinstate - Insufficient Evidence"
                                           - "Reinstate - Insufficient Evidence, Day Reporter"
@@ -159,6 +158,7 @@ output:
                                           - "Community Success Program"
                                           - "Nunc Pro Tunc"
                                           - "Voluntary Termination"
+                                          - "Probable Cause Found"
                                 - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)
           supervision_violated_conditions:
             - $foreach:
