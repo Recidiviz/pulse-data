@@ -45,7 +45,6 @@ const EMAIL_SETTINGS = {
   EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
   FEEDBACK_EMAIL: "feedback@recidiviz.org",
 
-  EMAIL_SUBJECT: "Recidiviz missed you this month!",
   RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
   RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
 };
@@ -325,12 +324,37 @@ function stateSpecificText(
   }
 }
 
-function generateIntroText(toolName, currentMonth, urgentClients) {
-  if (urgentClients.length) {
-    return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted for the opportunity or ineligible for the opportunity.<br><br>`;
+/**
+ * Generates the introduction text for the reminder email, which is different for supervision line 
+ * staff depending on whether they have any urgent clients and whether they've logged in during the current month
+ * @param {string} toolName the state-specific tool name
+ * @param {string} currentMonth the full name of the current month
+ * @param {array} urgentClients the opportunities with urgent clients
+ * @param {boolean} loggedIn whether the user has logged in during the current month
+ * @returns a string with the appropriate intro text
+ */
+function generateIntroText(toolName, currentMonth, urgentClients, loggedIn) {
+  if (urgentClients.length && loggedIn) {
+    return `We hope you're doing well! We noticed some of your clients in the tool have been eligible for over 30 days whom you haven’t reviewed yet. Clients can be resolved by either marking them as submitted for the opportunity or ineligible for the opportunity. Here’s what you might’ve missed:<br><br>`;
   }
 
+  if (urgentClients.length) {
+    return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted for the opportunity or ineligible for the opportunity.<br><br>`;
+  } 
+
   return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>`;
+}
+
+/**
+ * @param {date} lastLoginDate the user's most recent login date from auth0 
+ * @returns a boolean indicating whether the most recent login date is during the current month
+ */
+function loggedInThisMonth(lastLoginDate) {
+  const cutoffDate = new Date(); // last day of the previous month, 11:59pm local time
+  cutoffDate.setDate(0);
+  cutoffDate.setHours(23, 59);
+
+  return lastLoginDate >= cutoffDate;
 }
 
 /**
@@ -347,6 +371,7 @@ function buildLoginReminderBody(info, userType, settings) {
     eligibleClientsByOpportunity,
     almostEligibleClientsByOpportunity,
     urgentClientsByOpportunity,
+    lastLogin,
   } = info;
   const { RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL } = settings;
   const isSupervisors = userType === SUPERVISORS;
@@ -367,6 +392,8 @@ function buildLoginReminderBody(info, userType, settings) {
     urgentClientsByOpportunity
   );
 
+  const loggedIn = loggedInThisMonth(lastLogin);
+
   const now = new Date();
   const formattedDate = now.toLocaleString("en-US", {
     timeZone,
@@ -385,7 +412,8 @@ function buildLoginReminderBody(info, userType, settings) {
   const introText = generateIntroText(
     toolName,
     currentMonth,
-    urgentClientsByOpportunity
+    urgentClientsByOpportunity,
+    loggedIn
   );
 
   let bulletPoints = "";
@@ -442,8 +470,11 @@ function buildLoginReminderBody(info, userType, settings) {
  * and log that an email has been sent in the sentEmailsSheet.
  */
 function sendLoginReminder(info, body, sentEmailsSheet, settings) {
-  const { stateCode, name, emailAddress, district } = info;
-  const { EMAIL_SUBJECT, EMAIL_FROM_ALIAS, FEEDBACK_EMAIL } = settings;
+  const { stateCode, name, emailAddress, district, lastLogin } = info;
+  const { EMAIL_FROM_ALIAS, FEEDBACK_EMAIL, IS_TESTING } = settings;
+  const loggedIn = loggedInThisMonth(lastLogin);
+  const emailSubjectPrefix = IS_TESTING ? `[TESTING ${stateCode}] ` : "";
+  const emailSubject = loggedIn ? `${emailSubjectPrefix}Your month on Recidiviz!` : `${emailSubjectPrefix}Recidiviz missed you this month!`;
 
   // Add a record of this email to the sent emails spreadsheet
   const formattedTimestamp = new Date().toISOString();
@@ -456,7 +487,7 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
   ]);
 
   // Send the email from the appropriate alias
-  GmailApp.sendEmail(emailAddress, EMAIL_SUBJECT, "", {
+  GmailApp.sendEmail(emailAddress, emailSubject, "", {
     htmlBody: body,
     from: EMAIL_FROM_ALIAS,
     replyTo: FEEDBACK_EMAIL,
@@ -468,19 +499,33 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
  *                                outliers but no opportunities
  * @returns true if we should send an email to the person described in `info`
  */
-function shouldSendLoginReminder(info, checkOutliers, settings) {
+function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
   const {
     district,
     outliers,
     stateCode,
     totalOpportunities,
     almostEligibleOpportunities,
+    urgentClientsByOpportunity,
+    lastLogin,
   } = info;
   const hasOutliersOrOpportunities = checkOutliers
     ? outliers || totalOpportunities
     : totalOpportunities;
   const { EXCLUDED_DISTRICTS } = settings;
   const hasAlmostEligibleOpportunities = almostEligibleOpportunities > 0;
+  const loggedIn = loggedInThisMonth(lastLogin);
+
+  // We don't want to email non-supervision line staff who have logged in
+  if (userType !== SUPERVISION_LINESTAFF && loggedIn) {
+    return false;
+  }
+
+  // For now we also don't want to email supervision line staff who have logged in and don't
+  // have any urgent clients
+  if (userType === SUPERVISION_LINESTAFF && loggedIn && !urgentClientsByOpportunity.length) {
+    return false;
+  }
 
   // For Arizona, we only want to email staff who have almost eligible opportunities
   if (stateCode === "US_AZ" && !hasAlmostEligibleOpportunities) {
@@ -507,7 +552,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
  *                       last login time, # outliers, # opportunities]
  * @param {object} settings settings describing the email to be sent:
  *                          contains RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL,
- *                          EMAIL_SUBJECT, EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
+ *                          EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
  */
 function sendAllLoginReminders(userType, query, settings, stateCodes) {
   if (!VALID_USER_TYPES.includes(userType)) {
@@ -583,10 +628,6 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     ])
   );
 
-  const cutoffDate = new Date(); // last day of the previous month, 11:59pm local time
-  cutoffDate.setDate(0);
-  cutoffDate.setHours(23, 59);
-
   console.log("Getting user login information from auth0...");
   const authToken = getAuth0Token();
   const userLoginInfo = getUserLoginInfo(emails, authToken);
@@ -598,14 +639,15 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
       console.log("Skipping person we already emailed:", email);
       continue;
     }
-    if (lastLogin < cutoffDate) {
-      const emailInfo = dataByEmail[email];
-      const shouldCheckOutliers =
-        isSupervisors && hasOutliersTextConfigured[emailInfo.stateCode];
-      if (shouldSendLoginReminder(emailInfo, shouldCheckOutliers, settings)) {
-        const body = buildLoginReminderBody(emailInfo, userType, settings);
-        sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
-      }
+    const emailInfo = {
+      ...dataByEmail[email],
+      lastLogin
+    };
+    const shouldCheckOutliers =
+      isSupervisors && hasOutliersTextConfigured[emailInfo.stateCode];
+    if (shouldSendLoginReminder(emailInfo, shouldCheckOutliers, settings, userType)) {
+      const body = buildLoginReminderBody(emailInfo, userType, settings);
+      sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
     }
   }
 

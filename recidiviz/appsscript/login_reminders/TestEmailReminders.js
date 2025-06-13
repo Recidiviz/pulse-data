@@ -73,16 +73,30 @@ const TEST_USERS = [
     eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
     almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
     urgentClientsByOpportunity: TEST_URGENT_CLIENTS_BY_OPPORTUNITY,
-  }
+  },
+  {
+    testName: "LOGIN_URGENT",
+    name: TESTING_NAME,
+    emailAddress: TEST_DESTINATION_EMAIL,
+    district: TESTING_DISTRICT,
+    lastLogin: new Date(),
+    outliers: TEST_NUM_OUTLIERS,
+    totalOpportunities: TEST_NUM_OPPORTUNITIES,
+    eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
+    almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
+    eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    urgentClientsByOpportunity: TEST_URGENT_CLIENTS_BY_OPPORTUNITY,
+  },
 ]
 
 const SUPERVISION_LINESTAFF_USER_MAPPING = {
   "US_IX": "NO_LOGIN_NO_URGENT",
   "US_ME": "NO_LOGIN_NO_URGENT",
-  "US_MI": "NO_LOGIN_NO_URGENT",
+  "US_MI": "NO_LOGIN_URGENT",
   "US_ND": "NO_LOGIN_URGENT",
-  "US_PA": "NO_LOGIN_URGENT",
-  "US_TN": "NO_LOGIN_URGENT",
+  "US_PA": "LOGIN_URGENT",
+  "US_TN": "LOGIN_URGENT",
 }
 
 function testSendFacilitiesLinestaffEmails() {
@@ -184,7 +198,7 @@ function sendTestEmails_(sheetName, settings, stateCodesToTest, userType, userMa
   for (stateCode of stateCodesToTest) {
     const testSettings = {
       ...settings,
-      EMAIL_SUBJECT: `[TESTING ${stateCode}] ${settings.EMAIL_SUBJECT}`,
+      IS_TESTING: true,
     };
 
     let userInfo;
