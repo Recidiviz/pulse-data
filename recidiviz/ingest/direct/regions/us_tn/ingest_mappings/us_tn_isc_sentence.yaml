@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  # Form the unique ID for charges and sentences.
+  OffenderID: STRING
+  Jurisdiction: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+
+  # StateSentence information
+  SentenceImposedDate: DATE
+  ISCSentencyType: STRING
+
+  # These columns have credit should we need to add them in the future.
+  # ISCCreditDays: INTEGER
+  # ISCCreditDeadTime: INTEGER
+  # ISCPretrialCredit: INTEGER
+
+  # StateChargeV2 information
+  OffenseDate: DATE
+  ConvictedOffense: STRING
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - Jurisdiction
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text: ISCSentencyType
+              $mappings:
+                StateSentenceType.PROBATION:
+                  - B
+                StateSentenceType.PAROLE:
+                  - P
+                StateSentenceType.STATE_PRISON:
+                  - C # Custody
+          imposed_date: SentenceImposedDate
+          # All of these sentences are from other US states or Puerto Rico.
+          sentencing_authority: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+          # We have very little information about charges for ISC sentences,
+          # as all other charge information is found from judgement orders.
+          charges:
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                offense_date: OffenseDate
+                description: ConvictedOffense
