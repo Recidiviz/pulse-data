@@ -49,7 +49,7 @@ REQUIRED_PACKAGES = [
     "google-cloud-logging",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
-    "google-cloud-tasks==2.19.2",
+    "google-cloud-tasks==2.19.3",
     "iteration-utilities",
     "jsonschema",
     "more-itertools",
