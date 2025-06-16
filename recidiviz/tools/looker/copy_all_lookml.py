@@ -32,7 +32,7 @@ import shutil
 from pathlib import Path
 
 import recidiviz
-from recidiviz.tools.looker.constants import GENERATED_DIR, LOOKER_REPO_NAME
+from recidiviz.tools.looker.constants import GENERATED_DIR_ROOT, LOOKER_REPO_NAME
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
 
@@ -88,7 +88,7 @@ def main(looker_repo_root: str) -> None:
     """
     Main function to execute the copying of LookML files.
     """
-    source_path = os.path.join(os.path.dirname(recidiviz.__file__), GENERATED_DIR)
+    source_path = os.path.join(os.path.dirname(recidiviz.__file__), GENERATED_DIR_ROOT)
 
     logging.info("Starting file copy from %s -> %s", source_path, looker_repo_root)
 
