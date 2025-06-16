@@ -2017,7 +2017,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
         "ofndr_addr_attr_wrk": ["end_dt"],
         "ofndr_addr_wrk": ["geocode_dt"],
-        "ofndr_dio_prog": ["exit_dt"],
         "ofndr_earned_compliance_log": ["earned_end_dt"],
         "ofndr_header": [
             "acuity_strt_dt_tm",
@@ -2038,7 +2037,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "sex_ofndr_beg_dt",
             "stg_apprvd_dt",
         ],
-        "ofndr_prgrmng": ["end_dt", "vrfy_dt"],
         "ofndr_spcl_sprvsn": ["end_dt"],
         "p_p_agnt_rspns": ["agnt_rspns_deny_dt"],
         "p_p_agrmnt_cond": ["end_dt", "orig_entry_dt"],
