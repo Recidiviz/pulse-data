@@ -347,11 +347,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "HearingDt",
             "SubmittedDt",
         ],
-        "IA_DOC_CaseManagers": [
-            "CaseManagerAssignedDt",
-            "CaseManagerEndDt",
-            "CaseManagerStartDt",
-        ],
         "IA_DOC_CrimeCodes": ["EnteredDt"],
         "IA_DOC_FieldRuleViolations": ["EnteredDt"],
         "IA_DOC_FieldandResidentialRules": ["EndDt", "StartDt"],
@@ -383,10 +378,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "IA_DOC_ProbationROVHearingResponses": ["EnteredDt", "ResponseDt"],
         "IA_DOC_Sentences": ["EnteredDt", "SentenceDt", "SentenceEndDt"],
         "IA_DOC_Specialties": ["SpecialtyEndDt", "SpecialtyStartDt"],
-        "IA_DOC_SupervisionStatuses": [
-            "SupervisionStatusEndDt",
-            "SupervisionStatusStartDt",
-        ],
     },
     StateCode.US_IX: {
         "RECIDIVIZ_REFERENCE_leadership_roster": ["end_date", "start_date"],
