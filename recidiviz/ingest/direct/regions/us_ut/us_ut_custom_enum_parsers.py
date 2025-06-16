@@ -115,8 +115,13 @@ def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
 
 def parse_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
     if raw_text:
-        lgl_stat_desc, start_reason = raw_text.split("|")
-        if start_reason in ("ABSCOND", "WALKAWAY", "ESCAPE", "AWOL"):
+        lgl_stat_desc, start_reason, body_loc_desc = raw_text.split("|")
+        if (
+            start_reason in ("ABSCOND", "WALKAWAY", "ESCAPE", "AWOL", "FUGITIVE")
+            or "FUGITIVE" in body_loc_desc
+            or "-FUG-" in body_loc_desc
+            or body_loc_desc in ("A.W.O.L.", "ABSCOND", "WALKAWAY")
+        ):
             return StateSupervisionPeriodSupervisionType.ABSCONSION
         if "PROBATION" in lgl_stat_desc:
             return StateSupervisionPeriodSupervisionType.PROBATION
