@@ -1420,7 +1420,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "SubmittedDt",
         ],
         "IA_DOC_PSIChargeRecommendations": ["EnteredDt"],
-        "IA_DOC_PrimaryTDDSDD": ["MPD", "TDDSDD"],
         "IA_DOC_ResiFormalDisc": [
             "EnteredDt",
             "InvestigationDt",
@@ -1444,7 +1443,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "SecondaryManagementEndDt",
             "SecondaryManagementStartDt",
         ],
-        "IA_DOC_SupervisionStatusCharges": ["EndDt", "StartDt"],
         "Intervention_Program_T_DeID": ["EligibilityDt", "OrientationDt"],
         "Interventions_T_DeID": [
             "EligibilityDt",
