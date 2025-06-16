@@ -120,6 +120,6 @@ repos:
         entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
         files:
-          ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/models/|
+          ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|
           ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/
         pass_filenames: false
