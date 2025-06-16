@@ -17,9 +17,13 @@ snapshots[
 ] = [
     "incarceration_starts_technical_violation",
     "absconsions_bench_warrants",
+    "absconsions_bench_warrants_from_parole",
+    "absconsions_bench_warrants_from_probation",
     "incarceration_starts",
     "incarceration_starts_most_severe_violation_type_not_absconsion",
     "incarceration_starts_and_inferred",
+    "incarceration_starts_and_inferred_from_parole",
+    "incarceration_starts_and_inferred_from_probation",
     "incarceration_starts_and_inferred_technical_violation",
     "early_discharge_requests",
     "task_completions_transfer_to_limited_supervision",

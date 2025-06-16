@@ -27,8 +27,12 @@ from recidiviz.common.constants.state.state_staff_caseload_type import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
+    ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE,
+    ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
+    INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE,
+    INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
@@ -59,6 +63,8 @@ US_CA_EXCLUDED_UNITS = [
     "INS SOUTH",
     "INS NORTH",
 ]
+
+_SPLIT_PAROLE_PROBATION_FV = "splitParoleProbationOutcomes"
 
 _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
     StateCode.US_IX: OutliersBackendConfig(
@@ -172,6 +178,39 @@ The denominator is the average daily caseload for the officer over the given tim
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
                 list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this agent in the time period.""",
+                inverse_feature_variant=_SPLIT_PAROLE_PROBATION_FV,
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
+                metric=INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE,
+                title_display_name="Incarceration Rate From Parole",
+                body_display_name="incarceration rate from parole",
+                event_name="all incarcerations from parole",
+                event_name_singular="incarceration from parole",
+                event_name_past_tense="were incarcerated from parole",
+                description_markdown="""All transitions to incarceration (state prison or county jail) from parole in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from parole to incarceration due to any “New Commitment” movement reasons from OMNI.
+
+<br />
+Denominator is the average parole caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this agent in the time period.""",
+                rate_denominator="avg_population_parole",
+                feature_variant=_SPLIT_PAROLE_PROBATION_FV,
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
+                metric=INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION,
+                title_display_name="Incarceration Rate From Probation",
+                body_display_name="incarceration rate from probation",
+                event_name="all incarcerations from probation",
+                event_name_singular="incarceration from probation",
+                event_name_past_tense="were incarcerated from probation",
+                description_markdown="""All transitions to incarceration (state prison or county jail) from probation in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from probation to incarceration due to any “New Commitment” movement reasons from OMNI.
+
+<br />
+Denominator is the average probation caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this agent in the time period.""",
+                rate_denominator="avg_population_probation",
+                feature_variant=_SPLIT_PAROLE_PROBATION_FV,
             ),
             OutliersMetricConfig.build_from_metric(
                 state_code=StateCode.US_MI,
@@ -187,6 +226,39 @@ Denominator is the average daily caseload for the agent over the given time peri
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
                 list_table_text="""Clients will appear on this list multiple times if they have had more than one absconder warrant under this agent in the time period.""",
+                inverse_feature_variant=_SPLIT_PAROLE_PROBATION_FV,
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
+                metric=ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE,
+                title_display_name="Absconder Warrant Rate From Parole",
+                body_display_name="absconder warrant rate from parole",
+                event_name="absconder warrants from parole",
+                event_name_singular="absconder warrant from parole",
+                event_name_past_tense="had an absconder warrant from parole",
+                description_markdown="""All reported absconder warrants from parole in the given time period.
+
+<br />
+Denominator is the average parole caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one absconder warrant under this agent in the time period.""",
+                rate_denominator="avg_population_parole",
+                feature_variant=_SPLIT_PAROLE_PROBATION_FV,
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
+                metric=ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION,
+                title_display_name="Absconder Warrant Rate From Probation",
+                body_display_name="absconder warrant rate from probation",
+                event_name="absconder warrants from probation",
+                event_name_singular="absconder warrant from probation",
+                event_name_past_tense="had an absconder warrant from probation",
+                description_markdown="""All reported absconder warrants from probation in the given time period.
+
+<br />
+Denominator is the average probation caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one absconder warrant under this agent in the time period.""",
+                rate_denominator="avg_population_probation",
+                feature_variant=_SPLIT_PAROLE_PROBATION_FV,
             ),
         ],
         client_events=[

@@ -46,6 +46,14 @@ ABSCONSIONS_BENCH_WARRANTS = OutliersMetric(
     aggregated_metric=metric_config.ABSCONSIONS_BENCH_WARRANTS,
     outcome_type=MetricOutcome.ADVERSE,
 )
+ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE = OutliersMetric(
+    aggregated_metric=metric_config.ABSCONSIONS_BENCH_WARRANTS_FROM_PAROLE,
+    outcome_type=MetricOutcome.ADVERSE,
+)
+ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION = OutliersMetric(
+    aggregated_metric=metric_config.ABSCONSIONS_BENCH_WARRANTS_FROM_PROBATION,
+    outcome_type=MetricOutcome.ADVERSE,
+)
 
 INCARCERATION_STARTS = OutliersMetric(
     aggregated_metric=metric_config.INCARCERATION_STARTS,
@@ -59,6 +67,14 @@ INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION = OutliersMetric(
 
 INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(
     aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED,
+    outcome_type=MetricOutcome.ADVERSE,
+)
+INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE = OutliersMetric(
+    aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED_FROM_PAROLE,
+    outcome_type=MetricOutcome.ADVERSE,
+)
+INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION = OutliersMetric(
+    aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION,
     outcome_type=MetricOutcome.ADVERSE,
 )
 INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION = OutliersMetric(

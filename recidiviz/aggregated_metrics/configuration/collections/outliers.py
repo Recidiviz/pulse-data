@@ -31,6 +31,8 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
+    AVG_DAILY_POPULATION_PAROLE,
+    AVG_DAILY_POPULATION_PROBATION,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -48,6 +50,8 @@ from recidiviz.utils.metadata import local_project_id_override
 _METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric[Any]]] = {
     MetricPopulationType.SUPERVISION: [
         AVG_DAILY_POPULATION,
+        AVG_DAILY_POPULATION_PAROLE,
+        AVG_DAILY_POPULATION_PROBATION,
         *OutliersAggregatedMetricsCollector.get_metrics(),
     ]
 }
