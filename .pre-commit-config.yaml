@@ -115,8 +115,8 @@ repos:
           recidiviz.tools.alphabetize_raw_data_reference_reasons
         language: system
         files: recidiviz/view_registry/raw_data_reference_reasons.yaml
-      - id: generate_entity_lookml
-        name: generate_entity_lookml
+      - id: generate_lookml
+        name: generate_lookml
         entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
         files:
