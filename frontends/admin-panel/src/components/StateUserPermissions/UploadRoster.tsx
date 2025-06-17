@@ -19,6 +19,7 @@ import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
 
 import { StateRolePermissionsResponse } from "../../types";
+import { STATE_CODES_TO_NAMES } from "../constants";
 
 type UploadRosterProps = {
   action: string;
@@ -59,7 +60,11 @@ const UploadRoster = ({
         placeholder="Select a state"
         onChange={(s) => setStateCode(s)}
         options={stateRoleStateCodes.map((c) => {
-          return { value: c, label: c };
+          return {
+            value: c,
+            label:
+              STATE_CODES_TO_NAMES[c as keyof typeof STATE_CODES_TO_NAMES] || c,
+          };
         })}
       />
       <Input

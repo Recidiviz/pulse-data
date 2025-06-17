@@ -22,6 +22,7 @@ import {
   StateRolePermissionsResponse,
   StateUserPermissionsResponse,
 } from "../../types";
+import { STATE_CODES_TO_NAMES } from "../constants";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import { layout } from "./constants";
 import CustomInputSelect from "./CustomInputSelect";
@@ -127,7 +128,13 @@ export const AddUserForm = ({
               <Select
                 onChange={handleSelectStateCode}
                 options={stateCodes.map((c) => {
-                  return { value: c, label: c };
+                  return {
+                    value: c,
+                    label:
+                      STATE_CODES_TO_NAMES[
+                        c as keyof typeof STATE_CODES_TO_NAMES
+                      ] || c,
+                  };
                 })}
               />
             </Form.Item>
