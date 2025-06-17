@@ -1268,6 +1268,23 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             {"OldCol1": "Col1", "Col2": "Col2", "Col5": "Col5"},
         )
 
+    def test_is_recidiviz_generated(self) -> None:
+        self.assertFalse(self.sparse_config.is_recidiviz_generated)
+
+        config = attr.evolve(
+            self.sparse_config,
+            file_tag="RECIDIVIZ_REFERENCE_myConfig",
+        )
+        self.assertTrue(config.is_recidiviz_generated)
+
+        lower_config = attr.evolve(
+            self.sparse_config,
+            # We expect RECIDIVIZ_REFERENCE to be uppercase
+            # but we also allow lower just in case
+            file_tag="recidiviz_reference_myConfig",
+        )
+        self.assertTrue(lower_config.is_recidiviz_generated)
+
 
 class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig"""

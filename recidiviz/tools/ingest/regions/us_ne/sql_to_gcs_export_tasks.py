@@ -50,6 +50,8 @@ FILE_TAG_TO_TABLE_NAME = {
     "PIMSSanctionsNoncompliantResponses": "view_BMS_tblNoncompliantResponses",
     "PIMSSanctionsBehaviorEvent": "view_BMS_lnkEventVio",
     "PIMSSanctionsResponseEvent": "view_BMS_lnkEventResponse",
+    # TODO(#41296): Remove this once the file tag is updated to match the table name
+    "PIMSSpecialConditionContact": "PIMSSpecialConditionsContact",
 }
 
 

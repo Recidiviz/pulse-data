@@ -241,6 +241,9 @@ class UsNeSqlTableToRawFileExporter:
             mode="w",
             newline="",
             encoding=export_task.encoding,
+            # TODO(#41296) once we fully migrate over to this export process
+            # we should export in utf-8 instead of windows-1252
+            errors="replace",  # Handle encoding errors by replacing problematic characters
         ) as f:
             # Process the results in batches
             result_generator = self.connection_manager.execute_query_with_batched_fetch(
@@ -254,12 +257,23 @@ class UsNeSqlTableToRawFileExporter:
                     f"Found no columns in the exported file for file [{export_task.file_tag}]. Expected every file to at least have a columns row."
                 )
 
+            def format_field(field: Any) -> str:
+                """Format fields to match previous CSV export behavior."""
+                if field is None:
+                    return ""
+                if isinstance(field, bool):
+                    return "1" if field else "0"
+                if isinstance(field, datetime.datetime):
+                    # Format with three-digit millisecond precision
+                    return field.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                return str(field)
+
             def write_csv_row(row: list[Any]) -> None:
                 """Write a single row to the CSV file using the export_task's delimiter and line terminator.
                 Using a simple write here because the csv module escapes quotes and newlines when using csv.QUOTE_NONE,
                 which we don't want"""
                 f.write(
-                    export_task.delimiter.join(str(field) for field in row)
+                    export_task.delimiter.join(format_field(field) for field in row)
                     + export_task.line_terminator
                 )
 
@@ -497,7 +511,8 @@ def main() -> None:
                 update_datetime=update_datetime,
                 raw_file_config=region_raw_file_config.raw_file_configs[file_tag],
             )
-            for file_tag in list(region_raw_file_config.raw_file_tags)
+            for file_tag, config in region_raw_file_config.raw_file_configs.items()
+            if not config.is_recidiviz_generated
         ]
 
     logging.info(
