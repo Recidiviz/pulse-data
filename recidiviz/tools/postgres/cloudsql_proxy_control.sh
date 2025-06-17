@@ -110,6 +110,8 @@ function control_quit {
   else
     echo "Killing Cloud SQL Proxy container on :${DATABASE_PORT} with name: ${DOCKER_CONTAINER_ID}"
     docker kill "${DOCKER_CONTAINER_ID}" > /dev/null 2>&1
+    echo "Cleaning up stopped Cloud SQL Proxy container with name: ${DOCKER_CONTAINER_ID}"
+    docker rm "${DOCKER_CONTAINER_ID}" > /dev/null 2>&1
   fi
 
   exit 0
