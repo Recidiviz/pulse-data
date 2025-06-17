@@ -33,6 +33,7 @@ const sidebarComponentNames = [
   "UsNeORASScores",
   "UsNeSpecialConditions",
   "UsIaActionPlansAndNotes",
+  "UsIaVictimContactInfo",
 
   // Resident-related components
   "Incarceration",
