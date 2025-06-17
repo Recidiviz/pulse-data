@@ -146,6 +146,11 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
             return StateCustodialAuthority.SUPERVISION_AUTHORITY
         if "CO JAIL" in location_description:
             return StateCustodialAuthority.COUNTY
+        # Custody Compact & other denotation of custody in another state.
+        if "CUSCOM" in location_description or "ZINCARCERATED" in location_description:
+            return StateCustodialAuthority.OTHER_STATE
+        if location_description in ("FEDERAL CUSTODY", "US MARSHALS"):
+            return StateCustodialAuthority.FEDERAL
         return StateCustodialAuthority.STATE_PRISON
     return StateCustodialAuthority.INTERNAL_UNKNOWN
 
