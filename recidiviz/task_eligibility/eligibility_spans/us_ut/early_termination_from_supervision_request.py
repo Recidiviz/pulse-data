@@ -33,6 +33,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
     has_completed_ordered_assessments,
     no_medhigh_supervision_violation_within_12_months,
+    no_request_for_termination_in_current_supervision_super_session,
     no_risk_level_increase_of_5_percent,
     risk_level_reduction_of_one_or_more,
     risk_level_stayed_moderate_or_low,
@@ -85,6 +86,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_risk_level_increase_of_5_percent.VIEW_BUILDER,
         # Past ET Review date/ half-time date
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
+        # There hasn't been a request for termination in their current supervision session
+        no_request_for_termination_in_current_supervision_super_session.VIEW_BUILDER,
     ],
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         # There are two separate ways to become almost eligible:
