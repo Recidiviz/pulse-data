@@ -347,7 +347,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "HearingDt",
             "SubmittedDt",
         ],
-        "IA_DOC_CrimeCodes": ["EnteredDt"],
         "IA_DOC_FieldRuleViolations": ["EnteredDt"],
         "IA_DOC_FieldandResidentialRules": ["EndDt", "StartDt"],
         "IA_DOC_InterventionPrograms": [

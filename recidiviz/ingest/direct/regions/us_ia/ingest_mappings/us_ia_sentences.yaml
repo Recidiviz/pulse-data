@@ -26,6 +26,12 @@ input_columns:
   JudgeLastNm: STRING
   JudgeMiddleNm: STRING
   JudgeLegalPeopleId: STRING
+  CauseNumber: STRING
+  TDD: DATE
+  ProsecutingAttorneys: STRING
+  PenaltyDays: STRING
+  PenaltyMonths: STRING
+  PenaltyYears: STRING
   # TODO(#38402): figure out concurrent vs consecutive
 unused_columns:
   # TODO(#38402): figure out controlling charge
@@ -132,6 +138,18 @@ output:
                     - $literal("C")
                     - JurisdictionType
                 $then: Jurisdiction
+          sentence_metadata:
+            $normalized_values_json_dict:
+              CrimeCdOffenseType: CrimeCdOffenseType
+              SentencePenaltyType: SentencePenaltyType
+              SentencePenaltyModifier: SentencePenaltyModifier
+              Jurisdiction: Jurisdiction
+              CauseNumber: CauseNumber
+              TDD: TDD
+              ProsecutingAttorneys: ProsecutingAttorneys
+              PenaltyDays: PenaltyDays
+              PenaltyMonths: PenaltyMonths
+              PenaltyYears: PenaltyYears
           charges:
             - StateChargeV2:
                 external_id: ChargeId
