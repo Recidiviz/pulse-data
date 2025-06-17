@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    educational_score_1_while_incarcerated,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
     no_current_or_prior_excluded_offenses_work_release,
@@ -45,6 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
         mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
         institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
+        educational_score_1_while_incarcerated.VIEW_BUILDER,
     ],
     # TODO(#43358): Update this to be the correct completion event (either general or
     # state-specific) for this opportunity.
