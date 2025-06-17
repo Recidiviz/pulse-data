@@ -1546,14 +1546,14 @@ class DirectIngestRegionRawFileConfig:
                     )
 
         # Now that we are validated, we can hydrate reciprocal table relationships
-        for file_tag, config in raw_file_configs.items():
+        for config in sorted(raw_file_configs.values(), key=lambda c: c.file_tag):
             for table_relationship in config.table_relationships:
                 src_file_tag = table_relationship_locations[
                     table_relationship.get_referenced_tables()
                 ]
                 if (
                     table_relationship.file_tag == table_relationship.foreign_table
-                    or src_file_tag != file_tag
+                    or src_file_tag != config.file_tag
                 ):
                     # If this is a self-join or this isn't the original config this
                     # relationship was defined in, we don't copy over to the other

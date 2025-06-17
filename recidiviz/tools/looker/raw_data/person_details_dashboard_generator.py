@@ -117,7 +117,10 @@ def _generate_dashboard_template(
 
     all_tables = region_config.raw_file_configs
     filters = _generate_filters_for_state(
-        state_abbrev, state_explore, list(all_tables.values()), views_by_file_tag
+        state_abbrev,
+        state_explore,
+        sorted(list(all_tables.values()), key=lambda c: c.file_tag),
+        views_by_file_tag,
     )
 
     elements = _generate_elements_for_state(
@@ -258,7 +261,9 @@ def _generate_elements_for_state(
 
     # Construct the listen where keys are filter names and values are id type
     shared_listen_dict = {}
-    for config in region_config.raw_file_configs.values():
+    for config in sorted(
+        region_config.raw_file_configs.values(), key=lambda c: c.file_tag
+    ):
         view = views_by_file_tag.get(config.file_tag)
         if not view or view.view_name not in views_in_explore:
             continue
