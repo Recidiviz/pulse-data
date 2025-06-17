@@ -13,7 +13,6 @@ input_columns:
   end_date: DATE
   assessment_level: STRING
   rn: INTEGER
-  Special_Conditions: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -48,7 +47,6 @@ output:
                 $concat:
                   $separator: "@@"
                   $values:
-                    - Special_Conditions
                     - case_type
                     - status
                     - assessment_level

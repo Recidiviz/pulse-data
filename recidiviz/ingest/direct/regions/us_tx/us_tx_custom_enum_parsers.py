@@ -82,7 +82,6 @@ def parse_supervision_level(
     """
     raw_text = raw_text.upper()
     (
-        special_conditions,
         case_type,
         status,
         assessment_level,
@@ -93,9 +92,6 @@ def parse_supervision_level(
 
     if IN_CUSTODY_REGEX.search(status) and not NOT_IN_CUSTODY_REGEX.search(status):
         return StateSupervisionLevel.IN_CUSTODY
-
-    if any(c.strip() == "L" for c in special_conditions.split(";")):
-        return StateSupervisionLevel.HIGH
 
     if case_type == "ANNUAL":
         return StateSupervisionLevel.LIMITED
