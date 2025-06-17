@@ -1457,6 +1457,15 @@ def status_for_at_least_x_time_criteria_query(
             selecting statuses. Defaults to "".
         additional_column (str, optional): The name of the column that contains the
     """
+    left_join_statement = (
+        f"""LEFT JOIN sessions ses ON adj.state_code = ses.state_code
+                AND adj.person_id = ses.person_id
+                AND adj.start_date < {nonnull_end_date_clause('ses.end_date')}
+                AND ses.start_date < {nonnull_end_date_clause('adj.end_date')}"""
+        if additional_column != ""
+        else ""
+    )
+
     return f"""WITH spans AS (
         -- Spans that are relevant for the criteria
         SELECT *
@@ -1491,17 +1500,19 @@ def status_for_at_least_x_time_criteria_query(
     critical_date_spans AS (
         -- Aggregate adjacent spans and calculate the critical date
         SELECT 
-            state_code,
-            person_id,
-            start_date AS start_datetime,
-            end_date AS end_datetime,
-            DATE_ADD(start_date, INTERVAL {date_interval} {date_part}) AS critical_date,
-            {additional_column}
+            adj.state_code,
+            adj.person_id,
+            adj.start_date AS start_datetime,
+            adj.end_date AS end_datetime,
+            DATE_ADD(adj.start_date, INTERVAL {date_interval} {date_part}) AS critical_date,
+            {f"STRING_AGG(DISTINCT ses.{additional_column}, ', ' ORDER BY ses.{additional_column}) AS {additional_column}," if additional_column != '' else ''}
         FROM ({aggregate_adjacent_spans(
             table_name='sessions',
             end_date_field_name="end_date",
-            index_columns=["state_code", "person_id", additional_column]
-            )})
+            )}) AS adj
+        {left_join_statement if additional_column != '' else ''}
+
+        GROUP BY 1,2,3,4
     ),
     {critical_date_has_passed_spans_cte(attributes = [additional_column])}
     SELECT
