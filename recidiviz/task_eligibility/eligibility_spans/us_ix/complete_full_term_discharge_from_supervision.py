@@ -17,6 +17,7 @@
 """Builder for a task eligiblity spans view that shows the spans of time during which
 someone in ID is eligible for full term discharge from supervision.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -25,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.general import full_term_disch
 from recidiviz.task_eligibility.criteria.general import (
     supervision_past_full_term_completion_date,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -44,6 +46,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_past_full_term_completion_date.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=supervision_past_full_term_completion_date.VIEW_BUILDER,
+        reasons_date_field="eligible_date",
+        interval_length=60,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 60 days of FTRD",
+    ),
 )
 
 if __name__ == "__main__":
