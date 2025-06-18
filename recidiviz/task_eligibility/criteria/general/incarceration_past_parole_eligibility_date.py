@@ -40,13 +40,9 @@ SELECT
     person_id,
     start_date AS start_datetime,
     end_date_exclusive AS end_datetime,
-    MAX(sentence_parole_eligibility_date) as critical_date
-FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
-UNNEST(sentence_array)
-JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
-    USING(person_id, state_code, sentence_id)
-WHERE sentence_parole_eligibility_date IS NOT NULL AND sentence_type = 'STATE_PRISON'
-GROUP BY 1,2,3,4
+    group_parole_eligibility_date as critical_date
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+WHERE group_parole_eligibility_date IS NOT NULL
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
