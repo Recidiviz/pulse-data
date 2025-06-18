@@ -69,6 +69,11 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
             "export_archives.case_insights_record_archive",
+            # Daily archives of tasks_record exports. Will be used for impact tracking.
+            "export_archives.us_ix_supervision_tasks_record_archive",
+            "export_archives.us_nd_supervision_tasks_record_archive",
+            "export_archives.us_ne_supervision_tasks_record_archive",
+            "export_archives.us_tx_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
             *COMMON_VESTIGES,
@@ -90,6 +95,11 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
             "export_archives.case_insights_record_archive",
+            # Daily archives of tasks_record exports. Will be used for impact tracking.
+            "export_archives.us_ix_supervision_tasks_record_archive",
+            "export_archives.us_nd_supervision_tasks_record_archive",
+            "export_archives.us_ne_supervision_tasks_record_archive",
+            "export_archives.us_tx_supervision_tasks_record_archive",
             *COMMON_VESTIGES,
         ]
     },
