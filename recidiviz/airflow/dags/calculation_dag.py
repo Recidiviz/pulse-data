@@ -401,6 +401,8 @@ def create_calculation_dag() -> None:
         container_name=row_access_policy_task_id,
         arguments=["--entrypoint=ApplyRowLevelPermissionsEntrypoint"],
         trigger_rule=TriggerRule.ALL_DONE,
+        # The apply row access policies API can be flaky, so we retry it a few times.
+        retries=3,
     )
 
     (

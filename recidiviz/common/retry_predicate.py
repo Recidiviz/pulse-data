@@ -22,6 +22,9 @@ from google.api_core import retry
 from requests.exceptions import SSLError
 
 EXCEEDED_RATE_LIMITS_ERROR_MESSAGE: str = "Exceeded rate limits:"
+RATE_LIMIT_INITIAL_DELAY = 15.0  # 15 seconds
+RATE_LIMIT_MAXIMUM_DELAY = 60.0 * 2  # 2 minutes, in seconds
+RATE_LIMIT_TOTAL_TIMEOUT = 60.0 * 5  # 5 minutes, in seconds
 
 
 def google_api_retry_predicate(
@@ -47,3 +50,10 @@ def rate_limit_retry_predicate(exc: Exception) -> bool:
         and isinstance(exc, exceptions.Forbidden)
         and EXCEEDED_RATE_LIMITS_ERROR_MESSAGE in str(exc)
     )
+
+
+def bad_request_retry_predicate(exc: Exception) -> bool:
+    """Retries google client errors and bad request errors.
+    In general, bad request errors should not be retried, but there are some cases
+    where google returns a 400 due to some underlying rate limiting."""
+    return google_api_retry_predicate(exc) or isinstance(exc, exceptions.BadRequest)

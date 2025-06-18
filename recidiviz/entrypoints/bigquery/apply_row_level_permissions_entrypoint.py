@@ -60,7 +60,7 @@ def _apply_row_level_permissions_to_all_tables() -> None:
     managed_datasets = managed_source_table_datasets.union(managed_view_datasets)
 
     with futures.ThreadPoolExecutor(
-        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 4)
     ) as executor:
         futures_list = []
         dataset_ids = [
@@ -102,12 +102,18 @@ def _apply_row_level_permissions_to_all_tables() -> None:
                     )
                 ] = table_address
 
+        failed_tables: list[str] = []
         for f in futures.as_completed(table_futures):
             table_address = table_futures[f]
             try:
                 f.result()
             except Exception as e:
-                # since this operation has been so flaky, we are just logging the error
-                # to avoid noise for the oncall. emilyt will monitor errors and eventually
-                # TODO(#39354) actually raise the exception
-                logging.error("Error applying permissions for %s: %s", table_address, e)
+                logging.error(
+                    "Error applying permissions for %s: %s", table_address.to_str(), e
+                )
+                failed_tables.append(table_address.to_str())
+
+        if failed_tables:
+            raise RuntimeError(
+                f"Errors encountered while applying row level permissions for: {failed_tables}"
+            )
