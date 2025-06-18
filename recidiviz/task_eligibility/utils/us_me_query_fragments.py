@@ -801,6 +801,58 @@ def reclassification_shared_logic(reclass_type: str) -> str:
     """
     reclass_type = re.sub(r"[^\w\s]", "", reclass_type).lower()
     return f"""
+    sentence_end AS (
+      -- This CTE grabs sentence end dates for all individuals where end date is not null
+        SELECT
+          person_id,
+          end_date AS sentence_end_date
+        FROM
+          `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized`
+        WHERE
+          end_date IS NOT NULL
+    ),
+    matching_sentences_reclass AS (
+    -- This CTE matches sentence end dates to reclass_due dates, but only when a sentence end date is within 30-day window
+    -- before a given reclass_is_due_date
+      SELECT
+        rdd.state_code,
+        rdd.person_id,
+        rdd.incarceration_super_session_id,
+        rdd.reclass_is_due_date,
+        se.sentence_end_date,
+      FROM
+        reclass_due_dates_calc AS rdd
+      LEFT JOIN
+        sentence_end AS se
+      ON
+        rdd.person_id = se.person_id
+        AND rdd.reclass_is_due_date BETWEEN DATE_SUB(se.sentence_end_date, INTERVAL 30 DAY)
+        AND se.sentence_end_date 
+    -- adjust for sentence_end data repeating sentence end dates: select the sentence end that is closest to the reclass
+    -- due date, in the case where there are multiple sentence end dates within 30 days of reclass date
+      QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY rdd.person_id, rdd.reclass_is_due_date 
+        ORDER BY se.sentence_end_date ASC 
+      ) = 1),
+    corrected_reclass AS (
+      -- This CTE uses sentence_end_date and reclass_due_dates to generate a list of dues dates for each
+      -- individual during their incarceration stint, adjusted such that if the due date determined in
+      -- reclass_due_dates_calc is within 30 days of one of their sentence end dates, the reclass due date is adjusted to
+      -- equal that sentence end date. It does this by coalesing sentence_end_date and reclass_is_due_date from previous CTE,
+      -- preferring sentence_end_date where there is an existing sentence end date match within 30 days.
+          SELECT
+            state_code,
+            person_id,
+            incarceration_super_session_id,
+            COALESCE(sentence_end_date, reclass_is_due_date) AS reclass_is_due_date
+          FROM
+            matching_sentences_reclass),
+      reclass_due_dates_dups_dropped AS (
+        -- Need to drop the duplicates created in previous CTE that are caused when individuals have multiple reclass 
+        -- dates scheduled within 30 days of their release date.
+        SELECT DISTINCT *
+        FROM corrected_reclass
+      ),
       reclass_spans AS (
           SELECT
             * EXCEPT (reclass_is_due_date),
@@ -809,7 +861,7 @@ def reclassification_shared_logic(reclass_type: str) -> str:
                 ORDER BY reclass_is_due_date) AS end_date,
             ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY reclass_is_due_date) as span_id,
           FROM
-            reclass_due_dates
+            reclass_due_dates_dups_dropped
             -- During span creation, one extra row is created for every person with a start date equal to their 
             -- final span end and an end date of null, so this QUALIFY exists to remove that extraneous row
             QUALIFY LEAD(reclass_is_due_date) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id 
