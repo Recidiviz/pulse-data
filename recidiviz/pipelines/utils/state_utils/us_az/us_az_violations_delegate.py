@@ -17,6 +17,12 @@
 """Contains US_AZ implementation of the StateSpecificViolationDelegate."""
 
 
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseType,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -24,3 +30,17 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
 
 class UsAzViolationDelegate(StateSpecificViolationDelegate):
     """US_AZ implementation of the StateSpecificViolationDelegate."""
+
+    def should_include_response_in_violation_history(
+        self,
+        response: NormalizedStateSupervisionViolationResponse,
+        include_follow_up_responses: bool = False,
+    ) -> bool:
+        """For US_AZ, we include all responses of type CITATION, VIOLATION_REPORT and PERMANENT_DECISION responses to
+        be included in the violation history.
+        """
+        return response.response_type in (
+            StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            StateSupervisionViolationResponseType.CITATION,
+            StateSupervisionViolationResponseType.PERMANENT_DECISION,
+        )
