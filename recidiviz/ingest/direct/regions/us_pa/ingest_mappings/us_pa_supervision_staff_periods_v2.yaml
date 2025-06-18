@@ -83,6 +83,7 @@ output:
                         - "Corrections Community Center Monitor"
                         - "Community Corrections Center Director 1"
                         - "Parole Staff Technician 1"
+                        - "Rgnl Instl Prl Dir"
                       StateStaffRoleType.INTERNAL_UNKNOWN:
                         - "Administrative Assistant 1"
                         - "Administrative Officer 5"
@@ -183,6 +184,7 @@ output:
                         - "Pbtn Prl Dstr Dir 2"
                         - "Rgnl Pbtn Prl Dir"
                         - "Deputy District Director"
+                        - "Rgnl Instl Prl Dir"
                       StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
                         - "Deputy Secretary for Field Services"
                         - "Deputy Secretary for Reentry"
