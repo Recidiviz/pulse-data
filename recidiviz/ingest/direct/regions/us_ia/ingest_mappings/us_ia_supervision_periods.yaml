@@ -16,6 +16,9 @@ input_columns:
   WorkUnitServiceType: STRING
   SupervisionLevel: STRING
   SupervisionModifier: STRING
+  codes: STRING
+  PrimarySupervisionStatusStartDt: DATE
+  is_primary_supervision_status: BOOLEAN
   period_seq_num: INTEGER
 unused_columns: []
 output:
@@ -86,6 +89,7 @@ output:
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - CCUSO Release with Supervision 229A.9A
                         - Community Supervision 902.3A
+                        - Federal
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
                         - Pretrial Release Without Supervision
                         - Pretrial Release With Supervision
@@ -665,7 +669,10 @@ output:
                   - "Work Unit - Case Manager to Case Manager"
                   - "Work Unit - Residential to Prison"
                   - "Transferred to Release on Recognizance (Pretrial)"
+          conditions: codes
           supervision_period_metadata:
             $normalized_values_json_dict:
               specialty: Specialty
               SupervisionStatus: SupervisionStatus
+              is_primary_supervision_status: is_primary_supervision_status
+              PrimarySupervisionStatusStartDt: PrimarySupervisionStatusStartDt

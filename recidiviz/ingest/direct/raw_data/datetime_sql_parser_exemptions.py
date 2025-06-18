@@ -1003,44 +1003,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     StateCode.US_CO: {
         "Base_Curr_Off_Pop": ["DOB"],
     },
-    StateCode.US_IA: {
-        "IA_DOC_BOPDecisionConditions": ["EnteredDt"],
-        "IA_DOC_BOPDecisions": [
-            "DecisionDt",
-            "DocketCreationDt",
-            "EffectiveDt",
-            "EnteredDt",
-            "InterviewRescheduledDt",
-            "SubmittedDt",
-        ],
-        "IA_DOC_Citizenship": ["EnteredDt", "ExpirationDt"],
-        "IA_DOC_DNA": [
-            "CodisDt",
-            "DNARequiredDt",
-            "DNASubmittedDt",
-            "EnteredDt",
-            "RefusedDt",
-        ],
-        "IA_DOC_Fees": ["CloseDate", "DateOfLastUpdate", "IntakeDate"],
-        "IA_DOC_ReleaseNotifications": [
-            "CloseDt",
-            "EnteredDt",
-            "ExpirationDt",
-            "IssuingDt",
-            "NotificationSentDt",
-            "OffenderNotificationDt",
-            "ResponseDt",
-        ],
-        "IA_DOC_VictimCases": [
-            "AssignedDt",
-            "BopClosedDt",
-            "BopDecisionDt",
-            "DocClosedDt",
-            "DocDecisionDt",
-            "EnteredDt",
-        ],
-        "IA_DOC_Victims": ["EnteredDt"],
-    },
     StateCode.US_IX: {
         "clsf_OffenderSecurityLevelAct": ["InsertDate", "UpdateDate"],
         "com_PSIReport": [

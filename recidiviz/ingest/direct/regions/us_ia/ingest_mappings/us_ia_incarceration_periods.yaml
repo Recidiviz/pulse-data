@@ -39,6 +39,7 @@ output:
                         - Prison Safekeeper
                         - OWI Continuum
                         - Work Release
+                        - OWI Prison
                       StateIncarcerationType.COUNTY_JAIL:
                         - Jail (Designated Site)
               - $else:
@@ -97,6 +98,7 @@ output:
                         - Prison Safekeeper
                         - OWI Continuum
                         - Work Release
+                        - OWI Prison
                       StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY:
                         - Jail (Designated Site)
           admission_date: start_date
@@ -211,6 +213,7 @@ output:
                   - Status start - Prison Compact
                   - Status start - Prison Safekeeper
                   - Status start - Prison
+                  - Status start - OWI Prison
                   - OWI Facility Admission
                   - Shock Probation Return with New Sentence (probation not revoked on original sentence)
                   - Civil Commitment - Sex Offender
@@ -427,6 +430,7 @@ output:
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - In Prison
                   - Status start - OWI Continuum
+                  - Status start - OWI Prison
                   - Status start - Prison Safekeeper
                   - Status start - Prison
                   - Final Release to MHI
@@ -583,5 +587,6 @@ output:
                         - Prison Safekeeper
                         - OWI Continuum
                         - Work Release
+                        - OWI Prison
                       StateCustodialAuthority.COUNTY:
                         - Jail (Designated Site)
