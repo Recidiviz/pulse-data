@@ -16,20 +16,20 @@
 # =============================================================================
 """Script that aids Airflow development by managing experiment environments
 
-    # to create your experiment environment:
-    python -m recidiviz.tools.airflow.environment_control create
+# to create your experiment environment:
+python -m recidiviz.tools.airflow.environment_control create
 
-    # to destroy your experiment environment:
-    python -m recidiviz.tools.airflow.environment_control destroy
+# to destroy your experiment environment:
+python -m recidiviz.tools.airflow.environment_control destroy
 
-    # to open your experiment environment's web interface:
-    python -m recidiviz.tools.airflow.environment_control open
+# to open your experiment environment's web interface:
+python -m recidiviz.tools.airflow.environment_control open
 
-    # to copy source files over to your environment's storage bucket:
-    python -m recidiviz.tools.airflow.environment_control update_files [--files recidiviz/airflow/dags/calculation_dag.py ...]
+# to copy source files over to your environment's storage bucket:
+python -m recidiviz.tools.airflow.environment_control update_files [--files recidiviz/airflow/dags/calculation_dag.py ...]
 
-    # to update the version of the appengine image that KubernetesPodOperators run:
-    python -m recidiviz.tools.airflow.environment_control update_image
+# to update the version of the appengine image that KubernetesPodOperators run:
+python -m recidiviz.tools.airflow.environment_control update_image
 """
 import argparse
 import logging
@@ -42,6 +42,7 @@ from google.cloud.orchestration.airflow.service_v1beta1 import (
 )
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
+from recidiviz.common.google_cloud.utils import network_path, subnetwork_path
 from recidiviz.tools.airflow.copy_source_files_to_experiment_composer import (
     copy_source_files_to_experiment,
 )
@@ -128,11 +129,20 @@ def action_create() -> None:
             environment_size=types.EnvironmentConfig.EnvironmentSize.ENVIRONMENT_SIZE_SMALL,
             workloads_config=COMPOSER_SMALL_WORKLOADS_CONFIG,
             private_environment_config=types.PrivateEnvironmentConfig(
-                enable_private_environment=True
+                enable_private_environment=True,
+                private_cluster_config=types.PrivateClusterConfig(
+                    enable_private_endpoint=True
+                ),
             ),
             node_config=types.NodeConfig(
                 service_account=get_default_compute_engine_service_account_email(
                     project_id=GCP_PROJECT_STAGING
+                ),
+                network=network_path(project_id=GCP_PROJECT_STAGING, network="default"),
+                subnetwork=subnetwork_path(
+                    project_id=GCP_PROJECT_STAGING,
+                    region=COMPOSER_LOCATION,
+                    subnetwork="default",
                 ),
             ),
             data_retention_config=types.DataRetentionConfig(

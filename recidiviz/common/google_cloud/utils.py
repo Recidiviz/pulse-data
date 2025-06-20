@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for GCP resource lables """
+"""Utils for working with GCP resources."""
 import re
 
 
@@ -35,3 +35,13 @@ def format_resource_label(label: str) -> str:
     if len(label_value) > 63:
         label_value = label_value[:63]
     return label_value
+
+
+def subnetwork_path(*, project_id: str, region: str, subnetwork: str) -> str:
+    """Returns a fully-qualified subnetwork string."""
+    return f"projects/{project_id}/regions/{region}/subnetworks/{subnetwork}"
+
+
+def network_path(*, project_id: str, network: str) -> str:
+    """Returns a fully-qualified network string."""
+    return f"projects/{project_id}/global/networks/{network}"
