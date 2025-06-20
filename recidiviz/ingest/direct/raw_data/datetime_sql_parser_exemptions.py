@@ -43,7 +43,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     },
     StateCode.US_IA: {
         "IA_DOC_Charges": ["ArrestDt", "MPD", "OffenseDt", "SDD", "TDD"],
-        "IA_DOC_FieldRuleViolationIncidents": ["IncidentDt"],
         "IA_DOC_Supervision_Modifiers": [
             "HoldEndDt",
             "HoldStartDt",

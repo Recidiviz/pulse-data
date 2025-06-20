@@ -106,27 +106,26 @@ def case_notes_helper() -> str:
             CASE WHEN c.condition = 'SUBSTANCE' THEN 'DRUG VIOLATION'
                 WHEN c.condition = 'EMPLOYMENT' THEN 'EMPLOYMENT VIOLATION'
                 ELSE 'NO CONDITION PROVIDED' END AS violation_type, -- violation type (employment, substance, or internal_unknown for other sources)
-            ViolationComments,
+            JSON_VALUE(violation_metadata, '$.ViolationComments') AS ViolationComments,
             violation_date,
         FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation_response` svr
         LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violation` sv 
             USING(supervision_violation_id, person_id, state_code)
         LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violated_condition_entry` c 
             USING(supervision_violation_id, person_id, state_code)
-        LEFT JOIN `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_FieldRuleViolationIncidents_latest` fr
-            ON REPLACE(svr.external_id, 'INCIDENT-ONLY-', '') = fr.FieldRuleViolationIncidentId 
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON svr.person_id = pei.person_id
             AND pei.id_type = 'US_IA_OFFENDERCD'
         WHERE svr.state_code = 'US_IA'
-            AND response_type = 'CITATION' -- only include incidents
-            AND svr.external_id LIKE 'INCIDENT-ONLY%' -- AND only include incidents that don't have an associated report for now
+            -- only need to include CITATION responses since we ingest a CITATION response for every incident in the data we see in the data, 
+            -- regardless of whether there is an associated report
+            AND response_type = 'CITATION' 
             AND violation_date BETWEEN DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) AND CURRENT_DATE('US/Eastern')
         )
     SELECT DISTINCT external_id,
         'Violation Incidents in the Past 6 Months',
-        REPLACE(COALESCE(condition_description, violation_type, 'NO CONDITION PROVIDED'), '‡', ' ') AS note_title,
-        REPLACE(COALESCE(ViolationComments, 'NO DESCRIPTION PROVIDED'), '‡', ' ') AS note_body,
+        COALESCE(condition_description, violation_type, 'NO CONDITION PROVIDED') AS note_title,
+        COALESCE(ViolationComments, 'NO DESCRIPTION PROVIDED') AS note_body,
         violation_date AS event_date,
     FROM violations)
   """

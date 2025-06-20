@@ -25,7 +25,7 @@ output:
                 - FieldRuleViolationIncidentId
           violation_date: IncidentDt
           violation_metadata:
-            $normalized_values_json_dict:
+            $json_dict:
               ViolationComments: ViolationComments
           supervision_violation_responses:
             - StateSupervisionViolationResponse:

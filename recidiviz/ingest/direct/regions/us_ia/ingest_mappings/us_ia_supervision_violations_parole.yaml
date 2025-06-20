@@ -54,7 +54,7 @@ output:
                 $then: IncidentDt
               - $else: ReportDt
           violation_metadata:
-            $normalized_values_json_dict:
+            $json_dict:
               ViolationComments: ViolationComments
           supervision_violation_responses:
             - $conditional:
