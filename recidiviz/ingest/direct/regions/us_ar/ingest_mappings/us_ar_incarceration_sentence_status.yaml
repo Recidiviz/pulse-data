@@ -50,10 +50,5 @@ output:
                         - "9" # Vacated
                         - SUPVTIMELINE_V # Used when the accompanying supervision term for
                         # an incarceration sentence has a status of V ("Vacated")
-                      StateSentenceStatus.PRESENT_WITHOUT_INFO:
-                        - SENTENCECOMPONENT_IMPOSED # Only used on the specific date a sentence
-                        # was imposed. If the imposition date occurs before the sentence
-                        # actually started being served, the sentence's status is PRESENT_WITHOUT_INFO
-                        # until the sentence starts being served.
                       StateSentenceStatus.INTERNAL_UNKNOWN:
                         - MARKED_COMPLETE_TOO_EARLY
