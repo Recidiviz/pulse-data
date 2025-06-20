@@ -18,7 +18,7 @@ import requests
 from tabulate import tabulate
 
 # NOTE: If you change the model, you may need to change update the token limit!
-MODEL_NAME = "gemini-2.5-pro-preview-05-06"
+MODEL_NAME = "gemini-2.5-flash"
 MODEL_INPUT_TOKEN_LIMIT = 1_048_576
 
 FIND_PII_GEMINI_PROMPT = """
