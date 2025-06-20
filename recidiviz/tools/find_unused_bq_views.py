@@ -139,6 +139,9 @@ from recidiviz.calculator.query.state.views.sessions.incarceration_staff_caseloa
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_compartment_level_1_sessions import (
+    PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
@@ -407,6 +410,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER.address: (
         "Not currently referenced but is used in downstream analytical work for which "
         "we are interested in aggregating across in state and out of state (Andrew Gaidus 1/25/24)"
+    ),
+    PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER.address: (
+        "Will be used in subsequent prs for workflows criteria (Samantha Norcia 6/20/25)"
     ),
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: (
         "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
