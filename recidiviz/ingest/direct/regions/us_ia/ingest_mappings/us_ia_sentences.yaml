@@ -22,6 +22,7 @@ input_columns:
   ChargeCount: STRING
   MostSeriousCharge: STRING
   LeadCharge: STRING
+  DNAApplicable: STRING
   JudgeFirstNm: STRING
   JudgeLastNm: STRING
   JudgeMiddleNm: STRING
@@ -150,6 +151,7 @@ output:
               PenaltyDays: PenaltyDays
               PenaltyMonths: PenaltyMonths
               PenaltyYears: PenaltyYears
+              DNAApplicable: DNAApplicable
           charges:
             - StateChargeV2:
                 external_id: ChargeId
