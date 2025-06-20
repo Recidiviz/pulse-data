@@ -243,16 +243,6 @@ reasons_for_eligibility AS (
         )} AS latest_scc_review_date,
         {extract_object_from_json(
             json_column="criteria_reason",
-            object_column="reason.number_of_expected_reviews",
-            object_type="INT64",
-        )} AS number_of_expected_reviews,
-        {extract_object_from_json(
-            json_column="criteria_reason",
-            object_column="reason.number_of_reviews",
-            object_type="INT64",
-        )} AS number_of_reviews,
-        {extract_object_from_json(
-            json_column="criteria_reason",
             object_column="reason.next_scc_date",
             object_type="DATE",
         )} AS next_scc_date,
@@ -308,7 +298,7 @@ case_notes_cte AS (
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` s
         ON s.person_id = pei.person_id 
         AND CURRENT_DATE BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
-    WHERE Activity in ('SCC - Security Classification Committee','In Person Contact')
+    WHERE Activity in ('SCC - Security Classification Committee','SCC – ADD – 12 Month Review','SCC – Warden – 6 Month Review','In Person Contact')
     AND DATE(cn.Note_Date) BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
 ),
 array_case_notes_cte AS (
@@ -344,10 +334,6 @@ SELECT
     p.ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
     --metadata 
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
-    -- coalesce number of expected reviews and number of reviews to 0 if NULL
-    -- to account for residents who are almost eligible for their first review
-    IFNULL(e.number_of_expected_reviews, 0) AS metadata_number_of_expected_reviews,
-    IFNULL(e.number_of_reviews, 0) AS metadata_number_of_reviews,
     DATE(pmx_sgt_max_date) AS metadata_max_release_date,
     DATE(pmi_sgt_min_date) AS metadata_min_release_date,
     DATE_DIFF(DATE(pmi_sgt_min_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
