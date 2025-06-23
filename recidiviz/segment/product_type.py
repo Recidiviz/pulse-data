@@ -79,3 +79,12 @@ class ProductType(Enum):
     def segment_dataset_name(self) -> str:
         """Returns the dataset for a segment view with a given product type."""
         return f"segment_events__{self.value.lower()}"
+
+    @property
+    def columns_to_include_in_unioned_segment_view(self) -> list[str]:
+        """Returns any additional attribute columns that should be included in the
+        unioned Segment view for this product type.
+        """
+        if self == ProductType.WORKFLOWS:
+            return ["opportunity_type"]
+        return []

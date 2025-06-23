@@ -23,13 +23,32 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
 )
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
+    list_to_query_string,
 )
 from recidiviz.segment.segment_event_big_query_view_collector import (
     SegmentEventBigQueryViewCollector,
 )
 
 
+def _get_shared_columns_statement(vb: SegmentEventBigQueryViewBuilder) -> str:
+    """Generates a SQL statement for shared columns in unioned segment event views
+    that fills in NULL for columns not present in the specific segment event view."""
+
+    if not vb.product_type.columns_to_include_in_unioned_segment_view:
+        return ""
+
+    shared_columns: list[str] = []
+    for col in vb.product_type.columns_to_include_in_unioned_segment_view:
+        if vb.additional_attribute_cols and (col in vb.additional_attribute_cols):
+            shared_columns.append(col)
+        else:
+            shared_columns.append(f"CAST(NULL AS STRING) AS {col}")
+    return list_to_query_string(shared_columns)
+
+
 def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
+    """Generates a list of UnionAllBigQueryViewBuilder instances for each product type"""
+
     def _select_statement(vb: SegmentEventBigQueryViewBuilder) -> str:
         return f"""
 SELECT
@@ -39,6 +58,7 @@ SELECT
     "{vb.segment_event_name}" AS event,
     event_ts,
     person_id,
+    {_get_shared_columns_statement(vb)}
 """
 
     product_union_builders = []
