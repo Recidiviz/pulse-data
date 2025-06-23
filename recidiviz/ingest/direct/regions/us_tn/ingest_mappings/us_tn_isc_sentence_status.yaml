@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  # Form the unique ID for charges and sentences.
+  OffenderID: STRING
+  Jurisdiction: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+
+  # StateSentence information
+  status: STRING
+  status_date: DATE
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - Jurisdiction
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: status_date
+                status:
+                  $enum_mapping:
+                    $raw_text: status
+                    $mappings:
+                      StateSentenceStatus.SERVING:
+                        - "IMPOSED"
+                      StateSentenceStatus.COMPLETED:
+                        - "EXPIRED"

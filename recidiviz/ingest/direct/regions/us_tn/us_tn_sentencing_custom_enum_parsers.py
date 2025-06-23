@@ -162,3 +162,46 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
         f"{initial_sentenced_to=}, "
         f"{suspended_to_probation=}"
     )
+
+
+def infer_sentence_status(raw_text: str) -> StateSentenceStatus:
+    """
+    This function encapsulates everything we know about sentence
+    statuses from TN raw data.
+
+    It checks a few assumptions we have about the data and
+    returns the appropriate StateSentenceStatus.
+    """
+    sentence_status, *flags = raw_text.split("@@")
+    if sentence_status in {"EFFECTIVE", "AC", "PB", "CC"}:
+        return StateSentenceStatus.SERVING
+
+    (
+        pardoned,
+        dismissed,
+        commuted,
+        expired,
+        awaiting_retrial,
+        court_order,
+    ) = tuple(map(lambda x: x == "Y", flags))
+
+    if pardoned:
+        return StateSentenceStatus.PARDONED
+
+    # It seems that a court order is for terminating a
+    # sentence and not suspending it. The pipeline will
+    # break if a serving status follows a COMPLETED status.
+    # (BUT, if we ever turn on correct_early_completed_statuses
+    # in the normalization manager, this will not be the case.)
+    if dismissed or expired or court_order:
+        return StateSentenceStatus.COMPLETED
+
+    if commuted:
+        return StateSentenceStatus.COMMUTED
+
+    if awaiting_retrial:
+        return StateSentenceStatus.SUSPENDED
+
+    # TODO(#44222) About 15k people have no specific Invalid reason, we mark
+    # them as COMPLETED but should verify appropriate action with TN
+    return StateSentenceStatus.COMPLETED
