@@ -200,7 +200,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "PostedDateTime",
             "RefuseToSignDate",
         ],
-        "JOIdentification": ["ArrestedDate", "BirthDate", "PostedDate"],
+        "JOIdentification": ["ArrestedDate", "PostedDate"],
         "JOSentence": [
             "ExecutionDate",
             "FirstConfinementCompletedDate",
@@ -863,7 +863,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "LastLetterCreatedDate",
             "LastPostConvictionReliefDate",
         ],
-        "OffenderName": ["BirthDate", "LastUpdateDate"],
+        "OffenderName": ["LastUpdateDate"],
         "SentenceAction": ["ActionDate"],
         "SentenceMiscellaneous": [
             "AlternateSentenceImposeDate",

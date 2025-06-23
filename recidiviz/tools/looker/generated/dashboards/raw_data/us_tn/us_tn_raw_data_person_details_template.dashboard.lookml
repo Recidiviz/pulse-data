@@ -560,7 +560,7 @@
       us_tn_JOIdentification.is_deleted]
     sorts: [us_tn_JOIdentification.BirthDate__raw]
     note_display: hover
-    note_text: "This table contains one occurrence for each judgment order received by a person. This table contains information that serves to identify the judgment order."
+    note_text: "This table contains one occurrence for each judgment order received by a person, and contains information to identify that judgment order."
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID

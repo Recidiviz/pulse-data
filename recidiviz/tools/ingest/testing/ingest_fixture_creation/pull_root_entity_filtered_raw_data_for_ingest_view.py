@@ -77,6 +77,9 @@ def _join_table_to_external_id_table(
     while not table_queue.empty():
         table, previous_join = table_queue.get()
         for relationship in table.table_relationships:
+            # Only consider relationships relevant to the ingest view
+            if relationship.foreign_table not in all_dependencies:
+                continue
             f_table = all_dependencies[relationship.foreign_table].raw_file_config
             join_clause = " ".join(
                 [
@@ -87,7 +90,8 @@ def _join_table_to_external_id_table(
             ).strip()
             if id_col := f_table.get_external_id_col_with_type(external_id_type):
                 return (
-                    join_clause + f" WHERE {id_col.name} IN {external_id_sql_arr}"
+                    join_clause
+                    + f" WHERE {f_table.file_tag}.{id_col.name} IN {external_id_sql_arr}"
                 ).strip()
             table_queue.put(TableJoin(f_table, join_clause))
     raise ValueError(throw_cant_find_id_msg(config.file_tag, external_id_type))

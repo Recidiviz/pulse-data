@@ -71,14 +71,16 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None) ->
     if time_string == "" or time_string.isspace():
         return 0
     try:
-        return int(time_string)
+        time_float = float(time_string)
+        time_int = int(time_float)
+        if time_int == time_float:
+            return time_int
     except ValueError:
         # Parses the string '1 YEAR 2 DAYS' to mean 1 year and 2 days prior.
         current_dt = from_dt or datetime.datetime.now()
         past_dt = parse_datetime(time_string, from_dt=current_dt)
         if past_dt:
             return (current_dt - past_dt).days
-
     raise ValueError(f"Cannot parse time duration: {time_string}")
 
 
