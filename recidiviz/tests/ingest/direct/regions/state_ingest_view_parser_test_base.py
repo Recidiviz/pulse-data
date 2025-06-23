@@ -21,7 +21,7 @@ import os
 import re
 import unittest
 from abc import abstractmethod
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import List, Sequence
 from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
@@ -112,8 +112,6 @@ class LegacyStateIngestViewParserTestBase:
         self,
         ingest_view_name: str,
         expected_output: Sequence[Entity],
-        # TODO(#30495): Get data types/converters from YAMLs
-        column_converters: Optional[Dict[str, Callable]] = None,
         debug: bool = False,
         project: str = GCP_PROJECT_STAGING,
     ) -> None:
@@ -121,14 +119,6 @@ class LegacyStateIngestViewParserTestBase:
 
         It reads the input from the following file:
         `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/{ingest_view_name}.csv`
-
-        column_converters is a dictionary mapping {column_name: callable converter}.
-          - The column name is the *pre-parsed* name of an ingest view column, not the
-            name of the entity field it gets parsed into.
-          - The callable is a callable that will convert the column value to the
-            expected type that the values produced by this ingest view will be.
-            This can be used in cases where the csv.DictReader "smartly" auto-converts
-            values to a different type (e.g. an integer) that is incorrect.
         """
         self._check_test_matches_file_tag(ingest_view_name)
 
@@ -151,11 +141,6 @@ class LegacyStateIngestViewParserTestBase:
                     ).get_contents_iterator()
                 )
             )
-            # TODO(#30495): Get this from YAMLs
-            if column_converters:
-                for row in fixture_content:
-                    for field, converter in column_converters.items():
-                        row[field] = converter(row[field])
             parsed_output = manifest.parse_contents(
                 contents_iterator=fixture_content,
                 context=IngestViewContentsContext.build_for_tests(),
