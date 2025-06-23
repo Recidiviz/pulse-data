@@ -16,15 +16,53 @@
 # =============================================================================
 """Helpers for LookML generation scripts."""
 import argparse
+import hashlib
 import os
 
-import recidiviz
 from recidiviz.tools.looker.constants import (
-    GENERATED_DIR_ROOT,
-    GENERATED_SUBDIR,
+    GENERATED_LOOKML_ROOT_PATH,
+    GENERATED_SUBDIR_NAME,
     LOOKER_REPO_NAME,
     VIEWS_DIR,
 )
+
+
+def hash_directory(path: str) -> str:
+    """
+    Computes a SHA-256 hash for the contents of a directory, including file paths
+    and file contents. This ensures that changes such as renames, moves, or content
+    modifications are reflected in the hash.
+    Args:
+        path (str): The path to the directory to be hashed.
+    Returns:
+        str: The hexadecimal representation of the SHA-256 hash of the directory.
+    """
+
+    hash_obj = hashlib.sha256()
+
+    for root, _dirs, files in sorted(os.walk(path)):
+        for file in sorted(files):
+            file_path = os.path.join(root, file)
+            # Include file paths in hash to detect renames/moves
+            relative_path = os.path.relpath(file_path, path)
+            hash_obj.update(relative_path.encode())
+
+            with open(file_path, "rb") as f:
+                while chunk := f.read(8192):
+                    hash_obj.update(chunk)
+
+    return hash_obj.hexdigest()
+
+
+def hash_generated_directory() -> str:
+    """
+    Computes and returns a hash value for the contents of the directory
+    specified by the `GENERATED_ROOT_PATH` constant. This function utilizes
+    the `hash_directory` method to generate the hash.
+    Returns:
+        str: A string representation of the hash value for the directory contents.
+    """
+    return hash_directory(path=GENERATED_LOOKML_ROOT_PATH)
 
 
 def remove_lookml_files_from(directory: str) -> None:
@@ -60,9 +98,7 @@ def parse_and_validate_output_dir_arg() -> str:
                 f"Expected looker_repo_root to be at the root of [{LOOKER_REPO_NAME}] repo, but instead got [{args.looker_repo_root}]"
             )
 
-    return args.looker_repo_root or os.path.join(
-        os.path.dirname(recidiviz.__file__), GENERATED_DIR_ROOT
-    )
+    return args.looker_repo_root or GENERATED_LOOKML_ROOT_PATH
 
 
 def get_generated_views_path(output_dir: str, module_name: str) -> str:
@@ -72,4 +108,4 @@ def get_generated_views_path(output_dir: str, module_name: str) -> str:
     TODO(#36190) Refactor looker repo so that all generated files have a common generated/ root
     directory. ex `views/{module_name}/generated/` -> `generated/views/{module_name}/`
     """
-    return os.path.join(output_dir, VIEWS_DIR, module_name, GENERATED_SUBDIR)
+    return os.path.join(output_dir, VIEWS_DIR, module_name, GENERATED_SUBDIR_NAME)

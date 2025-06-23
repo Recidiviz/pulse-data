@@ -31,8 +31,12 @@ import os
 import shutil
 from pathlib import Path
 
-import recidiviz
-from recidiviz.tools.looker.constants import GENERATED_DIR_ROOT, LOOKER_REPO_NAME
+from recidiviz.tools.looker.constants import (
+    GENERATED_LOOKML_ROOT_PATH,
+    GENERATED_VERSION_FILE_NAME,
+    GENERATED_VERSION_FILE_PATH,
+    LOOKER_REPO_NAME,
+)
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
 EXCLUDED_PATHS = [
@@ -94,6 +98,10 @@ def copy_with_overwrite(source_root: str, target_root: str) -> int:
 
                 copied_files_count += 1
 
+    source_version_file_path = GENERATED_VERSION_FILE_PATH
+    target_version_file_path = f"{target_root}/{GENERATED_VERSION_FILE_NAME}"
+    shutil.copy2(source_version_file_path, target_version_file_path)
+
     return copied_files_count
 
 
@@ -101,16 +109,16 @@ def main(looker_repo_root: str) -> None:
     """
     Main function to execute the copying of LookML files.
     """
-    source_path = os.path.join(os.path.dirname(recidiviz.__file__), GENERATED_DIR_ROOT)
-
-    logging.info("Starting file copy from %s -> %s", source_path, looker_repo_root)
+    logging.info(
+        "Starting file copy from %s -> %s", GENERATED_LOOKML_ROOT_PATH, looker_repo_root
+    )
 
     copied_files_count = copy_with_overwrite(
-        source_root=source_path, target_root=looker_repo_root
+        source_root=GENERATED_LOOKML_ROOT_PATH, target_root=looker_repo_root
     )
     if copied_files_count == 0:
         raise ValueError(
-            f"No LookML files found to copy from [{source_path}] to [{looker_repo_root}]. "
+            f"No LookML files found to copy from [{GENERATED_LOOKML_ROOT_PATH}] to [{looker_repo_root}]. "
             "Ensure that the source directory contains generated LookML files."
         )
 

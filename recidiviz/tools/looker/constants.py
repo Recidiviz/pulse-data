@@ -15,10 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants for Looker generation scripts."""
+import os
+
+import recidiviz
 
 LOOKER_REPO_NAME = "looker"
+
 VIEWS_DIR = "views"
 DASHBOARDS_DIR = "dashboards"
 EXPLORES_DIR = "explores"
-GENERATED_DIR_ROOT = "tools/looker/generated"
-GENERATED_SUBDIR = "generated"
+
+RECIDIVIZ_ROOT = os.path.dirname(recidiviz.__file__)
+LOOKER_TOOLS_ROOT = "tools/looker"
+
+GENERATED_SUBDIR_NAME = "generated"
+GENERATED_VERSION_FILE_NAME = "generated_version_hash"
+
+GENERATED_LOOKML_ROOT_PATH = os.path.join(
+    RECIDIVIZ_ROOT, LOOKER_TOOLS_ROOT, GENERATED_SUBDIR_NAME
+)
+GENERATED_VERSION_FILE_PATH = os.path.join(
+    RECIDIVIZ_ROOT, LOOKER_TOOLS_ROOT, GENERATED_VERSION_FILE_NAME
+)

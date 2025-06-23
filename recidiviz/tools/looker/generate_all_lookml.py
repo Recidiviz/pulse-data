@@ -22,7 +22,12 @@ Usage:
     python generate_all_lookml.py [--looker-repo-root [DIR]]
 """
 
-from recidiviz.tools.looker.script_helpers import parse_and_validate_output_dir_arg
+from recidiviz.common.constants.encoding import UTF_8
+from recidiviz.tools.looker.constants import GENERATED_VERSION_FILE_PATH
+from recidiviz.tools.looker.script_helpers import (
+    hash_generated_directory,
+    parse_and_validate_output_dir_arg,
+)
 from recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator import (
     AggregatedMetricsLookMLGenerator,
 )
@@ -56,6 +61,10 @@ def main(output_dir: str) -> None:
     """Main function to generate all LookML files."""
     for generator in LOOKML_GENERATORS:
         generator.generate_lookml(output_dir=output_dir)
+
+    version_hash = hash_generated_directory()
+    with open(GENERATED_VERSION_FILE_PATH, "w", encoding=UTF_8) as version_file:
+        version_file.write(f"{version_hash}\n")
 
 
 if __name__ == "__main__":

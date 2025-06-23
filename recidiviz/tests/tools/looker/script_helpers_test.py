@@ -19,7 +19,10 @@ import os
 import tempfile
 import unittest
 
-from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
+from recidiviz.tools.looker.script_helpers import (
+    hash_directory,
+    remove_lookml_files_from,
+)
 
 
 class LookMLScriptHelpersTest(unittest.TestCase):
@@ -39,3 +42,39 @@ class LookMLScriptHelpersTest(unittest.TestCase):
                 remove_lookml_files_from(tmp_dir)
                 for _, _, filenames in os.walk(tmp_dir):
                     self.assertFalse(any(file.endswith(".lkml") for file in filenames))
+
+    def test_hash_directory(self) -> None:
+        # Test that hash_directory generates consistent hashes
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file1 = os.path.join(tmp_dir, "file1.txt")
+            file2 = os.path.join(tmp_dir, "file2.txt")
+
+            # Create files with specific content
+            with open(file1, "w", encoding="UTF-8") as f:
+                f.write("Hello, World!")
+            with open(file2, "w", encoding="UTF-8") as f:
+                f.write("Another file content.")
+
+            # Generate hash for the directory
+            initial_hash = hash_directory(tmp_dir)
+
+            # Ensure the hash remains the same if no changes are made
+            self.assertEqual(initial_hash, hash_directory(tmp_dir))
+
+            # Modify one file and check that the hash changes
+            with open(file1, "w", encoding="UTF-8") as f:
+                f.write("Modified content.")
+            modified_hash = hash_directory(tmp_dir)
+            self.assertNotEqual(initial_hash, modified_hash)
+
+            # Add a new file and check that the hash changes
+            new_file = os.path.join(tmp_dir, "new_file.txt")
+            with open(new_file, "w", encoding="UTF-8") as f:
+                f.write("New file content.")
+            new_hash = hash_directory(tmp_dir)
+            self.assertNotEqual(modified_hash, new_hash)
+
+            # Remove a file and check that the hash changes
+            os.remove(file2)
+            final_hash = hash_directory(tmp_dir)
+            self.assertNotEqual(new_hash, final_hash)
