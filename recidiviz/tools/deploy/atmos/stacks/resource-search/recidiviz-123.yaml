@@ -1,0 +1,20 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-staging
+
+import:
+  - ../../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+# The variables set here are automatically provided to any components used in this stack.
+settings:
+  context:
+    project_id: recidiviz-123
+    location: us-central1
+
+components:
+  terraform:
+    apps/resource-search:
+      vars:
+        location: "{{ .settings.context.location }}"
+        project_id: "{{ .settings.context.project_id }}"
+        sql_instance_name: "prod-resource-search-data"
+        is_backup_enabled: false
