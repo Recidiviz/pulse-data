@@ -28,15 +28,15 @@ terraform {
 }
 
 locals {
-  project_name_str = var.project_id == "recidiviz-123" ? "PRODUCTION" : "STAGING"
+  project_name_str                         = var.project_id == "recidiviz-123" ? "PRODUCTION" : "STAGING"
   monitoring_dag_sendgrid_from_email_regex = "alerts\\+airflow-(staging|production)@recidiviz\\.org"
 }
 
 # Docs: https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs/resources/service
 resource "pagerduty_service" "service" {
-  name                    = "[${local.project_name_str}] ${var.service_base_name}"
-  description             = var.service_description
-  escalation_policy       = var.escalation_policy_id
+  name              = "[${local.project_name_str}] ${var.service_base_name}"
+  description       = var.service_description
+  escalation_policy = var.escalation_policy_id
 
   acknowledgement_timeout = "null"
   auto_resolve_timeout    = "null"
@@ -44,10 +44,10 @@ resource "pagerduty_service" "service" {
   support_hours {
     # Monday to Friday support hours
     days_of_week = [1, 2, 3, 4, 5]
-    start_time = "09:00:00"
-    end_time   = "14:00:00"
-    time_zone  = "America/Los_Angeles"
-    type       = "fixed_time_per_day"
+    start_time   = "09:00:00"
+    end_time     = "14:00:00"
+    time_zone    = "America/Los_Angeles"
+    type         = "fixed_time_per_day"
   }
 
   incident_urgency_rule {
@@ -69,10 +69,10 @@ resource "pagerduty_service" "service" {
 # monitoring Airflow DAG.
 # Docs: https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs/resources/service_integration
 resource "pagerduty_service_integration" "airflow_monitoring_email_integration" {
-  name              = "Email"
-  type              = "generic_email_inbound_integration"
-  integration_email = "${var.integration_email_base_username}-${var.project_id}@recidiviz.pagerduty.com"
-  service           = pagerduty_service.service.id
+  name                    = "Email"
+  type                    = "generic_email_inbound_integration"
+  integration_email       = "${var.integration_email_base_username}-${var.project_id}@recidiviz.pagerduty.com"
+  service                 = pagerduty_service.service.id
   email_incident_creation = "use_rules"
   email_filter_mode       = "and-rules-email"
   email_filter {
@@ -86,22 +86,22 @@ resource "pagerduty_service_integration" "airflow_monitoring_email_integration" 
 
   // If this service is the service that actually produces alerts, we want to fire alerts
   // for all failure emails, not just the correctly formatted ones.
-  email_parsing_fallback  = var.is_monitoring_service ? "open_new_incident" : "discard"
+  email_parsing_fallback = var.is_monitoring_service ? "open_new_incident" : "discard"
   email_parser {
     action = "trigger"
     match_predicate {
       type = "any"
       predicate {
-        matcher = "Task failure"
+        matcher = "Failure:"
         part    = "subject"
         type    = "contains"
       }
     }
     value_extractor {
-      part         = "subject"
-      type         = "regex"
-      regex = "Task failure: (.*)"
-      value_name   = "incident_key"
+      part       = "subject"
+      type       = "regex"
+      regex      = "Failure: (.*)"
+      value_name = "incident_key"
     }
   }
 
@@ -110,7 +110,7 @@ resource "pagerduty_service_integration" "airflow_monitoring_email_integration" 
     match_predicate {
       type = "any"
       predicate {
-        matcher = "Task success"
+        matcher = "Success:"
         part    = "subject"
         type    = "contains"
       }
@@ -118,7 +118,7 @@ resource "pagerduty_service_integration" "airflow_monitoring_email_integration" 
     value_extractor {
       part       = "subject"
       type       = "regex"
-      regex      = "Task success: (.*)"
+      regex      = "Success: (.*)"
       value_name = "incident_key"
     }
   }

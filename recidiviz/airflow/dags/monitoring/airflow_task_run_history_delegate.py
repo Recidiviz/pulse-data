@@ -22,7 +22,7 @@ from airflow.utils.session import create_session
 from airflow.utils.state import State
 from sqlalchemy import case, func, text
 
-from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
 )
@@ -92,6 +92,8 @@ class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
             )
 
             return [
-                JobRun.from_airflow_task_instance_run(*task_instance_run)
+                JobRun.from_airflow_task_instance(
+                    *task_instance_run, job_type=JobRunType.AIRFLOW_TASK_RUN
+                )
                 for task_instance_run in query.all()
             ]

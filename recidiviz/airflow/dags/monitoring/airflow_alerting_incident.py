@@ -43,6 +43,7 @@ class AirflowAlertingIncident:
     dag_id: str = attr.ib(validator=attr_validators.is_str)
     dag_run_config: str = attr.ib(validator=attr_validators.is_str)
     job_id: str = attr.ib(validator=attr_validators.is_str)
+    incident_type: str = attr.ib(validator=attr_validators.is_str)
     # sorted list of failed execution dates [ earliest date, ... , latest date ]
     failed_execution_dates: List[datetime] = attr.ib(
         validator=attr_validators.is_list_of(datetime)
@@ -79,7 +80,7 @@ class AirflowAlertingIncident:
         """
         conf_string = f"{self.dag_run_config} " if self.dag_run_config != "{}" else ""
         start_date = self.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")
-        return f"{conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
+        return f"{self.incident_type}: {conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
 
     @classmethod
     def build(
@@ -91,6 +92,7 @@ class AirflowAlertingIncident:
         failed_execution_dates: list[datetime],
         previous_success: pd.Timestamp | NaTType,
         next_success: pd.Timestamp | NaTType,
+        incident_type: str,
         error_message: str | None,
     ) -> "AirflowAlertingIncident":
         return AirflowAlertingIncident(
@@ -107,4 +109,5 @@ class AirflowAlertingIncident:
                 next_success.to_pydatetime() if not pd.isna(next_success) else None
             ),
             error_message=error_message,
+            incident_type=incident_type,
         )

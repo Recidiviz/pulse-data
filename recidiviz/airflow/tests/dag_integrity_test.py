@@ -134,6 +134,7 @@ class TestDagIntegrity(AirflowIntegrationTest):
                         job_id=task_id,
                         failed_execution_dates=[datetime.now(tz=timezone.utc)],
                         error_message=None,
+                        incident_type="Task Run",
                     )
                 )
 

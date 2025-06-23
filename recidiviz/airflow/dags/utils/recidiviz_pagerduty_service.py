@@ -135,11 +135,9 @@ class RecidivizPagerDutyService(RecidivizAlertingService):
         return f"Failed run of [{incident.job_id}] on the following dates: [ {failure_date_strs} ]. {detail_msg}"
 
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
-        event = (
-            "Task failure:" if incident.next_success_date is None else "Task success:"
-        )
+        event_type = "Failure:" if incident.next_success_date is None else "Success:"
         send_email(
             to=self.service_integration_email,
-            subject=f"{event} {incident.unique_incident_id}",
+            subject=f"{event_type} {incident.unique_incident_id}",
             html_content=self._format_body(incident),
         )

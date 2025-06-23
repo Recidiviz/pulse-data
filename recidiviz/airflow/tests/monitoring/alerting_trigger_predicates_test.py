@@ -41,6 +41,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
             job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -52,6 +53,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config="{}",
             job_id="US_IX.remote_file_download.download_sftp_files",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -76,6 +78,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config="{}",
             job_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -87,6 +90,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config="{}",
             job_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -99,6 +103,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "SECONDARY"}),
             job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -109,6 +114,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config="",
             job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -120,6 +126,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
             job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=14)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -132,6 +139,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "SECONDARY"}),
             job_id="US_OZ.hunger_games_people",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+            incident_type="Task Run",
         )
 
         should_trigger, _ = should_trigger_airflow_alerting_incident(incident)
@@ -143,6 +151,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
             job_id="raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
@@ -156,6 +165,7 @@ class TestPredicates(unittest.TestCase):
             dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
             job_id="raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+            incident_type="Task Run",
         )
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)

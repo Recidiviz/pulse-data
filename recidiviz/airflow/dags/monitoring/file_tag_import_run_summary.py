@@ -22,7 +22,7 @@ from typing import Any
 
 import attr
 
-from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
     DirectIngestRawFileImportStatusBucket,
@@ -256,4 +256,5 @@ class FileTagImportRunSummary(BaseResult):
             job_id=self.job_id(),
             state=self.file_tag_import_state,
             error_message=self.format_error_message(),
+            job_type=JobRunType.RAW_DATA_IMPORT,
         )

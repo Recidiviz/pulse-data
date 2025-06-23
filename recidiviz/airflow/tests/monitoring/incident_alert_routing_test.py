@@ -69,6 +69,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             dag_run_config="{}",
             job_id=job_id,
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
+            incident_type="Task Run",
         )
 
     def test_get_alerting_service_for_incident(self) -> None:

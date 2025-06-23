@@ -15,9 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for RecidivizPagerDutyService."""
+import datetime
 import unittest
 from typing import Dict, List
+from unittest.mock import ANY, MagicMock, patch
 
+import attr
+
+from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
+    AirflowAlertingIncident,
+)
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
 )
@@ -61,6 +68,46 @@ class TestRecidivizPagerDutyService(unittest.TestCase):
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id="recidiviz-456", state_code=StateCode.US_ID
             ).service_integration_email,
+        )
+
+    @patch("recidiviz.airflow.dags.utils.recidiviz_pagerduty_service.send_email")
+    def test_email_subject(self, send_email_mock: MagicMock) -> None:
+        failing_incident = AirflowAlertingIncident(
+            dag_id="test-dag",
+            dag_run_config="{}",
+            job_id="job-1",
+            incident_type="Fake Incident Type",
+            failed_execution_dates=[datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)],
+            error_message="Fake Error message",
+        )
+
+        service = RecidivizPagerDutyService.data_platform_airflow_service(
+            project_id="recidiviz-456"
+        )
+
+        service.handle_incident(failing_incident)
+
+        send_email_mock.assert_called_with(
+            to=service.service_integration_email,
+            subject="Failure: Fake Incident Type: test-dag.job-1, started: 2024-01-01 00:00 UTC",
+            html_content=ANY,
+        )
+
+        succeeding_incident = attr.evolve(
+            failing_incident,
+            next_success_date=datetime.datetime(2024, 1, 2, tzinfo=datetime.UTC),
+        )
+
+        service = RecidivizPagerDutyService.data_platform_airflow_service(
+            project_id="recidiviz-456"
+        )
+
+        service.handle_incident(succeeding_incident)
+
+        send_email_mock.assert_called_with(
+            to=service.service_integration_email,
+            subject="Success: Fake Incident Type: test-dag.job-1, started: 2024-01-01 00:00 UTC",
+            html_content=ANY,
         )
 
     @classmethod

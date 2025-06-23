@@ -89,7 +89,7 @@ class IncidentHistoryBuilder:
                 [discrete_dag]
             ].copy()
 
-            dag_id, conf, job_id = discrete_dag
+            dag_id, conf, job_type, job_id = discrete_dag
 
             job_state_sessions = job_runs.groupby(["session_id"]).agg(
                 start_date=("execution_date", "min"),
@@ -133,6 +133,7 @@ class IncidentHistoryBuilder:
                     previous_success=previous_success,
                     next_success=next_success,
                     error_message=most_recent_error_message,
+                    incident_type=job_type.value,
                 )
 
                 incidents[incident.unique_incident_id] = incident

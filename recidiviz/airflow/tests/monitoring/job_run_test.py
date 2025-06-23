@@ -19,7 +19,7 @@ import datetime
 from unittest import TestCase
 from unittest.mock import patch
 
-from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 
 TEST_DAG = "test_dag"
 
@@ -49,7 +49,7 @@ class JobRunTest(TestCase):
     def test_build_from_airflow_sorts_conf(self) -> None:
         exec_date = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
 
-        run = JobRun.from_airflow_task_instance_run(
+        run = JobRun.from_airflow_task_instance(
             dag_id="dag_a",
             execution_date=exec_date,
             conf={
@@ -58,9 +58,10 @@ class JobRunTest(TestCase):
             },
             task_id="task_a",
             state=1,
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
 
-        run_is_the_same = JobRun.from_airflow_task_instance_run(
+        run_is_the_same = JobRun.from_airflow_task_instance(
             dag_id="dag_a",
             execution_date=exec_date,
             conf={
@@ -70,6 +71,7 @@ class JobRunTest(TestCase):
             },
             task_id="task_a",
             state=1,
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
 
         assert run == JobRun(
@@ -81,5 +83,6 @@ class JobRunTest(TestCase):
             job_id="task_a",
             state=JobRunState.UNKNOWN,
             error_message=None,
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
         assert run == run_is_the_same

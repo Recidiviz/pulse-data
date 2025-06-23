@@ -37,7 +37,7 @@ from recidiviz.airflow.dags.monitoring.file_tag_import_run_summary import (
 from recidiviz.airflow.dags.monitoring.incident_history_builder import (
     IncidentHistoryBuilder,
 )
-from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
 )
@@ -92,6 +92,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             job_id=row["job_id"],
             state=JobRunState(int(row["state"])),
             error_message=row.get("error_message"),
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -268,7 +269,9 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             incidents = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
                 lookback=TEST_START_DATE_LOOKBACK
             )
-            incident_key = "test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
             self.assertListEqual(list(incidents.keys()), [incident_key])
             self.assertEqual(
                 incidents[incident_key].failed_execution_dates,
@@ -334,9 +337,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             incidents = IncidentHistoryBuilder(dag_id=multi_test_dag.dag_id).build(
                 lookback=TEST_START_DATE_LOOKBACK
             )
-            incident_key = (
-                "multiple_delegate_dag.parent_task, started: 2023-07-09 12:00 UTC"
-            )
+            incident_key = "Task Run: multiple_delegate_dag.parent_task, started: 2023-07-09 12:00 UTC"
             self.assertListEqual(list(incidents.keys()), [incident_key])
             self.assertEqual(
                 set(incidents[incident_key].failed_execution_dates),
@@ -500,7 +501,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             incident_history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
                 lookback=TEST_START_DATE_LOOKBACK
             )
-            incident_key = '{"instance": "SECONDARY"} test_dag.parent_task, started: 2023-07-07 12:01 UTC'
+            incident_key = 'Task Run: {"instance": "SECONDARY"} test_dag.parent_task, started: 2023-07-07 12:01 UTC'
             self.assertIn(incident_key, incident_history)
             secondary_incident = incident_history[incident_key]
             # Assert that the task was last successful on July 6th
@@ -520,7 +521,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 july_eighth_secondary.execution_date,
             )
 
-            incident_key = '{"instance": "TERTIARY"} test_dag.parent_task, started: 2023-07-07 12:02 UTC'
+            incident_key = 'Task Run: {"instance": "TERTIARY"} test_dag.parent_task, started: 2023-07-07 12:02 UTC'
             self.assertIn(incident_key, incident_history)
             tertiary_incident = incident_history[incident_key]
             # Assert that the task was last successful on July 6th
@@ -607,7 +608,9 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 lookback=TEST_START_DATE_LOOKBACK
             )
 
-            incident_key = "test_dag.parent_task, started: 2023-07-06 12:00 UTC"
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-06 12:00 UTC"
+            )
             self.assertIn(incident_key, history)
             incident = history[incident_key]
             # Assert that the task has never succeeded
@@ -820,7 +823,9 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
 
         assert len(history) == 2
 
-        primary_key = "raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC"
+        primary_key = (
+            "Raw Data Import: raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC"
+        )
         assert primary_key in history
         primary_incident = history[primary_key]
         primary_incident.next_success_date = date_2024_01_03
@@ -828,7 +833,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
         primary_incident.job_id = "raw_data_dag.US_XX.tag_a"
         primary_incident.error_message = primary_2024_01_02.format_error_message()
 
-        secondary_key = '{"ingest_instance": "SECONDARY"} raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC'
+        secondary_key = 'Raw Data Import: {"ingest_instance": "SECONDARY"} raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC'
         assert secondary_key in history
         secondy_incident = history[secondary_key]
         secondy_incident.next_success_date = None

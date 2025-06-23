@@ -43,6 +43,13 @@ class JobRunState(Enum):
     FAILED = 3
 
 
+class JobRunType(Enum):
+    """Enum of known job run types; is used as a unique key in grouping job runs."""
+
+    AIRFLOW_TASK_RUN = "Task Run"
+    RAW_DATA_IMPORT = "Raw Data Import"
+
+
 @attr.define(kw_only=True, frozen=True)
 class JobRun:
     """Metadata about a JobRun, or some unit of work done in an Airflow DAG that usually,
@@ -58,6 +65,7 @@ class JobRun:
             an Airflow task, this will be the `task_id`.
         - state (JobRunState): the state of the this job.
         - error_message (str | None): error message associated with this job.
+        - job_type (str): the type of run associated with this job.
     """
 
     dag_id: str = attr.field(validator=attr_validators.is_str)
@@ -70,23 +78,26 @@ class JobRun:
     job_id: str = attr.field(validator=attr_validators.is_str)
     state: JobRunState = attr.field(validator=attr.validators.in_(JobRunState))
     error_message: str | None = attr.field(validator=attr_validators.is_opt_str)
+    job_type: JobRunType = attr.field(validator=attr.validators.in_(JobRunType))
 
     @classmethod
     def unique_keys(cls) -> list[str]:
-        return ["dag_id", "dag_run_config", "job_id"]
+        return ["dag_id", "dag_run_config", "job_type", "job_id"]
 
     @classmethod
     def date_key(cls) -> list[str]:
         return ["execution_date"]
 
     @classmethod
-    def from_airflow_task_instance_run(
+    def from_airflow_task_instance(
         cls,
         dag_id: str,
         execution_date: datetime.datetime,
         conf: dict[str, Any],
         task_id: str,
         state: int,
+        *,
+        job_type: JobRunType,
     ) -> "JobRun":
         # sort dag run config to make sure that two different parameter orderings
         # doesn't break incident de-duplication
@@ -103,5 +114,6 @@ class JobRun:
             dag_run_config=json.dumps(sorted_dag_run_config),
             job_id=task_id,
             state=JobRunState(state),
+            job_type=job_type,
             error_message=None,
         )

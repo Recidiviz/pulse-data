@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Delegate that pulls FileTagImportRunSummary objects from XCom and builds JobRun 
+"""Delegate that pulls FileTagImportRunSummary objects from XCom and builds JobRun
 objects."""
 
 import datetime

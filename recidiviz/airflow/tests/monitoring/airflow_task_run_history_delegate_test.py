@@ -31,7 +31,7 @@ from sqlalchemy.orm import Session
 from recidiviz.airflow.dags.monitoring.airflow_task_run_history_delegate import (
     AirflowTaskRunHistoryDelegate,
 )
-from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
 )
@@ -63,6 +63,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             job_id=row["job_id"],
             state=JobRunState(int(row["state"])),
             error_message=None,
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }

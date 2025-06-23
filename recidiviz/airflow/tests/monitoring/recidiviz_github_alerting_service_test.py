@@ -99,14 +99,15 @@ class RecidivizGitHubServiceTest(TestCase):
                 datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
         ]
 
@@ -178,14 +179,15 @@ class RecidivizGitHubServiceTest(TestCase):
                 datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
         ]
 
@@ -259,6 +261,7 @@ class RecidivizGitHubServiceTest(TestCase):
             job_id="a.job.id",
             failed_execution_dates=[datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         issue = self._create_issue(
@@ -267,10 +270,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             issue,
         ]
@@ -304,7 +307,7 @@ class RecidivizGitHubServiceTest(TestCase):
         assert len(logs.output) == 1
         assert (
             logs.output[0]
-            == "INFO:root:Found up-to-date issue [#54321] for an incident [test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing."
+            == "INFO:root:Found up-to-date issue [#54321] for an incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing."
         )
 
     def test_existing_incident_ongoing_no_update_needed_comment(self) -> None:
@@ -321,6 +324,7 @@ class RecidivizGitHubServiceTest(TestCase):
                 datetime.datetime(2024, 1, 2, tzinfo=datetime.UTC),
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         issue = self._create_issue(
@@ -329,10 +333,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             issue,
         ]
@@ -370,7 +374,7 @@ class RecidivizGitHubServiceTest(TestCase):
         assert len(logs.output) == 1
         assert (
             logs.output[0]
-            == "INFO:root:Found up-to-date issue [#54321] for an incident [test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing."
+            == "INFO:root:Found up-to-date issue [#54321] for an incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing."
         )
 
     def test_existing_incident_ongoing_update_and_reopen(self) -> None:
@@ -388,6 +392,7 @@ class RecidivizGitHubServiceTest(TestCase):
                 datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         issue = self._create_issue(
@@ -398,10 +403,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             issue,
         ]
@@ -441,7 +446,7 @@ class RecidivizGitHubServiceTest(TestCase):
         assert len(logs.output) == 1
         assert (
             logs.output[0]
-            == "INFO:root:Found out-of-date issue [#54321] for an incident [test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing. Updating..."
+            == "INFO:root:Found out-of-date issue [#54321] for an incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing. Updating..."
         )
 
     def test_existing_incident_ongoing_update(self) -> None:
@@ -459,6 +464,7 @@ class RecidivizGitHubServiceTest(TestCase):
                 datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         issue = self._create_issue(
@@ -468,10 +474,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             issue,
         ]
@@ -515,7 +521,7 @@ class RecidivizGitHubServiceTest(TestCase):
         assert len(logs.output) == 1
         assert (
             logs.output[0]
-            == "INFO:root:Found out-of-date issue [#54321] for an incident [test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing. Updating..."
+            == "INFO:root:Found out-of-date issue [#54321] for an incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] that is still ongoing. Updating..."
         )
 
     def test_existing_issue_resolved_and_open(self) -> None:
@@ -534,6 +540,7 @@ class RecidivizGitHubServiceTest(TestCase):
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
             next_success_date=datetime.datetime(2024, 1, 4, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         incident_issue = self._create_issue(
@@ -543,10 +550,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             incident_issue,
         ]
@@ -580,7 +587,7 @@ class RecidivizGitHubServiceTest(TestCase):
         assert len(logs.output) == 1
         assert (
             logs.output[0]
-            == "INFO:root:Closed issue [#54321] for incident [test_dag.a.job.id, started: 2024-01-01 00:00 UTC] as a job run completed successfully on [2024-01-04T00:00:00+00:00]"
+            == "INFO:root:Closed issue [#54321] for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] as a job run completed successfully on [2024-01-04T00:00:00+00:00]"
         )
 
     def test_existing_issue_resolved_and_already_closed(self) -> None:
@@ -599,6 +606,7 @@ class RecidivizGitHubServiceTest(TestCase):
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
             next_success_date=datetime.datetime(2024, 1, 4, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         incident_issue = self._create_issue(
@@ -609,10 +617,10 @@ class RecidivizGitHubServiceTest(TestCase):
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
             incident_issue,
         ]
@@ -660,14 +668,15 @@ class RecidivizGitHubServiceTest(TestCase):
             ],
             previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
             next_success_date=datetime.datetime(2024, 1, 4, tzinfo=datetime.UTC),
+            incident_type="Task Run",
         )
 
         mock_issues = [
             self._create_issue(
-                "{key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: {key: value}test_dag.a.job.id, started: 2024-01-01 00:00 UTC"
             ),
             self._create_issue(
-                "test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
+                "Task Run: test_dag.a.different.job.id, started: 2024-01-01 00:00 UTC"
             ),
         ]
 
