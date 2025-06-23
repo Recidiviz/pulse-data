@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ne import (
 from recidiviz.task_eligibility.criteria.general import (
     no_top_three_severity_level_supervision_violation_within_6_months,
     not_supervision_within_1_month_of_projected_completion_date_min_external,
-    on_parole_at_least_one_year,
+    on_parole_at_least_6_months,
     supervision_level_is_minimum,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
@@ -46,7 +46,7 @@ US_NE_GENERAL_SUPERVISION_LEVEL_OVERRIDE_CRITERIA = [
     no_top_three_severity_level_supervision_violation_within_6_months,
     # More than 1 month until Earned Discharge Date
     not_supervision_within_1_month_of_projected_completion_date_min_external,
-    on_parole_at_least_one_year,
+    on_parole_at_least_6_months,
 ]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
