@@ -2,7 +2,6 @@
 .github/workflows/** @Recidiviz/infra-review
 
 # DADS-owned code
-recidiviz/research/ @Recidiviz/dads
 
 # Doppler
 #  For Doppler-owned files, files with a high volume of edits are assigned to the @Recidiviz/doppler-codeowners group,
@@ -21,7 +20,6 @@ recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/tools/looker/generated/** @Recidiviz/doppler-codeowners
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
-
 
 # Polaris
 
