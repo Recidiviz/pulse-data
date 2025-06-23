@@ -142,7 +142,7 @@ secrets.yaml # keep in case any developers still have them
 .pytest_cache/
 
 # Mac
-.DS_Store
+**/.DS_Store
 
 # Terraform
 **/.terraform/*
