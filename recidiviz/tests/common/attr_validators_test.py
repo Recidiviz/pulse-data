@@ -152,15 +152,31 @@ class AttrValidatorsTest(unittest.TestCase):
             str(e.exception.args[0]),
         )
 
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found datetime value \[2020-01-02 03:04:05.000006\] on field "
+            r"\[my_required_date\] on class \[_TestClass\].",
+        ):
+            _ = _TestClass(
+                my_required_date=datetime.datetime(2020, 1, 2, 3, 4, 5, 6),
+                my_optional_date=None,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found datetime value \[2020-01-02 03:04:05.000006\] on field "
+            r"\[my_optional_date\] on class \[_TestClass\].",
+        ):
+            _ = _TestClass(
+                my_required_date=datetime.date.today(),
+                my_optional_date=datetime.datetime(2020, 1, 2, 3, 4, 5, 6),
+            )
+
         # These don't crash
         _ = _TestClass(my_required_date=datetime.date.today(), my_optional_date=None)
         _ = _TestClass(
             my_required_date=datetime.date.today(),
             my_optional_date=datetime.date.today(),
-        )
-        _ = _TestClass(
-            my_required_date=datetime.datetime.now(),
-            my_optional_date=datetime.datetime.now(),
         )
 
     def test_list_validators(self) -> None:
@@ -776,6 +792,28 @@ class TestIsReasonableDateValidator(unittest.TestCase):
                 my_required_past_datetime=(
                     datetime.datetime.now() + datetime.timedelta(days=10)
                 ),
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found datetime value \[2011-01-01 00:00:00\] on field "
+            r"\[my_required_date\] on class \[_TestClass\]",
+        ):
+            _ = _TestClass(
+                my_required_date=lower_bound_datetime,
+                my_required_past_date=lower_bound_date,
+                my_required_past_datetime=lower_bound_datetime,
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"Found datetime value \[2011-01-01 00:00:00\] on field "
+            r"\[my_required_past_date\] on class \[_TestClass\]",
+        ):
+            _ = _TestClass(
+                my_required_date=lower_bound_date,
+                my_required_past_date=lower_bound_datetime,
+                my_required_past_datetime=lower_bound_datetime,
             )
 
         # These don't crash

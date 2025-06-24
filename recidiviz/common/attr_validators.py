@@ -303,8 +303,26 @@ def is_opt_positive_int(
 
 
 # Date field validators
-is_date = attr.validators.instance_of(datetime.date)
-is_opt_date = is_opt(datetime.date)
+def is_date(instance: Any, attribute: attr.Attribute, value: Any) -> None:
+    """Validates that a field is a `date`, but NOT a `datetime` object."""
+    if isinstance(value, datetime.datetime):
+        raise TypeError(
+            f"Found datetime value [{value}] on field [{attribute.name}] on class "
+            f"[{type(instance).__name__}]. Expected the value to be a date, not a "
+            f"datetime."
+        )
+
+    attr.validators.instance_of(datetime.date)(instance, attribute, value)
+
+
+def is_opt_date(instance: Any, attribute: attr.Attribute, value: Any) -> None:
+    """Validates that a field is a `date`, but NOT a `datetime` object. Allows None
+    values.
+    """
+    if value is None:
+        return
+
+    is_date(instance, attribute, value)
 
 
 def is_str_iso_formatted_date(
@@ -454,6 +472,13 @@ class IsReasonableDateValidator:
         if value is None and self.allow_nulls:
             return
 
+        if isinstance(value, datetime.datetime):
+            raise TypeError(
+                f"Found datetime value [{value}] on field [{attribute.name}] on class "
+                f"[{type(instance).__name__}]. Expected the value to be a date, not a "
+                f"datetime."
+            )
+
         if not isinstance(value, datetime.date):
             raise TypeError(
                 f"Found [{attribute.name}] value on class [{type(instance).__name__}] "
@@ -483,6 +508,13 @@ class IsReasonablePastDateValidator:
     def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
         if value is None and self.allow_nulls:
             return
+
+        if isinstance(value, datetime.datetime):
+            raise TypeError(
+                f"Found datetime value [{value}] on field [{attribute.name}] on class "
+                f"[{type(instance).__name__}]. Expected the value to be a date, not a "
+                f"datetime."
+            )
 
         if not isinstance(value, datetime.date):
             raise TypeError(
