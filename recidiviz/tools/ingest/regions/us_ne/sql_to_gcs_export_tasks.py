@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 # Most of the file tags are found in the DCS_WEB db
 # but the following are only in the DCS_MVS db
 DCS_MVS_FILE_TAGS = [
+    "E03_REC_CNTR",
     "E04_LOCT_PRFX",
     "A03_ADMIS_TYPE",
     "CTS_Inmate",

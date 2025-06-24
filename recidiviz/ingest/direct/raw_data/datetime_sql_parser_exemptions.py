@@ -1661,7 +1661,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "PBABoardMember": ["createdDate", "endDate", "modifiedDate", "startDate"],
         "PBABoardMemberAttendance": ["createdDate", "modifiedDate"],
         "PBABoardMemberVote": ["createdDate", "modifiedDate"],
-        "PBAHearingAttendance": ["createdDate", "hearingDate", "modifiedDate"],
         "PBAHearingMemberAttendance": ["createdDate", "modifiedDate"],
         "PBAHearingReviewSummary": ["createdDate", "modifiedDate"],
         "PBAOffenderBoardReview": [
