@@ -83,6 +83,7 @@ output:
                         - GANGREL
                         - BRIBERY
                         - MED # Misuse of medication
+                        - RESTORATIVE # Only appears once. Reports an incident with a "restorative practice" sanction.
                       StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
                         - CONV
                       StateIncarcerationIncidentType.VIOLENCE:
