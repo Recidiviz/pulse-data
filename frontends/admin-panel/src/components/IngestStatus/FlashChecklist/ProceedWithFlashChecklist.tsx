@@ -28,7 +28,7 @@ import {
   markInstanceRawDataInvalidated,
   releaseResourceLocksForStateById,
   transferRawDataMetadataToNewInstance,
-  triggerCalculationDAGForState,
+  triggerCalculationDAG,
   updateIsFlashingInProgress,
 } from "../../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../constants";
@@ -433,9 +433,7 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
           }
           actionButtonTitle="Start Calculation DAG Run"
           actionButtonEnabled
-          onActionButtonClick={async () =>
-            triggerCalculationDAGForState(stateCode)
-          }
+          onActionButtonClick={async () => triggerCalculationDAG()}
           nextSection={FlashChecklistStepSection.DONE}
         />
       ),

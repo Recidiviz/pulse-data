@@ -48,49 +48,12 @@ def trigger_dag_run(dag_id: str, conf: dict) -> None:
         raise ValueError(f"Failed to trigger DAG {dag_id}: {response.error}")
 
 
-# TODO(#25274): Remove ingest_instance/state_code_filter/sandbox_prefix args entirely
-def trigger_calculation_dag(
-    ingest_instance: DirectIngestInstance,
-    state_code_filter: Optional[StateCode],
-    sandbox_prefix: Optional[str] = None,
-) -> None:
+def trigger_calculation_dag() -> None:
     """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
     refresh, which then will trigger the calculation DAG on completion."""
 
-    logging.info(
-        "Triggering the calc DAG with instance: [%s], state code filter: [%s], and sandbox_prefix: [%s].",
-        ingest_instance.value,
-        state_code_filter.value if state_code_filter else None,
-        sandbox_prefix,
-    )
-
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    if ingest_instance != DirectIngestInstance.PRIMARY:
-        raise ValueError(
-            f"[ingest_instance] not a supported DirectIngestInstance: {ingest_instance}."
-        )
-
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    if sandbox_prefix:
-        raise ValueError("The calc DAG does not support non-null sandbox_prefix")
-
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    if state_code_filter:
-        raise ValueError("The calc DAG does not support non-null state_code_filter")
-
-    trigger_dag_run(
-        f"{project_id()}_calculation_dag",
-        conf={
-            "state_code_filter": (
-                state_code_filter.value if state_code_filter else None
-            ),
-            "ingest_instance": ingest_instance.value,
-            "sandbox_prefix": sandbox_prefix,
-        },
-    )
+    logging.info("Triggering the calc DAG.")
+    trigger_dag_run(f"{project_id()}_calculation_dag", conf={})
 
 
 def trigger_raw_data_import_dag(

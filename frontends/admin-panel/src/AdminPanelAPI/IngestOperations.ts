@@ -195,12 +195,11 @@ export const deleteTablesInPruningDatasets = async (
 };
 
 // Run calc DAG For State
-export const triggerCalculationDAGForState = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody("/api/ingest_operations/trigger_calculation_dag", {
-    stateCode,
-  });
+export const triggerCalculationDAG = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/trigger_calculation_dag",
+    {}
+  );
 };
 
 // Trigger raw data import dag

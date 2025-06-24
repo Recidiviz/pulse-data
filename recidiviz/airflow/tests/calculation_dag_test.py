@@ -609,9 +609,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 dag,
                 session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
+                run_conf={},
                 expected_success_task_id_regexes=[
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -624,46 +622,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^dataset_cleanup",
                     r"^apply_row_access_policies",
                 ],
-            )
-
-    def test_calculation_dag_with_state(self) -> None:
-        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
-
-        dag = create_calculation_dag()
-
-        with Session(bind=self.engine) as session:
-            self.run_dag_test(
-                dag,
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                    "state_code_filter": "US_XX",
-                },
-                expected_success_task_id_regexes=[
-                    r"^initialize_dag.handle_params_check",
-                ],
-                expected_failure_task_id_regexes=[
-                    # This fails because no sandbox prefix arg is set when there is a
-                    # state_code_filter.
-                    r"^initialize_dag.verify_parameters",
-                ],
-                expected_skipped_task_id_regexes=[
-                    r"^initialize_dag.wait_to_continue_or_cancel",
-                    r"^initialize_dag.handle_queueing_result",
-                    r"^update_big_query_table_schemata",
-                    r"^dataflow_pipelines.*",
-                    r"^bq_refresh.*",
-                    r"^update_managed_views",
-                    r"^validations.*",
-                    r"^metric_exports.*",
-                    r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup",
-                    r"^apply_row_access_policies",
-                ],
-            )
-            self.assertIn(
-                "dataflow_pipelines.US_XX_dataflow_pipelines.ingest.us-xx-ingest-pipeline.run_pipeline",
-                dag.task_ids,
             )
 
     def test_calculation_dag_fail_single_ingest_pipeline(self) -> None:
@@ -681,9 +639,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 dag,
                 session=session,
                 use_full_ti_run=True,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
+                run_conf={},
                 expected_failure_task_id_regexes=[
                     # Pipeline fails
                     r"^dataflow_pipelines.US_YY_dataflow_pipelines.ingest.us-yy-ingest-pipeline.run_pipeline",
@@ -740,9 +696,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 dag,
                 session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
+                run_conf={},
                 expected_failure_task_id_regexes=[
                     r"^dataflow_pipelines.US_XX_dataflow_pipelines.full-us-xx-pipeline-no-limit-pipeline.run_pipeline",
                     r"^dataflow_pipelines.branch_end",
@@ -803,9 +757,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 downstream_of_schema_update_dag,
                 session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
+                run_conf={},
                 expected_failure_task_id_regexes=[
                     r"^update_big_query_table_schemata",
                     r"^dataflow_pipelines\.[a-zA-Z]*",
@@ -851,9 +803,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 upstream_of_view_update,
                 session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
+                run_conf={},
                 expected_failure_task_id_regexes=[
                     r"bq_refresh.refresh_bq_dataset_",
                 ],
@@ -867,7 +817,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 ],
             )
 
-    def test_calculation_dag_with_state_and_sandbox(self) -> None:
+    def test_calculation_dag_unknown_parameters(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
         dag = create_calculation_dag()
@@ -877,56 +827,13 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 dag,
                 session=session,
                 run_conf={
-                    "ingest_instance": "PRIMARY",
-                    "state_code_filter": "US_XX",
-                    "sandbox_prefix": "test_prefix",
+                    "some_parameter": "foo",
                 },
                 expected_success_task_id_regexes=[
                     r"^initialize_dag.handle_params_check",
                 ],
                 expected_failure_task_id_regexes=[
-                    # This fails because the state_code_filter/sandbox_prefix args
-                    # aren't supported
-                    r"^initialize_dag.verify_parameters",
-                ],
-                expected_skipped_task_id_regexes=[
-                    r"^initialize_dag.wait_to_continue_or_cancel",
-                    r"^initialize_dag.handle_queueing_result",
-                    r"^update_big_query_table_schemata",
-                    r"^dataflow_pipelines.*",
-                    r"^bq_refresh.*",
-                    r"^update_managed_views",
-                    r"^validations.*",
-                    r"^metric_exports.*",
-                    r"^dataflow_metric_pruning",
-                    r"^dataset_cleanup",
-                    r"^apply_row_access_policies",
-                ],
-            )
-            self.assertIn(
-                "dataflow_pipelines.US_XX_dataflow_pipelines.ingest.us-xx-ingest-pipeline.run_pipeline",
-                dag.task_ids,
-            )
-
-    def test_calculation_dag_secondary(self) -> None:
-        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
-
-        dag = create_calculation_dag()
-
-        with Session(bind=self.engine) as session:
-            self.run_dag_test(
-                dag,
-                session=session,
-                run_conf={
-                    "ingest_instance": "SECONDARY",
-                    "state_code_filter": "US_XX",
-                    "sandbox_prefix": "test_prefix",
-                },
-                expected_success_task_id_regexes=[
-                    r"^initialize_dag.handle_params_check",
-                ],
-                expected_failure_task_id_regexes=[
-                    # This fails because the ingest_instance isn't supported
+                    # This fails because the parameter isn't supported
                     r"^initialize_dag.verify_parameters",
                 ],
                 expected_skipped_task_id_regexes=[

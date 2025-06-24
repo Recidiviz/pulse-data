@@ -437,17 +437,8 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     )
     def _trigger_calculation_dag() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            trigger_calculation_dag(DirectIngestInstance.PRIMARY, state_code)
-            return (
-                "",
-                HTTPStatus.OK,
-            )
+            trigger_calculation_dag()
+            return "", HTTPStatus.OK
 
         except ValueError as error:
             logging.exception(error)

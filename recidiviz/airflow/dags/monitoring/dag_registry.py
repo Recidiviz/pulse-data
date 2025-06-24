@@ -64,13 +64,8 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
     NOTE: If a new parameter is being added, add it here and review the values returned
     for the given DAG in get_discrete_configuration_parameters() list.
     """
-    # TODO(#25274): deprecate these parameters for the calc DAG
     if dag_id == get_calculation_dag_id(project_id):
-        return {
-            "ingest_instance",
-            "state_code_filter",
-            "sandbox_prefix",
-        }
+        return set()
     if dag_id == get_monitoring_dag_id(project_id):
         return set()
     if dag_id == get_sftp_dag_id(project_id):

@@ -29,8 +29,6 @@ components:
 
           # Calculation runs daily in staging at 6am EST
           calculation_dag:
-            config:
-              ingest_instance: PRIMARY
             schedule:
               - 0 3 * * *
 

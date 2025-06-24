@@ -132,82 +132,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
 
     def test_successfully_initializes_dag(self) -> None:
         with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                test_dag,
-                session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                },
-            )
+            result = self.run_dag_test(test_dag, session, run_conf={})
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-
-    def test_initializes_dag_primary_with_sandbox_prefix(
-        self,
-    ) -> None:
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                test_dag,
-                session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                    "sandbox_prefix": "my_prefix",
-                },
-                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_task_id_regexes=[
-                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
-                    _HANDLE_QUEUEING_RESULT_TASK_ID,
-                    _WAIT_SECONDS_TASK_ID,
-                ],
-            )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-            self.assertEqual(
-                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
-                "The calc DAG does not support non-null sandbox_prefix",
-            )
-
-    def test_initializes_dag_primary_with_state_code(self) -> None:
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                dag=test_dag,
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                    "state_code_filter": "US_XX",
-                },
-                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_task_id_regexes=[
-                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
-                    _HANDLE_QUEUEING_RESULT_TASK_ID,
-                    _WAIT_SECONDS_TASK_ID,
-                ],
-            )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-            self.assertEqual(
-                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
-                "The calc DAG does not support non-null state_code_filter",
-            )
-
-    def test_dag_secondary_instance(
-        self,
-    ) -> None:
-        with Session(bind=self.engine) as session:
-            result = self.run_dag_test(
-                dag=test_dag,
-                session=session,
-                run_conf={"ingest_instance": "SECONDARY"},
-                expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
-                expected_skipped_task_id_regexes=[
-                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
-                    _HANDLE_QUEUEING_RESULT_TASK_ID,
-                    _WAIT_SECONDS_TASK_ID,
-                ],
-            )
-
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
-            self.assertEqual(
-                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
-                "[ingest_instance] not a supported DirectIngestInstance: SECONDARY.",
-            )
 
     def test_unknown_parameters(self) -> None:
         with Session(bind=self.engine) as session:

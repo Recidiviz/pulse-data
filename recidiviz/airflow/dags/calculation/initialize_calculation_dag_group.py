@@ -27,11 +27,6 @@ from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_a
     WaitUntilCanContinueOrCancelSensorAsync,
 )
 from recidiviz.airflow.dags.utils.config_utils import (
-    INGEST_INSTANCE,
-    SANDBOX_PREFIX,
-    STATE_CODE_FILTER,
-    get_ingest_instance,
-    get_state_code_filter,
     handle_params_check,
     handle_queueing_result,
 )
@@ -39,7 +34,6 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates import (
     NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -75,15 +69,6 @@ def templated_argument_from_conf(
     )
 
 
-INGEST_INSTANCE_JINJA_ARG = templated_argument_from_conf(
-    INGEST_INSTANCE, jinja_filter="upper"
-)
-SANDBOX_PREFIX_JINJA_ARG = templated_argument_from_conf(SANDBOX_PREFIX)
-STATE_CODE_FILTER_JINJA_ARG = templated_argument_from_conf(
-    STATE_CODE_FILTER, jinja_filter="upper"
-)
-
-
 @task
 def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     """Verifies that the required parameters are set in the dag_run configuration and
@@ -108,30 +93,6 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
         raise ValueError(
             f"Unknown configuration parameters supplied: {unknown_parameters}"
         )
-
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    ingest_instance_str = get_ingest_instance(dag_run)
-    if not ingest_instance_str:
-        raise ValueError("[ingest_instance] must be set in dag_run configuration")
-
-    if ingest_instance_str != DirectIngestInstance.PRIMARY.value:
-        raise ValueError(
-            f"[ingest_instance] not a supported DirectIngestInstance: {ingest_instance_str}."
-        )
-
-    sandbox_prefix: Optional[str] = dag_run.conf.get(SANDBOX_PREFIX)
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    if sandbox_prefix:
-        raise ValueError("The calc DAG does not support non-null sandbox_prefix")
-
-    state_code_filter = get_state_code_filter(dag_run)
-
-    # TODO(#25274): Remove this logic entirely once we entirely remove all places that
-    #  read from the calc DAG arg.
-    if state_code_filter:
-        raise ValueError("The calc DAG does not support non-null state_code_filter")
 
     return True
 
