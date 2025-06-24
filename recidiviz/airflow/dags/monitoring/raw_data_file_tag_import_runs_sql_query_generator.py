@@ -109,6 +109,7 @@ class RawDataFileTagImportRunSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]
         super().__init__()
         self._lookback = lookback
 
+    # TODO(#40117) use gcs-backed xcom here
     def execute_postgres_query(
         self,
         operator: CloudSqlQueryOperator,

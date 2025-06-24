@@ -57,26 +57,6 @@ data "google_compute_default_service_account" "default" {
   project = var.project_id
 }
 
-
-module "airflow-gcs-xcom" {
-  source = "./modules/cloud-storage-bucket"
-
-  project_id  = var.project_id
-  name_suffix = "airflow-gcs-xcom"
-
-  lifecycle_rules = [
-    {
-      action = {
-        type = "Delete"
-      }
-      condition = {
-        age = 7
-      }
-    },
-  ]
-}
-
-
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
   name     = "orchestration-v2"
@@ -109,14 +89,6 @@ resource "google_composer_environment" "default_v2" {
         "scheduler-scheduler_zombie_task_threshold" = 3600
         "secrets-backend"                           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
         "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
-
-        # airflow configs to have xcom that is > 1 mib be written out to a gcs bucket instead
-        # of to the metadata db. this has a slower I/O overhead, but keeps the metadata db
-        # size down for a few tasks that we know may have larger xcom size
-        "core-xcom_backend"                        = "airflow.providers.common.io.xcom.backend.XComObjectStorageBackend"
-        "common.io-xcom_objectstorage_path"        = module.airflow-gcs-xcom.url
-        "common.io-xcom_objectstorage_threshold"   = 1048576 # 1 MiB
-        "common.io-xcom_objectstorage_compression" = "gzip"
       }
       env_variables = {
         # DO NOT add variables that change with any frequency here. Updating these values causes Airflow tasks
@@ -127,13 +99,12 @@ resource "google_composer_environment" "default_v2" {
         "SENDGRID_MAIL_SENDER" = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
-        "us"                                 = "==3.1.1"
-        "apache-airflow-providers-sftp"      = "==4.9.1"
-        "python-levenshtein"                 = "==0.25.1"
-        "dateparser"                         = "==1.2.0"
-        "apache-airflow-providers-github"    = "==2.6.2"
-        "pygithub"                           = "==2.5.0"
-        "apache-airflow-providers-common-io" = "==1.6.0"
+        "us"                              = "==3.1.1"
+        "apache-airflow-providers-sftp"   = "==4.9.1"
+        "python-levenshtein"              = "==0.25.1"
+        "dateparser"                      = "==1.2.0"
+        "apache-airflow-providers-github" = "==2.6.2"
+        "pygithub"                        = "==2.5.0"
       }
       image_version = "composer-2.13.1-airflow-2.10.5"
     }
