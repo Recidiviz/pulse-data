@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_compared_to_recommended,
     custody_level_is_not_max,
+    has_initial_classification_in_state_prison_custody,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     at_least_12_months_since_latest_assessment,
@@ -43,8 +44,6 @@ _DESCRIPTION = """Builder for a task eligibility spans view that shows the spans
 someone in TN is eligible for an annual reclassification.
 """
 
-# TODO(#40732): Add back in has_initial_classification_in_state_prison_custody criteria when that opportunity is ready
-# for launch
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="ANNUAL_RECLASSIFICATION_REVIEW",
@@ -52,6 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         at_least_12_months_since_latest_assessment.VIEW_BUILDER,
+        has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,
         # This criteria is used to add the current and recommended custody levels into the reasons blob for easier
         # access to the fields on the front end. This could also be done via the opportunity record query but doing it
