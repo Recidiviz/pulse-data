@@ -2512,9 +2512,6 @@ class NormalizedStateSupervisionViolationResponse(
                     # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2913-10-22.
                     StateCode.US_AR,
-                    # TODO(#40457): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_AZ,
                     # TODO(#40458): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2105-12-30.
                     StateCode.US_CA,

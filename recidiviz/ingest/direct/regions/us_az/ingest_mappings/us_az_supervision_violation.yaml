@@ -6,8 +6,8 @@ input_columns:
   violation_external_id: STRING
   person_external_id: STRING
   reporting_staff: STRING
-  violation_date: STRING
-  response_date: STRING
+  violation_date: DATETIME
+  response_date: DATETIME
   violation_type_description: STRING
   violation_type_misdemeanor: STRING
   violation_type_felony: STRING
