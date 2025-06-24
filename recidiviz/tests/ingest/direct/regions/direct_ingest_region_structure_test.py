@@ -136,10 +136,6 @@ UNTESTED_INGEST_VIEWS = {
         # TODO(#19835): Write tests for this view and remove exemption
         "supervision_violation_response",
     },
-    StateCode.US_IA: {
-        # TODO(#37074): Write tests for this view and remove exemption
-        "incarceration_periods",
-    },
 }
 
 
