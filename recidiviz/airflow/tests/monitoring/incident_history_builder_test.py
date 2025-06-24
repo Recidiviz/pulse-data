@@ -107,7 +107,7 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
     execution_date = execution_date.replace(tzinfo=datetime.timezone.utc)
 
     return DagRun(
-        dag_id=dag.dag_id,
+        dag_id=kwargs.pop("dag_id", None) or dag.dag_id,
         run_id=execution_date.strftime("%Y-%m-%d-%H:%M"),
         run_type="manual",
         start_date=execution_date,
@@ -143,15 +143,21 @@ def dummy_task(dag: DAG, name: str) -> PythonOperator:
     )
 
 
-test_dag = DAG(
-    dag_id=_TEST_DAG_ID,
-    start_date=datetime.datetime(year=2023, month=6, day=21),
-    schedule=None,
-)
+def build_test_dag_with_id(dag_id: str) -> tuple[DAG, PythonOperator, PythonOperator]:
+    """for building a dag with a specific dag name"""
+    test_dag_ = DAG(
+        dag_id=dag_id,
+        start_date=datetime.datetime(year=2023, month=6, day=21),
+        schedule=None,
+    )
 
-parent_task = dummy_task(test_dag, "parent_task")
-child_task = dummy_task(test_dag, "child_task")
-parent_task >> child_task
+    parent_task_ = dummy_task(test_dag_, "parent_task")
+    child_task_ = dummy_task(test_dag_, "child_task")
+    parent_task_ >> child_task_
+    return test_dag_, parent_task_, child_task_
+
+
+test_dag, parent_task, child_task = build_test_dag_with_id(_TEST_DAG_ID)
 
 TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 
@@ -164,8 +170,6 @@ TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 )
 class IncidentHistoryBuilderTest(AirflowIntegrationTest):
     """Tests for IncidentHistoryBuilder"""
-
-    maxDiff = None
 
     def setUp(self) -> None:
         self.delegate_patcher = patch(
@@ -642,7 +646,12 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 6   PRIMARY         🟥          🟥           🟩
 
 
+        parent_task                 🟥          🟥           🟩
+
+
         """
+
+        rd_test_dag, rd_parent_task, _ = build_test_dag_with_id(_RAW_DATA_DAG)
 
         date_2024_01_01 = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
         date_2024_01_02 = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -806,6 +815,40 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
         ti.xcom_pull.return_value = [s.serialize() for s in summaries]
         context_patcher.return_value = {"ti": ti}
 
+        with self._get_session() as session:
+            jan_one_primary = dummy_dag_run(
+                rd_test_dag, date_2024_01_01.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_one_parent_primary = dummy_ti(rd_parent_task, jan_one_primary, "failed")
+
+            jan_two_primary = dummy_dag_run(
+                rd_test_dag, date_2024_01_02.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_two_primary_parent = dummy_ti(
+                rd_parent_task, jan_two_primary, state="failed"
+            )
+
+            jan_three_primary = dummy_dag_run(
+                rd_test_dag, date_2024_01_03.strftime("%Y-%m-%d %H:%M")
+            )
+
+            jan_three_primary_parent = dummy_ti(
+                rd_parent_task, jan_three_primary, state="success"
+            )
+
+            session.add_all(
+                [
+                    jan_one_primary,
+                    jan_one_parent_primary,
+                    jan_two_primary,
+                    jan_two_primary_parent,
+                    jan_three_primary,
+                    jan_three_primary_parent,
+                ]
+            )
+
+            session.commit()
+
         # validate job run history
         job_run_history = RawDataFileTagTaskRunHistoryDelegate(
             dag_id=_RAW_DATA_DAG
@@ -821,7 +864,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             lookback=TEST_START_DATE_LOOKBACK
         )
 
-        assert len(history) == 2
+        assert len(history) == 3
 
         primary_key = (
             "Raw Data Import: raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC"
@@ -840,3 +883,11 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
         secondy_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_03]
         secondy_incident.job_id = "raw_data_dag.US_XX.tag_a"
         secondy_incident.error_message = secondary_2024_01_03.format_error_message()
+
+        task_key = "Task Run: raw_data_dag.parent_task, started: 2024-01-01 01:01 UTC"
+        assert task_key in history
+        task_incident = history[task_key]
+        task_incident.next_success_date = date_2024_01_03
+        task_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_02]
+        task_incident.job_id = "raw_data_dag.parent_task"
+        task_incident.error_message = None

@@ -17,7 +17,7 @@
 """Metadata about a job run"""
 import datetime
 import json
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any
 
 import attr
@@ -43,7 +43,7 @@ class JobRunState(Enum):
     FAILED = 3
 
 
-class JobRunType(Enum):
+class JobRunType(StrEnum):
     """Enum of known job run types; is used as a unique key in grouping job runs."""
 
     AIRFLOW_TASK_RUN = "Task Run"
