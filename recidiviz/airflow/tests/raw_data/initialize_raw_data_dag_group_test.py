@@ -129,7 +129,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                {
+                run_conf={
                     "ingest_instance": "PRIMARY",
                 },
             )
@@ -143,7 +143,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                {
+                run_conf={
                     "ingest_instance": "SECONDARY",
                 },
                 expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],

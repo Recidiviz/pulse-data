@@ -91,7 +91,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             dag_run_config=row["conf"],
             job_id=row["job_id"],
             state=JobRunState(int(row["state"])),
-            error_message=row.get("error_message"),
+            error_message=None,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
         )
         for row in monitoring_fixtures.read_csv_fixture(file)

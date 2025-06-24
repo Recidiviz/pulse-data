@@ -135,7 +135,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                {
+                run_conf={
                     "ingest_instance": "PRIMARY",
                 },
             )
@@ -148,7 +148,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                {
+                run_conf={
                     "ingest_instance": "PRIMARY",
                     "sandbox_prefix": "my_prefix",
                 },

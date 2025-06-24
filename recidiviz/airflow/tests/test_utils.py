@@ -124,6 +124,8 @@ class AirflowIntegrationTest(unittest.TestCase):
         self,
         dag: DAG,
         session: Session,
+        *,
+        use_full_ti_run: bool = False,
         run_conf: Optional[Dict[str, Any]] = None,
         expected_failure_task_id_regexes: Optional[List[str]] = None,
         expected_skipped_task_id_regexes: Optional[List[str]] = None,
@@ -133,9 +135,15 @@ class AirflowIntegrationTest(unittest.TestCase):
         """
         A Modified version of 'dag.test' that runs the full dag and allows
         looking up statuses in the postgres database.
-        If check_test_matches_all_task_ids is True, we expect every task_id in the DAG to match one
-        of the given regex patterns in expected_*_task_id_regexes.
-        Failure messages are stored in self.failure_messages.
+
+        If |use_full_ti_run| is False, uses the faster, lighter TaskInstance._run_raw_task
+        which forgoes some of the nice-to-have task metadata; if True, will use the public
+        TaskInstance.run. Set to True when you want to be able to more faithful reconstruction
+        of task-level metadata.
+
+        If |check_test_matches_all_task_ids| is True, we expect every task_id in the DAG
+        to match one of the given regex patterns in expected_*_task_id_regexes. Failure
+        messages are stored in self.failure_messages.
         """
         failure_messages: Dict[str, str] = {}
 
@@ -190,7 +198,9 @@ class AirflowIntegrationTest(unittest.TestCase):
             for ti in schedulable_tis:
                 add_logger_if_needed(ti)
                 ti.task = tasks[ti.task_id]
-                failure_message = self._run_task(ti, session)
+                failure_message = self._run_task(
+                    ti, session, use_full_ti_run=use_full_ti_run
+                )
                 if failure_message:
                     failure_messages[ti.task_id] = failure_message
 
@@ -358,7 +368,9 @@ class AirflowIntegrationTest(unittest.TestCase):
         logging.info("created dagrun %s", str(dr))
         return dr
 
-    def _run_task(self, ti: TaskInstance, session: Session) -> Optional[str]:
+    def _run_task(
+        self, ti: TaskInstance, session: Session, *, use_full_ti_run: bool
+    ) -> Optional[str]:
         """
         Run a single task instance, and push result to Xcom for downstream tasks. This is a modified version of
         airflow.models.dag._run_task. Returns a failure message if the task fails.
@@ -369,7 +381,10 @@ class AirflowIntegrationTest(unittest.TestCase):
         else:
             logging.info("Running task %s", ti.task_id)
         try:
-            ti._run_raw_task(session=session)  # pylint: disable=protected-access
+            if use_full_ti_run:
+                ti.run(verbose=False, test_mode=True, session=session)
+            else:
+                ti._run_raw_task(session=session)  # pylint: disable=protected-access
             session.flush()
             logging.info("%s ran successfully!", ti.task_id)
         except Exception as e:

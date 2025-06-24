@@ -93,7 +93,9 @@ class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
 
             return [
                 JobRun.from_airflow_task_instance(
-                    *task_instance_run, job_type=JobRunType.AIRFLOW_TASK_RUN
+                    **task_instance_run,
+                    job_type=JobRunType.AIRFLOW_TASK_RUN,
+                    error_message=None,
                 )
                 for task_instance_run in query.all()
             ]

@@ -48,6 +48,7 @@ class JobRunType(StrEnum):
 
     AIRFLOW_TASK_RUN = "Task Run"
     RAW_DATA_IMPORT = "Raw Data Import"
+    RUNTIME_MONITORING = "Runtime Monitoring"
 
 
 @attr.define(kw_only=True, frozen=True)
@@ -91,13 +92,14 @@ class JobRun:
     @classmethod
     def from_airflow_task_instance(
         cls,
+        *,
         dag_id: str,
         execution_date: datetime.datetime,
         conf: dict[str, Any],
         task_id: str,
         state: int,
-        *,
         job_type: JobRunType,
+        error_message: str | None
     ) -> "JobRun":
         # sort dag run config to make sure that two different parameter orderings
         # doesn't break incident de-duplication
@@ -115,5 +117,5 @@ class JobRun:
             job_id=task_id,
             state=JobRunState(state),
             job_type=job_type,
-            error_message=None,
+            error_message=error_message,
         )

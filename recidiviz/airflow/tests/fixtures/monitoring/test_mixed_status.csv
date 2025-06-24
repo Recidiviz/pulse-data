@@ -1,0 +1,3 @@
+dag_id,conf,job_id,execution_date,state,error_message
+test_dag,{},parent_task,2024-01-01 00:00:00+00:00,0,
+test_dag,{},child_task,2024-01-01 00:00:00+00:00,3,Task [child_task] had a runtime of [130.0] minutes which is more than the configured [120] minutes.

@@ -680,6 +680,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 dag,
                 session=session,
+                use_full_ti_run=True,
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
