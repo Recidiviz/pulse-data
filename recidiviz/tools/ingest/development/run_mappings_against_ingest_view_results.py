@@ -36,6 +36,7 @@ import traceback
 from datetime import datetime
 from typing import Dict, Union
 
+from google.cloud.bigquery import QueryJob
 from tqdm import tqdm
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -44,6 +45,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 )
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -191,12 +193,56 @@ def parse_results(
             logging.info("Parsed successfully.")
 
 
+def validate_ingest_view_output_schema(
+    state_code: states.StateCode, ingest_view_name: str, query_job: QueryJob
+) -> None:
+    """Validates that the input_columns in the ingest view mappings YAML matches the
+    schema that was actually produced by the query.
+    """
+    manifest_compiler = IngestViewManifestCompiler(
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(
+            region=get_direct_ingest_region(state_code.value)
+        )
+    )
+    manifest = manifest_compiler.compile_manifest(ingest_view_name=ingest_view_name)
+    mappings_input_column_to_type = manifest.input_column_to_type
+
+    query_column_to_type = {
+        field.name: field.field_type for field in query_job.result().schema
+    }
+    if query_column_to_type != mappings_input_column_to_type:
+        missing_from_yaml = set(query_column_to_type) - set(
+            mappings_input_column_to_type
+        )
+        missing_from_query = set(mappings_input_column_to_type) - set(
+            query_column_to_type
+        )
+        different = {
+            k
+            for k in set(mappings_input_column_to_type).intersection(
+                set(query_column_to_type)
+            )
+            if mappings_input_column_to_type[k] != query_column_to_type[k]
+        }
+        raise ValueError(
+            f"Found query result schema which does not match the schema defined in the "
+            f"input_columns in the YAML mapping file.\n"
+            f"  Columns in query results but missing from YAML input_columns: {sorted(missing_from_yaml)}\n"
+            f"  Columns in YAML input_columns but not query results: {sorted(missing_from_query)}\n"
+            f"  Columns with mismatched types in query results and YAML input_columns: {sorted(different)}\n"
+        )
+
+
 def main(
     state_code: states.StateCode, ingest_view_name: str, write_results: bool
 ) -> None:
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
 
     contents_handle = query_ingest_view(region, ingest_view_name)
+    validate_ingest_view_output_schema(
+        state_code, ingest_view_name, contents_handle.query_job
+    )
+
     parse_results(region, ingest_view_name, contents_handle, write_results)
 
 
