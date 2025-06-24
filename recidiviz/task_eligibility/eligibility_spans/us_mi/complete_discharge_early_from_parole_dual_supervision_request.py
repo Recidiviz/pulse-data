@@ -25,7 +25,7 @@ from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custodial_authority_is_supervision_authority_or_other_state,
     serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state,
-    supervision_not_past_full_term_completion_date,
+    supervision_not_past_full_term_completion_date_or_upcoming_30_days,
     supervision_or_supervision_out_of_state_level_is_not_high,
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
@@ -56,7 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=parole_dual_active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER,
         serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state.VIEW_BUILDER,
         parole_dual_supervision_past_early_discharge_date.VIEW_BUILDER,
         not_serving_ineligible_offenses_for_early_discharge_from_parole_dual_supervision.VIEW_BUILDER,

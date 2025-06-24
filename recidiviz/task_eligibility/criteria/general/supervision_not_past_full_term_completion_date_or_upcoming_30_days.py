@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,59 +14,51 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which
-someone is two days past their supervision full term completion date (projected max completion
-date)
+"""Defines a criteria span view that shows spans of time during which someone is not
+past their supervision full term completion date (projected max completion date) or within 30 days of it.
+However, this criteria will be FALSE if no projected max completion date is set.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.criteria.general.supervision_past_full_term_completion_date_or_upcoming_30_days import (
+    VIEW_BUILDER as past_full_term_completion_builder,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_TWO_DAYS_PAST_FULL_TERM_COMPLETION_DATE"
+_CRITERIA_NAME = "SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone is two days past their supervision full term completion date"""
+someone is not past their supervision full term completion date (projected max completion
+date) or within 30 days of it. However, this criteria will be FALSE if no projected max completion date is set. 
+This criteria is therefore not fully the logical opposite of the
+`SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS` view, since both criteria will be FALSE if there
+is no projected max completion date"""
 
 _QUERY_TEMPLATE = f"""
-    #TODO(#28370) revert once normalization fix is in
-    WITH critical_date_spans AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date AS start_datetime,
-            end_date AS end_datetime,
-            IF(EXTRACT(YEAR FROM projected_completion_date_max)=9999, NULL, projected_completion_date_max) AS critical_date
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized`
-    ),
-    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time = -2)}
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        critical_date_has_passed AS meets_criteria,
-        TO_JSON(STRUCT(critical_date AS full_term_completion_date)) AS reason,
-        critical_date AS full_term_completion_date,
-    FROM critical_date_has_passed_spans
-    """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT meets_criteria AS meets_criteria,
+    reason,
+    JSON_EXTRACT(reason, "$.eligible_date") AS eligible_date,
+FROM `{{project_id}}.{{criteria_dataset}}.{past_full_term_completion_builder.view_id}_materialized`
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
+    criteria_dataset=past_full_term_completion_builder.dataset_id,
     reasons_fields=[
         ReasonsField(
-            name="full_term_completion_date",
+            name="eligible_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date of client's projected supervision full term completion",
         ),

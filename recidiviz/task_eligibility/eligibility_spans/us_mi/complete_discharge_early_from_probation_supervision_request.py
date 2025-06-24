@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custodial_authority_is_supervision_authority_or_other_state,
-    supervision_not_past_full_term_completion_date,
+    supervision_not_past_full_term_completion_date_or_upcoming_30_days,
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
@@ -55,7 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_active_ppo.VIEW_BUILDER,
         no_new_ineligible_offenses_for_early_discharge_from_supervision.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
-        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER,
         supervision_is_not_ic_in.VIEW_BUILDER,
         custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
         supervision_status_is_not_delayed_sentence.VIEW_BUILDER,
