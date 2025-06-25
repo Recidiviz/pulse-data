@@ -22,3 +22,14 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sente
 
 class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelegate):
     """US_TN implementation of the StateSpecificSentenceNormalizationDelegate."""
+
+    # TODO(#28869) understand why TN gives us data like this (a sentence really changes,
+    # there's an acute data issue, or the originating process is flawed)
+    @property
+    def correct_early_completed_statuses(self) -> bool:
+        """
+        If True, if we see a StateSentenceStatusSnapshot that is not the last status for a sentence which
+        has status COMPLETED, correct that status to SERVING. Otherwise, we'll throw if we see a COMPLETED
+        status that is followed by other statuses.
+        """
+        return True
