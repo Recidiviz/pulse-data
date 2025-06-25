@@ -603,6 +603,7 @@ state_supervision_contact_reason_initial_contact = "INITIAL_CONTACT"
 
 state_supervision_contact_status_attempted = "ATTEMPTED"
 state_supervision_contact_status_completed = "COMPLETED"
+state_supervision_contact_status_scheduled = "SCHEDULED"
 
 state_supervision_contact_location_court = "COURT"
 state_supervision_contact_location_field = "FIELD"

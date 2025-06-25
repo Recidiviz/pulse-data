@@ -777,13 +777,14 @@
       state_supervision_contact.location,
       state_supervision_contact.location_raw_text,
       state_supervision_contact.resulted_in_arrest,
+      state_supervision_contact.scheduled_contact_date,
       state_supervision_contact.state_code,
       state_supervision_contact.status,
       state_supervision_contact.status_raw_text,
       state_supervision_contact.supervision_contact_id,
       state_supervision_contact.supervision_contact_metadata,
       state_supervision_contact.verified_employment]
-    sorts: [state_supervision_contact.contact_date desc]
+    sorts: [state_supervision_contact.contact_date desc, state_supervision_contact.scheduled_contact_date desc]
     listen: 
       Person Id: state_person.person_id
       State Code: state_person.state_code

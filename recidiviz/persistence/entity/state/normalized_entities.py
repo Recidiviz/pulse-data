@@ -2824,6 +2824,7 @@ class NormalizedStateProgramAssignment(
 class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEntity):
     """Models a person's contact with their supervising officer."""
 
+    # TODO(#44050) disallow null status in favor of using internal/external unknown
     # Status
     status: StateSupervisionContactStatus | None = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSupervisionContactStatus)
@@ -2836,6 +2837,13 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
     #   - When
     contact_date: date | None = attr.ib(
         default=None, validator=attr_validators.is_opt_date
+    )
+    scheduled_contact_date: date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
     )
 
     #   - What
@@ -2925,6 +2933,36 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
                 fields=["state_code", "external_id"],
             )
         ]
+
+    def __attrs_post_init__(self) -> None:
+        # we want the following invariants to be true about contacts with a SCHEDULED status
+        #   - it has a non-null scheduled_date
+        #   - it has a null contact_date
+        #   - both verified_employment and resulted_in_arrest are null
+
+        if self.status == StateSupervisionContactStatus.SCHEDULED:
+            if self.scheduled_contact_date is None:
+                raise ValueError(
+                    "Excepted to have scheduled_date hydrated on a contact with a SCHEDULED status"
+                )
+
+            if self.contact_date is not None:
+                raise ValueError(
+                    "Excepted to have a null contact_date on a contact with a SCHEDULED status"
+                )
+
+            if (
+                self.verified_employment is not None
+                or self.resulted_in_arrest is not None
+            ):
+                raise ValueError(
+                    "Expected for both verified_employment and resulted_in_arrest to be null as this contact has not yet happened"
+                )
+        else:
+            if self.contact_date is None:
+                raise ValueError(
+                    "Expected to have contact_date hydrated on a contact without a SCHEDULED status"
+                )
 
 
 @attr.s(eq=False, kw_only=True)

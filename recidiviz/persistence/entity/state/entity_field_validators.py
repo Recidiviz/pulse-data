@@ -59,7 +59,7 @@ class ParsingOptionalOnlyValidator:
 
 
 def parsing_opt_only(
-    validator: Union[Callable, List[Callable], Tuple[Callable]]
+    validator: Union[Callable, List[Callable], Tuple[Callable]],
 ) -> Callable:
     """Returns a validator callable that is equivalent to attr.validators.is_optional.
 

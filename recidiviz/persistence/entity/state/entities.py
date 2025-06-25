@@ -2244,6 +2244,13 @@ class StateSupervisionContact(
     contact_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    scheduled_contact_date: Optional[datetime.date] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
+    )
 
     #   - What
     contact_type: Optional[StateSupervisionContactType] = attr.ib(

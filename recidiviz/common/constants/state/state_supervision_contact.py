@@ -129,6 +129,7 @@ _STATE_SUPERVISION_CONTACT_REASON_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 class StateSupervisionContactStatus(StateEntityEnum):
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
+    SCHEDULED = state_enum_strings.state_supervision_contact_status_scheduled
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -150,6 +151,10 @@ _STATE_SUPERVISION_CONTACT_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "their phone, but the person did not answer).",
     StateSupervisionContactStatus.COMPLETED: "Used when the contact was successfully "
     "completed.",
+    StateSupervisionContactStatus.SCHEDULED: "Used to represent a contact that is "
+    "scheduled to occur in the future at the time the record was created. If the contact "
+    "did occur, there should be another contact entry that represents information about "
+    "the actual or attempted contact.",
 }
 
 
