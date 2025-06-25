@@ -35,7 +35,10 @@ from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
+from recidiviz.calculator.query.operations.dataset_config import (
+    OPERATIONS_BASE_DATASET,
+    OPERATIONS_BASE_REGIONAL_DATASET,
+)
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibility_spans import (
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -58,6 +61,7 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
     STATE_BASE_DATASET,
+    STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.observations.views.events.person.task_completed import (
@@ -77,6 +81,7 @@ from recidiviz.observations.views.spans.person.task_eligibility_session import (
 )
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
+    state_dataset_for_state_code,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
@@ -636,26 +641,65 @@ The following views have less restrictive projects_to_deploy than their parents:
             # be used for debugging purposes. Views should use the `normalized_state`
             # dataset instead.
             STATE_BASE_DATASET,
+            STATE_BASE_VIEWS_DATASET,
+            *{state_dataset_for_state_code(state_code) for state_code in StateCode},
             # The `operations` dataset shows a potentially stale view of data platform
             # operations data and should only be used for debugging / one-off analysis
             # purposes.
+            OPERATIONS_BASE_REGIONAL_DATASET,
             OPERATIONS_BASE_DATASET,
+        }
+
+        # views that are allowed to references specific views in the datasets in disallowed_view_parent_datasets
+        # dict of exempt_view -> views in |disallowed_view_parent_datasets| it is allowed to reference
+        disallowed_view_parent_dataset_exceptions: dict[str, set] = {
+            STATE_BASE_VIEWS_DATASET: {
+                state_dataset_for_state_code(state_code) for state_code in StateCode
+            },
+            STATE_BASE_DATASET: {STATE_BASE_VIEWS_DATASET},
         }
         views_with_issues = defaultdict(set)
         for view in self.dag_walker.views:
+            if view.dataset_id in disallowed_view_parent_dataset_exceptions:
+                continue
             for parent_address in view.parent_tables:
                 parent_dataset = parent_address.dataset_id
                 if parent_dataset not in disallowed_view_parent_datasets:
                     continue
                 views_with_issues[parent_dataset].add(view.address)
 
+        errors = []
         for dataset_id, views_referencing_dataset in views_with_issues.items():
             address_strs = [a.to_str() for a in views_referencing_dataset]
-            raise ValueError(
-                f"Views in our primary view graph cannot reference dataset "
-                f"[{dataset_id}], which is present for non-production use cases only ("
-                f"e.g. debugging). Found views referencing [{dataset_id}]: "
-                f"{address_strs}"
+            errors.append(
+                ValueError(
+                    f"Views in our primary view graph cannot reference dataset "
+                    f"[{dataset_id}], which is present for non-production use cases only ("
+                    f"e.g. debugging). Found views referencing [{dataset_id}]: "
+                    f"{address_strs}"
+                )
+            )
+
+        for (
+            exempt_dataset,
+            allowed_disallowed_references,
+        ) in disallowed_view_parent_dataset_exceptions.items():
+            if (
+                extra_datasets := allowed_disallowed_references
+                - disallowed_view_parent_datasets
+            ):
+                errors.append(
+                    ValueError(
+                        f"Found dataset [{exempt_dataset}] that is exempted from not referencing "
+                        f"the following datasets that we are no longer enforcing as disallowed: "
+                        f"{extra_datasets}"
+                    )
+                )
+
+        if errors:
+            raise ExceptionGroup(
+                "Found the following failures while enforcing disallowed parent datasets references:",
+                errors,
             )
 
     def test_no_conflicts_between_source_tables_and_views(self) -> None:
