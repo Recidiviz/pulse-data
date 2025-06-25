@@ -40,7 +40,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
-    POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
@@ -531,8 +530,6 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     EXTERNAL_ACCURACY_DATASET,
     # Views used in CSG export
     EXTERNALLY_SHARED_VIEWS_DATASET,
-    # These views are inputs to Spark population projection modeling
-    POPULATION_PROJECTION_DATASET,
     # Contains views referencing the output of Spark population projection runs. These
     # views are used to build Spark reports.
     SPARK_OUTPUT_DATASET_MOST_RECENT,

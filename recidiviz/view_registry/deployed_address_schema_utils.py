@@ -48,24 +48,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_com
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_relevant_contact_codes import (
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.population_projection.population_projection_outputs import (
-    POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.state.views.population_projection.simulation_run_dates import (
-    SIMULATION_RUN_DATES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_non_cumulative_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.life_years_estimate_most_recent import (
-    SPARK_LIFE_YEARS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
-    SPARK_POPULATION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
@@ -170,7 +152,6 @@ STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS = {
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER.address,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER.address,
-    SIMULATION_RUN_DATES_VIEW_BUILDER.address,
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER.address,
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
     get_completion_event_metadata_view_builder().address,
@@ -247,15 +228,6 @@ def state_agnostic_deployed_views_without_state_code_column(
     """
     missing_state_code_col_addresses = {
         *STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS,
-        # These views produce inputs to Spark population projection modeling, which
-        # expects a certain input schema
-        *{vb.address for vb in POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS},
-        # These views do simple processing on Spark modeling outputs, which do not
-        # produce results with state_code columns.
-        SPARK_COST_AVOIDANCE_VIEW_BUILDER.address,
-        SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER.address,
-        SPARK_POPULATION_VIEW_BUILDER.address,
-        SPARK_LIFE_YEARS_VIEW_BUILDER.address,
         # This view backs the Vertex AI for case note search and is not allowed to have a state_code column (only allowed to have id and jsonData columns)
         CASE_NOTES_DATA_STORE_VIEW_BUILDER.address,
         # These views look at the platform as a whole, not breaking data down by state.

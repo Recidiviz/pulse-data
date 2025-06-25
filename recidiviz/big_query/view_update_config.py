@@ -31,11 +31,6 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="sessions",
         table_id="dataflow_sessions",
     ): (60 * 10),
-    # TODO(#25452) Improve performance of supervision_remaining_sentences
-    BigQueryAddress(
-        dataset_id="population_projection_data",
-        table_id="supervision_remaining_sentences",
-    ): (80 * 10),
     # TODO(#40213) Improve performance of supervision_officer_eligibility_sessions
     BigQueryAddress(
         dataset_id="observations__officer_span",

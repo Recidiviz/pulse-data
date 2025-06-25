@@ -162,9 +162,6 @@ from recidiviz.validation.views.state.overlapping_supervision_periods import (
 from recidiviz.validation.views.state.parole_agent_badge_number_changes import (
     PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
-    POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
@@ -993,17 +990,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             partition_columns=["region_code", "termination_date"],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "external_total_population",
-                "internal_total_population",
-            ],
-            hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,

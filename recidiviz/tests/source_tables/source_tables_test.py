@@ -57,6 +57,19 @@ COMMON_VESTIGES = [
     "static_reference_tables.state_incarceration_facilities",
     # This view is used by Polaris to monitor/analyze incoming messages to our Twilio phone numbers
     "twilio_webhook_requests.jii_texting_incoming_messages",
+    # These tables are output datasets for our population projection model code
+    # (see recidiviz/calculator/modeling/population_projection) but are not referenced
+    # by any deployed views.
+    "population_projection_output_data.cost_avoidance_estimate_raw",
+    "population_projection_output_data.cost_avoidance_non_cumulative_estimate_raw",
+    "population_projection_output_data.life_years_estimate_raw",
+    "population_projection_output_data.microsim_projected_outflows_raw",
+    "population_projection_output_data.microsim_projection_raw",
+    "population_projection_output_data.population_estimate_raw",
+    "spark_public_output_data.cost_avoidance_estimate_raw",
+    "spark_public_output_data.cost_avoidance_non_cumulative_estimate_raw",
+    "spark_public_output_data.life_years_estimate_raw",
+    "spark_public_output_data.population_estimate_raw",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph
@@ -82,14 +95,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
     GCP_PROJECT_PRODUCTION: {
         BigQueryAddress.from_str(address_str=address_str)
         for address_str in [
-            # This table is only referenced in staging
-            "spark_public_output_data.cost_avoidance_estimate_raw",
-            # This table is only referenced in staging
-            "spark_public_output_data.cost_avoidance_non_cumulative_estimate_raw",
-            # This table is only referenced in staging
-            "spark_public_output_data.life_years_estimate_raw",
-            # This table is only referenced in staging
-            "spark_public_output_data.population_estimate_raw",
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
             # Daily archives of the case_insights_record export for sentencing

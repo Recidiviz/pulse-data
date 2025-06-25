@@ -82,16 +82,6 @@ products:
         environment: production
       - state_code: US_MO
         environment: production
-  # TODO(#16465): Turn this back on in production
-  # TODO(#17733): Turn this back on (and remove US_IX from PATHWAYS) once projection has been run for US_IX
-  # - name: Pathways With Population Projections
-  #   description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
-  #   exports:
-  #     - PATHWAYS_AND_PROJECTIONS
-  #     - PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL
-  #   states:
-  #       - state_code: US_IX
-  #         environment: staging
   - name: Workflows
     description: Workflows is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
     exports:
