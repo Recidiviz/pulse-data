@@ -16,6 +16,7 @@
 # =============================================================================
 """Provides the base setup for unit testing any raw data LookML generation"""
 import abc
+import difflib
 import filecmp
 import os
 import tempfile
@@ -24,6 +25,7 @@ from types import ModuleType
 from typing import Any, Callable, List
 from unittest.mock import patch
 
+from recidiviz.common.constants.encoding import UTF_8
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -107,5 +109,27 @@ class PersonDetailsLookMLGeneratorTest(unittest.TestCase):
                 _, mismatch, errors = filecmp.cmpfiles(
                     tmp_path, fixtures_path, lkml_filenames, shallow=False
                 )
-                self.assertFalse(mismatch)
-                self.assertFalse(errors)
+                for filename in mismatch:
+                    expected_file = os.path.join(fixtures_path, filename)
+                    actual_file = os.path.join(tmp_path, filename)
+
+                    with open(expected_file, "r", encoding=UTF_8) as f1, open(
+                        actual_file, "r", encoding=UTF_8
+                    ) as f2:
+                        expected_lines = f1.readlines()
+                        actual_lines = f2.readlines()
+
+                    diff = difflib.unified_diff(
+                        expected_lines,
+                        actual_lines,
+                        fromfile=f"expected/{filename}",
+                        tofile=f"actual/{filename}",
+                    )
+                    diff_output = "".join(diff)
+                    self.fail(
+                        "File mismatch - you may need to update the following file in the fixtures/ directory: "
+                        f"{filename}\n{diff_output}"
+                    )
+
+                if errors:
+                    self.fail(f"Error comparing files: {errors}")

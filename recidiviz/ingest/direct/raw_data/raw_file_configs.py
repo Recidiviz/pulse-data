@@ -272,6 +272,7 @@ class RawTableColumnInfo:
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
+    @property
     def is_documented(self) -> bool:
         """Returns True if this column has meaningful documentation, i.e. a non-empty
         description that is not clearly a TO-DO to fill in the documentation later.
@@ -873,7 +874,7 @@ class DirectIngestRawFileConfig:
     @property
     def current_documented_columns(self) -> List[RawTableColumnInfo]:
         """Filters to only current columns with descriptions."""
-        return [column for column in self.current_columns if column.is_documented()]
+        return [column for column in self.current_columns if column.is_documented]
 
     @property
     def current_datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:

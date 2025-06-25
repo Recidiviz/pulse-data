@@ -68,6 +68,7 @@ from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
 )
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 RAW_DATA_OPTION = "raw_data"
 RAW_DATA_UP_TO_DATE_VIEWS_OPTION = "raw_data_up_to_date_views"
@@ -215,8 +216,10 @@ def _get_dimensions_for_raw_file_view(
             LookMLFieldParameter.type(LookMLFieldType.STRING),
         ]
 
-        if column.description:
-            col_params.append(LookMLFieldParameter.description(column.description))
+        if column.is_documented:
+            col_params.append(
+                LookMLFieldParameter.description(assert_type(column.description, str))
+            )
             col_params.append(LookMLFieldParameter.sql("${TABLE}." + column.name))
         else:
             # Columns with no description aren't available in up to date views
@@ -292,7 +295,7 @@ def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
         field_name=col.name,
         parameters=[
             LookMLFieldParameter.description(
-                f"[DATE PARSED FROM {raw_field_name_for_column(col)}]{col.description or ''}"
+                f"[DATE PARSED FROM {raw_field_name_for_column(col)}]{f' {col.description}' if col.description else ''}"
             ),
             LookMLFieldParameter.type(LookMLFieldType.TIME),
             LookMLFieldParameter.timeframes(
