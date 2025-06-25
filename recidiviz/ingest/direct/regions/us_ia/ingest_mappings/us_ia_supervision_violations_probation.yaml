@@ -152,12 +152,12 @@ output:
                                         StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
                                           - "Dismissed"
                                           - "No Hearing Held"
-                                          - "No Recommendation"
                                           - "Not Filed with the Court"
                                         StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
                                           - "Contempt - Jail Suspended"
                                           - "Continuum Placement"
                                           - "WR/OWI Zero Tolerance"
+                                          - "No Recommendation"
                                 - $else: $literal_enum(StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN)
           supervision_violated_conditions:
             - $foreach:

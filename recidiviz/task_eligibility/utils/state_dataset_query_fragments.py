@@ -806,9 +806,9 @@ def get_supervision_violations_sans_unfounded() -> str:
         WHERE
           NOT EXISTS (
             SELECT 1 FROM UNNEST(dfl.latest_decisions) AS dec
-            /* for Iowa, use state-specific logic to define which decisions are considered unfounded. otherwise, 
-               take all where the decision is VIOLATION_UNFOUNDED */ 
-            WHERE CASE WHEN state_code = 'US_IA' THEN dec LIKE '%REINSTATE%' OR dec LIKE '%DISMISSED%'
+            /* for Iowa, pull all violations where the decision was to reinstate the client on supervision OR where the violation was unfounded
+               for all other states, pull violations where the decision is VIOLATION_UNFOUNDED */ 
+            WHERE CASE WHEN state_code = 'US_IA' THEN dec LIKE '%REINSTATE%' OR dec LIKE '%VIOLATION_UNFOUNDED%'
               ELSE dec LIKE '%VIOLATION_UNFOUNDED%' END
           )
         GROUP BY
