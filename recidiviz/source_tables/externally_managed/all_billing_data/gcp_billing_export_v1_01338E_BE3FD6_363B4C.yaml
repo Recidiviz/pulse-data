@@ -208,6 +208,47 @@ schema:
   - name: cost_at_list
     type: FLOAT
     mode: NULLABLE
+  - name: consumption_model
+    type: RECORD
+    mode: NULLABLE
+    fields:
+      - name: id
+        type: STRING
+        mode: NULLABLE
+      - name: description
+        type: STRING
+        mode: NULLABLE
+  - name: cost_at_effective_price_default
+    type: FLOAT
+    mode: NULLABLE
+  - name: cost_at_list_consumption_model
+    type: FLOAT
+    mode: NULLABLE
+  - name: price
+    type: RECORD
+    mode: NULLABLE
+    fields:
+      - name: effective_price
+        type: NUMERIC
+        mode: NULLABLE
+      - name: tier_start_amount
+        type: NUMERIC
+        mode: NULLABLE
+      - name: unit
+        type: STRING
+        mode: NULLABLE
+      - name: pricing_unit_quantity
+        type: NUMERIC
+        mode: NULLABLE
+      - name: list_price
+        type: NUMERIC
+        mode: NULLABLE
+      - name: effective_price_default
+        type: NUMERIC
+        mode: NULLABLE
+      - name: list_price_consumption_model
+        type: NUMERIC
+        mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
