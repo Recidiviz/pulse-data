@@ -54,7 +54,7 @@ def case_notes_helper() -> str:
     -- All active warrants/detainers 
     SELECT DISTINCT pei.external_id,
         'Active Warrants & Detainers' AS criteria,
-        ReleaseNotificationType AS note_title,
+        UPPER(ReleaseNotificationType) AS note_title,
         COALESCE(ContactAgency, JurisdictionType) AS note_body,
         CAST(CAST(IssuingDt AS DATETIME) AS DATE) AS event_date,
     FROM `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_ReleaseNotifications_latest` d
@@ -66,36 +66,26 @@ def case_notes_helper() -> str:
     
     UNION ALL 
     
-    -- All required programs that were referred since the start of supervision, as defined by prioritized supervision super sessions
+    -- All open interventions
     SELECT DISTINCT pei.external_id,
-        'Required Programs & Interventions' AS criteria,
+        'Open Interventions' AS criteria,
         CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%' 
             THEN SPLIT(program_id, '##')[OFFSET(1)]
             WHEN pa.external_id LIKE '%INTERVENTION%'
             THEN program_id
             ELSE CAST(NULL AS STRING)
             END AS note_title,
-        CONCAT('LAST KNOWN STATUS: ',
-            CASE WHEN participation_status_raw_text IS NOT NULL THEN participation_status_raw_text
-                WHEN participation_status = 'IN_PROGRESS' THEN 'IN PROGRESS'
-                WHEN participation_status = 'PENDING' THEN 'PENDING'
-                ELSE 'UNKNOWN'
-                END) AS note_body,
-        referral_date AS event_date,
+        CASE WHEN participation_status = 'IN_PROGRESS' 
+            THEN 'In progress. Started on'
+            ELSE 'Pending. Referred on'
+            END AS note_body,
+        COALESCE(start_date, referral_date) AS event_date,
     FROM `{project_id}.{normalized_state_dataset}.state_program_assignment` pa
-    LEFT JOIN `{project_id}.{sessions_dataset}.prioritized_supervision_super_sessions_materialized` sss
-        USING(person_id, state_code)
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON pa.person_id = pei.person_id
         AND pei.id_type = 'US_IA_OFFENDERCD'
     WHERE pa.state_code = 'US_IA' 
-        -- Only include programs that are required
-        AND (
-            JSON_EXTRACT_SCALAR(referral_metadata, '$.InterventionProgramRequired') = "RQ" OR
-            JSON_EXTRACT_SCALAR(referral_metadata, '$.InterventionRequired') = "RQ"
-        )
-        -- Only include programs that were referred during the current supervision super session
-        AND pa.referral_date >= sss.start_date AND sss.end_date_exclusive IS NULL
+        AND pa.participation_status IN ('IN_PROGRESS', 'PENDING') -- only include open interventions 
 
     UNION ALL 
     
