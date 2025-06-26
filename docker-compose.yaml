@@ -138,6 +138,7 @@ services:
       - insights_db_socket:/var/run/postgresql/
 
   resource_search_db:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile.resource-search
@@ -157,7 +158,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - resource_search_db
-    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database RESOURCE_SEARCH
+    command: pipenv run alembic -c recidiviz/persistence/database/migrations/resource_search_alembic.ini upgrade head
     environment:
       - IS_DEV=true
       - SQLALCHEMY_DB_HOST=resource_search_db

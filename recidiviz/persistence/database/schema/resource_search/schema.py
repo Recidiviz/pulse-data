@@ -27,7 +27,6 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKeyConstraint,
-    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -102,30 +101,15 @@ class Resource(ResourceSearchBase):
     google_places_rating_count = Column(Integer, nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("category", "uri"),
-        Index(
-            "unique_phone",
-            "phone",
-            unique=True,
-            postgresql_where=text("phone IS NOT NULL"),
-        ),
-        Index(
-            "unique_website",
-            "website",
-            unique=True,
-            postgresql_where=text("website IS NOT NULL"),
-        ),
-        Index(
-            "unique_name_address",
+        UniqueConstraint("category", "uri", name="unique_category_uri"),
+        UniqueConstraint("phone", name="unique_phone"),
+        UniqueConstraint(
             "normalized_name",
             "street",
             "city",
             "state",
             "zip",
-            unique=True,
-            postgresql_where=text(
-                "normalized_name IS NOT NULL AND street IS NOT NULL AND city IS NOT NULL AND state IS NOT NULL AND zip IS NOT NULL"
-            ),
+            name="unique_address_and_name",
         ),
     )
 
