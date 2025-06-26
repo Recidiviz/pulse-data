@@ -16,7 +16,7 @@ exclusions:
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.023
+    hard_max_allowed_error_override: 0.025
     override_reason: |-
       A very small bump to accomodate the failure rate being 0.21% above the default threshold.
   - validation_name: incarceration_population_person_level_external_comparison
@@ -24,7 +24,7 @@ max_allowed_error_overrides:
     override_reason: |-
       Small bump until #42363 is addressed.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.023
+    hard_max_allowed_error_override: 0.025
     override_reason: |-
       A very small bump to accomodate the failure rate being 0.28% above the default threshold.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district

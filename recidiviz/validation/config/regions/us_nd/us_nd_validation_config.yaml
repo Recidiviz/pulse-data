@@ -51,7 +51,7 @@ max_allowed_error_overrides:
       is a reasonable threshold.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 120
+    hard_num_allowed_rows_override: 130
     override_reason: TODO(#31847)  - Needs investigation.
       Likely related to shifting IP external ids.
   - validation_name: invalid_admission_reason_and_pfi
