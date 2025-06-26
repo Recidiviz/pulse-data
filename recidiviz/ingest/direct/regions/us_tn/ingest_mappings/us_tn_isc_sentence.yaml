@@ -23,6 +23,10 @@ input_columns:
   OffenseDate: DATE
   ConvictedOffense: STRING
 
+  # StateSentenceStatusSnapshot
+  ExpirationDate: DATE
+  assume_completed: STRING
+
 unused_columns: []
 variables:
   - sentence_external_id:
@@ -64,3 +68,14 @@ output:
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
                 offense_date: OffenseDate
                 description: ConvictedOffense
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: SentenceImposedDate
+                status: $literal_enum(StateSentenceStatus.SERVING)
+            - $conditional:
+                - $if:
+                    $equal: [assume_completed, $literal("Y")]
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      status_update_datetime: ExpirationDate
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
