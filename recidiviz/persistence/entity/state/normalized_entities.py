@@ -2820,10 +2820,8 @@ class NormalizedStateProgramAssignment(
 class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEntity):
     """Models a person's contact with their supervising officer."""
 
-    # TODO(#44050) disallow null status in favor of using internal/external unknown
-    # Status
-    status: StateSupervisionContactStatus | None = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionContactStatus)
+    status: StateSupervisionContactStatus = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionContactStatus)
     )
     status_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str

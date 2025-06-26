@@ -346,7 +346,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
+        supervision_contact_data = [
+            normalized_database_base_dict(
+                supervision_contact,
+                additional_attributes={"status": "PRESENT_WITHOUT_INFO"},
+            )
+        ]
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {

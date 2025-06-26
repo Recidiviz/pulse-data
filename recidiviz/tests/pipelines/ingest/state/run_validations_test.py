@@ -24,6 +24,9 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactStatus,
+)
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
@@ -554,6 +557,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -666,6 +670,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -805,6 +810,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -934,6 +940,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -1154,6 +1161,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2018, 4, 1),
                 supervision_contact_id=101,
                 person=person1,
+                status=StateSupervisionContactStatus.COMPLETED,
             )
         )
         person1.supervision_contacts.append(
@@ -1163,6 +1171,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2018, 4, 1),
                 supervision_contact_id=102,
                 person=person1,
+                status=StateSupervisionContactStatus.COMPLETED,
             )
         )
         staff1 = StateStaff(
@@ -1211,6 +1220,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2020, 4, 1),
                 supervision_contact_id=104,
                 person=person2,
+                status=StateSupervisionContactStatus.ATTEMPTED,
             ),
         )
 
@@ -1221,6 +1231,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2020, 4, 1),
                 supervision_contact_id=105,
                 person=person2,
+                status=StateSupervisionContactStatus.ATTEMPTED,
             ),
         )
         entities = [self._set_backedges(e) for e in [person1, staff1, person2]]
@@ -1939,6 +1950,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -2060,6 +2072,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -2208,6 +2221,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -2346,6 +2360,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
                         supervision_contact_id=101,
+                        status=StateSupervisionContactStatus.COMPLETED,
                     )
                 ],
             ),
@@ -2587,6 +2602,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2018, 4, 1),
                 supervision_contact_id=101,
                 person=person1,
+                status=StateSupervisionContactStatus.COMPLETED,
             )
         )
         person1.supervision_contacts.append(
@@ -2596,6 +2612,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2018, 4, 1),
                 supervision_contact_id=102,
                 person=person1,
+                status=StateSupervisionContactStatus.COMPLETED,
             )
         )
         staff1 = NormalizedStateStaff(
@@ -2650,6 +2667,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2020, 4, 1),
                 supervision_contact_id=104,
                 person=person2,
+                status=StateSupervisionContactStatus.COMPLETED,
             ),
         )
 
@@ -2660,6 +2678,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 contact_date=date(2020, 4, 1),
                 supervision_contact_id=105,
                 person=person2,
+                status=StateSupervisionContactStatus.COMPLETED,
             ),
         )
         entities_without_backedges: list[Entity] = [person1, staff1, person2]
