@@ -19,6 +19,12 @@
 from recidiviz.airflow.dags.monitoring.airflow_task_run_history_delegate import (
     AirflowTaskRunHistoryDelegate,
 )
+from recidiviz.airflow.dags.monitoring.airflow_task_runtime_delegate import (
+    AirflowAllTaskRuntimeConfig,
+    AirflowExplicitTaskRuntimeAlertingConfig,
+    AirflowTaskNameRegexRuntimeAlertingConfig,
+    AirflowTaskRuntimeDelegate,
+)
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_calculation_dag_id,
     get_metadata_maintenance_dag_id,
@@ -36,25 +42,83 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
 class JobRunHistoryDelegateFactory:
+    """Factory for building the relevant JobRunHistoryDelegates for a particular dag."""
+
     @classmethod
     def build(cls, *, dag_id: str) -> list[JobRunHistoryDelegate]:
+        """Returns a list of JobRunHistoryDelegates that will build JobRunHistory objects
+        for the provided |dag_id|.
+        """
         project_id = get_project_id()
         if dag_id == get_calculation_dag_id(project_id):
-            return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRuntimeDelegate(
+                    dag_id=dag_id,
+                    # the order that these are listed is the order they will be evaluated
+                    # in -- in general, it's best to have the most restrictive configs
+                    # first
+                    configs=[
+                        AirflowExplicitTaskRuntimeAlertingConfig(
+                            dag_id=dag_id,
+                            runtime_minutes=70,
+                            task_names=["update_managed_views_all"],
+                        ),
+                        AirflowTaskNameRegexRuntimeAlertingConfig(
+                            dag_id=dag_id,
+                            runtime_minutes=55,
+                            task_name_regex=".*ingest-pipeline%.run_pipeline",
+                        ),
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=120),
+                    ],
+                ),
+            ]
 
         if dag_id == get_sftp_dag_id(project_id):
-            return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRuntimeDelegate(
+                    dag_id=dag_id,
+                    configs=[
+                        # TODO(#44467): consider reducing once nebraska uses a vpn tunnel
+                        # set at 3 hours, as nebraska sometimes takes this long
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=180),
+                    ],
+                ),
+            ]
 
         if dag_id == get_raw_data_import_dag_id(project_id):
             return [
                 AirflowTaskRunHistoryDelegate(dag_id=dag_id),
                 RawDataFileTagTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRuntimeDelegate(
+                    dag_id=dag_id,
+                    configs=[
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=120),
+                    ],
+                ),
             ]
 
         if dag_id == get_monitoring_dag_id(project_id):
-            return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRuntimeDelegate(
+                    dag_id=dag_id,
+                    configs=[
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=30),
+                    ],
+                ),
+            ]
 
         if dag_id == get_metadata_maintenance_dag_id(project_id):
-            return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRuntimeDelegate(
+                    dag_id=dag_id,
+                    configs=[
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=30),
+                    ],
+                ),
+            ]
 
         raise ValueError(f"No configured builder delegate for: {dag_id}")
