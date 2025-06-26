@@ -2519,10 +2519,6 @@ class NormalizedStateSupervisionViolationResponse(
                     #  - Found dates as low as 1800-06-25.
                     #  - Found dates as high as 9994-12-31.
                     StateCode.US_MI,
-                    # TODO(#40460): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1200-10-10.
-                    #  - Found dates as high as 5399-11-01.
-                    StateCode.US_ND,
                     # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1004-02-02.
                     #  - Found dates as high as 9914-07-01.
