@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     educational_score_1_while_incarcerated,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
+    no_contraband_violations_in_2_years_while_incarcerated,
     no_current_or_prior_excluded_offenses_work_release,
     no_escape_in_10_years_or_current_sentence,
 )
@@ -49,6 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
         no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
         educational_score_1_while_incarcerated.VIEW_BUILDER,
+        no_contraband_violations_in_2_years_while_incarcerated.VIEW_BUILDER,
     ],
     # TODO(#43358): Update this to be the correct completion event (either general or
     # state-specific) for this opportunity.
