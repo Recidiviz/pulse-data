@@ -30,7 +30,6 @@ from recidiviz.task_eligibility.criteria.general import (
     incarceration_not_past_projected_parole_release_date,
     incarceration_not_within_6_months_of_full_term_completion_date,
     not_in_treatment_in_prison,
-    not_incarceration_within_6_months_of_upcoming_projected_parole_release_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
@@ -38,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
     crc_work_release_time_based_criteria,
     in_crc_facility_or_pwcc_unit_1,
+    incarceration_not_within_6_months_of_upcoming_eprd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_sex_offender_alert,
     not_denied_for_crc,
@@ -84,7 +84,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_sex_offender_alert.VIEW_BUILDER,
         not_serving_for_violent_offense.VIEW_BUILDER,
         incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
-        not_incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
+        incarceration_not_within_6_months_of_upcoming_eprd.VIEW_BUILDER,
         incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
         # Do not count someone eligible for resident worker status if they are

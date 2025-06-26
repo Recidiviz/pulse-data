@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
@@ -590,4 +593,170 @@ SELECT
     TO_JSON(STRUCT(TRUE AS supervision_level_is_so)) AS reason,
     TRUE AS supervision_level_is_so,
     FROM ({aggregate_adjacent_spans(table_name='so_spans')})
+"""
+
+
+def eprd_within_x_months_query(
+    num_months: int, meets_criteria_bool: bool = True
+) -> str:
+    """
+    Defines a criteria span view that shows periods of time during which someone is
+    within x months of their Earliest Possible Release Date (EPRD) and has not yet
+    passed that date.
+
+    The EPRD is calculated as specified below:
+        EPRD = TPD, if the TPD exists
+        EPRD = FTRD, if both TPD and PHD do not exist
+        EPRD = PED, if TPD does not exist, the PHD is prior to the PED, and the PED after today.
+        EPRD = PHD, if TPD does not exist and PHD is after PED.
+    """
+    meets_criteria_condition = "" if meets_criteria_bool else "NOT"
+    return f"""
+    WITH ped_tpd_ftrd_spans AS (
+        SELECT
+            span.state_code,
+            span.person_id,
+            span.start_date,
+            span.end_date_exclusive AS end_date,
+            span.group_parole_eligibility_date AS parole_eligibility_date,
+            span.group_projected_parole_release_date AS tentative_parole_date,
+            span.group_projected_full_term_release_date_max AS full_term_release_date
+        FROM `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized` span
+        WHERE span.state_code = 'US_IX'
+    ),
+    ped_tpd_phd_ftrd_spans AS (
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            -- Only retain PEDs in the future
+            LEAST({nonnull_end_date_clause('end_date')}, parole_eligibility_date) AS end_date,
+            parole_eligibility_date,
+            NULL AS tentative_parole_date,
+            NULL AS parole_hearing_date,
+            NULL AS full_term_release_date
+        FROM ped_tpd_ftrd_spans
+        WHERE parole_eligibility_date IS NOT NULL
+
+        UNION ALL
+
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS parole_eligibility_date,
+            tentative_parole_date,
+            NULL AS parole_hearing_date,
+            full_term_release_date
+        FROM ped_tpd_ftrd_spans ped
+
+        UNION ALL
+
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+            NULL AS parole_eligibility_date,
+            NULL AS tentative_parole_date,
+            pds.initial_parole_hearing_date AS parole_hearing_date,
+            NULL AS full_term_release_date
+        FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
+
+        UNION ALL
+
+        SELECT 
+            pds.state_code,
+            pds.person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+            NULL AS parole_eligibility_date,
+            NULL AS tentative_parole_date,
+            pds.next_parole_hearing_date AS parole_hearing_date,
+            NULL AS full_term_release_date
+        FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
+    ),
+    {create_sub_sessions_with_attributes(
+        table_name="ped_tpd_phd_ftrd_spans"
+    )},
+    grouped_sub_sessions AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            MIN(parole_eligibility_date) AS parole_eligibility_date, 
+            MIN(tentative_parole_date) AS tentative_parole_date, 
+            --take the MIN of all future parole hearing dates, or if none exist, the MAX of all past parole hearing dates
+            --this only works based on the subsessionizing done in us_ix_parole_dates_spans_preprocessing_materialized
+            COALESCE(
+                MIN(IF(parole_hearing_date > start_date, parole_hearing_date, NULL)),
+                MAX(parole_hearing_date)
+            ) AS parole_hearing_date,
+            MIN(full_term_release_date) AS full_term_release_date,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1,2,3,4
+    ),
+    eprd_sessions AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            parole_eligibility_date,
+            tentative_parole_date,
+            parole_hearing_date,
+            full_term_release_date,
+            CASE
+                WHEN tentative_parole_date IS NOT NULL THEN tentative_parole_date
+                WHEN parole_hearing_date IS NULL THEN full_term_release_date
+                WHEN parole_eligibility_date > parole_hearing_date THEN parole_eligibility_date
+                WHEN (parole_hearing_date >= parole_eligibility_date OR parole_eligibility_date IS NULL) THEN parole_hearing_date
+                ELSE NULL
+            END AS earliest_possible_release_date
+        FROM grouped_sub_sessions
+    ),
+    critical_date_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            --crop spans so that EPRDs are always upcoming
+            LEAST({nonnull_end_date_clause('end_date')}, earliest_possible_release_date) AS end_datetime,
+            earliest_possible_release_date AS critical_date,
+            parole_eligibility_date,
+            tentative_parole_date,
+            parole_hearing_date,
+            full_term_release_date,
+            earliest_possible_release_date
+        FROM eprd_sessions
+        --only include spans where EPRD is upcoming
+        WHERE earliest_possible_release_date > start_date
+    ),
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=num_months,
+                                        attributes=["parole_eligibility_date",
+                                                    "tentative_parole_date",
+                                                    "parole_hearing_date",
+                                                    "full_term_release_date",
+                                                    "earliest_possible_release_date"],
+                                        date_part="MONTH")}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        {meets_criteria_condition} critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(parole_eligibility_date,
+                    tentative_parole_date,
+                    parole_hearing_date,
+                    full_term_release_date,
+                    earliest_possible_release_date)) AS reason,
+        parole_eligibility_date,
+        tentative_parole_date,
+        parole_hearing_date,
+        full_term_release_date,
+        earliest_possible_release_date
+    FROM critical_date_has_passed_spans
+    WHERE start_date IS DISTINCT FROM end_date
 """

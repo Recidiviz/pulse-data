@@ -29,13 +29,13 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     incarceration_within_6_months_of_full_term_completion_date,
     incarceration_within_6_months_of_parole_eligibility_date,
-    incarceration_within_6_months_of_upcoming_projected_parole_release_date,
     not_serving_for_sexual_offense,
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
     in_crc_facility_or_pwcc_unit_1_for_60_days,
+    incarceration_within_6_months_of_upcoming_eprd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_class_a_or_b_dor_for_6_months,
     no_sex_offender_alert,
@@ -46,7 +46,7 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
     TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -65,15 +65,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
         in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
-        StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD",
+            criteria_name="US_IX_INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_EPRD",
             sub_criteria_list=[
                 incarceration_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
                 incarceration_within_6_months_of_parole_eligibility_date.VIEW_BUILDER,
-                incarceration_within_6_months_of_upcoming_projected_parole_release_date.VIEW_BUILDER,
+                incarceration_within_6_months_of_upcoming_eprd.VIEW_BUILDER,
             ],
-            allowed_duplicate_reasons_keys=[],
+            allowed_duplicate_reasons_keys=["parole_eligibility_date"],
         ),
         custody_level_is_minimum.VIEW_BUILDER,
         no_class_a_or_b_dor_for_6_months.VIEW_BUILDER,
