@@ -105,6 +105,7 @@ output:
                   - "INQUIRY"
                   - "FAILED TO REPORT"
                   - "ATTEMPTED,COMPLETED"
+              $map_null_to: $literal_enum(StateSupervisionContactStatus.PRESENT_WITHOUT_INFO)
           resulted_in_arrest:
             $equal:
               - resulted_in_arrest

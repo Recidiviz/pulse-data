@@ -715,6 +715,7 @@ state_supervision_contact_status = Enum(
     state_enum_strings.state_supervision_contact_status_attempted,
     state_enum_strings.state_supervision_contact_status_completed,
     state_enum_strings.state_supervision_contact_status_scheduled,
+    state_enum_strings.present_without_info,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_supervision_contact_status",

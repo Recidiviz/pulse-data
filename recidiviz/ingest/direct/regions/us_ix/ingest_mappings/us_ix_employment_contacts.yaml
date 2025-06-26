@@ -27,3 +27,4 @@ output:
           contacting_staff_external_id_type: $literal("US_IX_EMPLOYEE")
           verified_employment: $literal_bool(True)
           contact_date: UpdateDate
+          status: $literal_enum(StateSupervisionContactStatus.PRESENT_WITHOUT_INFO)

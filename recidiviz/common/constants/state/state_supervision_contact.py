@@ -130,6 +130,7 @@ class StateSupervisionContactStatus(StateEntityEnum):
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
     SCHEDULED = state_enum_strings.state_supervision_contact_status_scheduled
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
