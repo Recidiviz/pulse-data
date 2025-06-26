@@ -34,7 +34,7 @@ components:
         auto_create_network: true
         activate_apis:
           - run.googleapis.com # Cloud Run
-          - cloudscheduler.googleapis.com # Cloud Scheduler
+          - cloudscheduler.googleapis.com
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
 
@@ -61,9 +61,9 @@ components:
         region: us-central1
         ingest_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication recidiviz-ingest-us-ne bucket_name
         service_account_email: !terraform.output direct-ingest-gcs-service-account recidiviz-ingest-us-ne service_account_email
-        # NE resources will deploy as a part of the prod deploy
-        # so use docker image from the recidiviz-123 project
-        registry_project_id: recidiviz-123
+        # Use the staging image so we can track the `latest` tag
+        # so we don't have to deploy this stack every time we update the image
+        registry_project_id: recidiviz-staging
         vpc_network: recidiviz-ingest-us-ne-vpc
         vpc_subnetwork: recidiviz-ingest-us-ne-us-central-1
         run_schedule: "0 7 * * *" # Daily at 2am central time

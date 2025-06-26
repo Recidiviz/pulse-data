@@ -12,7 +12,7 @@ resource "google_cloud_run_v2_job" "us_ne_export_sql_server_raw_data_to_gcs" {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:latest"
         command = ["pipenv"]
-        args    = ["run", "python", "-m", "recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs", "--destination-bucket", var.ingest_bucket_name, "--dry-run", "True"]
+        args    = ["run", "python", "-m", "recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs", "--destination-bucket", var.ingest_bucket_name, "--dry-run", "False"]
         resources {
           limits = {
             # Need to use 4 CPUs if we want to have > 8Gi memory.
