@@ -74,6 +74,7 @@ from recidiviz.common.constants.state.state_staff_caseload_type import (
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
@@ -287,7 +288,9 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
     state_entities.StateSupervisionCaseTypeEntry: [],
     state_entities.StateSupervisionContact: [
         state_entities.StateSupervisionContact(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateSupervisionContactStatus.PRESENT_WITHOUT_INFO,
         )
     ],
     state_entities.StateSupervisionPeriod: [],
@@ -630,6 +633,7 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
+            status=StateSupervisionContactStatus.COMPLETED,
         ),
     ],
     state_entities.StateSupervisionPeriod: [

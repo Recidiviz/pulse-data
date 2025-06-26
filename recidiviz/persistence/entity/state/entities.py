@@ -2228,8 +2228,8 @@ class StateSupervisionContact(
     """
 
     # Status
-    status: Optional[StateSupervisionContactStatus] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionContactStatus)
+    status: StateSupervisionContactStatus = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionContactStatus)
     )
     status_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

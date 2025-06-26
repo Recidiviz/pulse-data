@@ -33,6 +33,9 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactStatus,
+)
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
@@ -245,6 +248,7 @@ class TestStateEntities(TestCase):
             external_id="1111",
             contacting_staff_external_id="ABCDE",
             contacting_staff_external_id_type="EMP-2",
+            status=StateSupervisionContactStatus.COMPLETED,
         )
 
     def test_post_attrs_referring_staff_id_simple(self) -> None:

@@ -1807,7 +1807,7 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
     location = Column(state_supervision_contact_location)
     location_raw_text = Column(String(255))
     resulted_in_arrest = Column(Boolean)
-    status = Column(state_supervision_contact_status)
+    status = Column(state_supervision_contact_status, nullable=False)
     status_raw_text = Column(String(255))
     verified_employment = Column(Boolean)
 
