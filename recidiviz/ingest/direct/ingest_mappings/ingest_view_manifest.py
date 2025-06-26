@@ -906,7 +906,11 @@ class EnumMappingManifest(ManifestNode[EnumT]):
     # these values will never be passed to the custom parser function.
     IGNORES_KEY = "$ignore"
 
+    # Raw manifest key whose value is used when a NULL value is seen
+    MAP_NULL_TO_KEY = "$map_null_to"
+
     enum_parser: EnumParser = attr.ib()
+    map_null_to_enum_manifest: Optional[EnumLiteralFieldManifest] = attr.ib()
     raw_text_field_manifest: ManifestNode[str] = attr.ib()
 
     @property
@@ -919,12 +923,17 @@ class EnumMappingManifest(ManifestNode[EnumT]):
     def build_from_row(
         self, row: Dict[str, str], context: IngestViewContentsContext
     ) -> Optional[EnumT]:
-        return self.enum_parser.parse(
-            raw_text=self.raw_text_field_manifest.build_from_row(row, context)
-        )
+        raw_text = self.raw_text_field_manifest.build_from_row(row, context)
+        if not raw_text and self.map_null_to_enum_manifest is not None:
+            return self.map_null_to_enum_manifest.build_from_row(row, context)
+
+        return self.enum_parser.parse(raw_text=raw_text)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
-        return [self.raw_text_field_manifest]
+        child_nodes = [self.raw_text_field_manifest]
+        if self.map_null_to_enum_manifest:
+            child_nodes.append(self.map_null_to_enum_manifest)
+        return child_nodes
 
     @classmethod
     def from_raw_manifest(
@@ -957,6 +966,20 @@ class EnumMappingManifest(ManifestNode[EnumT]):
             ),
         )
 
+        map_null_to_enum_manifest: EnumLiteralFieldManifest | None = None
+        if null_value_manifest_str := field_enum_mappings_manifest.pop_optional(
+            EnumMappingManifest.MAP_NULL_TO_KEY, str
+        ):
+            map_null_to_enum_manifest = EnumLiteralFieldManifest.from_raw_manifest(
+                raw_manifest=null_value_manifest_str, delegate=delegate
+            )
+
+            if map_null_to_enum_manifest.result_type != enum_parser.enum_cls:
+                raise ValueError(
+                    f"Enum class for map_null_to [{map_null_to_enum_manifest.result_type.__name__}] "
+                    f"must match the enum specified in the mappings class [{enum_parser.enum_cls.__name__}]"
+                )
+
         if len(field_enum_mappings_manifest):
             raise ValueError(
                 f"Found unused keys in field enum mappings manifest: "
@@ -965,6 +988,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
         return EnumMappingManifest(
             enum_parser=enum_parser,
             raw_text_field_manifest=raw_text_field_manifest,
+            map_null_to_enum_manifest=map_null_to_enum_manifest,
         )
 
     @classmethod
@@ -1437,13 +1461,15 @@ class PhysicalAddressManifest(ManifestNode[str]):
                 delegate,
                 variable_manifests=variable_manifests,
             ),
-            address_2_manifest=build_str_manifest_from_raw(
-                raw_address_2_manifest,
-                delegate,
-                variable_manifests=variable_manifests,
-            )
-            if raw_address_2_manifest
-            else StringLiteralFieldManifest(literal_value=""),
+            address_2_manifest=(
+                build_str_manifest_from_raw(
+                    raw_address_2_manifest,
+                    delegate,
+                    variable_manifests=variable_manifests,
+                )
+                if raw_address_2_manifest
+                else StringLiteralFieldManifest(literal_value="")
+            ),
             city_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest),
                 delegate,
@@ -2088,7 +2114,7 @@ def build_str_manifest_from_raw(
 
 
 def build_iterable_manifest_from_raw(
-    raw_iterable_manifest: Union[str, YAMLDict]
+    raw_iterable_manifest: Union[str, YAMLDict],
 ) -> ManifestNode[List[str]]:
     """Builds a ManifestNode[List[str] from the provided raw manifest."""
 

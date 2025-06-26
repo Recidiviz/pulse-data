@@ -15,9 +15,4 @@ output:
         $mappings:
           FakeGender.MALE: Male
           FakeGender.FEMALE: Female
-          FakeGender.TRANS_FEMALE: Trans-Female
-          FakeGender.TRANS_MALE: Trans-Male
-        $ignore:
-          - x
-          - "!"
-        $map_null_to: $literal_enum(FakeGender.UNKNOWN)
+        $map_null_to: $literal_enum(FakeRace.WHITE)

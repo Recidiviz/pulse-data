@@ -18,6 +18,7 @@
 import csv
 import datetime
 import os
+import re
 import unittest
 from enum import Enum
 from typing import Dict, List, Optional, Type
@@ -808,6 +809,16 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                     )
                 ],
             ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.UNKNOWN,
+                gender_raw_text=None,
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="5", id_type="ID_TYPE"
+                    )
+                ],
+            ),
         ]
 
         # Act
@@ -827,6 +838,15 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_map_null_to_mismatch(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Enum class for map_null_to [FakeRace] must match the enum specified in the mappings class [FakeGender]"
+            ),
+        ):
+            self._run_parse_for_ingest_view("enums_bad_map_null_to_mixed")
 
     def test_enum_literal_in_conditional(self) -> None:
         expected_output = [

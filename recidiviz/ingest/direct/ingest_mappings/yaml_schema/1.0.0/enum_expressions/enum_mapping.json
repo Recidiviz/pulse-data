@@ -44,6 +44,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "$map_null_to": {
+          "description": "A enum literal to map to if the raw text value is NULL or an empty string.",
+          "$ref": "enum_literal.json"
         }
       },
       "oneOf": [
@@ -64,18 +68,14 @@
           "FakeRace.BLACK": "B",
           "FakeRace.WHITE": "W"
         },
-        "$ignore": [
-          "X"
-        ]
+        "$ignore": ["X"]
       }
     },
     {
       "$enum_mapping": {
         "$raw_text": "RACE",
         "$custom_parser": "us_xx_enum_parsers.flip_black_and_white",
-        "$ignore": [
-          "X"
-        ]
+        "$ignore": ["X"]
       }
     },
     {
@@ -102,16 +102,14 @@
               "FakeRace.BLACK": "B",
               "FakeRace.WHITE": "W"
             },
-            "$ignore": [
-              "X"
-            ]
+            "$ignore": ["X"]
           }
         }
       }
     },
     {
       "StateIncarcerationPeriod": {
-        "release_reason":     {
+        "release_reason": {
           "$conditional": [
             {
               "$if": {

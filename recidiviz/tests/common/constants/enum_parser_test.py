@@ -98,6 +98,9 @@ class TestEnumParser(unittest.TestCase):
         self.assertEqual(StateRace.BLACK, self.race_parser.parse("BLACK"))
         self.assertEqual(StateRace.WHITE, self.race_parser.parse("WHITE"))
 
+        self.assertEqual(self.race_parser.parse(None), None)
+        self.assertEqual(self.race_parser.parse(""), None)
+
     def test_parse_missing_mapping(self) -> None:
         with self.assertRaises(EnumParsingError):
             _ = self.gender_parser.parse("M")

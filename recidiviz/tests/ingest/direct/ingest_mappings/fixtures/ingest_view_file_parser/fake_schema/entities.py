@@ -34,6 +34,7 @@ class FakeGender(Enum):
     MALE = "MALE_ENUM_VALUE"
     TRANS_FEMALE = "TRANS_FEMALE_ENUM_VALUE"
     TRANS_MALE = "TRANS_MALE_ENUM_VALUE"
+    UNKNOWN = "UNKNOWN"
 
 
 class FakeRace(Enum):
