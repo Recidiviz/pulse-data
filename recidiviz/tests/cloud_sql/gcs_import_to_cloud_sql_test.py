@@ -342,7 +342,9 @@ class TestGCSImportToCloudSQL(TestCase):
     def test_retry(self) -> None:
         # Client first raises a Conflict error, then returns a successful operation ID.
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
-            HttpError(Response({"status": HTTPStatus.CONFLICT}), b"This will retry"),
+            HttpError(
+                Response({"status": str(HTTPStatus.CONFLICT.value)}), b"This will retry"
+            ),
             "op_id",
         ]
 
@@ -361,7 +363,9 @@ class TestGCSImportToCloudSQL(TestCase):
     def test_retry_with_fatal_error(self) -> None:
         # Client first raises a Conflict error, then on retry will raise a InvalidJsonError
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
-            HttpError(Response({"status": HTTPStatus.CONFLICT}), b"This will retry"),
+            HttpError(
+                Response({"status": str(HTTPStatus.CONFLICT.value)}), b"This will retry"
+            ),
             InvalidJsonError((), b"This will fail"),
         ]
 

@@ -198,9 +198,11 @@ dill = "==0.3.1.1"
 # If the cloudpickle version changes be sure to update the pinned version in dataflow_setup.py
 cloudpickle = "==2.2.1"
 matplotlib = "*"
-scipy = "*"
+#TODO(statsmodels/statsmodels#9584): Unpin once scipy issue has been resolved (or a new version released)
+scipy = "<1.15.3"
 seaborn = "*"
-statsmodels = "*"
+#TODO(statsmodels/statsmodels#9584): Unpin once scipy issue has been resolved (or a new version released)
+statsmodels = "0.14.4"
 openpyxl = "*"
 analytics-python = "*"
 redis = "*"
@@ -241,6 +243,15 @@ tenacity="*"
 pgvector = "*"
 sshtunnel = "*"
 pymssql = "*"
+scrapy = "*"
+scrapy-playwright = "*"
+usaddress = "*"
+llama_index = "*"
+pydantic = "*"
+langsmith = "*"
+async_googlemaps = "*"
+googlemaps = "*"
+pydantic_settings = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
