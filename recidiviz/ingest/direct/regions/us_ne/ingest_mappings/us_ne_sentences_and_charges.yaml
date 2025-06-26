@@ -121,28 +121,28 @@ output:
                     $raw_text: fkFelonyMisdemeanorCode
                     $mappings:
                       StateChargeV2ClassificationType.FELONY:
-                        - 3F
-                        - 2AF
-                        - 1CF
-                        - 1F
-                        - 3AF
-                        - 1AF
-                        - 2F
-                        - 1BF
-                        - 1DF
-                        - 4F
-                        - F
+                        - 3F # CLASS III FELONY
+                        - 2AF # CLASS IIA FELONY - inferring
+                        - 1CF # CLASS IC FELONY
+                        - 1F # CLASS I FELONY
+                        - 3AF # CLASS IIIA FELONY
+                        - 1AF # CLASS IA FELONY
+                        - 2F # CLASS II FELONY
+                        - 1BF # CLASS IB FELONY
+                        - 1DF # CLASS ID FELONY
+                        - 4F # CLASS IV FELONY
+                        - F # FELONY
                       StateChargeV2ClassificationType.MISDEMEANOR:
-                        - M
-                        - 1M
-                        - 5M
-                        - 2M
-                        - 3M
-                        - 3AM
-                        - 4M
-                        - WM
+                        - M # MISDEMEANOR
+                        - 1M # CLASS I MISDEMEANOR
+                        - 5M # CLASS V MISDEMEANOR
+                        - 2M # CLASS II MISDEMEANOR
+                        - 3M # CLASS III MISDEMEANOR
+                        - 3AM # CLASS IIIA MISDEMEANOR
+                        - 4M # CLASS IV MISDEMEANOR
+                        - WM # Class W MISDEMEANOR
                       StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
-                        - UNK
+                        - UNK # UNKNOWN
                       StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
                         - SK # SAFEKEEPER
                 classification_subtype: degree
