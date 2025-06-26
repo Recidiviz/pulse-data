@@ -231,11 +231,15 @@ def on_disk_postgres_db_url(
 @environment.local_only
 def async_on_disk_postgres_db_url(
     database: str = get_on_disk_postgres_database_name(),
+    username: str = TEST_POSTGRES_USER_NAME,
+    password: Optional[str] = None,
+    port: int = get_on_disk_postgres_port(),
 ) -> URL:
     return URL.create(
         drivername="postgresql+asyncpg",
-        username=TEST_POSTGRES_USER_NAME,
+        username=username,
         host="localhost",
-        port=get_on_disk_postgres_port(),
+        port=port,
         database=database,
+        password=password,
     )
