@@ -3231,6 +3231,12 @@ class StateSentence(
         factory=list, validator=attr_validators.is_list
     )
 
+    def __attrs_post_init__(self) -> None:
+        if self.external_id in (self.parent_sentence_external_id_array or ""):
+            raise ValueError(
+                f"{self.limited_pii_repr()} cannot list itself in its own parent_sentence_external_id_array"
+            )
+
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
         return [

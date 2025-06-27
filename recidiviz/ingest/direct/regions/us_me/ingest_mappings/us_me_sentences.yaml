@@ -29,7 +29,8 @@ input_columns:
   revocation_time: STRING
   Detention_Days_Num_cleaned: INTEGER
   parent_Cis_401_Court_Order_Id_cleaned: STRING
-unused_columns: []
+unused_columns:
+  - parent_Cis_401_Court_Order_Id_cleaned
 variables:
   - is_sex_offense:
       $in:
@@ -74,7 +75,8 @@ output:
               $custom_parser: us_me_custom_enum_parsers.parse_sentence_type
           county_code: Jurisdiction_County_Cd
           conditions: conditions
-          parent_sentence_external_id_array: parent_Cis_401_Court_Order_Id_cleaned
+          # TODO(#44528) Correct and hydrate
+          # parent_sentence_external_id_array: parent_Cis_401_Court_Order_Id_cleaned
           charges:
             - StateChargeV2:
                 external_id:

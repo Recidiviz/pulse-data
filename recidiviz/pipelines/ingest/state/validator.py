@@ -19,6 +19,8 @@
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Type
 
+import networkx
+
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_person_address_period import (
@@ -251,6 +253,41 @@ def _check_sentence_lengths(
         )
 
 
+def _consecutive_sentences_check(
+    state_person: state_entities.StatePerson,
+    sentences_by_external_id: dict[str, state_entities.StateSentence],
+) -> Iterable[Error]:
+    """
+    Checks that all consecutive sentences exist and that there are no cycles
+    in the graph of consecutive sentences for a person.
+    """
+    G: networkx.DiGraph = networkx.DiGraph()
+    for external_id, sentence in sentences_by_external_id.items():
+        G.add_node(external_id)
+        if not sentence.parent_sentence_external_id_array:
+            continue
+        for parent_id in sentence.parent_sentence_external_id_array.split(","):
+            if parent_id not in sentences_by_external_id:
+                yield Error(
+                    f"Found sentence {sentence.limited_pii_repr()} with parent "
+                    f"sentence external ID {parent_id}, but no sentence with that "
+                    "external ID exists."
+                )
+                continue
+            G.add_edge(sentence.external_id, parent_id)
+    try:
+        if cycle := networkx.find_cycle(G, orientation="original"):
+            cycle_detail_str = "; ".join(
+                f"{child} -> as child of -> {parent}" for child, parent, _ in cycle
+            )
+            yield Error(
+                f"{state_person.limited_pii_repr()} has an invalid set of consecutive sentences that form a cycle: {cycle_detail_str}. "
+                "Did you intend to hydrate these a concurrent sentences?"
+            )
+    except networkx.NetworkXNoCycle:
+        pass
+
+
 def _sentencing_entities_checks(
     state_person: state_entities.StatePerson,
 ) -> Iterable[Error]:
@@ -262,7 +299,9 @@ def _sentencing_entities_checks(
 
     yield from _sentence_group_checks(state_person)
 
-    external_ids = set(s.external_id for s in state_person.sentences)
+    sentences_by_external_id = {s.external_id: s for s in state_person.sentences}
+
+    yield from _consecutive_sentences_check(state_person, sentences_by_external_id)
 
     for sentence in state_person.sentences:
         if (
@@ -280,16 +319,6 @@ def _sentencing_entities_checks(
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no CONVICTED charges."
 
-        # If this sentence has consecutive sentences before it, check
-        # that they exist for this person.
-        if sentence.parent_sentence_external_id_array is not None:
-            for p_id in sentence.parent_sentence_external_id_array.split(","):
-                if p_id not in external_ids:
-                    yield (
-                        f"{sentence.limited_pii_repr()} denotes parent sentence {p_id}, "
-                        f"but {state_person.limited_pii_repr()} does not have a sentence "
-                        "with that external ID."
-                    )
         if sentence.sentence_lengths:
             yield from _check_sentence_lengths(state_person, sentence)
         if sentence.sentence_status_snapshots:

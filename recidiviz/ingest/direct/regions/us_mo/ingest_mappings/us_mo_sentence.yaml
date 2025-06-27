@@ -22,7 +22,8 @@ input_columns:
   BU_SF: STRING
   initial_status_desc: STRING
   initial_status_code: STRING
-unused_columns: []
+unused_columns:
+  - parent_sentence_external_id_array
 variables:
   - sentence_group_external_id:
       $concat:
@@ -66,7 +67,8 @@ output:
                 BS_CNS: BS_CNS
                 initial_status_code: initial_status_code
                 initial_status_desc: initial_status_desc
-          parent_sentence_external_id_array: parent_sentence_external_id_array
+          # TODO(#44527) Correct and hydrate
+          # parent_sentence_external_id_array: parent_sentence_external_id_array
           county_code:
             $custom:
               $function: us_mo_custom_parsers.normalize_county_code

@@ -644,16 +644,16 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
 
-    def test_parent_sentences_validation(
+    def test_consecutive_sentences_check(
         self,
     ) -> None:
         """
         If a sentence has parent_sentence_external_id_array,
         then those sentences should exist for the StatePerson.
         """
-        sentence = state_entities.StateSentence(
+        child_sentence = state_entities.StateSentence(
             state_code=self.state_code,
-            external_id="SENT-EXTERNAL-1",
+            external_id="CHILD",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
@@ -670,44 +670,120 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
 
         # No parents, valid
-        self.state_person.sentences = [sentence]
+        self.state_person.sentences = [child_sentence]
         errors = validate_root_entity(self.state_person)
         self.assertEqual(errors, [])
 
         # One parent, invalid
-        sentence.parent_sentence_external_id_array = "NOT-REAL"
-        self.state_person.sentences = [sentence]
+        child_sentence.parent_sentence_external_id_array = "NOT-REAL"
+        self.state_person.sentences = [child_sentence]
         errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
-                "parent sentence NOT-REAL, but StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
-                "does not have a sentence with that external ID.",
+                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-REAL, but no sentence with that external ID exists."
             ],
         )
 
         # Multiple parents, invalid
-        sentence.parent_sentence_external_id_array = "NOT-REAL,NOT-HERE"
-        self.state_person.sentences = [sentence]
+        child_sentence.parent_sentence_external_id_array = "NOT-REAL,NOT-HERE"
+        self.state_person.sentences = [child_sentence]
         errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
-                # ---- First error message ----
-                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
-                "parent sentence NOT-REAL, but StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
-                "does not have a sentence with that external ID.",
-                # ---- Second error message ----
-                "StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) denotes "
-                "parent sentence NOT-HERE, but StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) "
-                "does not have a sentence with that external ID.",
+                # 1st error
+                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-REAL, "
+                "but no sentence with that external ID exists.",
+                # 2nd error
+                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-HERE, "
+                "but no sentence with that external ID exists.",
+            ],
+        )
+
+        parent_sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="PARENT",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            parent_sentence_external_id_array=None,
+        )
+        child_sentence.parent_sentence_external_id_array = parent_sentence.external_id
+        parent_sentence.parent_sentence_external_id_array = child_sentence.external_id
+        self.state_person.sentences = [child_sentence, parent_sentence]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(
+            errors,
+            [
+                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: CHILD -> as child of -> PARENT; PARENT -> as child of -> CHILD. Did you intend to hydrate these a concurrent sentences?"
+            ],
+        )
+
+        grand_parent_sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="GRAND_PARENT",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+            parent_sentence_external_id_array=None,
+        )
+
+        # A sentence can still have two children
+        child_sentence.parent_sentence_external_id_array = (
+            grand_parent_sentence.external_id
+        )
+        parent_sentence.parent_sentence_external_id_array = (
+            grand_parent_sentence.external_id
+        )
+        self.state_person.sentences = [
+            child_sentence,
+            parent_sentence,
+            grand_parent_sentence,
+        ]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(errors, [])
+
+        # Multi-level tree also works (child -> parent -> grandparent)
+        child_sentence.parent_sentence_external_id_array = parent_sentence.external_id
+        parent_sentence.parent_sentence_external_id_array = (
+            grand_parent_sentence.external_id
+        )
+        self.state_person.sentences = [
+            child_sentence,
+            parent_sentence,
+            grand_parent_sentence,
+        ]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(errors, [])
+
+        # A cycle from the top breaks though
+        grand_parent_sentence.parent_sentence_external_id_array = (
+            child_sentence.external_id
+        )
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(
+            errors,
+            [
+                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: CHILD -> as child of -> PARENT; PARENT -> as child of -> GRAND_PARENT; GRAND_PARENT -> as child of -> CHILD. Did you intend to hydrate these a concurrent sentences?"
             ],
         )
 
