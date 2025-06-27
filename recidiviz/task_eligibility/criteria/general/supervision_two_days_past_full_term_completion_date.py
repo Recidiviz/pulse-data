@@ -54,8 +54,8 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         critical_date_has_passed AS meets_criteria,
-        TO_JSON(STRUCT(critical_date AS full_term_completion_date)) AS reason,
-        critical_date AS full_term_completion_date,
+        TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+        critical_date AS eligible_date,
     FROM critical_date_has_passed_spans
     """
 
@@ -66,7 +66,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
-            name="full_term_completion_date",
+            name="eligible_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
             description="Date of client's projected supervision full term completion",
         ),

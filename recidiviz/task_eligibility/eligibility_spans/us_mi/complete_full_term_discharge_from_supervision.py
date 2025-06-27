@@ -47,8 +47,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     ],
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=supervision_two_days_past_full_term_completion_date.VIEW_BUILDER,
-        reasons_date_field="full_term_completion_date",
-        interval_length=32,
+        reasons_date_field="eligible_date",
+        interval_length=30,
         interval_date_part=BigQueryDateInterval.DAY,
         description="Within 30 days of FTRD",
     ),
