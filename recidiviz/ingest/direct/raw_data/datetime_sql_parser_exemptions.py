@@ -890,7 +890,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "PREF_PROG_TYPE_ID",
             "PREF_UPDATE_DATE",
         ],
-        "Staff": ["Creation_Date", "Last_Modified_Date", "Termination_Date"],
     },
     StateCode.US_UT: {
         "addr": ["end_dt", "geocode_dt", "updt_dt", "usps_vrfy_dt"],
