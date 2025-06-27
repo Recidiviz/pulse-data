@@ -260,6 +260,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     highlighted_case_cta_copy = fields.Str(required=False)
     overdue_opportunity_callout_copy = fields.Str(required=False)
     snooze_companion_opportunity_types = fields.List(fields.Str(required=False))
+    case_notes_title = fields.Str(required=False)
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

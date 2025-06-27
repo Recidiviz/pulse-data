@@ -214,3 +214,6 @@ class OpportunityConfiguration(WorkflowsBase):
     snooze_companion_opportunity_types = Column(
         ARRAY(String), nullable=False, server_default="{}"
     )
+
+    # Optional label for case notes -- should be displayed in "other relevant information" section
+    case_notes_title = Column(String, nullable=True)

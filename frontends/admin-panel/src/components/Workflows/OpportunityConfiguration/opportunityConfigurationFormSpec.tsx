@@ -135,6 +135,7 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         View: SidebarComponentsView,
       },
       eligibilityDateText: {},
+      caseNotesTitle: {},
     },
   },
   {

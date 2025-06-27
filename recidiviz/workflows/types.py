@@ -115,6 +115,8 @@ class OpportunityConfig:
 
     snooze_companion_opportunity_types: Optional[List[str]] = attr.ib()
 
+    case_notes_title: Optional[str] = attr.ib()
+
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
 

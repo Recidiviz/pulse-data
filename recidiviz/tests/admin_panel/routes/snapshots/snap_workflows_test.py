@@ -97,6 +97,7 @@ snapshots[
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
         "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
+        "caseNotesTitle": "Case notes title",
     },
     {
         "callToAction": "do something",
@@ -164,6 +165,7 @@ snapshots[
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
         "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
+        "caseNotesTitle": "Case notes title",
     },
     {
         "callToAction": "do something",
@@ -231,5 +233,6 @@ snapshots[
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
         "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
+        "caseNotesTitle": "Case notes title",
     },
 ]

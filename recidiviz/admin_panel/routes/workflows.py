@@ -220,6 +220,7 @@ class OpportunityConfigurationsAPI(MethodView):
             snooze_companion_opportunity_types=body_args.get(
                 "snooze_companion_opportunity_types"
             ),
+            case_notes_title=body_args.get("case_notes_title"),
         )
         return new_config_id
 

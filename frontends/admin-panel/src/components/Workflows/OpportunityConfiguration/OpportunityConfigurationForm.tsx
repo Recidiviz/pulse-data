@@ -50,6 +50,7 @@ const OPTIONAL_FIELDS: OpportunityConfigurationField[] = [
   "highlightedCaseCtaCopy",
   "overdueOpportunityCalloutCopy",
   "snoozeCompanionOpportunityTypes",
+  "caseNotesTitle",
 ];
 
 const OpportunityConfigurationForm = ({
