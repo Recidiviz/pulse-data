@@ -29,10 +29,13 @@ input_columns:
   JudgeLegalPeopleId: STRING
   CauseNumber: STRING
   TDD: DATE
+  SDD: DATE
   ProsecutingAttorneys: STRING
   PenaltyDays: STRING
   PenaltyMonths: STRING
   PenaltyYears: STRING
+  PenaltyValue: STRING
+  PenaltyStorageType: STRING
   # TODO(#38402): figure out concurrent vs consecutive
 unused_columns:
   # TODO(#38402): figure out controlling charge
@@ -147,10 +150,13 @@ output:
               Jurisdiction: Jurisdiction
               CauseNumber: CauseNumber
               TDD: TDD
+              SDD: SDD
               ProsecutingAttorneys: ProsecutingAttorneys
               PenaltyDays: PenaltyDays
               PenaltyMonths: PenaltyMonths
               PenaltyYears: PenaltyYears
+              PenaltyValue: PenaltyValue
+              PenaltyStorageType: PenaltyStorageType
               DNAApplicable: DNAApplicable
           charges:
             - StateChargeV2:
