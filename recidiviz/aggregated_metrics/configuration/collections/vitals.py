@@ -38,6 +38,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
     AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+    CONTACT_DUE_DATES,
+    CONTACT_DUE_DATES_MET,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -51,6 +53,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VITALS_METRICS_LOOKBACK_DAYS = 180
+VITALS_METRICS_LOOKBACK_MONTHS = 6
 
 
 def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
@@ -82,11 +85,16 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
                     AVG_DAILY_POPULATION_CONTACT_OVERDUE,
                     AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE_SUPERVISION,
+                    CONTACT_DUE_DATES,
+                    CONTACT_DUE_DATES_MET,
                     sld_metric,
                 ],
             )
         },
         time_periods=[
+            MetricTimePeriodConfig.month_periods(
+                lookback_months=VITALS_METRICS_LOOKBACK_MONTHS
+            ),
             MetricTimePeriodConfig.day_periods(
                 lookback_days=VITALS_METRICS_LOOKBACK_DAYS
             ),
@@ -103,7 +111,7 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                 # calculate values for each day in the time period.
                 rolling_period_unit=MetricTimePeriod.DAY,
                 rolling_period_length=1,
-                period_name=MetricTimePeriod.MONTH.value,
+                period_name="30D",
                 config_name=f"30_days_rolling_last_{VITALS_METRICS_LOOKBACK_DAYS}_days",
                 description=(
                     f"30 day-long metric periods, with one ending on every day for the "

@@ -954,6 +954,28 @@ CONTACTS_HOME_VISIT = EventCountMetric(
     ),
 )
 
+CONTACT_DUE_DATES = EventCountMetric(
+    name="contact_due_dates",
+    display_name="Contact Due Dates",
+    description="Number of contact due dates, counting distinct by date and type",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["tasks_contact_type"],
+)
+
+CONTACT_DUE_DATES_MET = EventCountMetric(
+    name="contact_due_dates_met",
+    display_name="Contact Due Dates Met",
+    description="Number of contact due dates for which all requirements were completed prior to due date, counting distinct by date and type",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT_DUE,
+        event_conditions_dict={"contact_missed": ["false"]},
+    ),
+    event_segmentation_columns=["tasks_contact_type"],
+)
+
 CUSTODY_LEVEL_DOWNGRADES = EventCountMetric(
     name="custody_level_downgrades",
     display_name="Custody Level Downgrades",
