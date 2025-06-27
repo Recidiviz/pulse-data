@@ -850,16 +850,21 @@ output:
                         $separator: "##"
                     $custom_parser: us_mi_custom_enum_parsers.map_internal_unknown_level
               - $else_if:
-                  $in:
-                    $value: movement_reason_id
-                    $options:
-                      - $literal("105") # Held Under Custody - Parole Violation Processing
-                      - $literal("128") # Held Under Custody - Probation Violation Processing
-                      - $literal("104") # Held Under Custody - REP Violation Processing
-                      - $literal("106") # Held Under Custody
-                      - $literal("103") # Held Under Custody - Jail Sentence
-                      - $literal("102") # Held Under Custody - New Criminal Processing
-                      - $literal("156") # Probationer Held Under Custody
+                  $and:
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("105") # Held Under Custody - Parole Violation Processing
+                          - $literal("128") # Held Under Custody - Probation Violation Processing
+                          - $literal("104") # Held Under Custody - REP Violation Processing
+                          - $literal("106") # Held Under Custody
+                          - $literal("103") # Held Under Custody - Jail Sentence
+                          - $literal("102") # Held Under Custody - New Criminal Processing
+                          - $literal("156") # Probationer Held Under Custody
+                    - $custom:
+                        $function: us_mi_custom_parsers.period_before_COMS_migration
+                        $args:
+                          period_start_date: period_start
                 $then:
                   $enum_mapping:
                     $raw_text:
