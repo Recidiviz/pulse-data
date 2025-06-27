@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  prog_id: STRING
+  prvdr_id: STRING
+  ofndr_num: STRING
+  prgrm_prvdr_loc_id: STRING
+  prog_title: STRING
+  rfrl_usr_id: STRING
+  prog_rfrl_dt: DATETIME
+  prog_strt_dt: DATETIME
+  exit_dt: DATETIME
+  cmt: STRING
+  exit_typ_desc: STRING
+  sequence_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - ofndr_num
+                - prvdr_id
+                - prog_id
+                - prog_rfrl_dt
+                - prog_strt_dt
+                - sequence_num
+              $separator: "@@"
+          start_date: prog_strt_dt
+          discharge_date: exit_dt
+          program_id: prog_title
+          referral_date: prog_rfrl_dt
+          referring_staff_external_id: rfrl_usr_id
+          referring_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: rfrl_usr_id
+                $then: $literal("US_UT_USR_ID")
+          program_location_id: prgrm_prvdr_loc_id
+          participation_status:
+            $enum_mapping:
+              $raw_text: exit_typ_desc
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - SUCCESSFUL COMPLETION
+                  - SUCCESSFUL
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - UNSUCCESSFUL COMPLETION
+                  - DISCIPLINARY REMOVAL
+                  - ABSENCES
+                  - POSITIVE SUBSTANCE TEST
+                  - FAIL TO PERFORM
+                  - UNSUCCESSFUL
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - INCOMPLETE-NO FAULT OF OFFENDER
+                  - CCC TRANSFER
+                  - PRISON RELEASE
+                  - AP&P JAIL ENTRY
+                  - PRISON INCARCERATION
+                  - ABSCOND/WALKAWAY
+                  - ESCAPE
+                  - BODY LOCATION CHANGE
+                  - ADMIN REMOVAL
+                  - SCHEDULE CONFLICT
+                  - WORK CONFLICT
+                  - AP&P JAIL RELEASE
+                  - HOUSING CHANGE/OFNDR
+                  - MOVED
+                  - HOUSING CHANGE/STAFF
+                  - CLASSIFICATION CHANGE
+                  - PROGRAM CHANGE
+                  - MEDICAL
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
+                  - DISCHARGED
+                  - NON GRADE
+                StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN:
+                  - UNKNOWN
+                StateProgramAssignmentParticipationStatus.DECEASED:
+                  - DEATH
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL_WITH_DISCRETION:
+                  - MAXIMUM BENEFIT
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  - BAD DATA
+                  - OFFENDER REQUEST
+          referral_metadata:
+            $normalized_values_json_dict:
+              cmt: cmt

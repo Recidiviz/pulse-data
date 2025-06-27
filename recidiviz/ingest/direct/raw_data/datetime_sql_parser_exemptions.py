@@ -1934,7 +1934,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "case_mgr": ["lst_eff_dt"],
         "dio_bed": ["end_dt"],
         "dio_ofndr_bed": ["end_dt"],
-        "dio_prog_rfrl": ["schd_dt", "scrn_dt"],
         "grvnc": ["grvnc_close_dt"],
         "grvnc_actn_lvl": [
             "actn_due_dt",
