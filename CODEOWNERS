@@ -3,6 +3,17 @@
 
 # DADS-owned code
 
+# R&D-owned code
+recidiviz/persistence/**/resource_search/** @nichelle-hall @roshcagra
+
+# Polaris-owned code
+recidiviz/persistence/**/case_triage/** @Recidiviz/polaris
+recidiviz/persistence/**/insights/** @Recidiviz/polaris-insights
+# The JC database should never be updated anymore
+recidiviz/persistence/**/justice_counts/** @Recidiviz/polaris
+recidiviz/persistence/**/pathways/** @Recidiviz/polaris
+recidiviz/persistence/**/workflows/** @Recidiviz/polaris-workflows
+
 # Doppler
 #  For Doppler-owned files, files with a high volume of edits are assigned to the @Recidiviz/doppler-codeowners group,
 #  which assigns a single reviewer via round robin. For more critical files with a lower volume of edits, we assign the
@@ -20,7 +31,3 @@ recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/tools/looker/generated/** @Recidiviz/doppler-codeowners
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
-
-# Polaris
-
-# Justice Counts
