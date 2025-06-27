@@ -29,6 +29,11 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodHousingUnitCategory,
+    StateIncarcerationPeriodHousingUnitType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentencingAuthority,
@@ -170,3 +175,127 @@ def parse_supervision_case_type(
         return StateSupervisionCaseType.DOMESTIC_VIOLENCE
 
     return StateSupervisionCaseType.GENERAL
+
+
+def parse_housing_unit_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+    """
+    Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitType.
+    #TODO(#43055): Update solitary housing unit type once we have more information on
+    Nebraska's solitary confinement housing units.
+
+    """
+    if raw_text in (
+        "OCC SEGREGATION UNIT"
+        "SEGREGATION B"
+        "SPECIAL MANAGEMENT UNIT NCYF"
+        "SPECIAL MANAGEMENT UNIT E  TSC"
+        "NCW MAIN SEGREGATION UNIT"
+        "NNC SEGREGATION UNIT #1"
+        "SPECIAL MANAGEMENT UNIT B  TSC"
+        "SPECIAL MANAGEMENT UNIT C  TSC"
+        "SPECIAL MANAGEMENT UNIT A  TSC"
+        "SPECIAL MANAGEMENT UNIT F  TSC"
+        "SPECIAL MANAGEMENT UNIT D  TSC"
+        "SEGREGATION, COMM CORRECTIONS"
+        "HDC SEGREGATION UNIT"
+    ):
+        return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
+
+    if raw_text == "PROTECTIVE CUSTODY":
+        return StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY
+
+    if raw_text in (
+        "NEBRASKA HEART HOSPITAL",
+        "IMMANUEL MEDICAL CENTER",
+        "HAYES KS MEDICDAL CENTER",
+        "MIDLANDS HOSPITAL",
+        "INSIDE HOSPITAL",
+        "LINCOLN GENERAL HOSPITAL",
+        "CREIGHTON UNIV MEDICAL CENTER",
+        "BERGAN MERCY HOSPITAL",
+        "ST. JOSEPH HOSPITAL - OMAHA",
+        "METHODIST HOSPITAL - OMAHA",
+        "MCCOOK COMMUNITY HOSPITAL",
+        "BELLEVUE MEDICAL CENTER",
+        "LINCOLN SURGICAL HOSPITAL",
+        "RICHARD YOUNG HOSPITAL",
+        "GREAT PLAINS MED CNTR-NTH PLTT",
+        "REGIONAL WEST MEDICAL CENTER",
+        "ST. ELIZABETH HOSPITAL",
+        "UNIVERSITY MEDICAL CENTER",
+        "OCC MEDICAL OBSERVATION",
+        "CHI SELECT SPECIALTY HOSPITAL",
+        "CLARKSON HOSPITAL",
+        "BRYAN MEMORIAL HOSPITAL",
+        "YORK GENERAL HOSPITAL",
+        "JOHNSON COUNTY HOSPITAL",
+        "WARREN MEMORIAL HOSP FRIEND",
+        "VETERAN'S HOSPITAL",
+    ):
+        return StateIncarcerationPeriodHousingUnitType.HOSPITAL
+
+    if not raw_text:
+        return None
+    return StateIncarcerationPeriodHousingUnitType.GENERAL
+
+
+def parse_housing_unit_category(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitCategory]:
+    """
+    Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitCategory,
+    identifying which housing units are solitary confinement units and which are general.
+    """
+
+    if any(
+        keyword in raw_text for keyword in ["SPECIAL MANAGEMENT UNIT", "SEGREGATION"]
+    ):
+        return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
+
+    if not raw_text:
+        return None
+
+    return StateIncarcerationPeriodHousingUnitCategory.GENERAL
+
+
+def parse_incarceration_custodial_authority(
+    raw_text: str,
+) -> Optional[StateCustodialAuthority]:
+    """
+    Uses LOCT_PRFX_DESC and ADMISSION_TYPE_DESC to determine custodial authority.
+    """
+
+    location, admission = raw_text.split("@@")
+
+    if location == "COUNTY JAIL":
+        return StateCustodialAuthority.COUNTY
+
+    if admission == "OUT OF STATE TRANSFER":
+        return StateCustodialAuthority.OTHER_STATE
+
+    if admission == "TO FEDERAL CUSTODY":
+        return StateCustodialAuthority.FEDERAL
+
+    return StateCustodialAuthority.STATE_PRISON
+
+
+def parse_incarceration_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationType]:
+    """
+    Uses LOCT_PRFX_DESC and ADMISSION_TYPE to determine incarceration type.
+    """
+    location, admission = raw_text.split("@@")
+
+    if location == "COUNTY JAIL":
+        return StateIncarcerationType.COUNTY_JAIL
+
+    if admission == "OUT OF STATE TRANSFER":
+        return StateIncarcerationType.OUT_OF_STATE
+
+    if admission == "TO FEDERAL CUSTODY":
+        return StateIncarcerationType.FEDERAL_PRISON
+
+    return StateIncarcerationType.STATE_PRISON

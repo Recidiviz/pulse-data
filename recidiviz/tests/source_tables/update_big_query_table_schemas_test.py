@@ -1377,6 +1377,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ne_ingest_view_results.address_periods",
     "us_ne_ingest_view_results.employment_periods",
     "us_ne_ingest_view_results.hearing_supervision_violations_and_responses",
+    "us_ne_ingest_view_results.incarceration_periods",
     "us_ne_ingest_view_results.non_hearing_supervision_violations_and_responses",
     "us_ne_ingest_view_results.parole_staff",
     "us_ne_ingest_view_results.person_external_ids",

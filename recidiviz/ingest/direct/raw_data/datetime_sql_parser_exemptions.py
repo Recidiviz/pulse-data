@@ -1620,7 +1620,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "recidiviz_docstars_LSI_SUPERPLAN": ["INACTIVEDATE", "RECDATE"],
     },
     StateCode.US_NE: {
-        "CUSTODY_HIST": ["CREATION_TS", "EFFECTIVE_DT", "LAST_ACTIVITY_TS"],
         "LKViolation": ["createdDate", "endDate", "modifiedDate", "startDate"],
         "MRRSAppealBoard": [
             "createdDate",

@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  PERIOD_ID: INTEGER
+  FACILITY_NAME: STRING
+  CUSTODY_CD: STRING
+  LOCT_PRFX_DESC: STRING
+  LOCT_SUFX_DSC: STRING
+  START_DT: DATE
+  ADMISSION_TYPE: STRING
+  RELEASE_TYPE: STRING
+  END_DT: DATE
+unused_columns:
+  - LOCT_SUFX_DSC # Not used in the output, but helpful to see why periods split on bed changes
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - PERIOD_ID
+          custodial_authority:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - LOCT_PRFX_DESC
+                    - ADMISSION_TYPE
+              $custom_parser: us_ne_custom_enum_parsers.parse_incarceration_custodial_authority
+          incarceration_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - LOCT_PRFX_DESC
+                    - ADMISSION_TYPE
+              $custom_parser: us_ne_custom_enum_parsers.parse_incarceration_type
+          admission_date: START_DT
+          release_date: END_DT
+          facility: FACILITY_NAME
+          housing_unit: LOCT_PRFX_DESC
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: LOCT_PRFX_DESC
+              $custom_parser: us_ne_custom_enum_parsers.parse_housing_unit_type
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: LOCT_PRFX_DESC
+              $custom_parser: us_ne_custom_enum_parsers.parse_housing_unit_category
+          custody_level:
+            $enum_mapping:
+              $raw_text: CUSTODY_CD
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                  - 4A # COMMUNITY A
+                  - 4B # COMMUNITY B
+                  - 4E # COMMUNITY - ED RELEASE
+                  - 4P # COMMUNITY - PAROLE VIO
+                  - 4R # COMMUNITY - RESTRICTED
+                  - 4W # COMMUNITY W LEVEL A
+                  - BL # BLUE - LEVEL 1
+                  - HG # HIGH LEVEL GREEN HIGH LEVEL 2
+                  - LG # LOW LEVEL FREEN LOW LEVEL 2
+                  - OR # ORANGE - LEVEL 3
+                  - WC # WEC OFFENDER
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                  - 1A # MAXIMUM 1A
+                  - 1B # MAXIMUM 1B
+                  - 1X # MAXIMUM
+                StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                  - 2X # MEDIUM
+                StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                  - 3A # MINIMUM A
+                  - 3B # MINIMUM B
+                  - 3D # MINIMUM D
+                  - 3W # MINIMUM W
+                  - 3X # MINIMUM X
+          specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
+          admission_reason:
+            $enum_mapping:
+              $raw_text: ADMISSION_TYPE
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - ESCAPE
+                  - ESCAPE/ABSCONDER
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - INITIAL ADMIT
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - RETURN FRM ESCP
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - RETURN FROM COURT
+                  - RETURN FROM HOSPITAL
+                  - RETURN FROM MEDICAL CENTER
+                  - RETURN FROM WORK RELEASE
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+                  - RE-ADMISSION
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - PAROLE VIOLATOR
+                  - RETURN FROM PRS # Post Release Supervision Return
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - CUSTODY CHANGE
+                  - OUT OF STATE TRANSFER
+                  - TO FEDERAL CUSTODY
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                  - FURLOUGH
+                  - OUT FOR WORK RELEASE
+                  - OUT TO COURT
+                  - OUT TO HOSPITAL
+                  - OUT TO MEDICAL CENTER
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - ADM TRANSFER # only one instance of this
+                  - FACILITY TRANSFER
+                  - TRANSFER - CHECK NEW LOCT_SUFX_DSC # placeholder if new values added
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - UNIT TRANSFER
+                  - BED TRANSFER
+          release_reason:
+            $enum_mapping:
+              $raw_text: RELEASE_TYPE
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - DECEASED
+                  - EXECUTION
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - DISCRETIONARY PAROLE
+                  - MANDATORY PAROLE
+                  - MANDATORY PAROLE TO TTF # clarifying with NE
+                  - RE-PAROLE
+                  - RELEASED TO PRS
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - RETURN FROM FEDERAL CUSTODY
+                  - RETURN FROM OUT OF STATE TRANSFER
+                  - CUSTODY CHANGE
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - TRANSFER
+                  - FACILITY TRANSFER
+                  - TRANSFER - CHECK NEW LOCT_SUFX_DSC # placeholder if new values added
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - ESCAPE
+                  - WEC RLSE-ABSCOND # Work Ethic Camp Release - Absconder
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - RETURN FROM ESCAPE
+                  - RETURN FROM ESCAPE/ABSCONDER
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - RETURN FROM COURT
+                  - RETURN FROM HOSPITAL
+                  - RETURN FROM MEDICAL CENTER
+                  - RETURN FROM WORK RELEASE
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - FURLOUGH
+                  - OUT TO COURT
+                  - OUT TO HOSPITAL
+                  - OUT TO MEDICAL CENTER
+                  - OUT FOR WORK RELEASE
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - RETURN TO LAW ENFORCEMENT
+                StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - DISCHARGED IN ERROR
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - MANDATORY DISCHARGE
+                  - EXPIRATION OF SENTENCE
+                  - DISCHARGE - INS
+                StateIncarcerationPeriodReleaseReason.VACATED:
+                  - SENTENCE VACATED
+                  - CASE DISMISSED
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - SENTENCE AMENDED
+                  - OTHER
+                  ## WEC IS WORK ETHIC CAMP
+                  - WEC RLSE-REVOKE-PRIOR VIOLATIO
+                  - WEC RLSE-MEDICAL/MENTL HEALTH
+                  - WEC RLSE-REMOVED MAX TIME EXP
+                  - WEC RLSE-SUCCESSFUL
+                  - WEC RLSE-REMOVE-NOT SUITABLE
+                  - DISCHARGED FROM PRS PER PROBTN
+                  - WEC RLSE-GUARDED
+                  - WEC RLSE-REMOVAL VOLUNTARY
+                  - WEC RLSE-REVOKE-LAW VIOLATION
+                  - WEC RLSE-OTHER
+                  - WEC RLSE-REMOVE-PROGRM FAILURE
+                  - BED TRANSFER
+                  - UNIT TRANSFER
