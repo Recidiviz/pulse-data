@@ -120,7 +120,6 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
             mock_task_manager.return_value.create_task.assert_called_with(
                 absolute_uri=f"http://localhost:5000/import/pathways/{self.state_code}/test-file.csv",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
-                task_id=f"import-pathways-{self.state_code}-test-file-csv",
             )
 
     def test_import_trigger_pathways_bad_message(self) -> None:
@@ -429,7 +428,6 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
             mock_task_manager.return_value.create_task.assert_called_with(
                 absolute_uri=f"http://localhost:5000/import/insights/{self.state_code}/test-file.json",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
-                task_id=f"import-insights-{self.state_code}-test-file-json",
             )
 
     @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
@@ -457,7 +455,6 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
             mock_task_manager.return_value.create_task.assert_called_with(
                 absolute_uri=f"http://localhost:5000/import/insights/{self.state_code}/test-file.json",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
-                task_id=f"import-insights-demo-{self.state_code}-test-file-json",
             )
 
     def test_import_trigger_insights_bad_message(self) -> None:

@@ -87,7 +87,7 @@ module "validations-queue" {
 module "pathways-db-import-queue" {
   source = "./modules/base-task-queue"
 
-  queue_name = "pathways-db-import"
+  queue_name = "pathways-db-import-v2"
   region     = var.us_east_region
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.
@@ -116,7 +116,7 @@ module "workflows-external-system-requests-queue" {
 module "outliers-db-import-queue" {
   source = "./modules/base-task-queue"
 
-  queue_name = "outliers-db-import"
+  queue_name = "outliers-db-import-v2"
   region     = var.us_east_region
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.

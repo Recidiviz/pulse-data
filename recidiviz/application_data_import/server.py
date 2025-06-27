@@ -17,13 +17,11 @@
 """Entry point for Application Data Import service."""
 import logging
 import os
-import re
 from http import HTTPStatus
 from typing import Tuple
 
 import google.cloud.pubsub_v1 as pubsub
 from flask import Flask, request
-from google.api_core.exceptions import AlreadyExists
 from google.cloud import datastore
 from sqlalchemy import delete
 
@@ -127,8 +125,8 @@ APPLICATION_DATA_IMPORT_BLUEPRINTS = [
 for blueprint, url_prefix in APPLICATION_DATA_IMPORT_BLUEPRINTS:
     app.register_blueprint(blueprint, url_prefix=url_prefix)
 
-PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import"
-OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import"
+PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import-v2"
+OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import-v2"
 
 
 def _dashboard_event_level_bucket() -> str:
@@ -239,7 +237,6 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
             message=message,
             gcs_bucket=_dashboard_event_level_bucket(),
             import_queue_name=PATHWAYS_DB_IMPORT_QUEUE,
-            task_prefix="import-pathways",
             task_url="/import/pathways",
         )
     except ValueError as e:
@@ -295,7 +292,6 @@ def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
             message=message,
             gcs_bucket=expected_insights_bucket,
             import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
-            task_prefix=f"import-insights{'-demo' if load_demo_data_into_insights else ''}",
             task_url="/import/insights",
         )
     except ValueError as e:
@@ -309,7 +305,6 @@ def create_import_task_helper(
     message: pubsub.types.PubsubMessage,
     gcs_bucket: str,
     import_queue_name: str,
-    task_prefix: str,
     task_url: str,
 ) -> None:
     """
@@ -318,7 +313,6 @@ def create_import_task_helper(
     :param message: The Pub/Sub message that triggered this endpoint
     :param gcs_bucket: The bucket that is expected to have sent the Pub/Sub message
     :param import_queue_name: The name of the TaskQueue that the import task should be queued to
-    :param task_prefix: A more general prefix to use for the task id
     :param task_url: The endpoint that will handle the task
     :rtype: None
     """
@@ -355,20 +349,11 @@ def create_import_task_helper(
         queue_info_cls=CloudTaskQueueInfo, queue_name=import_queue_name
     )
 
-    task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"{task_prefix}-{object_id}")
-
-    try:
-        cloud_task_manager.create_task(
-            absolute_uri=f"{cloud_run_metadata.url}{task_url}/{object_id}",
-            service_account_email=cloud_run_metadata.service_account_email,
-            task_id=task_id,  # deduplicate import requests for the same file
-        )
-        logging.info("Enqueued gcs_import task to %s", import_queue_name)
-    except AlreadyExists:
-        logging.info(
-            "Skipping enqueueing of %s because it is already being imported",
-            task_id,
-        )
+    cloud_task_manager.create_task(
+        absolute_uri=f"{cloud_run_metadata.url}{task_url}/{object_id}",
+        service_account_email=cloud_run_metadata.service_account_email,
+    )
+    logging.info("Enqueued gcs_import task to %s", import_queue_name)
 
 
 @app.route("/import/insights/<state_code>/<filename>", methods=["POST"])
