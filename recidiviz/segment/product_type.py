@@ -37,6 +37,7 @@ class ProductType(Enum):
     """
 
     CASE_NOTE_SEARCH = "CASE_NOTE_SEARCH"
+    CLIENT_PAGE = "CLIENT_PAGE"
     MILESTONES = "MILESTONES"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
     SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE = "SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE"
@@ -46,34 +47,44 @@ class ProductType(Enum):
     SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE = "SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE"
     TASKS = "TASKS"
     WORKFLOWS = "WORKFLOWS"
+    VITALS = "VITALS"
 
     @property
     def pretty_name(self) -> str:
         return self.value.lower()
 
-    @property
-    def context_page_keyword(self) -> str:
-        """Returns the string contained in the url path returned by Segment events
-        associated with a given product type. We use the context page keyword to filter
-        Segment events by product type."""
+    def context_page_filter_query_fragment(
+        self, context_page_url_col_name: str = "context_page_path"
+    ) -> str:
+        """Returns the query fragment that identifies the Segment event url paths
+        associated with a given product type. Since some segment events are shared across
+        multiple product surfaces, we use the context page keyword to further filter
+        Segment events by product type based on where they were triggered in the UI."""
 
         if self == ProductType.CASE_NOTE_SEARCH:
-            return "workflows"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows')"
+        if self == ProductType.CLIENT_PAGE:
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/clients|/workflows/residents')"
         if self == ProductType.MILESTONES:
-            return "workflows/milestones"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
         if self == ProductType.PSI_CASE_INSIGHTS:
-            return "psi"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
-            return "insights"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
-            return "insights"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
-            return "operations"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         if self == ProductType.TASKS:
-            return "workflows/tasks"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks')"
         if self == ProductType.WORKFLOWS:
-            return "workflows"
-        raise ValueError(f"Unknown context page for product type: {self}")
+            return (
+                f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows') "
+                f"AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/(clients|residents|milestones|tasks)')"
+            )
+        if self == ProductType.VITALS:
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations')"
+        raise ValueError(f"Unknown context page filter for product type: {self}")
 
     @property
     def segment_dataset_name(self) -> str:

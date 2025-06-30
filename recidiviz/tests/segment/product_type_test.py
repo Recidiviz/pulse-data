@@ -23,7 +23,11 @@ from recidiviz.segment.product_type import ProductType
 class ProductTypeTest(unittest.TestCase):
     """Tests ProductType functions"""
 
-    def test_context_page_keyword(self) -> None:
-        """Check that context_page_keyword is defined for every ProductType enum"""
+    def test_context_page_filter_query_fragment(self) -> None:
+        """Check that context_page_filter_query_fragment is defined for every ProductType enum"""
         for product_type in ProductType:
-            self.assertIsNotNone(product_type.context_page_keyword)
+            self.assertIsNotNone(
+                product_type.context_page_filter_query_fragment(
+                    context_page_url_col_name="context_page_path"
+                )
+            )

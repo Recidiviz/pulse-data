@@ -120,7 +120,7 @@ FROM (
         `{{project_id}}.{segment_table_sql_source.to_str()}`
     -- events from prod deployment only
     WHERE
-        context_page_path LIKE '%/{product_type.context_page_keyword}%' 
+        {product_type.context_page_filter_query_fragment(context_page_url_col_name="context_page_url")} 
         --TODO(#43316): Adjust logic to support JII tablet events
         AND context_page_url LIKE '%://dashboard.recidiviz.org/%'
     -- dedupes events loaded more than once
