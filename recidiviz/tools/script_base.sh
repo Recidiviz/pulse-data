@@ -127,7 +127,8 @@ function version_less_than {
 }
 
 function verify_clean_git_status {
-    if [[ -n "$(git status --porcelain)" ]]; then
+    LOCAL_REPO_PATH=${1:-$(git rev-parse --show-toplevel)}
+    if [[ -n "$(git -C "$LOCAL_REPO_PATH" status --porcelain)" ]]; then
         echo_error "Git status not clean - please stash changes before retrying."
         echo_error "If you have made a local change to fix a deploy issue that cannot be solved by reverting a recent "
         echo_error "commit (e.g. if you have found an old bug in the script itself) AND you need to deploy "
@@ -140,18 +141,19 @@ function verify_clean_git_status {
 
 function safe_git_checkout_remote_branch {
     BRANCH=$1
+    LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
     echo "Checking for clean git status"
-    verify_clean_git_status
+    verify_clean_git_status "$LOCAL_REPO_PATH"
 
     echo "Checking out [$BRANCH]"
-    if ! git checkout -t "origin/${BRANCH}"
+    if ! git -C "$LOCAL_REPO_PATH" checkout -t "origin/${BRANCH}"
     then
         echo "Branch [$BRANCH] already exists - reusing"
-        run_cmd git checkout "${BRANCH}"
+        run_cmd git -C "$LOCAL_REPO_PATH" checkout "${BRANCH}"
 
         echo "Checking local commit exists on origin/${BRANCH}"
         # Queries for branches that contain the commit at HEAD, then searches for the remote branch in that list
-        HEAD_EXISTS_ON_REMOTE_RESULT=$(git branch --remotes --contains HEAD | grep "origin/${BRANCH}")
+        HEAD_EXISTS_ON_REMOTE_RESULT=$(git -C "$LOCAL_REPO_PATH" branch --remotes --contains HEAD | grep "origin/${BRANCH}")
         if [[ -z ${HEAD_EXISTS_ON_REMOTE_RESULT} ]]; then
             echo "origin/${BRANCH}" does not contain HEAD
             echo_error "Remote branch origin/${BRANCH} does not contain the commit at HEAD."
@@ -165,7 +167,7 @@ function safe_git_checkout_remote_branch {
         fi
 
         echo "Pulling latest from [$BRANCH]"
-        run_cmd git pull
+        run_cmd git -C "$LOCAL_REPO_PATH" pull
     fi
 }
 
@@ -207,9 +209,10 @@ function check_docker_running {
 
 function verify_hash {
     EXPECTED_HASH=$1
-    CURRENT_HASH=$(git rev-parse HEAD) || exit_on_fail
+    LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
+    CURRENT_HASH=$(git -C "$LOCAL_REPO_PATH" rev-parse HEAD) || exit_on_fail
 
-    verify_clean_git_status
+    verify_clean_git_status "$LOCAL_REPO_PATH"
 
     if [[ "$CURRENT_HASH" != "$EXPECTED_HASH" ]]; then
         echo_error "Current commit [${CURRENT_HASH:0:7}] does not match expected commit "

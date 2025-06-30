@@ -101,8 +101,9 @@ function parse_version {
 # Returns the last version tag on the given branch. Fails if that tag does not match the acceptable version regex.
 function last_version_tag_on_branch {
     BRANCH=$1
+    LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
 
-    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
+    LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
 
     # Check that the version parses
     _=$(parse_version "${LAST_VERSION_TAG_ON_BRANCH}") || exit_on_fail
