@@ -37,6 +37,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TIMELY_CONTACT,
+    TIMELY_CONTACT_DUE_DATE_BASED,
     TIMELY_F2F_CONTACT,
     TIMELY_RISK_ASSESSMENT,
     TREATMENT_STARTS,
@@ -447,7 +448,7 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name_past_tense="were incarcerated",
             ),
         ],
-        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_CONTACT],
+        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_CONTACT_DUE_DATE_BASED],
     ),
 }
 
