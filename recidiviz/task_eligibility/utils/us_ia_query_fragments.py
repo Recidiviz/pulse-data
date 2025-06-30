@@ -113,7 +113,7 @@ def case_notes_helper() -> str:
             AND violation_date BETWEEN DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) AND CURRENT_DATE('US/Eastern')
         )
     SELECT DISTINCT external_id,
-        'Violation Incidents in the Past 6 Months',
+        'Violation Incidents Dated Within the Past 6 Months',
         COALESCE(condition_description, violation_type, 'NO CONDITION PROVIDED') AS note_title,
         COALESCE(ViolationComments, 'NO DESCRIPTION PROVIDED') AS note_body,
         violation_date AS event_date,
