@@ -304,7 +304,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "overlapping_sentence_serving_periods",
             "sentence_id_to_consecutive_sentence_id",
             "sentence_imposed_group_summary",
-            "sentence_serving_start_date",
         ]
     },
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (

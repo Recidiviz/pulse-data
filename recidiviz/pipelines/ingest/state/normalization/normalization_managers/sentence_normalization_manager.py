@@ -58,6 +58,7 @@ from recidiviz.utils.types import assert_type
 def _sort_sentences_by_severity(
     sentences: list[NormalizedStateSentence],
 ) -> list[NormalizedStateSentence]:
+    # TODO(#44111): consider either deprecating or refactoring this logic so it can replace the SQL logic in `person_charge_severity_ranking`
     """
     Sorts the list of sentences by their severity (in priority order):
         - A state prison sentence is more severe than other types
