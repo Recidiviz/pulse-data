@@ -37,41 +37,38 @@ output:
                 $then: $literal_enum(StateSentencingAuthority.OTHER_STATE)
               - $else: $literal_enum(StateSentencingAuthority.COUNTY)
           sentence_type:
-            $conditional:
-              - $if:
-                  $is_null: disposition
-                $then: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: disposition
-                    $mappings:
-                      StateSentenceType.INTERNAL_UNKNOWN:
-                        - ADJUDICATED DELINQUENT
-                        - GUILTY-OTHER SANCTION
-                        - NO CONTEST
-                        - JUVENILE OTHER
-                        - JUVENILE DETENTION
-                        - DRUG COURT
-                      StateSentenceType.COUNTY_JAIL:
-                        - COUNTY JAIL-FELONY
-                        - SHOCK INCARCERATION
-                      StateSentenceType.FEDERAL_PRISON:
-                        - FEDERAL PRISON
-                      StateSentenceType.FINES_RESTITUTION:
-                        - RESTITUTION
-                        - FINED
-                      StateSentenceType.STATE_PRISON:
-                        - AZ-STATE PRISON NOT ENTERED IN AIMS
-                        - PROBATION REVOKED
-                        - FELONY CONVICTION-OTHER STATE PRISON
-                      StateSentenceType.PROBATION:
-                        - COMMUNITY SUPERVISION
-                        - FELONY CONVICTION-PROBATION
-                        - JUVENILE PROBATION
-                        - FELONY SEX OFFENSE W/FUTURE CONVICTION/PROBATION
-                        - LIFETIME PROBATION-AZ SEX OFF ONLY
-                        - FELONY SEX OFFENSE SERVED PROBATION
-                        - MISDEMEANOR CONVICTION
+            $enum_mapping:
+              $raw_text: disposition
+              $mappings:
+                StateSentenceType.INTERNAL_UNKNOWN:
+                  - ADJUDICATED DELINQUENT
+                  - GUILTY-OTHER SANCTION
+                  - NO CONTEST
+                  - JUVENILE OTHER
+                  - JUVENILE DETENTION
+                  - DRUG COURT
+                StateSentenceType.COUNTY_JAIL:
+                  - COUNTY JAIL-FELONY
+                  - SHOCK INCARCERATION
+                StateSentenceType.FEDERAL_PRISON:
+                  - FEDERAL PRISON
+                StateSentenceType.FINES_RESTITUTION:
+                  - RESTITUTION
+                  - FINED
+                StateSentenceType.STATE_PRISON:
+                  - AZ-STATE PRISON NOT ENTERED IN AIMS
+                  - PROBATION REVOKED
+                  - FELONY CONVICTION-OTHER STATE PRISON
+                StateSentenceType.PROBATION:
+                  - COMMUNITY SUPERVISION
+                  - FELONY CONVICTION-PROBATION
+                  - JUVENILE PROBATION
+                  - FELONY SEX OFFENSE W/FUTURE CONVICTION/PROBATION
+                  - LIFETIME PROBATION-AZ SEX OFF ONLY
+                  - FELONY SEX OFFENSE SERVED PROBATION
+                  - MISDEMEANOR CONVICTION
+              # TODO(#27873) consider remapping to PRESENT_WITHOUT_INFO
+              $map_null_to: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
           charges:
             - StateChargeV2:
                 external_id:

@@ -53,14 +53,10 @@ output:
                 $then: SUPV_PERIOD_END_DT
           supervision_site: LOCATION_ACRONYM
           admission_reason:
-            $conditional:
-              - $if:
-                  $is_null: START_STATUS_CODE_LIST
-                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: START_STATUS_CODE_LIST
-                    $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_admission_reason
+            $enum_mapping:
+              $raw_text: START_STATUS_CODE_LIST
+              $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_admission_reason
+              $map_null_to: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
           termination_reason:
             $conditional:
               - $if:

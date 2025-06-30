@@ -45,11 +45,7 @@ output:
               - $if: $variable(is_employed)
                 $then: EmployerName
           employment_status:
-            $conditional:
-              - $if:
-                  $is_null: EmployerName
-                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: EmployerName
-                    $custom_parser: us_ca_custom_enum_parsers.parse_employment_status
+            $enum_mapping:
+              $raw_text: EmployerName
+              $custom_parser: us_ca_custom_enum_parsers.parse_employment_status
+              $map_null_to: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
