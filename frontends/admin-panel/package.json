@@ -24,7 +24,7 @@
     "querystringify": "^2.2.0",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
-    "react-draggable": "^4.4.3",
+    "react-draggable": "^4.5.0",
     "react-markdown": "^8.0.0",
     "react-router-dom": "^5.2.0",
     "semiotic": "^2.0.3",
