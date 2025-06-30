@@ -96,6 +96,7 @@ class BuildCloudFunctions(DeploymentStageInterface):
                    echo "Source files have changed, deploying new function revisions"
                    gcloud functions list \
                      --project={deployment_context.project_id} \
+                     --filter='NOT name:"cloud-build-pagerduty"' \
                      --format="value(name)" | \
                      xargs -I{{}} \
                          gcloud functions deploy {{}} \
