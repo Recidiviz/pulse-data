@@ -96,6 +96,11 @@ class ProductType(Enum):
         """Returns any additional attribute columns that should be included in the
         unioned Segment view for this product type.
         """
-        if self == ProductType.WORKFLOWS:
+        if self in [
+            ProductType.WORKFLOWS,
+            ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+            ProductType.CLIENT_PAGE,
+            ProductType.TASKS,
+        ]:
             return ["opportunity_type"]
         return []

@@ -161,6 +161,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__tasks_primary_user_span",
     "observations__tasks_provisioned_user_span",
     "reentry",
+    "segment_events__client_page",
     "segment_events__supervisor_homepage_opportunities_module",
     "segment_events__supervisor_homepage_outcomes_module",
     "segment_events__tasks",
