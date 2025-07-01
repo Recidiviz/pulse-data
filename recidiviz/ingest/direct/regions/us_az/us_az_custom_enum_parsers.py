@@ -345,9 +345,11 @@ def parse_supervision_level(raw_text: str) -> Optional[StateSupervisionLevel]:
     if supervision_level:
         if supervision_level == "ADM":
             return StateSupervisionLevel.LIMITED
-        if supervision_level == "MIN":
+        if supervision_level in ("MIN", "LOW"):
             return StateSupervisionLevel.MINIMUM
-        if supervision_level == "MED":
+        if supervision_level == "LOW/MODERATE":
+            return StateSupervisionLevel.LOW_MEDIUM
+        if supervision_level in ("MED", "MODERATE"):
             return StateSupervisionLevel.MEDIUM
         if supervision_level == "INT":
             return StateSupervisionLevel.HIGH
