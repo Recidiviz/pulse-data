@@ -57,6 +57,9 @@ DETAINER_TYPE_LST_CLD = [
     "102",
     "108",
     "112",
+    "115",
+    "117",
+    "121",
 ]
 
 IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
