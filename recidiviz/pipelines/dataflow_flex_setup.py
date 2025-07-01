@@ -53,6 +53,7 @@ REQUIRED_PACKAGES = [
     "iteration-utilities",
     "jsonschema",
     "more-itertools",
+    "networkx",
     "oauth2client",
     # TODO(open-telemetry/opentelemetry-python#3959): Remove TODO when opentelemetry when cost increase is solved.
     "opentelemetry-api",
