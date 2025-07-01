@@ -1065,6 +1065,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_state.state_supervision_violation_response_decision_entry",
     "us_mi_state.state_supervision_violation_type_entry",
     "us_mi_state.state_task_deadline",
+    "us_mo_ingest_view_results.assessments_other",
     "us_mo_ingest_view_results.classification_assessments",
     "us_mo_ingest_view_results.incarceration_incident",
     "us_mo_ingest_view_results.offender_sentence_institution",

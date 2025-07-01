@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_assessments_other` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  DOC_ID: STRING
+  ASSESSMENT_DATE: DATE
+  SCORE_INTERPRETATION: STRING
+  ASSESSMENT_TYPE: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - ASSESSMENT_DATE
+                - ASSESSMENT_TYPE
+          assessment_date: ASSESSMENT_DATE
+          assessment_type:
+            $enum_mapping:
+              $raw_text: ASSESSMENT_TYPE
+              $mappings:
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - "1270"
+          assessment_level:
+            $enum_mapping:
+              $raw_text: SCORE_INTERPRETATION
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - Non-STG Member
+                StateAssessmentLevel.MEDIUM:
+                  - STG Associate
+                StateAssessmentLevel.HIGH:
+                  - STG Member
