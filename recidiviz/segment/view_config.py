@@ -58,6 +58,7 @@ SELECT
     "{vb.segment_event_name}" AS event,
     event_ts,
     person_id,
+    context_page_path,
     {_get_shared_columns_statement(vb)}
 """
 

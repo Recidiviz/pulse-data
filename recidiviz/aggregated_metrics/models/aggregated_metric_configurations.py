@@ -2445,7 +2445,7 @@ WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS = EventCountMetric(
         event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
         event_conditions_dict={},
     ),
-    event_segmentation_columns=["event_type", "task_type", "person_external_id"],
+    event_segmentation_columns=["event_type", "task_type", "person_id"],
 )
 
 WORKFLOWS_PRIMARY_USER_LOGINS = EventCountMetric(

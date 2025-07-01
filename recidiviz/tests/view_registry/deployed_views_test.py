@@ -401,6 +401,10 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="observations__insights_primary_user_event",
                 table_id="insights_active_usage_event",
             ),
+            BigQueryAddress(
+                dataset_id="observations__workflows_primary_user_event",
+                table_id="workflows_active_usage_event",
+            ),
             # Funnel analysis requires referencing all unioned segment events.
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
         }

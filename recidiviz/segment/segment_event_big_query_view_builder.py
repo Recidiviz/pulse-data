@@ -38,9 +38,10 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         product_type: ProductType,
         # The source table of the segment events
         segment_table_sql_source: BigQueryAddress,
-        # The id column(s) if they exist in the sql source indicating the anonymized id of the justice involved person
-        # Multiple id columns may be present in event tables where the name of column changed over time,
-        # and some events may have no JII-identifying id column.
+        # The ID column(s) if they exist in the sql source indicating the anonymized ID of the justice involved person
+        # Multiple ID columns may be present in event tables where the name of column changed over time,
+        # and some events may have no JII-identifying ID column.
+        # If JII ID columns are specified, only events with non-null ID's will be included.
         segment_table_jii_pseudonymized_id_columns: list[str] | None = None,
         # Any additional attribute columns that should be included in the view
         additional_attribute_cols: list[str] | None = None,
@@ -95,6 +96,12 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
         if not additional_attribute_cols:
             additional_attribute_cols = []
+
+        person_id_join_type = "LEFT"
+        if segment_table_jii_pseudonymized_id_columns:
+            # If JII ID columns are specified, only include events with non-null ID's
+            person_id_join_type = "INNER"
+
         template = f"""
 SELECT
     state_code,
@@ -103,6 +110,7 @@ SELECT
     DATETIME(timestamp, "US/Eastern") AS event_ts,
     person_id,
     session_id,
+    context_page_path,
     {list_to_query_string(additional_attribute_cols, table_prefix="events")}
 FROM (
     SELECT
@@ -115,6 +123,7 @@ FROM (
         timestamp,
         session_id,
         user_id,
+        context_page_path,
         {list_to_query_string(additional_attribute_cols)}
     FROM
         `{{project_id}}.{segment_table_sql_source.to_str()}`
@@ -136,7 +145,7 @@ ON
     OR (STARTS_WITH(rdu.user_id, "_")
         AND STARTS_WITH(events.user_id, "/")
         AND SUBSTR(rdu.user_id, 2) = SUBSTR(events.user_id, 2))
-LEFT JOIN
+{person_id_join_type} JOIN
     `{{project_id}}.workflows_views.person_id_to_pseudonymized_id_materialized`
 USING
     (state_code, pseudonymized_id)
