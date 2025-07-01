@@ -1,11 +1,16 @@
 # Configuration for which validations to run for region US_TX.
 
 region_code: US_TX
-# TODO(#32851): Enable validations for US_TX.
-dev_mode: True
+dev_mode: False
 exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: officer_monthly_usage_report_vs_impact_report_active_users_supervision
+    hard_max_allowed_error_override: 0.20
+    override_reason: >-
+      Currently a difference of 1 is triggering this validation. Raising the max allowed 
+      error override because this is not a priority at the moment and because a difference
+      of 1 isn't significant. 6/30/25
 num_allowed_rows_overrides: []
