@@ -99,7 +99,7 @@ def make_add_config_arguments(
     return {
         "opportunity_type": opportunity_type,
         "created_by": "Maria",
-        "created_at": datetime.datetime(2024, 5, 12),
+        "created_at": datetime.datetime(2024, 5, 12, tzinfo=datetime.timezone.utc),
         "variant_description": "variant_description",
         "revision_description": "revision_description",
         "display_name": "display_name",
@@ -179,7 +179,7 @@ WORK_RELEASE_INFO = FullOpportunityInfo(
     experiment_id="work_release_experiment_id",
     completion_event="work_release_event",
     homepage_position=1,
-    last_updated_at=datetime.datetime(2023, 4, 26),
+    last_updated_at=datetime.datetime(2023, 4, 26, tzinfo=datetime.timezone.utc),
     last_updated_by="tony@recidiviz.org",
 )
 
@@ -193,7 +193,7 @@ FAST_FTRD_INFO = FullOpportunityInfo(
     experiment_id="fast_experiment_id",
     completion_event="fast_event",
     homepage_position=2,
-    last_updated_at=datetime.datetime(2023, 4, 27),
+    last_updated_at=datetime.datetime(2023, 4, 27, tzinfo=datetime.timezone.utc),
     last_updated_by="daniel@recidiviz.org",
 )
 
@@ -207,7 +207,7 @@ SLD_INFO = FullOpportunityInfo(
     experiment_id="sld_experiment_id",
     completion_event="sld_event",
     homepage_position=3,
-    last_updated_at=datetime.datetime(2023, 4, 28),
+    last_updated_at=datetime.datetime(2023, 4, 28, tzinfo=datetime.timezone.utc),
     last_updated_by="ken@recidiviz.org",
 )
 
@@ -506,7 +506,10 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(datetime.datetime(2023, 5, 8), actual[0].created_at)
+        self.assertEqual(
+            datetime.datetime(2023, 5, 8, tzinfo=datetime.timezone.utc),
+            actual[0].created_at,
+        )
 
     def test_get_configs_for_type_respects_limit(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
@@ -514,7 +517,10 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(datetime.datetime(2023, 5, 17), actual[0].created_at)
+        self.assertEqual(
+            datetime.datetime(2023, 5, 17, tzinfo=datetime.timezone.utc),
+            actual[0].created_at,
+        )
 
     def test_get_configs_for_type_respects_status(self) -> None:
         actual_active = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
@@ -522,7 +528,10 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual_active))
-        self.assertEqual(datetime.datetime(2023, 5, 3), actual_active[0].created_at)
+        self.assertEqual(
+            datetime.datetime(2023, 5, 3, tzinfo=datetime.timezone.utc),
+            actual_active[0].created_at,
+        )
         self.assertEqual("base config", actual_active[0].variant_description)
 
         actual_inactive = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
@@ -547,7 +556,7 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertIsNotNone(actual)
-        self.assertEqual(datetime.datetime(2023, 5, 8), actual.created_at)  # type: ignore
+        self.assertEqual(datetime.datetime(2023, 5, 8, tzinfo=datetime.timezone.utc), actual.created_at)  # type: ignore
 
     def test_get_config_for_id_returns_none_for_nonexistent_id(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id(
@@ -574,14 +583,17 @@ class TestWorkflowsQuerier(TestCase):
         querier.update_opportunity(
             opportunity_type="usIdNewOpp",
             updated_by="testerZZZ",
-            updated_at=datetime.datetime(2024, 11, 12),
+            updated_at=datetime.datetime(2024, 11, 12, tzinfo=datetime.timezone.utc),
             gating_feature_variant="test_fv",
             homepage_position=423,
         )
 
         opp = lookup_type(querier.get_opportunities(), "usIdNewOpp")
         self.assertEqual("testerZZZ", opp.last_updated_by)
-        self.assertEqual(datetime.datetime(2024, 11, 12), opp.last_updated_at)
+        self.assertEqual(
+            datetime.datetime(2024, 11, 12, tzinfo=datetime.timezone.utc),
+            opp.last_updated_at,
+        )
         self.assertEqual("test_fv", opp.gating_feature_variant)
         self.assertEqual(423, opp.homepage_position)
 
@@ -591,14 +603,17 @@ class TestWorkflowsQuerier(TestCase):
         querier.update_opportunity(
             opportunity_type="usIdSupervisionLevelDowngrade",
             updated_by="testerZZZ",
-            updated_at=datetime.datetime(2024, 11, 12),
+            updated_at=datetime.datetime(2024, 11, 12, tzinfo=datetime.timezone.utc),
             gating_feature_variant=None,
             homepage_position=423,
         )
 
         opp = lookup_type(querier.get_opportunities(), "usIdSupervisionLevelDowngrade")
         self.assertEqual("testerZZZ", opp.last_updated_by)
-        self.assertEqual(datetime.datetime(2024, 11, 12), opp.last_updated_at)
+        self.assertEqual(
+            datetime.datetime(2024, 11, 12, tzinfo=datetime.timezone.utc),
+            opp.last_updated_at,
+        )
         self.assertEqual(None, opp.gating_feature_variant)
         self.assertEqual(423, opp.homepage_position)
 
@@ -609,7 +624,9 @@ class TestWorkflowsQuerier(TestCase):
             querier.update_opportunity(
                 opportunity_type="badType",
                 updated_by="testerZZZ",
-                updated_at=datetime.datetime(2024, 11, 12),
+                updated_at=datetime.datetime(
+                    2024, 11, 12, tzinfo=datetime.timezone.utc
+                ),
                 gating_feature_variant=None,
                 homepage_position=423,
             )

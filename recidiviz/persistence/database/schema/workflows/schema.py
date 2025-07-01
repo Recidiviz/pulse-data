@@ -51,7 +51,7 @@ class Opportunity(WorkflowsBase):
     state_code = Column(String, primary_key=True)
     opportunity_type = Column(String, primary_key=True)
     updated_by = Column(String, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
     gating_feature_variant = Column(String, nullable=True)
     homepage_position = Column(Integer, nullable=False)
     # TODO(#27733): Migrate fields from WorkflowsOpportunityConfig
@@ -86,7 +86,7 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # The person who created this version of the config and when
     created_by = Column(String, nullable=False)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
 
     # A short description of the config variant
     variant_description = Column(String, nullable=False)

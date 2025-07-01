@@ -108,7 +108,7 @@ class OpportunityAPI(MethodView):
         WorkflowsQuerier(state_code).update_opportunity(
             opportunity_type=opportunity_type,
             updated_by=updated_by,
-            updated_at=datetime.datetime.now(),
+            updated_at=datetime.datetime.now(datetime.timezone.utc),
             gating_feature_variant=body_args.get("gating_feature_variant"),
             homepage_position=body_args["homepage_position"],
         )
@@ -173,7 +173,7 @@ class OpportunityConfigurationsAPI(MethodView):
         new_config_id = WorkflowsQuerier(state_code).add_config(
             opportunity_type,
             created_by=created_by,
-            created_at=datetime.datetime.now(),
+            created_at=datetime.datetime.now(datetime.timezone.utc),
             variant_description=body_args["variant_description"],
             revision_description=body_args["revision_description"],
             feature_variant=body_args.get("feature_variant"),

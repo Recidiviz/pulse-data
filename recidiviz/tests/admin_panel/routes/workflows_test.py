@@ -368,7 +368,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
 
             mock_querier.return_value.add_config.assert_called_with(
                 TEST_WORKFLOW_TYPE,
-                created_at=datetime.datetime.now(),
+                created_at=datetime.datetime.now(datetime.timezone.utc),
                 **(config_fields_for_request),
             )
 

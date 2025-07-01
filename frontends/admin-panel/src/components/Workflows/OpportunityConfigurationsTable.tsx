@@ -72,7 +72,10 @@ const OpportunityConfigurationsTable = ({
       title: "Updated",
       dataIndex: undefined,
       sorter: (a, b) => compareAsc(a.createdAt, b.createdAt),
-      render: (opp) => `${opp.createdAt.toLocaleString()} by ${opp.createdBy}`,
+      render: (opp) =>
+        `${new Date(`${opp.createdAt}Z`).toLocaleString("en-US")} by ${
+          opp.createdBy
+        }`,
     },
   });
 
