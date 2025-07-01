@@ -5,7 +5,15 @@ description:
   This table contains daily archives of the resident_record export for
   Workflows, which are read directly from Cloud Storage.
 schema:
+  # TODO(#44536): Deprecate this column in favor of stable_person_external_id once all historical
+  #  values have been backfilled.
   - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id_type
     type: STRING
     mode: NULLABLE
   - name: pseudonymized_id
