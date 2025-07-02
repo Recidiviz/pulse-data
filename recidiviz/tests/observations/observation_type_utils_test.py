@@ -94,9 +94,11 @@ class TestObservationTypeUtils(unittest.TestCase):
         )
         self.assertEqual(
             BigQueryAddress.from_str(
-                "observations__workflows_primary_user_event.workflows_user_action_materialized"
+                "observations__workflows_primary_user_event.workflows_active_usage_event_materialized"
             ),
-            materialized_view_address_for_observation(EventType.WORKFLOWS_USER_ACTION),
+            materialized_view_address_for_observation(
+                EventType.WORKFLOWS_ACTIVE_USAGE_EVENT
+            ),
         )
         self.assertEqual(
             BigQueryAddress.from_str(

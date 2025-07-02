@@ -213,9 +213,6 @@ from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_stat
 from recidiviz.calculator.query.state.views.workflows.milestones_funnel import (
     MILESTONES_FUNNEL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
-    WORKFLOWS_USAGE_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -264,7 +261,6 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
-    WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker
     SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,

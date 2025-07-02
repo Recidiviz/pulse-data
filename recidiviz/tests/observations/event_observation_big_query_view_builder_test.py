@@ -95,7 +95,7 @@ FROM `{project_id}.another_dataset.table`;
         """
 
         view_builder = EventObservationBigQueryViewBuilder(
-            event_type=EventType.WORKFLOWS_USER_ACTION,
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
             description="My description",
             sql_source=sql_source,
             attribute_cols=[
@@ -109,7 +109,7 @@ FROM `{project_id}.another_dataset.table`;
 
         self.assertEqual(
             BigQueryAddress.from_str(
-                "observations__workflows_primary_user_event.workflows_user_action"
+                "observations__workflows_primary_user_event.workflows_active_usage_event"
             ),
             view.address,
         )

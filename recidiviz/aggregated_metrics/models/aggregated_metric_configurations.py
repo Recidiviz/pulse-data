@@ -2300,16 +2300,6 @@ TREATMENT_STARTS = EventCountMetric(
     event_segmentation_columns=["program_id"],
 )
 
-WORKFLOWS_CLIENT_STATUS_UPDATE = EventCountMetric(
-    name="workflows_client_status_update",
-    display_name="Workflows App Client Status Updates",
-    description="Number of updates made on workflows app",
-    event_selector=EventSelector(
-        event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-        event_conditions_dict={},
-    ),
-)
-
 VIOLATIONS = EventCountMetric(
     name="violations",
     display_name="Violations: All",

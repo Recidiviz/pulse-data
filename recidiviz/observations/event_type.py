@@ -84,15 +84,7 @@ class EventType(Enum):
 
     # Event tracking all activity that qualifies a Workflows user as "active"
     WORKFLOWS_ACTIVE_USAGE_EVENT = "WORKFLOWS_ACTIVE_USAGE_EVENT"
-    # Event where the user took an action in Workflows not covered by
-    # WORKFLOWS_USER_CLIENT_STATUS_UPDATE
-    WORKFLOWS_USER_ACTION = "WORKFLOWS_USER_ACTION"
-    # Event where the user updated a person's status (eligible, ineligible, etc.) in
-    # Workflows
-    WORKFLOWS_USER_CLIENT_STATUS_UPDATE = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
     WORKFLOWS_USER_LOGIN = "WORKFLOWS_USER_LOGIN"
-    # Event where the user visited a workflows page
-    WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
     # Event where the user triggered a new snooze status
     WORKFLOWS_USER_SNOOZE_ACTION = "WORKFLOWS_USER_SNOOZE_ACTION"
 
@@ -156,10 +148,7 @@ class EventType(Enum):
             return MetricUnitOfObservationType.SUPERVISION_OFFICER
         if self in [
             EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
-            EventType.WORKFLOWS_USER_ACTION,
-            EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             EventType.WORKFLOWS_USER_LOGIN,
-            EventType.WORKFLOWS_USER_PAGE,
             EventType.WORKFLOWS_USER_SNOOZE_ACTION,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER
