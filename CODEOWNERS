@@ -28,6 +28,6 @@ recidiviz/pipelines/** @Recidiviz/doppler
 recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler
 recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
-recidiviz/tools/looker/generated/** @Recidiviz/doppler-codeowners
+recidiviz/tools/looker/generated/** @emilyemilyemilyemilyemilyemily
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
