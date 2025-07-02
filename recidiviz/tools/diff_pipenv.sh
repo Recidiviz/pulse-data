@@ -14,7 +14,7 @@ source "${BASH_SOURCE_DIR}/script_base.sh"
 # - Remove any lines starting with a comment ('#')
 # - Remove the pypi line ('-i https://pypi.org/simple')
 # - Remove any blank lines
-# - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
+# - Remove pip / setuptools / appnope, since they'll always be installed but aren't always in the Pipfile.lock
 # - Remove appnope, since it is required on Mac but not Linux
 # - Sort, in case the above transformations affected the sort order
 # The command to get the expected packages from pipenv has changed from `pipenv lock -r`
@@ -30,14 +30,38 @@ expected=$( (pipenv requirements --dev || pipenv lock -r --dev) \
     | sed '/^setuptools/d' \
     | sed '/^appnope/d' \
     | sort) || exit_on_fail
+
+# Normalize version names so packages formatted like Abc.def==1.0 are reformatted as abc-def==1.0 (avoid normalizing the
+# version number). In more detail:
+# a) splits each line on ==
+# b) normalizes only the first part which is the package name to lowercase ($1)
+# c) leaves the version ($2) untouched
+# d) reassembles the line as normalized_name==version
+expected=$(echo "$expected" \
+    | awk -F '==' 'NF == 2 {
+        gsub(/[_.]/, "-", $1);
+        print tolower($1) "==" $2;
+    }' \
+    | sort) || exit_on_fail
+
 # The installed command gets all installed packages in a requirements format, with the following transformations
-# - Replace any underscores with dashes
-#   - Note: setuptools replaces any non-alphanumeric/. with a dash but so far we have only seen issues with underscore and
-#     this lets us run it on the whole line instead of just the package name. See
-#     https://github.com/pypa/setuptools/blob/main/pkg_resources/__init__.py#L1314)
-# - Make everything lower case
+# - Normalize version names so packages formatted like Abc.def==1.0 are reformatted as abc-def==1.0 (avoid normalizing the
+#   version number). In more detail:
+#    a) splits each line on ==
+#    b) normalizes only the first part which is the package name to lowercase ($1)
+#    c) leaves the version ($2) untouched
+#    d) reassembles the line as normalized_name==version
+# - Remove pip / setuptools / appnope, since they'll always be installed but aren't always in the Pipfile.lock
 # - Sort, in case the above affected the sort order
-installed=$(pipenv run pip freeze | tr _ - | tr "[:upper:]" "[:lower:]" | sort) || exit_on_fail
+installed=$(pipenv run pip freeze \
+    | awk -F '==' 'NF == 2 {
+        gsub(/[_.]/, "-", $1);
+        print tolower($1) "==" $2;
+    }' \
+    | sed '/^pip/d' \
+    | sed '/^setuptools/d' \
+    | sed '/^appnope/d' \
+    | sort) || exit_on_fail
 
 
 function process_explicit_exceptions {
@@ -66,7 +90,7 @@ ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fa
 if [[ -n $missing ]]
 then
     echo "Your environment is missing or has outdated packages, please run 'pipenv sync --dev'."
-    echo "Expected packages or versions that are incorrect:"
+    echo "Expected packages or versions that are missing from your pipenv:"
     echo "$missing" | indent_output
     run_cmd exit 1
 fi
