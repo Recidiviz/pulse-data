@@ -3250,6 +3250,23 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_task_eligible_and_unviewed",
+    display_name="Average Population: Task Eligible And Unviewed",
+    description="Average daily count of residents eligible and unviewed",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "viewed": ["false"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
