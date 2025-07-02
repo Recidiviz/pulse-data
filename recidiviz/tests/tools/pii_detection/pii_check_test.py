@@ -4,6 +4,7 @@ Unit tests for the pii_check module, which analyzes code changes for potential P
 import unittest
 
 from recidiviz.tools.pii_detection.pii_check import (
+    FIND_PII_GEMINI_PROMPT,
     build_markdown_comment,
     extract_json_from_markdown,
     generate_found_pii_table,
@@ -98,6 +99,23 @@ class TestPIICheck(unittest.TestCase):
             "_This comment is automatically updated on new commits to this PR._",
             markdown_comment,
         )
+
+    def test_prompt_contains_false_positive_guidance(self) -> None:
+        """Test that the prompt contains guidance to avoid false positives."""
+
+        # Check that the prompt contains guidance about print statements
+        self.assertIn("print statement", FIND_PII_GEMINI_PROMPT)
+
+        # Check that the prompt contains guidance about common column names
+        self.assertIn("person_id", FIND_PII_GEMINI_PROMPT)
+        self.assertIn("officer_id", FIND_PII_GEMINI_PROMPT)
+        self.assertIn("race", FIND_PII_GEMINI_PROMPT)
+
+        # Check that the prompt mentions not flagging column name references
+        self.assertIn("column name", FIND_PII_GEMINI_PROMPT.lower())
+
+        # Check that the prompt mentions variable names and code identifiers
+        self.assertIn("Variable names", FIND_PII_GEMINI_PROMPT)
 
 
 if __name__ == "__main__":

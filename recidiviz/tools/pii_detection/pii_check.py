@@ -39,6 +39,11 @@ We also do not want to be alerted to PII of Recidiviz employees or contractors, 
 
 Also, we frequently have files that reference data fields names and descriptions, and files that describe data schemas but do not actually contain PII. Please do not report on these metadata findings but only files whose content themselves constitute PII.
 
+Additionally, please ignore these specific types of false positives:
+- Variables or expressions within print statements or logging statements (e.g., print(variable_name) or console.log(some_variable)) - we clear output so this is not a concern. Do not flag the variable names or expressions themselves as PII, even if they might contain PII values at runtime.
+- Common database column names that refer to PII but are not PII values themselves, such as: person_id, officer_id, offender_id, staff_id, user_id, race, gender, ethnicity, firstname, lastname, middlename, email, phone, address, date_of_birth, DOB, birthdate, and similar column identifiers. Only flag these if they contain actual PII values, not just the column name references.
+- Variable names, function names, or code identifiers that reference PII concepts but do not contain actual PII data.
+
 If you find PII, return your findings as a JSON array where each object has the following keys:
 - "content": The potential PII content.
 - "type": The type of PII detected.
