@@ -210,7 +210,7 @@ jobs:
       - name: Run airflow tests in parallel
         working-directory: ./recidiviz/airflow
         run: |
-          pipenv run pytest tests
+          pipenv run pytest tests -n logical
   db-tests:
     name: Database tests
     runs-on: ubuntu-22.04

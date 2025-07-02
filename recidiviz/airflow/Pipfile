@@ -5,6 +5,7 @@ name = "pypi"
 
 [dev-packages]
 pytest = "*"
+pytest-xdist = "*"
 pylint = "*"
 more-itertools = "*"
 mypy = "*"
