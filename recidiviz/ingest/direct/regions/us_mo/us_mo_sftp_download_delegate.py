@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
 )
 from recidiviz.ingest.direct.sftp.metadata import (
     DISABLED_ALGORITHMS_KWARG,
+    MAX_CONCURRENT_READ_THREADS,
     SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
@@ -69,7 +70,7 @@ class UsMoSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}
 
     def get_read_kwargs(self) -> Dict[str, Any]:
-        return {}
+        return {MAX_CONCURRENT_READ_THREADS: 1}
 
     def post_download_actions(
         self, *, sftp_client: paramiko.SFTPClient, remote_path: str
