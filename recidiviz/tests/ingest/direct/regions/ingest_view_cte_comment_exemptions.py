@@ -228,18 +228,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "final_periods",
             "preliminary_periods",
         ],
-        "state_staff_supervisor_periods": [
-            "aggregated_periods",
-            "final_supervisor_periods",
-            "preliminary_periods",
-        ],
-        "state_staff_supervisor_role_periods": [
-            "aggregated_periods",
-            "all_dates",
-            "all_end_dates",
-            "final_supervisor_periods",
-            "preliminary_periods",
-        ],
         "supervision_contacts": ["atlas_contacts", "contact_modes", "legacy_contacts"],
         "supervision_period": [
             "supervision_periods",

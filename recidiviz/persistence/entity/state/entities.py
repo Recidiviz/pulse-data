@@ -2805,7 +2805,7 @@ class StateStaffRolePeriod(
     StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """
-    Represents information about a staff member’s role in the justice system during a
+    Represents information about a staff member's role in the justice system during a
     particular period of time.
     """
 

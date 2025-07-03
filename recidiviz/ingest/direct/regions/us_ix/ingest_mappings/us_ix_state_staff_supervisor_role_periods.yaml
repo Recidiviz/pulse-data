@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# This file associates the columns outputted from the query in `state_staff_supervisor_role_periods` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:

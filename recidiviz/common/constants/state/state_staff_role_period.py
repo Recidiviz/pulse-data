@@ -32,7 +32,7 @@ class StateStaffRoleType(StateEntityEnum):
     @classmethod
     def get_enum_description(cls) -> str:
         return (
-            "A general type describing a staff member’s role within the justice system."
+            "A general type describing a staff member's role within the justice system."
         )
 
     @classmethod

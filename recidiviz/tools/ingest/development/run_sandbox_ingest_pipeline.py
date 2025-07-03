@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Script that creates sandbox datasets (as appropriate) and launches a sandbox ingest
-pipline for the given state.
+pipeline for the given state.
 
 Usage:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
