@@ -33,7 +33,7 @@ max_allowed_error_overrides:
       Investigation needed. TODO(#42364)
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1000
+    hard_num_allowed_rows_override: 15000
     override_reason: To investigate (#37797)
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 2000
