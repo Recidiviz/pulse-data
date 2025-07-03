@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  SID_NO: STRING
+  APPIONTMENT_ID: STRING
+  Contact_Datetime: DATETIME
+  OFFICER_ID: STRING
+  MEETING_ADDRESS: STRING
+  Type_Description: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_NO
+          id_type: $literal("US_TX_SID")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id: APPIONTMENT_ID
+          scheduled_contact_date: Contact_Datetime
+          contact_method:
+            $enum_mapping:
+              $raw_text: Type_Description
+              $mappings:
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - "Surveillance"
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "Home"
+                  - "Employment"
+                  - "Office"
+                  - "Field"
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "Telephonic"
+                StateSupervisionContactMethod.VIRTUAL:
+                  - "Electronic"
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - "Written"
+          status: $literal_enum(StateSupervisionContactStatus.SCHEDULED)
+          supervision_contact_metadata:
+            $normalized_values_json_dict:
+              OFFICER_ID: OFFICER_ID
+              MEETING_ADDRESS: MEETING_ADDRESS
