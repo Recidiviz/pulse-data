@@ -71,9 +71,7 @@ def case_notes_helper() -> str:
         'Open Interventions' AS criteria,
         CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%' 
             THEN SPLIT(program_id, '##')[OFFSET(1)]
-            WHEN pa.external_id LIKE '%INTERVENTION%'
-            THEN program_id
-            ELSE CAST(NULL AS STRING)
+            ELSE program_id
             END AS note_title,
         CASE WHEN participation_status = 'IN_PROGRESS' 
             THEN 'In progress. Started on'
