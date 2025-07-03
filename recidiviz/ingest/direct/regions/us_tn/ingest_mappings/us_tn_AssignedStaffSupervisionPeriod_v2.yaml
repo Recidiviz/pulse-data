@@ -220,6 +220,7 @@ output:
                   - ZCU # VIOLATOR IN CUSTODY
                   - 9DT # ADM - DETAINER
                   - 7IC # IN CUSTODY
+                  - CCU # IN CUSTODY - COMMUNITY CORR (new value as of 7/1/2025)
 
                 StateSupervisionLevel.UNASSIGNED:
                   - 2IN # RESTRICTED - INTAKE
@@ -251,11 +252,14 @@ output:
                   - ZAP # ABSCONDER PAROLE
                   - NIA # WARRANT FILED; NOT SERVED
                   - 7AB # ABSCONDER
+                  - CAB # ABSCONDER - COMMUNITY CORR (new value as of 7/1/2025)
 
                 StateSupervisionLevel.WARRANT:
                   - 9WR # ADM - WARRANT
                   - WRT # WARRANT STATUS OFFENDER
                   - ZWS # WARRANT STATUS
+                  - CWS # COMMUNITY CORRECTIONS WARRANT (new value as of 7/1/2025)
+                  - CWA # COMMUNITY CORRECTIONS WARRANT ON BOND (new value as of 7/1/2025)
 
                 StateSupervisionLevel.FURLOUGH:
                   - MDF # Medical Furlough
@@ -299,5 +303,12 @@ output:
                   - 7M1 # PHASE 1 REGULAR
                   - 7RP # REFUSAL TO PARTICIPATE
                   - 8LM # should not be used, was intended to be low medium
+                  - CRE # COMMUNITY CORRECTIONS RESIDENTIAL (new value as of 7/1/2025)
+                  - CS1 # COMMUNITY CORRECTIONS STEP 1 INTAKE (new value as of 7/1/2025)
+                  - CS2 # COMMUNITY CORRECTIONS STEP 2 ENHANCED (new value as of 7/1/2025)
+                  - CS3 # COMMUNITY CORRECTIONS STEP 3 MEDIUM (new value as of 7/1/2025)
+                  - CS4 # COMMUNITY CORRECTIONS STEP 4 MINIMUM (new value as of 7/1/2025)
+                  - CDT # COMMUNITY CORRECTIONS DETAINER (new value as of 7/1/2025)
+                  - CDE # COMMUNITY CORRECTIONS DEPORTED (new value as of 7/1/2025)
               # TODO(#27873) consider remapping to PRESENT_WITHOUT_INFO
               $map_null_to: $literal_enum(StateSupervisionLevel.EXTERNAL_UNKNOWN)
