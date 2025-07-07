@@ -136,6 +136,8 @@ products:
         environment: production
       - state_code: US_TX
         environment: production
+      - state_code: US_UT
+        environment: production
   - name: Product failed logins
     description: Tracks the failed logins from the dashboard product over the last 30 days to enhance our user support
     is_state_agnostic: True
