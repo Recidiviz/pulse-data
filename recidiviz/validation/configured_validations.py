@@ -57,9 +57,6 @@ from recidiviz.validation.views.state.in_custody_sps_have_associated_ip import (
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.incarceration_admission_nulls import (
-    INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.incarceration_admission_person_level_external_comparison import (
     INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -68,9 +65,6 @@ from recidiviz.validation.views.state.incarceration_commitments_subset_of_admiss
 )
 from recidiviz.validation.views.state.incarceration_lengths_by_demographics_internal_consistency import (
     INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.incarceration_period_dates_existence import (
-    INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_population_by_admission_reason_internal_consistency import (
     INCARCERATION_POPULATION_BY_ADMISSION_REASON_INTERNAL_CONSISTENCY_VIEW_BUILDER,
@@ -137,9 +131,6 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 )
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.invalid_snooze_notes import (
-    INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.location_ids_to_names_unique_ids import (
     LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
@@ -252,9 +243,6 @@ from recidiviz.validation.views.state.sessions.sessions_persons_in_incarceration
 from recidiviz.validation.views.state.stable_counts.configured_validations import (
     get_all_stable_counts_validations,
 )
-from recidiviz.validation.views.state.supervision_period_dates_existence import (
-    SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -292,6 +280,9 @@ from recidiviz.validation.views.state.supervision_termination_reason_no_date imp
 )
 from recidiviz.validation.views.state.supervisor_roster_exclusions import (
     SUPERVISOR_ROSTER_EXCLUSION_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
+    US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.user_metrics.officer_monthly_usage_report_actions_without_logins import (
     OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,
@@ -405,10 +396,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
             view_builder=INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
@@ -488,14 +475,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
@@ -586,7 +565,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
-            view_builder=INVALID_SNOOZE_NOTES_VIEW_BUILDER,
+            view_builder=US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

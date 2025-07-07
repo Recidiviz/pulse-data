@@ -1144,7 +1144,7 @@ class StateIncarcerationPeriod(
     # Attributes
     #   - When
     admission_date: datetime.date = attr.ib(
-        # TODO(#41434): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#41434): Reset validator to just `attr_validators.is_reasonable_date`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
