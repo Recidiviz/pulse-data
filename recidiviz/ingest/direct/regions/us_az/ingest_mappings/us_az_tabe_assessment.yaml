@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  PERSON_ID: STRING
+  TABE_ID: STRING
+  TABE_DATE: DATETIME
+  CONDUCTING_STAFF_EXTERNAL_ID: STRING
+  READING_SCORE: STRING
+  MATH_COMP_SCORE: STRING
+  MATH_APPLIED_SCORE: STRING
+  MATH_SCORE: STRING
+  LANGUAGE_SCORE: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - TABE_ID
+                - $literal("TABE")
+          assessment_date: TABE_DATE
+          assessment_class: $literal_enum(StateAssessmentClass.EDUCATION)
+          assessment_type: $literal_enum(StateAssessmentType.INTERNAL_UNKNOWN)
+          conducting_staff_external_id: CONDUCTING_STAFF_EXTERNAL_ID
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CONDUCTING_STAFF_EXTERNAL_ID
+                $then: $literal("US_AZ_PERSON_ID")
+          assessment_metadata:
+            $normalized_values_json_dict:
+              READING_SCORE: READING_SCORE
+              MATH_COMP_SCORE: MATH_COMP_SCORE
+              MATH_APPLIED_SCORE: MATH_APPLIED_SCORE
+              MATH_SCORE: MATH_SCORE
+              LANGUAGE_SCORE: LANGUAGE_SCORE

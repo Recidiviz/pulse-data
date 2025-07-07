@@ -175,6 +175,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_az_ingest_view_results.state_task_deadline_tpr_dtp",
     "us_az_ingest_view_results.supervision_periods",
     "us_az_ingest_view_results.supervision_violation",
+    "us_az_ingest_view_results.tabe_assessment",
     "us_az_normalized_state.state_assessment",
     "us_az_normalized_state.state_charge",
     "us_az_normalized_state.state_charge_incarceration_sentence_association",
