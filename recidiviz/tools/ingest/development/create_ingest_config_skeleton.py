@@ -33,13 +33,14 @@ import argparse
 import logging
 import os
 import sys
-from typing import List
-
-from pandas import read_csv
+from typing import List, Optional
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_header_reader import (
+    read_csv_first_row,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import RawDataClassification
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 
@@ -93,6 +94,7 @@ def write_skeleton_config(
     data_classification: RawDataClassification,
     allow_overwrite: bool,
     add_description_placeholders: bool,
+    custom_line_terminator: Optional[str] = None,
 ) -> None:
     """Generates a config skeleton for the table at the given path"""
     table_name = os.path.basename(raw_table_path)
@@ -102,22 +104,21 @@ def write_skeleton_config(
         logging.info("Skipping hidden file: %s", table_name)
         return
 
-    # TODO(#20684): We should just try to rely on some of the import code for handling
-    # encoding and delimiters here. Of course we can't use all of it since we don't
-    # know the columns yet, but we should be able to use the actual CSV reading #
-    # functionality so that it behaves the same here as well.
-    df = read_csv(
-        raw_table_path,
-        delimiter=delimiter,
-        encoding=encoding,
-        dtype=str,
-    )
+    with open(raw_table_path, "r", encoding=encoding) as f:
+        csv_first_row = read_csv_first_row(
+            f=f,
+            delimiter=delimiter,
+            custom_line_terminator=custom_line_terminator,
+            # Making the assumption that the file does not contain quotes
+            # in the header names.
+            ignore_quotes=False,
+        )
 
     fields = [
-        normalize_column_name_for_bq(column_name) for column_name in list(df.columns)
+        normalize_column_name_for_bq(column_name) for column_name in csv_first_row
     ]
 
-    if len(fields) == 1:
+    if len(fields) <= 1:
         logging.error(
             "Unable to split header of %s on delimiter '%s'", raw_table_path, delimiter
         )
@@ -165,6 +166,7 @@ def create_ingest_config_skeleton(
     allow_overwrite: bool,
     initialize_state: bool,
     add_description_placeholders: bool,
+    custom_line_terminator: Optional[str] = None,
 ) -> None:
     """Reads the header off of a raw config file and generate a config yaml skeleton for it."""
     state_code = state_code.lower()
@@ -187,6 +189,7 @@ def create_ingest_config_skeleton(
                 data_classification,
                 allow_overwrite,
                 add_description_placeholders,
+                custom_line_terminator,
             )
         except Exception as e:
             raise ValueError(f"Unable to write config for file: {path}") from e
@@ -271,6 +274,12 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         required=False,
         default=False,
     )
+    parser.add_argument(
+        "--custom-line-terminator",
+        help="Line terminator to use in parsing the CSV file.",
+        type=str,
+        required=False,
+    )
 
     known_args, _ = parser.parse_known_args(argv)
 
@@ -281,29 +290,23 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments(sys.argv)
 
-    if args.file_path:
-        create_ingest_config_skeleton(
-            [args.file_path],
-            args.state_code,
-            args.delimiter,
-            args.encoding,
-            args.classification,
-            args.allow_overwrite,
-            args.initialize_state,
-            args.add_description_placeholders,
-        )
-    else:
-        # get all files in the supplied folder
-        create_ingest_config_skeleton(
-            [
-                f"{args.folder_path}/{filename}"
-                for filename in os.listdir(args.folder_path)
-            ],
-            args.state_code,
-            args.delimiter,
-            args.encoding,
-            args.classification,
-            args.allow_overwrite,
-            args.initialize_state,
-            args.add_description_placeholders,
-        )
+    raw_file_paths = (
+        [args.file_path]
+        if args.file_path
+        else [
+            os.path.join(args.folder_path, filename)
+            for filename in os.listdir(args.folder_path)
+        ]
+    )
+
+    create_ingest_config_skeleton(
+        raw_table_paths=raw_file_paths,
+        state_code=args.state_code,
+        delimiter=args.delimiter,
+        encoding=args.encoding,
+        data_classification=args.classification,
+        allow_overwrite=args.allow_overwrite,
+        initialize_state=args.initialize_state,
+        add_description_placeholders=args.add_description_placeholders,
+        custom_line_terminator=args.custom_line_terminator,
+    )

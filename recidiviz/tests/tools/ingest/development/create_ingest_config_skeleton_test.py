@@ -32,6 +32,7 @@ from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
 
 INPUT_TABLE = "raw_table_1"
 HIDDEN_INPUT_TABLE = ".raw_table_1"
+FIXTURE_DIR_NAME = "create_ingest_config_skeleton_test_fixtures"
 
 FAKE_STATE = "us_xx"
 
@@ -42,7 +43,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
     def setUp(self) -> None:
         self.input_path = os.path.join(
             os.path.dirname(__file__),
-            "create_ingest_config_skeleton_test_fixtures",
+            FIXTURE_DIR_NAME,
             INPUT_TABLE + ".txt",
         )
         self.state_code = FAKE_STATE
@@ -51,9 +52,46 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         self.allow_overwrite = False
         self.initialize_state = True
         self.add_description_placeholders = False
+        self.custom_line_terminator = None
 
     def tearDown(self) -> None:
         shutil.rmtree(os.path.split(make_config_directory(FAKE_STATE))[0])
+
+    def test_create_structure_custom_line_terminator(self) -> None:
+        file_tag = "raw_table_2"
+        create_ingest_config_skeleton(
+            raw_table_paths=[
+                os.path.join(
+                    os.path.dirname(__file__),
+                    FIXTURE_DIR_NAME,
+                    f"{file_tag}.txt",
+                )
+            ],
+            state_code=self.state_code,
+            delimiter="‡",
+            encoding=self.encoding,
+            data_classification=RawDataClassification.SOURCE,
+            allow_overwrite=self.allow_overwrite,
+            initialize_state=self.initialize_state,
+            add_description_placeholders=self.add_description_placeholders,
+            custom_line_terminator="†",
+        )
+
+        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+
+        self.assertIsNotNone(config)
+
+        table_config = config.raw_file_configs[file_tag]
+        self.assertEqual(table_config.file_tag, file_tag)
+        self.assertEqual(table_config.data_classification, RawDataClassification.SOURCE)
+        self.assertEqual(
+            [field.name for field in table_config.current_columns],
+            ["field1", "field2", "field3", "field_4"],
+        )
+        self.assertEqual(
+            [field.description for field in table_config.current_columns],
+            [None, None, None, None],
+        )
 
     def test_create_structure_and_check(self) -> None:
         """Create a raw file config from a test input, try to ingest it, and check the results."""
@@ -66,6 +104,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             self.allow_overwrite,
             self.initialize_state,
             self.add_description_placeholders,
+            self.custom_line_terminator,
         )
 
         config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
@@ -95,6 +134,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             self.allow_overwrite,
             self.initialize_state,
             add_description_placeholders=True,
+            custom_line_terminator=self.custom_line_terminator,
         )
 
         config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
@@ -128,6 +168,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             self.allow_overwrite,
             self.initialize_state,
             add_description_placeholders=True,
+            custom_line_terminator=self.custom_line_terminator,
         )
 
         config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
