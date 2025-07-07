@@ -23,6 +23,7 @@ from unittest.mock import patch
 
 import pytest
 from google.api_core.exceptions import NotFound
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
@@ -54,6 +55,7 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type_list
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
@@ -224,44 +226,86 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         super().tearDown()
         self.view_update_client_patcher.stop()
 
-    def _has_state_code_column(self, address: BigQueryAddress) -> bool | None:
+    def _get_schema(
+        self, address: BigQueryAddress
+    ) -> list[bigquery.SchemaField] | None:
         try:
             schema = self.bq_client.get_table(address=address).schema
-            if not schema:
-                raise ValueError(f"Found empty schema for [{address.to_str()}]")
-            return any(f.name == "state_code" for f in schema)
         except NotFound:
             # This view was skipped for optimization reasons, do not check for a
             # state_code column.
             return None
 
-    def _check_for_missing_state_code_column_views(self) -> None:
-        """Raises an error if we find any views that do not have a state_code column
-        and have not been explicitly exempted from having one.
-        """
+        if not schema:
+            raise ValueError(f"Found empty schema for [{address.to_str()}]")
 
-        has_state_code_addresses = set()
-        missing_state_code_addresses = set()
-        skipped_addresses = set()
+        return list(assert_type_list(schema, bigquery.SchemaField))
+
+    # TODO(#18306): Once the BigQueryViewBuilders store the schema, update this check
+    #  to just verify that the schema generated in this test matches the schema defined
+    #  in the builder, then migrate all the remaining checks in this function to just
+    #  query against the schema defined on the builder.
+    def _run_view_schema_checks(self) -> None:
+        view_address_to_schema = self._load_view_schemas_by_address()
+        self._verify_views_all_have_state_code_column(view_address_to_schema)
+        # TODO(#44757): Enforce no views have an ambiguous `external_id` column name
+        #  (with exemptions)
+
+    def _schema_has_field(
+        self, schema: list[bigquery.SchemaField], field_name: str
+    ) -> bool:
+        return any(f.name == field_name for f in schema)
+
+    def _load_view_schemas_by_address(
+        self,
+    ) -> dict[BigQueryAddress, list[bigquery.SchemaField] | None]:
+        """Loads schemas for every view address into a map. If the view was not loaded
+        during the view graph test as an optimization, the schema returned for that
+        view will be None.
+        """
+        view_address_to_schema: dict[
+            BigQueryAddress, list[bigquery.SchemaField] | None
+        ] = {}
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
             # full, discarding connection" errors.
             max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
         ) as executor:
-            get_has_column_futures = {
-                executor.submit(self._has_state_code_column, vb.address): vb.address
+            get_schema_futures = {
+                executor.submit(self._get_schema, vb.address): vb.address
                 for vb in self._view_builders_to_update
             }
-            for future in futures.as_completed(get_has_column_futures):
-                address = get_has_column_futures[future]
-                has_state_code_col = future.result()
-                if has_state_code_col is None:
-                    skipped_addresses.add(address)
-                elif has_state_code_col:
-                    has_state_code_addresses.add(address)
-                else:
-                    missing_state_code_addresses.add(address)
+            for future in futures.as_completed(get_schema_futures):
+                address = get_schema_futures[future]
+                schema = future.result()
+                view_address_to_schema[address] = schema
+        return view_address_to_schema
+
+    def _verify_views_all_have_state_code_column(
+        self,
+        view_address_to_schema: dict[
+            BigQueryAddress, list[bigquery.SchemaField] | None
+        ],
+    ) -> None:
+        """Throws if we find any view that does not have a state_code column (and is not
+        in our list of exempted views).
+        """
+        has_state_code_addresses = set()
+        missing_state_code_addresses = set()
+        skipped_addresses = set()
+        for address, schema in view_address_to_schema.items():
+            if schema is None:
+                # This view was skipped for optimization reasons, do not check for a
+                # state_code column.
+                skipped_addresses.add(address)
+                continue
+
+            has_state_code_col = self._schema_has_field(schema, "state_code")
+            if has_state_code_col:
+                has_state_code_addresses.add(address)
+            else:
+                missing_state_code_addresses.add(address)
 
         expected_missing_state_code_addresses = {
             a for a in self._known_no_state_col_addresses if a not in skipped_addresses
@@ -355,8 +399,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             # None of the tables exist already, so always materialize
             materialize_changed_views_only=False,
         )
-
-        self._check_for_missing_state_code_column_views()
+        self._run_view_schema_checks()
 
 
 class StagingViewGraphTest(BaseViewGraphTest):
