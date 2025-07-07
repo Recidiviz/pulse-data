@@ -60,7 +60,7 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier get_first_of_month_date_officer_vitals_metric"
 ] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0, metric_date='2025-06-01', previous_metric_date='2025-05-01')])"
     ),
     GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
 ]
@@ -83,7 +83,7 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier get_missing_previous_date_vitals_metric"
 ] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date=None)])"
     ),
     GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
 ]
@@ -92,17 +92,17 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier get_missing_previous_metric_value_vitals_metrics"
 ] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash4', metric_value=76.0, metric_30d_delta=0.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash4', metric_value=76.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15')])"
     ),
     GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
 ]
 
 snapshots["TestOutliersQuerier.TestOutliersQuerier get_officer_vitals_metrics"] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0, metric_date='2025-06-14', previous_metric_date='2025-05-15')])"
     ),
     GenericRepr(
-        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0)])"
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15')])"
     ),
 ]
 
@@ -110,19 +110,19 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier get_supervisor_can_access_all_supervisors_vitals_metrics"
 ] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=95.0, metric_30d_delta=-3.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash4', metric_value=76.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=95.0, metric_30d_delta=-3.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash4', metric_value=76.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date=None), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0, metric_date='2025-06-01', previous_metric_date='2025-05-01')])"
     ),
     GenericRepr(
-        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=100.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0)])"
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=100.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash11', metric_value=37.0, metric_30d_delta=0.0, metric_date='2025-07-01', previous_metric_date=None), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash11', metric_value=42.0, metric_30d_delta=5.0, metric_date='2025-07-31', previous_metric_date='2025-07-01'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15')])"
     ),
 ]
 
 snapshots["TestOutliersQuerier.TestOutliersQuerier get_supervisor_vitals_metrics"] = [
     GenericRepr(
-        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=95.0, metric_30d_delta=-3.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0)])"
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=95.0, metric_30d_delta=-3.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date=None), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0, metric_date='2025-06-01', previous_metric_date='2025-05-01')])"
     ),
     GenericRepr(
-        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=100.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0)])"
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=100.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15'), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0, metric_date='2025-06-14', previous_metric_date='2025-05-15')])"
     ),
 ]
 
@@ -131,6 +131,36 @@ snapshots[
 ] = [
     GenericRepr("VitalsMetric(metric_id='timely_contact', vitals_metrics=[])"),
     GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_vitals_metric_with_long_month"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact_due_date_based', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash11', metric_value=33.0, metric_30d_delta=-9.0, metric_date='2025-07-01', previous_metric_date='2025-06-01')])"
+    ),
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash11', metric_value=42.0, metric_30d_delta=5.0, metric_date='2025-07-31', previous_metric_date='2025-07-01')])"
+    ),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_vitals_metric_with_month_period"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact_due_date_based', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash9', metric_value=55.0, metric_30d_delta=-11.0, metric_date='2025-06-01', previous_metric_date='2025-05-01')])"
+    )
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_vitals_metric_with_short_month"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact_due_date_based', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash10', metric_value=33.0, metric_30d_delta=-9.0, metric_date='2025-03-01', previous_metric_date='2025-02-01')])"
+    ),
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash10', metric_value=42.0, metric_30d_delta=5.0, metric_date='2025-03-01', previous_metric_date='2025-01-31')])"
+    ),
 ]
 
 snapshots[

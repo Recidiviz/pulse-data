@@ -53,8 +53,10 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": -17.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 80.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
             }
         ],
     },
@@ -63,8 +65,10 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 94.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": None,
             }
         ],
     },
@@ -78,13 +82,17 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": -3.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 95.0,
                 "officerPseudonymizedId": "officerhash1",
+                "previousMetricDate": "2025-06-01",
             },
             {
                 "metric30DDelta": -17.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 80.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
             },
         ],
     },
@@ -93,13 +101,17 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 100.0,
                 "officerPseudonymizedId": "officerhash1",
+                "previousMetricDate": None,
             },
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 94.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": None,
             },
         ],
     },
@@ -720,8 +732,10 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": -17.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 80.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
             }
         ],
     },
@@ -730,8 +744,10 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 94.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": None,
             }
         ],
     },
@@ -822,13 +838,17 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": -3.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 95.0,
                 "officerPseudonymizedId": "officerhash1",
+                "previousMetricDate": "2025-06-01",
             },
             {
                 "metric30DDelta": -17.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 80.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
             },
         ],
     },
@@ -837,13 +857,17 @@ snapshots[
         "vitalsMetrics": [
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 100.0,
                 "officerPseudonymizedId": "officerhash1",
+                "previousMetricDate": "2025-06-01",
             },
             {
                 "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
                 "metricValue": 94.0,
                 "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
             },
         ],
     },

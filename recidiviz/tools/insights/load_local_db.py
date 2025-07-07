@@ -26,7 +26,7 @@ and will match the schema of the data being imported.
 
 If this is your first time trying to set up the Insights database:
 1. Initialize the devepment environment
-`./recidiviz/tools/outliers/initialize_development_environment.sh`
+`./recidiviz/tools/insights/initialize_development_environment.sh`
 2. Run docker-compose to run migrations and start the application-data-import server
 Note: This requires that local state databases already exist. If you don't have a db
 within insights_db for each state in outliers_enabled_states.yaml you must create them first.

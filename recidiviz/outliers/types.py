@@ -524,7 +524,12 @@ class SupervisionOfficerVitalsEntity:
 
     officer_pseudonymized_id: str
     metric_value: float
+    # Despite the name, this field represents the difference of the metric value between
+    # previous_metric_date and metric_date; those dates might not be 30 days apart.
+    # When there is no previous metric date, the delta is 0.
     metric_30d_delta: float
+    metric_date: str
+    previous_metric_date: Optional[str]
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -545,6 +550,8 @@ class VitalsMetric:
         officer_pseudonymized_id: str,
         metric_value: float,
         metric_30d_delta: int,
+        end_date: date,
+        previous_end_date: date,
     ) -> None:
         """Adds a SupervisionOfficerVitalsEntity to the vitals_metrics list using provided parameters."""
         # Create a new SupervisionOfficerVitalsEntity instance
@@ -552,6 +559,8 @@ class VitalsMetric:
             officer_pseudonymized_id=officer_pseudonymized_id,
             metric_value=metric_value,
             metric_30d_delta=metric_30d_delta,
+            metric_date=str(end_date),
+            previous_metric_date=str(previous_end_date) if previous_end_date else None,
         )
 
         # Directly append to the existing list

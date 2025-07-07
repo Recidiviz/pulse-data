@@ -40,6 +40,7 @@ from recidiviz.outliers.constants import (
     TIMELY_RISK_ASSESSMENT,
     VIOLATIONS,
 )
+from recidiviz.outliers.outliers_configs import TIMELY_CONTACT_DUE_DATE_BASED
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
@@ -1611,6 +1612,70 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.snapshot.assert_match(  # type: ignore[attr-defined]
             result, name="get_first_of_month_date_officer_vitals_metric"
+        )
+
+    @freezegun.freeze_time(datetime(2025, 6, 14, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_vitals_metric_with_month_period(self, mock_config: MagicMock) -> None:
+        pseudo_id = "officerhash9"
+        state_code = StateCode.US_XX
+        querier = OutliersQuerier(state_code, self.test_user_context.feature_variants)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT_DUE_DATE_BASED],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_vitals_metric_with_month_period"
+        )
+
+    @freezegun.freeze_time(datetime(2025, 3, 2, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_vitals_metric_with_short_month(self, mock_config: MagicMock) -> None:
+        # Edge case when the previous month was shorter than 30 days, so the previous metric
+        # end dates for MONTH and DAY period metrics are in different months.
+        pseudo_id = "officerhash10"
+        state_code = StateCode.US_XX
+        querier = OutliersQuerier(state_code, self.test_user_context.feature_variants)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT_DUE_DATE_BASED, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_vitals_metric_with_short_month"
+        )
+
+    @freezegun.freeze_time(datetime(2025, 7, 31, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_vitals_metric_with_long_month(self, mock_config: MagicMock) -> None:
+        # Edge case when the previous month was longer than 30 days, so the previous metric
+        # end dates for MONTH and DAY period metrics are in different months.
+        pseudo_id = "officerhash11"
+        state_code = StateCode.US_XX
+        querier = OutliersQuerier(state_code, self.test_user_context.feature_variants)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT_DUE_DATE_BASED, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_vitals_metric_with_long_month"
         )
 
     @patch(

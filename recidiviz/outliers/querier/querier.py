@@ -1094,6 +1094,7 @@ class OutliersQuerier:
         Retrieve vitals metrics for officers by officer or supervisor ID.
 
         :param officer_id: List[str] pseudonymized ids for the officers vitals metrics will be retrieved for.
+                                     If not included, all officers' metrics will be retrieved.
         :return: List of vitals metrics entities
         """
 
@@ -1103,27 +1104,38 @@ class OutliersQuerier:
 
         vitals_metrics_by_metric_id = self._init_vitals_metrics_dict_for_query()
 
+        TODAY = datetime.today().date()
+        # A date that is within the current period and after the end of the previous period.
+        # The "current period" is the past 30 days if `period` is DAY
+        # or the span of time between the 1st of last month and the 1st of this month
+        # if `period` is MONTH.
+        # TODO(#45008): Consider cleaning up query so these cutoffs aren't necessary
+        DAY_PERIOD_DATE_CUTOFF = TODAY - relativedelta(days=30)
+        MONTH_PERIOD_DATE_CUTOFF = TODAY - relativedelta(months=1)
+
         with self.insights_database_session() as session:
-
-            TODAY = datetime.today().date()
-            CURRENT_PERIOD_START_DATE = TODAY - relativedelta(days=30)
-            PREVIOUS_PERIOD_START_DATE = CURRENT_PERIOD_START_DATE - relativedelta(
-                days=30
-            )
-
-            # Subquery: Get the metric value, end date, and previous metric value
-            # for each officer, filtering by the provided pseudonymized IDs, metric_ids, and last two periods.
+            # Subquery: Get the current metric value and (if it exists) previous metric
+            # value for each officer, filtering by the provided pseudonymized IDs and
+            # vitals metrics IDs.
             #
-            # NOTE: We assume that there will be only two calculated periods ~30 days
-            # apart between the current date, today (inclusive), and the previous period
-            # start date, 60 days ago (exclusive).
+            # NOTE: We assume that there will be up to two calculated metric values,
+            # and that those values will represent the most recent two periods.
+            # In other words, we assume there are up to two rows per officer ID and metric ID
+            # combination in the source table, where the end_dates are:
+            # - for metrics calculated with a period of DAY, such as assessments,
+            #   1) the day before the current date and
+            #   2) the day 30 days before the current date
+            # - for metrics calculated with a period of MONTH, such as timely_contact_due_date_based,
+            #   1) the 1st of the current month and
+            #   2) the 1st of the previous month
+            # (where "the current date" is the date the aggregated metrics collection was last refreshed.)
             #
             # https://github.com/Recidiviz/pulse-data/pull/35760#discussion_r1882412306
-            # https://github.com/Recidiviz/pulse-data/blob/ken/insights-routes/recidiviz/calculator/query/state/views/outliers/supervision_officer_metrics.py#L116-L139
             filtered_officers_and_metrics = (
                 session.query(
                     SupervisionOfficerMetric.metric_id,
                     SupervisionOfficerMetric.metric_value,
+                    SupervisionOfficerMetric.period,
                     SupervisionOfficerMetric.end_date,
                     SupervisionOfficer.pseudonymized_id,
                     func.lag(SupervisionOfficerMetric.metric_value)
@@ -1135,6 +1147,15 @@ class OutliersQuerier:
                         order_by=SupervisionOfficerMetric.end_date,
                     )
                     .label("previous_metric_value"),
+                    func.lag(SupervisionOfficerMetric.end_date)
+                    .over(
+                        partition_by=[
+                            SupervisionOfficerMetric.metric_id,
+                            SupervisionOfficerMetric.officer_id,
+                        ],
+                        order_by=SupervisionOfficerMetric.end_date,
+                    )
+                    .label("previous_end_date"),
                 )
                 .join(
                     SupervisionOfficer,
@@ -1143,12 +1164,11 @@ class OutliersQuerier:
                 )
                 .filter(
                     SupervisionOfficerMetric.metric_id.in_(vitals_metrics_by_metric_id),
-                    SupervisionOfficerMetric.end_date >= PREVIOUS_PERIOD_START_DATE,
                     (
                         SupervisionOfficer.pseudonymized_id.in_(
                             supervision_officer_pseudonymized_ids
                         )
-                        if supervision_officer_pseudonymized_ids
+                        if supervision_officer_pseudonymized_ids is not None
                         else True
                     ),
                 )
@@ -1159,12 +1179,14 @@ class OutliersQuerier:
             # and the delta between the current and previous period metric values as
             # metric_30d_delta.
             #
-            # NOTE: This will only show vitals metrics for the provided
+            # NOTE: This will only calculate a difference for the provided
             # pseudonymized IDs that have a metric value for the current period.
             vitals_metrics_for_officers_query = session.query(
                 filtered_officers_and_metrics.c.pseudonymized_id,
                 filtered_officers_and_metrics.c.metric_id,
                 filtered_officers_and_metrics.c.metric_value,
+                filtered_officers_and_metrics.c.end_date,
+                filtered_officers_and_metrics.c.previous_end_date,
                 func.round(
                     func.coalesce(
                         filtered_officers_and_metrics.c.metric_value
@@ -1173,18 +1195,36 @@ class OutliersQuerier:
                     ).label("metric_30d_delta")
                 ),
             ).filter(
-                filtered_officers_and_metrics.c.end_date > CURRENT_PERIOD_START_DATE,
                 filtered_officers_and_metrics.c.metric_value.isnot(None),
+                case(
+                    (
+                        filtered_officers_and_metrics.c.period == "DAY",
+                        filtered_officers_and_metrics.c.end_date
+                        > DAY_PERIOD_DATE_CUTOFF,
+                    ),
+                    (
+                        filtered_officers_and_metrics.c.period == "MONTH",
+                        filtered_officers_and_metrics.c.end_date
+                        > MONTH_PERIOD_DATE_CUTOFF,
+                    ),
+                    else_=False,
+                ),
             )
 
             for (
                 pseudonymized_id,
                 metric_id,
                 metric_value,
+                end_date,
+                previous_end_date,
                 metric_30d_delta,
             ) in vitals_metrics_for_officers_query:
                 vitals_metrics_by_metric_id[metric_id].add_officer_vitals_entity(
-                    pseudonymized_id, metric_value, metric_30d_delta
+                    pseudonymized_id,
+                    metric_value,
+                    metric_30d_delta,
+                    end_date,
+                    previous_end_date,
                 )
 
         return sorted(vitals_metrics_by_metric_id.values())
