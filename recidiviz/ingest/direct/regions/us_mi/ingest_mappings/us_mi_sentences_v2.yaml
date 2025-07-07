@@ -366,6 +366,7 @@ output:
                               - "7580" # Plea Withdrawn
                               - "7211" # Release from SAI - Incomplete
                               - "5238" # Client Number Reassignment
+                              - "7603" # Sentenced to a Monetary Sentence Only
                             StateSentenceStatus.PARDONED:
                               - "5242" # Pardoned
                             StateSentenceStatus.SUSPENDED:
