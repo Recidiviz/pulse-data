@@ -113,7 +113,7 @@ def client_specific_fines_fees_balance(
         SELECT
             state_code,
             person_id,
-            external_id,
+            payment_account_external_id,
             fee_type,
             transaction_type,
             start_date,
