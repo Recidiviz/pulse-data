@@ -38,7 +38,12 @@ output:
                 StateSupervisionContactMethod.WRITTEN_MESSAGE:
                   - "Written"
           status: $literal_enum(StateSupervisionContactStatus.SCHEDULED)
+          contacting_staff_external_id: OFFICER_ID
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: OFFICER_ID
+                $then: $literal("US_TX_STAFF_ID")
           supervision_contact_metadata:
             $normalized_values_json_dict:
-              OFFICER_ID: OFFICER_ID
               MEETING_ADDRESS: MEETING_ADDRESS
