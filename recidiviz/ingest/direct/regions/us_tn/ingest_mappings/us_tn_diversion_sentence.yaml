@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  # Form the unique ID for charges and sentences.
+  OffenderID: STRING
+  ConvictionCounty: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+
+  # StateSentence information
+  DiversionGrantedDate: DATE
+
+  # StateChargeV2 information
+  OffenseDescription: STRING
+  SexOffenderFlag: STRING
+  DrugOffensesFlag: STRING
+  AssaultiveOffenseFlag: STRING
+
+  # StateSentenceStatusSnapshot information
+  DiversionStatus: STRING
+  StatusDate: DATE
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - ConvictionCounty
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+          # TODO(#44429)
+          # Differentiates observation in Sentence from observations
+          # in Diversion. These are likely revocations and will
+          # be accounted for in normalization.
+          - $literal("DIVERSION")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_type: $literal_enum(StateSentenceType.PROBATION)
+          imposed_date: DiversionGrantedDate
+          sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
+          charges:
+            # TODO(#7424) Update classification when we've documented FelonyClass, etc.
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                # TODO(#44447) If there are pre-trial diversions, this client
+                # was never convicted! They sign a memorandum of understanding
+                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                date_charged: DiversionGrantedDate
+                county_code: ConvictionCounty
+                description: OffenseDescription
+                is_sex_offense:
+                  $equal: [SexOffenderFlag, $literal("Y")]
+                is_drug:
+                  $equal: [DrugOffensesFlag, $literal("Y")]
+                is_violent:
+                  $equal: [AssaultiveOffenseFlag, $literal("Y")]
+          sentence_status_snapshots:
+            # We add sequence num manually here for when a status is completed on the diversiongranted date
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: DiversionGrantedDate
+                status: $literal_enum(StateSentenceStatus.SERVING)
+                sequence_num: $literal("1")
+            - $conditional:
+                - $if:
+                    $equal: [DiversionStatus, $literal("C")]
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      status_update_datetime: StatusDate
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
+                      sequence_num: $literal("2")
