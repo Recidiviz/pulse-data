@@ -66,7 +66,10 @@ class JobRun:
             an Airflow task, this will be the `task_id`.
         - state (JobRunState): the state of the this job.
         - error_message (str | None): error message associated with this job.
-        - job_type (str): the type of run associated with this job.
+        - job_type (JobRunType): the type of run associated with this job.
+        - job_run_num (int): the run / attempt number of this job run. Used to represent
+            and properly order cases with multiple runs with the same JobRun.unique_keys
+            and the same |execution_date|.
     """
 
     dag_id: str = attr.field(validator=attr_validators.is_str)
@@ -80,14 +83,25 @@ class JobRun:
     state: JobRunState = attr.field(validator=attr.validators.in_(JobRunState))
     error_message: str | None = attr.field(validator=attr_validators.is_opt_str)
     job_type: JobRunType = attr.field(validator=attr.validators.in_(JobRunType))
+    job_run_num: int = attr.field(validator=attr_validators.is_int)
 
     @classmethod
     def unique_keys(cls) -> list[str]:
         return ["dag_id", "dag_run_config", "job_type", "job_id"]
 
+    @property
+    def unique_key(self) -> tuple[str, str, str, str]:
+        """Returns the unique key for this job run, which is a tuple of the
+        JobRun.unique_keys.
+        """
+        return tuple(getattr(self, key) for key in self.unique_keys())
+
     @classmethod
-    def date_key(cls) -> list[str]:
-        return ["execution_date"]
+    def order_by_keys(cls) -> list[str]:
+        """List of keys to order by in a SQL-order by fashion (order by the first, only
+        use the second if the first two are equal, etc).
+        """
+        return ["execution_date", "job_run_num"]
 
     @classmethod
     def from_airflow_task_instance(
@@ -99,6 +113,7 @@ class JobRun:
         task_id: str,
         state: int,
         job_type: JobRunType,
+        try_number: int | None,
         error_message: str | None
     ) -> "JobRun":
         # sort dag run config to make sure that two different parameter orderings
@@ -116,6 +131,7 @@ class JobRun:
             dag_run_config=json.dumps(sorted_dag_run_config),
             job_id=task_id,
             state=JobRunState(state),
+            job_run_num=try_number or 0,
             job_type=job_type,
             error_message=error_message,
         )

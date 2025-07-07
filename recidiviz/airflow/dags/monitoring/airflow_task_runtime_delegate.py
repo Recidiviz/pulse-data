@@ -22,13 +22,15 @@ import datetime
 
 import attr
 import sqlalchemy as sa
-from airflow.models import DagRun, TaskInstance
 from airflow.utils.session import create_session
 from airflow.utils.state import TaskInstanceState
 from more_itertools import one
-from sqlalchemy import and_, case, func, or_, text, true
+from sqlalchemy import and_, case, func, or_, true
 from sqlalchemy.sql.elements import BooleanClauseList, ColumnElement
 
+from recidiviz.airflow.dags.monitoring.airflow_task_history_builder_mixin import (
+    AirflowTaskHistoryBuilderMixin,
+)
 from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
@@ -119,7 +121,7 @@ STARTED_TASK_STATES = frozenset(
 )
 
 
-class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate):
+class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate, AirflowTaskHistoryBuilderMixin):
     """Delegate that builds JobRunHistory based on the historical runtime of specific
     airflow tasks.
 
@@ -215,48 +217,41 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate):
     def fetch_job_runs(self, *, lookback: datetime.timedelta) -> list[JobRun]:
         with create_session() as session:
 
-            latest_tasks = (
+            # Airflow stores the most recent run of each task in the TaskInstance table,
+            # and all previous runs in TaskInstanceHistory. We want to fetch all previous
+            # runs of tasks
+            all_tasks = self.build_task_history(
+                dag_id=self.dag_id, lookback=lookback
+            ).cte("all_tasks")
+
+            filtered_tasks_with_runtime = (
                 session.query(
-                    TaskInstance.dag_id,
-                    TaskInstance.task_id,
-                    DagRun.conf,
-                    DagRun.execution_date,
-                    # map_index will be -1 for all non-mapped tasks
-                    TaskInstance.map_index,
+                    all_tasks,
                     (
                         sa.extract(
                             "epoch",
                             func.coalesce(
-                                TaskInstance.end_date,
-                                DagRun.end_date,
+                                sa.column("end_date"),
+                                sa.column("dag_end_date"),
                                 datetime.datetime.now(tz=datetime.UTC).isoformat(),
                             )
-                            - TaskInstance.start_date,
+                            - sa.column("start_date"),
                         )
                         / 60
                     ).label("task_duration"),
-                )
-                .join(TaskInstance.dag_run)
-                # filter to correct dag
-                .filter(TaskInstance.dag_id.in_([self.dag_id]))
-                # filter to set of tasks that we want to alert on
-                .filter(
+                ).filter(  # filter to set of tasks that we want to alert on
                     or_(*[config.build_task_filter_clause() for config in self.configs])
                 )
                 # filter to the set of task states we know how to reason about
-                .filter(TaskInstance.state.in_(STARTED_TASK_STATES))
+                .filter(sa.column("task_state").in_(STARTED_TASK_STATES))
                 # all of the above task states should have a started time, but just
                 # make sure it does
-                .filter(TaskInstance.start_date.isnot(None))
-                .filter(
-                    func.age(TaskInstance.start_date)
-                    < text(f"interval '{lookback.total_seconds()} seconds'")
-                )
-            ).cte("latest_tasks")
+                .filter(sa.column("start_date").isnot(None))
+            ).cte("filtered_tasks_with_runtime")
 
-            latest_tasks_with_states = (
+            filtered_tasks_with_state = (
                 session.query(
-                    latest_tasks,
+                    filtered_tasks_with_runtime,
                     case(
                         self._build_state_case_clauses(),
                         else_=JobRunState.UNKNOWN.value,
@@ -277,22 +272,24 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate):
             #   - A group is only considered successful if all members are successful
 
             query = session.query(
-                latest_tasks_with_states.c.dag_id,
-                latest_tasks_with_states.c.task_id,
-                latest_tasks_with_states.c.conf,
-                latest_tasks_with_states.c.execution_date,
-                func.max(latest_tasks_with_states.c.task_duration).label(
+                filtered_tasks_with_state.c.dag_id,
+                filtered_tasks_with_state.c.task_id,
+                filtered_tasks_with_state.c.conf,
+                filtered_tasks_with_state.c.execution_date,
+                filtered_tasks_with_state.c.try_number,
+                func.max(filtered_tasks_with_state.c.task_duration).label(
                     "max_duration"
                 ),
-                func.min(latest_tasks_with_states.c.threshold_exceeded).label(
+                func.min(filtered_tasks_with_state.c.threshold_exceeded).label(
                     "threshold_exceeded"
                 ),
-                func.max(latest_tasks_with_states.c.state).label("state"),
+                func.max(filtered_tasks_with_state.c.state).label("state"),
             ).group_by(
-                latest_tasks_with_states.c.dag_id,
-                latest_tasks_with_states.c.task_id,
-                latest_tasks_with_states.c.conf,
-                latest_tasks_with_states.c.execution_date,
+                filtered_tasks_with_state.c.dag_id,
+                filtered_tasks_with_state.c.task_id,
+                filtered_tasks_with_state.c.conf,
+                filtered_tasks_with_state.c.execution_date,
+                filtered_tasks_with_state.c.try_number,
             )
 
             return [
@@ -302,6 +299,7 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate):
                     conf=task_instance_run.conf,
                     task_id=task_instance_run.task_id,
                     state=task_instance_run.state,
+                    try_number=task_instance_run.try_number,
                     error_message=self.task_runtime_error_message(
                         max_duration=task_instance_run.max_duration,
                         threshold_exceeded=task_instance_run.threshold_exceeded,

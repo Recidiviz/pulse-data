@@ -24,6 +24,7 @@ from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 from airflow.models import DagRun, TaskInstance
+from airflow.models.taskinstancehistory import TaskInstanceHistory
 from airflow.operators.python import PythonOperator
 from sqlalchemy.orm import Session
 
@@ -93,6 +94,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             state=JobRunState(int(row["state"])),
             error_message=None,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
+            job_run_num=int(row.get("try_number", 0)),
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -126,6 +128,16 @@ def dummy_ti(
         state=state,
         **kwargs,
     )
+
+
+def dummy_ti_retry(
+    ti: TaskInstance, retry_state: str
+) -> tuple[TaskInstance, TaskInstanceHistory]:
+    ti_history = TaskInstanceHistory(ti, state=ti.state)
+    ti.try_number = ti.next_try_number
+    ti.state = retry_state
+
+    return ti, ti_history
 
 
 def dummy_mapped_tis(
@@ -628,6 +640,163 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             self.assertEqual(
                 incident.next_success_date,
                 july_seventh_primary.execution_date,
+            )
+
+    def test_multiple_failures_with_same_execution_date_with_child_task(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+                    2023-07-06 2023-07-07 2023-07-08
+        parent      🟩 🟥       🟥  🟩      🟩
+        child       🟥 🟩       🟥  🟥      🟩
+
+        Assert that the last successful run of `child_task` was `never`
+        Assert that the next successful run of `parent_task` was `2023-07-07`
+        """
+
+        with self._get_session() as session:
+            # 2023-07-06 ------
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent = dummy_ti(parent_task, july_sixth_primary, "success")
+            july_sixth_child = dummy_ti(child_task, july_sixth_primary, "failed")
+
+            (
+                july_sixth_parent,
+                july_sixth_parent_first_try,
+            ) = dummy_ti_retry(july_sixth_parent, "failed")
+
+            (
+                july_sixth_child,
+                july_sixth_child_first_try,
+            ) = dummy_ti_retry(july_sixth_child, "success")
+
+            # 2023-07-07 ------
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_parent = dummy_ti(parent_task, july_seventh_primary, "failed")
+            july_seventh_child = dummy_ti(child_task, july_seventh_primary, "failed")
+
+            (
+                july_seventh_parent,
+                july_seventh_parent_first_try,
+            ) = dummy_ti_retry(july_seventh_parent, "success")
+
+            july_seventh_child, july_seventh_child_first_try = dummy_ti_retry(
+                july_seventh_child, "failed"
+            )
+
+            # 2023-07-08 ------
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_parent = dummy_ti(
+                parent_task, july_eighth_primary, state="success"
+            )
+            july_eighth_child = dummy_ti(
+                child_task, july_eighth_primary, state="success"
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent,
+                    july_sixth_child,
+                    july_seventh_primary,
+                    july_seventh_parent,
+                    july_seventh_child,
+                    july_eighth_primary,
+                    july_eighth_parent,
+                    july_eighth_child,
+                ]
+            )
+
+            session.commit()
+
+            # added second as fk to TaskInstance must be committed first
+            session.add_all(
+                [
+                    july_sixth_parent_first_try,
+                    july_sixth_child_first_try,
+                    july_seventh_parent_first_try,
+                    july_seventh_child_first_try,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate(
+                    "test_multiple_failures_with_same_execution_date_with_child_task.csv"
+                ),
+            )
+
+            # validate incident history
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-06 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+            self.assertEqual(
+                incident.previous_success_date,
+                july_sixth_primary.execution_date,
+            )
+            # Assert that the most recent failure was on July 7th
+            self.assertEqual(
+                incident.most_recent_failure,
+                july_seventh_primary.execution_date,
+            )
+            # Assert that the next success was on July 7th
+            self.assertEqual(
+                incident.next_success_date,
+                july_seventh_primary.execution_date,
+            )
+
+            incident_key = (
+                "Task Run: test_dag.child_task, started: 2023-07-06 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+            # Assert that the task has never succeeded
+            self.assertEqual(incident.previous_success_date, None)
+            # Assert that the most recent failure was on July 6th
+            self.assertEqual(
+                incident.most_recent_failure,
+                july_sixth_primary.execution_date,
+            )
+            # Assert that the next success was on July 6th
+            self.assertEqual(
+                incident.next_success_date,
+                july_sixth_primary.execution_date,
+            )
+
+            incident_key = (
+                "Task Run: test_dag.child_task, started: 2023-07-07 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+            # Assert that the task has never succeeded
+            self.assertEqual(
+                incident.previous_success_date, july_sixth_primary.execution_date
+            )
+            # Assert that the most recent failure was on July 7th
+            self.assertEqual(
+                incident.most_recent_failure,
+                july_seventh_primary.execution_date,
+            )
+            # Assert that the next success was on July 8th
+            self.assertEqual(
+                incident.next_success_date,
+                july_eighth_primary.execution_date,
             )
 
     @patch(

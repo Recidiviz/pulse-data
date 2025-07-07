@@ -17,18 +17,23 @@
 """JobRunHistoryDelegate for Airflow's TaskInstance"""
 import datetime
 
-from airflow.models import DagRun, TaskInstance
+import sqlalchemy as sa
 from airflow.utils.session import create_session
 from airflow.utils.state import State
-from sqlalchemy import case, func, text
+from sqlalchemy import case, func
 
+from recidiviz.airflow.dags.monitoring.airflow_task_history_builder_mixin import (
+    AirflowTaskHistoryBuilderMixin,
+)
 from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
 )
 
 
-class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
+class AirflowTaskRunHistoryDelegate(
+    JobRunHistoryDelegate, AirflowTaskHistoryBuilderMixin
+):
     """Builds JobRun objects from Airflow's TaskInstance model."""
 
     def __init__(self, *, dag_id: str) -> None:
@@ -37,39 +42,33 @@ class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
     def fetch_job_runs(self, *, lookback: datetime.timedelta) -> list[JobRun]:
         with create_session() as session:
 
-            # Fetch alerting state for each TaskInstance
-            latest_tasks = (
-                session.query(
-                    TaskInstance.dag_id,
-                    DagRun.execution_date,
-                    DagRun.conf,
-                    TaskInstance.task_id,
-                    TaskInstance.map_index,
-                    case(
-                        [
-                            (
-                                TaskInstance.state.in_(State.unfinished),
-                                JobRunState.PENDING.value,
-                            ),
-                            (
-                                TaskInstance.state.in_([State.FAILED.value]),
-                                JobRunState.FAILED.value,
-                            ),
-                            (
-                                TaskInstance.state.in_([State.SUCCESS]),
-                                JobRunState.SUCCESS.value,
-                            ),
-                        ],
-                        else_=JobRunState.UNKNOWN.value,
-                    ).label("state"),
-                )
-                .join(TaskInstance.dag_run)
-                .filter(
-                    func.age(DagRun.execution_date)
-                    < text(f"interval '{lookback.total_seconds()} seconds'")
-                )
-                .filter(DagRun.dag_id.in_([self.dag_id]))
-            ).cte("latest_tasks")
+            # Airflow stores the most recent run of each task in the TaskInstance table,
+            # and all previous runs in TaskInstanceHistory. We want to fetch all previous
+            # runs of tasks
+            all_tasks = self.build_task_history(
+                dag_id=self.dag_id, lookback=lookback
+            ).cte("all_tasks")
+
+            filtered_tasks_with_state = session.query(
+                all_tasks,
+                case(
+                    [
+                        (
+                            sa.column("task_state").in_(State.unfinished),
+                            JobRunState.PENDING.value,
+                        ),
+                        (
+                            sa.column("task_state").in_([State.FAILED]),
+                            JobRunState.FAILED.value,
+                        ),
+                        (
+                            sa.column("task_state").in_([State.SUCCESS]),
+                            JobRunState.SUCCESS.value,
+                        ),
+                    ],
+                    else_=JobRunState.UNKNOWN.value,
+                ).label("state"),
+            ).cte("filtered_tasks_with_state")
 
             # Group mapped tasks into a single row per parent task, the value for a task
             # instance is assigned like:
@@ -79,21 +78,27 @@ class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
             #   - A group is only considered successful if all members are successful
 
             query = session.query(
-                latest_tasks.c.dag_id,
-                latest_tasks.c.execution_date,
-                latest_tasks.c.conf,
-                latest_tasks.c.task_id,
-                func.max(latest_tasks.c.state).label("state"),
+                filtered_tasks_with_state.c.dag_id,
+                filtered_tasks_with_state.c.execution_date,
+                filtered_tasks_with_state.c.conf,
+                filtered_tasks_with_state.c.task_id,
+                filtered_tasks_with_state.c.try_number,
+                func.max(filtered_tasks_with_state.c.state).label("state"),
             ).group_by(
-                latest_tasks.c.dag_id,
-                latest_tasks.c.execution_date,
-                latest_tasks.c.conf,
-                latest_tasks.c.task_id,
+                filtered_tasks_with_state.c.dag_id,
+                filtered_tasks_with_state.c.execution_date,
+                filtered_tasks_with_state.c.conf,
+                filtered_tasks_with_state.c.task_id,
+                filtered_tasks_with_state.c.try_number,
             )
-
             return [
                 JobRun.from_airflow_task_instance(
-                    **task_instance_run,
+                    dag_id=task_instance_run.dag_id,
+                    execution_date=task_instance_run.execution_date,
+                    conf=task_instance_run.conf,
+                    task_id=task_instance_run.task_id,
+                    state=task_instance_run.state,
+                    try_number=task_instance_run.try_number,
                     job_type=JobRunType.AIRFLOW_TASK_RUN,
                     error_message=None,
                 )

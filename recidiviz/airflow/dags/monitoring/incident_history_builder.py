@@ -17,6 +17,8 @@
 """Builds incident history for an Airflow DAG."""
 import datetime
 import logging
+from collections import defaultdict
+from typing import Any
 
 import attr
 import pandas as pd
@@ -55,87 +57,72 @@ class IncidentHistoryBuilder:
             logging.error("No recent runs found for [%s]", self._dag_id)
             return {}
 
-        df = pd.DataFrame(data=[attr.asdict(job_run) for job_run in job_history])
-
-        # partition by JobRun's unique keys (dag_id, dag_run_conf, job_id)
-        df = df.set_index(JobRun.unique_keys())
-        # ensure that we sort by unique keys, and that the rows within each unique key
-        # are in ascending order by sorted by JobRun's date_key
-        df = df.sort_values(by=JobRun.date_key()).sort_index()
-
-        # Filter down to job runs in a failed or success state.
-        df = df[(df.state == JobRunState.FAILED) | (df.state == JobRunState.SUCCESS)]
-
-        if df.empty:
-            return {}
-
-        # Add a new column that is True every time the state changes as compared to the
-        # previous row each partition of (dag_id, dag_run_config, job_id)
-        df["state_change"] = df.state != df.state.shift(1)
-
-        # Add session_id column which is the same for all contiguous rows of the same state
-        df["session_id"] = df.groupby(level=df.index.names)["state_change"].cumsum()
+        data_by_distinct_dag: dict[
+            tuple[str, str, str, str], list[dict[str, Any]]
+        ] = defaultdict(list)
+        for job_run in job_history:
+            data_by_distinct_dag[job_run.unique_key].append(attr.asdict(job_run))
 
         # Map of unique incident IDs to incidents
         incidents: dict[str, AirflowAlertingIncident] = {}
-
-        # Loop over discrete DAG members (dag_id, dag_run_config, job_id)
-        for discrete_dag in df.index.unique():
-            # Select all job runs for this discrete DAG and copy slice into a new df
-            job_runs = df.loc[
-                # We must pass the discrete_dag index cols as a list here so that loc always
-                # returns a df. Otherwise, it will return a Series if there is only
-                # one row in job_runs.
-                [discrete_dag]
-            ].copy()
-
-            dag_id, conf, job_type, job_id = discrete_dag
-
-            job_state_sessions = job_runs.groupby(["session_id"]).agg(
-                start_date=("execution_date", "min"),
-                end_date=("execution_date", "max"),
-                state=("state", "first"),
+        for distinct_dag_key, dag_data in data_by_distinct_dag.items():
+            df = (
+                pd.DataFrame(data=dag_data)
+                .drop(columns=JobRun.unique_keys())
+                .sort_values(JobRun.order_by_keys())
             )
+            # Filter down to job runs in a failed or success state.
+            df = df[df.state.isin([JobRunState.FAILED, JobRunState.SUCCESS])]
 
-            # Generate a hash map of failures, grouped by the last successful execution
-            for _index, row in job_state_sessions.iterrows():
-                if row.state != JobRunState.FAILED:
-                    continue
+            # Skip if we have no runs or they are all SUCCESS.
+            if df.empty or df.state.unique().tolist() == [JobRunState.SUCCESS]:
+                continue
 
-                previous_success = job_runs[
-                    (job_runs.state == JobRunState.SUCCESS)
-                    & (job_runs.execution_date < row.start_date)
-                ].execution_date.max()
+            # Add session_id column which is the same for all contiguous rows of the same state
+            df["session_id"] = (df.state != df.state.shift(1)).cumsum()
 
-                next_success = job_runs[
-                    (job_runs.state == JobRunState.SUCCESS)
-                    & (job_runs.execution_date > row.end_date)
-                ].execution_date.min()
+            # Hold on to sessions as groups to aggregate most recent error and critical dates.
+            sessions = df.groupby("session_id")
 
-                failed_execution_dates = [
-                    execution_date.to_pydatetime()
-                    for execution_date in job_runs[
-                        job_runs.execution_date.between(
-                            row.start_date, row.end_date, inclusive="both"
-                        )
-                    ].execution_date.to_list()
-                ]
+            # This is a DataFrame with the most recent error for each session
+            last_error_per_session = df.iloc[sessions.job_run_num.idxmax()][
+                ["session_id", "state", "error_message"]
+            ]
+            # Creates a dataframe with aggregated dates for each session,
+            # then we can shift critical dates forwards and backwards as needed.
+            session_dates = sessions.execution_date.agg((list, "min", "max")).rename(
+                columns={
+                    "list": "all_execution_dates",
+                    "min": "earliest_execution_date",
+                    "max": "most_recent_execution_date",
+                }
+            )
+            session_dates[
+                "previous_session_critical_date"
+            ] = session_dates.most_recent_execution_date.shift(1)
+            session_dates[
+                "next_session_critical_date"
+            ] = session_dates.earliest_execution_date.shift(-1)
 
-                most_recent_error_message = job_runs[
-                    job_runs.execution_date == row.end_date
-                ].error_message.iloc[0]
-
+            failed_sessions = session_dates.merge(
+                last_error_per_session[
+                    last_error_per_session.state == JobRunState.FAILED
+                ],
+                on="session_id",
+                how="inner",
+            )
+            for session_record in failed_sessions.to_dict("records"):
+                dag_id, dag_run_config, job_type_value, job_id = distinct_dag_key
                 incident = AirflowAlertingIncident.build(
                     dag_id=dag_id,
-                    conf=conf,
+                    conf=dag_run_config,
                     job_id=job_id,
-                    failed_execution_dates=failed_execution_dates,
-                    previous_success=previous_success,
-                    next_success=next_success,
-                    error_message=most_recent_error_message,
-                    incident_type=job_type.value,
+                    incident_type=job_type_value,
+                    failed_execution_dates=session_record["all_execution_dates"],
+                    previous_success=session_record["previous_session_critical_date"],
+                    next_success=session_record["next_session_critical_date"],
+                    error_message=session_record["error_message"],
                 )
 
                 incidents[incident.unique_incident_id] = incident
-
         return incidents

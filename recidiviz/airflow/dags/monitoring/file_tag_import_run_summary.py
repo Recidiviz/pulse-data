@@ -257,4 +257,5 @@ class FileTagImportRunSummary(BaseResult):
             state=self.file_tag_import_state,
             error_message=self.format_error_message(),
             job_type=JobRunType.RAW_DATA_IMPORT,
+            job_run_num=0,
         )

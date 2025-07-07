@@ -334,6 +334,7 @@ class AirflowIntegrationTest(unittest.TestCase):
 
     def _get_or_create_dagrun(
         self,
+        *,
         dag: DAG,
         session: Session,
         conf: Optional[Dict[Any, Any]],
@@ -404,7 +405,6 @@ class AirflowIntegrationTest(unittest.TestCase):
         self, task_id: str, run_id: str, session: Session
     ) -> TaskInstanceState:
         """Get the state of the task instance with task_id from the most recent dag run."""
-        print(task_id)
         rows = (
             session.query(TaskInstance.state)
             .filter(TaskInstance.task_id == task_id, TaskInstance.run_id == run_id)

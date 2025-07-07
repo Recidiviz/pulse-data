@@ -60,6 +60,7 @@ class JobRunTest(TestCase):
             state=1,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
             error_message=None,
+            try_number=0,
         )
 
         run_is_the_same = JobRun.from_airflow_task_instance(
@@ -74,6 +75,7 @@ class JobRunTest(TestCase):
             state=1,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
             error_message=None,
+            try_number=0,
         )
 
         assert run == JobRun(
@@ -86,5 +88,6 @@ class JobRunTest(TestCase):
             state=JobRunState.UNKNOWN,
             error_message=None,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
+            job_run_num=0,
         )
         assert run == run_is_the_same

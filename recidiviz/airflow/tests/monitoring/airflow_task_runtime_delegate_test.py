@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the AirflowTaskRunHistoryDelegate."""
+"""Tests for the AirflowTaskRuntimeDelegate."""
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -25,6 +25,7 @@ from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 from airflow.models import DagRun, TaskInstance
+from airflow.models.taskinstancehistory import TaskInstanceHistory
 from airflow.operators.python import PythonOperator
 from freezegun import freeze_time
 from sqlalchemy.orm import Session
@@ -53,6 +54,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             state=JobRunState(int(row["state"])),
             error_message=row["error_message"] or None,
             job_type=JobRunType.RUNTIME_MONITORING,
+            job_run_num=int(row.get("try_number", 0)),
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -81,6 +83,20 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Any) -> DagRun:
     return dr
 
 
+def dummy_ti_retry(
+    ti: TaskInstance, retry_state: str, **retry_kwargs: Any
+) -> tuple[TaskInstance, TaskInstanceHistory]:
+    ti_history = TaskInstanceHistory(ti, state=ti.state)
+    ti.try_number = ti.next_try_number
+    ti.state = retry_state
+
+    if retry_kwargs:
+        for k, v in retry_kwargs.items():
+            setattr(ti, k, v)
+
+    return ti, ti_history
+
+
 def dummy_ti(
     task: PythonOperator,
     dag_run: DagRun,
@@ -104,10 +120,12 @@ def dummy_ti(
 
 
 def dummy_mapped_tis(
-    task: PythonOperator, dag_run: DagRun, states: List[str], **kwargs: Any
+    task: PythonOperator, dag_run: DagRun, states: List[str], ti_kwargs: list[dict]
 ) -> List[TaskInstance]:
     return [
-        dummy_ti(task=task, dag_run=dag_run, state=state, map_index=index, **kwargs)
+        dummy_ti(
+            task=task, dag_run=dag_run, state=state, map_index=index, **ti_kwargs[index]
+        )
         for index, state in enumerate(states)
     ]
 
@@ -139,12 +157,6 @@ TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 )
 class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
     """Tests for AirflowTaskRuntimeDelegate"""
-
-    def setUp(self) -> None:
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        return super().tearDown()
 
     @contextlib.contextmanager
     def _get_session(self) -> Generator[Session, None, None]:
@@ -272,8 +284,24 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 child_task,
                 july_sixth,
                 ["success", "success"],
-                start_date=datetime.datetime(2023, 7, 6, tzinfo=datetime.UTC),
-                end_date=datetime.datetime(2023, 7, 6, 1, tzinfo=datetime.UTC),
+                [
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 6, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 6, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 6, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 6, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                ],
             )
 
             july_seventh = dummy_dag_run(test_dag, "2023-07-07")
@@ -285,7 +313,7 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 end_date=datetime.datetime(2023, 7, 7, 0, 1, tzinfo=datetime.UTC),
             )
             july_seventh_children = [
-                # 120 mins, trips the task-specific
+                # 120 mins, counted as a failure as > 119 minute threshold
                 dummy_ti(
                     child_task,
                     july_seventh,
@@ -294,7 +322,7 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                     start_date=datetime.datetime(2023, 7, 7, tzinfo=datetime.UTC),
                     end_date=datetime.datetime(2023, 7, 7, 1, tzinfo=datetime.UTC),
                 ),
-                # 180 mins, trips the dag wide
+                # 180 mins, counted as a failure as > 119 min threshold
                 dummy_ti(
                     child_task,
                     july_seventh,
@@ -322,7 +350,7 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                     start_date=datetime.datetime(2023, 7, 8, tzinfo=datetime.UTC),
                     end_date=datetime.datetime(2023, 7, 8, 1, tzinfo=datetime.UTC),
                 ),
-                # 180 mins
+                # 180 mins, counted as a failure as > 119 minute threshold
                 dummy_ti(
                     child_task,
                     july_eighth,
@@ -489,6 +517,7 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 parent_task,
                 july_seventh_secondary,
                 state="failed",
+                # 120 mins, counted as a failure as > 60 minute threshold
                 start_date=datetime.datetime(2023, 7, 7, 12, 1, tzinfo=datetime.UTC),
                 end_date=datetime.datetime(2023, 7, 7, 14, 1, tzinfo=datetime.UTC),
             )
@@ -502,7 +531,8 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 july_eighth_secondary,
                 state="failed",
                 start_date=datetime.datetime(2023, 7, 8, 12, 1, tzinfo=datetime.UTC),
-                # no end date, will use the current date as the end date
+                # no end date, will use the current date as the end date which will
+                # be > 24 hours which is counted as a failure
             )
 
             july_sixth_tertiary = dummy_dag_run(
@@ -529,7 +559,8 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 july_seventh_tertiary,
                 state="failed",
                 start_date=datetime.datetime(2023, 7, 7, 12, 1, tzinfo=datetime.UTC),
-                # no end date, will use dag run end date (still failure)
+                # no end date, will use dag run end date -- will be at 120 mins which is
+                # more than the 60 min threshold
             )
 
             july_eighth_tertiary = dummy_dag_run(
@@ -544,7 +575,7 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 july_eighth_tertiary,
                 state="success",
                 start_date=datetime.datetime(2023, 7, 8, 13, 2, tzinfo=datetime.UTC),
-                # no end date, will duse the dag run end date (success)
+                # no end date, will use the dag run end date (success)
             )
 
             session.add_all(
@@ -587,3 +618,294 @@ class AirflowTaskRuntimeDelegateTest(AirflowIntegrationTest):
                 set(job_history),
                 read_csv_fixture_for_delegate("test_graph_config_idempotency.csv"),
             )
+
+    def test_multiple_runtime_failures_with_same_execution_date(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+        2023-07-06 2023-07-07 2023-07-08
+        🟩 🟥       🟥  🟩      🟩
+
+        """
+
+        with self._get_session() as session:
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent_primary = dummy_ti(
+                parent_task,
+                july_sixth_primary,
+                "failed",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 12, 2, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+            )
+
+            (
+                july_sixth_parent_primary,
+                july_sixth_parent_primary_first_try,
+            ) = dummy_ti_retry(
+                july_sixth_parent_primary,
+                "success",
+                # delegate will classify as a failure as runtime is greater than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 14, 2, tzinfo=datetime.UTC),
+            )
+
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_primary_parent = dummy_ti(
+                parent_task,
+                july_seventh_primary,
+                state="failed",
+                # delegate will classify as a failure as runtime is greater than 60 min
+                start_date=datetime.datetime(2023, 7, 7, 12, 2, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 7, 13, 3, tzinfo=datetime.UTC),
+            )
+
+            (
+                july_seventh_primary_parent,
+                july_seventh_primary_parent_first_try,
+            ) = dummy_ti_retry(
+                july_seventh_primary_parent,
+                "success",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 7, 13, 3, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 7, 14, 2, tzinfo=datetime.UTC),
+            )
+
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_primary_parent = dummy_ti(
+                parent_task,
+                july_eighth_primary,
+                state="success",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 8, 12, 2, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 8, 13, 1, tzinfo=datetime.UTC),
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent_primary,
+                    july_seventh_primary,
+                    july_seventh_primary_parent,
+                    july_eighth_primary,
+                    july_eighth_primary_parent,
+                ]
+            )
+
+            session.commit()
+
+            # added second as fk to TaskInstance must be committed first
+            session.add_all(
+                [
+                    july_sixth_parent_primary_first_try,
+                    july_seventh_primary_parent_first_try,
+                ]
+            )
+            session.commit()
+
+            with freeze_time(datetime.datetime(2023, 7, 9, 12, tzinfo=datetime.UTC)):
+                explicit_config = AirflowExplicitTaskRuntimeAlertingConfig(
+                    dag_id=_TEST_DAG_ID,
+                    task_names=["parent_task"],
+                    runtime_minutes=60,
+                )
+
+                job_history = AirflowTaskRuntimeDelegate(
+                    dag_id=test_dag.dag_id, configs=[explicit_config]
+                ).fetch_job_runs(
+                    lookback=TEST_START_DATE_LOOKBACK,
+                )
+
+                self.assertSetEqual(
+                    set(job_history),
+                    read_csv_fixture_for_delegate(
+                        "test_multiple_runtime_failures_with_same_execution_date.csv"
+                    ),
+                )
+
+    def test_multiple_mapped_runtime_failures_with_same_execution_date(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+        date        2023-07-06 2023-07-07  2023-07-08
+        try         1  2       1   2       1
+        overall     🟩 🟥       🟥  🟩      🟩
+        idx=0       🟩 🟥       🟩  🟩      🟩
+        idx=1       🟩 🟩       🟥  🟩      🟩
+
+
+        """
+
+        with self._get_session() as session:
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent_primaries = dummy_mapped_tis(
+                parent_task,
+                july_sixth_primary,
+                ["success", "success"],
+                [
+                    # delegate will classify as a success as runtime is less than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 6, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 6, 13, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                    # delegate will classify as a success as runtime is less than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 6, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 6, 13, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                ],
+            )
+
+            (
+                july_sixth_parent_primary_idx_0,
+                july_sixth_parent_primary_idx_0_first_try,
+            ) = dummy_ti_retry(
+                july_sixth_parent_primaries[0],
+                "failed",
+                # delegate will classify as a failure as runtime is greater than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 14, 2, tzinfo=datetime.UTC),
+            )
+
+            (
+                july_sixth_parent_primary_idx_1,
+                july_sixth_parent_primary_idx_1_first_try,
+            ) = dummy_ti_retry(
+                july_sixth_parent_primaries[1],
+                "success",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 14, 0, tzinfo=datetime.UTC),
+            )
+
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_parent_primaries = dummy_mapped_tis(
+                parent_task,
+                july_seventh_primary,
+                ["success", "failed"],
+                [
+                    # delegate will classify as a success as runtime is less than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 7, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 7, 13, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                    # delegate will classify as a failure as runtime is greater than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 7, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 7, 13, 3, tzinfo=datetime.UTC
+                        ),
+                    },
+                ],
+            )
+
+            (
+                july_seventh_parent_primary_idx_0,
+                july_seventh_parent_primary_idx_0_first_try,
+            ) = dummy_ti_retry(
+                july_seventh_parent_primaries[0],
+                "success",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 14, 0, tzinfo=datetime.UTC),
+            )
+
+            (
+                july_seventh_parent_primary_idx_1,
+                july_seventh_parent_primary_idx_1_first_try,
+            ) = dummy_ti_retry(
+                july_seventh_parent_primaries[1],
+                "success",
+                # delegate will classify as a success as runtime is less than 60 min
+                start_date=datetime.datetime(2023, 7, 6, 13, 1, tzinfo=datetime.UTC),
+                end_date=datetime.datetime(2023, 7, 6, 14, 0, tzinfo=datetime.UTC),
+            )
+
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_parent_primaries = dummy_mapped_tis(
+                parent_task,
+                july_eighth_primary,
+                ["success", "success"],
+                [
+                    # delegate will classify as a success as runtime is less than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 8, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 8, 13, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                    # delegate will classify as a success as runtime is less than 60 min
+                    {
+                        "start_date": datetime.datetime(
+                            2023, 7, 8, 12, 2, tzinfo=datetime.UTC
+                        ),
+                        "end_date": datetime.datetime(
+                            2023, 7, 8, 13, 1, tzinfo=datetime.UTC
+                        ),
+                    },
+                ],
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent_primary_idx_0,
+                    july_sixth_parent_primary_idx_1,
+                    july_seventh_primary,
+                    july_seventh_parent_primary_idx_0,
+                    july_seventh_parent_primary_idx_1,
+                    july_eighth_primary,
+                    *july_eighth_parent_primaries,
+                ]
+            )
+
+            session.commit()
+
+            # added second as fk to TaskInstance must be committed first
+            session.add_all(
+                [
+                    july_sixth_parent_primary_idx_0_first_try,
+                    july_sixth_parent_primary_idx_1_first_try,
+                    july_seventh_parent_primary_idx_0_first_try,
+                    july_seventh_parent_primary_idx_1_first_try,
+                ]
+            )
+            session.commit()
+
+            with freeze_time(datetime.datetime(2023, 7, 9, 12, tzinfo=datetime.UTC)):
+                explicit_config = AirflowExplicitTaskRuntimeAlertingConfig(
+                    dag_id=_TEST_DAG_ID,
+                    task_names=["parent_task"],
+                    runtime_minutes=60,
+                )
+
+                job_history = AirflowTaskRuntimeDelegate(
+                    dag_id=test_dag.dag_id, configs=[explicit_config]
+                ).fetch_job_runs(
+                    lookback=TEST_START_DATE_LOOKBACK,
+                )
+
+                self.assertSetEqual(
+                    set(job_history),
+                    read_csv_fixture_for_delegate(
+                        "test_multiple_runtime_failures_with_same_execution_date.csv"
+                    ),
+                )

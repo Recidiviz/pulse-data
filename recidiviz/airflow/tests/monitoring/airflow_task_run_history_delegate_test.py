@@ -25,6 +25,7 @@ from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 from airflow.models import DagRun, TaskInstance
+from airflow.models.taskinstancehistory import TaskInstanceHistory
 from airflow.operators.python import PythonOperator
 from sqlalchemy.orm import Session
 
@@ -64,6 +65,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             state=JobRunState(int(row["state"])),
             error_message=None,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
+            job_run_num=int(row.get("try_number", 0)),
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -85,6 +87,16 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
         execution_date=execution_date,
         **kwargs,
     )
+
+
+def dummy_ti_retry(
+    ti: TaskInstance, retry_state: str
+) -> tuple[TaskInstance, TaskInstanceHistory]:
+    ti_history = TaskInstanceHistory(ti, state=ti.state)
+    ti.try_number = ti.next_try_number
+    ti.state = retry_state
+
+    return ti, ti_history
 
 
 def dummy_ti(
@@ -561,5 +573,163 @@ class AirflowTaskRunHistoryDelegateTest(AirflowIntegrationTest):
                 set(job_run_history),
                 read_csv_fixture_for_delegate(
                     "test_graph_never_succeeded_most_recent_success.csv"
+                ),
+            )
+
+    def test_multiple_failures_with_same_execution_date(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+                    2023-07-06 2023-07-07 2023-07-08
+        parent      🟩 🟥       🟥  🟩      🟩
+        """
+
+        with self._get_session() as session:
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent_primary = dummy_ti(
+                parent_task, july_sixth_primary, "success"
+            )
+
+            (
+                july_sixth_parent_primary,
+                july_sixth_parent_primary_first_try,
+            ) = dummy_ti_retry(july_sixth_parent_primary, "failed")
+
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_primary_parent = dummy_ti(
+                parent_task, july_seventh_primary, state="failed"
+            )
+
+            (
+                july_seventh_primary_parent,
+                july_seventh_primary_parent_first_try,
+            ) = dummy_ti_retry(july_seventh_primary_parent, "success")
+
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_primary_parent = dummy_ti(
+                parent_task, july_eighth_primary, state="success"
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent_primary,
+                    july_seventh_primary,
+                    july_seventh_primary_parent,
+                    july_eighth_primary,
+                    july_eighth_primary_parent,
+                ]
+            )
+
+            session.commit()
+
+            # added second as fk to TaskInstance must be committed first
+            session.add_all(
+                [
+                    july_sixth_parent_primary_first_try,
+                    july_seventh_primary_parent_first_try,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate(
+                    "test_multiple_failures_with_same_execution_date.csv"
+                ),
+            )
+
+    def test_multiple_mapped_failures_with_same_execution_date(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+        date        2023-07-06 2023-07-07  2023-07-08
+        try         1  2       1   2       1
+        overall     🟩 🟥       🟥  🟩      🟩
+        idx=0       🟩 🟥       🟩          🟩
+        idx=1       🟩 🟩       🟥  🟩      🟩
+
+
+        When we do retries, it should follow the same format (each retry is it's 'own'
+        run, even across mapped tasks)
+        """
+
+        with self._get_session() as session:
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent_primaries = dummy_mapped_tis(
+                parent_task,
+                july_sixth_primary,
+                ["success", "success"],
+            )
+
+            (
+                july_sixth_parent_primary_idx_0,
+                july_sixth_parent_primary_idx_0_first_try,
+            ) = dummy_ti_retry(july_sixth_parent_primaries[0], "failed")
+
+            (
+                july_sixth_parent_primary_idx_1,
+                july_sixth_parent_primary_idx_1_first_try,
+            ) = dummy_ti_retry(july_sixth_parent_primaries[1], "success")
+
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_parent_primaries = dummy_mapped_tis(
+                parent_task, july_seventh_primary, ["success", "failed"]
+            )
+
+            (
+                july_seventh_parent_primary_idx_1,
+                july_seventh_parent_primary_idx_1_first_try,
+            ) = dummy_ti_retry(july_seventh_parent_primaries[1], "success")
+
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_parent_primaries = dummy_mapped_tis(
+                parent_task, july_eighth_primary, ["success", "success"]
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent_primary_idx_0,
+                    july_sixth_parent_primary_idx_1,
+                    july_seventh_primary,
+                    july_seventh_parent_primary_idx_1,
+                    july_eighth_primary,
+                    *july_eighth_parent_primaries,
+                ]
+            )
+
+            session.commit()
+
+            # added second as fk to TaskInstance must be committed first
+            session.add_all(
+                [
+                    july_sixth_parent_primary_idx_0_first_try,
+                    july_sixth_parent_primary_idx_1_first_try,
+                    july_seventh_parent_primary_idx_1_first_try,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate(
+                    "test_multiple_failures_with_same_execution_date.csv"
                 ),
             )
