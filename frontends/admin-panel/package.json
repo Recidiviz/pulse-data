@@ -29,7 +29,7 @@
     "react-router-dom": "^5.2.0",
     "semiotic": "^2.0.3",
     "styled-components": "^5.2.1",
-    "zod": "^3.25.67"
+    "zod": "^3.25.75"
   },
   "scripts": {
     "dev": "PORT=3030 react-scripts start",
