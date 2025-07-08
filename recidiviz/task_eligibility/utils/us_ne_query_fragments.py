@@ -46,3 +46,27 @@ def supervision_oras_overrides_completion_event_query_template(
             -- Identify overrides to the specified level ("{overridden_to_level}"")
             AND JSON_EXTRACT_SCALAR(assessment_metadata, '$.SUPERVISION_LEVEL_OVERRIDE') = '{overridden_to_level}'
     """
+
+
+def us_ne_state_specific_contact_types_query_fragment() -> str:
+    """
+    Compiles data on supervision contacts completed in NE
+    """
+    return """
+        SELECT 
+            person_id,
+            contact_date,
+            CASE 
+              WHEN contact_type_raw_text = "PERSONAL" 
+                THEN "PERSONAL"
+              WHEN contact_type_raw_text = "COLLATERAL" OR contact_type_raw_text = "PERSONAL/COLLATERAL" 
+                THEN "COLLATERAL"
+              WHEN contact_type_raw_text = "LE/NCJIS CHECK" 
+                THEN "NCJIS"
+                ELSE NULL 
+            END AS contact_type,
+            external_id AS contact_external_id,
+            state_code,
+        FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
+        WHERE state_code = "US_NE" AND status = "COMPLETED"
+        """

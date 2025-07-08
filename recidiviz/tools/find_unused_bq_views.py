@@ -251,6 +251,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_ne.needs_personal_contact import (
+    VIEW_BUILDER as US_NE_NEEDS_PERSONAL_CONTACT,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.configured_validations import get_all_validations
@@ -521,6 +524,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_NE_CONTACT_CADENCE_SPANS_VIEW_BUILDER.address: (
         "Will be used by NE Tasks 'needs' view for types of contacts very soon, see ticket #42252 (Maggie Taylor 06/23/2025)"
+    ),
+    US_NE_NEEDS_PERSONAL_CONTACT.address: (
+        "Will be used by NE Tasks soon, see ticket #42252 (Maggie Taylor 07/03/2025)"
     ),
 }
 
