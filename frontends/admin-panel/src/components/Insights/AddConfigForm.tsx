@@ -19,6 +19,7 @@ import { Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
 import styled from "styled-components/macro";
 
+import { ACTION_STRATEGIES_DEFAULT_COPY } from "../../InsightsStore/models/fixtures/ConfigurationsFixture";
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
 import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { DraggableModal } from "../Utilities/DraggableModal";
@@ -63,7 +64,9 @@ const AddConfigForm = ({
       })
     : [];
 
-  const actionStrategies = Object.entries(baseConfig?.actionStrategyCopy ?? {});
+  const actionStrategies = Object.entries(
+    baseConfig?.actionStrategyCopy ?? ACTION_STRATEGIES_DEFAULT_COPY
+  );
 
   return (
     <DraggableModal

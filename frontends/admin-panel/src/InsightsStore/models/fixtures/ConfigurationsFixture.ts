@@ -17,7 +17,7 @@
 
 import { InsightsConfiguration } from "../InsightsConfiguration";
 
-const ACTION_STRATEGIES_DEFAULT_COPY = {
+export const ACTION_STRATEGIES_DEFAULT_COPY = {
   ACTION_STRATEGY_OUTLIER: {
     prompt: "How might I investigate what is driving this metric?",
     body: "Try conducting case reviews and direct observations:\n1. Gather additional information on how agents do their work to inform how you approach the staff member, where there are gaps in client or staff resources, and where additional agent training could help.\n2. Conduct case reviews to ascertain whether outlying agents are consistently following agency policy and practice expectations; using the strategies and techniques that have been identified as most effective in meeting agency goals (e.g., evidence-based practices); and delivering services in the manner intended. Consider using cases listed in the tool for the agent's 3 self-assessments/case management reviews this quarter.\n4. Conduct direct observations of in-person staff/client meetings to determine the quality of interactions with clients and how agents are building rapport and using strategies that promote behavior change.\n\nSee this and other action strategies [here](https://www.recidiviz.org).",
