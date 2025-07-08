@@ -41,8 +41,8 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
-    PersonDetailsLookMLGeneratorTest,
+from recidiviz.tests.tools.looker.raw_data.raw_data_person_details_generator_test_utils import (
+    RawDataPersonDetailsLookMLGeneratorTest,
 )
 from recidiviz.tools.looker.raw_data import (
     person_details_explore_generator,
@@ -402,7 +402,9 @@ class RawDataTreeEdgesTest(unittest.TestCase):
                         self.assertIn(relationship, relationships)
 
 
-class LookMLExploreTest(PersonDetailsLookMLGeneratorTest):
+class RawDataPersonDetailsLookMLExploreGeneratorTest(
+    RawDataPersonDetailsLookMLGeneratorTest
+):
     """Tests LookML explore generation functions"""
 
     @classmethod

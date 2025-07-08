@@ -18,8 +18,8 @@
 from types import ModuleType
 from typing import List
 
-from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
-    PersonDetailsLookMLGeneratorTest,
+from recidiviz.tests.tools.looker.raw_data.raw_data_person_details_generator_test_utils import (
+    RawDataPersonDetailsLookMLGeneratorTest,
 )
 from recidiviz.tools.looker.raw_data import person_details_view_generator
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
@@ -27,7 +27,9 @@ from recidiviz.tools.looker.raw_data.person_details_view_generator import (
 )
 
 
-class LookMLViewTest(PersonDetailsLookMLGeneratorTest):
+class RawDataPersonDetailsLookMLViewGeneratorTest(
+    RawDataPersonDetailsLookMLGeneratorTest
+):
     """Tests LookML view generation functions"""
 
     @classmethod

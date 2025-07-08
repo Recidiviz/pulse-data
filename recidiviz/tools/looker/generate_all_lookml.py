@@ -40,8 +40,8 @@ from recidiviz.tools.looker.top_level_generators.custom_metrics_lookml_generator
 from recidiviz.tools.looker.top_level_generators.observations_lookml_generator import (
     ObservationsLookMLGenerator,
 )
-from recidiviz.tools.looker.top_level_generators.person_details_lookml_generator import (
-    PersonDetailsLookMLGenerator,
+from recidiviz.tools.looker.top_level_generators.raw_data_person_details_lookml_generator import (
+    RawDataPersonDetailsLookMLGenerator,
 )
 from recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator import (
     StateDatasetLookMLGenerator,
@@ -49,7 +49,7 @@ from recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator 
 
 LOOKML_GENERATORS = [
     StateDatasetLookMLGenerator,
-    PersonDetailsLookMLGenerator,
+    RawDataPersonDetailsLookMLGenerator,
     ObservationsLookMLGenerator,
     BreadthAndDepthLookMLGenerator,
     CustomMetricsLookMLGenerator,

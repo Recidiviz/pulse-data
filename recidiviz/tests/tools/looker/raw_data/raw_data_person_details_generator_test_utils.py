@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.tests.ingest.direct import fake_regions
 
 
-class PersonDetailsLookMLGeneratorTest(unittest.TestCase):
+class RawDataPersonDetailsLookMLGeneratorTest(unittest.TestCase):
     """
     Base class for helping to test raw data LookML generation.
     """

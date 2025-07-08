@@ -18,7 +18,7 @@
 for raw data tables and writing them to files.
 
 Run the following to write files to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.person_details_lookml_generator [--looker-repo-root [DIR]]
+python -m recidiviz.tools.looker.top_level_generators.raw_data_person_details_lookml_generator [--looker-repo-root [DIR]]
 
 If you are running this for new states, you will also have to add the following lines
 into the `models/recidiviz-123.model.lkml` and `models/recidiviz-staging.model.lkml`
@@ -45,7 +45,7 @@ from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
 )
 
 
-class PersonDetailsLookMLGenerator(LookMLGenerator):
+class RawDataPersonDetailsLookMLGenerator(LookMLGenerator):
     """Generates LookML files for person details raw data tables."""
 
     @staticmethod
@@ -60,6 +60,6 @@ class PersonDetailsLookMLGenerator(LookMLGenerator):
 
 
 if __name__ == "__main__":
-    PersonDetailsLookMLGenerator.generate_lookml(
+    RawDataPersonDetailsLookMLGenerator.generate_lookml(
         output_dir=parse_and_validate_output_dir_arg()
     )
