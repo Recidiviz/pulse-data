@@ -419,3 +419,24 @@ function update_deployment_status {
       deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_SUCCEEDED_MESSAGE}" > /dev/null
   fi
 }
+
+function validate_release_branch_changes_since_tag {
+    # Validates that the release branch has no changes since the given tag.
+    if [[ $# -lt 1 || $# -gt 2 ]]; then
+        echo "Usage: validate_release_branch_changes_since_tag <GIT_VERSION_TAG> [LOCAL_REPO_PATH]"
+        exit 1
+    fi
+    GIT_VERSION_TAG=$1
+    LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
+
+    read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
+    MAJOR_VERSION="${VERSION_PARTS[1]}"
+    MINOR_VERSION="${VERSION_PARTS[2]}"
+    CHANGES_SINCE_TAG=$(git -C "$LOCAL_REPO_PATH" log "tags/${GIT_VERSION_TAG}..origin/releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline) || exit_on_fail
+    if [ -n "${CHANGES_SINCE_TAG}" ]; then
+        echo "There are newly-added commits in the release branch that will not be deployed in ${GIT_VERSION_TAG}:"
+        echo "${CHANGES_SINCE_TAG}" | indent_output
+        echo "Folks may be expecting the above changes to go out in this production deploy (did we miss a cherry-pick?)."
+        script_prompt  "Would you like to continue deploying ${GIT_VERSION_TAG}?"
+    fi
+}

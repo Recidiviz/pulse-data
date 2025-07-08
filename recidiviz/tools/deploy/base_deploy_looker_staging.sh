@@ -9,12 +9,13 @@
 # them if not by creating a new branch in the looker repo with the updated files. Once the looker repo files are up-to-date,
 # it will create a new version tag in the looker repo, and point the looker project to the new tag.
 #
-
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
+source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
 VERSION_TAG=''
 COMMIT_HASH=''
@@ -80,14 +81,8 @@ if [[ -n ${PROMOTE} && -n ${DEBUG_BUILD_NAME} ]]; then
     run_cmd exit 1
 fi
 
-TEMP_LOOKER_DIR="/tmp/looker"
-LOOKER_REPO_URL="https://github.com/Recidiviz/looker.git"
 RECIDIVIZ_DATA_REPO_ROOT=$(git rev-parse --show-toplevel) || exit_on_fail
 
-function looker_git {
-  # Run git commands in the temporary cloned looker repo directory.
-  run_cmd git -C "$TEMP_LOOKER_DIR" "$@"
-}
 
 # TODO(#44644) This should be moved to a post-merge CI job in the pulse-data repo.
 function looker_generated_versions_match {
@@ -102,9 +97,7 @@ function looker_generated_versions_match {
   [[ "$RECIDIVIZ_DATA_HASH" == "$LOOKER_HASH" ]]
 }
 
-if [[ -z $(ls "$TEMP_LOOKER_DIR" 2>/dev/null) ]]; then
-    git clone "$LOOKER_REPO_URL" "$TEMP_LOOKER_DIR"
-fi
+clone_looker_repo_to_temp_dir
 
 run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR" 
 
@@ -128,7 +121,6 @@ else
   echo "Looker generated code has changed. Proceeding to sync..."
   # TODO(#44644): This should be done in a separate script that is a part of the
   # pulse-data PR CI suite.
-
 
   verify_hash "$RECIDIVIZ_DATA_COMMIT_HASH" "$RECIDIVIZ_DATA_REPO_ROOT"
   run_cmd check_running_in_pipenv_shell
@@ -178,5 +170,5 @@ fi
 
 if [[ -n ${PROMOTE} ]]; then
   echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $PROJECT_ID."
-  # TODO(#36190) Deploy using https://recidiviz.cloud.looker.com/webhooks/projects/<LookML project name>/deploy/ref/<commit SHA or tag>
+  deploy_looker_staging_version "$VERSION_TAG" "$PROJECT_ID"
 fi
