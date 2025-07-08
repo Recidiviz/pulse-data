@@ -129,7 +129,7 @@ class RawDataConfigWriter:
         default_ignore_quotes: bool,
         default_export_lookback_window: RawDataExportLookbackWindow,
         default_no_valid_primary_keys: bool,
-        default_line_terminator: Optional[str],
+        default_custom_line_terminator: Optional[str],
         default_update_cadence: Optional[RawDataFileUpdateCadence],
         default_infer_columns_from_config: bool,
         default_import_blocking_validation_exemptions: Optional[
@@ -184,7 +184,7 @@ class RawDataConfigWriter:
             and raw_file_config.export_lookback_window != default_export_lookback_window
         ):
             config += f"export_lookback_window: {raw_file_config.export_lookback_window.value}\n"
-        if raw_file_config.custom_line_terminator != default_line_terminator:
+        if raw_file_config.custom_line_terminator != default_custom_line_terminator:
             # Convert newline, etc. to escape sequences
             custom_line_terminator_for_yaml = repr(
                 raw_file_config.custom_line_terminator

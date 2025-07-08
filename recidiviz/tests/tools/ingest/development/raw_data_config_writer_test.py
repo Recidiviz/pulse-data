@@ -79,7 +79,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_no_valid_primary_keys=False,
                     output_path=test_output_path,
                     raw_file_config=config,
-                    default_line_terminator="‡\n",
+                    default_custom_line_terminator="‡\n",
                     default_infer_columns_from_config=False,
                     default_import_blocking_validation_exemptions=[
                         ImportBlockingValidationExemption(

@@ -2,7 +2,7 @@ default_encoding: UTF-8
 default_separator: ","
 default_ignore_quotes: False
 default_export_lookback_window: TWO_WEEK_INCREMENTAL_LOOKBACK
-default_line_terminator: "‡\n"
+default_custom_line_terminator: "‡\n"
 default_no_valid_primary_keys: False
 default_update_cadence: WEEKLY
 default_infer_columns_from_config: False

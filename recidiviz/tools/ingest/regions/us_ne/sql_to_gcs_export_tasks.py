@@ -23,6 +23,7 @@ from enum import Enum
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
@@ -160,7 +161,8 @@ class UsNeSqltoGCSExportTask:
             db=UsNeDatabaseName(db_name),
             update_datetime=update_datetime,
             encoding=default_region_config.default_encoding,
-            line_terminator=default_region_config.default_line_terminator or "\n",
+            line_terminator=default_region_config.default_custom_line_terminator
+            or DEFAULT_CSV_LINE_TERMINATOR,
             delimiter=default_region_config.default_separator,
             quoting_mode=(
                 csv.QUOTE_NONE

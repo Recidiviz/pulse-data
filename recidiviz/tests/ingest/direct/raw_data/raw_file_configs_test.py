@@ -1748,7 +1748,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
             default_config.default_export_lookback_window,
         )
-        self.assertEqual("‡\n", default_config.default_line_terminator)
+        self.assertEqual("‡\n", default_config.default_custom_line_terminator)
         self.assertEqual(False, default_config.default_no_valid_primary_keys)
         self.assertTrue(
             ImportBlockingValidationExemption.list_includes_exemption_type(
@@ -1767,7 +1767,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         default_config = self.us_xx_region_config.default_config()
         self.assertEqual(
             simple_file_config.custom_line_terminator,
-            default_config.default_line_terminator,
+            default_config.default_custom_line_terminator,
         )
         self.assertEqual(
             simple_file_config.encoding,
@@ -1806,7 +1806,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             "tagPipeSeparatedNonUTF8"
         ]
         self.assertNotEqual(
-            file_config.custom_line_terminator, default_config.default_line_terminator
+            file_config.custom_line_terminator,
+            default_config.default_custom_line_terminator,
         )
         self.assertEqual("\n", file_config.custom_line_terminator)
         self.assertNotEqual(file_config.encoding, default_config.default_encoding)

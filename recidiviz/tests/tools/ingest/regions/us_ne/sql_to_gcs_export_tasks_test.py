@@ -84,7 +84,7 @@ class TestUsNeSqltoGCSExportTasks(unittest.TestCase):
         self.assertEqual(task.encoding, default_region_config.default_encoding)
         self.assertEqual(
             task.line_terminator,
-            default_region_config.default_line_terminator,
+            default_region_config.default_custom_line_terminator,
         )
         self.assertEqual(task.delimiter, default_region_config.default_separator)
         self.assertEqual(

@@ -582,7 +582,7 @@ class DirectIngestRawFileDefaultConfig:
     # The default setting of inferring columns from headers
     default_infer_columns_from_config: bool = attr.ib(validator=attr_validators.is_bool)
     # The default line terminator for raw files from this region
-    default_line_terminator: Optional[str] = attr.ib(
+    default_custom_line_terminator: Optional[str] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_str,
     )
@@ -1059,7 +1059,7 @@ class DirectIngestRawFileConfig:
         file_path: str,
         default_encoding: str,
         default_separator: str,
-        default_line_terminator: Optional[str],
+        default_custom_line_terminator: Optional[str],
         default_update_cadence: RawDataFileUpdateCadence,
         default_ignore_quotes: bool,
         default_export_lookback_window: RawDataExportLookbackWindow,
@@ -1252,7 +1252,7 @@ class DirectIngestRawFileConfig:
             custom_line_terminator=(
                 custom_line_terminator
                 if custom_line_terminator is not None
-                else default_line_terminator
+                else default_custom_line_terminator
             ),
             ignore_quotes=(
                 ignore_quotes if ignore_quotes is not None else default_ignore_quotes
@@ -1366,8 +1366,8 @@ class DirectIngestRegionRawFileConfig:
         default_contents = YAMLDict.from_path(default_file_path)
         default_encoding = default_contents.pop("default_encoding", str)
         default_separator = default_contents.pop("default_separator", str)
-        default_line_terminator = default_contents.pop_optional(
-            "default_line_terminator", str
+        default_custom_line_terminator = default_contents.pop_optional(
+            "default_custom_line_terminator", str
         )
         default_update_cadence_str = default_contents.pop("default_update_cadence", str)
         default_update_cadence = RawDataFileUpdateCadence(default_update_cadence_str)
@@ -1402,7 +1402,7 @@ class DirectIngestRegionRawFileConfig:
             filename=self.default_config_filename,
             default_encoding=default_encoding,
             default_separator=default_separator,
-            default_line_terminator=default_line_terminator,
+            default_custom_line_terminator=default_custom_line_terminator,
             default_ignore_quotes=default_ignore_quotes,
             default_infer_columns_from_config=default_infer_columns_from_config,
             default_export_lookback_window=default_export_lookback_window,
@@ -1499,7 +1499,7 @@ class DirectIngestRegionRawFileConfig:
                 file_path=yaml_file_path,
                 default_encoding=default_config.default_encoding,
                 default_separator=default_config.default_separator,
-                default_line_terminator=default_config.default_line_terminator,
+                default_custom_line_terminator=default_config.default_custom_line_terminator,
                 default_update_cadence=default_config.default_update_cadence,
                 default_ignore_quotes=default_config.default_ignore_quotes,
                 default_export_lookback_window=default_config.default_export_lookback_window,
