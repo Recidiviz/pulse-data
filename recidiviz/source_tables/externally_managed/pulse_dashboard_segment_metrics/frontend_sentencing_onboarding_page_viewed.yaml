@@ -1,0 +1,101 @@
+address:
+  dataset_id: pulse_dashboard_segment_metrics
+  table_id: frontend_sentencing_onboarding_page_viewed
+description:
+  Segment events emitted when a user views the Sentencing Assistant onboarding
+  page.
+schema:
+  - name: anonymous_id
+    type: STRING
+    mode: NULLABLE
+  - name: button_clicked
+    type: STRING
+    mode: NULLABLE
+  - name: case_id
+    type: STRING
+    mode: NULLABLE
+  - name: context_ip
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_referrer
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_title
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    type: STRING
+    mode: NULLABLE
+  - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_brands
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_mobile
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: context_user_agent_data_platform
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: session_id
+    type: STRING
+    mode: NULLABLE
+  - name: onboarding_topic
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: viewed_by
+    type: STRING
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

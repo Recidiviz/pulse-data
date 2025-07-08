@@ -1,0 +1,99 @@
+address:
+  dataset_id: pulse_dashboard_segment_metrics
+  table_id: frontend_outliers_supervisor_roster_modal_viewed
+description: |-
+  This table contains tracking metrics from segment
+  for the Outliers supervisor roster modal view event. 
+  Fields arise from segment: https://segment.com/docs/
+  If this schema has changed, a new event has likely pulled
+  in a new metric from the spec. You can find common ones here:
+  https://segment.com/docs/connections/spec/common/
+schema:
+  - name: anonymous_id
+    type: STRING
+    mode: NULLABLE
+  - name: context_ip
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_referrer
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_title
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_brands
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_mobile
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: context_user_agent_data_platform
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: session_id
+    type: STRING
+    mode: NULLABLE
+  - name: supervisor_pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: viewed_by
+    type: STRING
+    mode: NULLABLE
+  - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false
