@@ -61,7 +61,7 @@ class JobRunHistoryDelegateFactory:
                     configs=[
                         AirflowExplicitTaskRuntimeAlertingConfig(
                             dag_id=dag_id,
-                            runtime_minutes=70,
+                            runtime_minutes=90,
                             task_names=["update_managed_views_all"],
                         ),
                         AirflowTaskNameRegexRuntimeAlertingConfig(
