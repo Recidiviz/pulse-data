@@ -79,6 +79,7 @@ output:
               $mappings:
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
                   - "ESC" # Absconder
+                  - "LV2" # TODO(#45186): Find definition for this value, which started showing up on 7/9/25
                 StateSupervisionLevel.UNASSIGNED:
                   - "IAP" # Initial Assessment Phase
                   - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
