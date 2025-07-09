@@ -31,7 +31,6 @@ import datetime
 from typing import Dict, List
 
 from recidiviz.common.constants.state.state_sentence import (
-    StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
@@ -45,10 +44,10 @@ from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
+    StatePerson,
     StateSentence,
     StateSentenceGroup,
     StateSentenceGroupLength,
-    StateSentenceStatusSnapshot,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
@@ -60,12 +59,18 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
-    get_normalized_imposed_sentence_groups,
-    get_normalized_inferred_sentence_groups,
+from recidiviz.persistence.entity.state.state_entity_utils import (
+    ConsecutiveSentenceGraph,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.sentencing.infer_sentence_groups import (
+    get_normalized_imposed_sentence_groups,
+    get_normalized_inferred_sentence_groups,
+)
+from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_sentence_statuses import (
+    normalize_sentence_status_snapshots,
 )
 from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
 from recidiviz.utils.types import assert_type
@@ -196,55 +201,12 @@ def normalize_sentence_lengths(
     return normalized_lengths
 
 
-def normalize_sentence_status_snapshots(
-    snapshots: list[StateSentenceStatusSnapshot],
-    delegate: StateSpecificSentenceNormalizationDelegate,
-) -> list[NormalizedStateSentenceStatusSnapshot]:
-    """
-    Normalizes StateSentenceStatusSnapshot.
-    Normalized snapshots have a new field, status_end_datetime,
-    which is when the given status is no longer true.
-    All terminating statuses or actively serving statuses have a null status_end_datetime
-    """
-    snapshots = sorted(snapshots, key=lambda s: s.partition_key)
-    n_snapshots = len(snapshots)
-    normalized_snapshots = []
-    for idx, snapshot in enumerate(snapshots):
-        is_final_snapshot = idx == n_snapshots - 1
-        # The final snapshot has no end date.
-        if is_final_snapshot:
-            end_dt = None
-        else:
-            end_dt = snapshots[idx + 1].status_update_datetime
-            if (
-                delegate.correct_early_completed_statuses
-                and snapshot.status == StateSentenceStatus.COMPLETED
-            ):
-                snapshot.status = StateSentenceStatus.SERVING
-            if snapshot.status.is_terminating_status:
-                raise ValueError(
-                    f"Found [{snapshot.status.value}] status that is not the final status. {snapshot.limited_pii_repr()}"
-                )
-        normalized_snapshots.append(
-            NormalizedStateSentenceStatusSnapshot(
-                state_code=snapshot.state_code,
-                status_update_datetime=snapshot.status_update_datetime,
-                status_end_datetime=end_dt,
-                status=snapshot.status,
-                status_raw_text=snapshot.status_raw_text,
-                sentence_status_snapshot_id=assert_type(
-                    snapshot.sentence_status_snapshot_id, int
-                ),
-                sequence_num=idx + 1,
-            )
-        )
-    return normalized_snapshots
-
-
-def normalize_sentence(
+def _normalize_single_sentence(
+    *,
     sentence: StateSentence,
     charge_id_to_normalized_charge_cache: Dict[int, NormalizedStateChargeV2],
     delegate: StateSpecificSentenceNormalizationDelegate,
+    normalized_snapshots: list[NormalizedStateSentenceStatusSnapshot],
 ) -> NormalizedStateSentence:
     """Normalizes the sentencing V2 entities for a given StateSentence."""
     normalized_charges = []
@@ -254,11 +216,6 @@ def normalize_sentence(
             normalized_charge = normalize_charge_v2(charge)
             charge_id_to_normalized_charge_cache[charge_id] = normalized_charge
         normalized_charges.append(charge_id_to_normalized_charge_cache[charge_id])
-
-    normalized_snapshots = normalize_sentence_status_snapshots(
-        sentence.sentence_status_snapshots,
-        delegate,
-    )
 
     return NormalizedStateSentence(
         sentence_id=assert_type(sentence.sentence_id, int),
@@ -289,8 +246,8 @@ def normalize_sentence(
     )
 
 
-def get_normalized_sentences(
-    sentences: List[StateSentence],
+def get_normalized_sentences_for_person(
+    person: StatePerson,
     delegate: StateSpecificSentenceNormalizationDelegate,
 ) -> List[NormalizedStateSentence]:
     """
@@ -299,9 +256,29 @@ def get_normalized_sentences(
     the many-to-many relationship for sentences and charges.
     """
     charge_id_to_normalized_charge_cache: Dict[int, NormalizedStateChargeV2] = {}
+    sentences_by_external_id = {
+        sentence.external_id: sentence for sentence in person.sentences
+    }
+    consecutive_sentence_graph = ConsecutiveSentenceGraph.from_person(person)
+
+    # We normalize sentence statuses first, because they are often the source
+    # of truth for sentences themselves yet also depend on information of
+    # other sentences.
+    # For instance, we can't normalize the statuses of a consecutive sentence
+    # without first normalizing the sentences for its parent sentences.
+    normalized_snapshots = normalize_sentence_status_snapshots(
+        delegate=delegate,
+        unprocessed_sentences=sentences_by_external_id,
+        processing_order=consecutive_sentence_graph.topological_order,
+    )
     normalized_sentences = [
-        normalize_sentence(sentence, charge_id_to_normalized_charge_cache, delegate)
-        for sentence in sentences
+        _normalize_single_sentence(
+            sentence=sentence,
+            charge_id_to_normalized_charge_cache=charge_id_to_normalized_charge_cache,
+            delegate=delegate,
+            normalized_snapshots=normalized_snapshots[sentence.external_id],
+        )
+        for sentence in sentences_by_external_id.values()
     ]
     entities_module_context = entities_module_context_for_module(normalized_entities)
     for sentence in normalized_sentences:
@@ -375,8 +352,7 @@ def get_normalized_sentence_groups(
 
 def get_normalized_sentencing_entities(
     state_code: StateCode,
-    sentences: List[StateSentence],
-    sentence_groups: List[StateSentenceGroup],
+    person: StatePerson,
     delegate: StateSpecificSentenceNormalizationDelegate,
     expected_output_entities: set[type[Entity]],
 ) -> tuple[
@@ -392,10 +368,10 @@ def get_normalized_sentencing_entities(
     sentence_inferred_group_id of their respective NormalizedStateSentenceInferredGroup.
     """
     normalized_sentences_by_external_id = {
-        s.external_id: s for s in get_normalized_sentences(sentences, delegate)
+        s.external_id: s for s in get_normalized_sentences_for_person(person, delegate)
     }
     normalized_sentence_groups_by_external_id = {
-        g.external_id: g for g in get_normalized_sentence_groups(sentence_groups)
+        g.external_id: g for g in get_normalized_sentence_groups(person.sentence_groups)
     }
 
     if NormalizedStateSentenceInferredGroup in expected_output_entities:

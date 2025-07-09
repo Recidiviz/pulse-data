@@ -1378,6 +1378,13 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
     )
 
     @property
+    def parent_sentence_external_ids(self) -> list[str]:
+        """Returns the list of parent sentence external ids, or an empty list if there are none."""
+        if self.parent_sentence_external_id_array:
+            return self.parent_sentence_external_id_array.split(",")
+        return []
+
+    @property
     def first_serving_status_to_terminating_status_dt_range(
         self,
     ) -> PotentiallyOpenDateTimeRange | None:

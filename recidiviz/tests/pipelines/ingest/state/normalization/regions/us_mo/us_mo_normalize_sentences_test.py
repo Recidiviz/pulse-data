@@ -45,11 +45,11 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )
-from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
+from recidiviz.pipelines.ingest.state.normalization.sentencing.infer_sentence_groups import (
     NormalizedStateSentenceInferredGroup,
     build_imposed_group_from_sentences,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_all_sentencing_entities import (
     get_normalized_sentencing_entities,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_normalization_delegate import (
@@ -764,8 +764,7 @@ def test_person_001_sentencing_normalization() -> None:
         actual_imposed_groups,
     ) = get_normalized_sentencing_entities(
         StateCode.US_MO,
-        person_001.sentences,
-        person_001.sentence_groups,
+        person_001,
         MO_DELEGATE,
         expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
     )

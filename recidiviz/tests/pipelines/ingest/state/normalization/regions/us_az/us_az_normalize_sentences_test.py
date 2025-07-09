@@ -42,7 +42,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_all_sentencing_entities import (
     get_normalized_sentencing_entities,
 )
 from recidiviz.pipelines.utils.state_utils.us_az.us_az_sentence_normalization_delegate import (
@@ -200,8 +200,7 @@ def test_sentencing_normalization() -> None:
         actual_imposed_groups,
     ) = get_normalized_sentencing_entities(
         StateCode.US_AZ,
-        person.sentences,
-        person.sentence_groups,
+        person,
         UsAzSentenceNormalizationDelegate(),
         expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
     )

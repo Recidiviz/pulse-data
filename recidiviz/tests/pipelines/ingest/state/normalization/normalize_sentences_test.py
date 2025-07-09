@@ -50,9 +50,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_all_sentencing_entities import (
     get_normalized_sentence_groups,
-    get_normalized_sentences,
+    get_normalized_sentences_for_person,
     normalize_charge_v2,
 )
 from recidiviz.utils.types import assert_type
@@ -82,17 +82,16 @@ class TestSentenceV2Normalization(unittest.TestCase):
         self.start_dt = as_datetime(self.start_date)
         self.delegate = StateSpecificSentenceNormalizationDelegate()
 
-    def _get_normalized_sentences(
+    def _get_normalized_sentences_for_person(
         self,
-        sentences: list[StateSentence],
+        person: state_entities.StatePerson,
         delegate: StateSpecificSentenceNormalizationDelegate,
     ) -> list[NormalizedStateSentence]:
         entities_module_context = entities_module_context_for_module(state_entities)
-        sentences = [
-            assert_type(set_backedges(s, entities_module_context), StateSentence)
-            for s in sentences
-        ]
-        return get_normalized_sentences(sentences, delegate)
+        person = assert_type(
+            set_backedges(person, entities_module_context), state_entities.StatePerson
+        )
+        return get_normalized_sentences_for_person(person, delegate)
 
     def _new_charge(self, id_num: int) -> StateChargeV2:
         return StateChargeV2(
@@ -143,7 +142,14 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentence = self._new_sentence(1)
         sentence.charges = [charge]
         charge.sentences = [sentence]
-        normalized_sentences = self._get_normalized_sentences([sentence], self.delegate)
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentences = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )
         normalized_sentence = normalized_sentences[0]
         assert len(normalized_sentence.charges) == 1
         normalized_charge = normalized_sentence.charges[0]
@@ -159,7 +165,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentence.charges = charges
         for charge in charges:
             charge.sentences = [sentence]
-        normalized_sentences = self._get_normalized_sentences([sentence], self.delegate)
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentences = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )
         assert len(normalized_sentences) == 1
         normalized_sentence = normalized_sentences[0]
         assert len(normalized_sentence.charges) == 2
@@ -176,7 +188,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
         charge.sentences = sentences
         for sentence in sentences:
             sentence.charges = [charge]
-        normalized_sentences = self._get_normalized_sentences(sentences, self.delegate)
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=sentences,
+        )
+        normalized_sentences = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )
         for normalized_sentence in normalized_sentences:
             assert len(normalized_sentence.charges) == 1
             normalized_charge = normalized_sentence.charges[0]
@@ -201,7 +219,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentences[2].charges.append(charges[1])
         charges[1].sentences.append(sentences[2])
 
-        normalized_sentences = self._get_normalized_sentences(sentences, self.delegate)
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=sentences,
+        )
+        normalized_sentences = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )
         assert len(normalized_sentences) == 3
 
         # Check the first charge is related to all sentences
@@ -248,9 +272,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence=sentence,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
         )
@@ -262,8 +290,8 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert second.sentence_length_days_min == 49
 
         # Now test we can infer completion dates.
-        normalized_sentence = self._get_normalized_sentences(
-            [sentence], FakeDelegateThatInfersProjectedDatesFromLengthDays()
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatInfersProjectedDatesFromLengthDays()
         )[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
@@ -314,9 +342,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 + datetime.timedelta(days=100),
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
         )
@@ -361,9 +393,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 projected_completion_date_min_external=None,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         length = normalized_sentence.sentence_lengths[0]
         assert length.sentence_length_days_max == 142
         assert not length.projected_completion_date_min_external
@@ -409,8 +445,12 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 + datetime.timedelta(days=100),
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences(
-            [sentence], FakeDelegateThatInfersProjectedDatesFromLengthDays()
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatInfersProjectedDatesFromLengthDays()
         )[0]
         normalized_lengths = sorted(
             normalized_sentence.sentence_lengths, key=lambda s: s.partition_key
@@ -564,9 +604,14 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_status_snapshot_id=2,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         expected_normalized_status_snapshots = [
             NormalizedStateSentenceStatusSnapshot(
                 state_code=self.state_code_value,
@@ -609,9 +654,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_status_snapshot_id=2,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         expected_normalized_status_snapshots = [
             NormalizedStateSentenceStatusSnapshot(
                 state_code=self.state_code_value,
@@ -661,8 +710,12 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_status_snapshot_id=3,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences(
-            [sentence], FakeDelegateThatCorrectsCompleted()
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatCorrectsCompleted()
         )[0]
         expected_normalized_status_snapshots = [
             NormalizedStateSentenceStatusSnapshot(
@@ -719,11 +772,15 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sentence_status_snapshot_id=3,
             ),
         ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
         with self.assertRaisesRegex(
             ValueError,
             r"Found \[VACATED\] status that is not the final status. StateSentenceStatusSnapshot\(sentence_status_snapshot_id=2\)",
         ):
-            _ = self._get_normalized_sentences([sentence], self.delegate)
+            _ = self._get_normalized_sentences_for_person(person, self.delegate)
 
     def test_normalize_sentences_statuses_on_same_day(self) -> None:
         """
@@ -762,9 +819,13 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 sequence_num=11,
             ),
         ]
-        normalized_sentence = self._get_normalized_sentences([sentence], self.delegate)[
-            0
-        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
         expected_normalized_status_snapshots = [
             NormalizedStateSentenceStatusSnapshot(
                 state_code=self.state_code_value,

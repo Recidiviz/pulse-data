@@ -70,7 +70,7 @@ from recidiviz.pipelines.ingest.state.normalization.normalize_person_staff_relat
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
+from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_all_sentencing_entities import (
     get_normalized_sentencing_entities,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
@@ -170,8 +170,7 @@ def build_normalized_state_person(
         normalized_sentence_imposed_groups,
     ) = get_normalized_sentencing_entities(
         state_code=state_code,
-        sentences=person.sentences,
-        sentence_groups=person.sentence_groups,
+        person=person,
         delegate=sentencing_delegate,
         expected_output_entities=expected_output_entities,
     )

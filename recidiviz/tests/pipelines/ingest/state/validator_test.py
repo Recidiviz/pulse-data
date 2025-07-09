@@ -725,7 +725,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         self.assertEqual(
             errors,
             [
-                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: CHILD -> as child of -> PARENT; PARENT -> as child of -> CHILD. Did you intend to hydrate these a concurrent sentences?"
+                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: PARENT -> as child of -> CHILD; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?"
             ],
         )
 
@@ -779,11 +779,18 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         grand_parent_sentence.parent_sentence_external_id_array = (
             child_sentence.external_id
         )
+        self.state_person.sentences = [
+            child_sentence,
+            parent_sentence,
+            grand_parent_sentence,
+        ]
+        assert child_sentence.parent_sentence_external_id_array == "PARENT"
+        assert parent_sentence.parent_sentence_external_id_array == "GRAND_PARENT"
         errors = validate_root_entity(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: CHILD -> as child of -> PARENT; PARENT -> as child of -> GRAND_PARENT; GRAND_PARENT -> as child of -> CHILD. Did you intend to hydrate these a concurrent sentences?"
+                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: GRAND_PARENT -> as child of -> CHILD; PARENT -> as child of -> GRAND_PARENT; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?",
             ],
         )
 

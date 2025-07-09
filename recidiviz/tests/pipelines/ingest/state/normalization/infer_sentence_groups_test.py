@@ -43,13 +43,13 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.ingest.state.normalization.sentencing.infer_sentence_groups import (
     build_imposed_group_from_sentences,
     get_normalized_imposed_sentence_groups,
     get_normalized_inferred_sentence_groups,
-)
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
-    StateSpecificSentenceNormalizationDelegate,
 )
 from recidiviz.utils.types import assert_type
 

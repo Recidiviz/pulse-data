@@ -3237,6 +3237,13 @@ class StateSentence(
                 f"{self.limited_pii_repr()} cannot list itself in its own parent_sentence_external_id_array"
             )
 
+    @property
+    def parent_sentence_external_ids(self) -> list[str]:
+        """Returns the list of parent sentence external ids, or an empty list if there are none."""
+        if self.parent_sentence_external_id_array:
+            return self.parent_sentence_external_id_array.split(",")
+        return []
+
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
         return [
