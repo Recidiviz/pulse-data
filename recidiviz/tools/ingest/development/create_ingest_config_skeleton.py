@@ -195,7 +195,7 @@ def create_ingest_config_skeleton(
             raise ValueError(f"Unable to write config for file: {path}") from e
 
 
-def parse_arguments(argv: List[str]) -> argparse.Namespace:
+def parse_arguments() -> argparse.Namespace:
     """Parses the named arguments."""
     parser = argparse.ArgumentParser()
 
@@ -281,14 +281,12 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         required=False,
     )
 
-    known_args, _ = parser.parse_known_args(argv)
-
-    return known_args
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    args = parse_arguments(sys.argv)
+    args = parse_arguments()
 
     raw_file_paths = (
         [args.file_path]
