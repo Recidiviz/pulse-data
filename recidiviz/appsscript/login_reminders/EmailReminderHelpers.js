@@ -84,10 +84,17 @@ function stateSpecificOpportunities(stateCode) {
       return {
         EARLY_DISCHARGE: "Early Termination",
       };
+    case "US_NE":
+      return {
+        OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION:
+          "Override to Conditional Low Risk",
+        OVERRIDE_TO_LOW_SUPERVISION: "Override to Low",
+      };
     case "US_PA":
       return {
         TRANSFER_TO_ADMINISTRATIVE_SUPERVISION: "Administrative Supervision",
-        TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION: "Special Circumstances Supervision",
+        TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION:
+          "Special Circumstances Supervision",
       };
     case "US_TN":
       return {
@@ -146,22 +153,22 @@ function parseClientsByOpportunity(stateCode, structArray) {
  */
 function pluralize(count, additionalVerbs = [], noun = "client") {
   const pluralNoun = count === 1 ? noun : `${noun}s`;
-  
+
   const result = {
     is: count === 1 ? "is" : "are",
     has: count === 1 ? "has" : "have",
-    pluralNoun
+    pluralNoun,
   };
-  
+
   // Add additional verbs as separate keys
-  additionalVerbs.forEach(verb => {
+  additionalVerbs.forEach((verb) => {
     if (verb === "is" || verb === "has") {
       return;
     } else {
       result[verb] = count === 1 ? `${verb}s` : verb;
     }
   });
-  
+
   return result;
 }
 
@@ -301,6 +308,12 @@ function stateSpecificText(
         supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
         supervisionOpportunitySpecificText,
       };
+    case "US_NE":
+      return {
+        toolName: "the Recidiviz Supervision Assistant",
+        timeZone: "America/Chicago",
+        supervisionOpportunitySpecificText,
+      };
     case "US_PA":
       return {
         toolName: "the Recidiviz Supervision Assistant",
@@ -325,7 +338,7 @@ function stateSpecificText(
 }
 
 /**
- * Generates the introduction text for the reminder email, which is different for supervision line 
+ * Generates the introduction text for the reminder email, which is different for supervision line
  * staff depending on whether they have any urgent clients and whether they've logged in during the current month
  * @param {string} toolName the state-specific tool name
  * @param {string} currentMonth the full name of the current month
@@ -340,13 +353,13 @@ function generateIntroText(toolName, currentMonth, urgentClients, loggedIn) {
 
   if (urgentClients.length) {
     return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted for the opportunity or ineligible for the opportunity.<br><br>`;
-  } 
+  }
 
   return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>`;
 }
 
 /**
- * @param {date} lastLoginDate the user's most recent login date from auth0 
+ * @param {date} lastLoginDate the user's most recent login date from auth0
  * @returns a boolean indicating whether the most recent login date is during the current month
  */
 function loggedInThisMonth(lastLoginDate) {
@@ -427,9 +440,12 @@ function buildLoginReminderBody(info, userType, settings) {
 
       const eligible = pluralize(eligibleOpportunities);
       if (urgentClientsByOpportunity.length) {
-        const urgentOpportunities = urgentClientsByOpportunity.reduce((total, opp) => total += opp.numClients, 0);
+        const urgentOpportunities = urgentClientsByOpportunity.reduce(
+          (total, opp) => (total += opp.numClients),
+          0
+        );
         const urgent = pluralize(urgentOpportunities);
-        additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities, and ${urgentOpportunities} ${urgent.has} been unviewed for 30+ days.<br><br>`
+        additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities, and ${urgentOpportunities} ${urgent.has} been unviewed for 30+ days.<br><br>`;
       } else {
         const almost = pluralize(almostEligibleOpportunities);
         additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.is} almost eligible for opportunities.<br><br>`;
@@ -474,7 +490,9 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
   const { EMAIL_FROM_ALIAS, FEEDBACK_EMAIL, IS_TESTING } = settings;
   const loggedIn = loggedInThisMonth(lastLogin);
   const emailSubjectPrefix = IS_TESTING ? `[TESTING ${stateCode}] ` : "";
-  const emailSubject = loggedIn ? `${emailSubjectPrefix}Your month on Recidiviz!` : `${emailSubjectPrefix}Recidiviz missed you this month!`;
+  const emailSubject = loggedIn
+    ? `${emailSubjectPrefix}Your month on Recidiviz!`
+    : `${emailSubjectPrefix}Recidiviz missed you this month!`;
 
   // Add a record of this email to the sent emails spreadsheet
   const formattedTimestamp = new Date().toISOString();
@@ -523,7 +541,11 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
 
   // For now we also don't want to email supervision line staff who have logged in and don't
   // have any urgent clients
-  if (userType === SUPERVISION_LINESTAFF && loggedIn && !urgentClientsByOpportunity.length) {
+  if (
+    userType === SUPERVISION_LINESTAFF &&
+    loggedIn &&
+    !urgentClientsByOpportunity.length
+  ) {
     return false;
   }
 
@@ -641,11 +663,18 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     }
     const emailInfo = {
       ...dataByEmail[email],
-      lastLogin
+      lastLogin,
     };
     const shouldCheckOutliers =
       isSupervisors && hasOutliersTextConfigured[emailInfo.stateCode];
-    if (shouldSendLoginReminder(emailInfo, shouldCheckOutliers, settings, userType)) {
+    if (
+      shouldSendLoginReminder(
+        emailInfo,
+        shouldCheckOutliers,
+        settings,
+        userType
+      )
+    ) {
       const body = buildLoginReminderBody(emailInfo, userType, settings);
       sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
     }

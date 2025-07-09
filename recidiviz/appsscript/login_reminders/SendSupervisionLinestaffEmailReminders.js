@@ -18,9 +18,9 @@
 
 const SUPERVISION_LINESTAFF_INCLUDED_STATES = [
   "US_IX",
-  "US_ME",
   "US_MI",
   "US_ND",
+  "US_NE",
   "US_PA",
   "US_TN",
 ];
