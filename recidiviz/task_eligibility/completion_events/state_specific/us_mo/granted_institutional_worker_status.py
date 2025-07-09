@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identify when residents in MO have been granted outside clearance."""
+"""Identify when residents in MO have been granted outside clearance.
+
+In MO, outside clearance consists of work assignments located outside of a facility's
+security perimeter but on DOC property and under the supervision of DOC staff.
+"""
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -37,8 +41,6 @@ _QUERY_TEMPLATE = """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_MO,
-    # TODO(#44389): Confirm whether this is the correct TaskCompletionEventType for
-    # outside clearance (and change it if needed). (It's a placeholder for now!)
     completion_event_type=TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,

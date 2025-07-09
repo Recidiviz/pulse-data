@@ -23,19 +23,34 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
+from recidiviz.task_eligibility.criteria.general import (
+    no_contraband_incarceration_incident_within_2_years,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     educational_score_1_while_incarcerated,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
-    no_contraband_violations_in_2_years_while_incarcerated,
     no_current_or_prior_excluded_offenses_work_release,
     no_escape_in_10_years_or_current_sentence,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    TaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
+    TaskCriteriaBigQueryViewBuilder
+] = [
+    no_contraband_incarceration_incident_within_2_years.VIEW_BUILDER,
+    educational_score_1_while_incarcerated.VIEW_BUILDER,
+    institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
+    mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
+    no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
+]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
@@ -45,15 +60,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     # TODO(#42982): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
+        *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
-        mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
-        institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
-        no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
-        educational_score_1_while_incarcerated.VIEW_BUILDER,
-        no_contraband_violations_in_2_years_while_incarcerated.VIEW_BUILDER,
     ],
-    # TODO(#43358): Update this to be the correct completion event (either general or
-    # state-specific) for this opportunity.
+    # TODO(#43358): Make sure this completion event is pulling in the proper data from
+    # upstream to capture work-release events appropriately.
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
 

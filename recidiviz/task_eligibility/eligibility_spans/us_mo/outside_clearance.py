@@ -25,8 +25,12 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
     granted_institutional_worker_status,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
-    mental_health_score_3_or_below_while_incarcerated,
+
+# from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+#     not_eligible_or_almost_eligible_for_work_release,
+# )
+from recidiviz.task_eligibility.eligibility_spans.us_mo.work_release import (
+    WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -34,6 +38,12 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#44404): Un-comment lines related to
+# `US_MO_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_WORK_RELEASE` once we're ready to make the
+# opportunities mutually exclusive.
+# TODO(#44404): Since there can be exceptions for residents who don't meet the education
+# requirements, do we want to include them as almost eligible or otherwise still surface
+# those residents who may not meet the education requirement (but meet everything else)?
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="OUTSIDE_CLEARANCE",
@@ -42,10 +52,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     # TODO(#44404): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
-        mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
+        *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
+        # not_eligible_or_almost_eligible_for_work_release.VIEW_BUILDER,
     ],
-    # TODO(#44389): Implement the correct completion event (either general or state-
-    # specific) for this opportunity.
+    # TODO(#44389): Make sure this completion event is pulling in the proper data from
+    # upstream to capture outside-clearance events appropriately.
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
 )
 

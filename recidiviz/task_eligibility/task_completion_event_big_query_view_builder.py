@@ -89,7 +89,10 @@ class TaskCompletionEventType(Enum):
     GRANTED_WORK_RELEASE = "GRANTED_WORK_RELEASE"
     # Institutional worker status allows incarcerated residents to work within
     # a facility, or work in a very limited capacity outside a facility while
-    # monitored by a warden, sheriff, or other officer
+    # monitored by a warden, sheriff, or other officer. In some states (e.g., MO), only
+    # assignments outside the facility are included in this completion event; we may
+    # need to make adjustments in the future if it becomes necessary to distinguish
+    # between within-facility and outside-the-facility assignments within a state.
     GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
     GRANTED_FURLOUGH = "GRANTED_FURLOUGH"
     # TODO(#35580): determine if this should be split into separate events
