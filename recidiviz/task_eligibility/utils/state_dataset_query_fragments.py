@@ -493,7 +493,7 @@ def sentence_attributes() -> str:
         state_code,
         person_id,
         sentence_id,
-        external_id,
+        sentence_external_id,
         sentence_type,
         charge_id,
         offense_date,
