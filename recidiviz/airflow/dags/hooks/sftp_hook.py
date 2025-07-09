@@ -23,6 +23,12 @@ import paramiko
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from paramiko.transport import Transport
 
+# Timeout set on the SFTPClient's socket (paramiko.Channel class). This timeout is used
+# each time the underlying socket is reading or writing a single packet (which is, at most,
+# 2^15 bytes, or 0.03 mb), not for the entire file. This is set as a backstop against
+# flaky and/or silently dropped SFTP reads that can hang indefinitely.
+SFTP_SOCKET_PACKET_READ_TIMEOUT = 180.0  # 3 minutes, in seconds
+
 
 class RecidivizSFTPHook(SFTPHook):
     """Custom SFTPHook that supports two-factor authenticated SFTP servers."""
@@ -101,5 +107,6 @@ class RecidivizSFTPHook(SFTPHook):
                 ) from e
             if not client:
                 raise ValueError("Expected proper SFTP client to be created.")
+            client.sock.settimeout(SFTP_SOCKET_PACKET_READ_TIMEOUT)
             self.conn = client
         return self.conn
