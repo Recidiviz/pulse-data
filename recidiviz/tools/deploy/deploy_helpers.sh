@@ -291,7 +291,15 @@ function verify_can_deploy {
     run_cmd check_terraform_installed
 
     echo "Checking pipenv is synced"
-    "${BASH_SOURCE_DIR}"/../diff_pipenv.sh || exit_on_fail
+    if ! "${BASH_SOURCE_DIR}"/../diff_pipenv.sh; then
+      echo "Pipenv is not synced. Running 'pipenv sync --dev'..."
+      run_cmd pipenv sync --dev
+      echo "Re-checking pipenv sync"
+      if ! "${BASH_SOURCE_DIR}"/../diff_pipenv.sh; then
+        echo "Pipenv still not synced after running 'pipenv sync --dev'"
+        exit 1
+      fi
+    fi
 
     echo "Checking Github status checks for commit"
     python -m recidiviz.tools.deploy.verify_github_check_statuses \
