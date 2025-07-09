@@ -489,9 +489,14 @@ class SupervisionOfficerEntity:
     earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
     # A list of zero grant opportunity types for this officer.
     zero_grant_opportunities: Optional[List[str]] = attr.ib(default=None)
+    # The date of the officer's last login
+    latest_login_date: Optional[date] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
+        result = cattrs.unstructure(self)
+        if result.get("latest_login_date"):
+            result["latest_login_date"] = result["latest_login_date"].isoformat()
+        return result
 
 
 @attr.s

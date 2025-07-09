@@ -16,43 +16,43 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier get_all_supervision_officers_required_info_only"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='OFFICER1', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='OFFICER1', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='10', middle_names='', name_suffix=''), external_id='OFFICER10', pseudonymized_id='officerhash10', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='10', middle_names='', name_suffix=''), external_id='OFFICER10', pseudonymized_id='officerhash10', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='11', middle_names='', name_suffix=''), external_id='OFFICER11', pseudonymized_id='officerhash11', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='11', middle_names='', name_suffix=''), external_id='OFFICER11', pseudonymized_id='officerhash11', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='12', middle_names='', name_suffix=''), external_id='OFFICER12', pseudonymized_id='officerhash12', supervisor_external_id='105', supervisor_external_ids=['105'], district='2', email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='12', middle_names='', name_suffix=''), external_id='OFFICER12', pseudonymized_id='officerhash12', supervisor_external_id='105', supervisor_external_ids=['105'], district='2', email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='13', middle_names='', name_suffix=''), external_id='OFFICER13', pseudonymized_id='officerhash13', supervisor_external_id='105', supervisor_external_ids=['105'], district='2', email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='13', middle_names='', name_suffix=''), external_id='OFFICER13', pseudonymized_id='officerhash13', supervisor_external_id='105', supervisor_external_ids=['105'], district='2', email='officer1@recidiviz.org', include_in_outcomes=False, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='2', middle_names='', name_suffix=''), external_id='OFFICER2', pseudonymized_id='officerhash2', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='2', middle_names='', name_suffix=''), external_id='OFFICER2', pseudonymized_id='officerhash2', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='5', middle_names='', name_suffix=''), external_id='OFFICER5', pseudonymized_id='officerhash5', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='5', middle_names='', name_suffix=''), external_id='OFFICER5', pseudonymized_id='officerhash5', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='OFFICER7', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='OFFICER7', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='8', middle_names='', name_suffix=''), external_id='OFFICER8', pseudonymized_id='officerhash8', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='8', middle_names='', name_suffix=''), external_id='OFFICER8', pseudonymized_id='officerhash8', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='OFFICER9', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='OFFICER9', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=None, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=None)"
     ),
 ]
 
@@ -676,13 +676,13 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 13))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=['usPaAdminSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=['usPaAdminSupervision'], latest_login_date=datetime.date(2024, 12, 12))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 10))"
     ),
 ]
 
@@ -690,13 +690,13 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor_non_all_category"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 13))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=['usPaAdminSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=['usPaAdminSupervision'], latest_login_date=datetime.date(2024, 12, 12))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 10))"
     ),
 ]
 
@@ -704,13 +704,13 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor_without_workflows_info"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=None, latest_login_date=datetime.date(2024, 12, 13))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names='', name_suffix=''), external_id='OFFICER4', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=3.45, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=None, latest_login_date=datetime.date(2024, 12, 12))"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=None)"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names='', name_suffix=''), external_id='OFFICER6', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=90.09, earliest_person_assignment_date=datetime.date(2022, 4, 15), zero_grant_opportunities=None, latest_login_date=datetime.date(2024, 12, 10))"
     ),
 ]
 
@@ -729,31 +729,31 @@ snapshots[
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_changing_caseload_categories"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='OFFICER1', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=59.95, earliest_person_assignment_date=datetime.date(2024, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='OFFICER1', pseudonymized_id='officerhash1', supervisor_external_id='101', supervisor_external_ids=['101', '104'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=59.95, earliest_person_assignment_date=datetime.date(2024, 4, 15), zero_grant_opportunities=['usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 15))"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 13))"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_not_top_x_pct"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='OFFICER9', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=99.9, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=[])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names='', name_suffix=''), external_id='OFFICER9', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=99.9, earliest_person_assignment_date=datetime.date(2020, 6, 15), zero_grant_opportunities=[], latest_login_date=datetime.date(2024, 12, 7))"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_with_highlights"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names='', name_suffix=''), external_id='OFFICER3', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=54.321, earliest_person_assignment_date=None, zero_grant_opportunities=['usPaAdminSupervision', 'usPaSpecialCircumstancesSupervision'], latest_login_date=datetime.date(2024, 12, 13))"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_highlight_in_prev_period_only"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='OFFICER7', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=23.456, earliest_person_assignment_date=datetime.date(2018, 4, 15), zero_grant_opportunities=['usPaAdminSupervision'])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names='', name_suffix=''), external_id='OFFICER7', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', email='officer1@recidiviz.org', include_in_outcomes=True, avg_daily_population=23.456, earliest_person_assignment_date=datetime.date(2018, 4, 15), zero_grant_opportunities=['usPaAdminSupervision'], latest_login_date=datetime.date(2024, 12, 9))"
 )
 
 snapshots[
