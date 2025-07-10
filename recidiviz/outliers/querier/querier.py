@@ -958,7 +958,6 @@ class OutliersQuerier:
                     SupervisionOfficer.supervision_district,
                     include_in_outcomes_subquery.c.include_in_outcomes,
                     SupervisionOfficer.email,
-                    SupervisionOfficer.latest_login_date,
                 )
             ).all()
 
@@ -1346,7 +1345,6 @@ class OutliersQuerier:
                 SupervisionOfficer.supervision_district,
                 SupervisionOfficer.email,
                 SupervisionOfficer.earliest_person_assignment_date,
-                SupervisionOfficer.latest_login_date,
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
             ]
@@ -1371,7 +1369,6 @@ class OutliersQuerier:
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.email,
                     SupervisionOfficer.earliest_person_assignment_date,
-                    SupervisionOfficer.latest_login_date,
                     avgs_subquery.c.avg_daily_population,
                     include_in_outcomes_subquery.c.include_in_outcomes,
                 )
@@ -1485,7 +1482,6 @@ class OutliersQuerier:
                         else None
                     ),
                     include_in_outcomes=bool(record.include_in_outcomes),
-                    latest_login_date=record.latest_login_date,
                 )
 
             return officer_external_id_to_entity
