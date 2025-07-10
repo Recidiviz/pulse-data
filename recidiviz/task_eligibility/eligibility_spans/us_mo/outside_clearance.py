@@ -25,6 +25,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
     granted_institutional_worker_status,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    incarceration_within_60_months_of_projected_full_term_completion_date_min,
+)
 
 # from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
 #     not_eligible_or_almost_eligible_for_work_release,
@@ -53,6 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     # TODO(#44404): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
+        incarceration_within_60_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
         # not_eligible_or_almost_eligible_for_work_release.VIEW_BUILDER,
     ],
     # TODO(#44389): Make sure this completion event is pulling in the proper data from
