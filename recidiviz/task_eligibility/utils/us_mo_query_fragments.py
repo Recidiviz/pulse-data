@@ -70,6 +70,35 @@ MO_CHARGE_CODES_MURDER_SECOND_DEGREE = [
     "10036",
 ]
 
+# The following charge codes can be used to identify first degree arson offenses in
+# Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
+# category (`BE_NC2`) 20 (arson) and (`BE_CLA`) A or B (first degree arson can be class A or B felonies).
+MO_CHARGE_CODES_ARSON_FIRST_DEGREE = [
+    "20AAM",
+    # Not sure why there are some NCI categories of 17, since these
+    # were surfaced by ensuring BC_NC2 = 20
+    "17012",
+    "17010",
+    "20AAK",
+    "17015",
+    "20AAL",
+]
+
+# The following charge codes can be used to identify first degree arson offenses in
+# Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
+# category (`BE_NC2`) 12 (robbery) and (`BE_CLA`) A (first degree robbery is a class A felony).
+MO_CHARGE_CODES_ROBBERY_FIRST_DEGREE = [
+    "12030",
+    "12AAE",
+    "12AAA",
+    "12AAC",
+    "12035",
+    "12010",
+    # These have `BE_CLA` = U (Unclassified)
+    "12011",
+    "12012",
+]
+
 
 def classes_cte() -> str:
     """Helper method that returns a CTE getting
