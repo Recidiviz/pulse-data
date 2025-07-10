@@ -28,12 +28,14 @@ def fake_region(
     region_code: str = "us_xx",
     environment: str = "local",
     region_module: Optional[ModuleType] = None,
+    playground: bool = False,
 ) -> DirectIngestRegion:
     """Fake Region Object"""
     region = create_autospec(DirectIngestRegion)
     region.region_code = region_code
     region.environment = environment
     region.region_module = region_module
+    region.playground = playground
 
     def fake_is_launched_in_env() -> bool:
         return DirectIngestRegion.is_ingest_launched_in_env(region)

@@ -27,6 +27,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
+from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.find_direct_raw_data_references import (
     find_direct_raw_data_references,
 )
@@ -45,17 +47,37 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
 
+        ingest_states = [StateCode.US_XX, StateCode.US_YY]
+
         self.mock_get_existing_direct_ingest_states = patch(
             "recidiviz.ingest.direct.dataset_helpers.get_existing_direct_ingest_states"
         )
-        self.mock_get_existing_direct_ingest_states.start().return_value = [
-            StateCode.US_XX,
-            StateCode.US_YY,
-        ]
+        self.mock_get_existing_direct_ingest_states.start().return_value = ingest_states
+
+        self.mock_get_existing_direct_ingest_states_2 = patch(
+            "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_existing_direct_ingest_states"
+        )
+        self.mock_get_existing_direct_ingest_states_2.start().return_value = (
+            ingest_states
+        )
+
+        regions_by_state = {}
+        for state in ingest_states:
+            regions_by_state[state.value.lower()] = fake_region(
+                region_code=state.value.lower(), region_module=fake_regions
+            )
+
+        self.mock_fake_regions = patch(
+            "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
+            new=lambda region_code: regions_by_state[region_code.lower()],
+        )
+        self.mock_fake_regions.start()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.mock_get_existing_direct_ingest_states.stop()
+        self.mock_get_existing_direct_ingest_states_2.stop()
+        self.mock_fake_regions.stop()
 
     def test_downstream_view_is_excluded(self) -> None:
         view1 = self._create_view_builder(

@@ -145,7 +145,6 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
 
         # pylint: disable=C0415 import-outside-toplevel
         # pylint: disable=unused-import
-        from recidiviz.airflow.dags.raw_data_import_dag import raw_data_import_dag
 
     def test_branch_sorting(self) -> None:
         """Tests that branches are sorted in alphabetical order in topological_sort
@@ -426,17 +425,20 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
             self.conn_id
         )
-        self.gcs_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
-            side_effect=fake_operator_with_return_value([]),
-        )
-        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
 
+        # This must be patched prior to the import of the raw_data_import_dag in `gcs_operator_patcher`
+        # as `DirectIngestListNormalizedUnprocessedFilesOperator` imports and holds a reference to the delegate
         self.delegate_patcher = patch(
             "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
             FakeRawDataImportDelegateFactory,
         )
         self.delegate_patcher.start()
+
+        self.gcs_operator_patcher = patch(
+            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
+            side_effect=fake_operator_with_return_value([]),
+        )
+        self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
 
         self.fs = FakeGCSFileSystem()
         self.gcsfs_patcher = patch(
@@ -914,6 +916,14 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
+        # This must be patched prior to file_chunking_args_patcher as `generate_file_chunking_pod_arguments` imports
+        # and holds a reference to the delegate
+        self.delegate_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
+            FakeRawDataImportDelegateFactory,
+        )
+        self.delegate_patcher.start()
+
         self.file_chunking_args_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments.function",
         )
@@ -929,12 +939,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.verify_file_chunks_patcher.start().side_effect = self._regroup(original)
 
         # task interaction mocks ---
-
-        self.delegate_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
-            FakeRawDataImportDelegateFactory,
-        )
-        self.delegate_patcher.start()
 
         self.fake_gcs_patch = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build"

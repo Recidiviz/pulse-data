@@ -108,7 +108,6 @@ class BigQueryEmulatorControl:
             ports={self.port: self.port},
             detach=True,
             volumes=volumes,
-            mem_limit="4g",
             platform=EMULATOR_PLATFORM,
         )
 

@@ -48,6 +48,9 @@ class TestUsTnViolationResponseNormalizationDelegate(unittest.TestCase):
         self.mock_unique_id = self.unique_id_patcher.start()
         self.mock_unique_id.return_value = 4700000000012312345
 
+    def tearDown(self) -> None:
+        self.unique_id_patcher.stop()
+
     @staticmethod
     def _build_delegate(
         incarceration_periods: List[StateIncarcerationPeriod],

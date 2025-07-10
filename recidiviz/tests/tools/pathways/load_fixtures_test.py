@@ -104,17 +104,25 @@ class TestLoadFixtures(TestCase):
             db_url=local_postgres_helpers.on_disk_postgres_db_url("us_tn"),
         )
 
-        # Ensure DB does not exist
-        with pytest.raises(Exception):
+        try:
+            # Ensure DB does not exist
+            with pytest.raises(Exception):
+                tn_engine.connect()
+
+            create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
+
+            # Should no longer throw
             tn_engine.connect()
 
-        create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
-
-        # Should no longer throw
-        tn_engine.connect()
-
-        # Should no-op
-        create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
+            # Should no-op
+            create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
+        except Exception as e:
+            self.fail(f"Encountered error while running test: {e}")
+        finally:
+            # Teardown key
+            SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                database_key=tn_key
+            )
 
     def test_import_pathways_from_gcs(self) -> None:
         bucket = "recidiviz-456-dashboard-event-level-data"

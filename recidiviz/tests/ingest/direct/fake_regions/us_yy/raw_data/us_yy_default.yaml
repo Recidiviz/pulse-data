@@ -1,0 +1,10 @@
+default_encoding: UTF-8
+default_separator: ","
+default_ignore_quotes: False
+default_export_lookback_window: TWO_WEEK_INCREMENTAL_LOOKBACK
+default_no_valid_primary_keys: False
+default_update_cadence: WEEKLY
+default_infer_columns_from_config: False
+default_import_blocking_validation_exemptions:
+  - validation_type: STABLE_HISTORICAL_RAW_DATA_COUNTS
+    exemption_reason: reason

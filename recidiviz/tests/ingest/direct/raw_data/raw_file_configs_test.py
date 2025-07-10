@@ -18,7 +18,9 @@
 import os
 import unittest
 from datetime import datetime, timezone
+from os.path import exists
 from typing import Dict
+from unittest.mock import patch
 
 import attr
 
@@ -1324,13 +1326,26 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             )
 
     def test_parse_no_defaults_throws(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError, "^Missing default raw data configs for region: us_yy"
-        ):
-            _ = DirectIngestRegionRawFileConfig(
-                region_code="us_yy",
-                region_module=fake_regions,
-            )
+        def fake_os_exists(path: str) -> bool:
+            if path.endswith("us_yy_default.yaml"):
+                return False
+            return exists(path)
+
+        patcher = patch(
+            "recidiviz.ingest.direct.raw_data.raw_file_configs.os.path.exists",
+            new=fake_os_exists,
+        )
+        patcher.start()
+        try:
+            with self.assertRaisesRegex(
+                ValueError, "^Missing default raw data configs for region: us_yy"
+            ):
+                _ = DirectIngestRegionRawFileConfig(
+                    region_code="us_yy",
+                    region_module=fake_regions,
+                )
+        finally:
+            patcher.stop()
 
     def test_many_primary_person_tables(self) -> None:
         with self.assertRaisesRegex(

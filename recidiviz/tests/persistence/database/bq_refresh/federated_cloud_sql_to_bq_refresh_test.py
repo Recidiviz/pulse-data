@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for federated_cloud_sql_to_bq_refresh.py."""
 
-import importlib
 import unittest
 from typing import Optional
 from unittest import mock
@@ -33,7 +32,6 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_resources.resource_label import ResourceLabel
-from recidiviz.common.constants import states
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
     federated_cloud_sql_to_bq_refresh,
@@ -59,9 +57,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
     """Tests for federated_cloud_sql_to_bq_refresh.py."""
 
     def setUp(self) -> None:
-        # Ensures StateCode.US_XX is properly loaded
-        importlib.reload(states)
-
         self.mock_project_id = "recidiviz-staging"
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_metadata = self.metadata_patcher.start()

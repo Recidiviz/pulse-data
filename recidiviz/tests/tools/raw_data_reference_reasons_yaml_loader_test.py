@@ -72,6 +72,9 @@ class TestRawDataReferenceReasonsYamlLoader(unittest.TestCase):
     def setUp(self) -> None:
         RawDataReferenceReasonsYamlLoader.reset_data()
 
+    def tearDown(self) -> None:
+        RawDataReferenceReasonsYamlLoader.reset_data()
+
     @patch("builtins.open", new_callable=mock_open, read_data=mock_yaml_content)
     @patch.object(
         YAML,

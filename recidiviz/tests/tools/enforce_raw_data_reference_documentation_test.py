@@ -56,6 +56,9 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
             all_deployed_view_builders()
         )
 
+    def tearDown(self) -> None:
+        RawDataReferenceReasonsYamlLoader.reset_data()
+
     @classmethod
     def tearDownClass(cls) -> None:
         cls.project_id_patcher.stop()
