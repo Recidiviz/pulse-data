@@ -80,9 +80,7 @@ class JobRunHistoryDelegateFactory:
                 AirflowTaskRuntimeDelegate(
                     dag_id=dag_id,
                     configs=[
-                        # TODO(#44467): consider reducing once nebraska uses a vpn tunnel
-                        # set at 3 hours, as nebraska sometimes takes this long
-                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=180),
+                        AirflowAllTaskRuntimeConfig(dag_id=dag_id, runtime_minutes=90),
                     ],
                 ),
             ]
