@@ -72,6 +72,45 @@ def normalize_sentence_status_snapshots(
     return normalized_snapshots
 
 
+def split_snapshot_by_status(
+    *,
+    original_snapshot: NormalizedStateSentenceStatusSnapshot,
+    split_dt: datetime.datetime,
+    first_status: StateSentenceStatus,
+    first_status_raw_text_override: str | None = None,
+    second_status: StateSentenceStatus,
+    second_status_raw_text_override: str | None = None,
+) -> list[NormalizedStateSentenceStatusSnapshot]:
+    """Splits the given snapshot into two snapshots at the given datetime."""
+    first_snapshot = NormalizedStateSentenceStatusSnapshot(
+        state_code=original_snapshot.state_code,
+        status_update_datetime=original_snapshot.status_update_datetime,
+        status=first_status,
+        status_end_datetime=split_dt,
+        status_raw_text=(
+            first_status_raw_text_override or original_snapshot.status_raw_text
+        ),
+        person=original_snapshot.person,
+        sentence=original_snapshot.sentence,
+        # These will get reset later in normalization but need to exist.
+        sequence_num=-1,
+    )
+    second_snapshot = NormalizedStateSentenceStatusSnapshot(
+        state_code=original_snapshot.state_code,
+        status_update_datetime=split_dt,
+        status=second_status,
+        status_end_datetime=original_snapshot.status_end_datetime,
+        status_raw_text=(
+            second_status_raw_text_override or original_snapshot.status_raw_text
+        ),
+        person=original_snapshot.person,
+        sentence=original_snapshot.sentence,
+        # These will get reset later in normalization but need to exist.
+        sequence_num=-1,
+    )
+    return [first_snapshot, second_snapshot]
+
+
 def _normalize_given_snapshots(
     delegate: StateSpecificSentenceNormalizationDelegate,
     snapshots: list[StateSentenceStatusSnapshot],

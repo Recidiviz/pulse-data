@@ -700,6 +700,29 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
         ]
 
 
+# TODO(#32690) Update this when PK PK generation is consistent across
+# HasExternalId entities. This allows us to have a unique mandatory field for now
+def _build_unique_snapshot_key(
+    snapshot: "NormalizedStateSentenceStatusSnapshot",
+) -> int:
+    """
+    Creates a unique key for this entity.
+    Partition keys are unique to each sentence, and each sentence external ID
+    is unique, so this forms a unique Key.
+    """
+    if not snapshot.sentence:
+        # This shouldn't happen because a sentence is needed to hydrate these.
+        # It can happen if we build normalized snapshots for a test without a sentence though.
+        raise ValueError(
+            "Cannot build unique key for NormalizedStateSentenceStatusSnapshot "
+            "without a sentence."
+        )
+    return generate_primary_key(
+        snapshot.sentence.external_id + snapshot.partition_key,
+        StateCode(snapshot.state_code),
+    )
+
+
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceStatusSnapshot(
     NormalizedStateEntity, LedgerEntityMixin, Entity
@@ -744,9 +767,6 @@ class NormalizedStateSentenceStatusSnapshot(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key
-    sentence_status_snapshot_id: int = attr.ib(validator=attr_validators.is_int)
-
     # Cross-entity relationships
     person: Optional["NormalizedStatePerson"] = attr.ib(
         default=None, validator=IsNormalizedPersonBackedgeValidator()
@@ -754,6 +774,14 @@ class NormalizedStateSentenceStatusSnapshot(
 
     sentence: Optional["NormalizedStateSentence"] = attr.ib(
         default=None, validator=IsNormalizedSentenceBackedgeValidator()
+    )
+
+    # Primary key, this must be defined after sentence!
+    sentence_status_snapshot_id: int = attr.ib(
+        validator=attr_validators.is_int,
+        # TODO(#32690) Update this when PK PK generation is consistent across
+        # HasExternalId entities. This allows us to have a unique mandatory field for now
+        default=attr.Factory(_build_unique_snapshot_key, takes_self=True),
     )
 
     @property
