@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
     no_contraband_incarceration_incident_within_2_years,
+    not_in_work_release,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     educational_score_1_while_incarcerated,
@@ -46,6 +47,14 @@ WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
     no_contraband_incarceration_incident_within_2_years.VIEW_BUILDER,
+    # For outside clearance, we check that someone is not eligible for work release,
+    # because if eligible, they should show up in the work-release opportunity instead
+    # of outside clearance. We include `NOT_IN_WORK_RELEASE` as a shared criterion with
+    # outside clearance here because if someone is already on work release, they won't
+    # be eligible for work release but could therefore show up in the outside-clearance
+    # eligibility pool, but we don't want to surface them there if they're already on
+    # work release.
+    not_in_work_release.VIEW_BUILDER,
     educational_score_1_while_incarcerated.VIEW_BUILDER,
     institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
     mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
