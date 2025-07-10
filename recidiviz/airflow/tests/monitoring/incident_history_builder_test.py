@@ -798,6 +798,14 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 incident.next_success_date,
                 july_eighth_primary.execution_date,
             )
+            # there were TWO whole failures on this day :eyes:
+            self.assertEqual(
+                incident.failed_execution_dates,
+                [
+                    july_seventh_primary.execution_date,
+                    july_seventh_primary.execution_date,
+                ],
+            )
 
     @patch(
         "recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate.get_current_context"
@@ -1060,3 +1068,114 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
         task_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_02]
         task_incident.job_id = "raw_data_dag.parent_task"
         task_incident.error_message = None
+
+    def test_graph_task_skipped(self) -> None:
+        """
+        Given a task has consecutively failed, but its upstream task failed in between
+
+                    2023-07-09 2023-07-10 2023-07-11 2023-07-12 2023-07-13
+        parent_task 🟥         🟪          🟪         🟪         🟥
+        child_task  🟥         🟪          🟩         🟪         🟥
+
+        Assert that an incident is only reported once
+        """
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_parent = dummy_ti(parent_task, july_ninth, "failed")
+            july_ninth_child = dummy_ti(child_task, july_ninth, "failed")
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_parent = dummy_ti(parent_task, july_tenth, "skipped")
+            july_tenth_child = dummy_ti(child_task, july_tenth, "skipped")
+
+            july_eleventh = dummy_dag_run(test_dag, "2023-07-11 12:00")
+            july_eleventh_parent = dummy_ti(parent_task, july_eleventh, "skipped")
+            july_eleventh_child = dummy_ti(child_task, july_eleventh, "success")
+
+            july_twelfth = dummy_dag_run(test_dag, "2023-07-12 12:00")
+            july_twelfth_parent = dummy_ti(parent_task, july_twelfth, "skipped")
+            july_twelfth_child = dummy_ti(child_task, july_twelfth, "skipped")
+
+            july_thirteenth = dummy_dag_run(test_dag, "2023-07-13 12:00")
+            july_thirteenth_parent = dummy_ti(parent_task, july_thirteenth, "failed")
+            july_thirteenth_child = dummy_ti(child_task, july_thirteenth, "failed")
+
+            session.add_all(
+                [
+                    july_ninth,
+                    july_ninth_parent,
+                    july_ninth_child,
+                    july_tenth,
+                    july_tenth_parent,
+                    july_tenth_child,
+                    july_eleventh,
+                    july_eleventh_parent,
+                    july_eleventh_child,
+                    july_twelfth,
+                    july_twelfth_parent,
+                    july_twelfth_child,
+                    july_thirteenth,
+                    july_thirteenth_parent,
+                    july_thirteenth_child,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate("test_graph_task_skipped.csv"),
+            )
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # first child failure
+            incident_key = (
+                "Task Run: test_dag.child_task, started: 2023-07-09 12:00 UTC"
+            )
+            assert incident_key in history
+            incident = history[incident_key]
+            # no previous successes
+            self.assertEqual(incident.previous_success_date, None)
+            # next success is 7-11: the day of free slurpees; everyone eats i guess????
+            self.assertEqual(incident.next_success_date, july_eleventh.execution_date)
+            # a single failure
+            self.assertEqual(
+                incident.failed_execution_dates, [july_ninth.execution_date]
+            )
+
+            # second child failure
+            incident_key = (
+                "Task Run: test_dag.child_task, started: 2023-07-13 12:00 UTC"
+            )
+            assert incident_key in history
+            incident = history[incident_key]
+            self.assertEqual(
+                incident.previous_success_date, july_eleventh.execution_date
+            )
+            self.assertEqual(incident.next_success_date, None)
+            self.assertEqual(
+                incident.failed_execution_dates, [july_thirteenth.execution_date]
+            )
+
+            # single parent failure
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
+            assert incident_key in history
+            incident = history[incident_key]
+            # it's failures all the way down
+            self.assertEqual(incident.previous_success_date, None)
+            self.assertEqual(incident.next_success_date, None)
+            self.assertEqual(
+                incident.failed_execution_dates,
+                [july_ninth.execution_date, july_thirteenth.execution_date],
+            )

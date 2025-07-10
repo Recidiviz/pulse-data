@@ -340,29 +340,50 @@ class AirflowTaskRunHistoryDelegateTest(AirflowIntegrationTest):
         """
         Given a task has consecutively failed, but its upstream task failed in between
 
-                    2023-07-09 2023-07-10 2023-07-11
-        parent_task 🟥         🟪         🟥
+                    2023-07-09 2023-07-10 2023-07-11 2023-07-12 2023-07-13
+        parent_task 🟥         🟪          🟪         🟪         🟥
+         child_task 🟥         🟪          🟩         🟪         🟥
 
         Assert that an incident is only reported once
         """
         with self._get_session() as session:
             july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
-            july_ninth_ti = dummy_ti(parent_task, july_ninth, "failed")
+            july_ninth_parent = dummy_ti(parent_task, july_ninth, "failed")
+            july_ninth_child = dummy_ti(child_task, july_ninth, "failed")
 
             july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
-            july_tenth_ti = dummy_ti(parent_task, july_tenth, "skipped")
+            july_tenth_parent = dummy_ti(parent_task, july_tenth, "skipped")
+            july_tenth_child = dummy_ti(child_task, july_tenth, "skipped")
 
             july_eleventh = dummy_dag_run(test_dag, "2023-07-11 12:00")
-            july_eleventh_ti = dummy_ti(parent_task, july_eleventh, "failed")
+            july_eleventh_parent = dummy_ti(parent_task, july_eleventh, "skipped")
+            july_eleventh_child = dummy_ti(child_task, july_eleventh, "success")
+
+            july_twelfth = dummy_dag_run(test_dag, "2023-07-12 12:00")
+            july_twelfth_parent = dummy_ti(parent_task, july_twelfth, "skipped")
+            july_twelfth_child = dummy_ti(child_task, july_twelfth, "skipped")
+
+            july_thirteenth = dummy_dag_run(test_dag, "2023-07-13 12:00")
+            july_thirteenth_parent = dummy_ti(parent_task, july_thirteenth, "failed")
+            july_thirteenth_child = dummy_ti(child_task, july_thirteenth, "failed")
 
             session.add_all(
                 [
                     july_ninth,
-                    july_ninth_ti,
+                    july_ninth_parent,
+                    july_ninth_child,
                     july_tenth,
-                    july_tenth_ti,
+                    july_tenth_parent,
+                    july_tenth_child,
                     july_eleventh,
-                    july_eleventh_ti,
+                    july_eleventh_parent,
+                    july_eleventh_child,
+                    july_twelfth,
+                    july_twelfth_parent,
+                    july_twelfth_child,
+                    july_thirteenth,
+                    july_thirteenth_parent,
+                    july_thirteenth_child,
                 ]
             )
             session.commit()

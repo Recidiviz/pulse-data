@@ -85,7 +85,7 @@ class IncidentHistoryBuilder:
             sessions = df.groupby("session_id")
 
             # This is a DataFrame with the most recent error for each session
-            last_error_per_session = df.iloc[sessions.job_run_num.idxmax()][
+            last_error_per_session = sessions.tail(1)[
                 ["session_id", "state", "error_message"]
             ]
             # Creates a dataframe with aggregated dates for each session,
