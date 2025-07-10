@@ -52,6 +52,12 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
 MAX_NUM_COLS = 300
+DEFAULT_IS_PII_VALUE = False
+DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE = False
+DEFAULT_IS_CODE_FILE_VALUE = False
+DEFAULT_IS_PRIMARY_PERSON_TABLE_VALUE = False
+DEFAULT_IS_CHUNKED_FILE_VALUE = False
+EXCLUDE_FROM_YAML = "exclude_from_yaml"
 
 
 class RawDataClassification(Enum):
@@ -92,6 +98,9 @@ class RawTableColumnFieldType(Enum):
     @classmethod
     def external_id_types(cls) -> Set["RawTableColumnFieldType"]:
         return {cls.PERSON_EXTERNAL_ID, cls.STAFF_EXTERNAL_ID}
+
+
+DEFAULT_FIELD_TYPE = RawTableColumnFieldType.STRING
 
 
 class RawDataFileUpdateCadence(Enum):
@@ -258,16 +267,21 @@ class RawTableColumnInfo:
     # The state code is in the format of "US_XX" for each state
     state_code: StateCode = attr.ib(
         validator=attr.validators.instance_of(StateCode),
+        metadata={EXCLUDE_FROM_YAML: True},
     )
     # The raw data file tag for the file this column belongs to
-    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    file_tag: str = attr.ib(
+        validator=attr_validators.is_str, metadata={EXCLUDE_FROM_YAML: True}
+    )
 
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # Designates the type of data that this column contains
-    field_type: RawTableColumnFieldType = attr.ib()
+    field_type: RawTableColumnFieldType = attr.ib(default=DEFAULT_FIELD_TYPE)
     # True if a column contains Personal Identifiable Information (PII)
-    is_pii: bool = attr.ib(validator=attr_validators.is_bool)
+    is_pii: bool = attr.ib(
+        validator=attr_validators.is_bool, default=DEFAULT_IS_PII_VALUE
+    )
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
     # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
@@ -305,7 +319,8 @@ class RawTableColumnInfo:
 
     # Describes possible enum values for this column if known
     known_values: Optional[List[ColumnEnumValueInfo]] = attr.ib(
-        default=None, validator=attr_validators.is_opt_list
+        default=None,
+        validator=attr_validators.is_opt_list,
     )
     # Describes the SQL parsers needed to parse the datetime string appropriately.
     # It should contain the string literal {col_name} and follow the format with the
@@ -598,13 +613,19 @@ class DirectIngestRawFileDefaultConfig:
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
 
-    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+    state_code: StateCode = attr.ib(
+        validator=attr.validators.instance_of(StateCode),
+        metadata={EXCLUDE_FROM_YAML: True},
+    )
 
     # The file tag / table name that this file will get written to
     file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # The path to the config file
-    file_path: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    file_path: str = attr.ib(
+        validator=attr_validators.is_non_empty_str,
+        metadata={EXCLUDE_FROM_YAML: True},
+    )
 
     # Description of the raw data file contents
     file_description: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -1157,19 +1178,25 @@ class DirectIngestRawFileConfig:
                     field_type=(
                         RawTableColumnFieldType(field_type_str)
                         if (field_type_str := column.pop_optional("field_type", str))
-                        else RawTableColumnFieldType.STRING
+                        else DEFAULT_FIELD_TYPE
                     ),
-                    is_pii=column.pop_optional("is_pii", bool) or False,
+                    is_pii=v
+                    if (v := column.pop_optional("is_pii", bool)) is not None
+                    else DEFAULT_IS_PII_VALUE,
                     description=column.pop_optional("description", str),
                     known_values=known_value_infos,
                     datetime_sql_parsers=column.pop_list_optional(
                         "datetime_sql_parsers", str
                     ),
                     external_id_type=column.pop_optional("external_id_type", str),
-                    is_primary_for_external_id_type=column.pop_optional(
-                        "is_primary_for_external_id_type", bool
+                    is_primary_for_external_id_type=v
+                    if (
+                        v := column.pop_optional(
+                            "is_primary_for_external_id_type", bool
+                        )
                     )
-                    or False,
+                    is not None
+                    else DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE,
                     import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
                     update_history=update_history,
                     null_values=column.pop_list_optional("null_values", str),
@@ -1198,7 +1225,11 @@ class DirectIngestRawFileConfig:
                 export_lookback_window_yaml
             )
 
-        is_code_file = file_config_dict.pop_optional("is_code_file", bool) or False
+        is_code_file = (
+            v
+            if (v := file_config_dict.pop_optional("is_code_file", bool)) is not None
+            else DEFAULT_IS_CODE_FILE_VALUE
+        )
         no_valid_primary_keys = file_config_dict.pop_optional(
             "no_valid_primary_keys", bool
         )
@@ -1219,10 +1250,16 @@ class DirectIngestRawFileConfig:
             else []
         )
         is_primary_person_table = (
-            file_config_dict.pop_optional("is_primary_person_table", bool) or False
+            v
+            if (v := file_config_dict.pop_optional("is_primary_person_table", bool))
+            is not None
+            else DEFAULT_IS_PRIMARY_PERSON_TABLE_VALUE
         )
+
         is_chunked_file = (
-            file_config_dict.pop_optional("is_chunked_file", bool) or False
+            v
+            if (v := file_config_dict.pop_optional("is_chunked_file", bool)) is not None
+            else DEFAULT_IS_CHUNKED_FILE_VALUE
         )
 
         max_num_unparseable_bytes_per_chunk = file_config_dict.pop_optional(
