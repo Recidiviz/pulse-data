@@ -168,12 +168,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.case_type_supervision_level_spans import (
-    CASE_TYPE_SUPERVISION_LEVEL_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.tasks.us_ne.us_ne_contact_cadence_spans import (
-    US_NE_CONTACT_CADENCE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -253,9 +247,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.not_eligible_or_almost_eligible_for_work_release import (
     VIEW_BUILDER as US_MO_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_WORK_RELEASE,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ne.needs_personal_contact import (
-    VIEW_BUILDER as US_NE_NEEDS_PERSONAL_CONTACT,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -521,15 +512,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Ryan Guan 05/07/2025)"
-    ),
-    CASE_TYPE_SUPERVISION_LEVEL_SPANS_VIEW_BUILDER.address: (
-        "Will be used by NE Tasks contact cadence spans very soon, see ticket #43030, #42252 (Maggie Taylor 06/09/2025)"
-    ),
-    US_NE_CONTACT_CADENCE_SPANS_VIEW_BUILDER.address: (
-        "Will be used by NE Tasks 'needs' view for types of contacts very soon, see ticket #42252 (Maggie Taylor 06/23/2025)"
-    ),
-    US_NE_NEEDS_PERSONAL_CONTACT.address: (
-        "Will be used by NE Tasks soon, see ticket #42252 (Maggie Taylor 07/03/2025)"
     ),
     US_MO_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_WORK_RELEASE.address: (
         "Will be used for outside-clearance eligibility in MO once we make more progress on dev work & validation for work release & outside clearance (see #44404) (Maggie Hilderbran, 7/9/2025)"

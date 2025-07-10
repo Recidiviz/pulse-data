@@ -57,7 +57,9 @@ def us_ne_state_specific_contact_types_query_fragment() -> str:
             person_id,
             contact_date,
             CASE 
-              WHEN contact_type_raw_text = "PERSONAL" 
+              WHEN contact_type_raw_text = "PERSONAL"
+              -- only code contact as PO personal contact if it's NOT an LE check
+                AND JSON_EXTRACT_SCALAR(supervision_contact_metadata, '$.lawEnforcement') != '1' 
                 THEN "PERSONAL"
               WHEN contact_type_raw_text = "COLLATERAL" OR contact_type_raw_text = "PERSONAL/COLLATERAL" 
                 THEN "COLLATERAL"
