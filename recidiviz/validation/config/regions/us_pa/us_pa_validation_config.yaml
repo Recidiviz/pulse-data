@@ -67,6 +67,9 @@ max_allowed_error_overrides:
   - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: 0.03
     override_reason: We're expecting .026 is standard variation.
+  - validation_name: client_record_archive_duplicate_person_ids
+    hard_max_allowed_error_override: 0.00004
+    override_reason: TODO(#45221) - Delete duplicates introduced in staging by #42841
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 40000
