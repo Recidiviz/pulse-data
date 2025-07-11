@@ -66,6 +66,7 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
     StateCode.US_NE: {
         "LOCATION_HIST": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "AggregateSentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "ORASClientRiskLevelAndNeeds": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_OR: {
         "RCDVZ_PRDDTA_OP013P": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,

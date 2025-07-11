@@ -13,8 +13,8 @@ input_columns:
   inOutStateIndicator3Code: STRING
   startReason: STRING
   endReason: STRING
-  startDate: STRING
-  endDate: STRING
+  startDate: DATETIME
+  endDate: DATETIME
   specialConditions: STRING
 unused_columns: []
 output:
