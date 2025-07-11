@@ -98,6 +98,8 @@ class SupervisionOfficer(PersonBase, InsightsBase):
     specialized_caseload_type = Column(String, nullable=True)
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date = Column(Date, nullable=True)
+    # latest date that this officer logged in
+    latest_login_date = Column(Date, nullable=True)
 
 
 class SupervisionOfficerSupervisor(PersonBase, InsightsBase):
