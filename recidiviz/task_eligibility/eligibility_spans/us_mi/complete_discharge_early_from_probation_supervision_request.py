@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in MI is eligible for early discharge from probation supervision.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_active_supervision_and_supervision_out_of_state_population,
@@ -35,6 +36,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     supervision_level_is_not_modified,
     supervision_status_is_not_delayed_sentence,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -62,6 +64,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_modified.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
+        reasons_date_field="half_full_term_release_date",
+        interval_length=30,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 30 days of completing half their full term supervision or supervision out of state sentence",
+    ),
 )
 
 if __name__ == "__main__":

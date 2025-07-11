@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in MI is eligible for their initial classification review
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -36,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     supervision_level_is_not_minimum_low,
     supervision_level_is_not_modified,
 )
+from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -60,6 +62,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_not_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade_after_initial_classification_review_date.VIEW_BUILDER,
+    almost_eligible_condition=TimeDependentCriteriaCondition(
+        criteria=past_initial_classification_review_date.VIEW_BUILDER,
+        reasons_date_field="classification_review_date",
+        interval_length=30,
+        interval_date_part=BigQueryDateInterval.DAY,
+        description="Within 30 days of initial classification review date",
+    ),
 )
 
 if __name__ == "__main__":

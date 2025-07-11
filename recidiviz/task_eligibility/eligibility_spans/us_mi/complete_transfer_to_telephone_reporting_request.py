@@ -17,6 +17,7 @@
 """Builder for a task eligibility spans view that shows the spans of time during which
 someone in MI is eligible for minimum telephone reporting.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -35,6 +36,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     supervision_and_assessment_level_eligible_for_telephone_reporting,
     supervision_level_is_not_modified,
     supervision_specialty_is_not_rposn,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -62,6 +68,46 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_modified.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    # Clients are almost eligible for telephone reporting if they are within 30 days from being fully eligible,
+    # which means they are both within 30 days of completing six months on minimum supervision and
+    # if serving for an ouil or owi, within 30 days of completing one year on supervision.
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    TimeDependentCriteriaCondition(
+                        criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
+                        reasons_date_field="minimum_time_served_date",
+                        interval_length=30,
+                        interval_date_part=BigQueryDateInterval.DAY,
+                        description="Within 30 days of six months on minimum supervision",
+                    ),
+                    EligibleCriteriaCondition(
+                        criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
+                        description="Completed six months on minimum supervision",
+                    ),
+                ],
+                at_least_n_conditions_true=1,
+            ),
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    TimeDependentCriteriaCondition(
+                        criteria=if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision.VIEW_BUILDER,
+                        reasons_date_field="one_year_on_supervision_date",
+                        interval_length=30,
+                        interval_date_part=BigQueryDateInterval.DAY,
+                        description="Within 30 days of one year on supervision",
+                    ),
+                    EligibleCriteriaCondition(
+                        criteria=if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision.VIEW_BUILDER,
+                        description="Completed one year on supervision",
+                    ),
+                ],
+                at_least_n_conditions_true=1,
+            ),
+        ],
+        at_least_n_conditions_true=2,
+    ),
 )
 
 if __name__ == "__main__":
