@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  STAFF_ID: STRING
+  JobTitle: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  period_seq_num: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: STAFF_ID
+          id_type: $literal("US_ND_ELITE_OFFICER")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - STAFF_ID
+                - period_seq_num
+          start_date: start_date
+          end_date: end_date
+          role_type:
+            $enum_mapping:
+              $raw_text: JobTitle
+              $custom_parser: us_nd_custom_enum_parsers.parse_role_type_facility_staff

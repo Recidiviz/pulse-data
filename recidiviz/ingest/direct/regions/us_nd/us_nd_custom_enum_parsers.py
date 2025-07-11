@@ -49,6 +49,7 @@ from recidiviz.common.constants.state.state_staff_caseload_type import (
 )
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
+    StateStaffRoleType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -627,3 +628,11 @@ def parse_address_type(raw_text: str) -> StatePersonAddressType:
             return StatePersonAddressType.MAILING_ONLY
         return StatePersonAddressType.PHYSICAL_RESIDENCE
     return StatePersonAddressType.INTERNAL_UNKNOWN
+
+
+def parse_role_type_facility_staff(raw_text: str) -> StateStaffRoleType:
+    """A parser that only returns INTERNAL_UNKNOWN because it only parses role types
+    for facilities staff, for which there is no designated role type currently."""
+    if raw_text:
+        return StateStaffRoleType.INTERNAL_UNKNOWN
+    return StateStaffRoleType.INTERNAL_UNKNOWN

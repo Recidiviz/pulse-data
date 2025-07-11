@@ -1286,6 +1286,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_ingest_view_results.elite_sentence",
     "us_nd_ingest_view_results.elite_sentence_status_snapshot",
     "us_nd_ingest_view_results.elite_staff",
+    "us_nd_ingest_view_results.elite_staff_role_periods",
     "us_nd_ingest_view_results.task_deadlines",
     "us_nd_normalized_state.state_assessment",
     "us_nd_normalized_state.state_charge",
