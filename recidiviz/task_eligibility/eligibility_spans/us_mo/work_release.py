@@ -29,9 +29,8 @@ from recidiviz.task_eligibility.criteria.general import (
     no_contraband_incarceration_incident_within_2_years,
     not_in_work_release,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # educational_score_1_while_incarcerated,
     completed_12_months_outside_clearance,
-    educational_score_1_while_incarcerated,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
@@ -92,6 +91,9 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
     },
 )
 
+# TODO(#42982): Un-comment lines related to
+# `US_MO_EDUCATIONAL_SCORE_1_WHILE_INCARCERATED` (or just delete the criterion) once we
+# decide what we're going to do with it, pending feedback from TTs.
 WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
@@ -104,7 +106,7 @@ WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     # eligibility pool, but we don't want to surface them there if they're already on
     # work release.
     not_in_work_release.VIEW_BUILDER,
-    educational_score_1_while_incarcerated.VIEW_BUILDER,
+    # educational_score_1_while_incarcerated.VIEW_BUILDER,
     institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
     mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
     no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
@@ -120,16 +122,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
-        mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
-        institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
-        no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
-        educational_score_1_while_incarcerated.VIEW_BUILDER,
-        no_contraband_incarceration_incident_within_2_years.VIEW_BUILDER,
-        not_has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
-        incarceration_within_48_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
-        has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
-        incarceration_within_24_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
-        completed_12_months_outside_clearance.VIEW_BUILDER,
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,
     ],
     # TODO(#43358): Make sure this completion event is pulling in the proper data from
