@@ -159,7 +159,7 @@ function pre_deploy_configure_infrastructure {
       --apply
 
     verify_hash "$COMMIT_HASH"
-    if ! git diff "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}" --quiet recidiviz/persistence/database/migrations; then
+    if ! git diff "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}" --quiet recidiviz/persistence/database/migrations recidiviz/tools/deploy/terraform/config/**/*enabled_states.yaml; then
       echo "Running migrations using Cloud Build"
       run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
         --project-id "${PROJECT}" \
