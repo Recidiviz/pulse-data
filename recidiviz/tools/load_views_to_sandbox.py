@@ -793,6 +793,22 @@ def _get_sandbox_leaf_node_candidate_addresses(
     no other child views have also been specified as views to load.
     """
     if load_up_to_datasets or load_up_to_addresses:
+        view_datasets_in_full_dag = {a.dataset_id for a in view_addresses_in_full_dag}
+        if load_up_to_datasets:
+            for dataset in load_up_to_datasets:
+                if dataset not in view_datasets_in_full_dag:
+                    raise ValueError(
+                        f"Found dataset [{dataset}] in --load_up_to_datasets that is "
+                        f"not a valid view dataset."
+                    )
+        if load_up_to_addresses:
+            for address in load_up_to_addresses:
+                if address not in view_addresses_in_full_dag:
+                    raise ValueError(
+                        f"Found address [{address.to_str()}] in "
+                        f"--load_up_to_addresses that is not a valid view address."
+                    )
+
         end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
         end_addresses |= (
             {
