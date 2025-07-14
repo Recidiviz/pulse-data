@@ -42,27 +42,21 @@ class ResourceQuery(BaseModel):
     distance_bias: Optional[DistanceBias] = None
     pageSize: Optional[int] = None
     pageOffset: Optional[int] = None
-
-
-class SearchQuery(ResourceQuery):
     resourceDescription: Optional[str] = None
     address: Optional[str] = None
-
-
-class TextSearchQuery(ResourceQuery):
-    textSearch: str
+    textSearch: Optional[str] = None
 
 
 class ExternalApiPluginBase(ABC):
     """Base class for external API plugins"""
 
     @abstractmethod
-    async def search(self, query: SearchQuery) -> list[ResourceCandidate]:
+    async def search(self, query: ResourceQuery) -> list[ResourceCandidate]:
         pass
 
     @abstractmethod
     def map_to_resource_candidate(self, data: dict) -> Optional[ResourceCandidate]:
         pass
 
-    async def text_search(self, query: TextSearchQuery) -> list[ResourceCandidate]:
+    async def text_search(self, query: ResourceQuery) -> list[ResourceCandidate]:
         raise NotImplementedError("Text search is not supported.")

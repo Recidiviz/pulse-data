@@ -23,11 +23,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 
-from recidiviz.resource_search.src.external_apis.base import (
-    DistanceBias,
-    SearchQuery,
-    TextSearchQuery,
-)
+from recidiviz.resource_search.src.external_apis.base import DistanceBias, ResourceQuery
 from recidiviz.resource_search.src.external_apis.plugins.google_places import (
     DEFAULT_FIELDS,
     LOCATION_BIAS_RADIUS_BY_MODE,
@@ -106,7 +102,7 @@ class TestResourceSearchExternalAPI(unittest.IsolatedAsyncioTestCase):
 
                 plugin = GooglePlacesApiPlugin()
                 distance_mode = DistanceMode.WALKING
-                query = TextSearchQuery(
+                query = ResourceQuery(
                     category=ResourceCategory.BASIC_NEEDS,
                     distance_bias=DistanceBias(
                         lat=37.0, lon=-122.0, mode=distance_mode
@@ -157,7 +153,7 @@ class TestResourceSearchExternalAPI(unittest.IsolatedAsyncioTestCase):
                 ),
             ):
                 plugin = GooglePlacesApiPlugin()
-                query = TextSearchQuery(
+                query = ResourceQuery(
                     category=ResourceCategory.BASIC_NEEDS,
                     textSearch="test query",
                     pageSize=None,
@@ -171,7 +167,7 @@ class TestResourceSearchExternalAPI(unittest.IsolatedAsyncioTestCase):
     async def test_missing_api_key(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             plugin = GooglePlacesApiPlugin()
-            query = TextSearchQuery(
+            query = ResourceQuery(
                 category=ResourceCategory.BASIC_NEEDS,
                 textSearch="test query",
                 pageSize=None,
@@ -208,7 +204,7 @@ class TestResourceSearchExternalAPI(unittest.IsolatedAsyncioTestCase):
             mock_text_search.return_value = mock_search_results
 
             plugin = GooglePlacesApiPlugin()
-            query = SearchQuery(
+            query = ResourceQuery(
                 category=ResourceCategory.BASIC_NEEDS,
                 address="Test City, TC, 12345",
                 resourceDescription=None,

@@ -25,8 +25,7 @@ from pydantic import ValidationError
 
 from recidiviz.resource_search.src.external_apis.base import (
     ExternalApiPluginBase,
-    SearchQuery,
-    TextSearchQuery,
+    ResourceQuery,
 )
 from recidiviz.resource_search.src.external_apis.utils import ResourceApiPluginException
 from recidiviz.resource_search.src.models.resource_enums import (
@@ -85,12 +84,12 @@ class GooglePlacesApiPlugin(ExternalApiPluginBase):
 
     origin = ResourceOrigin.GOOGLE_PLACES
 
-    async def text_search(self, query: TextSearchQuery) -> list[ResourceCandidate]:
+    async def text_search(self, query: ResourceQuery) -> list[ResourceCandidate]:
         """
         Perform a text search using the Google Places API
 
         Args:
-            query: TextSearchQuery containing search parameters
+            query: ResourceQuery containing search parameters
 
         Returns:
             ResourceQueryResponse with search results
@@ -157,12 +156,12 @@ class GooglePlacesApiPlugin(ExternalApiPluginBase):
                     f"Google Places API request failed with status {error.response.status_code}: {error.response.text}"
                 ) from error
 
-    async def search(self, query: SearchQuery) -> list[ResourceCandidate]:
+    async def search(self, query: ResourceQuery) -> list[ResourceCandidate]:
         """
         Perform a structured search using the Google Places API
 
         Args:
-            query: SearchQuery containing search parameters
+            query: ResourceQuery containing search parameters
 
         Returns:
             ResourceQueryResponse with search results
@@ -178,7 +177,7 @@ class GooglePlacesApiPlugin(ExternalApiPluginBase):
         resource_description = query.resourceDescription or ""
         text_search = " ".join([category_string, resource_description, location_string])
 
-        text_query = TextSearchQuery(
+        text_query = ResourceQuery(
             category=query.category,
             subcategory=query.subcategory,
             distance_bias=query.distance_bias,
