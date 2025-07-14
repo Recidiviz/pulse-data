@@ -115,6 +115,9 @@ def _convert_person_external_id_strict(
         is_current_display_id_for_type=assert_type(
             pei.is_current_display_id_for_type, bool
         ),
+        # TODO(#45291): Change to assert_type here once is_stable_id_for_type is hydrated
+        #  for all external_ids.
+        is_stable_id_for_type=pei.is_stable_id_for_type,
         id_active_from_datetime=pei.id_active_from_datetime,
         id_active_to_datetime=pei.id_active_from_datetime,
     )

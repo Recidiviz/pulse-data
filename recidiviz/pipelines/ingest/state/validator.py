@@ -509,6 +509,28 @@ def _normalized_person_external_id_checks(
                 f"any ids of a given id_type, exactly one must be set as the display "
                 f"id."
             )
+        stable_external_ids = [
+            pei for pei in external_ids_of_type if pei.is_stable_id_for_type
+        ]
+        # TODO(#45291): Uncomment this and the associated test in validator_test.py once
+        #  we hydrate stable_external_ids for all states.
+        # if len(stable_external_ids) == 0:
+        #     yield (
+        #         f"Found no NormalizedStatePersonExternalId on person "
+        #         f"[{person.limited_pii_repr()}] with type [{id_type}] that are "
+        #         f"designated as is_stable_id_for_type=True. If a person has "
+        #         f"any ids of a given id_type, exactly one must be set as the stable "
+        #         f"id."
+        #     )
+        if len(stable_external_ids) > 1:
+            yield (
+                f"Found multiple ({len(stable_external_ids)}) "
+                f"NormalizedStatePersonExternalId on person "
+                f"[{person.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_stable_id_for_type=True. If a person has "
+                f"any ids of a given id_type, exactly one must be set as the stable "
+                f"id."
+            )
 
 
 def validate_root_entity(

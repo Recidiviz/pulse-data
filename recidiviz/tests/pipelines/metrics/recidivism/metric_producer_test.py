@@ -1316,6 +1316,7 @@ class TestProduceMetrics(unittest.TestCase):
                     external_id="ABC",
                     id_type=US_ND_ELITE,
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime.datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 )

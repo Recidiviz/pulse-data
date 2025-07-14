@@ -80,6 +80,9 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         external_id: str,
         id_type: str = "US_XX_ID_TYPE",
         is_current_display_id_for_type: bool,
+        # TODO(#45291): Make non-optional and remove default once we expect
+        #  is_stable_id_for_type to always be hydrated.
+        is_stable_id_for_type: bool | None = None,
     ) -> NormalizedStatePersonExternalId:
         return NormalizedStatePersonExternalId(
             person_external_id_id=1,
@@ -87,6 +90,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             external_id=external_id,
             id_type=id_type,
             is_current_display_id_for_type=is_current_display_id_for_type,
+            is_stable_id_for_type=is_stable_id_for_type,
             id_active_from_datetime=None,
             id_active_to_datetime=None,
         )

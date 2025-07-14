@@ -552,6 +552,7 @@
       normalized_state_person_external_id.id_active_to_datetime_date,
       normalized_state_person_external_id.id_type,
       normalized_state_person_external_id.is_current_display_id_for_type,
+      normalized_state_person_external_id.is_stable_id_for_type,
       normalized_state_person_external_id.person_external_id_id,
       normalized_state_person_external_id.state_code]
     sorts: [normalized_state_person_external_id.id_active_from_datetime_date desc, normalized_state_person_external_id.id_active_to_datetime_date desc]

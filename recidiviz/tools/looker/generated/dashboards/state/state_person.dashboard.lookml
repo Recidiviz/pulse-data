@@ -538,6 +538,7 @@
       state_person_external_id.id_active_to_datetime_date,
       state_person_external_id.id_type,
       state_person_external_id.is_current_display_id_for_type,
+      state_person_external_id.is_stable_id_for_type,
       state_person_external_id.person_external_id_id,
       state_person_external_id.state_code]
     sorts: [state_person_external_id.id_active_from_datetime_date desc, state_person_external_id.id_active_to_datetime_date desc]

@@ -335,6 +335,13 @@ state_person_external_id:
       at normalization time. For id types where a person can have multiple external ids of that type, delegate logic 
       must be added to the appropriate StateSpecificNormalizationDelegate subclass to choose the proper display id (i.e.
       the most current / active id) when there are multiple.
+    is_stable_id_for_type: >-
+      When True, denotes that this id is the version for the id for this id_type that should be used as a stable 
+      identifier for this person that can be persisted to archive views or other product caches. This should generally
+      be the *first* id of this type that someone is ever assigned. If this is not hydrated at ingest time, it must be 
+      hydrated at normalization time. For id types where a person can have multiple external ids of that type, delegate 
+      logic must be added to the appropriate StateSpecificNormalizationDelegate subclass to choose the proper stable id 
+      (i.e. the version that was least recently assigned) when there are multiple.
     id_active_from_datetime: >-
       Optional field that specifies when this id was issued / became valid for this person. This can be hydrated if it 
       is useful to know this information when hydrating is_current_display_id_for_type at normalization time.

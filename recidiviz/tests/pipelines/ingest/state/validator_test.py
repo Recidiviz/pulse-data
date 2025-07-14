@@ -510,6 +510,7 @@ class TestEntityValidations(unittest.TestCase):
                     external_id="EXTERNAL_ID_1",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 )
@@ -557,6 +558,7 @@ class TestEntityValidations(unittest.TestCase):
                     external_id="EXTERNAL_ID_1",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 )
@@ -1441,6 +1443,7 @@ class TestNormalizedEarlyDischargeChecks(unittest.TestCase):
                     state_code="US_XX",
                     id_type="US_XX_TEST_PERSON",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
@@ -1682,6 +1685,7 @@ class TestNormalizedStatePersonStaffRelationshipPeriodChecks(unittest.TestCase):
                     state_code=self.STATE_CODE_VALUE,
                     id_type="US_XX_STAFF_ID",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
@@ -1898,6 +1902,7 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
         index: int,
         external_id: str,
         is_current_display_id_for_type: bool,
+        is_stable_id_for_type: bool,
         id_type: str = "US_XX_ID_TYPE",
     ) -> NormalizedStatePersonExternalId:
         return NormalizedStatePersonExternalId(
@@ -1906,6 +1911,7 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             external_id=external_id,
             id_type=id_type,
             is_current_display_id_for_type=is_current_display_id_for_type,
+            is_stable_id_for_type=is_stable_id_for_type,
             id_active_from_datetime=None,
             id_active_to_datetime=None,
         )
@@ -1928,17 +1934,26 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             pei.person = person
         return person
 
-    def test_valid_exactly_one_display_id(self) -> None:
+    def test_valid_exactly_one_display_id_and_stable_id(self) -> None:
         person = self.make_person(
             external_ids=[
                 self._make_normalized_external_id(
-                    index=1, external_id="ID1", is_current_display_id_for_type=False
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
-                    index=2, external_id="ID2", is_current_display_id_for_type=True
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
                 ),
                 self._make_normalized_external_id(
-                    index=3, external_id="ID3", is_current_display_id_for_type=False
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 ),
             ]
         )
@@ -1953,12 +1968,14 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
                     external_id="ID1",
                     id_type="US_XX_NO_MULTIPLES_ALLOWED",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
                     index=2,
                     external_id="ID2",
                     id_type="US_XX_NO_MULTIPLES_ALLOWED",
                     is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 ),
             ]
         )
@@ -1975,10 +1992,16 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
         person = self.make_person(
             external_ids=[
                 self._make_normalized_external_id(
-                    index=1, external_id="ID1", is_current_display_id_for_type=False
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
-                    index=2, external_id="ID2", is_current_display_id_for_type=False
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 ),
             ]
         )
@@ -1990,17 +2013,52 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             r"exactly one must be set",
         )
 
+    # TODO(#45291): Reenable this test once this check is enabled in validator.py
+    # def test_error_no_stable_id_set(self) -> None:
+    #     person = self.make_person(
+    #         external_ids=[
+    #             self._make_normalized_external_id(
+    #                 index=1,
+    #                 external_id="ID1",
+    #                 is_current_display_id_for_type=False,
+    #                 is_stable_id_for_type=False,
+    #             ),
+    #             self._make_normalized_external_id(
+    #                 index=2,
+    #                 external_id="ID2",
+    #                 is_current_display_id_for_type=True,
+    #                 is_stable_id_for_type=False,
+    #             ),
+    #         ]
+    #     )
+    #     errors: list[str] = list(validate_root_entity(person))
+    #     self.assertEqual(len(errors), 1)
+    #     self.assertRegex(
+    #         errors[0],
+    #         r"Found no NormalizedStatePersonExternalId.*with type \[US_XX_ID_TYPE\].*"
+    #         r"exactly one must be set",
+    #     )
+
     def test_error_multiple_display_ids_set(self) -> None:
         person = self.make_person(
             external_ids=[
                 self._make_normalized_external_id(
-                    index=1, external_id="ID1", is_current_display_id_for_type=True
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
-                    index=2, external_id="ID2", is_current_display_id_for_type=True
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
                 ),
                 self._make_normalized_external_id(
-                    index=3, external_id="ID3", is_current_display_id_for_type=False
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 ),
             ]
         )
@@ -2012,7 +2070,38 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             r"\[US_XX_ID_TYPE\].*exactly one must be set",
         )
 
-    def test_valid_multiple_types_with_one_display_each(self) -> None:
+    def test_error_multiple_stable_ids_set(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found multiple \(2\) NormalizedStatePersonExternalId.*with type "
+            r"\[US_XX_ID_TYPE\].*exactly one must be set",
+        )
+
+    def test_valid_multiple_types_with_one_display_and_stable_each(self) -> None:
         person = self.make_person(
             external_ids=[
                 self._make_normalized_external_id(
@@ -2020,12 +2109,14 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
                     external_id="ID1",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
                     index=2,
                     external_id="ABC123",
                     id_type="US_XX_ID_TYPE_2",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 ),
             ]
         )
@@ -2042,6 +2133,7 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
                     external_id="ID1",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
                 ),
                 # Type US_XX_ID_TYPE_2 has two display IDs
                 self._make_normalized_external_id(
@@ -2049,12 +2141,14 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
                     external_id="ABC123",
                     id_type="US_XX_ID_TYPE_2",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 ),
                 self._make_normalized_external_id(
                     index=3,
                     external_id="DEF456",
                     id_type="US_XX_ID_TYPE_2",
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
                 ),
             ]
         )

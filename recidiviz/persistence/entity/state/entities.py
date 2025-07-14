@@ -374,6 +374,9 @@ class StatePersonExternalId(
     is_current_display_id_for_type: bool | None = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
+    is_stable_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
     id_active_from_datetime: datetime.datetime | None = attr.ib(
         default=None,
         validator=attr_validators.is_opt_reasonable_past_datetime(

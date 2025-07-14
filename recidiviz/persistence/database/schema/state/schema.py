@@ -1023,6 +1023,7 @@ class StatePersonExternalId(StateBase, _ReferencesStatePersonSharedColumns):
     state_code = Column(String(255), nullable=False, index=True)
     id_type = Column(String(255), nullable=False)
     is_current_display_id_for_type = Column(Boolean)
+    is_stable_id_for_type = Column(Boolean)
     id_active_from_datetime = Column(DateTime)
     id_active_to_datetime = Column(DateTime)
 

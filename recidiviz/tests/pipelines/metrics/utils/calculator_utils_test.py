@@ -155,6 +155,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             id_type="US_MO_DOC",
             state_code="US_MO",
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=datetime(2020, 1, 1),
             id_active_to_datetime=None,
         )
@@ -188,6 +189,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_XX",
             person_external_id_id=12345,
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=datetime(2020, 1, 1),
             id_active_to_datetime=None,
         )
@@ -214,6 +216,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_ND",
             person_external_id_id=12345,
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=None,
             id_active_to_datetime=None,
         )
@@ -224,6 +227,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_MO",
             person_external_id_id=12345,
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=None,
             id_active_to_datetime=None,
         )
@@ -252,6 +256,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_PA",
             person_external_id_id=12345,
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=datetime(2020, 1, 1),
             id_active_to_datetime=None,
         )
@@ -263,6 +268,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_PA",
             person_external_id_id=12345,
             is_current_display_id_for_type=False,
+            is_stable_id_for_type=False,
             id_active_from_datetime=datetime(2020, 1, 1),
             id_active_to_datetime=datetime(2021, 1, 1),
         )
@@ -274,6 +280,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             state_code="US_PA",
             person_external_id_id=12345,
             is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
             id_active_from_datetime=datetime(2021, 1, 1),
             id_active_to_datetime=None,
         )
@@ -374,6 +381,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     state_code="US_XX",
                     person_external_id_id=12345,
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
@@ -383,6 +391,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     state_code="US_XX",
                     person_external_id_id=12345,
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
@@ -421,6 +430,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     state_code="US_XX",
                     person_external_id_id=12345,
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
@@ -430,6 +440,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
                     state_code="US_XX",
                     person_external_id_id=12345,
                     is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),

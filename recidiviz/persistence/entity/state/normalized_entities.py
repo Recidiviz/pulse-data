@@ -266,6 +266,8 @@ class NormalizedStatePersonExternalId(NormalizedStateEntity, ExternalIdEntity):
     person_external_id_id: int = attr.ib(validator=attr_validators.is_int)
 
     is_current_display_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
+    # TODO(#45291): Make this non-optional and set validator to is_bool
+    is_stable_id_for_type: bool | None = attr.ib(validator=attr_validators.is_opt_bool)
     id_active_from_datetime: datetime | None = attr.ib(
         validator=attr_validators.is_opt_reasonable_past_datetime(
             STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
