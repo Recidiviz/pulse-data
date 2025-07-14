@@ -84,6 +84,7 @@ output:
                   - 3A # MINIMUM A
                   - 3B # MINIMUM B
                   - 3D # MINIMUM D
+                  - 3E # MINIMUM E
                   - 3W # MINIMUM W
                   - 3X # MINIMUM X
           specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
