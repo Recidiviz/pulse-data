@@ -17,9 +17,6 @@
 """Contains factory class for creating SftpDownloadDelegate objects"""
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.us_ar.us_ar_sftp_download_delegate import (
-    UsArSftpDownloadDelegate,
-)
 from recidiviz.ingest.direct.regions.us_ca.us_ca_sftp_download_delegate import (
     UsCaSftpDownloadDelegate,
 )
@@ -60,8 +57,6 @@ class SftpDownloadDelegateFactory:
             return UsMiSftpDownloadDelegate()
         if region_code == StateCode.US_MO.value:
             return UsMoSftpDownloadDelegate()
-        if region_code == StateCode.US_AR.value:
-            return UsArSftpDownloadDelegate()
         if region_code == StateCode.US_CA.value:
             return UsCaSftpDownloadDelegate()
         if region_code == StateCode.US_TX.value:
