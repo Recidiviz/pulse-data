@@ -562,7 +562,7 @@
       us_mo_LBAKRDTA_TAK028.BY_PON,
       us_mo_LBAKRDTA_TAK028.BY_RCA,
       us_mo_LBAKRDTA_TAK028.BY_VTY,
-      us_mo_LBAKRDTA_TAK028.BY_DV,
+      us_mo_LBAKRDTA_TAK028.BY_DV__raw,
       us_mo_LBAKRDTA_TAK028.BY_DCR,
       us_mo_LBAKRDTA_TAK028.BY_TCR,
       us_mo_LBAKRDTA_TAK028.BY_UID,
@@ -571,7 +571,7 @@
       us_mo_LBAKRDTA_TAK028.BY_UIU,
       us_mo_LBAKRDTA_TAK028.file_id,
       us_mo_LBAKRDTA_TAK028.is_deleted]
-    sorts: [us_mo_LBAKRDTA_TAK028.BY_DOC, us_mo_LBAKRDTA_TAK028.BY_CYC, us_mo_LBAKRDTA_TAK028.BY_VSN]
+    sorts: [us_mo_LBAKRDTA_TAK028.BY_DV__raw]
     note_display: hover
     note_text: "Violation Reports. Column prefix: BY."
     listen: 

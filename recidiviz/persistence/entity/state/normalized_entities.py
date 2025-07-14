@@ -2638,9 +2638,6 @@ class NormalizedStateSupervisionViolation(NormalizedStateEntity, HasExternalIdEn
                     # TODO(#40464): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 3201-01-22.
                     StateCode.US_IX,
-                    # TODO(#40465): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1776-07-04.
-                    StateCode.US_MO,
                     # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1004-02-02.
                     #  - Found dates as high as 9914-07-01.
