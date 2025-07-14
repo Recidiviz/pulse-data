@@ -21,15 +21,14 @@ has been run through the normalization portions of our pipelines.
 
 TODO(#34048): Consider disallowing default values in normalized entities.
 """
-import abc
+
 from datetime import date, datetime
-from typing import Any, Optional, Type
+from typing import Optional, Type
 
 import attr
 from more_itertools import first, last
 
 from recidiviz.common import attr_validators
-from recidiviz.common.attr_utils import is_list
 from recidiviz.common.constants.reasonable_dates import (
     BIRTHDATE_REASONABLE_LOWER_BOUND,
     MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
@@ -162,7 +161,10 @@ from recidiviz.persistence.entity.generate_primary_key import generate_primary_k
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseSeverity,
 )
-from recidiviz.persistence.entity.state.entity_field_validators import appears_with
+from recidiviz.persistence.entity.state.entity_field_validators import (
+    EntityBackedgeValidator,
+    appears_with,
+)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -172,58 +174,7 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
 )
 from recidiviz.utils.types import assert_type
 
-
 ##### VALIDATORS #####
-class EntityBackedgeValidator:
-    """Attrs validator that can be used on fields that contain back edges, aka references
-    to entities that are closer to the root in the entity tree.
-
-    This validator is set up so that the back edge class is retrieved at runtime, when
-    it is already loaded properly, vs import time where, due to the circular nature of
-    the entity definitions, it is not yet available.
-    """
-
-    def allow_nulls(self) -> bool:
-        """If True, allow null values in this field even after the entity graph is
-        fully-formed. This should likely only be True for backedges on entities with
-        multiple different possible parent types.
-        """
-        return False
-
-    @abc.abstractmethod
-    def get_backedge_type(self) -> Type:
-        pass
-
-    def __call__(
-        self, instance: Any, attribute: attr.Attribute, value: Any | None
-    ) -> None:
-        if value is None:
-            return
-
-        expected_backedge_type = self.get_backedge_type()
-
-        if is_list(attribute):
-            if not isinstance(value, list):
-                raise ValueError(
-                    f"Found [{attribute.name}] set on class "
-                    f"[{type(instance).__name__}] which is not a list."
-                )
-
-            for item in value:
-                if not isinstance(value, expected_backedge_type):
-                    raise ValueError(
-                        f"Found [{attribute.name}] list set on class "
-                        f"{type(instance).__name__} with incorrect item type "
-                        f"[{type(item)}]. Expected type [{expected_backedge_type}]."
-                    )
-            return
-
-        if not isinstance(value, expected_backedge_type):
-            raise ValueError(
-                f"Found [{attribute.name}] set on class {type(instance).__name__} with "
-                f"incorrect type [{type(value)}]. Expected type "
-                f"[{expected_backedge_type}]."
-            )
 
 
 class IsNormalizedPersonBackedgeValidator(EntityBackedgeValidator):

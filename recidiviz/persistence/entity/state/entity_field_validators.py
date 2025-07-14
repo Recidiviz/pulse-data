@@ -16,12 +16,14 @@
 # =============================================================================
 """This file contains code to validate fields specifically for state entities."""
 
-from typing import Any, Callable, List, Optional, Tuple, Union
+import abc
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 import attr
 from more_itertools import one
 
-from recidiviz.persistence.entity.base_entity import EntityT
+from recidiviz.common.attr_utils import is_list
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -42,7 +44,7 @@ class ParsingOptionalOnlyValidator:
     # this validator can be any of attr.validators as well as this class.
     validator = attr.ib()  # type: ignore
 
-    def __call__(self, inst: EntityT, attr_: attr.Attribute, value: Any) -> None:
+    def __call__(self, inst: Entity, attr_: attr.Attribute, value: Any) -> None:
         if isinstance(inst, NormalizedStateEntity):
             raise TypeError(
                 f"Cannot use a parsing_opt_only() validator on "
@@ -116,3 +118,56 @@ class AppearsWithValidator:
 
 def appears_with(field_name: str) -> AppearsWithValidator:
     return AppearsWithValidator(field_name)
+
+
+class EntityBackedgeValidator:
+    """Attrs validator that can be used on fields that contain back edges, aka references
+    to entities that are closer to the root in the entity tree.
+
+    This validator is set up so that the back edge class is retrieved at runtime, when
+    it is already loaded properly, vs import time where, due to the circular nature of
+    the entity definitions, it is not yet available.
+    """
+
+    def allow_nulls(self) -> bool:
+        """If True, allow null values in this field even after the entity graph is
+        fully-formed. This should likely only be True for backedges on entities with
+        multiple different possible parent types.
+        """
+        return False
+
+    @abc.abstractmethod
+    def get_backedge_type(self) -> Type:
+        pass
+
+    def __call__(
+        self, instance: Entity, attribute: attr.Attribute, value: Any | None
+    ) -> None:
+
+        if value is None:
+            return
+
+        expected_backedge_type = self.get_backedge_type()
+
+        if is_list(attribute):
+            if not isinstance(value, list):
+                raise ValueError(
+                    f"Found [{attribute.name}] set on class "
+                    f"[{type(instance).__name__}] which is not a list."
+                )
+
+            for item in value:
+                if not isinstance(item, expected_backedge_type):
+                    raise ValueError(
+                        f"Found [{attribute.name}] list set on class "
+                        f"{type(instance).__name__} with incorrect item type "
+                        f"[{type(item)}]. Expected type [{expected_backedge_type}]."
+                    )
+            return
+
+        if not isinstance(value, expected_backedge_type):
+            raise ValueError(
+                f"Found [{attribute.name}] set on class {type(instance).__name__} with "
+                f"incorrect type [{type(value)}]. Expected type "
+                f"[{expected_backedge_type}]."
+            )

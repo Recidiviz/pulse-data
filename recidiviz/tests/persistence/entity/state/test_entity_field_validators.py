@@ -24,7 +24,13 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state.entities import (
+    StateChargeV2,
+    StateChargeV2Status,
+    StatePerson,
+)
 from recidiviz.persistence.entity.state.entity_field_validators import (
+    EntityBackedgeValidator,
     appears_with,
     parsing_opt_only,
 )
@@ -52,6 +58,91 @@ class Example(Entity):
 
 class NormalizedExample(Example, NormalizedStateEntity):
     """Now all the fields should not be optional."""
+
+
+class TestEntityBackedgeValidator(unittest.TestCase):
+    """Tests for EntityBackedgeValidator functionality with list fields"""
+
+    def setUp(self) -> None:
+        """Set up test validators and mock entity classes"""
+
+        class TestPersonValidator(EntityBackedgeValidator):
+            def get_backedge_type(self) -> type:
+                return StatePerson
+
+        class TestChargeValidator(EntityBackedgeValidator):
+            def get_backedge_type(self) -> type:
+                return StateChargeV2
+
+        person_validator = TestPersonValidator()
+        charge_validator = TestChargeValidator()
+
+        # Define the test class here, using the validators from self
+        @attr.define
+        class ExampleBackedgeEntity(Entity):
+            charges: list[StateChargeV2] = attr.ib(validator=charge_validator)
+            person: StatePerson | None = attr.ib(
+                default=None, validator=person_validator
+            )
+
+        self.example_cls = ExampleBackedgeEntity
+
+    def test_EntityBackedgeValidator__for__charges(self) -> None:
+        """Test EntityBackedgeValidator with a list of StateChargeV2."""
+
+        # Case 1: Charges are valid and exist.
+        valid_charges = [
+            StateChargeV2(
+                state_code="US_XX",
+                external_id="123",
+                status=StateChargeV2Status("PENDING"),
+            ),
+            StateChargeV2(
+                state_code="US_XX",
+                external_id="456",
+                status=StateChargeV2Status("PENDING"),
+            ),
+        ]
+        test_entity_valid_charges = self.example_cls(charges=valid_charges)
+        self.assertEqual(test_entity_valid_charges.charges, valid_charges)
+
+        # Case 2: Charges are valid and don't exist (empty list).
+        test_entity_empty_charges = self.example_cls(charges=[])
+        self.assertEqual(test_entity_empty_charges.charges, [])
+
+        # Case 3: Charges are invalid and exist.
+        invalid_charges = [
+            StateChargeV2(
+                state_code="US_XX",
+                external_id="789",
+                status=StateChargeV2Status("PENDING"),
+            ),
+            StatePerson(state_code="US_XX"),  # This item is the wrong type
+        ]
+
+        with self.assertRaisesRegex(ValueError, "incorrect item type"):
+            self.example_cls(charges=invalid_charges)  # type: ignore[arg-type]
+
+    def test_EntityBackedgeValidator__for__person(self) -> None:
+        """Test EntityBackedgeValidator with an optional StatePerson."""
+
+        # Case 1: Person is valid and exists.
+        valid_person = StatePerson(state_code="US_XX")
+        test_entity_valid_person = self.example_cls(person=valid_person, charges=[])
+        self.assertEqual(test_entity_valid_person.person, valid_person)
+
+        # Case 2: Person is valid and doesn't exist (None).
+        test_entity_none = self.example_cls(person=None, charges=[])
+        self.assertIsNone(test_entity_none.person)
+
+        # Case 3: Person is invalid and exists (not a person).
+        invalid_person = StateChargeV2(
+            state_code="US_XX",
+            external_id="1011",
+            status=StateChargeV2Status("PENDING"),
+        )
+        with self.assertRaisesRegex(ValueError, "incorrect type"):
+            self.example_cls(person=invalid_person, charges=[])  # type: ignore[arg-type]
 
 
 @attr.s()
