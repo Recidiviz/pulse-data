@@ -35,9 +35,28 @@ Use context clues to ignore obviously fake/test data:
 
 We really want to avoid false positives. Please carefully consider whether the data is indeed likely to be PII (could you use it in a sentence or to perform a search on somebody with that data)? The bar should be more likely than not before you report it back. Specifically for ID numbers, prioritize identification of formats that are widely recognized and standardized (e.g., Social Security Numbers). Be cautious about flagging simple numerical strings that could be database IDs or other non-sensitive identifiers unless there is strong contextual evidence suggesting they are PII.
 
+CRITICAL: DO NOT flag database schema references, column names, field names, or SQL query structures. Only flag actual PII VALUES, not metadata about PII. Specifically, ignore:
+- Database column names (e.g., "first_name", "email_address", "phone_number", "assessment_score")
+- SQL SELECT statements that reference columns but don't contain actual values
+- Variable names that describe PII fields but don't contain actual PII data
+- JSON field names or dictionary keys that reference PII concepts
+- Function names or method names that reference PII handling
+- Comments that describe PII fields or data processing
+- Table names, view names, or schema definitions
+- Field descriptions or data type definitions
+
+Only flag content that contains ACTUAL PII values like:
+- Real email addresses (john.doe@company.com)
+- Real phone numbers (555-123-4567)
+- Real names when used as data values
+- Real addresses when used as data values
+- Real SSNs or other ID numbers when used as data values
+- Real IP addresses when used as data values
+
 We also do not want to be alerted to PII of Recidiviz employees or contractors, so please ignore any PII that is clearly related to Recidiviz employees or contractors. This includes email addresses, names, computer names, usernames and other identifiers that are clearly associated with Recidiviz.
 
 Also, we frequently have files that reference data fields names and descriptions, and files that describe data schemas but do not actually contain PII. Please do not report on these metadata findings but only files whose content themselves constitute PII.
+
 
 Additionally, please ignore these specific types of false positives:
 - Variables or expressions within print statements or logging statements (e.g., print(variable_name) or console.log(some_variable)) - we clear output so this is not a concern. Do not flag the variable names or expressions themselves as PII, even if they might contain PII values at runtime.
