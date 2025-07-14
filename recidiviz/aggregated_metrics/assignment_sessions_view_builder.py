@@ -624,7 +624,7 @@ WHERE
     ): """SELECT
     users.state_code,
     users.workflows_user_email_address AS email_address,
-    staff_external.external_id AS officer_id,
+    staff_external.supervising_officer_external_id AS officer_id,
     users.start_date,
     users.end_date_exclusive, 
 FROM

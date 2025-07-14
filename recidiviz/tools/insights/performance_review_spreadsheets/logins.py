@@ -26,7 +26,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 
 _LOGINS_QUERY = f"""
-SELECT external_id AS officer_id, DATE_TRUNC(login_date, MONTH) AS month, COUNT(*) AS num_logins
+SELECT staff_external_id, DATE_TRUNC(login_date, MONTH) AS month, COUNT(*) AS num_logins
 FROM `recidiviz-123.analyst_data.all_auth0_login_events_materialized` logins
 INNER JOIN `recidiviz-123.reference_views.product_staff_materialized` staff
     ON LOWER(logins.email_address) = LOWER(staff.email)
@@ -56,7 +56,7 @@ class Logins:
         # Unbound data includes events from before 2024
         unbound_data: dict[str, dict[datetime, int]] = defaultdict(dict)
         for row in results:
-            unbound_data[row["officer_id"]][row["month"]] = row["num_logins"]
+            unbound_data[row["staff_external_id"]][row["month"]] = row["num_logins"]
 
         # Recreate the dict, adding zeros for missing months after first login date
         data: dict[str, dict[datetime, int]] = defaultdict(dict)
