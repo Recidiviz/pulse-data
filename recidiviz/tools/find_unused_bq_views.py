@@ -57,15 +57,6 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
-    US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
-    US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
-    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
@@ -328,15 +319,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
-    ),
-    US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
-        "Used for ongoing MOSOP work (n-damiani 12/21/23)"
-    ),
-    US_MO_PROGRAM_TRACKS_VIEW_BUILDER.address: (
-        "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
-    ),
-    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
-        "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
     ),
     OFFICER_ASSIGNMENTS_VIEW_BUILDER.address: (
         "These views are still referenced by existing looker infra and will likely become relevant "

@@ -108,7 +108,8 @@ def classes_cte() -> str:
     """
 
     return """classes AS (
-        SELECT 
+        SELECT
+            pei.person_id,
             se.OFNDR_CYCLE_REF_ID,
             se.EXIT_TYPE_CD,
             -- The 'is_referral' flag is used to indicate whether or not a class entry
@@ -128,6 +129,10 @@ def classes_cte() -> str:
         USING (CLASS_REF_ID)
         LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
         USING (CLASS_EXIT_REASON_CD)
+        LEFT JOIN `{project_id}.us_mo_normalized_state.state_person_external_id` pei
+        ON
+            DOC_ID = pei.external_id
+            AND id_type = 'US_MO_DOC'
         WHERE 
             se.DELETE_IND = "N" 
             AND xref.DELETE_IND = "N" 

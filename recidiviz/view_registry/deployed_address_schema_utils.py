@@ -33,15 +33,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
-    US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
-    US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
-    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -200,10 +191,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_MA_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_ME_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
-        US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address,
-        US_MO_PROGRAM_TRACKS_VIEW_BUILDER.address,
         US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
-        US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address,
         US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
