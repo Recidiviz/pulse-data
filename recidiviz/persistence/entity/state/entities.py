@@ -3142,6 +3142,18 @@ class StateSentence(
         ),
     )
 
+    # This field should be hydrated if the state data provides an explicit piece of data
+    # designating when they think a sentence begins serving (and/or accruing credit).
+    # It should not be inferred from any data, including sentence statuses.
+    # Future dates are not allowed because we check that this date aligns with serving statuses,
+    # which cannot be in the future!
+    current_state_provided_start_date: datetime.date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
+
     # The amount of any time already served (in days) at time of sentence imposition,
     # to possibly be credited against the overall sentence duration.
     initial_time_served_days: Optional[int] = attr.ib(

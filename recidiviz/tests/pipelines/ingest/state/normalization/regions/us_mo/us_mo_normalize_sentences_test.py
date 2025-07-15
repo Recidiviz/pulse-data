@@ -387,6 +387,7 @@ def test_person_001_sentencing_normalization() -> None:
     NORMALIZED_SENTENCE_001_19900117_1 = normalized_entities.NormalizedStateSentence(
         sentence_id=assert_type(SENTENCE_001_19900117_1.sentence_id, int),
         external_id="TEST_001-19900117-1",
+        current_start_date=datetime.date(1990, 1, 17),
         sentence_type=StateSentenceType.PROBATION,
         imposed_date=datetime.date(1989, 9, 25),
         sentencing_authority=StateSentencingAuthority.COUNTY,
@@ -484,6 +485,7 @@ def test_person_001_sentencing_normalization() -> None:
     NORMALIZED_SENTENCE_001_20040224_1 = normalized_entities.NormalizedStateSentence(
         sentence_id=assert_type(SENTENCE_001_20040224_1.sentence_id, int),
         external_id="TEST_001-20040224-1",
+        current_start_date=datetime.date(2004, 2, 24),
         sentence_type=StateSentenceType.PROBATION,
         imposed_date=datetime.date(2004, 2, 24),
         sentencing_authority=StateSentencingAuthority.COUNTY,
@@ -595,6 +597,7 @@ def test_person_001_sentencing_normalization() -> None:
     NORMALIZED_SENTENCE_001_20040224_2 = normalized_entities.NormalizedStateSentence(
         sentence_id=assert_type(SENTENCE_001_20040224_2.sentence_id, int),
         external_id="TEST_001-20040224-2",
+        current_start_date=datetime.date(2004, 11, 5),
         sentence_type=StateSentenceType.PROBATION,
         imposed_date=datetime.date(2004, 11, 5),
         sentencing_authority=StateSentencingAuthority.COUNTY,

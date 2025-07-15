@@ -18,11 +18,40 @@
 Helper functions for state entities (and their normalized counterparts)
 that can be used in multiple places.
 """
+# This prevents circular import and allows type annotations to work correctly.
+# This stores all annotations as strings and resolves them at runtime, so handy!
+from __future__ import annotations
 
 import networkx
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
+
+
+# TODO(#32690) Update this when PK PK generation is consistent across
+# HasExternalId entities. This allows us to have a unique mandatory field for now
+def build_unique_sentence_status_snapshot_key(
+    snapshot: state_entities.StateSentenceStatusSnapshot
+    | normalized_entities.NormalizedStateSentenceStatusSnapshot,
+) -> int:
+    """
+    Creates a unique key for this entity.
+    Partition keys are unique to each sentence, and each sentence external ID
+    is unique, so this forms a unique Key.
+    """
+    if not snapshot.sentence:
+        # This shouldn't happen because a sentence is needed to hydrate these.
+        # It can happen if we build normalized snapshots for a test without a sentence though.
+        raise ValueError(
+            "Cannot build unique key for NormalizedStateSentenceStatusSnapshot "
+            "without a sentence."
+        )
+    return generate_primary_key(
+        snapshot.sentence.external_id + snapshot.partition_key,
+        StateCode(snapshot.state_code),
+    )
 
 
 class ConsecutiveSentenceErrors(ExceptionGroup):

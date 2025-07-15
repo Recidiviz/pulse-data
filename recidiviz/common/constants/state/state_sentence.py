@@ -45,6 +45,7 @@ class StateSentenceStatus(StateEntityEnum):
     IMPOSED_PENDING_SERVING = (
         state_enum_strings.state_sentence_status_imposed_pending_serving
     )
+    NON_CREDIT_SERVING = state_enum_strings.state_sentence_status_non_credit_serving
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -81,6 +82,12 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSentenceStatus.IMPOSED_PENDING_SERVING: "Describes a sentence that has been imposed "
     "consecutively to another sentence, but has not begun serving. This means the parent sentence "
     "has an initial serving status and no terminating status.",
+    # This Enum value was created for TN where they created a board to retroactively remove
+    # credits from people's sentences.
+    StateSentenceStatus.NON_CREDIT_SERVING: "Describes a point in time for a sentence that "
+    "shows a person was serving their sentence, but the state has decided they do not receive "
+    "credit towards serving that sentence. This can be due to not meeting the requirements towards "
+    "credit or the state revoking credit after a person has actually been serving their sentence.",
     StateSentenceStatus.PARDONED: "Describes a sentence associated with a conviction "
     "that has been pardoned. When a person is pardoned, there is immediate release "
     "from any active form of incarceration or supervision related to the pardoned "
@@ -121,6 +128,7 @@ _STATE_SENTENCE_STATUS_VALUE_TERMINATES: Dict[StateEntityEnum, bool] = {
     StateSentenceStatus.DEATH: True,
     StateSentenceStatus.EXECUTION: True,
     # These are not terminating statuses
+    StateSentenceStatus.NON_CREDIT_SERVING: False,
     StateSentenceStatus.AMENDED: False,
     StateSentenceStatus.COMMUTED: False,
     StateSentenceStatus.PENDING: False,
@@ -141,6 +149,7 @@ _STATE_SENTENCE_STATUS_VALUE_DESIGNATES_SERVING: Dict[StateEntityEnum, bool] = {
     StateSentenceStatus.SERVING: True,
     # We do not consider a sentence as being served while it has one
     # of these statuses
+    StateSentenceStatus.NON_CREDIT_SERVING: False,
     StateSentenceStatus.IMPOSED_PENDING_SERVING: False,
     StateSentenceStatus.COMPLETED: False,
     StateSentenceStatus.PARDONED: False,

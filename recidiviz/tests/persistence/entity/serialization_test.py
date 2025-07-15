@@ -209,6 +209,7 @@ class TestJsonSerializableDict(unittest.TestCase):
             {
                 "conditions": None,
                 "county_code": None,
+                "current_state_provided_start_date": None,
                 "external_id": "EXTERNAL_ID",
                 "imposed_date": None,
                 "initial_time_served_days": None,

@@ -28,6 +28,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 
 FIELD_KEY = "fields"
+STATE_DATASET_ONLY_FIELD_KEY = "state_dataset_only_fields"
 NORMALIZATION_FIELD_KEY = "normalization_only_fields"
 _ENTITY_DESCRIPTIONS_YAML_PATH = (
     f"{os.path.dirname(__file__)}/entity_field_descriptions.yaml"
@@ -76,6 +77,9 @@ def description_for_field(entity_cls: type[StateEntityMixin], field_name: str) -
     if issubclass(entity_cls, NormalizedStateEntity):
         if norm_only_fields := table_descriptions.get(NORMALIZATION_FIELD_KEY):
             descriptions |= norm_only_fields
+    else:
+        if state_only_fields := table_descriptions.get(STATE_DATASET_ONLY_FIELD_KEY):
+            descriptions |= state_only_fields
     if field_name not in descriptions:
         raise ValueError(
             f"Didn't find description for field [{field_name}] in class "

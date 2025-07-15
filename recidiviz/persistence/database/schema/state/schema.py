@@ -188,6 +188,7 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_suspended,
     state_enum_strings.state_sentence_status_revoked,
     state_enum_strings.state_sentence_status_vacated,
+    state_enum_strings.state_sentence_status_non_credit_serving,
     state_enum_strings.present_without_info,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
@@ -2094,6 +2095,7 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
     sentence_group_external_id = Column(String, nullable=True)
 
     imposed_date = Column(Date, nullable=False)
+    current_state_provided_start_date = Column(Date, nullable=True)
 
     initial_time_served_days = Column(Integer, nullable=True)
 

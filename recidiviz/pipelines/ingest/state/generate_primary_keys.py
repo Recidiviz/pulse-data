@@ -36,7 +36,14 @@ from recidiviz.persistence.entity.generate_primary_key import (
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
+from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
+    StateSentenceStatusSnapshot,
+    StateStaff,
+)
+from recidiviz.persistence.entity.state.state_entity_utils import (
+    build_unique_sentence_status_snapshot_key,
+)
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.utils.types import assert_type, non_optional
 
@@ -53,6 +60,14 @@ def generate_primary_keys_for_root_entity_tree(
         entity = cast(Entity, queue.pop(0))
         if isinstance(entity, (StatePerson, StateStaff)):
             entity.set_id(root_primary_key)
+        elif isinstance(entity, StateSentenceStatusSnapshot):
+            # TODO(#32690) Consolidate PK generation
+            # For StateSentenceStatusSnapshot, we generate a unique key based on the sentence external ID and partition key.
+            entity.set_id(
+                build_unique_sentence_status_snapshot_key(
+                    cast(StateSentenceStatusSnapshot, entity)
+                )
+            )
         elif isinstance(entity, HasExternalIdEntity):
             external_id = assert_type(entity.get_external_id(), str)
             entity.set_id(

@@ -14,6 +14,7 @@ from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entity_documentation_utils import (
     FIELD_KEY,
     NORMALIZATION_FIELD_KEY,
+    STATE_DATASET_ONLY_FIELD_KEY,
     description_for_field,
     get_entity_field_descriptions,
 )
@@ -51,7 +52,11 @@ def test_all_state_entities_have_field_descriptions() -> None:
     entities: set[Type[Entity]] = get_all_entity_classes_in_module(state_entities)
     for entity in entities:
         table_name = entity.get_table_id()
-        documented_fields = set(get_entity_field_descriptions()[table_name][FIELD_KEY])
+        table_description_data = get_entity_field_descriptions()[table_name]
+        documented_fields = set(
+            table_description_data[FIELD_KEY]
+            | table_description_data.get(STATE_DATASET_ONLY_FIELD_KEY, {})
+        )
         defined_fields = _entity_fields_to_document(entity)
         if undocumented_fields := defined_fields - documented_fields:
             raise ValueError(

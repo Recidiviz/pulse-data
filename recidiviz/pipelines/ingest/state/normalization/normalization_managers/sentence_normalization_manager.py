@@ -170,6 +170,18 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalizing sentences
     for calculations."""
 
+    def __init__(self) -> None:
+        if (
+            self.allow_non_credit_serving
+            and self.correct_imposed_pending_serving_statuses
+        ):
+            raise ValueError(
+                "Both allow_non_credit_serving and correct_imposed_pending_serving_statuses return True. "
+                "We can only have one of these properties return True (if a state is providing "
+                "explicit serving start dates, then we should be using them). "
+                "If this is too strict, please ping #platform-team"
+            )
+
     @property
     def override_projected_completion_dates_using_sentence_length_days(self) -> bool:
         """
@@ -178,6 +190,20 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
 
         Note if your state provides completion dates and this is True,
         we will override that data!
+        """
+        return False
+
+    @property
+    def correct_imposed_pending_serving_statuses(self) -> bool:
+        """
+        If True, SERVING statuses for a sentence that are before it's
+        parents' final terminating statuses will be changed to IMPOSED_PENDING_SERVING.
+        We will also create an initial SERVING status if one does not exist at
+        that datetime.
+
+        The delegate will fail if this property is True and allow_non_credit_serving
+        is also True (if a state is providing explicit serving start dates, then
+        we should be using them). If this is too strict, please ping #platform-team
         """
         return False
 
@@ -203,6 +229,15 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         If True, if we see a StateSentenceStatusSnapshot that is not the last status for a sentence which
         has status COMPLETED, correct that status to SERVING. Otherwise, we'll throw if we see a COMPLETED
         status that is followed by other statuses.
+        """
+        return False
+
+    @property
+    def allow_non_credit_serving(self) -> bool:
+        """
+        If True, statuses that count towards serving that are before their sentence's
+        current_state_provided_start_date will be switched to NON_CREDIT_SERVING.
+        Only return True in a state where we know that serving credit can be removed.
         """
         return False
 
@@ -331,7 +366,9 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             ],
         ] = defaultdict(list)
 
-        sentence: NormalizedStateIncarcerationSentence | NormalizedStateSupervisionSentence
+        sentence: (
+            NormalizedStateIncarcerationSentence | NormalizedStateSupervisionSentence
+        )
         for sentence in normalized_incarceration_sentences:
             for charge in sentence.charges:
                 charge_external_id_to_parents[charge.external_id].append(sentence)
@@ -532,9 +569,9 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         # Columns that are renamed to *_external
         return {
             "ncic_code_external": charge.ncic_code,
-            "ncic_category_external": get_description(charge.ncic_code)
-            if charge.ncic_code
-            else None,
+            "ncic_category_external": (
+                get_description(charge.ncic_code) if charge.ncic_code else None
+            ),
             "description_external": charge.description,
             "is_violent_external": charge.is_violent,
             "is_drug_external": charge.is_drug,

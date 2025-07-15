@@ -30,6 +30,8 @@ It also produces ingerred sentence groups that only exist in normalized_state:
 import datetime
 from typing import Dict, List
 
+from more_itertools import first
+
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
     StateSentencingAuthority,
@@ -217,6 +219,37 @@ def _normalize_single_sentence(
             charge_id_to_normalized_charge_cache[charge_id] = normalized_charge
         normalized_charges.append(charge_id_to_normalized_charge_cache[charge_id])
 
+    earliest_serving_status_date: datetime.date | None = None
+    serving_snapshots = [
+        snapshot
+        for snapshot in normalized_snapshots
+        if snapshot.status.is_considered_serving_status
+    ]
+    # We don't want states that haven't hydrated status snapshots
+    # or sentences that completed before we ever ingested to crash
+    if any(serving_snapshots):
+        earliest_serving_snapshot = first(
+            sorted(
+                serving_snapshots,
+                key=lambda snapshot: assert_type(snapshot.sequence_num, int),
+            )
+        )
+        earliest_serving_status_date = (
+            earliest_serving_snapshot.status_update_datetime.date()
+        )
+    if (
+        sentence.current_state_provided_start_date
+        and sentence.current_state_provided_start_date != earliest_serving_status_date
+    ):
+        raise ValueError(
+            f"{sentence.limited_pii_repr()} has a current_state_provided_start_date that does not align "
+            "with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+            f"is {earliest_serving_status_date} and the current_state_provided_start_date is {sentence.current_state_provided_start_date}"
+        )
+    current_start_date = (
+        sentence.current_state_provided_start_date or earliest_serving_status_date
+    )
+
     return NormalizedStateSentence(
         sentence_id=assert_type(sentence.sentence_id, int),
         external_id=sentence.external_id,
@@ -239,6 +272,8 @@ def _normalize_single_sentence(
         parent_sentence_external_id_array=sentence.parent_sentence_external_id_array,
         conditions=sentence.conditions,
         sentence_metadata=sentence.sentence_metadata,
+        current_state_provided_start_date=sentence.current_state_provided_start_date,
+        current_start_date=current_start_date,
         # Relationships
         charges=normalized_charges,
         sentence_lengths=normalize_sentence_lengths(sentence, delegate),

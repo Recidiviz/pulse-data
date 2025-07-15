@@ -18,7 +18,7 @@
 
 import datetime
 import unittest
-from typing import Dict, ForwardRef, List, Set, Type
+from typing import ForwardRef, List, Set, Type
 
 import attr
 
@@ -65,12 +65,16 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 )
 from recidiviz.utils.types import non_optional
 
-EXPECTED_MISSING_NORMALIZED_FIELDS: Dict[Type[Entity], Set[str]] = {
-    # TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
-    #  plan to delete here.
-}
-
 NORMALIZED_PREFIX = "Normalized"
+
+# Fields that are present in state entities but not in normalized entities.
+# TODO(#15559): Add NormalizedStateCharge / NormalizedStateChargeV2 fields that we
+#  plan to delete here.
+STATE_DATASET_ONLY_FIELDS = {
+    state_entities.StateSentence.__name__: {
+        "current_state_provided_start_date",
+    }
+}
 
 NORMALIZATION_ONLY_ENTITIES = {
     normalized_entities.NormalizedStateSentenceInferredGroup.__name__,
@@ -271,11 +275,14 @@ class TestNormalizedEntities(unittest.TestCase):
                 attribute_field_type_reference_for_class(normalized_entity_class)
             )
             normalized_entity_fields = normalized_entity_class_reference.fields
+            state_dataset_only_fields = STATE_DATASET_ONLY_FIELDS.get(
+                entity_class.__name__, set()
+            )
 
             missing_normalized_entity_fields = (
                 set(entity_fields)
+                - state_dataset_only_fields
                 - set(normalized_entity_fields)
-                - EXPECTED_MISSING_NORMALIZED_FIELDS.get(normalized_entity_class, set())
             )
             if missing_normalized_entity_fields:
                 raise ValueError(

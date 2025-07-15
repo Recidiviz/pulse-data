@@ -154,10 +154,10 @@ class StateChargeV2Status(StateEntityEnum):
 _STATE_CHARGE_V2_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateChargeV2Status.ACQUITTED: "Used when the person has been freed completely from "
     "the charge due to a case reaching a verdict of not guilty.",
-    StateChargeV2Status.ADJUDICATED: "Used when there has been a final judgement on a "
-    "charge by a judge, but the result is not legally classified as a conviction. For "
-    "example, this is used in Maine for all charges in juvenile court that result in "
-    "a guilty plea or if the court has found the juvenile guilty of the charge.",
+    StateChargeV2Status.ADJUDICATED: "Used when there has been a final judgement or decision on a "
+    "charge by a judge or authority, but the result is not legally classified as a conviction. For "
+    "example: alternative/suspended sentencing, types of diversion programs without a conviction, "
+    "and types of juvenile/youth courts.",
     StateChargeV2Status.CONVICTED: "Used when the person has been declared guilty of the "
     "offense by a judge or a jury.",
     StateChargeV2Status.DROPPED: "Describes a charge that was dropped by the prosecution, "

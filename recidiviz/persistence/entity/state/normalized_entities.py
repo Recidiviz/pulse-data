@@ -172,6 +172,9 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     SequencedEntityMixin,
 )
+from recidiviz.persistence.entity.state.state_entity_utils import (
+    build_unique_sentence_status_snapshot_key,
+)
 from recidiviz.utils.types import assert_type
 
 ##### VALIDATORS #####
@@ -653,29 +656,6 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
         ]
 
 
-# TODO(#32690) Update this when PK PK generation is consistent across
-# HasExternalId entities. This allows us to have a unique mandatory field for now
-def _build_unique_snapshot_key(
-    snapshot: "NormalizedStateSentenceStatusSnapshot",
-) -> int:
-    """
-    Creates a unique key for this entity.
-    Partition keys are unique to each sentence, and each sentence external ID
-    is unique, so this forms a unique Key.
-    """
-    if not snapshot.sentence:
-        # This shouldn't happen because a sentence is needed to hydrate these.
-        # It can happen if we build normalized snapshots for a test without a sentence though.
-        raise ValueError(
-            "Cannot build unique key for NormalizedStateSentenceStatusSnapshot "
-            "without a sentence."
-        )
-    return generate_primary_key(
-        snapshot.sentence.external_id + snapshot.partition_key,
-        StateCode(snapshot.state_code),
-    )
-
-
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceStatusSnapshot(
     NormalizedStateEntity, LedgerEntityMixin, Entity
@@ -734,7 +714,9 @@ class NormalizedStateSentenceStatusSnapshot(
         validator=attr_validators.is_int,
         # TODO(#32690) Update this when PK PK generation is consistent across
         # HasExternalId entities. This allows us to have a unique mandatory field for now
-        default=attr.Factory(_build_unique_snapshot_key, takes_self=True),
+        default=attr.Factory(
+            build_unique_sentence_status_snapshot_key, takes_self=True
+        ),
     )
 
     @property
@@ -1269,6 +1251,29 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
                     StateCode.US_ND,
                 },
             ),
+        ),
+    )
+
+    # This field should be hydrated if the state data provides an explicit piece of data
+    # designating when they think a sentence begins serving (and/or accruing credit).
+    # It should not be inferred from any data, including sentence statuses.
+    # Future dates are not allowed because we check that this date aligns with serving statuses,
+    # which cannot be in the future!
+    current_state_provided_start_date: date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
+        ),
+    )
+
+    # This field originates from `current_state_provided_start_date`
+    # if it exists. If not, it is the status_update_datetime of the earliest
+    # sentence status that is considered serving.
+    # It cannot be a future date because it must align with a serving status.
+    current_start_date: date | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_past_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
         ),
     )
 

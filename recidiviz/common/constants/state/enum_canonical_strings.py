@@ -333,6 +333,7 @@ state_sentence_status_vacated = "VACATED"
 state_sentence_status_death = "DEATH"
 state_sentence_status_execution = "EXECUTION"
 state_sentence_status_imposed_pending_serving = "IMPOSED_PENDING_SERVING"
+state_sentence_status_non_credit_serving = "NON_CREDIT_SERVING"
 
 state_sentence_type_county_jail = "COUNTY_JAIL"
 state_sentence_type_federal_prison = "FEDERAL_PRISON"

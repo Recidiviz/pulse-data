@@ -655,6 +655,8 @@
     type: looker_grid
     fields: [normalized_state_sentence.conditions,
       normalized_state_sentence.county_code,
+      normalized_state_sentence.current_start_date,
+      normalized_state_sentence.current_state_provided_start_date,
       normalized_state_sentence.external_id,
       normalized_state_sentence.imposed_date,
       normalized_state_sentence.initial_time_served_days,
@@ -672,7 +674,7 @@
       normalized_state_sentence.sentencing_authority,
       normalized_state_sentence.sentencing_authority_raw_text,
       normalized_state_sentence.state_code]
-    sorts: [normalized_state_sentence.imposed_date desc]
+    sorts: [normalized_state_sentence.current_start_date desc, normalized_state_sentence.current_state_provided_start_date desc, normalized_state_sentence.imposed_date desc]
     listen: 
       Person Id: normalized_state_person.person_id
       State Code: normalized_state_person.state_code

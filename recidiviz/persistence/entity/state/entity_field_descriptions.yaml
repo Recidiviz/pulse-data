@@ -446,9 +446,20 @@ state_sentence:
     sentence_type_raw_text: Raw text indicating whether a sentence is supervision/incarceration/etc
     sentencing_authority: The class of authority imposing the sentence (COUNTY, STATE, etc.)
     sentencing_authority_raw_text: Raw text used to hydrate sentencing_authority.
+    current_state_provided_start_date: >-
+      This field should be hydrated if the state data provides an explicit piece of data 
+      designating when they think a sentence begins serving (and/or accruing credit).
+      It should not be inferred from any data, including sentence statuses.
+      Future dates are not allowed because we check that this date aligns with serving statuses,
+      which cannot be in the future!
   normalization_only_fields:
     sentence_inferred_group_id: The unique ID of the StateSentenceInferredGroup that this sentence belongs to.
     sentence_imposed_group_id: The unique ID of the StateSentenceImposedGroup that this sentence belongs to if we know the sentence's imposed_date.
+    current_start_date: >-
+      This field originates from `current_state_provided_start_date`
+      from StateSentence if it exists, or the status_update_datetime of the earliest 
+      sentence status that is considered serving if it does not.
+      It cannot be a future date because it must align with a serving status.
 
 state_sentence_group:
   fields: {}

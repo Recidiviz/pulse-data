@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """State agnostic testing of normalization of sentencing v2 entities."""
+import copy
 import datetime
 import unittest
 from typing import List
@@ -56,6 +57,14 @@ from recidiviz.pipelines.ingest.state.normalization.sentencing.normalize_all_sen
     normalize_charge_v2,
 )
 from recidiviz.utils.types import assert_type
+
+
+class FakeDelegateThatCorrectsImposedPendingServingStatuses(
+    StateSpecificSentenceNormalizationDelegate
+):
+    @property
+    def correct_imposed_pending_serving_statuses(self) -> bool:
+        return True
 
 
 class FakeDelegateThatCorrectsCompleted(StateSpecificSentenceNormalizationDelegate):
@@ -119,6 +128,24 @@ class TestSentenceV2Normalization(unittest.TestCase):
             external_id=f"sentence-group-{id_num}",
             sentence_group_id=id_num,
         )
+
+    def test_delegate_fails_init_w_invalid_configuration(self) -> None:
+        class ShouldFailDelegate(StateSpecificSentenceNormalizationDelegate):
+            @property
+            def allow_non_credit_serving(self) -> bool:
+                return True
+
+            @property
+            def correct_imposed_pending_serving_statuses(self) -> bool:
+                return True
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Both allow_non_credit_serving and correct_imposed_pending_serving_statuses return True. "
+            r"We can only have one of these properties return True \(if a state is providing explicit serving start dates, "
+            r"then we should be using them\). If this is too strict, please ping #platform-team",
+        ):
+            _ = ShouldFailDelegate()
 
     def test_normalized_charge_v2_has_external_fields(self) -> None:
         """Ensures we add 'exteral' fields to charges."""
@@ -618,7 +645,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=self.start_dt,
                 status_end_datetime=second_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=1,
+                sentence_status_snapshot_id=9062572995916971789,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -626,7 +653,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=second_dt,
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
-                sentence_status_snapshot_id=2,
+                sentence_status_snapshot_id=9016435069908919358,
                 sequence_num=2,
             ),
         ]
@@ -667,7 +694,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=self.start_dt,
                 status_end_datetime=second_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=1,
+                sentence_status_snapshot_id=9062572995916971789,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -675,7 +702,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=second_dt,
                 status_end_datetime=None,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=2,
+                sentence_status_snapshot_id=9016435069908919358,
                 sequence_num=2,
             ),
         ]
@@ -723,7 +750,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=self.start_dt,
                 status_end_datetime=second_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=1,
+                sentence_status_snapshot_id=9062572995916971789,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -731,7 +758,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=second_dt,
                 status_end_datetime=third_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=2,
+                sentence_status_snapshot_id=9016435069908919358,
                 sequence_num=2,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -739,7 +766,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=third_dt,
                 status_end_datetime=None,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=3,
+                sentence_status_snapshot_id=9014489572768718354,
                 sequence_num=3,
             ),
         ]
@@ -832,7 +859,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=self.start_dt,
                 status_end_datetime=datetime.datetime(2022, 1, 1, 14, 30),
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=1,
+                sentence_status_snapshot_id=9071361184583469418,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -840,7 +867,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=datetime.datetime(2022, 1, 1, 14, 30),
                 status_end_datetime=datetime.datetime(2022, 1, 1, 17, 30),
                 status=StateSentenceStatus.INTERNAL_UNKNOWN,
-                sentence_status_snapshot_id=7,
+                sentence_status_snapshot_id=9046814330294127925,
                 sequence_num=2,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -848,7 +875,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=datetime.datetime(2022, 1, 1, 17, 30),
                 status_end_datetime=second_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=8,
+                sentence_status_snapshot_id=9001769904833200496,
                 sequence_num=3,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -856,7 +883,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=second_dt,
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
-                sentence_status_snapshot_id=11,
+                sentence_status_snapshot_id=9004940053723796659,
                 sequence_num=4,
             ),
         ]
@@ -865,4 +892,243 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert (
             normalized_sentence.sentence_status_snapshots
             == expected_normalized_status_snapshots
+        )
+
+    def test_current_start_date_no_serving_data(self) -> None:
+        """
+        Tests that current_start_date is None when there are
+        no serving statuses and no current_state_provided_start_date
+        """
+        # No current_state_provided_start_date
+        sentence = self._new_sentence(1)
+        the_future = self.start_dt + datetime.timedelta(days=300)
+        # Our earliest ingested status is a COMPLETED one,
+        # this is very common as many sentences have completed before
+        # our data-sharing agreements with states ever begin.
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=the_future,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        assert not normalized_sentence.current_start_date
+
+        # Make sure we don't break the pipeline if snapshots have not been ingested yet
+        sentence.sentence_status_snapshots = []
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        assert not normalized_sentence.current_start_date
+
+    def test_current_start_date_raises_no_serving_data(self) -> None:
+        """
+        Tests that we fail when current_state_provided_start_date is provided
+        but there are no serving statuses.
+        """
+        sentence = self._new_sentence(1)
+        sentence.current_state_provided_start_date = self.start_date
+        the_future = self.start_dt + datetime.timedelta(days=300)
+        # Our earliest ingested status is a COMPLETED one,
+        # this is very common as many sentences have completed before
+        # our data-sharing agreements with states ever begin.
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=the_future,
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date that "
+            "does not align with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+            "is None and the current_state_provided_start_date is 2022-01-01",
+        ):
+            self._get_normalized_sentences_for_person(person, self.delegate)
+
+        # We break in this case as well. If snapshots have not been ingested yet we can comment out
+        # current_state_provided_start_date of the ingest mapping until statuses are ready
+        sentence.sentence_status_snapshots = []
+        with self.assertRaisesRegex(
+            ValueError,
+            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date that "
+            "does not align with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+            "is None and the current_state_provided_start_date is 2022-01-01",
+        ):
+            self._get_normalized_sentences_for_person(person, self.delegate)
+
+    def test_current_start_date_aligned_serving_data(self) -> None:
+        """
+        Tests that current_start_date is set when there are
+        both serving statuses and a provided current_state_provided_start_date
+        """
+        sentence = self._new_sentence(1)
+        sentence.current_state_provided_start_date = self.start_date
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt + datetime.timedelta(days=45),
+                status=StateSentenceStatus.AMENDED,
+                sentence_status_snapshot_id=2,
+                sequence_num=2,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        assert normalized_sentence.current_start_date == self.start_date
+
+    def test_current_start_date_fails_misaligned_serving_data(self) -> None:
+        """
+        Tests that we fail when our earliest serving statuse does not match the
+        provided current_state_provided_start_date and the delegate doesn't correct it.
+        """
+        sentence = self._new_sentence(1)
+        # For example: The provided start date now aligns with the second status.
+        sentence.current_state_provided_start_date = (
+            self.start_dt + datetime.timedelta(days=45)
+        ).date()
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt + datetime.timedelta(days=45),
+                status=StateSentenceStatus.AMENDED,
+                sentence_status_snapshot_id=2,
+                sequence_num=2,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date "
+            "that does not align with the NormalizedStateSentenceStatusSnapshot values. "
+            "The earliest serving status date is 2022-01-01 and the current_state_provided_start_date is 2022-02-15",
+        ):
+            self._get_normalized_sentences_for_person(person, self.delegate)
+
+    def test_imposed_pending_serving_valid(self) -> None:
+        parent_one_sentence = self._new_sentence(1)
+        parent_two_sentence = self._new_sentence(2)
+        child_sentence = self._new_sentence(3)
+        child_sentence.parent_sentence_external_id_array = ",".join(
+            [parent_one_sentence.external_id, parent_two_sentence.external_id]
+        )
+
+        parent_one_ends_on = self.start_dt + datetime.timedelta(days=90)
+        parent_two_ends_on = self.start_dt + datetime.timedelta(days=180)
+
+        parent_one_sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence=parent_one_sentence,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status=StateSentenceStatus.COMPLETED,
+                status_update_datetime=parent_one_ends_on,
+                sentence=parent_one_sentence,
+            ),
+        ]
+        parent_two_sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence=parent_two_sentence,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status=StateSentenceStatus.COMPLETED,
+                status_update_datetime=parent_two_ends_on,
+                sentence=parent_two_sentence,
+            ),
+        ]
+        child_sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence=child_sentence,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[parent_one_sentence, parent_two_sentence, child_sentence],
+        )
+        normalized_sentences = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatCorrectsImposedPendingServingStatuses()
+        )
+        normalized_child_sentence = [
+            s for s in normalized_sentences if s.external_id == "sentence-3"
+        ][0]
+        assert normalized_child_sentence.current_start_date == parent_two_ends_on.date()
+
+        # Make a copy so that we can compare expected output
+        normalized_copy = copy.copy(normalized_child_sentence)
+        normalized_copy.sentence_status_snapshots = [
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status_end_datetime=parent_two_ends_on,
+                status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
+                status_raw_text=None,
+                sentence=normalized_copy,
+                sentence_status_snapshot_id=9028747032879537611,
+                sequence_num=1,
+            ),
+            NormalizedStateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=parent_two_ends_on,
+                status_end_datetime=None,
+                status=StateSentenceStatus.SERVING,
+                status_raw_text="Created during normalization from parent sentences' final terminating statuses",
+                sentence=normalized_copy,
+                sentence_status_snapshot_id=9030207598898236483,
+                sequence_num=2,
+            ),
+        ]
+
+        assert (
+            normalized_child_sentence.sentence_status_snapshots
+            == normalized_copy.sentence_status_snapshots
         )
