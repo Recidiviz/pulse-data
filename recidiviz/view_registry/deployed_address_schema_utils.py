@@ -96,6 +96,9 @@ from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata im
 from recidiviz.calculator.query.state.views.workflows.us_ne.client_metadata import (
     US_NE_CLIENT_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.resident_metadata import (
+    US_TN_RESIDENT_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ut.client_metadata import (
     US_UT_CLIENT_METADATA_VIEW_BUILDER,
 )
@@ -194,6 +197,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
+        US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
     }
