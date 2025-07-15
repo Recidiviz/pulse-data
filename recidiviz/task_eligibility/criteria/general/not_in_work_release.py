@@ -17,9 +17,9 @@
 """Defines a criteria span view that shows spans of time during which residents are not
 in work release.
 """
-
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NOT_IN_WORK_RELEASE"
 
-_QUERY = """
+_QUERY = f"""
 SELECT
     state_code,
     person_id,
@@ -41,7 +41,8 @@ SELECT
         start_date AS most_recent_work_release_start_date
     )) AS reason,
     start_date AS most_recent_work_release_start_date,
-FROM `{project_id}.{sessions_dataset}.work_release_sessions_materialized`
+FROM `{{project_id}}.{{sessions_dataset}}.work_release_sessions_materialized`
+WHERE start_date != {nonnull_end_date_clause('end_date_exclusive')}
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
