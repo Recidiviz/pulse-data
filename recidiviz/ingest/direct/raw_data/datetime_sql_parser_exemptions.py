@@ -264,7 +264,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "OfficeDescription": ["OFFC_END_DATE", "OFFC_START_DATE"],
     },
     StateCode.US_UT: {
-        "case_mgr_ofndr": ["beg_dt", "end_dt", "updt_dt"],
         "crt_case": [
             "convict_dt",
             "crt_trmn_dt",
@@ -896,6 +895,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "applc_usr": ["updt_dt"],
         "applc_usr_email": ["updt_dt"],
         "assess_tst": ["updt_dt"],
+        "case_mgr_ofndr": ["beg_dt", "end_dt", "updt_dt"],
         "case_stat": ["end_dt", "stat_beg_dt", "updt_dt"],
         "dcpln_case": ["apprv_dt", "filing_dt", "served_dt", "updt_dt"],
         "dcpln_hrng": ["final_hrng_dt", "sched_hrng_dt", "updt_dt"],
