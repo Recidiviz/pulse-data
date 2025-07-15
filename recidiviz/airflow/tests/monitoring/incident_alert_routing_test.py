@@ -31,6 +31,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
 )
+from recidiviz.airflow.dags.monitoring.job_run import JobRunType
 from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
     RecidivizGitHubService,
 )
@@ -63,13 +64,15 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
         self.env_for_project_patch.stop()
 
     @staticmethod
-    def _make_incident(dag_id: str, job_id: str) -> AirflowAlertingIncident:
+    def _make_incident(
+        dag_id: str, job_id: str, incident_type: str | None = None
+    ) -> AirflowAlertingIncident:
         return AirflowAlertingIncident(
             dag_id=dag_id,
             dag_run_config="{}",
             job_id=job_id,
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
-            incident_type="Task Run",
+            incident_type=incident_type or JobRunType.AIRFLOW_TASK_RUN.value,
         )
 
     def test_get_alerting_service_for_incident(self) -> None:
@@ -181,6 +184,23 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 )
             ),
         )
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    job_id=(
+                        "post_ingest_pipelines.US_ND_dataflow_pipelines."
+                        "full-us-nd-supervision-metrics.run_pipeline"
+                    ),
+                    incident_type=JobRunType.RUNTIME_MONITORING.value,
+                )
+            ),
+        )
 
         # Failures in this task indicate that raw data has been removed or operations
         # tables haven't been properly managed, so route the failure to state-specific
@@ -219,6 +239,23 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                         "post_ingest_pipelines.US_ND_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.create_flex_template"
                     ),
+                )
+            ),
+        )
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    job_id=(
+                        "post_ingest_pipelines.US_ND_dataflow_pipelines."
+                        "full-us-nd-supervision-metrics.create_flex_template"
+                    ),
+                    incident_type=JobRunType.RUNTIME_MONITORING.value,
                 )
             ),
         )
@@ -283,6 +320,22 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                     dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
                     job_id="US_OZ.hunger_games_person",
                 )
+            ),
+        )
+
+        # but data platform for runtime!
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
+                    job_id="US_OZ.hunger_games_person",
+                    incident_type=JobRunType.RUNTIME_MONITORING.value,
+                ),
             ),
         )
 

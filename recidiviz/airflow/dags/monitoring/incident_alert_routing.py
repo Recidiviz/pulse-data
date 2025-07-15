@@ -32,6 +32,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_raw_data_import_dag_id,
     get_sftp_dag_id,
 )
+from recidiviz.airflow.dags.monitoring.job_run import JobRunType
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
     RecidivizAlertingService,
 )
@@ -125,6 +126,15 @@ def get_alerting_services_for_incident(
     project_id = get_project_id()
     dag_id = incident.dag_id
     job_id = incident.job_id
+
+    # we want all runtime monitoring failures, regardless of which dag or task they
+    # originate from, to go to platform on-call
+    if incident.incident_type == JobRunType.RUNTIME_MONITORING.value:
+        return [
+            RecidivizPagerDutyService.data_platform_airflow_service(
+                project_id=project_id
+            )
+        ]
 
     if dag_id == get_sftp_dag_id(project_id):
         if not (state_code := _state_code_from_job_id(job_id)):

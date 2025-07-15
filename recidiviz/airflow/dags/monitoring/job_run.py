@@ -44,7 +44,12 @@ class JobRunState(Enum):
 
 
 class JobRunType(StrEnum):
-    """Enum of known job run types; is used as a unique key in grouping job runs."""
+    """Enum of known job run types; is used as a unique key in grouping job runs.
+
+    n.b.: the values of this enum are used to generate an AirflowAlertingIncident's
+    unique id which is used to de-dupe incidents in PagerDuty; if you plan on updating
+    any of these values, please close the newly created duplicates.
+    """
 
     AIRFLOW_TASK_RUN = "Task Run"
     RAW_DATA_IMPORT = "Raw Data Import"
