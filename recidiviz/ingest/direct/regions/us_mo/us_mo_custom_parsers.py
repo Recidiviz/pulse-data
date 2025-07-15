@@ -47,6 +47,14 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification i
     UsMoSentenceStatus,
 )
 
+NCIC_SEX_OFFENSE_CATEGORIES = [
+    # TODO(#45164): Figure out if 37 (OBSCENITY) should be included here
+    "11",  # SEXUAL ASSAULT /RAPE
+    "36",  # SEX OFFENSES
+    "40",  # COMMERCIALIZED SEXUAL OFFENSES
+    "64",  # EXPLOITATION /ENTICEMENT
+]
+
 
 def normalize_county_code(county_code: str) -> str:
     """Takes in a MO raw county code and returns
@@ -89,6 +97,10 @@ def set_parole_eligibility_date(start_date: str, parole_ineligible_years: str) -
 def set_charge_is_violent_from_ncic(ncic_code: str) -> bool:
     is_violent = ncic.get_is_violent(ncic_code)
     return bool(is_violent)
+
+
+def set_charge_is_sex_offense_from_ncic(ncic_code: str) -> bool:
+    return ncic.get_category_code(ncic_code) in NCIC_SEX_OFFENSE_CATEGORIES
 
 
 def set_response_date(final_formed_create_date: str, response_date: str) -> str:

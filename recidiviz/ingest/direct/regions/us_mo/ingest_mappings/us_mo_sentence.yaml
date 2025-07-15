@@ -125,4 +125,9 @@ output:
                     $function: us_mo_custom_parsers.set_charge_is_violent_from_ncic
                     $args:
                       ncic_code: BS_NCI
+                is_sex_offense:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_charge_is_sex_offense_from_ncic
+                    $args:
+                      ncic_code: BS_NCI
                 judicial_district_code: BS_CRC
