@@ -653,10 +653,18 @@ WHERE chk.CHECK_LIST_CATEGORY IN ("ID'S")
 """
 
 
-def eligible_and_almost_eligible_minus_referrals() -> str:
+def eligible_and_almost_eligible_minus_referrals(
+    remove_recent_referrals: bool = True,
+) -> str:
     """
-    Returns a SQL query that retrieves the eligible and almost eligible individuals
-    and removes those that have had referrals to minimum housing.
+    Returns a SQL query that retrieves the eligible and almost eligible individuals.
+    Conditionally removes individuals who have had recent referrals to minimum housing
+    based on the value of the `remove_recent_referrals` parameter.
+
+    Args:
+        remove_recent_referrals (bool): If True, removes individuals who have had
+            recent referrals to minimum housing. If False, includes all individuals
+            regardless of recent referrals.
     """
     return f"""
     SELECT 
@@ -668,12 +676,13 @@ def eligible_and_almost_eligible_minus_referrals() -> str:
                 nrr.reason AS reason
             ))]
         )) AS reasons,
+        IF(nrr.meets_criteria IS FALSE, 'REFERRAL_SUBMITTED', NULL) AS metadata_tab_name,
     FROM eligible_and_almost_eligible eae
     LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized` nrr
         ON eae.person_id = nrr.person_id
             AND eae.state_code = nrr.state_code
             AND CURRENT_DATE("US/Pacific") BETWEEN nrr.start_date AND {nonnull_end_date_exclusive_clause('nrr.end_date')}
-    WHERE IFNULL(nrr.meets_criteria, True)"""
+    {'WHERE IFNULL(nrr.meets_criteria, True)' if remove_recent_referrals else ''}"""
 
 
 def get_warrants_and_detainers_query(
