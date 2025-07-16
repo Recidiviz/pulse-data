@@ -10,6 +10,7 @@ input_columns:
   overallScore: STRING
   riskLevel: STRING
   assessmentDate: STRING
+  overrideDate: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -44,5 +45,6 @@ output:
                   - Very High
           assessment_metadata:
             $normalized_values_json_dict:
-              OVERRIDE_REASON: overrideReasonCode
               SUPERVISION_LEVEL_OVERRIDE: supervisionLevelOverrideCode
+              DATE_OF_OVERRIDE: overrideDate
+              OVERRIDE_REASON: overrideReasonCode
