@@ -267,6 +267,7 @@ def _sentencing_entities_checks(
     yield from _sentence_group_checks(state_person)
 
     # Checks that all consecutive sentence references resolve to a valid sentence
+    # TODO(#45385): Ensure parents and children either both have statuses, or both do not
     try:
         _ = ConsecutiveSentenceGraph.from_person(state_person)
     except ConsecutiveSentenceErrors as err:

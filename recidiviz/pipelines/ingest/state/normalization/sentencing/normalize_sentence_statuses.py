@@ -54,6 +54,9 @@ def _termination_datetime_for_given_sentences(
     """
     termination_dt: datetime.datetime | None = None
     for snapshot_list in list_of_snapshots:
+        # TODO(#45385): Ensure parents and children either both have statuses, or both do not
+        if not snapshot_list:
+            continue
         final_snapshot = max(snapshot_list, key=lambda s: s.partition_key)
         if final_snapshot.status.is_terminating_status and (
             termination_dt is None
@@ -90,8 +93,6 @@ def normalize_sentence_status_snapshots(
         normalized_snapshots[external_id] = normalize_snapshots_for_single_sentence(
             delegate=delegate,
             sentence=sentence,
-            # TODO(#44525): Make use of parent sentence statuses for
-            # IMPOSED_PENDING_SERVING
             parent_sentences_final_terminating_status_dt=_termination_datetime_for_given_sentences(
                 parent_sentence_snapshots
             ),

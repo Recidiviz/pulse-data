@@ -3412,20 +3412,8 @@ class StateSentenceStatusSnapshot(
 
     # The start of the period of time over which the sentence status is valid
     status_update_datetime: datetime.datetime = attr.ib(
-        # TODO(#38799): Reset validator to just `attr_validators.is_reasonable_past_datetime`
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_not_future_datetime,
-            state_exempted_validator(
-                attr_validators.is_reasonable_past_datetime(
-                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-                ),
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01 00:00:00.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=attr_validators.is_reasonable_past_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
         )
     )
     # The status of a sentence

@@ -300,7 +300,10 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
             status=StateSentenceStatus.SERVING,
         )
         self.assertEqual(ok.ledger_datetime_field, self.the_past)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[status_update_datetime\] value on class \[StateSentenceStatusSnapshot\]",
+        ):
             _ = entities.StateSentenceStatusSnapshot(
                 state_code=self.state_code,
                 status_update_datetime=self.the_future,
