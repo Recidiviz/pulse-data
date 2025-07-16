@@ -378,6 +378,8 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.documentation_exemptions",
         "recidiviz.ingest.direct.raw_data.mixins.sequential_chunked_file_mixin",
         "recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory",
+        "recidiviz.ingest.direct.raw_data.raw_file_config_enums",
+        "recidiviz.ingest.direct.raw_data.raw_file_config_utils",
         "recidiviz.ingest.direct.raw_data.raw_file_configs",
         "recidiviz.ingest.direct.raw_data.raw_table_relationship_info",
         "recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions",

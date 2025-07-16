@@ -55,7 +55,8 @@ class TestYamlFilter(unittest.TestCase):
             "primary_key_cols",
             "_columns",
             "encoding",
-            "table_relationships",
+            # TODO(#45340) unexclude table_relationships from yaml
+            # "table_relationships",
         }
 
         expected_column_keys = [

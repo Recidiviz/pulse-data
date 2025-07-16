@@ -20,7 +20,6 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime, timezone
-from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -42,6 +41,18 @@ from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
     COLUMN_DOCUMENTATION_STATE_LEVEL_EXEMPTIONS,
     FILE_DOCUMENTATION_EXEMPTIONS,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_config_enums import (
+    ColumnUpdateOperation,
+    RawDataClassification,
+    RawDataExportLookbackWindow,
+    RawDataFileUpdateCadence,
+    RawTableColumnFieldType,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
+    LIST_ITEM_IDENTIFIER_TAG,
+    is_meaningful_docstring,
+    validate_list_item_identifiers,
+)
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
@@ -52,153 +63,24 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
 MAX_NUM_COLS = 300
+
 DEFAULT_IS_PII_VALUE = False
 DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE = False
 DEFAULT_IS_CODE_FILE_VALUE = False
 DEFAULT_IS_PRIMARY_PERSON_TABLE_VALUE = False
 DEFAULT_IS_CHUNKED_FILE_VALUE = False
-EXCLUDE_FROM_YAML = "exclude_from_yaml"
-
-
-class RawDataClassification(Enum):
-    """Defines whether this is source or validation data.
-
-    Used to keep the two sets of data separate. This prevents validation data from being
-    ingested, or source data from being used to validate our metrics.
-    """
-
-    # Data to be ingested and used as the basis of our entities and calcs.
-    SOURCE = "source"
-
-    # Used to validate our entities and calcs.
-    VALIDATION = "validation"
-
-
-# TODO(#40717) Add BIRTHDATE
-class RawTableColumnFieldType(Enum):
-    """Field type for a single raw data column"""
-
-    # Contains string values (this is the default)
-    STRING = "string"
-
-    # Contains values representing dates or datetimes
-    DATETIME = "datetime"
-
-    # Contains values representing integers
-    INTEGER = "integer"
-
-    # Contains external ids representing a justice-impacted individual
-    # i.e. values that might hydrate state_person_external_id
-    PERSON_EXTERNAL_ID = "person_external_id"
-
-    # Contains external ids representing an agent / staff member
-    # i.e. values that might hydrate state_staff_external_id
-    STAFF_EXTERNAL_ID = "staff_external_id"
-
-    @classmethod
-    def external_id_types(cls) -> Set["RawTableColumnFieldType"]:
-        return {cls.PERSON_EXTERNAL_ID, cls.STAFF_EXTERNAL_ID}
-
-
 DEFAULT_FIELD_TYPE = RawTableColumnFieldType.STRING
 
-
-class RawDataFileUpdateCadence(Enum):
-    """Defines an expected update cadence for a raw data file (i.e. how often we
-    expect a state to transfer a raw data file to our ingest infrastructure). We do not
-    necessarily expect for new data to flow through our system at this cadence (i.e.
-    some states might send files that only contain header rows if there are sending
-    incremental updates).
-    """
-
-    # There is no defined update cadence or the update cadence is expected to be irregular
-    IRREGULAR = "IRREGULAR"
-
-    # The file is expected to be updated once per month
-    MONTHLY = "MONTHLY"
-
-    # The file is expected to be updated once per week
-    WEEKLY = "WEEKLY"
-
-    # The file is expected to be updated once per day
-    DAILY = "DAILY"
-
-    @staticmethod
-    def interval_from_cadence(cadence: "RawDataFileUpdateCadence") -> int:
-        match cadence:
-            case RawDataFileUpdateCadence.DAILY:
-                return 1
-            case RawDataFileUpdateCadence.WEEKLY:
-                return 7
-            case RawDataFileUpdateCadence.MONTHLY:
-                return 31  # ¯\_(ツ)_/¯
-            case _:
-                raise ValueError(
-                    f"Don't know how to get max days allowed stale for {cadence}"
-                )
-
-
-class RawDataExportLookbackWindow(Enum):
-    """Defines the lookback window for each raw data file, or how much historical data we
-    expect to be in a typical raw data file a state sends to us. Generally, we prefer
-    states to send us full historical files. If a raw file tag is an incremental file,
-    that likely means that either the file or underlying data table itself has an audit
-    column that reliably allows the states to generate date-bounded diffs.
-    """
-
-    # We expect each raw data file to include a full table export, and will never change
-    # to incremental exports.
-    FULL_HISTORICAL_LOOKBACK = "FULL_HISTORICAL_LOOKBACK"
-
-    # We expect each raw data file to ONLY include the last two months worth of data for this
-    # file tag. This means that this file tag or table itself likely has some sort of
-    # audit column that allows the state to generate date-bounded diffs.
-    TWO_MONTH_INCREMENTAL_LOOKBACK = "TWO_MONTH_INCREMENTAL_LOOKBACK"
-
-    # We expect each raw data file to ONLY include data for the last month for this
-    # file tag. This means that this file tag or table itself likely has some sort of
-    # audit column that allows the state to generate date-bounded diffs.
-    ONE_MONTH_INCREMENTAL_LOOKBACK = "ONE_MONTH_INCREMENTAL_LOOKBACK"
-
-    # We expect each raw data file to ONLY include the last two weeks worth of data for this
-    # file tag. This means that this file tag or table itself likely has some sort of
-    # audit column that allows the state to generate date-bounded diffs.
-    TWO_WEEK_INCREMENTAL_LOOKBACK = "TWO_WEEK_INCREMENTAL_LOOKBACK"
-
-    # We expect each raw data file to ONLY include the last weeks worth of data for this file
-    # tag. This means that this file tag or table itself likely has some sort of audit
-    # column that allows the state to generate date-bounded diffs.
-    ONE_WEEK_INCREMENTAL_LOOKBACK = "ONE_WEEK_INCREMENTAL_LOOKBACK"
-
-    # We expect each raw data file to only include recent data for this file tag, but
-    # we're not exactly sure how much historical data is included with each file. This
-    # means that this file tag or table itself likely has some sort of audit column that
-    # allows the state to generate date-bounded diffs.
-    UNKNOWN_INCREMENTAL_LOOKBACK = "UNKNOWN_INCREMENTAL_LOOKBACK"
-
-
-def is_meaningful_docstring(docstring: str | None) -> bool:
-    """Returns true if the provided docstring gives meaningful information, i.e. it is
-    non-empty and does not start with an obvious placeholder.
-    """
-    if not docstring:
-        return False
-
-    stripped_docstring = docstring.strip()
-    if not stripped_docstring:
-        return False
-
-    return (
-        # Split up into TO and DO to avoid lint errors
-        not stripped_docstring.startswith("TO" + "DO")
-        and not stripped_docstring.startswith("XXX")
-    )
+EXCLUDE_FROM_YAML = "exclude_from_yaml"
 
 
 @attr.s
 class ColumnEnumValueInfo:
     # The literal enum value
-    value: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    value: str = attr.ib(
+        validator=attr_validators.is_non_empty_str,
+        metadata={LIST_ITEM_IDENTIFIER_TAG: True},
+    )
     # The description that value maps to
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
@@ -206,7 +88,8 @@ class ColumnEnumValueInfo:
 @attr.define
 class ImportBlockingValidationExemption:
     validation_type: RawDataImportBlockingValidationType = attr.ib(
-        validator=attr.validators.instance_of(RawDataImportBlockingValidationType)
+        validator=attr.validators.instance_of(RawDataImportBlockingValidationType),
+        metadata={LIST_ITEM_IDENTIFIER_TAG: True},
     )
     exemption_reason: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
@@ -222,14 +105,6 @@ class ImportBlockingValidationExemption:
         )
 
 
-class ColumnUpdateOperation(Enum):
-    """Enum for column update operations"""
-
-    ADDITION = "ADDITION"
-    DELETION = "DELETION"
-    RENAME = "RENAME"
-
-
 @attr.define
 class ColumnUpdateInfo:
     """Stores information about an update made to a column
@@ -243,7 +118,10 @@ class ColumnUpdateInfo:
     update_type: ColumnUpdateOperation = attr.ib(
         validator=attr.validators.instance_of(ColumnUpdateOperation)
     )
-    update_datetime: datetime = attr.ib(validator=attr.validators.instance_of(datetime))
+    update_datetime: datetime = attr.ib(
+        validator=attr.validators.instance_of(datetime),
+        metadata={LIST_ITEM_IDENTIFIER_TAG: True},
+    )
     previous_value: Optional[str] = attr.ib(
         default=None,
         validator=attr.validators.optional(attr.validators.instance_of(str)),
@@ -275,7 +153,10 @@ class RawTableColumnInfo:
     )
 
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
-    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    name: str = attr.ib(
+        validator=attr_validators.is_non_empty_str,
+        metadata={LIST_ITEM_IDENTIFIER_TAG: True},
+    )
     # Designates the type of data that this column contains
     field_type: RawTableColumnFieldType = attr.ib(default=DEFAULT_FIELD_TYPE)
     # True if a column contains Personal Identifiable Information (PII)
@@ -688,8 +569,13 @@ class DirectIngestRawFileConfig:
     no_valid_primary_keys: bool = attr.ib()
 
     # TODO(#40036): Consider generalizing relationship traversal.
+    # TODO(#45340): to represent relationships in raw data yamls we build a string representation
+    # of the join relationship that does not map 1:1 to RawTableRelationshipInfo attributes.
+    # because of this, we can't intuitively update the ruamel representation of the relationships
+    # note that this does not mean table_relationships will be removed from the yaml if the file is
+    # updated programmatically, it just means that we cannot update this particular field programmatically.
     table_relationships: List[RawTableRelationshipInfo] = attr.ib(
-        validator=attr_validators.is_list
+        validator=attr_validators.is_list, metadata={EXCLUDE_FROM_YAML: True}
     )
     # True if this is the overall table representing person (JII) information
     # for this region. All other raw data tables containing person-level information
@@ -798,6 +684,9 @@ class DirectIngestRawFileConfig:
                 f"Table marked as primary person table, but no primary external ID"
                 f" column was specified for file [{self.file_tag}]"
             )
+
+        # TODO(#45352) Validate that list item identifier attributes are actually unique
+        validate_list_item_identifiers(self.__class__, excluded_tag=EXCLUDE_FROM_YAML)
 
     @property
     def has_primary_external_id_col(self) -> bool:
@@ -1180,23 +1069,27 @@ class DirectIngestRawFileConfig:
                         if (field_type_str := column.pop_optional("field_type", str))
                         else DEFAULT_FIELD_TYPE
                     ),
-                    is_pii=v
-                    if (v := column.pop_optional("is_pii", bool)) is not None
-                    else DEFAULT_IS_PII_VALUE,
+                    is_pii=(
+                        v
+                        if (v := column.pop_optional("is_pii", bool)) is not None
+                        else DEFAULT_IS_PII_VALUE
+                    ),
                     description=column.pop_optional("description", str),
                     known_values=known_value_infos,
                     datetime_sql_parsers=column.pop_list_optional(
                         "datetime_sql_parsers", str
                     ),
                     external_id_type=column.pop_optional("external_id_type", str),
-                    is_primary_for_external_id_type=v
-                    if (
-                        v := column.pop_optional(
-                            "is_primary_for_external_id_type", bool
+                    is_primary_for_external_id_type=(
+                        v
+                        if (
+                            v := column.pop_optional(
+                                "is_primary_for_external_id_type", bool
+                            )
                         )
-                    )
-                    is not None
-                    else DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE,
+                        is not None
+                        else DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE
+                    ),
                     import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
                     update_history=update_history,
                     null_values=column.pop_list_optional("null_values", str),

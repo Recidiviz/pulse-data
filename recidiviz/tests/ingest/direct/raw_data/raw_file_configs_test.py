@@ -39,7 +39,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
-    is_meaningful_docstring,
 )
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     ColumnEqualityJoinBooleanClause,
@@ -2309,26 +2308,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             self.sparse_config.column_is_exempt_from_validation(
                 column_name, RawDataImportBlockingValidationType.NONNULL_VALUES
             )
-
-
-class TestIsMeaningfulDocstring(unittest.TestCase):
-    """Tests for is_meaningful_docstring"""
-
-    def test_is_meaningful_docstring(self) -> None:
-        # These are not meaningful
-        self.assertFalse(is_meaningful_docstring(None))
-        self.assertFalse(is_meaningful_docstring(""))
-        self.assertFalse(is_meaningful_docstring("XXXX"))
-        self.assertFalse(is_meaningful_docstring("TO" + "DO(#123): Fill this out"))
-        self.assertFalse(is_meaningful_docstring("   TO" + "DO(#123): Fill this out"))
-
-        # These are meaningful
-        self.assertTrue(is_meaningful_docstring("This columns does X"))
-        self.assertTrue(
-            is_meaningful_docstring(
-                "This columns does X. TO" + "DO(#123): Ask clarifying question Y"
-            )
-        )
 
 
 def test_validate_all_raw_yaml_schemas() -> None:
