@@ -1537,3 +1537,153 @@ def get_reason_json_fields_query_template_for_criteria(
             for field in criteria_builder.reasons_fields
         ]
     )
+
+
+def on_negative_drug_screen_streak(
+    criteria_name: str,
+    date_interval: int,
+    date_part: str = "MONTH",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Creates spans showing when someone has had entirely negative drug screens for at
+    least X time, and has had a negative drug screen at least every year.
+
+    The logic tracks periods when:
+    1. Someone has had a negative drug screen
+    2. At least X time has passed since the streak of negative drug screens began
+    3. There has been at least one negative drug test
+
+    This creates historical spans that can start and end based on drug screen patterns.
+    For example: positive in Jan, negative in Feb -> eligible span starts in April.
+    If positive again in June -> span ends in June. If negative in July -> new span starts in September.
+
+    Args:
+        criteria_name (str): Name of the criteria
+        date_interval (int): Number of <date_part> that must pass since first negative
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
+    """
+
+    query_template = f"""
+    WITH
+    -- This CTE collapses all drug screens on a given date together and flags if any
+    -- were positive
+    any_positive_drug_screens AS (
+        SELECT
+            state_code,
+            person_id,
+            drug_screen_date,
+            LOGICAL_OR(is_positive_result) AS is_positive_result
+        FROM `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+        GROUP BY state_code, person_id, drug_screen_date
+    ),
+    -- This CTE adds an end date which is either a year out, or at the next drug screen
+    -- date, whatever is closer. This effectively means your streak can only continue if
+    -- you are getting at least one negative drug screen each year
+    test_result_periods AS (
+        SELECT
+            state_code,
+            person_id,
+            drug_screen_date AS start_date,
+            -- This period ends at the next test date OR a year later
+            LEAST({nonnull_end_date_clause('LEAD(drug_screen_date) OVER (PARTITION BY person_id ORDER BY drug_screen_date ASC)')}, drug_screen_date + INTERVAL 1 YEAR) AS potential_end_date,
+            is_positive_result
+        FROM any_positive_drug_screens
+    ),
+    sessionized AS (
+        {aggregate_adjacent_spans(
+            table_name='test_result_periods',
+            attribute=['is_positive_result'],
+            end_date_field_name='potential_end_date'
+        )}
+    ),
+    -- Adjust start times in case we want to wait a few months before a streak is
+    -- considered valid, and drop periods which no longer are valid (start date after
+    -- end date -- these will be autopopulated with spans of meets_criteria = <default>
+    -- in the final query)
+    streaks AS (
+        SELECT 
+            * EXCEPT (start_date), 
+            start_date AS drug_test_date,
+            NOT is_positive_result AS meets_criteria,
+        CASE WHEN
+            NOT is_positive_result THEN start_date + INTERVAL {date_interval} {date_part}
+            ELSE start_date 
+        END AS start_date,
+        FROM sessionized
+        WHERE start_date + INTERVAL {date_interval} {date_part} < {nonnull_end_date_clause('potential_end_date')}
+    ),
+    -- At this point we have the test_result_periods which indicate periods during which
+    -- the most recent test was positive or negative, and we have streaks which define
+    -- continuous periods of negative drug screens. Now we will create periods during
+    -- which someone is on a streak, and include information about when the streak
+    -- began, and also when the last negative drug test was.
+
+    -- It's possible (likely) that a streak starts on a date where there wasn't actually
+    -- a test, so we union in an extra record per streak which will account for the
+    -- beginning span of the streak.
+    trp_and_streak_starts AS (
+        SELECT state_code, person_id, start_date, potential_end_date, FALSE AS streak_start_record
+        FROM test_result_periods
+
+        UNION ALL
+
+        SELECT state_code, person_id, start_date, NULL AS end_date, TRUE AS streak_start_record
+        FROM streaks s
+    ),
+    -- Join in the information from the streaks back into the periods
+    joined_streaks AS (
+        SELECT DISTINCT
+            trpss.state_code,
+            trpss.person_id,
+            trpss.streak_start_record,
+            trpss.start_date,
+            trpss.potential_end_date,
+            meets_criteria,
+            IF(
+                trpss.streak_start_record, 
+                LAG(trpss.start_date) OVER (PARTITION BY trpss.person_id ORDER BY trpss.start_date, streak_start_record),
+                trpss.start_date
+            ) AS most_recent_test_date,
+            s.start_date - INTERVAL {date_interval} {date_part} AS first_negative_test_in_streak
+        FROM trp_and_streak_starts trpss
+        LEFT JOIN streaks s ON 
+            trpss.person_id = s.person_id AND 
+            trpss.start_date >= s.start_date AND 
+            trpss.start_date < COALESCE(s.potential_end_date, DATE('9999-01-01'))
+        ORDER BY trpss.start_date DESC
+    ),
+    -- Earlier, when we joined in the streak_start_record's, we introduced a period with
+    -- an open end date. Here, we set the end date of the start record to either the
+    -- next test date (if there is one), or a year after the most recent test date.
+    joined_streaks_with_end_dates as (
+        SELECT 
+            * EXCEPT (potential_end_date), 
+            IFNULL(LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date, streak_start_record), most_recent_test_date + INTERVAL 1 YEAR) AS end_date
+        FROM joined_streaks
+    )
+    SELECT *, TO_JSON(STRUCT(first_negative_test_in_streak, most_recent_test_date)) AS reason
+    FROM joined_streaks_with_end_dates
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description="Creates spans showing when someone has had entirely negative drug screens for at least X time",
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="first_negative_test_in_streak",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the first negative result in this streak",
+            ),
+            ReasonsField(
+                name="most_recent_test_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="The most recent negative result at this point in time",
+            ),
+        ],
+    )
