@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitType,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
@@ -46,6 +47,13 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
+)
+from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_and_utils import (
+    INTERNAL_UNKNOWN_STATUS_DESCRIPTIONS,
+    KNOWN_SERVING_STATUS_DESCRIPTIONS,
+    KNOWN_TERMINATING_STATUS_DESCRIPTIONS,
+    RECIDIVIZ_MARKED_COMPLETED,
+    RECIDIVIZ_MARKED_STARTED,
 )
 
 new_condition_identifier_strings = [
@@ -475,3 +483,31 @@ def parse_supervision_violation_response_decision(
     if violation_result:
         return StateSupervisionViolationResponseDecision.WARRANT_ISSUED
     return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN
+
+
+def parse_sentence_status(raw_text: str) -> StateSentenceStatus:
+    # Just in case :)
+    raw_text = raw_text.upper()
+
+    if (
+        raw_text == RECIDIVIZ_MARKED_STARTED
+        or raw_text in KNOWN_SERVING_STATUS_DESCRIPTIONS
+    ):
+        return StateSentenceStatus.SERVING
+
+    if (
+        raw_text == RECIDIVIZ_MARKED_COMPLETED
+        or raw_text in KNOWN_TERMINATING_STATUS_DESCRIPTIONS
+    ):
+        return StateSentenceStatus.COMPLETED
+
+    if raw_text == "COMMUTED":
+        return StateSentenceStatus.COMMUTED
+
+    if raw_text == "MODIFICATION SENT":
+        return StateSentenceStatus.AMENDED
+
+    if raw_text in INTERNAL_UNKNOWN_STATUS_DESCRIPTIONS:
+        return StateSentenceStatus.INTERNAL_UNKNOWN
+
+    raise ValueError(f"Unknown sentence status: {raw_text}")

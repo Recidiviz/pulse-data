@@ -3,9 +3,10 @@ manifest_language: 1.0.0
 input_columns:
   PERSON_ID: STRING
   OFFENSE_ID: STRING
-  status_update_datetime: STRING
-  status_raw_text: STRING
-  sequence_num: INTEGER
+  initial_status_dt: DATETIME
+  initial_status_raw_text: STRING
+  final_status_dt: DATETIME
+  final_status_raw_text: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -15,31 +16,27 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     sentences:
       - StateSentence:
-          external_id:
-            $concat:
-              $values:
-                - OFFENSE_ID
+          external_id: OFFENSE_ID
           sentence_status_snapshots:
-            - StateSentenceStatusSnapshot:
-                sequence_num: sequence_num
-                status_update_datetime: status_update_datetime
-                status:
-                  $enum_mapping:
-                    $raw_text: status_raw_text
-                    $mappings:
-                      StateSentenceStatus.SERVING:
-                        - Imposed
-                        - Paroled to Consecutive
-                        - Paroled
-                        - Recidiviz Marked Started
-                      StateSentenceStatus.COMMUTED:
-                        - Commuted
-                      StateSentenceStatus.AMENDED:
-                        - Modification Sent
-                      StateSentenceStatus.COMPLETED:
-                        - Completed
-                        - Recidiviz Marked Completed
-                        - Early Termination
-                      StateSentenceStatus.INTERNAL_UNKNOWN:
-                        - Set-Aside
-                        - Expungement
+            - $conditional:
+                - $if:
+                    $not_null: initial_status_dt
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("1")
+                      status_update_datetime: initial_status_dt
+                      status:
+                        $enum_mapping:
+                          $raw_text: initial_status_raw_text
+                          $custom_parser: us_az_custom_enum_parsers.parse_sentence_status
+            - $conditional:
+                - $if:
+                    $not_null: final_status_dt
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("2")
+                      status_update_datetime: final_status_dt
+                      status:
+                        $enum_mapping:
+                          $raw_text: final_status_raw_text
+                          $custom_parser: us_az_custom_enum_parsers.parse_sentence_status
