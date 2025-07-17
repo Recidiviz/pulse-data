@@ -97,7 +97,7 @@ function create_looker_release_branch {
   looker_git checkout -b "${NEW_RELEASE_BRANCH}"
 
   # 1. Update manifest.lkml
-  run_cmd sed -i'' "s/value: \"$LOOKER_STAGING_PROJECT_ID\"/value: \"$LOOKER_PROD_PROJECT_ID\"/" "${TEMP_LOOKER_DIR}/manifest.lkml"
+  run_cmd sed -i "" "s/value: \"$LOOKER_STAGING_PROJECT_ID\"/value: \"$LOOKER_PROD_PROJECT_ID\"/" "${TEMP_LOOKER_DIR}/manifest.lkml"
   grep -q "value: \"$LOOKER_PROD_PROJECT_ID\"" "${TEMP_LOOKER_DIR}/manifest.lkml" || {
     echo "Error: Failed to update manifest.lkml with prod project ID" >&2
     exit 1

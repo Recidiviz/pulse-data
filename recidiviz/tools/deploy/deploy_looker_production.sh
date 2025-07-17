@@ -10,7 +10,7 @@ source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 # shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
 source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
-PROJECT_ID="recidiviz-looker-123"
+LOOKER_PROJECT_ID="recidiviz-looker-123"
 
 if [[ "$1" == "" ]]; then
     echo_error "usage: $0 <version_tag>"
@@ -44,3 +44,5 @@ validate_release_branch_changes_since_tag "$GIT_VERSION_TAG" "$TEMP_LOOKER_DIR"
 # looker_git log --oneline "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERSION_TAG}"
 
 deploy_looker_prod_version "$GIT_VERSION_TAG" "$LOOKER_PROJECT_ID"
+
+echo "Deployed Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."

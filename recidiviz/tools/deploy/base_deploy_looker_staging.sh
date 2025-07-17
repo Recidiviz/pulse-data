@@ -23,10 +23,10 @@ BRANCH_NAME=''
 DEBUG_BUILD_NAME=''
 PROMOTE=''
 NO_PROMOTE=''
-PROJECT_ID='recidiviz-staging'
+LOOKER_PROJECT_ID='recidiviz-looker-staging'
 
 function print_usage {
-    echo_error "usage: $0 -v VERSION -c COMMIT_SHA [-p -n -d DEBUG_BUILD_NAME -r PROJECT_ID]"
+    echo_error "usage: $0 -v VERSION -c COMMIT_SHA [-p -n -d DEBUG_BUILD_NAME -r LOOKER_PROJECT_ID]"
     echo_error "  -v: Version tag to deploy (e.g. v1.2.0)"
     echo_error "  -c: Full SHA of the pulse-data commit that is being deployed."
     echo_error "  -b: Name of the branch from which we're deploying."
@@ -45,7 +45,7 @@ while getopts "b:v:c:pnd:r:" flag; do
     p) PROMOTE='true';;
     n) NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
-    r) PROJECT_ID="$OPTARG" ;;
+    r) LOOKER_PROJECT_ID="$OPTARG" ;;
     *) print_usage
        run_cmd exit 1 ;;
   esac
@@ -147,7 +147,7 @@ else
   [ "$PROMOTE" = "true" ] && RECONSTRUCTED_CMD+=" -p"
   [ "$NO_PROMOTE" = "true" ] && RECONSTRUCTED_CMD+=" -n"
   [ -n "$DEBUG_BUILD_NAME" ] && RECONSTRUCTED_CMD+=" -d $DEBUG_BUILD_NAME"
-  [ -n "$PROJECT_ID" ] && RECONSTRUCTED_CMD+=" -r $PROJECT_ID"
+  [ -n "$LOOKER_PROJECT_ID" ] && RECONSTRUCTED_CMD+=" -r $LOOKER_PROJECT_ID"
 
   script_prompt "Has the pull request been merged? If the script was accidentally terminated, you can retry by running the following after the PR is merged:\n\t${RECONSTRUCTED_CMD}"
 
@@ -169,6 +169,6 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
 fi
 
 if [[ -n ${PROMOTE} ]]; then
-  echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $PROJECT_ID."
-  deploy_looker_staging_version "$VERSION_TAG" "$PROJECT_ID"
+  echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
+  deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
 fi
