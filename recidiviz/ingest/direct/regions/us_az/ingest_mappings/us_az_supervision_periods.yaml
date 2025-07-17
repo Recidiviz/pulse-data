@@ -95,6 +95,7 @@ output:
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                   - SUPV LEVEL ASSESSMENT
                   - OFFICER CHANGE
+                  - START - INTERSTATE COMPACT # This only appears once due to a data entry error.
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - Release ISC
                   - Deport 1/2 Term
