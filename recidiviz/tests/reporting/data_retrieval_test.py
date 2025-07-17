@@ -75,6 +75,7 @@ class OutliersDataRetrievalTests(TestCase):
         self.project_id_patcher.stop()
         self.gcs_factory_patcher.stop()
         self.get_secret_patcher.stop()
+        self.retrieve_data_patcher.stop()
 
 
 class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrievalTests):

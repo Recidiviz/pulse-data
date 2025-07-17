@@ -7,7 +7,7 @@ jobs:
   analyze:
     if: github.repository == 'Recidiviz/pulse-data'
     name: CodeQL Build and Analyze
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
     permissions:
       actions: read
       contents: read
@@ -17,6 +17,7 @@ jobs:
       matrix:
         language: ["javascript"]
     steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
       - name: Check out repository
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Initialize CodeQL

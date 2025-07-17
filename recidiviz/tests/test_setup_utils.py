@@ -33,7 +33,8 @@ def get_bq_emulator_port() -> int:
     emulator running at the default port. Otherwise, the port number is variable to
     avoid interference between tests running in parallel.
     """
-    port = 9050
+    # This port is arbitrarily chosen to avoid conflicts services in the RunsOn runner.
+    port = 60050
     if not (pytest_worker_id := get_pytest_worker_id()):
         return port
 

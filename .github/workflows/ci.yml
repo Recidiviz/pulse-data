@@ -3,73 +3,257 @@ on: push
 jobs:
   cancel-previous-runs:
     name: Cancel previous runs
-    runs-on: ubuntu-22.04
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
     steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@ce177499ccf9fd2aded3b0426c97e5434c2e8a73 # 0.6.0
         with:
           access_token: ${{ github.token }}
-  black:
-    name: Black
-    runs-on: ubuntu-22.04
+
+  # These unit tests need to be run separately because they depend on a different Python
+  # environment defined in the Pipfile in the recidiviz/airflow package.
+  airflow-tests:
+    name: Airflow Pytest
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Airflow Python Setup
+        uses: ./.github/actions/airflow-python-setup
+      - name: Run airflow tests in parallel
+        working-directory: ./recidiviz/airflow
+        run: |
+          pipenv run pytest tests -n logical
+
+  unit-tests:
+    name: Pytest
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=16
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
-      - name: Black
-        run: pipenv run black . --check --exclude '^/recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$'
-  check-if-pipenv-locked:
-    name: Check if Pipenv is locked and synced
-    runs-on: ubuntu-22.04
+      - name: Run unit tests in parallel
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -n logical \
+            -m 'not uses_bq_emulator'
+
+  big-query-emulator-tests:
+    name: BigQuery Emulator Tests
+    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16
     steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Pull emulator Docker image
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
+      - name: Run unittests
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -m 'uses_bq_emulator and not view_graph_validation' \
+            -n logical
+        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+        # If the emulator encounters an incorrect / unknown error that is continuously retried,
+        # we'd rather the process time out than incur additional billed minutes.
+        # Debugging can be done locally to find the root error
+        timeout-minutes: 6
+      - name: Remove the emulator docker containers
+        if: ${{ always() }}
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
+
+  bigquery-view-graph-validation:
+    name: BigQuery View Graph Validation
+    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Pull emulator Docker image
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
+      - name: Load view graph to emulator
+        # This test suite only contains two tests (staging and production) so we run them in parallel
+        run: pipenv run pytest -s recidiviz/tests/big_query/view_graph_validation_test.py -n 2
+        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+        # If the emulator encounters an incorrect / unknown error that is continuously retried,
+        # we'd rather the process time out than incur additional billed minutes.
+        # Debugging can be done locally to find the root error
+        timeout-minutes: 12
+      - name: Remove the emulator docker container
+        if: ${{ always() }}
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
+
+  pipenv-validation:
+    name: Pipenv Validation
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Check pipenv is locked
         run: pipenv run python -m recidiviz.tools.is_pipenv_locked
       - name: Check pipenv is synced
         run: pipenv run recidiviz/tools/diff_pipenv.sh
-  mypy:
-    name: Mypy
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Mypy check
-        run: pipenv run mypy recidiviz
-  # Verify that all YAML files are properly formatted, according to prettier
-  prettier:
-    name: Prettier [yaml]
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
-      - run: npm install prettier
-      - run: npx prettier --check "**/*.{yaml,yml}"
+      - name: Validate source visibility
+        run: pipenv run python -m recidiviz.tools.validate_source_visibility
+
   pylint:
     name: Pylint
-    runs-on: ubuntu-22.04
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This clones the repo and checks out the SHA that triggered this action.
           # We set fetch-depth 0 to fetch all branches and history so that merge-base
           # is guaranteed to be able to find the common ancestor with the base branch.
           # See https://github.com/actions/checkout#readme
           fetch-depth: 0
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ github.workspace }}/.cache/pylint
+          key: ${{ runner.os }}-${{ runner.arch }}-python-pylint
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Install Pylint
         run: pipenv run pip install pylint
       - name: Pylint
         run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
+
+  mypy:
+    name: Mypy
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ github.workspace }}/.cache/mypy
+          key: ${{ runner.os }}-${{ runner.arch }}-python-mypy
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Mypy
+        run: pipenv run mypy recidiviz --cache-dir ${{ github.workspace }}/.cache/mypy
+
+  black:
+    name: Black
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ github.workspace }}/.cache/black
+          key: ${{ runner.os }}-${{ runner.arch }}-python-black
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Black
+        run: pipenv run black . --check --exclude '^/recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$'
+        env:
+          BLACK_CACHE_DIR: ${{ github.workspace }}/.cache/black
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Yarn caching
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        id: yarn-caching
+        with:
+          path: "**/node_modules"
+          key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-v2-${{ hashFiles('**/yarn.lock') }}
+            yarn-v2-
+            yarn-
+      - name: Yarn install (admin panel)
+        if: steps.yarn-caching.outputs.cache-hit != 'true'
+        working-directory: ./frontends/admin-panel/
+        run: yarn install --frozen-lockfile
+      - name: Yarn lint (admin panel)
+        working-directory: ./frontends/admin-panel/
+        run: yarn lint --max-warnings=0
+      - name: Yarn test (admin panel)
+        working-directory: ./frontends/admin-panel/
+        run: yarn test
+
+  asset-generation-tests:
+    name: Asset Generation Service tests
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    defaults:
+      run:
+        working-directory: ./nodejs/asset-generation/
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
+        with:
+          node-version: "18"
+          cache: "yarn"
+          cache-dependency-path: nodejs/asset-generation/yarn.lock
+      - name: Install fonts
+        run: |
+          cp src/fonts/* /usr/share/fonts/
+          fc-cache -fv
+      - name: Yarn install
+        run: yarn install --frozen-lockfile
+      - name: Lint
+        run: yarn lint --max-warnings=0
+      - name: Test
+        run: yarn test
+
+  # Verify that all YAML files are properly formatted, according to prettier
+  prettier:
+    name: Prettier [yaml]
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
+    steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
+      - run: npm install prettier
+      - run: npx prettier --check "**/*.{yaml,yml}"
+
   terraform-validation:
     name: Terraform Validation
-    runs-on: ubuntu-22.04
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
     steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
+        with:
+          metrics: cpu,network,memory,disk,io
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: hashicorp/setup-terraform@bfaf33cd488dd9a148df9ea8868ffec802fc4a04 # v1
         with:
           # Note: this version number should be kept in sync with the ones in Dockerfile,
@@ -90,223 +274,3 @@ jobs:
            echo "If you are not making changes to any Terraform files in this PR, tag the platform on-call engineer"
            exit 1
           fi
-  validate-source-visibility:
-    name: Validate source visibility
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Validate source visibility
-        run: pipenv run python -m recidiviz.tools.validate_source_visibility
-  frontend-tests:
-    name: Frontend tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-        with:
-          # This clones the repo and checks out the SHA that triggered this action.
-          # We set fetch-depth 0 to fetch all branches and history so that merge-base
-          # is guaranteed to be able to find the common ancestor with the base branch.
-          # See https://github.com/actions/checkout#readme
-          fetch-depth: 0
-      - name: Yarn caching
-        uses: actions/cache@8492260343ad570701412c2f464a5877dc76bace # v2
-        id: yarn-caching
-        with:
-          path: "**/node_modules"
-          key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            yarn-v2-${{ hashFiles('**/yarn.lock') }}
-            yarn-v2-
-            yarn-
-      - name: Yarn install (admin panel)
-        if: steps.yarn-caching.outputs.cache-hit != 'true'
-        working-directory: ./frontends/admin-panel/
-        run: yarn install --frozen-lockfile
-      - name: Yarn lint (admin panel)
-        working-directory: ./frontends/admin-panel/
-        run: yarn lint --max-warnings=0
-      - name: Yarn test (admin panel)
-        working-directory: ./frontends/admin-panel/
-        run: yarn test
-  asset-generation-tests:
-    name: Asset Generation Service tests
-    runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ./nodejs/asset-generation/
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
-        with:
-          node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: nodejs/asset-generation/yarn.lock
-      - name: Install fonts
-        run: |
-          cp src/fonts/* /usr/share/fonts/
-          fc-cache -fv
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
-      - name: Lint
-        run: yarn lint --max-warnings=0
-      - name: Test
-        run: yarn test
-  unit-tests:
-    name: Base unit tests
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [1, 2, 3]
-        suite-count: [3]
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Run unit tests in parallel
-        run: |
-          pipenv run pytest recidiviz/tests \
-            -n logical \
-            -m 'not uses_db and not isolated and not uses_bq_emulator' \
-            --suite-count ${{matrix.suite-count}} \
-            --suite=${{ matrix.suite }} \
-            --durations=25
-  # These unit tests need to be run separately because they depend on a different Python
-  # environment defined in the Pipfile in the recidiviz/airflow package.
-  airflow-tests:
-    name: Airflow unit tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Airflow Python Setup
-        uses: ./.github/actions/airflow-python-setup
-      - name: Cache postgres
-        uses: actions/cache@8492260343ad570701412c2f464a5877dc76bace # v2
-        id: cache-postgres
-        with:
-          path: "~/postgres"
-          key: ${{ runner.os }}-${{ runner.version }}-postgres-13
-      - name: Install postgres
-        env:
-          CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
-        shell: bash
-        run: |
-          if [[ "$CACHE_HIT" == 'true' ]]; then
-            sudo cp --force --recursive ~/postgres/* /
-          else
-            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
-            sudo apt-get update
-            sudo apt-get install postgresql-13
-            mkdir -p ~/postgres
-            for dep in postgresql-13; do
-                dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/postgres/
-            done
-          fi
-          echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
-          sudo chown -R $USER /var/run/postgresql
-      - name: Run airflow tests in parallel
-        working-directory: ./recidiviz/airflow
-        run: |
-          pipenv run pytest tests -n logical
-  db-tests:
-    name: Database tests
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [1, 2, 3]
-        suite-count: [3]
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      # Postgres caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
-      - name: Cache postgres
-        uses: actions/cache@8492260343ad570701412c2f464a5877dc76bace # v2
-        id: cache-postgres
-        with:
-          path: "~/postgres"
-          key: ${{ runner.os }}-${{ runner.version }}-postgres-13
-      - name: Install postgres
-        env:
-          CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
-        shell: bash
-        run: |
-          if [[ "$CACHE_HIT" == 'true' ]]; then
-            sudo cp --force --recursive ~/postgres/* /
-          else
-            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
-            sudo apt-get update
-            sudo apt-get install postgresql-13
-            mkdir -p ~/postgres
-            for dep in postgresql-13; do
-                dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/postgres/
-            done
-          fi
-          echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
-          sudo chown -R $USER /var/run/postgresql
-      - name: Run db tests
-        run: |
-          pipenv run pytest recidiviz/tests \
-            -n logical \
-            -m 'uses_db' \
-            --suite-count ${{matrix.suite-count}} \
-            --suite=${{ matrix.suite }} \
-            --durations=25
-  big-query-emulator-tests:
-    name: BigQuery Emulator Tests
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [1, 2, 3, 4, 5]
-        suite-count: [5]
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Pull emulator Docker image
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
-      - name: Run unittests
-        run: |
-          pipenv run pytest recidiviz/tests \
-            -m 'uses_bq_emulator and not view_graph_validation' \
-            -n 2 \
-            --suite-count ${{matrix.suite-count}} \
-            --suite=${{ matrix.suite }} \
-            --durations=25
-        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
-        # If the emulator encounters an incorrect / unknown error that is continuously retried,
-        # we'd rather the process time out than incur additional billed minutes.
-        # Debugging can be done locally to find the root error
-        timeout-minutes: 9
-      - name: Remove the emulator docker containers
-        if: ${{ always() }}
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
-  bigquery-view-graph-validation:
-    name: BigQuery View Graph Validation
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: true
-      matrix:
-        project: [staging, production]
-    steps:
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Pull emulator Docker image
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
-      - name: Load view graph to emulator
-        run: pipenv run pytest -s "recidiviz/tests/big_query/view_graph_validation_test.py::${{matrix.project == 'production' && 'ProductionViewGraphTest' || 'StagingViewGraphTest'}}"
-        # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
-        # If the emulator encounters an incorrect / unknown error that is continuously retried,
-        # we'd rather the process time out than incur additional billed minutes.
-        # Debugging can be done locally to find the root error
-        timeout-minutes: 8
-      - name: Remove the emulator docker container
-        if: ${{ always() }}
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all

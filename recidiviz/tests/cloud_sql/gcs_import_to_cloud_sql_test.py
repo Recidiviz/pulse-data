@@ -124,12 +124,12 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client = MagicMock()
         self.cloud_sql_client_patcher.start().return_value = self.mock_cloud_sql_client
 
-        self.mock_sqlalchemy_engine_manager = SQLAlchemyEngineManager
-        setattr(
-            self.mock_sqlalchemy_engine_manager,
-            "get_stripped_cloudsql_instance_id",
-            Mock(return_value=self.mock_instance_id),
+        self.sqlalchemy_engine_patcher = patch(
+            "recidiviz.cloud_sql.gcs_import_to_cloud_sql.SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id",
+            return_value=self.mock_instance_id,
         )
+        self.sqlalchemy_engine_patcher.start()
+
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_mo")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
@@ -143,6 +143,7 @@ class TestGCSImportToCloudSQL(TestCase):
 
     def tearDown(self) -> None:
         self.cloud_sql_client_patcher.stop()
+        self.sqlalchemy_engine_patcher.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.database_key
         )

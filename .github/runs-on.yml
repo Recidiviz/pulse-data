@@ -1,0 +1,42 @@
+# This file is consumed by the RunsOn service which is hosted in our AWS account
+# https://runs-on.com/configuration/repo-config/
+runners:
+  # ARM64 pricing is generally ~20% cheaper than x64 and should be used where possible
+  arm64:
+    image: py311-postgres-arm64
+    family: ["m8g", "c8g", "c7g", "m7g"]
+    extras: ["s3-cache", "tmpfs"]
+    # Start the runner inside the private subnet and route egress through a static IP
+    private: true
+    # Disable SSH access to the runner instances
+    ssh: false
+    # Use capacity-optimized strategy to select spot instances with less chance of preemption
+    spot: capacity-optimized
+
+  x64:
+    image: py311-postgres-x64
+    family: ["c7i", "m7i"]
+    extras: ["s3-cache", "tmpfs"]
+    # Start the runner inside the private subnet and route egress through a static IP
+    private: true
+    # Disable SSH access to the runner instances
+    ssh: false
+    # Use capacity-optimized strategy to select spot instances with less chance of preemption
+    spot: capacity-optimized
+
+images:
+  py311-postgres-x64:
+    platform: "linux"
+    arch: "x64"
+    # Our AWS Account ID
+    owner: "475312562243"
+    # Built using runner_images/python311-postgres13/templates/python311-postgres13.pkr.hcl
+    name: x64-python311-postgres13-runs-on-2025-07-08-233814
+
+  py311-postgres-arm64:
+    platform: "linux"
+    arch: "arm64"
+    # Our AWS Account ID
+    owner: "475312562243"
+    # Built using runner_images/python311-postgres13/templates/python311-postgres13.pkr.hcl
+    name: arm64-python311-postgres13-runs-on-2025-07-08-233814

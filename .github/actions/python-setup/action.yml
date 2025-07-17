@@ -2,25 +2,21 @@ name: "Python Setup"
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-python@v2
-      id: setup-python
-      with:
-        python-version: "3.11.6"
-    - name: Install pipenv
-      run: pip install pipenv
+    - name: Use Python 3.11.6
+      run: pyenv global 3.11.6
       shell: bash
     - name: Pipenv caching
-      uses: actions/cache@v3
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
       id: pipenv-caching
       with:
         path: ~/.local/share/virtualenvs/
-        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipenv-v3-${{ hashFiles('**/Pipfile.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-python-pipenv-${{ hashFiles(format('{0}/Pipfile.lock', github.workspace)) }}
         # If we haven't cached a pipenv for the new version of the lock file this will
         # restore the cache for the most recent version. Since most of the time our
         # lock file updates only change a small number of packages, this speeds up
         # the sync step significantly.
         restore-keys: |
-          ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipenv-v3-
+          ${{ runner.os }}-${{ runner.arch }}-python-pipenv
     - name: Sync pipenv
       if: steps.pipenv-caching.outputs.cache-hit != 'true'
       # If we didn't find an exact pipenv match, we have to `sync.` Because we may have

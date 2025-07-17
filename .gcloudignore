@@ -32,8 +32,9 @@ tramp
 # Distribution / packaging
 .Python
 build/
-# with an exception for endpoint docs
+# with an exception for endpoint docs and Packer images
 !docs/**/build/
+!.github/runner_images/**/scripts/build/
 develop-eggs/
 dist/
 downloads/
