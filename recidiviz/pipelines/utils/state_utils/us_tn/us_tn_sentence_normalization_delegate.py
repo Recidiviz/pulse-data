@@ -23,6 +23,11 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sente
 class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelegate):
     """US_TN implementation of the StateSpecificSentenceNormalizationDelegate."""
 
+    @property
+    def allow_non_credit_serving(self) -> bool:
+        """TN has an 'oversight board' that revokes credit for time served, so we allow non-credit serving sentences."""
+        return True
+
     # TODO(#28869) understand why TN gives us data like this (a sentence really changes,
     # there's an acute data issue, or the originating process is flawed)
     @property

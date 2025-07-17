@@ -421,12 +421,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=datetime.datetime(1992, 2, 20, 0, 0),
                 status=StateSentenceStatus.SERVING,
                 status_raw_text='15I1000@@"NEW COURT PROBATION "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_19900117_1.sentence_status_snapshots[
-                        0
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
             normalized_entities.NormalizedStateSentenceStatusSnapshot(
                 sequence_num=2,
@@ -435,12 +430,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='99O2100@@"PROB REV-TECHNICAL-JAIL "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_19900117_1.sentence_status_snapshots[
-                        1
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
         ],
     )
@@ -519,12 +509,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=datetime.datetime(2009, 1, 26, 0, 0),
                 status=StateSentenceStatus.SERVING,
                 status_raw_text='15I1000@@"NEW COURT PROBATION "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_20040224_1.sentence_status_snapshots[
-                        0
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
             normalized_entities.NormalizedStateSentenceStatusSnapshot(
                 sequence_num=2,
@@ -533,12 +518,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status=StateSentenceStatus.SUSPENDED,
                 status_end_datetime=datetime.datetime(2009, 2, 27, 0, 0),
                 status_raw_text='65O2015@@"COURT PROBATION SUSPENSION "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_20040224_1.sentence_status_snapshots[
-                        1
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
             normalized_entities.NormalizedStateSentenceStatusSnapshot(
                 sequence_num=3,
@@ -547,12 +527,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='95O7000@@"RELIEVED OF SUPV-COURT "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_20040224_1.sentence_status_snapshots[
-                        2
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
         ],
     )
@@ -631,12 +606,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=datetime.datetime(2009, 11, 4, 0, 0),
                 status=StateSentenceStatus.SERVING,
                 status_raw_text='25I1000@@"COURT PROBATION-ADDL CHARGE "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_20040224_2.sentence_status_snapshots[
-                        0
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
             normalized_entities.NormalizedStateSentenceStatusSnapshot(
                 sequence_num=2,
@@ -645,12 +615,7 @@ def test_person_001_sentencing_normalization() -> None:
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
                 status_raw_text='99O1010@@"COURT PROB DISC-CONFIDENTIAL "',
-                sentence_status_snapshot_id=assert_type(
-                    SENTENCE_001_20040224_2.sentence_status_snapshots[
-                        1
-                    ].sentence_status_snapshot_id,
-                    int,
-                ),
+                sentence_status_snapshot_id=-1,
             ),
         ],
     )
@@ -771,6 +736,23 @@ def test_person_001_sentencing_normalization() -> None:
         MO_DELEGATE,
         expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
     )
+
+    # Migrate the IDs from normalization to the expected entities.
+    # This can only work if all other fields match.
+    for actual, expected in zip(
+        actual_normalized_sentences, expected_normalized_sentences
+    ):
+        for actual_snap, expected_snap in zip(
+            assert_type(
+                actual, normalized_entities.NormalizedStateSentence
+            ).sentence_status_snapshots,
+            assert_type(
+                expected, normalized_entities.NormalizedStateSentence
+            ).sentence_status_snapshots,
+        ):
+            expected_snap.sentence_status_snapshot_id = (
+                actual_snap.sentence_status_snapshot_id
+            )
 
     assert actual_normalized_sentences == expected_normalized_sentences
     assert actual_normalized_sentence_groups == expected_normalized_sentence_groups

@@ -21,6 +21,7 @@ input_columns:
   ConsecutiveCaseYear: STRING
   ConsecutiveCaseNumber: STRING
   ConsecutiveCountNumber: STRING
+  SentenceEffectiveDate: DATE
 
   # StateChargeV2 information
   OffenseDate: DATE
@@ -67,6 +68,7 @@ output:
                     - SuspendedToProbation
               $custom_parser: us_tn_sentencing_custom_enum_parsers.infer_imposed_sentence_type_from_raw_text
           imposed_date: SentenceImposedDate
+          current_state_provided_start_date: SentenceEffectiveDate
           county_code: ConvictionCounty
           sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
           conditions: ConditionsText

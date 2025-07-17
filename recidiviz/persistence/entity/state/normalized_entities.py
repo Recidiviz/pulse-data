@@ -172,9 +172,6 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     SequencedEntityMixin,
 )
-from recidiviz.persistence.entity.state.state_entity_utils import (
-    build_unique_sentence_status_snapshot_key,
-)
 from recidiviz.utils.types import assert_type
 
 ##### VALIDATORS #####
@@ -709,14 +706,13 @@ class NormalizedStateSentenceStatusSnapshot(
         default=None, validator=IsNormalizedSentenceBackedgeValidator()
     )
 
-    # Primary key, this must be defined after sentence!
+    # Primary key, that is built with
+    # recidiviz.persistence.entity.state.state_entity_utils.build_unique_sentence_status_snapshot_key
+    # We do not set a default here or have this value optional so that setting this ID
+    # is as explicit (and debuggable) as possible.
+    # TODO(#32690) Don't forget this case (and function ^) when update PK generation
     sentence_status_snapshot_id: int = attr.ib(
         validator=attr_validators.is_int,
-        # TODO(#32690) Update this when PK PK generation is consistent across
-        # HasExternalId entities. This allows us to have a unique mandatory field for now
-        default=attr.Factory(
-            build_unique_sentence_status_snapshot_key, takes_self=True
-        ),
     )
 
     @property

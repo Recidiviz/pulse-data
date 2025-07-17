@@ -122,6 +122,8 @@ def _add_end_datetime_and_normalize_sequence_num(
                     if idx == N
                     else sorted_snapshots[idx + 1].status_update_datetime
                 ),
+                # We always re-assign sequence_num here to make sure it is
+                # contiguous and increasing.
                 sequence_num=idx + 1,
                 sentence_status_snapshot_id=build_unique_sentence_status_snapshot_key(
                     snapshot=snapshot,
@@ -131,13 +133,13 @@ def _add_end_datetime_and_normalize_sequence_num(
     return normalized_snapshots
 
 
-def _update_serving_statuses_before_watermark(
+def _correct_and_create_serving_statuses_from_watermark(
     sentence: StateSentence,
     all_snapshots: list[StateSentenceStatusSnapshot],
-    watermark_datetime: datetime.datetime,
-    new_status: StateSentenceStatus,
-    new_status_raw_text: str,
-) -> StateSentenceStatusSnapshot | None:
+    serving_watermark_datetime: datetime.datetime,
+    status_value_to_relace_serving: StateSentenceStatus,
+    raw_text_for_new_serving_status: str,
+) -> list[StateSentenceStatusSnapshot]:
     """
     This function updates any serving statuses to be the given new status
     value if their status_update_datetime is before the watermark_datetime.
@@ -155,48 +157,120 @@ def _update_serving_statuses_before_watermark(
     If the watermark_datetime is 2024-01-05, and the new_status is IMPOSED_PENDING_SERVING,
     the given statuses will become
 
-    status_update_datetime | status
-    -----------------------|--------
-    2024-01-01 00:00:00    | IMPOSED_PENDING_SERVING
-    2024-01-04 00:00:00    | IMPOSED_PENDING_SERVING
-    2024-01-08 00:00:00    | SERVING
+    sequence_num | status_update_datetime | status
+    -------------|------------------------|--------
+         1       | 2024-01-01 00:00:00    | IMPOSED_PENDING_SERVING
+         2       | 2024-01-04 00:00:00    | IMPOSED_PENDING_SERVING
+         3       | 2024-01-08 00:00:00    | SERVING
 
     Since there is not a serving status on the date of the watermark_datetime,
-    we would return a new StateSentenceStatusSnapshot with the
+    we would create a new StateSentenceStatusSnapshot with the
     status_update_datetime set to the 2024-01-05 and a status value of SERVING.
 
-    When considered with the existing status snapshots downstream of this function,
-    that would then look like
+    The list of status snapshots returned by this function would then look like:
 
-    status_update_datetime | status
-    -----------------------|--------
-    2024-01-01 00:00:00    | IMPOSED_PENDING_SERVING
-    2024-01-04 00:00:00    | IMPOSED_PENDING_SERVING
-    2024-01-05 00:00:00    | SERVING <--- New! Returned by this function
-    2024-01-08 00:00:00    | SERVING
+    sequence_num | status_update_datetime | status
+    -------------|------------------------|--------
+         1       | 2024-01-01 00:00:00    | IMPOSED_PENDING_SERVING
+         2       | 2024-01-04 00:00:00    | IMPOSED_PENDING_SERVING
+         3       | 2024-01-05 00:00:00    | SERVING <--- New! Created by this function
+         4       | 2024-01-08 00:00:00    | SERVING
 
     For that example, if the watermark_datetime was 2024-01-08, we would not have
-    made a new StateSentenceStatusSnapshot and this function would have returned None
+    made a new StateSentenceStatusSnapshot.
     """
+    if not all_snapshots:
+        return []
 
-    make_net_new_serving_status = True
-    for snapshot in all_snapshots:
-        if not snapshot.status.is_considered_serving_status:
-            continue
-        if snapshot.status_update_datetime < watermark_datetime:
-            snapshot.status = new_status
-        if snapshot.status_update_datetime.date() == watermark_datetime.date():
-            make_net_new_serving_status = False
+    snapshots_to_return: list[StateSentenceStatusSnapshot] = []
 
-    if make_net_new_serving_status:
-        return StateSentenceStatusSnapshot(
-            state_code=sentence.state_code,
-            status_update_datetime=watermark_datetime,
-            status=StateSentenceStatus.SERVING,
-            status_raw_text=new_status_raw_text,
-            sentence=sentence,
+    serving_snapshot_exists_at_watermark = False
+
+    for snapshot in sorted(all_snapshots, key=lambda s: s.partition_key):
+
+        if snapshot.status_update_datetime < serving_watermark_datetime:
+
+            # If serving before the watermark, update to the new status.
+            if snapshot.status.is_considered_serving_status:
+                snapshot.status = status_value_to_relace_serving
+
+            # If we have a terminating status before the serving_watermark,
+            # something has gone wrong in ingest. Note we've already corrected
+            # early completion statuses before calling this function!
+            if snapshot.status.is_terminating_status:
+                raise ValueError(
+                    f"{sentence.limited_pii_repr()} has a terminating status before we expected it to begin serving!"
+                )
+
+        # We only create net-new serving statuses if there isn't a serving status on the serving watermark date
+        if snapshot.status_update_datetime.date() == serving_watermark_datetime.date():
+            if snapshot.status.is_considered_serving_status:
+                serving_snapshot_exists_at_watermark = True
+
+        # If we're past the watermark and we haven't created a serving snapshot yet,
+        # we create a new one with the serving_watermark_datetime.
+        if (
+            snapshot.status_update_datetime >= serving_watermark_datetime
+            and not serving_snapshot_exists_at_watermark
+        ):
+            snapshots_to_return.append(
+                StateSentenceStatusSnapshot(
+                    state_code=snapshot.state_code,
+                    status=StateSentenceStatus.SERVING,
+                    status_raw_text=raw_text_for_new_serving_status,
+                    status_update_datetime=serving_watermark_datetime,
+                    sentence=snapshot.sentence,
+                    sequence_num=len(snapshots_to_return) + 1,
+                )
+            )
+            serving_snapshot_exists_at_watermark = True
+
+        snapshot.sequence_num = len(snapshots_to_return) + 1
+        snapshots_to_return.append(snapshot)
+
+    # If there were only statuses before the watermark, we haven't made a net-new
+    # snapshot yet.
+    if not serving_snapshot_exists_at_watermark:
+        snapshots_to_return.append(
+            StateSentenceStatusSnapshot(
+                state_code=all_snapshots[0].state_code,
+                status=StateSentenceStatus.SERVING,
+                status_raw_text=raw_text_for_new_serving_status,
+                status_update_datetime=serving_watermark_datetime,
+                sentence=all_snapshots[0].sentence,
+                sequence_num=len(snapshots_to_return) + 1,
+            )
         )
-    return None
+
+    return snapshots_to_return
+
+
+def _validate_terminating_statuses(
+    sorted_snapshots: list[StateSentenceStatusSnapshot],
+    correct_early_completed_statuses: bool,
+) -> list[StateSentenceStatusSnapshot]:
+    """
+    Validate that if a terminating status exists in the given snapshots,
+    then it is the only terminating status and it is the last one in the list.
+
+    If correct_early_completed_statuses is True, we will correct
+    any early COMPLETED statuses to SERVING. Note that we only correct
+    COMPLETED and not other terminating statuses (accessed via status.is_terminating_status).
+    For example, if a DEATH status is not the final status, we fail.
+    """
+    *initial_snapshots, final_snapshot = sorted_snapshots
+    for snapshot in initial_snapshots:
+        if snapshot.status.is_terminating_status:
+            if (
+                snapshot.status == StateSentenceStatus.COMPLETED
+                and correct_early_completed_statuses
+            ):
+                snapshot.status = StateSentenceStatus.SERVING
+            else:
+                raise ValueError(
+                    f"Found [{snapshot.status.value}] status that is not the final status. {snapshot.limited_pii_repr()}"
+                )
+    return initial_snapshots + [final_snapshot]
 
 
 def normalize_snapshots_for_single_sentence(
@@ -217,29 +291,13 @@ def normalize_snapshots_for_single_sentence(
     if not sentence.sentence_status_snapshots:
         return []
 
-    # TODO(#44525): Make use of parent sentence statuses for IMPOSED_PENDING_SERVING
-    _ = parent_sentences_final_terminating_status_dt
-    *initial_snapshots, final_snapshot = sorted(
+    all_snapshots = sorted(
         sentence.sentence_status_snapshots, key=lambda s: s.partition_key
     )
-
-    # Validate (or correct) non-final statuses are not terminating
-    # Note that we only correct COMPLETED and not other terminating statuses
-    # (accessed via status.is_terminating_status). For example, if a DEATH status
-    # is not the final status, we fail.
-    for snapshot in initial_snapshots:
-        if snapshot.status.is_terminating_status:
-            if (
-                snapshot.status == StateSentenceStatus.COMPLETED
-                and delegate.correct_early_completed_statuses
-            ):
-                snapshot.status = StateSentenceStatus.SERVING
-            else:
-                raise ValueError(
-                    f"Found [{snapshot.status.value}] status that is not the final status. {snapshot.limited_pii_repr()}"
-                )
-
-    all_snapshots = initial_snapshots + [final_snapshot]
+    if delegate.correct_early_completed_statuses:
+        all_snapshots = _validate_terminating_statuses(
+            all_snapshots, correct_early_completed_statuses=True
+        )
 
     # This should never happen but we check again just in case.
     if (
@@ -253,34 +311,35 @@ def normalize_snapshots_for_single_sentence(
             "If this is too strict, please ping #platform-team"
         )
 
-    net_new_snapshot: StateSentenceStatusSnapshot | None = None
     if (
         delegate.correct_imposed_pending_serving_statuses
         and parent_sentences_final_terminating_status_dt is not None
     ):
-        net_new_snapshot = _update_serving_statuses_before_watermark(
+        all_snapshots = _correct_and_create_serving_statuses_from_watermark(
             sentence=sentence,
             all_snapshots=all_snapshots,
-            watermark_datetime=parent_sentences_final_terminating_status_dt,
-            new_status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
-            new_status_raw_text="Created during normalization from parent sentences' final terminating statuses",
+            serving_watermark_datetime=parent_sentences_final_terminating_status_dt,
+            status_value_to_relace_serving=StateSentenceStatus.IMPOSED_PENDING_SERVING,
+            raw_text_for_new_serving_status="Created during normalization from parent sentences' final terminating statuses",
         )
 
     if (
         delegate.allow_non_credit_serving
         and sentence.current_state_provided_start_date is not None
     ):
-        net_new_snapshot = _update_serving_statuses_before_watermark(
+        all_snapshots = _correct_and_create_serving_statuses_from_watermark(
             sentence=sentence,
             all_snapshots=all_snapshots,
-            watermark_datetime=as_datetime(
+            serving_watermark_datetime=as_datetime(
                 assert_type(sentence.current_state_provided_start_date, datetime.date)
             ),
-            new_status=StateSentenceStatus.NON_CREDIT_SERVING,
-            new_status_raw_text="Created during normalization from current_state_provided_start_date",
+            status_value_to_relace_serving=StateSentenceStatus.NON_CREDIT_SERVING,
+            raw_text_for_new_serving_status="Created during normalization from current_state_provided_start_date",
         )
 
-    if net_new_snapshot is not None:
-        all_snapshots.append(net_new_snapshot)
-
+    # We have possibly created new snapshots, and so we should validate that
+    # there's at most one terminating status (and it is the last one).
+    all_snapshots = _validate_terminating_statuses(
+        sorted_snapshots=all_snapshots, correct_early_completed_statuses=False
+    )
     return _add_end_datetime_and_normalize_sequence_num(snapshots=all_snapshots)

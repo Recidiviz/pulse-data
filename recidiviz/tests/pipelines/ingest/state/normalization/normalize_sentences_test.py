@@ -1113,7 +1113,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
                 status_raw_text=None,
                 sentence=normalized_copy,
-                sentence_status_snapshot_id=9028747032879537611,
+                sentence_status_snapshot_id=9015625368581535695,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -1123,11 +1123,10 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status=StateSentenceStatus.SERVING,
                 status_raw_text="Created during normalization from parent sentences' final terminating statuses",
                 sentence=normalized_copy,
-                sentence_status_snapshot_id=9030207598898236483,
+                sentence_status_snapshot_id=9031313153086874328,
                 sequence_num=2,
             ),
         ]
-
         assert (
             normalized_child_sentence.sentence_status_snapshots
             == normalized_copy.sentence_status_snapshots
