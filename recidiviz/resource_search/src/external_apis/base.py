@@ -37,7 +37,7 @@ class DistanceBias(BaseModel):
 
 
 class ResourceQuery(BaseModel):
-    category: ResourceCategory
+    category: Optional[ResourceCategory] = None
     subcategory: Optional[ResourceSubcategory] = None
     distance_bias: Optional[DistanceBias] = None
     pageSize: Optional[int] = None

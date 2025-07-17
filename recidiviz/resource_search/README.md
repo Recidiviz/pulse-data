@@ -41,6 +41,21 @@ docker build . -f Dockerfile.recidiviz-base -t us-docker.pkg.dev/recidiviz-stagi
 docker compose build resource_search_db
 ```
 
+3. Run the Justice Counts Docker image using the following command:
+
+```bash
+pipenv run docker-resource-search
+```
+
+## Databases
+
+### Connect to the local Postgres database
+
+1. Once you have the Resource Search Docker image running locally, look for `resource_search_db-1` in your Docker dashboard, click on 'Exec'.
+2. In the window that opens, run `psql --dbname postgres -U resource_user`
+3. You should now be able to type psql commands and interact directly with your local database! For example, the `\dt` command will show all of the tables within the database.
+
+
 ## Running Locally
 
 1. Make sure you've followed the steps above to build our Docker image.
@@ -49,4 +64,9 @@ docker compose build resource_search_db
 
 ```bash
 pipenv run docker-resource-search
+```
+3. Run the webscraping job with:
+
+```bash
+pipenv run scrape-resources
 ```

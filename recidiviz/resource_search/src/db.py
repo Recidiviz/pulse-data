@@ -29,7 +29,7 @@ from recidiviz.persistence.database.sqlalchemy_async_engine_manager import (
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
-from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.secrets import get_secret_from_local_directory
 
 _global_engine: Optional[AsyncEngine] = None
 
@@ -40,10 +40,18 @@ async def initialize_global_engine() -> None:
     if _global_engine is None:
         db_url_to_use = (
             local_postgres_helpers.async_on_disk_postgres_db_url(
-                username=get_secret("resource_user"),
-                port=get_secret("resource_search_db_port"),
-                password=get_secret("resource_search_db_password"),
-                database=get_secret("resource_search_db_host"),
+                username=get_secret_from_local_directory(
+                    secret_id="resource_search_db_user"  # nosec
+                ),
+                port=get_secret_from_local_directory(
+                    secret_id="resource_search_db_port"  # nosec
+                ),
+                password=get_secret_from_local_directory(
+                    secret_id="resource_search_db_password"  # nosec
+                ),
+                database=get_secret_from_local_directory(
+                    secret_id="resource_search_db_host"  # nosec
+                ),
             )
             if not in_gcp_staging() or not in_gcp_production()
             else SQLAlchemyAsyncEngineManager.get_server_postgres_asyncpg_instance_url(

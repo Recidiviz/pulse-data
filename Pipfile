@@ -278,3 +278,4 @@ docker-prototypes = "docker compose -f docker-compose.yaml -f docker-compose.pro
 # pipenv run migrate-resource-search -m "your migration message here"
 migrate-resource-search = "docker compose run --rm resource_search_migrations pipenv run alembic -c recidiviz/persistence/database/migrations/resource_search_alembic.ini revision --autogenerate"
 docker-resource-search = "docker compose -f docker-compose.yaml up resource_search_db resource_search_migrations"
+scrape-resources = "python -m recidiviz.resource_search.scraper.scrape"

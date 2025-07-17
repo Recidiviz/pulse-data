@@ -146,12 +146,15 @@ async def process_and_store_candidates(
 
 
 def validate_subcategory(
-    category: ResourceCategory, subcategory: Optional[ResourceSubcategory] = None
+    category: Optional[ResourceCategory] = None,
+    subcategory: Optional[ResourceSubcategory] = None,
 ) -> None:
     """Check if a subcategory is valid for a category"""
     if subcategory is None:
         return
-    valid_subcategories = CATEGORY_SUBCATEGORY_MAP.get(category, [])
+    valid_subcategories = (
+        CATEGORY_SUBCATEGORY_MAP.get(category, []) if category is not None else []
+    )
     if subcategory not in valid_subcategories:
         raise ValueError(
             f"Subcategory {subcategory} is not valid for category {category}."

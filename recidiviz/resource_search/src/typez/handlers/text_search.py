@@ -31,6 +31,6 @@ from recidiviz.resource_search.src.typez.base import PageQueryParams
 
 
 class TextSearchBodyParams(PageQueryParams):
-    category: ResourceCategory
+    category: Optional[ResourceCategory] = None
     textSearch: str
     subcategory: Optional[ResourceSubcategory] = None
