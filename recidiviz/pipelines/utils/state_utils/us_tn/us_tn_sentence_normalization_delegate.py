@@ -26,7 +26,8 @@ class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
     @property
     def allow_non_credit_serving(self) -> bool:
         """TN has an 'oversight board' that revokes credit for time served, so we allow non-credit serving sentences."""
-        return True
+        # TODO(#44222) Flip to True when we appropriately handle unknown completions
+        return False
 
     # TODO(#28869) understand why TN gives us data like this (a sentence really changes,
     # there's an acute data issue, or the originating process is flawed)
