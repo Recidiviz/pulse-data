@@ -98,7 +98,7 @@ products:
       - state_code: US_IX
         environment: production
       - state_code: US_MA
-        environment: staging
+        environment: production
       - state_code: US_MI
         environment: production
       - state_code: US_ME
