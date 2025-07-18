@@ -43,46 +43,6 @@ class TnSentenceStatus(Enum):
     INACTIVE = "IN"
 
 
-class TnInactiveSentenceStatusReason(Enum):
-    """
-    Enumerates the reason a sentence can have an inactive status in TN.
-
-    They are super nice and provide individual boolean columns for each
-    possible reason in the Sentence raw data table.
-    """
-
-    PARDONED = "PARDONED"
-    DISMISSED = "DISMISSED"
-    COMMUTED = "COMMUTED"
-    EXPIRED = "EXPIRED"
-    AWAITING_RETRIAL = "AWAITING_RETRIAL"
-    COURT_ORDERED = "COURT_ORDERED"
-
-    @classmethod
-    def from_raw_text(cls, raw_text: str) -> Optional["TnInactiveSentenceStatusReason"]:
-        if raw_text.upper() == "NONE":
-            return None
-        return cls(raw_text.upper())
-
-    # TODO(#41538) Ingest StateSentenceStatus
-    def to_recidiviz_sentence_status(self) -> StateSentenceStatus:
-        match self:
-            case self.PARDONED:
-                return StateSentenceStatus.PARDONED
-            case self.COMMUTED:
-                return StateSentenceStatus.COMMUTED
-            case self.DISMISSED:
-                return StateSentenceStatus.VACATED
-            case self.EXPIRED:
-                return StateSentenceStatus.COMPLETED
-            case self.AWAITING_RETRIAL | self.COURT_ORDERED:
-                return StateSentenceStatus.SUSPENDED
-            case _:
-                raise ValueError(
-                    f"Inactive sentence status reason {self} is not mapped to a Recidiviz StateSentenceStatus value."
-                )
-
-
 class TnSentencedTo(Enum):
     """
     Enumerates the possible values of SentencedTo in TN.
@@ -173,10 +133,8 @@ def infer_sentence_status(raw_text: str) -> StateSentenceStatus:
     returns the appropriate StateSentenceStatus.
     """
     sentence_status, *flags = raw_text.split("@@")
-    if sentence_status in {"EFFECTIVE", "AC", "PB", "CC"}:
-        return StateSentenceStatus.SERVING
-
     (
+        death,
         pardoned,
         dismissed,
         commuted,
@@ -184,6 +142,12 @@ def infer_sentence_status(raw_text: str) -> StateSentenceStatus:
         awaiting_retrial,
         court_order,
     ) = tuple(map(lambda x: x == "Y", flags))
+
+    if death:
+        return StateSentenceStatus.DEATH
+
+    if sentence_status in {"EFFECTIVE", "AC", "PB", "CC"}:
+        return StateSentenceStatus.SERVING
 
     if pardoned:
         return StateSentenceStatus.PARDONED
@@ -202,6 +166,9 @@ def infer_sentence_status(raw_text: str) -> StateSentenceStatus:
     if awaiting_retrial:
         return StateSentenceStatus.SUSPENDED
 
-    # TODO(#44222) About 15k people have no specific Invalid reason, we mark
-    # them as COMPLETED but should verify appropriate action with TN
+    # TODO(#44222) About 100 people have no specific Invalid reason
+    # and do not have a death date.
+    # Next step is to look more closely into movement reasons
+    # We mark them as COMPLETED but should verify appropriate action
+    # with TN
     return StateSentenceStatus.COMPLETED
