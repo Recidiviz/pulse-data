@@ -17,6 +17,10 @@ RECIDIVIZ_123_PROJECT_ID="recidiviz-123"
 LOOKER_STAGING_PROJECT_ID="recidiviz-looker-staging"
 LOOKER_PROD_PROJECT_ID="recidiviz-looker-123"
 
+LOOKER_DASHBOARD_LINK_PREFIX="https://recidiviz.cloud.looker.com/dashboards/"
+LOOKER_STAGING_DASHBOARD_LINK="${LOOKER_DASHBOARD_LINK_PREFIX}${LOOKER_STAGING_PROJECT_ID}::"
+LOOKER_PROD_DASHBOARD_LINK="${LOOKER_DASHBOARD_LINK_PREFIX}${LOOKER_PROD_PROJECT_ID}::"
+
 function looker_git {
   # Run git commands in the temporary cloned looker repo directory.
   run_cmd git -C "$TEMP_LOOKER_DIR" "$@"
@@ -113,6 +117,14 @@ function create_looker_release_branch {
   run_cmd sed -i "" "s/connection: \"${RECIDIVIZ_STAGING_PROJECT_ID}\"/connection: \"${RECIDIVIZ_123_PROJECT_ID}\"/" "${TEMP_LOOKER_DIR}/models/${LOOKER_PROD_PROJECT_ID}.model.lkml"
   grep -q "connection: \"${RECIDIVIZ_123_PROJECT_ID}\"" "${TEMP_LOOKER_DIR}/models/${LOOKER_PROD_PROJECT_ID}.model.lkml" || {
     echo "Error: Failed to update connection name in model file" >&2
+    exit 1
+  }
+
+  # 4. Update any dashboard links
+  DASHBOARDS_DIR="${TEMP_LOOKER_DIR}/dashboards/"
+  run_cmd find "${DASHBOARDS_DIR}" -type f -exec sed -i "" 's|'"${LOOKER_STAGING_DASHBOARD_LINK}"'|'"${LOOKER_PROD_DASHBOARD_LINK}"'|g' {} +
+  grep -rq "${LOOKER_PROD_DASHBOARD_LINK}" "${DASHBOARDS_DIR}" || {
+    echo "Error: Failed to update dashboard links" >&2
     exit 1
   }
 
