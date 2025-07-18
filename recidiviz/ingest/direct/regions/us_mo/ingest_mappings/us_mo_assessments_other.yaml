@@ -27,7 +27,7 @@ output:
             $enum_mapping:
               $raw_text: ASSESSMENT_TYPE
               $mappings:
-                StateAssessmentType.INTERNAL_UNKNOWN:
+                StateAssessmentType.MO_1270:
                   - "1270"
           assessment_level:
             $enum_mapping:

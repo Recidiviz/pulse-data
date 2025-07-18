@@ -226,6 +226,14 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.CCRRA,
                 StateAssessmentType.AZ_GEN_RISK_LVL,
                 StateAssessmentType.AZ_VLNC_RISK_LVL,
+                StateAssessmentType.MO_CLASSIFICATION_E,
+                StateAssessmentType.MO_CLASSIFICATION_MH,
+                StateAssessmentType.MO_CLASSIFICATION_M,
+                StateAssessmentType.MO_CLASSIFICATION_W,
+                StateAssessmentType.MO_CLASSIFICATION_V,
+                StateAssessmentType.MO_CLASSIFICATION_I,
+                StateAssessmentType.MO_CLASSIFICATION_P,
+                StateAssessmentType.MO_1270,
             ]:
                 logging.warning(
                     "Cannot determine assessment score bucket - assessment type %s is unsupported.",

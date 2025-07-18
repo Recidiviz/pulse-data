@@ -34,6 +34,8 @@ output:
               $mappings:
                 StateAssessmentClass.EDUCATION:
                   - "CLASSIFICATION-E"
+                StateAssessmentClass.MEDICAL:
+                  - "CLASSIFICATION-M"
                 StateAssessmentClass.MENTAL_HEALTH:
                   - "CLASSIFICATION-MH"
                   - "940-MEN"
@@ -43,13 +45,14 @@ output:
                   - "960"
                   - "320-MEN"
                   - "340-WOMEN"
-                StateAssessmentClass.INTERNAL_UNKNOWN:
+                StateAssessmentClass.WORK:
                   - "CLASSIFICATION-W"
                   - "CLASSIFICATION-V"
+                StateAssessmentClass.RISK:
                   - "CLASSIFICATION-I"
                   - "CLASSIFICATION-P"
+                StateAssessmentClass.INTERNAL_UNKNOWN:
                   - "CLASSIFICATION-F"
-                  - "CLASSIFICATION-M"
           assessment_type:
             $enum_mapping:
               $raw_text: assessment_type
@@ -64,15 +67,22 @@ output:
                   - "340-WOMEN"
                 StateAssessmentType.TCU_DRUG_SCREEN:
                   - "960"
-                StateAssessmentType.INTERNAL_UNKNOWN:
+                StateAssessmentType.MO_CLASSIFICATION_E:
                   - "CLASSIFICATION-E"
+                StateAssessmentType.MO_CLASSIFICATION_MH:
                   - "CLASSIFICATION-MH"
-                  - "CLASSIFICATION-W"
-                  - "CLASSIFICATION-V"
-                  - "CLASSIFICATION-I"
-                  - "CLASSIFICATION-P"
-                  - "CLASSIFICATION-F"
+                StateAssessmentType.MO_CLASSIFICATION_M:
                   - "CLASSIFICATION-M"
+                StateAssessmentType.MO_CLASSIFICATION_W:
+                  - "CLASSIFICATION-W"
+                StateAssessmentType.MO_CLASSIFICATION_V:
+                  - "CLASSIFICATION-V"
+                StateAssessmentType.MO_CLASSIFICATION_I:
+                  - "CLASSIFICATION-I"
+                StateAssessmentType.MO_CLASSIFICATION_P:
+                  - "CLASSIFICATION-P"
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - "CLASSIFICATION-F"
           assessment_score: assessment_score
           assessment_metadata:
             $normalized_values_json_dict:

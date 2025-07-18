@@ -33,6 +33,8 @@ class StateAssessmentClass(StateEntityEnum):
     SEX_OFFENSE = state_enum_strings.state_assessment_class_sex_offense
     SOCIAL = state_enum_strings.state_assessment_class_social
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
+    MEDICAL = state_enum_strings.state_assessment_class_medical
+    WORK = state_enum_strings.state_assessment_class_work
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -57,6 +59,8 @@ _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "attitudes and beliefs of an individual.",
     StateAssessmentClass.SUBSTANCE_ABUSE: "Describes an assessment that evaluates the "
     "degree of substance use by an individual.",
+    StateAssessmentClass.MEDICAL: "Describes an assessment that evaluates the health and/or medical history of an individual.",
+    StateAssessmentClass.WORK: "Describes an assessment that evaluates the work experience and/or potential to gain employment.",
 }
 
 
@@ -117,6 +121,14 @@ class StateAssessmentType(StateEntityEnum):
     CCRRA = state_enum_strings.state_assessment_type_ccrra
     AZ_GEN_RISK_LVL = state_enum_strings.state_assessment_type_az_gen_risk_lvl
     AZ_VLNC_RISK_LVL = state_enum_strings.state_assessment_type_az_vlnc_risk_lvl
+    MO_CLASSIFICATION_E = state_enum_strings.state_assessment_type_mo_classification_e
+    MO_CLASSIFICATION_MH = state_enum_strings.state_assessment_type_mo_classification_mh
+    MO_CLASSIFICATION_M = state_enum_strings.state_assessment_type_mo_classification_m
+    MO_CLASSIFICATION_W = state_enum_strings.state_assessment_type_mo_classification_w
+    MO_CLASSIFICATION_V = state_enum_strings.state_assessment_type_mo_classification_v
+    MO_CLASSIFICATION_I = state_enum_strings.state_assessment_type_mo_classification_i
+    MO_CLASSIFICATION_P = state_enum_strings.state_assessment_type_mo_classification_p
+    MO_1270 = state_enum_strings.state_assessment_type_mo_1270
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -185,6 +197,14 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.CCRRA: "Arizona Community Corrections Risk Release Assessment",
     StateAssessmentType.AZ_GEN_RISK_LVL: "Arizona Community General Risk Level",
     StateAssessmentType.AZ_VLNC_RISK_LVL: "Arizona Community Violence Risk Level",
+    StateAssessmentType.MO_CLASSIFICATION_E: "Missouri “E” (Education) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_MH: "Missouri “MH” (Mental Health) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_M: "Missouri “M” (Medical) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_W: "Missouri “W” (Work) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_V: "Missouri “V” (Vocational) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_I: "Missouri “I” (Institutional Risk) Assessment",
+    StateAssessmentType.MO_CLASSIFICATION_P: "Missouri “P” (Public Risk) Assessment",
+    StateAssessmentType.MO_1270: "Missouri Gang/STG Affiliation Assessment",
 }
 
 
