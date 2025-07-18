@@ -30,4 +30,5 @@ recidiviz/tests/calculator/query/state/views/reference/product_person_external_i
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/tools/looker/generated/** @emilyemilyemilyemilyemilyemily
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
+recidiviz/view_registry/deployed_view_external_id_exemptions.py @ageiduschek, @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners

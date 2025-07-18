@@ -62,6 +62,9 @@ from recidiviz.validation.views.view_config import (
 from recidiviz.view_registry.deployed_address_schema_utils import (
     get_deployed_addresses_without_state_code_column,
 )
+from recidiviz.view_registry.deployed_view_external_id_exemptions import (
+    get_known_views_with_unqualified_external_id,
+)
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
@@ -150,6 +153,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     _view_builders_to_update: list[BigQueryViewBuilder] = []
     _source_table_addresses: list[BigQueryAddress] = []
     _known_no_state_col_addresses: set[BigQueryAddress] = set()
+    _known_has_external_id_addresses: set[BigQueryAddress] = set()
 
     @classmethod
     def _get_gcp_project_id(cls) -> str:
@@ -174,6 +178,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 get_deployed_addresses_without_state_code_column(
                     cls._get_gcp_project_id()
                 )
+            )
+            cls._known_has_external_id_addresses = (
+                get_known_views_with_unqualified_external_id(cls._get_gcp_project_id())
             )
 
         if cls.addresses_to_test:
@@ -248,6 +255,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     def _run_view_schema_checks(self) -> None:
         view_address_to_schema = self._load_view_schemas_by_address()
         self._verify_views_all_have_state_code_column(view_address_to_schema)
+        self._verify_views_have_no_unqualified_external_id_columns(
+            view_address_to_schema
+        )
         # TODO(#44757): Enforce no views have an ambiguous `external_id` column name
         #  (with exemptions)
 
@@ -337,6 +347,81 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 f"by get_deployed_addresses_without_state_code_column() but which have "
                 f"a state_code column:{addresses_list}\nThese should be removed from "
                 f"that list."
+            )
+
+    def _verify_views_have_no_unqualified_external_id_columns(
+        self,
+        view_address_to_schema: dict[
+            BigQueryAddress, list[bigquery.SchemaField] | None
+        ],
+    ) -> None:
+        """Validates that no view in our BQ view graph has a column named "external_id".
+        All external id columns should have a qualified name, like sentence_external_id
+        or stable_person_external_id.
+        """
+        no_external_id_addresses = set()
+        has_external_id_addresses = set()
+        skipped_addresses = set()
+        for address, schema in view_address_to_schema.items():
+            if schema is None:
+                # This view was skipped for optimization reasons, do not check for a
+                # state_code column.
+                skipped_addresses.add(address)
+                continue
+
+            has_external_id_col = self._schema_has_field(schema, "external_id")
+            if not has_external_id_col:
+                no_external_id_addresses.add(address)
+            else:
+                has_external_id_addresses.add(address)
+
+        expected_has_external_id_addresses = {
+            a
+            for a in self._known_has_external_id_addresses
+            if a not in skipped_addresses
+        }
+
+        invalid_addresses = expected_has_external_id_addresses - set(
+            view_address_to_schema
+        )
+        if invalid_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                invalid_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found addresses returned by "
+                f"get_known_views_with_unqualified_external_id() which are not a valid "
+                f"view address: {addresses_list}"
+            )
+
+        unexpected_has_external_id_addresses = (
+            has_external_id_addresses - expected_has_external_id_addresses
+        )
+        if unexpected_has_external_id_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_has_external_id_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found unexpected views with an unqualified external_id column:"
+                f"{addresses_list}\nThe name external_id is not specific enough and "
+                f"can lead to confusion. Please rename to a more specific name, like "
+                f"sentence_external_id or display_person_external_id. If there is an "
+                f"expected reason why this view has an external_id column (rare!), "
+                f"please discuss with someone on Doppler and then add it to "
+                f"_KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN."
+            )
+
+        unexpected_no_external_id_addresses = no_external_id_addresses.intersection(
+            expected_has_external_id_addresses
+        )
+        if unexpected_no_external_id_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_no_external_id_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found views / tables that do not have an external_id columns but are "
+                f"listed in _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN:"
+                f"{addresses_list}\nThese should be removed from that list (yay!)."
             )
 
     @classmethod
