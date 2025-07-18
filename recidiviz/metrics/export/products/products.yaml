@@ -170,3 +170,14 @@ products:
     states:
       - state_code: US_IX
         environment: production
+  - name: Reentry
+    description: Views that back the Reentry product
+    exports:
+      - REENTRY
+    states:
+      - state_code: US_AZ
+        environment: staging
+      - state_code: US_IX
+        environment: staging
+      - state_code: US_UT
+        environment: staging

@@ -50,6 +50,9 @@ from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_not
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.reentry.reentry_views import (
+    REENTRY_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -253,6 +256,7 @@ CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-case-notes-vertex-search-data"
 )
 JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data"
+REENTRY_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-reentry-etl-data"
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
@@ -420,6 +424,19 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
         },
         publish_success_pubsub_message=True,
+    ),
+    # Reentry views
+    ExportViewCollectionConfig(
+        view_builders_to_export=REENTRY_VIEW_BUILDERS,
+        output_directory_uri_template=REENTRY_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="REENTRY",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+        output_project_by_data_project={
+            GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
+            GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
+        },
+        publish_success_pubsub_message=False,
     ),
 ]
 

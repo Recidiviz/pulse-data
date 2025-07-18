@@ -87,15 +87,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reentry.case_manager import (
-    REENTRY_CASE_MANAGER_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reentry.client import (
-    REENTRY_CLIENT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
-    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -482,15 +473,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
-    ),
-    REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
-        "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
-    ),
-    REENTRY_CLIENT_VIEW_BUILDER.address: (
-        "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
-    ),
-    REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER.address: (
-        "Will be used to power reentry tooling (Roshan Agrawal 04/22/2025)"
     ),
     SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
         "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
