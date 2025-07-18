@@ -21,6 +21,7 @@ import os
 import pwd
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional
 
 
@@ -182,6 +183,7 @@ def run_command(
     assert_success: bool = True,
     as_user: Optional[pwd.struct_passwd] = None,
     timeout_sec: int = 15,
+    cwd: Optional[Path] = None,
 ) -> str:
     """Runs the given command, waiting for it to complete before returning output.
     Throws if the command exits with a non-zero return code.
@@ -197,6 +199,7 @@ def run_command(
         stderr=subprocess.PIPE,
         text=True,
         preexec_fn=_get_run_as_user_fn(as_user) if as_user else None,
+        cwd=cwd,
     ) as proc:
         try:
             out, err = proc.communicate(timeout=timeout_sec)

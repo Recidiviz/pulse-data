@@ -25,7 +25,11 @@ from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
 GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH = 65536
 GITHUB_HELPERBOT_TOKEN_SECRET_NAME = "github_deploy_script_pat"  # nosec
-RECIDIVIZ_DATA_REPO = "Recidiviz/pulse-data"
+
+RECIDIVIZ_GITHUB_ORGANIZATION = "Recidiviz"
+RECIDIVIZ_DATA_REPO = f"{RECIDIVIZ_GITHUB_ORGANIZATION}/pulse-data"
+LOOKER_REPO_NAME = f"{RECIDIVIZ_GITHUB_ORGANIZATION}/looker"
+
 HELPERBOT_USER_NAME = "helperbot-recidiviz"
 __gh_helperbot_client = None
 
@@ -40,11 +44,44 @@ def github_helperbot_client() -> Github:
     return __gh_helperbot_client
 
 
-def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -> None:
-    """Adds a comment with the given |body| to the specified pull request, or overwrites an existing comment
-    with the |body| if a Helperbot-issued comment starting with |existing_comment_prefix| is found.
-    """
-    github_client = github_helperbot_client()
+def open_pr_if_not_exists(
+    github_client: Github,
+    title: str,
+    body: str,
+    head_branch_name: str,
+    base_branch_name: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> str:
+    """Opens a pull request with the given title, body, head, and base branch
+    if a pull request with the same head and base branch doesn't already exist.
+    Returns the URL of the pull request."""
+    repo_obj = github_client.get_repo(repo)
+    existing_prs = repo_obj.get_pulls(
+        state="open",
+        head=f"{RECIDIVIZ_GITHUB_ORGANIZATION}:{head_branch_name}",
+        base=base_branch_name,
+    )
+    if existing_prs:
+        return one(existing_prs).html_url
+
+    body_length_safe = truncate_string_if_necessary(
+        body, max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH
+    )
+    pr = repo_obj.create_pull(
+        title=title,
+        body=body_length_safe,
+        head=head_branch_name,
+        base=base_branch_name,
+    )
+    return pr.html_url
+
+
+def upsert_pr_comment(
+    github_client: Github,
+    pull_request_number: int,
+    body: str,
+    prefix: str,
+) -> None:
     pull_request = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_pull(
         pull_request_number
     )
@@ -63,6 +100,20 @@ def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -
         comment.edit(body=body_length_safe)
     except ValueError:
         pull_request.create_issue_comment(body=body_length_safe)
+
+
+def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -> None:
+    """Adds a comment with the given |body| to the specified pull request, or overwrites an existing comment
+    with the |body| if a Helperbot-issued comment starting with |existing_comment_prefix| is found. You must
+    have google secrets access to use this function.
+    """
+    github_client = github_helperbot_client()
+    upsert_pr_comment(
+        github_client=github_client,
+        pull_request_number=pull_request_number,
+        body=body,
+        prefix=prefix,
+    )
 
 
 def format_region_specific_ticket_title(
