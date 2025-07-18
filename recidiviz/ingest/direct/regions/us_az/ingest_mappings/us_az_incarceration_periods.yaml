@@ -150,11 +150,8 @@ output:
                   - DC to Probation
                   - Provisional Release
                   - Standard Transition Release
-                  - Absolute Discharge
                   - Paroled - Regular
-                  - NEW CODE - Earned Release
                   - Drug Transition Release
-                  - OLD/NEW CODE - Expiration
                   - Mandatory Release
                   - Parole (Early/Emergency)
                   - Release ISC
@@ -169,6 +166,9 @@ output:
                   - SHOCK Incarceration End
                   - Shock Incarceration Release
                   - Close Prison Episode
+                  - Absolute Discharge
+                  - NEW CODE - Earned Release
+                  - OLD/NEW CODE - Expiration
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - CLASSIFICATION
                   - Received from Overcrowding

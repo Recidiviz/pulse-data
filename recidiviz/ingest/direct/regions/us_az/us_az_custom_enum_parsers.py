@@ -355,17 +355,20 @@ def parse_supervision_level(raw_text: str) -> Optional[StateSupervisionLevel]:
             return StateSupervisionLevel.LIMITED
         if supervision_level in ("MIN", "LOW"):
             return StateSupervisionLevel.MINIMUM
-        if supervision_level == "LOW/MODERATE":
-            return StateSupervisionLevel.LOW_MEDIUM
-        if supervision_level in ("MED", "MODERATE"):
+        if supervision_level in ("MED", "MOD"):
             return StateSupervisionLevel.MEDIUM
-        if supervision_level == "INT":
+        if supervision_level in ("INT", "HIG"):
             return StateSupervisionLevel.HIGH
         if supervision_level == "MAX":
             return StateSupervisionLevel.MAXIMUM
         if supervision_level == "UNK":
             return StateSupervisionLevel.EXTERNAL_UNKNOWN
         return StateSupervisionLevel.INTERNAL_UNKNOWN
+
+    # If a person does not have an assigned supervision level and has just begun
+    # their period of supervision, assign them to INTAKE.
+    if admission_reason == "DPPE START":
+        return StateSupervisionLevel.INTAKE
 
     # If none of the above cases are true, we do not know this person's supervision level.
     return StateSupervisionLevel.PRESENT_WITHOUT_INFO
