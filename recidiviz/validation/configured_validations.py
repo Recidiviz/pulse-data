@@ -87,7 +87,10 @@ from recidiviz.validation.views.state.incarceration_population_by_prioritized_ra
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import (
+from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people_with_custody_level import (
+    INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_CUSTODY_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people_with_facility import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_release_person_level_external_comparison import (
@@ -872,6 +875,14 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_FACILITY_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=["external_facility", "internal_facility"],
+            partition_columns=["region_code", "date_of_stay"],
+            hard_max_allowed_error=0.02,
+            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_WITH_CUSTODY_LEVEL_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=["external_custody_level", "internal_custody_level"],
             partition_columns=["region_code", "date_of_stay"],
             hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
