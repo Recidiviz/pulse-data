@@ -5,6 +5,8 @@ input_columns:
   prevInmateNumber: STRING
   is_current_display_id_for_type: BOOLEAN
   prev_is_current_display_id_for_type: BOOLEAN
+  is_stable_id_for_type: BOOLEAN
+  prev_is_stable_id_for_type: BOOLEAN
   receivedDate: DATE
   prev_receivedDate: DATE
 unused_columns: []
@@ -19,6 +21,10 @@ output:
             $equal:
               - is_current_display_id_for_type
               - $literal("True")
+          is_stable_id_for_type:
+            $equal:
+              - is_stable_id_for_type
+              - $literal("True")
       - $conditional:
           - $if:
               $not_null: prevInmateNumber
@@ -30,4 +36,8 @@ output:
                 is_current_display_id_for_type:
                   $equal:
                     - prev_is_current_display_id_for_type
+                    - $literal("True")
+                is_stable_id_for_type:
+                  $equal:
+                    - prev_is_stable_id_for_type
                     - $literal("True")
