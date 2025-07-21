@@ -120,7 +120,7 @@ jobs:
 
   pylint:
     name: Pylint
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=8
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=16
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -142,6 +142,8 @@ jobs:
         run: pipenv run pip install pylint
       - name: Pylint
         run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
+        env:
+          PYLINTHOME: ${{ github.workspace }}/.cache/pylint
 
   mypy:
     name: Mypy
