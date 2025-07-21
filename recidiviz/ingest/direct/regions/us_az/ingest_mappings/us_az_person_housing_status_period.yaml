@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person_housing_status_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  person_id: STRING
+  location_id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  housing_status_type: STRING
+  street_name: STRING
+unused_columns:
+  - street_name
+  - location_id
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_id
+          id_type: $literal("US_AZ_PERSON_ID")
+    housing_status_periods:
+      - StatePersonHousingStatusPeriod:
+          housing_status_start_date: start_date
+          housing_status_end_date: end_date
+          housing_status_type:
+            $enum_mapping:
+              $raw_text: housing_status_type
+              $mappings:
+                StatePersonHousingStatusType.UNHOUSED:
+                  - "unhoused"
+                StatePersonHousingStatusType.FACILITY:
+                  - "facility"
+                StatePersonHousingStatusType.PERMANENT_RESIDENCE:
+                  - "permanent_residence"
+                StatePersonHousingStatusType.EXTERNAL_UNKNOWN:
+                  - "external_unknown"

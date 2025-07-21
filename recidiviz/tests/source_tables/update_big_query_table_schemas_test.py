@@ -163,6 +163,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_az_ingest_view_results.mh_assessment",
     "us_az_ingest_view_results.nonstate_sentence",
     "us_az_ingest_view_results.oras_assessment",
+    "us_az_ingest_view_results.person_housing_status_period",
     "us_az_ingest_view_results.program_assignment",
     "us_az_ingest_view_results.state_person",
     "us_az_ingest_view_results.state_sentence",
