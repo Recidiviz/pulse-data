@@ -21,7 +21,9 @@ import logging
 import os
 import pwd
 import shutil
+import socket
 import tempfile
+import time
 from typing import Dict, Optional
 
 from sqlalchemy.engine import URL
@@ -60,7 +62,7 @@ def can_start_on_disk_postgresql_database() -> bool:
 
 
 def get_on_disk_postgres_log_dir_prefix() -> str:
-    return f"postgres{get_pytest_worker_id()}"
+    return f"postgres_log_{get_pytest_worker_id()}_"
 
 
 @environment.local_only
@@ -189,6 +191,11 @@ def stop_and_clear_on_disk_postgresql_database(
     shutil.rmtree(temp_db_data_dir)
 
 
+def is_port_in_use(port: int) -> int | None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("localhost", port)) == 0
+
+
 def _stop_on_disk_postgresql_database(
     temp_db_data_dir: str, assert_success: bool = True
 ) -> None:
@@ -196,11 +203,26 @@ def _stop_on_disk_postgresql_database(
     password_record = (
         pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
     )
+
     run_command(
-        f"pg_ctl -D {temp_db_data_dir} -o '-p {get_on_disk_postgres_port()}' stop",
+        f"pg_ctl -D {temp_db_data_dir} -o '-p {get_on_disk_postgres_port()}' stop -m immediate",
         as_user=password_record,
         assert_success=assert_success,
     )
+
+    if assert_success:
+        # Raise an error and print logs if the server did not stop
+        interval = 0.1
+        attempts = 0
+        max_tries = 30
+
+        while attempts < max_tries and is_port_in_use(get_on_disk_postgres_port()):
+            time.sleep(interval)
+            attempts += 1
+
+        if attempts == max_tries:
+            print_all_on_disk_postgresql_logs()
+            raise TimeoutError("Failed to stop postgres within the timeout period")
 
 
 def get_on_disk_postgres_port() -> int:
@@ -213,6 +235,19 @@ def get_on_disk_postgres_database_name() -> str:
 
 def get_on_disk_postgres_temp_dir_prefix() -> str:
     return f"postgres{get_pytest_worker_id()}_"
+
+
+def print_all_on_disk_postgresql_logs() -> None:
+    temp_dir = tempfile.gettempdir()
+    for entry in os.scandir(temp_dir):
+        if not entry.is_file():
+            continue
+        prefix = get_on_disk_postgres_log_dir_prefix()
+        filename = entry.name
+        if filename.startswith(prefix):
+            with open(entry.path, "r", encoding="utf-8") as f:
+                contents = f.read()
+                print(f"Contents of {entry.path}:\n{contents}")
 
 
 @environment.local_only

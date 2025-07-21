@@ -32,7 +32,7 @@ from airflow.utils.context import Context
 from airflow.utils.db import initdb, resetdb
 from airflow.utils.state import DagRunState, State, TaskInstanceState
 from airflow.utils.types import DagRunType
-from sqlalchemy.orm import DeclarativeMeta, Session
+from sqlalchemy.orm import DeclarativeMeta, Session, close_all_sessions
 
 from recidiviz import airflow as recidiviz_airflow_module
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -99,10 +99,11 @@ class AirflowIntegrationTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
+        close_all_sessions()
+        cls.environment_patcher.stop()
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
-        cls.environment_patcher.stop()
 
     def setUp(self) -> None:
         self.engine = settings.engine
