@@ -2013,31 +2013,30 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             r"exactly one must be set",
         )
 
-    # TODO(#45291): Reenable this test once this check is enabled in validator.py
-    # def test_error_no_stable_id_set(self) -> None:
-    #     person = self.make_person(
-    #         external_ids=[
-    #             self._make_normalized_external_id(
-    #                 index=1,
-    #                 external_id="ID1",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #             self._make_normalized_external_id(
-    #                 index=2,
-    #                 external_id="ID2",
-    #                 is_current_display_id_for_type=True,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #         ]
-    #     )
-    #     errors: list[str] = list(validate_root_entity(person))
-    #     self.assertEqual(len(errors), 1)
-    #     self.assertRegex(
-    #         errors[0],
-    #         r"Found no NormalizedStatePersonExternalId.*with type \[US_XX_ID_TYPE\].*"
-    #         r"exactly one must be set",
-    #     )
+    def test_error_no_stable_id_set(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found no NormalizedStatePersonExternalId.*with type \[US_XX_ID_TYPE\].*"
+            r"exactly one must be set",
+        )
 
     def test_error_multiple_display_ids_set(self) -> None:
         person = self.make_person(
@@ -2070,37 +2069,36 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
             r"\[US_XX_ID_TYPE\].*exactly one must be set",
         )
 
-    # TODO(#45291): Reenable this test once this check is enabled in validator.py
-    # def test_error_multiple_stable_ids_set(self) -> None:
-    #     person = self.make_person(
-    #         external_ids=[
-    #             self._make_normalized_external_id(
-    #                 index=1,
-    #                 external_id="ID1",
-    #                 is_current_display_id_for_type=True,
-    #                 is_stable_id_for_type=True,
-    #             ),
-    #             self._make_normalized_external_id(
-    #                 index=2,
-    #                 external_id="ID2",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=True,
-    #             ),
-    #             self._make_normalized_external_id(
-    #                 index=3,
-    #                 external_id="ID3",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #         ]
-    #     )
-    #     errors: list[str] = list(validate_root_entity(person))
-    #     self.assertEqual(len(errors), 1)
-    #     self.assertRegex(
-    #         errors[0],
-    #         r"Found multiple \(2\) NormalizedStatePersonExternalId.*with type "
-    #         r"\[US_XX_ID_TYPE\].*exactly one must be set",
-    #     )
+    def test_error_multiple_stable_ids_set(self) -> None:
+        person = self.make_person(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(person))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found multiple \(2\) NormalizedStatePersonExternalId.*with type "
+            r"\[US_XX_ID_TYPE\].*exactly one must be set",
+        )
 
     def test_valid_multiple_types_with_one_display_and_stable_each(self) -> None:
         person = self.make_person(

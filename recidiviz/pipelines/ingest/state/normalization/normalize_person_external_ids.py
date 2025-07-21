@@ -83,9 +83,16 @@ def _convert_person_external_ids_of_type(
     if len(external_ids_of_type) == 1:
         pei = one(external_ids_of_type)
         pei.is_current_display_id_for_type = True
+        pei.is_stable_id_for_type = True
         return [_convert_person_external_id_strict(pei)]
 
     display_id_of_type = delegate.select_display_id_for_person_external_ids_of_type(
+        state_code=state_code,
+        person_id=person_id,
+        id_type=id_type,
+        person_external_ids_of_type=external_ids_of_type,
+    )
+    stable_id_of_type = delegate.select_stable_id_for_person_external_ids_of_type(
         state_code=state_code,
         person_id=person_id,
         id_type=id_type,
@@ -95,6 +102,7 @@ def _convert_person_external_ids_of_type(
         pei.is_current_display_id_for_type = (
             pei.external_id == display_id_of_type.external_id
         )
+        pei.is_stable_id_for_type = pei.external_id == stable_id_of_type.external_id
     return [
         _convert_person_external_id_strict(pei)
         for pei in sorted(external_ids_of_type, key=lambda p: p.external_id)
@@ -115,9 +123,7 @@ def _convert_person_external_id_strict(
         is_current_display_id_for_type=assert_type(
             pei.is_current_display_id_for_type, bool
         ),
-        # TODO(#45291): Change to assert_type here once is_stable_id_for_type is hydrated
-        #  for all external_ids.
-        is_stable_id_for_type=pei.is_stable_id_for_type,
+        is_stable_id_for_type=assert_type(pei.is_stable_id_for_type, bool),
         id_active_from_datetime=pei.id_active_from_datetime,
         id_active_to_datetime=pei.id_active_from_datetime,
     )

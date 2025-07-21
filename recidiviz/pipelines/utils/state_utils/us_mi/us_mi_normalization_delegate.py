@@ -20,6 +20,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_person_external_id,
+    select_alphabetically_lowest_person_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -44,5 +45,23 @@ class UsMiNormalizationDelegate(StateSpecificNormalizationDelegate):
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per person and no "
             f"is_current_display_id_for_type set at ingest time: "
+            f"{person_external_ids_of_type}"
+        )
+
+    def select_stable_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        person_id: int,
+        id_type: str,
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        if id_type == US_MI_DOC_BOOK:
+            return select_alphabetically_lowest_person_external_id(
+                person_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per person and no "
+            f"is_stable_id_for_type set at ingest time: "
             f"{person_external_ids_of_type}"
         )

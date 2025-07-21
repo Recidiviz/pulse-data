@@ -128,9 +128,7 @@ class TestNormalizeStatePerson(unittest.TestCase):
                     external_id="ELITE_ID_123",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=True,
-                    # TODO(#45291): This value should change to True once normalization
-                    #  for this field is implemented.
-                    is_stable_id_for_type=None,
+                    is_stable_id_for_type=True,
                     id_active_from_datetime=None,
                     id_active_to_datetime=None,
                 )

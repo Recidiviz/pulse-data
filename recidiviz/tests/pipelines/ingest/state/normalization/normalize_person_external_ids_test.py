@@ -28,6 +28,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_person_external_id,
+    select_alphabetically_lowest_person_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_person_external_ids import (
     get_normalized_person_external_ids,
@@ -41,7 +42,11 @@ class DefaultDelegate(StateSpecificNormalizationDelegate):
     pass
 
 
-class PickAlphabeticallyHighestDelegate(StateSpecificNormalizationDelegate):
+class PickAlphabeticallyHighestAndLowestDelegate(StateSpecificNormalizationDelegate):
+    """Delegate implementation that picks the lowest alphabetical id as the stable id
+    and the highest alphabetical id as the display id.
+    """
+
     def select_display_id_for_person_external_ids_of_type(
         self,
         state_code: StateCode,
@@ -50,6 +55,17 @@ class PickAlphabeticallyHighestDelegate(StateSpecificNormalizationDelegate):
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
         return select_alphabetically_highest_person_external_id(
+            person_external_ids_of_type
+        )
+
+    def select_stable_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        person_id: int,
+        id_type: str,
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        return select_alphabetically_lowest_person_external_id(
             person_external_ids_of_type
         )
 
@@ -63,6 +79,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         external_id: str,
         id_type: str = "US_XX_ID_TYPE",
         is_current_display_id_for_type: bool | None = None,
+        is_stable_id_for_type: bool | None = None,
     ) -> StatePersonExternalId:
         return StatePersonExternalId(
             person_external_id_id=1,
@@ -70,6 +87,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             external_id=external_id,
             id_type=id_type,
             is_current_display_id_for_type=is_current_display_id_for_type,
+            is_stable_id_for_type=is_stable_id_for_type,
             id_active_from_datetime=None,
             id_active_to_datetime=None,
         )
@@ -80,9 +98,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         external_id: str,
         id_type: str = "US_XX_ID_TYPE",
         is_current_display_id_for_type: bool,
-        # TODO(#45291): Make non-optional and remove default once we expect
-        #  is_stable_id_for_type to always be hydrated.
-        is_stable_id_for_type: bool | None = None,
+        is_stable_id_for_type: bool,
     ) -> NormalizedStatePersonExternalId:
         return NormalizedStatePersonExternalId(
             person_external_id_id=1,
@@ -101,17 +117,19 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             state_code=StateCode.US_XX,
             person_id=12345,
             external_ids=[pei],
-            delegate=PickAlphabeticallyHighestDelegate(),
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
 
         expected_result = [
             self._make_normalized_external_id(
-                external_id="ID1", is_current_display_id_for_type=True
+                external_id="ID1",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=True,
             )
         ]
         self.assertEqual(expected_result, result)
 
-    def test_multiple_ids_delegate_selects_display(self) -> None:
+    def test_multiple_ids_delegate_selects_display_and_stable(self) -> None:
         ids = [
             self._make_unnormalized_external_id(external_id="ID1"),
             self._make_unnormalized_external_id(external_id="ID3"),
@@ -121,18 +139,26 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             state_code=StateCode.US_XX,
             person_id=12345,
             external_ids=ids,
-            delegate=PickAlphabeticallyHighestDelegate(),
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
         expected_result = [
             self._make_normalized_external_id(
-                external_id="ID1", is_current_display_id_for_type=False
+                external_id="ID1",
+                is_current_display_id_for_type=False,
+                # Lowest alphabetical id is the stable id
+                is_stable_id_for_type=True,
             ),
             self._make_normalized_external_id(
-                external_id="ID2", is_current_display_id_for_type=False
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=False,
             ),
             # This ID selected
             self._make_normalized_external_id(
-                external_id="ID3", is_current_display_id_for_type=True
+                external_id="ID3",
+                # Highest alphabetical id is the stable id
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
         ]
         self.assertEqual(expected_result, result)
@@ -156,28 +182,32 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
             state_code=StateCode.US_XX,
             person_id=12345,
             external_ids=ids,
-            delegate=PickAlphabeticallyHighestDelegate(),
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
         expected_result = [
             self._make_normalized_external_id(
                 external_id="A",
                 id_type="US_XX_ID_TYPE",
                 is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
             ),
             self._make_normalized_external_id(
                 external_id="B",
                 id_type="US_XX_ID_TYPE",
                 is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
             self._make_normalized_external_id(
                 external_id="X",
                 id_type="US_XX_ID_TYPE_2",
                 is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
             ),
             self._make_normalized_external_id(
                 external_id="Y",
                 id_type="US_XX_ID_TYPE_2",
                 is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
         ]
         self.assertEqual(expected_result, result)
@@ -187,9 +217,24 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         "state_specific_normalization_delegate."
         "person_external_id_types_with_allowed_multiples_per_person"
     )
-    def test_raises_if_some_ids_have_display_flag_and_others_do_not_with_default_delegate(
+    def test_raises_if_some_ids_have_display_flag_and_others_do_not(
         self, mock_allowed_types_with_multiples: mock.MagicMock
     ) -> None:
+        class _DefaultDisplayIdNormalizationDelegate(
+            StateSpecificNormalizationDelegate
+        ):
+            # Only override is for stable_id normalization
+            def select_stable_id_for_person_external_ids_of_type(
+                self,
+                state_code: StateCode,
+                person_id: int,
+                id_type: str,
+                person_external_ids_of_type: list[StatePersonExternalId],
+            ) -> StatePersonExternalId:
+                return select_alphabetically_lowest_person_external_id(
+                    person_external_ids_of_type
+                )
+
         mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
         ids = [
             self._make_unnormalized_external_id(
@@ -209,7 +254,7 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
                 state_code=StateCode.US_XX,
                 person_id=12345,
                 external_ids=ids,
-                delegate=DefaultDelegate(),
+                delegate=_DefaultDisplayIdNormalizationDelegate(),
             )
 
     @patch(
@@ -217,17 +262,64 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         "state_specific_normalization_delegate."
         "person_external_id_types_with_allowed_multiples_per_person"
     )
-    def test_all_ids_have_display_flags_preserved_default_delegate(
+    def test_raises_if_some_ids_have_stable_flag_and_others_do_not(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        class _DefaultStableIdNormalizationDelegate(StateSpecificNormalizationDelegate):
+            # Only override is for display_id normalization
+            def select_display_id_for_person_external_ids_of_type(
+                self,
+                state_code: StateCode,
+                person_id: int,
+                id_type: str,
+                person_external_ids_of_type: list[StatePersonExternalId],
+            ) -> StatePersonExternalId:
+                return select_alphabetically_highest_person_external_id(
+                    person_external_ids_of_type
+                )
+
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
+        ids = [
+            self._make_unnormalized_external_id(
+                external_id="ID1", is_stable_id_for_type=True
+            ),
+            self._make_unnormalized_external_id(
+                external_id="ID2", is_stable_id_for_type=None
+            ),
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            r"If you are going to rely on directly hydrated "
+            r"is_stable_id_for_type values, you must hydrate it for ALL "
+            r"external ids of this type \(US_XX_ID_TYPE\).",
+        ):
+            get_normalized_person_external_ids(
+                state_code=StateCode.US_XX,
+                person_id=12345,
+                external_ids=ids,
+                delegate=_DefaultStableIdNormalizationDelegate(),
+            )
+
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "person_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_all_ids_have_flags_preserved_default_delegate(
         self, mock_allowed_types_with_multiples: mock.MagicMock
     ) -> None:
         mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
 
         ids = [
             self._make_unnormalized_external_id(
-                external_id="ID1", is_current_display_id_for_type=True
+                external_id="ID1",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
             self._make_unnormalized_external_id(
-                external_id="ID2", is_current_display_id_for_type=False
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
             ),
         ]
         result = get_normalized_person_external_ids(
@@ -238,10 +330,14 @@ class TestNormalizePersonExternalIds(unittest.TestCase):
         )
         expected_result = [
             self._make_normalized_external_id(
-                external_id="ID1", is_current_display_id_for_type=True
+                external_id="ID1",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
             self._make_normalized_external_id(
-                external_id="ID2", is_current_display_id_for_type=False
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
             ),
         ]
         self.assertEqual(expected_result, result)

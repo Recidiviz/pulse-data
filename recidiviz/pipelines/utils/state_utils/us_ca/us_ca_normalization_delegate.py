@@ -24,6 +24,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_least_recently_active_person_external_id,
     select_most_recently_active_person_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
@@ -53,6 +54,28 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per person and no "
             f"is_current_display_id_for_type set at ingest time: "
+            f"{person_external_ids_of_type}"
+        )
+
+    def select_stable_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        person_id: int,
+        id_type: str,
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        if id_type == US_CA_DOC:
+            return select_least_recently_active_person_external_id(
+                person_external_ids_of_type, enforce_nonnull_id_active_from=False
+            )
+        if id_type == US_CA_CDCNO:
+            return select_least_recently_active_person_external_id(
+                person_external_ids_of_type, enforce_nonnull_id_active_from=False
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per person and no "
+            f"is_stable_id_for_type set at ingest time: "
             f"{person_external_ids_of_type}"
         )
 

@@ -26,6 +26,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
     select_single_external_id_with_is_current_display_id,
+    select_single_external_id_with_is_stable_id,
 )
 from recidiviz.pipelines.ingest.state.validator import (
     person_external_id_types_with_allowed_multiples_per_person,
@@ -84,6 +85,53 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
             f"allow multiple per person, this function must be implemented in the "
             f"appropriate state-specific subclass of "
             f"StateSpecificNormalizationDelegate OR is_current_display_id_for_type "
+            f"must be set to True at ingest time for exactly one external id of this "
+            f"type per person."
+        )
+
+    def select_stable_id_for_person_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        person_id: int,
+        id_type: str,
+        # pylint: disable=unused-argument
+        person_external_ids_of_type: list[StatePersonExternalId],
+    ) -> StatePersonExternalId:
+        """Given a list of external_ids of the given |id_type|, returns the one that
+        should be used as the "stable" external id in products that need to persist an
+        external id for a person across deploy cycles.
+
+        States with id types that have multiple of that type per person will need to
+        provide a state-specific implementation of this delegate method.
+        """
+        if id_type not in person_external_id_types_with_allowed_multiples_per_person(
+            state_code
+        ):
+            raise ValueError(
+                f"Person external_id type [{id_type}] should never have multiple ids "
+                f"of a given type, but found multiple for person [{person_id}]. We "
+                f"should have never called "
+                f"select_stable_id_for_person_external_ids_of_type(). If you expect "
+                f"that a single person can have multiple {id_type} ids, update the "
+                f"exemptions list in "
+                f"person_external_id_types_with_allowed_multiples_per_person()."
+            )
+        has_any_is_stable_id_flags_set = any(
+            pei.is_stable_id_for_type is not None for pei in person_external_ids_of_type
+        )
+
+        if has_any_is_stable_id_flags_set:
+            return select_single_external_id_with_is_stable_id(
+                person_external_ids_of_type
+            )
+
+        raise NotImplementedError(
+            f"No implementation of "
+            f"select_stable_id_for_person_external_ids_of_type(), but called for "
+            f"ids of type [{id_type}] in state [{state_code.value}]. For id types that "
+            f"allow multiple per person, this function must be implemented in the "
+            f"appropriate state-specific subclass of "
+            f"StateSpecificNormalizationDelegate OR is_stable_id_for_type "
             f"must be set to True at ingest time for exactly one external id of this "
             f"type per person."
         )
