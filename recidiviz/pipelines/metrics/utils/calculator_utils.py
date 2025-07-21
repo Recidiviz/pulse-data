@@ -59,22 +59,11 @@ def person_characteristics(
     primary_person_external_id = person_external_id_to_include(
         person.state_code,
         person,
-        secondary=False,
         metrics_producer_delegate=metrics_producer_delegate,
     )
 
     if primary_person_external_id is not None:
         characteristics["person_external_id"] = primary_person_external_id
-
-    secondary_person_external_id = person_external_id_to_include(
-        person.state_code,
-        person,
-        secondary=True,
-        metrics_producer_delegate=metrics_producer_delegate,
-    )
-
-    if secondary_person_external_id is not None:
-        characteristics["secondary_person_external_id"] = secondary_person_external_id
 
     return characteristics
 
@@ -102,18 +91,15 @@ def age_at_date(
     )
 
 
+# TODO(#44763): Delete this once we don't output person_external_id from metrics
+#  pipelines
 def person_external_id_to_include(
     state_code: str,
     person: NormalizedStatePerson,
-    secondary: bool = False,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Optional[str]:
     """Finds an external_id on the person that should be included in calculations for
     person-level metrics in the given pipeline.
-
-    If |secondary| is True, finds an external_id of a type that is listed as a
-    "secondary" type to be included for metrics of the given pipeline. Else, finds an
-    external_id of the "primary" type.
     """
     external_ids = person.external_ids
 
@@ -124,9 +110,7 @@ def person_external_id_to_include(
         return None
 
     id_type_to_include = (
-        metrics_producer_delegate.secondary_person_external_id_to_include()
-        if secondary
-        else metrics_producer_delegate.primary_person_external_id_to_include()
+        metrics_producer_delegate.primary_person_external_id_to_include()
     )
 
     if not id_type_to_include:

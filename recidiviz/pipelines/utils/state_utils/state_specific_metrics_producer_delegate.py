@@ -16,16 +16,13 @@
 # =============================================================================
 """Stores the base StateSpecificMetricsProducerDelegate class shared by all state-specific
 metrics delegates."""
-from typing import Optional
-
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
 
 
 # TODO(#30363): We should be able to delete this delegate and all subclasses once we
-#  stop outputting person_external_id / secondary_person_external_id from metric
-#  pipelines.
+#  stop outputting person_external_id from metric pipelines.
 class StateSpecificMetricsProducerDelegate(StateSpecificDelegate):
     """Base class for a class that defines state-specific metric specifications."""
 
@@ -34,7 +31,3 @@ class StateSpecificMetricsProducerDelegate(StateSpecificDelegate):
         raise NotImplementedError(
             "Must replace this with an external id type defined in external_id_types.py"
         )
-
-    def secondary_person_external_id_to_include(self) -> Optional[str]:
-        """Determines the secondary person_external_id type to include, if applicable."""
-        return None

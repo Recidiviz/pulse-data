@@ -171,7 +171,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                     custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
                     custody_level_raw_text="MEDIUM",
                     housing_unit="COUNTY JAIL",
@@ -220,7 +219,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
@@ -237,7 +235,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
@@ -254,7 +251,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
             ],
         )
@@ -299,7 +295,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 )
             ],
         )
@@ -343,7 +338,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
@@ -360,7 +354,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
             ],
         )
@@ -671,7 +664,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
@@ -688,7 +680,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
@@ -705,7 +696,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    secondary_person_external_id="SID9889",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,

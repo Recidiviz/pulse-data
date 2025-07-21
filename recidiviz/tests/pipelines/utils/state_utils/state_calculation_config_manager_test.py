@@ -89,9 +89,6 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                             primary_external_id = (
                                 delegate.primary_person_external_id_to_include()
                             )
-                            secondary_external_id = (
-                                delegate.secondary_person_external_id_to_include()
-                            )
                         except NotImplementedError as e:
                             raise NotImplementedError(
                                 f"Found missing method implementation for {type(delegate).__name__}"
@@ -103,14 +100,6 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                             f"on delegate {type(delegate).__name__}: "
                             f"{primary_external_id}",
                         )
-                        if secondary_external_id:
-                            self.assertIn(
-                                secondary_external_id,
-                                external_ids_by_state_code[state],
-                                f"Unexpected secondary_person_external_id_to_include() "
-                                f"on delegate {type(delegate).__name__}: "
-                                f"{secondary_external_id}",
-                            )
 
     def test_get_state_specific_staff_role_period_normalization_delegate(
         self,

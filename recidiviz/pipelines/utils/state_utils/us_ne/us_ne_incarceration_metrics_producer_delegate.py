@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_NE implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
-from typing import Optional
-
+from recidiviz.common.constants.state.external_id_types import US_NE_ID_NBR
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -28,7 +27,4 @@ class UsNeIncarcerationMetricsProducerDelegate(
     """US_NE implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> str:
-        return "US_NE_ID_NBR"
-
-    def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return None
+        return US_NE_ID_NBR

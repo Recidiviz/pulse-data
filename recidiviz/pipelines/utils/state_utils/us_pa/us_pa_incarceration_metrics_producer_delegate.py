@@ -15,9 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_PA implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
-from typing import Optional
-
-from recidiviz.common.constants.state.external_id_types import US_PA_CONT, US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_PA_CONT
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -30,6 +28,3 @@ class UsPaIncarcerationMetricsProducerDelegate(
 
     def primary_person_external_id_to_include(self) -> str:
         return US_PA_CONT
-
-    def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return US_PA_PBPP

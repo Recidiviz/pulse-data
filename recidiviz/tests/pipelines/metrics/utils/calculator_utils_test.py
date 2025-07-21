@@ -61,18 +61,12 @@ class UsXxIncarcerationMetricsProducerDelegateForTests(
     def primary_person_external_id_to_include(self) -> str:
         return "US_XX_DOC"
 
-    def secondary_person_external_id_to_include(self) -> str:
-        return "US_XX_SID"
-
 
 class UsXxSupervisionMetricsProducerDelegateForTests(
     UsXxSupervisionMetricsProducerDelegate
 ):
     def primary_person_external_id_to_include(self) -> str:
         return "US_XX_SID"
-
-    def secondary_person_external_id_to_include(self) -> str | None:
-        return None
 
 
 class TestAgeAtDate(unittest.TestCase):
@@ -460,7 +454,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             "gender": StateGender.FEMALE,
             "person_id": person.person_id,
             "person_external_id": "DOC1341",
-            "secondary_person_external_id": "SID9889",
         }
 
         self.assertEqual(updated_characteristics, expected_output)

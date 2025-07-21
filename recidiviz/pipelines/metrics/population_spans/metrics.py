@@ -39,7 +39,6 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
-    SecondaryPersonExternalIdMetric,
 )
 from recidiviz.pipelines.utils.identifier_models import SupervisionLocationMixin
 
@@ -55,7 +54,6 @@ class PopulationSpanMetricType(RecidivizMetricType):
 class PopulationSpanMetric(
     RecidivizMetric[PopulationSpanMetricType],
     PersonLevelMetric,
-    SecondaryPersonExternalIdMetric,
 ):
     """Base model for population span metrics."""
 

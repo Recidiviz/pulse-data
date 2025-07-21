@@ -15,12 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_OR implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
-from typing import Optional
 
-from recidiviz.common.constants.state.external_id_types import (
-    US_OR_ID,
-    US_OR_RECORD_KEY,
-)
+from recidiviz.common.constants.state.external_id_types import US_OR_ID
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -33,6 +29,3 @@ class UsOrIncarcerationMetricsProducerDelegate(
 
     def primary_person_external_id_to_include(self) -> str:
         return US_OR_ID
-
-    def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return US_OR_RECORD_KEY

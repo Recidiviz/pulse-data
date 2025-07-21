@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_XX implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
-from typing import Optional
 
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -32,6 +31,3 @@ class UsXxIncarcerationMetricsProducerDelegate(
             "Must replace this with an external id type defined for US_XX in "
             "external_id_types.py"
         )
-
-    def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return None
