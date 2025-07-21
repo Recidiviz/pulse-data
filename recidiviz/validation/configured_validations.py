@@ -902,8 +902,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_person_id",
+                "internal_person_id",
             ],
             partition_columns=["region_code", "date_of_supervision"],
             hard_max_allowed_error=0.2,
@@ -944,8 +944,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_person_id",
+                "internal_person_id",
             ],
             partition_columns=["region_code", "release_cohort", "follow_up_period"],
             hard_max_allowed_error=0.02,
@@ -963,8 +963,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_person_id",
+                "internal_person_id",
             ],
             partition_columns=["region_code", "start_date"],
             hard_max_allowed_error=0.02,
@@ -974,8 +974,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
+                "external_person_id",
+                "internal_person_id",
             ],
             partition_columns=["region_code", "termination_date"],
             hard_max_allowed_error=0.02,
