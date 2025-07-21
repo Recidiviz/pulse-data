@@ -204,7 +204,6 @@ def generate_metric_export_configs(
         most_severe_response_decision,
         response_count,
         person_external_id,
-        secondary_person_external_id,
         person_id,
         violation_history_description,
         case_type,
