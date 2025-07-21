@@ -14,17 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Constants for the resource search system."""
-
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIMENSION = 1536
-EMBED_BATCH_SIZE = 10
-
-# Google API endpoints
-GOOGLE_ROUTES_DISTANCE_MATRIX_API = (
-    "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix"
-)
-RESOURCE_SEARCH_SENTRY_DSN = (
-    # not a secret!
-    "https://baf420ace1fd66f826e8216edf30def0@o432474.ingest.us.sentry.io/4509685213036544"
-)

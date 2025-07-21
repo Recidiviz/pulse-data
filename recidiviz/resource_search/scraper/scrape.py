@@ -50,7 +50,7 @@ def parse_input_directory(
     return inputs
 
 
-async def main() -> None:
+async def scrape_resources() -> None:
     inputs = parse_input_directory()
     async for resource_candidates in run_scraper(inputs):
         print(f"{'-' * 10}Got new batch; length {len(resource_candidates)}{'-' * 10}")
@@ -72,10 +72,10 @@ async def main() -> None:
             continue
 
 
-if __name__ == "__main__":
+if __name__ == "__scrape_resources__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(main())
+        loop.run_until_complete(scrape_resources())
     finally:
         loop.close()
