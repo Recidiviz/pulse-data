@@ -18,3 +18,6 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         sql_instance_name: "resource-search-staging"
         is_backup_enabled: false
+        big_query_instance_name: "resource_search_staging"
+        big_query_instance_friendly_name: "Resource Search Data (Staging)"
+        big_query_instance_description: "Staging dataset for Recidiviz Resource Search application data. Used for testing and development purposes. Do NOT use for production queries or applications."

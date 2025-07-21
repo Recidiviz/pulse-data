@@ -17,3 +17,6 @@ components:
         project_id: "{{ .settings.context.project_id }}"
         sql_instance_name: "prod-resource-search-data"
         is_backup_enabled: true
+        big_query_instance_name: "resource_search_production"
+        big_query_instance_friendly_name: "Resource Search Data (Production)"
+        big_query_instance_description: "Production dataset for Recidiviz Resource Search application data."
