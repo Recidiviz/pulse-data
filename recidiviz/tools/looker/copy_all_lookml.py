@@ -40,8 +40,7 @@ from recidiviz.tools.looker.constants import (
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
 EXCLUDED_PATHS = [
-    "dashboards/normalized_state",
-    "dashboards/state",
+    "dashboards/",
 ]
 
 

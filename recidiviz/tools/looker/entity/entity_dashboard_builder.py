@@ -47,6 +47,7 @@ from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
+from recidiviz.tools.looker.constants import PROJECT_ID_VAR_STRING
 from recidiviz.tools.looker.entity.state_dataset_dashboard_element_providers import (
     get_elements_provider,
 )
@@ -57,7 +58,6 @@ class EntityLookMLDashboardBuilder:
     """Builder for an entity LookML dashboard."""
 
     module_context: EntitiesModuleContext
-    project_id: str
     root_entity_cls: Type[Entity]
     views: list[LookMLView]
     dataset_id: str
@@ -147,7 +147,7 @@ class EntityLookMLDashboardBuilder:
             dashboard_name=self.root_entity_name,
             dashboard_title=snake_to_title(self.root_entity_name),
             explore_name=self.root_entity_name,
-            model_name=self.project_id,
+            model_name=PROJECT_ID_VAR_STRING,
             filter_fields=filter_fields,
             element_provider=get_elements_provider(
                 self.root_entity_cls,

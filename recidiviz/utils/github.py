@@ -61,7 +61,7 @@ def open_pr_if_not_exists(
         head=f"{RECIDIVIZ_GITHUB_ORGANIZATION}:{head_branch_name}",
         base=base_branch_name,
     )
-    if existing_prs:
+    if existing_prs and existing_prs.totalCount > 0:
         return one(existing_prs).html_url
 
     body_length_safe = truncate_string_if_necessary(

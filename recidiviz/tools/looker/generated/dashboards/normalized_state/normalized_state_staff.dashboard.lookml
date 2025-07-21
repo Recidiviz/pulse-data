@@ -15,7 +15,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: normalized_state_staff
     field: normalized_state_staff.staff_id
 
@@ -27,7 +27,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: normalized_state_staff
     field: normalized_state_staff.state_code
 
@@ -39,7 +39,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: normalized_state_staff
     field: normalized_state_staff_external_id.external_id
 
@@ -51,7 +51,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: normalized_state_staff
     field: normalized_state_staff_external_id.id_type
 
@@ -59,7 +59,7 @@
   - name: Normalized State Staff
     title: Normalized State Staff
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff.email,
       normalized_state_staff.full_name,
@@ -79,7 +79,7 @@
   - name: Normalized State Staff Caseload Type Period
     title: Normalized State Staff Caseload Type Period
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff_caseload_type_period.caseload_type,
       normalized_state_staff_caseload_type_period.caseload_type_raw_text,
@@ -102,7 +102,7 @@
   - name: Normalized State Staff External Id
     title: Normalized State Staff External Id
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff_external_id.external_id,
       normalized_state_staff_external_id.id_type,
@@ -122,7 +122,7 @@
   - name: Normalized State Staff Location Period
     title: Normalized State Staff Location Period
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff_location_period.end_date,
       normalized_state_staff_location_period.external_id,
@@ -144,7 +144,7 @@
   - name: Normalized State Staff Role Period
     title: Normalized State Staff Role Period
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff_role_period.end_date,
       normalized_state_staff_role_period.external_id,
@@ -169,7 +169,7 @@
   - name: Normalized State Staff Supervisor Period
     title: Normalized State Staff Supervisor Period
     explore: normalized_state_staff
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [normalized_state_staff_supervisor_period.end_date,
       normalized_state_staff_supervisor_period.external_id,

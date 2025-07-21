@@ -37,3 +37,6 @@ GENERATED_LOOKML_ROOT_PATH = os.path.join(
 GENERATED_VERSION_FILE_PATH = os.path.join(
     RECIDIVIZ_ROOT, LOOKER_TOOLS_ROOT, GENERATED_VERSION_FILE_NAME
 )
+
+# Reference to project_id variable defined in looker manifest.yml
+PROJECT_ID_VAR_STRING = '"@{project_id}"'

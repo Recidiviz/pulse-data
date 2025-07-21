@@ -1,12 +1,11 @@
 # This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_dashboard_generator.py`.
 
-- dashboard: us_ix_raw_data_person_details_template
-  title: Idaho ATLAS Latest Raw Data Person Details Template
+- dashboard: us_ix_raw_data_person_details
+  title: Idaho ATLAS Raw Data Person Details
   description: For examining individuals in US_IX's raw data tables
   layout: newspaper
   load_configuration: wait
-  extension: required
 
   filters:
   - name: View Type
@@ -18,6 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
+    model: "@{project_id}"
     explore: us_ix_raw_data
     field: us_ix_ind_Offender.view_type
 
@@ -30,6 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_ix_raw_data
     field: us_ix_ind_Offender.OffenderId
 
@@ -37,6 +38,7 @@
   - name: ind_Offender
     title: ind_Offender
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender.primary_key,
       us_ix_ind_Offender.OffenderId,
@@ -110,6 +112,7 @@
   - name: asm_Assessment
     title: asm_Assessment
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_asm_Assessment.primary_key,
       us_ix_asm_Assessment.AssessmentId,
@@ -156,6 +159,7 @@
   - name: com_CommunityServiceRecord
     title: com_CommunityServiceRecord
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_com_CommunityServiceRecord.primary_key,
       us_ix_com_CommunityServiceRecord.CommunityServiceRecordId,
@@ -187,6 +191,7 @@
   - name: com_PSIReport
     title: com_PSIReport
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_com_PSIReport.primary_key,
       us_ix_com_PSIReport.PSIReportId,
@@ -236,6 +241,7 @@
   - name: com_PhysicalLocation
     title: com_PhysicalLocation
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_com_PhysicalLocation.primary_key,
       us_ix_com_PhysicalLocation.PhysicalLocationId,
@@ -267,6 +273,7 @@
   - name: com_Transfer
     title: com_Transfer
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_com_Transfer.primary_key,
       us_ix_com_Transfer.TransferId,
@@ -318,6 +325,7 @@
   - name: crs_OfdCourseEnrollment
     title: crs_OfdCourseEnrollment
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_crs_OfdCourseEnrollment.primary_key,
       us_ix_crs_OfdCourseEnrollment.OfdCourseEnrollmentId,
@@ -366,6 +374,7 @@
   - name: drg_DrugTestResult
     title: drg_DrugTestResult
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_drg_DrugTestResult.primary_key,
       us_ix_drg_DrugTestResult.DrugTestResultId,
@@ -420,6 +429,7 @@
   - name: dsc_DACase
     title: dsc_DACase
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_dsc_DACase.primary_key,
       us_ix_dsc_DACase.DACaseId,
@@ -463,6 +473,7 @@
   - name: dsc_DAProcedure
     title: dsc_DAProcedure
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_dsc_DAProcedure.primary_key,
       us_ix_dsc_DAProcedure.DAProcedureId,
@@ -491,6 +502,7 @@
   - name: hsn_BedAssignment
     title: hsn_BedAssignment
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_hsn_BedAssignment.primary_key,
       us_ix_hsn_BedAssignment.BedAssignmentId,
@@ -521,6 +533,7 @@
   - name: ind_AliasName
     title: ind_AliasName
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_AliasName.primary_key,
       us_ix_ind_AliasName.AliasNameId,
@@ -558,6 +571,7 @@
   - name: ind_EmploymentHistory
     title: ind_EmploymentHistory
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_EmploymentHistory.primary_key,
       us_ix_ind_EmploymentHistory.EmploymentHistoryId,
@@ -598,6 +612,7 @@
   - name: ind_OffenderNoteInfo
     title: ind_OffenderNoteInfo
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_OffenderNoteInfo.primary_key,
       us_ix_ind_OffenderNoteInfo.OffenderNoteInfoId,
@@ -633,6 +648,7 @@
   - name: ind_OffenderSecurityLevel
     title: ind_OffenderSecurityLevel
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_OffenderSecurityLevel.primary_key,
       us_ix_ind_OffenderSecurityLevel.OffenderSecurityLevelId,
@@ -670,6 +686,7 @@
   - name: ind_Offender_Address
     title: ind_Offender_Address
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender_Address.primary_key,
       us_ix_ind_Offender_Address.Offender_AddressId,
@@ -708,6 +725,7 @@
   - name: ind_Offender_Alert
     title: ind_Offender_Alert
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender_Alert.primary_key,
       us_ix_ind_Offender_Alert.Offender_AlertId,
@@ -740,6 +758,7 @@
   - name: ind_Offender_EmailAddress
     title: ind_Offender_EmailAddress
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender_EmailAddress.primary_key,
       us_ix_ind_Offender_EmailAddress.Offender_EmailAddressId,
@@ -767,6 +786,7 @@
   - name: ind_Offender_Phone
     title: ind_Offender_Phone
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender_Phone.primary_key,
       us_ix_ind_Offender_Phone.Offender_PhoneId,
@@ -794,6 +814,7 @@
   - name: ind_Offender_QuestionnaireTemplate
     title: ind_Offender_QuestionnaireTemplate
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_ind_Offender_QuestionnaireTemplate.primary_key,
       us_ix_ind_Offender_QuestionnaireTemplate.OffenderQuestionnaireTemplateId,
@@ -825,6 +846,7 @@
   - name: prb_PBCase
     title: prb_PBCase
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_prb_PBCase.primary_key,
       us_ix_prb_PBCase.PBCaseId,
@@ -865,6 +887,7 @@
   - name: scl_Charge
     title: scl_Charge
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Charge.primary_key,
       us_ix_scl_Charge.ChargeId,
@@ -911,6 +934,7 @@
   - name: scl_DiscOffenseRpt
     title: scl_DiscOffenseRpt
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_DiscOffenseRpt.primary_key,
       us_ix_scl_DiscOffenseRpt.DiscOffenseRptId,
@@ -956,6 +980,7 @@
   - name: scl_Escape
     title: scl_Escape
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Escape.primary_key,
       us_ix_scl_Escape.EscapeId,
@@ -1003,6 +1028,7 @@
   - name: scl_MasterTerm
     title: scl_MasterTerm
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_MasterTerm.primary_key,
       us_ix_scl_MasterTerm.MasterTermId,
@@ -1034,6 +1060,7 @@
   - name: scl_Parole
     title: scl_Parole
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Parole.primary_key,
       us_ix_scl_Parole.ParoleId,
@@ -1081,6 +1108,7 @@
   - name: scl_Sentence
     title: scl_Sentence
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Sentence.primary_key,
       us_ix_scl_Sentence.SentenceId,
@@ -1173,6 +1201,7 @@
   - name: scl_SentenceOrder
     title: scl_SentenceOrder
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_SentenceOrder.primary_key,
       us_ix_scl_SentenceOrder.SentenceOrderId,
@@ -1226,6 +1255,7 @@
   - name: scl_Supervision
     title: scl_Supervision
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Supervision.primary_key,
       us_ix_scl_Supervision.SupervisionId,
@@ -1267,6 +1297,7 @@
   - name: scl_Term
     title: scl_Term
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Term.primary_key,
       us_ix_scl_Term.TermId,
@@ -1361,6 +1392,7 @@
   - name: scl_Violation
     title: scl_Violation
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Violation.primary_key,
       us_ix_scl_Violation.ViolationId,
@@ -1408,6 +1440,7 @@
   - name: scl_Warrant
     title: scl_Warrant
     explore: us_ix_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_ix_scl_Warrant.primary_key,
       us_ix_scl_Warrant.WarrantId,

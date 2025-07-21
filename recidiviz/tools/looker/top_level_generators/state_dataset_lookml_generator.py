@@ -57,7 +57,6 @@ from recidiviz.tools.looker.script_helpers import (
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 
 def write_lookml_files(
@@ -100,9 +99,6 @@ def write_lookml_files(
         dashboard = EntityLookMLDashboardBuilder(
             module_context=module_context,
             root_entity_cls=root_entity_cls,
-            # We only write dashboards for recidiviz-staging
-            # TODO(#36190) Automatically convert staging dashboards to prod for prod deploy
-            project_id=GCP_PROJECT_STAGING,
             dataset_id=dataset_id,
             views=state_views,
         ).build_and_validate()

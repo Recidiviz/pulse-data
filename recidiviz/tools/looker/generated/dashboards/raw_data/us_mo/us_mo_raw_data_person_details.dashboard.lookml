@@ -1,12 +1,11 @@
 # This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_dashboard_generator.py`.
 
-- dashboard: us_mo_raw_data_person_details_template
-  title: Missouri Latest Raw Data Person Details Template
+- dashboard: us_mo_raw_data_person_details
+  title: Missouri Raw Data Person Details
   description: For examining individuals in US_MO's raw data tables
   layout: newspaper
   load_configuration: wait
-  extension: required
 
   filters:
   - name: View Type
@@ -18,6 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
+    model: "@{project_id}"
     explore: us_mo_raw_data
     field: us_mo_LBAKRDTA_TAK001.view_type
 
@@ -30,6 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mo_raw_data
     field: us_mo_LBAKRDTA_TAK001.EK_DOC
 
@@ -42,6 +43,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mo_raw_data
     field: us_mo_LBAKRDTA_TAK001.EK_SID
 
@@ -54,6 +56,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mo_raw_data
     field: us_mo_LBAKRDTA_TAK001.EK_FBI
 
@@ -66,6 +69,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mo_raw_data
     field: us_mo_LBAKRDTA_TAK001.EK_OLN
 
@@ -73,6 +77,7 @@
   - name: LBAKRDTA_TAK001
     title: LBAKRDTA_TAK001
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK001.primary_key,
       us_mo_LBAKRDTA_TAK001.EK_DOC,
@@ -155,6 +160,7 @@
   - name: ORAS_WEEKLY_SUMMARY_UPDATE
     title: ORAS_WEEKLY_SUMMARY_UPDATE
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_ORAS_WEEKLY_SUMMARY_UPDATE.primary_key,
       us_mo_ORAS_WEEKLY_SUMMARY_UPDATE.OFFENDER_NAME,
@@ -193,6 +199,7 @@
   - name: LBAKRDTA_TAK015
     title: LBAKRDTA_TAK015
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK015.primary_key,
       us_mo_LBAKRDTA_TAK015.BL_DOC,
@@ -232,6 +239,7 @@
   - name: LBAKRDTA_TAK017
     title: LBAKRDTA_TAK017
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK017.primary_key,
       us_mo_LBAKRDTA_TAK017.BN_DOC,
@@ -271,6 +279,7 @@
   - name: LBAKRDTA_TAK020
     title: LBAKRDTA_TAK020
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK020.primary_key,
       us_mo_LBAKRDTA_TAK020.BQ_DOC,
@@ -334,6 +343,7 @@
   - name: LBAKRDTA_TAK022
     title: LBAKRDTA_TAK022
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK022.primary_key,
       us_mo_LBAKRDTA_TAK022.BS_DOC,
@@ -386,6 +396,7 @@
   - name: LBAKRDTA_TAK023
     title: LBAKRDTA_TAK023
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK023.primary_key,
       us_mo_LBAKRDTA_TAK023.BT_DOC,
@@ -433,6 +444,7 @@
   - name: LBAKRDTA_TAK024
     title: LBAKRDTA_TAK024
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK024.primary_key,
       us_mo_LBAKRDTA_TAK024.BU_DOC,
@@ -475,6 +487,7 @@
   - name: LBAKRDTA_TAK025
     title: LBAKRDTA_TAK025
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK025.primary_key,
       us_mo_LBAKRDTA_TAK025.BV_DOC,
@@ -505,6 +518,7 @@
   - name: LBAKRDTA_TAK026
     title: LBAKRDTA_TAK026
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK026.primary_key,
       us_mo_LBAKRDTA_TAK026.BW_DOC,
@@ -537,6 +551,7 @@
   - name: LBAKRDTA_TAK028
     title: LBAKRDTA_TAK028
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK028.primary_key,
       us_mo_LBAKRDTA_TAK028.BY_DOC,
@@ -588,6 +603,7 @@
   - name: LBAKRDTA_TAK034
     title: LBAKRDTA_TAK034
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK034.primary_key,
       us_mo_LBAKRDTA_TAK034.CE_DOC,
@@ -621,6 +637,7 @@
   - name: LBAKRDTA_TAK039
     title: LBAKRDTA_TAK039
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK039.primary_key,
       us_mo_LBAKRDTA_TAK039.DN_DOC,
@@ -687,6 +704,7 @@
   - name: LBAKRDTA_TAK042
     title: LBAKRDTA_TAK042
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK042.primary_key,
       us_mo_LBAKRDTA_TAK042.CF_DOC,
@@ -718,6 +736,7 @@
   - name: LBAKRDTA_TAK044
     title: LBAKRDTA_TAK044
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK044.primary_key,
       us_mo_LBAKRDTA_TAK044.CG_DOC,
@@ -760,6 +779,7 @@
   - name: LBAKRDTA_TAK065
     title: LBAKRDTA_TAK065
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK065.primary_key,
       us_mo_LBAKRDTA_TAK065.CS_DOC,
@@ -801,6 +821,7 @@
   - name: LBAKRDTA_TAK076
     title: LBAKRDTA_TAK076
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK076.primary_key,
       us_mo_LBAKRDTA_TAK076.CZ_DOC,
@@ -831,6 +852,7 @@
   - name: LBAKRDTA_TAK142
     title: LBAKRDTA_TAK142
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK142.primary_key,
       us_mo_LBAKRDTA_TAK142.E6_DOC,
@@ -865,6 +887,7 @@
   - name: LBAKRDTA_TAK158
     title: LBAKRDTA_TAK158
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK158.primary_key,
       us_mo_LBAKRDTA_TAK158.F1_DOC,
@@ -905,6 +928,7 @@
   - name: LBAKRDTA_TAK233
     title: LBAKRDTA_TAK233
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK233.primary_key,
       us_mo_LBAKRDTA_TAK233.IZ_DOC,
@@ -957,6 +981,7 @@
   - name: LBAKRDTA_TAK236
     title: LBAKRDTA_TAK236
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK236.primary_key,
       us_mo_LBAKRDTA_TAK236.IU_DOC,
@@ -996,6 +1021,7 @@
   - name: LBAKRDTA_TAK237
     title: LBAKRDTA_TAK237
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK237.primary_key,
       us_mo_LBAKRDTA_TAK237.IV_DOC,
@@ -1040,6 +1066,7 @@
   - name: LBAKRDTA_TAK291
     title: LBAKRDTA_TAK291
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK291.primary_key,
       us_mo_LBAKRDTA_TAK291.JS_DOC,
@@ -1072,6 +1099,7 @@
   - name: LBAKRDTA_TAK292
     title: LBAKRDTA_TAK292
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_TAK292.primary_key,
       us_mo_LBAKRDTA_TAK292.JT_DOC,
@@ -1106,6 +1134,7 @@
   - name: LBAKRDTA_VAK003
     title: LBAKRDTA_VAK003
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_LBAKRDTA_VAK003.primary_key,
       us_mo_LBAKRDTA_VAK003.DOC_ID_DOB,
@@ -1134,6 +1163,7 @@
   - name: MASTER_PDB_LOCATIONS
     title: MASTER_PDB_LOCATIONS
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_MASTER_PDB_LOCATIONS.primary_key,
       us_mo_MASTER_PDB_LOCATIONS.LOC_REF_ID,
@@ -1171,6 +1201,7 @@
   - name: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
     title: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.primary_key,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.DOC_ID,
@@ -1209,6 +1240,7 @@
   - name: OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF
     title: OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF
     explore: us_mo_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mo_OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF.primary_key,
       us_mo_OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF.OFNDR_CYCLE_REF_ID,

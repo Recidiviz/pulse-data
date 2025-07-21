@@ -1,12 +1,11 @@
 # This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_dashboard_generator.py`.
 
-- dashboard: us_nd_raw_data_person_details_template
-  title: North Dakota Latest Raw Data Person Details Template
+- dashboard: us_nd_raw_data_person_details
+  title: North Dakota Raw Data Person Details
   description: For examining individuals in US_ND's raw data tables
   layout: newspaper
   load_configuration: wait
-  extension: required
 
   filters:
   - name: View Type
@@ -18,6 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
+    model: "@{project_id}"
     explore: us_nd_raw_data
     field: us_nd_docstars_offenders.view_type
 
@@ -30,6 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_nd_raw_data
     field: us_nd_docstars_offenders.SID
 
@@ -42,6 +43,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_nd_raw_data
     field: us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID
 
@@ -54,6 +56,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_nd_raw_data
     field: us_nd_elite_offenders.ROOT_OFFENDER_ID
 
@@ -61,6 +64,7 @@
   - name: docstars_offenders
     title: docstars_offenders
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_offenders.primary_key,
       us_nd_docstars_offenders.SID,
@@ -142,6 +146,7 @@
   - name: docstars_contacts
     title: docstars_contacts
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_contacts.primary_key,
       us_nd_docstars_contacts.RecID,
@@ -174,6 +179,7 @@
   - name: docstars_ftr_episode
     title: docstars_ftr_episode
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_ftr_episode.primary_key,
       us_nd_docstars_ftr_episode.EPISODE_ID,
@@ -220,6 +226,7 @@
   - name: docstars_lsi_chronology
     title: docstars_lsi_chronology
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_lsi_chronology.primary_key,
       us_nd_docstars_lsi_chronology.RecID,
@@ -274,6 +281,7 @@
   - name: docstars_offendercasestable
     title: docstars_offendercasestable
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_offendercasestable.primary_key,
       us_nd_docstars_offendercasestable.CASE_NUMBER,
@@ -329,6 +337,7 @@
   - name: docstars_offensestable
     title: docstars_offensestable
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_docstars_offensestable.primary_key,
       us_nd_docstars_offensestable.RecID,
@@ -368,6 +377,7 @@
   - name: elite_offenderidentifier
     title: elite_offenderidentifier
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offenderidentifier.primary_key,
       us_nd_elite_offenderidentifier.ROOT_OFFENDER_ID,
@@ -393,6 +403,7 @@
   - name: elite_offenders
     title: elite_offenders
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offenders.primary_key,
       us_nd_elite_offenders.ROOT_OFFENDER_ID,
@@ -423,6 +434,7 @@
   - name: elite_alias
     title: elite_alias
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_alias.primary_key,
       us_nd_elite_alias.ROOT_OFFENDER_ID,
@@ -455,6 +467,7 @@
   - name: elite_offenderbookingstable
     title: elite_offenderbookingstable
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offenderbookingstable.primary_key,
       us_nd_elite_offenderbookingstable.OFFENDER_BOOK_ID,
@@ -488,6 +501,7 @@
   - name: elite_offense_in_custody_and_pos_report_data
     title: elite_offense_in_custody_and_pos_report_data
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offense_in_custody_and_pos_report_data.primary_key,
       us_nd_elite_offense_in_custody_and_pos_report_data.ROOT_OFFENDER_ID,
@@ -548,6 +562,7 @@
   - name: recidiviz_elite_offender_alerts
     title: recidiviz_elite_offender_alerts
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_recidiviz_elite_offender_alerts.primary_key,
       us_nd_recidiviz_elite_offender_alerts.ALERT_CODE,
@@ -586,6 +601,7 @@
   - name: elite_bedassignmenthistory
     title: elite_bedassignmenthistory
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_bedassignmenthistory.primary_key,
       us_nd_elite_bedassignmenthistory.OFFENDER_BOOK_ID,
@@ -613,6 +629,7 @@
   - name: elite_externalmovements
     title: elite_externalmovements
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_externalmovements.primary_key,
       us_nd_elite_externalmovements.OFFENDER_BOOK_ID,
@@ -647,6 +664,7 @@
   - name: elite_institutionalactivities
     title: elite_institutionalactivities
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_institutionalactivities.primary_key,
       us_nd_elite_institutionalactivities.OFFENDER_BOOK_ID,
@@ -685,6 +703,7 @@
   - name: elite_offendersentenceaggs
     title: elite_offendersentenceaggs
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offendersentenceaggs.primary_key,
       us_nd_elite_offendersentenceaggs.OFFENDER_BOOK_ID,
@@ -715,6 +734,7 @@
   - name: elite_offendersentences
     title: elite_offendersentences
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offendersentences.primary_key,
       us_nd_elite_offendersentences.OFFENDER_BOOK_ID,
@@ -752,6 +772,7 @@
   - name: elite_offendersentenceterms
     title: elite_offendersentenceterms
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_offendersentenceterms.primary_key,
       us_nd_elite_offendersentenceterms.OFFENDER_BOOK_ID,
@@ -783,6 +804,7 @@
   - name: elite_orderstable
     title: elite_orderstable
     explore: us_nd_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_nd_elite_orderstable.primary_key,
       us_nd_elite_orderstable.ORDER_ID,

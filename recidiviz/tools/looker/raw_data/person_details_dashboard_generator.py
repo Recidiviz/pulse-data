@@ -18,10 +18,7 @@
 Used inside person_details_lookml_writer
 """
 import os
-from collections import defaultdict
 from typing import Dict, List
-
-import attr
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -50,6 +47,7 @@ from recidiviz.looker.lookml_dashboard_parameter import (
 from recidiviz.looker.lookml_explore import LookMLExplore
 from recidiviz.looker.lookml_explore_parameter import ExploreParameterJoin
 from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.tools.looker.constants import PROJECT_ID_VAR_STRING
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     RAW_DATA_UP_TO_DATE_VIEWS_OPTION,
     VIEW_TYPE_PARAM_NAME,
@@ -63,56 +61,19 @@ ELEMENT_HEIGHT = 6
 VIEW_TYPE_FILTER_NAME = "View Type"
 
 
-def _gen_real_dash_from_template(
-    template: LookMLDashboard,
-    state_code: StateCode,
-    staging: bool,
-) -> LookMLDashboard:
-    """
-    Return a copy of the given template dashboard
-    converted to a prod or staging dashboard by stripping down the elements
-    and filters to only have a name and model.
-    """
-    dashboard_suffix = "Staging" if staging else "Prod"
-    state_abbrev = state_code.value.lower()
-    state_name = state_code.get_state().name
-    model_name = "recidiviz-staging" if staging else "recidiviz-123"
-    return attr.evolve(
-        template,
-        parameters=[
-            LookMLDashboardParameter.title(
-                f"{state_name} Raw Data Person Details {dashboard_suffix}"
-            ),
-        ],
-        load_configuration_wait=False,
-        extension_required=False,
-        extended_dashboard=f"{state_abbrev}_raw_data_person_details_template",
-        dashboard_name=f"{state_abbrev}_raw_data_person_details_{dashboard_suffix.lower()}",
-        elements=[
-            LookMLDashboardElement(name=e.name, model=model_name)
-            for e in template.elements
-        ],
-        filters=[
-            LookMLDashboardFilter(name=f.name, model=model_name)
-            for f in template.filters
-        ],
-    )
-
-
-def _generate_dashboard_template(
+def _generate_dashboard(
     state_code: StateCode,
     region_config: DirectIngestRegionRawFileConfig,
     state_explore: LookMLExplore,
     views_by_file_tag: Dict[str, LookMLView],
 ) -> LookMLDashboard:
     """
-    Return an Dashboard for the given state code that has basic information:
-    an extension: required field, fitting description and group label,
-    and the given name of the primary person table for that state,
-    which is used as the base view name for the Dashboard.
+    Return a dashboard for the given state code that has basic information:
+    a fitting description and group label, and the given name of the primary
+    person table for that state, which is used as the base view name for the Dashboard.
     """
     state_abbrev = state_code.value.lower()
-    dashboard_name = f"{state_abbrev}_raw_data_person_details_template"
+    dashboard_name = f"{state_abbrev}_raw_data_person_details"
     state_name = state_code.get_state().name
 
     all_tables = region_config.raw_file_configs
@@ -132,16 +93,14 @@ def _generate_dashboard_template(
     return LookMLDashboard(
         dashboard_name=dashboard_name,
         parameters=[
-            LookMLDashboardParameter.title(
-                f"{state_name} Latest Raw Data Person Details Template"
-            ),
+            LookMLDashboardParameter.title(f"{state_name} Raw Data Person Details"),
             LookMLDashboardParameter.description(
                 f"For examining individuals in {state_code.value}'s raw data tables"
             ),
             LookMLDashboardParameter.layout(LookMLDashboardLayoutType.NEWSPAPER),
         ],
         load_configuration_wait=True,
-        extension_required=True,
+        extension_required=False,
         filters=filters,
         elements=elements,
     )
@@ -169,6 +128,7 @@ def _generate_filters_for_state(
         LookMLDashboardFilter(
             name=VIEW_TYPE_FILTER_NAME,
             title=VIEW_TYPE_FILTER_NAME,
+            model=PROJECT_ID_VAR_STRING,
             type=LookMLFilterType.FIELD_FILTER,
             default_value=RAW_DATA_UP_TO_DATE_VIEWS_OPTION.replace("_", "^_"),
             allow_multiple_values=False,
@@ -202,6 +162,7 @@ def _generate_filters_for_state(
                 LookMLDashboardFilter(
                     name=name,
                     title=name,
+                    model=PROJECT_ID_VAR_STRING,
                     type=LookMLFilterType.FIELD_FILTER,
                     default_value='""',
                     allow_multiple_values=True,
@@ -314,6 +275,7 @@ def _generate_elements_for_state(
                 name=file_config.file_tag,
                 title=file_config.file_tag,
                 explore=explore.non_template_name,
+                model=PROJECT_ID_VAR_STRING,
                 type=LookMLElementType.LOOKER_GRID,
                 note_display=LookMLNoteDisplayType.HOVER,
                 note_text=f'"{note_text}"',
@@ -332,28 +294,24 @@ def _generate_elements_for_state(
 def _generate_all_state_dashboards(
     state_views: Dict[StateCode, Dict[str, LookMLView]],
     state_explores: Dict[StateCode, LookMLExplore],
-) -> Dict[StateCode, List[LookMLDashboard]]:
+) -> Dict[StateCode, LookMLDashboard]:
     """
     Return a dictionary where keys are StateCodes for states with raw data
-    and a primary person table defined, and values are three LookMLDashboards for each state
+    and a primary person table defined, and value is a LookMLDashboard
+    for that state with the primary person table as the base view.
     """
-    dashboards: Dict[StateCode, List[LookMLDashboard]] = defaultdict(list)
+    dashboards: Dict[StateCode, LookMLDashboard] = {}
     # Only generate dashboards for states with an explore
     for state_code, explore in state_explores.items():
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
-        dashboard = _generate_dashboard_template(
+        dashboard = _generate_dashboard(
             state_code,
             region_config,
             explore,
             state_views[state_code],
         )
-        dashboards[state_code].append(dashboard)
-        dashboards[state_code].append(
-            _gen_real_dash_from_template(dashboard, state_code, staging=False)
-        )
-        dashboards[state_code].append(
-            _gen_real_dash_from_template(dashboard, state_code, staging=True)
-        )
+        dashboards[state_code] = dashboard
+
     return dashboards
 
 
@@ -371,9 +329,8 @@ def generate_lookml_dashboards(
     dashboard_dir = os.path.join(looker_dir, "dashboards", "raw_data")
     remove_lookml_files_from(dashboard_dir)
 
-    for state_code, dashboards in _generate_all_state_dashboards(
+    for state_code, dashboard in _generate_all_state_dashboards(
         state_views, state_explores
     ).items():
         state_dir = os.path.join(dashboard_dir, state_code.value.lower())
-        for dash in dashboards:
-            dash.write(state_dir, source_script_path=__file__)
+        dashboard.write(state_dir, source_script_path=__file__)

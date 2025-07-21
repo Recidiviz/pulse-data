@@ -1,12 +1,11 @@
 # This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_dashboard_generator.py`.
 
-- dashboard: us_mi_raw_data_person_details_template
-  title: Michigan Latest Raw Data Person Details Template
+- dashboard: us_mi_raw_data_person_details
+  title: Michigan Raw Data Person Details
   description: For examining individuals in US_MI's raw data tables
   layout: newspaper
   load_configuration: wait
-  extension: required
 
   filters:
   - name: View Type
@@ -18,6 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
+    model: "@{project_id}"
     explore: us_mi_raw_data
     field: us_mi_ADH_OFFENDER.view_type
 
@@ -30,6 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mi_raw_data
     field: us_mi_ADH_OFFENDER.offender_id
 
@@ -42,6 +43,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mi_raw_data
     field: us_mi_ADH_OFFENDER.offender_number
 
@@ -54,6 +56,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_mi_raw_data
     field: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
 
@@ -61,6 +64,7 @@
   - name: ADH_OFFENDER
     title: ADH_OFFENDER
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER.primary_key,
       us_mi_ADH_OFFENDER.offender_id,
@@ -87,6 +91,7 @@
   - name: ADH_FACILITY_COUNT_SHEET
     title: ADH_FACILITY_COUNT_SHEET
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_FACILITY_COUNT_SHEET.primary_key,
       us_mi_ADH_FACILITY_COUNT_SHEET.facility_count_sheet_id,
@@ -126,6 +131,7 @@
   - name: ADH_FACILITY_COUNT_SHEET_HIST
     title: ADH_FACILITY_COUNT_SHEET_HIST
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_FACILITY_COUNT_SHEET_HIST.primary_key,
       us_mi_ADH_FACILITY_COUNT_SHEET_HIST.facility_count_sheet_id,
@@ -165,6 +171,7 @@
   - name: ADH_OFFENDER_BOOKING
     title: ADH_OFFENDER_BOOKING
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_BOOKING.primary_key,
       us_mi_ADH_OFFENDER_BOOKING.offender_booking_id,
@@ -200,6 +207,7 @@
   - name: ADH_OFFENDER_DESIGNATION
     title: ADH_OFFENDER_DESIGNATION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_DESIGNATION.primary_key,
       us_mi_ADH_OFFENDER_DESIGNATION.offender_designation_id,
@@ -228,6 +236,7 @@
   - name: ADH_OFFENDER_DETAINER
     title: ADH_OFFENDER_DETAINER
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_DETAINER.primary_key,
       us_mi_ADH_OFFENDER_DETAINER.detainer_id,
@@ -296,6 +305,7 @@
   - name: ADH_OFFENDER_ERD
     title: ADH_OFFENDER_ERD
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_ERD.primary_key,
       us_mi_ADH_OFFENDER_ERD.offender_erd_id,
@@ -322,6 +332,7 @@
   - name: ADH_OFFENDER_LOCK
     title: ADH_OFFENDER_LOCK
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_LOCK.primary_key,
       us_mi_ADH_OFFENDER_LOCK.offender_lock_id,
@@ -352,6 +363,7 @@
   - name: ADH_OFFENDER_NAME
     title: ADH_OFFENDER_NAME
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_NAME.primary_key,
       us_mi_ADH_OFFENDER_NAME.offender_id,
@@ -390,6 +402,7 @@
   - name: ADH_OFFENDER_PROFILE_SUMMARY_WRK
     title: ADH_OFFENDER_PROFILE_SUMMARY_WRK
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_PROFILE_SUMMARY_WRK.primary_key,
       us_mi_ADH_OFFENDER_PROFILE_SUMMARY_WRK.offender_id,
@@ -452,6 +465,7 @@
   - name: ADH_OFFENDER_SENTENCE
     title: ADH_OFFENDER_SENTENCE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_SENTENCE.primary_key,
       us_mi_ADH_OFFENDER_SENTENCE.offender_sentence_id,
@@ -530,6 +544,7 @@
   - name: ADH_PERSON
     title: ADH_PERSON
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_PERSON.primary_key,
       us_mi_ADH_PERSON.person_id,
@@ -583,6 +598,7 @@
   - name: ADH_PERSONAL_PROTECTION_ORDER
     title: ADH_PERSONAL_PROTECTION_ORDER
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_PERSONAL_PROTECTION_ORDER.primary_key,
       us_mi_ADH_PERSONAL_PROTECTION_ORDER.personal_protection_order_id,
@@ -618,6 +634,7 @@
   - name: ADH_SHOFFENDER
     title: ADH_SHOFFENDER
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_SHOFFENDER.primary_key,
       us_mi_ADH_SHOFFENDER.FkShPerson,
@@ -648,6 +665,7 @@
   - name: COMS_Assaultive_Risk_Assessments
     title: COMS_Assaultive_Risk_Assessments
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Assaultive_Risk_Assessments.primary_key,
       us_mi_COMS_Assaultive_Risk_Assessments.Offender_Number,
@@ -681,6 +699,7 @@
   - name: COMS_Case_Managers
     title: COMS_Case_Managers
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Case_Managers.primary_key,
       us_mi_COMS_Case_Managers.Case_Manager_Id,
@@ -708,6 +727,7 @@
   - name: COMS_Case_Notes
     title: COMS_Case_Notes
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Case_Notes.primary_key,
       us_mi_COMS_Case_Notes.Case_Note_Id,
@@ -733,6 +753,7 @@
   - name: COMS_Employment
     title: COMS_Employment
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Employment.primary_key,
       us_mi_COMS_Employment.Employment_Id,
@@ -763,6 +784,7 @@
   - name: COMS_Modifiers
     title: COMS_Modifiers
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Modifiers.primary_key,
       us_mi_COMS_Modifiers.Modifier_Id,
@@ -790,6 +812,7 @@
   - name: COMS_Parole_Violation_Violation_Incidents
     title: COMS_Parole_Violation_Violation_Incidents
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Parole_Violation_Violation_Incidents.primary_key,
       us_mi_COMS_Parole_Violation_Violation_Incidents.Parole_Violation_Id,
@@ -814,6 +837,7 @@
   - name: COMS_Parole_Violations
     title: COMS_Parole_Violations
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Parole_Violations.primary_key,
       us_mi_COMS_Parole_Violations.Parole_Violation_Id,
@@ -842,6 +866,7 @@
   - name: COMS_Probation_Violation_Violation_Incidents
     title: COMS_Probation_Violation_Violation_Incidents
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Probation_Violation_Violation_Incidents.primary_key,
       us_mi_COMS_Probation_Violation_Violation_Incidents.Probation_Violation_Id,
@@ -866,6 +891,7 @@
   - name: COMS_Probation_Violations
     title: COMS_Probation_Violations
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Probation_Violations.primary_key,
       us_mi_COMS_Probation_Violations.Probation_Violation_Id,
@@ -904,6 +930,7 @@
   - name: COMS_Program_Recommendations
     title: COMS_Program_Recommendations
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Program_Recommendations.primary_key,
       us_mi_COMS_Program_Recommendations.Program_Recommendation_Id,
@@ -935,6 +962,7 @@
   - name: COMS_Security_Classification
     title: COMS_Security_Classification
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Security_Classification.primary_key,
       us_mi_COMS_Security_Classification.Security_Classification_Id,
@@ -965,6 +993,7 @@
   - name: COMS_Security_Standards_Toxin
     title: COMS_Security_Standards_Toxin
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Security_Standards_Toxin.primary_key,
       us_mi_COMS_Security_Standards_Toxin.Security_Standards_Toxin_Id,
@@ -1006,6 +1035,7 @@
   - name: COMS_Security_Threat_Group_Involvement
     title: COMS_Security_Threat_Group_Involvement
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Security_Threat_Group_Involvement.primary_key,
       us_mi_COMS_Security_Threat_Group_Involvement.Offender_Number,
@@ -1035,6 +1065,7 @@
   - name: COMS_Specialties
     title: COMS_Specialties
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Specialties.primary_key,
       us_mi_COMS_Specialties.Specialty_Id,
@@ -1062,6 +1093,7 @@
   - name: COMS_Supervision_Levels
     title: COMS_Supervision_Levels
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Supervision_Levels.primary_key,
       us_mi_COMS_Supervision_Levels.Supervision_Level_Id,
@@ -1089,6 +1121,7 @@
   - name: COMS_Supervision_Schedule_Activities
     title: COMS_Supervision_Schedule_Activities
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Supervision_Schedule_Activities.primary_key,
       us_mi_COMS_Supervision_Schedule_Activities.Supervision_Schedule_Activity_Id,
@@ -1120,6 +1153,7 @@
   - name: COMS_Supervision_Schedules
     title: COMS_Supervision_Schedules
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Supervision_Schedules.primary_key,
       us_mi_COMS_Supervision_Schedules.Supervision_Schedule_Id,
@@ -1148,6 +1182,7 @@
   - name: COMS_Violation_Incident_Charges
     title: COMS_Violation_Incident_Charges
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Violation_Incident_Charges.primary_key,
       us_mi_COMS_Violation_Incident_Charges.Violation_Incident_Charge_Id,
@@ -1174,6 +1209,7 @@
   - name: COMS_Violation_Incidents
     title: COMS_Violation_Incidents
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_COMS_Violation_Incidents.primary_key,
       us_mi_COMS_Violation_Incidents.Violation_Incident_Id,
@@ -1204,6 +1240,7 @@
   - name: ADH_CASE_NOTE_DETAIL
     title: ADH_CASE_NOTE_DETAIL
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_CASE_NOTE_DETAIL.primary_key,
       us_mi_ADH_CASE_NOTE_DETAIL.case_note_detail_id,
@@ -1246,6 +1283,7 @@
   - name: ADH_EMC_WARRANT
     title: ADH_EMC_WARRANT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_EMC_WARRANT.primary_key,
       us_mi_ADH_EMC_WARRANT.emc_warrant_id,
@@ -1295,6 +1333,7 @@
   - name: ADH_EMPLOYEE_BOOKING_ASSIGNMENT
     title: ADH_EMPLOYEE_BOOKING_ASSIGNMENT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_EMPLOYEE_BOOKING_ASSIGNMENT.primary_key,
       us_mi_ADH_EMPLOYEE_BOOKING_ASSIGNMENT.offender_booking_id,
@@ -1336,6 +1375,7 @@
   - name: ADH_LEGAL_ORDER
     title: ADH_LEGAL_ORDER
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_LEGAL_ORDER.primary_key,
       us_mi_ADH_LEGAL_ORDER.legal_order_id,
@@ -1397,6 +1437,7 @@
   - name: ADH_MISCONDUCT_INCIDENT
     title: ADH_MISCONDUCT_INCIDENT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_MISCONDUCT_INCIDENT.primary_key,
       us_mi_ADH_MISCONDUCT_INCIDENT.misconduct_incident_id,
@@ -1448,6 +1489,7 @@
   - name: ADH_OFFENDER_ASSESSMENT
     title: ADH_OFFENDER_ASSESSMENT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_ASSESSMENT.primary_key,
       us_mi_ADH_OFFENDER_ASSESSMENT.offender_assessment_id,
@@ -1486,6 +1528,7 @@
   - name: ADH_OFFENDER_BASIC_INFO_104A
     title: ADH_OFFENDER_BASIC_INFO_104A
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_BASIC_INFO_104A.primary_key,
       us_mi_ADH_OFFENDER_BASIC_INFO_104A.offender_booking_id,
@@ -1706,6 +1749,7 @@
   - name: ADH_OFFENDER_BOOKING_PROFILE
     title: ADH_OFFENDER_BOOKING_PROFILE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_BOOKING_PROFILE.primary_key,
       us_mi_ADH_OFFENDER_BOOKING_PROFILE.offender_booking_id,
@@ -1789,6 +1833,7 @@
   - name: ADH_OFFENDER_BOOKING_REPORT
     title: ADH_OFFENDER_BOOKING_REPORT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_BOOKING_REPORT.primary_key,
       us_mi_ADH_OFFENDER_BOOKING_REPORT.offender_booking_id,
@@ -1814,6 +1859,7 @@
   - name: ADH_OFFENDER_CHARGE
     title: ADH_OFFENDER_CHARGE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_CHARGE.primary_key,
       us_mi_ADH_OFFENDER_CHARGE.offender_charge_id,
@@ -1865,6 +1911,7 @@
   - name: ADH_OFFENDER_EMPLOYMENT
     title: ADH_OFFENDER_EMPLOYMENT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_EMPLOYMENT.primary_key,
       us_mi_ADH_OFFENDER_EMPLOYMENT.offender_booking_id,
@@ -1921,6 +1968,7 @@
   - name: ADH_OFFENDER_EXTERNAL_MOVEMENT
     title: ADH_OFFENDER_EXTERNAL_MOVEMENT
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_EXTERNAL_MOVEMENT.primary_key,
       us_mi_ADH_OFFENDER_EXTERNAL_MOVEMENT.offender_external_movement_id,
@@ -1955,6 +2003,7 @@
   - name: ADH_OFFENDER_FEE_PROFILE
     title: ADH_OFFENDER_FEE_PROFILE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_FEE_PROFILE.primary_key,
       us_mi_ADH_OFFENDER_FEE_PROFILE.offender_fee_profile_id,
@@ -2005,6 +2054,7 @@
   - name: ADH_OFFENDER_MISCOND_HEARING
     title: ADH_OFFENDER_MISCOND_HEARING
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_MISCOND_HEARING.primary_key,
       us_mi_ADH_OFFENDER_MISCOND_HEARING.offender_miscond_hearing_id,
@@ -2046,6 +2096,7 @@
   - name: ADH_OFFENDER_RGC_RECOMMENDATION
     title: ADH_OFFENDER_RGC_RECOMMENDATION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_RGC_RECOMMENDATION.primary_key,
       us_mi_ADH_OFFENDER_RGC_RECOMMENDATION.offender_rgc_recommendation_id,
@@ -2078,6 +2129,7 @@
   - name: ADH_OFFENDER_RGC_TRACKING
     title: ADH_OFFENDER_RGC_TRACKING
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_RGC_TRACKING.primary_key,
       us_mi_ADH_OFFENDER_RGC_TRACKING.offender_rgc_tracking_id,
@@ -2117,6 +2169,7 @@
   - name: ADH_OFFENDER_SCHEDULE
     title: ADH_OFFENDER_SCHEDULE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_SCHEDULE.primary_key,
       us_mi_ADH_OFFENDER_SCHEDULE.offender_schedule_id,
@@ -2155,6 +2208,7 @@
   - name: ADH_OFFENDER_SUPERVISION
     title: ADH_OFFENDER_SUPERVISION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_OFFENDER_SUPERVISION.primary_key,
       us_mi_ADH_OFFENDER_SUPERVISION.offender_supervision_id,
@@ -2189,6 +2243,7 @@
   - name: ADH_PERSONAL_PROTECTION_ORDER_NOTE
     title: ADH_PERSONAL_PROTECTION_ORDER_NOTE
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_PERSONAL_PROTECTION_ORDER_NOTE.primary_key,
       us_mi_ADH_PERSONAL_PROTECTION_ORDER_NOTE.notes_id,
@@ -2216,6 +2271,7 @@
   - name: ADH_PLAN_OF_SUPERVISION
     title: ADH_PLAN_OF_SUPERVISION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_PLAN_OF_SUPERVISION.primary_key,
       us_mi_ADH_PLAN_OF_SUPERVISION.plan_of_supervision_id,
@@ -2245,6 +2301,7 @@
   - name: ADH_SUBSTANCE_ABUSE_TEST
     title: ADH_SUBSTANCE_ABUSE_TEST
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_SUBSTANCE_ABUSE_TEST.primary_key,
       us_mi_ADH_SUBSTANCE_ABUSE_TEST.substance_abuse_test_id,
@@ -2302,6 +2359,7 @@
   - name: ADH_SUPERVISION_CONDITION
     title: ADH_SUPERVISION_CONDITION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_SUPERVISION_CONDITION.primary_key,
       us_mi_ADH_SUPERVISION_CONDITION.supervision_condition_id,
@@ -2356,6 +2414,7 @@
   - name: ADH_SUPERVISION_VIOLATION
     title: ADH_SUPERVISION_VIOLATION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_SUPERVISION_VIOLATION.primary_key,
       us_mi_ADH_SUPERVISION_VIOLATION.supervision_violation_id,
@@ -2425,6 +2484,7 @@
   - name: ADH_SUPER_COND_VIOLATION
     title: ADH_SUPER_COND_VIOLATION
     explore: us_mi_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_mi_ADH_SUPER_COND_VIOLATION.primary_key,
       us_mi_ADH_SUPER_COND_VIOLATION.super_cond_violation_id,

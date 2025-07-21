@@ -368,7 +368,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-testing
+    model: "@{project_id}"
     explore: fake_person
     field: fake_person.fake_person_id
 
@@ -380,7 +380,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-testing
+    model: "@{project_id}"
     explore: fake_person
     field: fake_person.state_code
 
@@ -392,7 +392,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-testing
+    model: "@{project_id}"
     explore: fake_person
     field: fake_person_external_id.external_id
 
@@ -404,7 +404,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-testing
+    model: "@{project_id}"
     explore: fake_person
     field: fake_person_external_id.id_type
 
@@ -412,7 +412,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Another Entity
     title: Fake Another Entity
     explore: fake_person
-    model: recidiviz-testing
+    model: "@{project_id}"
     type: looker_grid
     fields: [fake_another_entity.another_entity_id,
       fake_another_entity.another_name,
@@ -431,7 +431,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Entity
     title: Fake Entity
     explore: fake_person
-    model: recidiviz-testing
+    model: "@{project_id}"
     type: looker_grid
     fields: [fake_entity.entity_id,
       fake_entity.name,
@@ -450,7 +450,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Person
     title: Fake Person
     explore: fake_person
-    model: recidiviz-testing
+    model: "@{project_id}"
     type: looker_grid
     fields: [fake_person.fake_person_id,
       fake_person.full_name,
@@ -469,7 +469,7 @@ class EntityDashboardBuilderTest(unittest.TestCase):
   - name: Fake Person External Id
     title: Fake Person External Id
     explore: fake_person
-    model: recidiviz-testing
+    model: "@{project_id}"
     type: looker_grid
     fields: [fake_person_external_id.external_id,
       fake_person_external_id.fake_person_external_id_id,
@@ -492,7 +492,6 @@ class EntityDashboardBuilderTest(unittest.TestCase):
             root_entity_cls=fake_entities.FakePerson,
             views=LOOKML_VIEWS,
             dataset_id=STATE_BASE_DATASET,
-            project_id="recidiviz-testing",
         ).build_and_validate()
 
         self.assertEqual(dashboard.build(), expected_dashboard)
@@ -514,5 +513,4 @@ class TestStateDashboardBuilder(unittest.TestCase):
                 root_entity_cls=root_entity_cls,
                 views=views,
                 dataset_id=STATE_BASE_DATASET,
-                project_id="recidiviz-testing",
             ).build_and_validate()

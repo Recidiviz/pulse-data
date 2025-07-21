@@ -15,7 +15,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: state_person
     field: state_person.person_id
 
@@ -27,7 +27,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: state_person
     field: state_person.state_code
 
@@ -39,7 +39,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: state_person
     field: state_person_external_id.external_id
 
@@ -51,7 +51,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: recidiviz-staging
+    model: "@{project_id}"
     explore: state_person
     field: state_person_external_id.id_type
 
@@ -68,7 +68,7 @@
   - name: actions
     title: Actions
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: single_value
     fields: [state_person.actions]
     listen: 
@@ -84,7 +84,7 @@
   - name: periods_timeline
     title: Periods Timeline
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_timeline
     fields: [state_person.person_id,
       state_person_periods.period_type,
@@ -109,7 +109,7 @@
   - name: State Assessment
     title: State Assessment
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_assessment.assessment_class,
       state_assessment.assessment_class_raw_text,
@@ -139,7 +139,7 @@
   - name: State Charge
     title: State Charge
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_charge.attempted,
       state_charge.charge_id,
@@ -181,7 +181,7 @@
   - name: State Charge V2
     title: State Charge V2
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_charge_v2.attempted,
       state_charge_v2.charge_notes,
@@ -223,7 +223,7 @@
   - name: State Drug Screen
     title: State Drug Screen
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_drug_screen.drug_screen_date,
       state_drug_screen.drug_screen_id,
@@ -248,7 +248,7 @@
   - name: State Early Discharge
     title: State Early Discharge
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_early_discharge.county_code,
       state_early_discharge.deciding_body_type,
@@ -280,7 +280,7 @@
   - name: State Employment Period
     title: State Employment Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_employment_period.employer_address,
       state_employment_period.employer_name,
@@ -309,7 +309,7 @@
   - name: State Incarceration Incident
     title: State Incarceration Incident
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_incarceration_incident.external_id,
       state_incarceration_incident.facility,
@@ -337,7 +337,7 @@
   - name: State Incarceration Incident Outcome
     title: State Incarceration Incident Outcome
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_incarceration_incident_outcome.date_effective_date,
       state_incarceration_incident_outcome.external_id,
@@ -366,7 +366,7 @@
   - name: State Incarceration Period
     title: State Incarceration Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_incarceration_period.admission_date,
       state_incarceration_period.admission_reason,
@@ -407,7 +407,7 @@
   - name: State Incarceration Sentence
     title: State Incarceration Sentence
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_incarceration_sentence.completion_date,
       state_incarceration_sentence.conditions,
@@ -447,7 +447,7 @@
   - name: State Person
     title: State Person
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person.birthdate_date,
       state_person.current_address,
@@ -477,7 +477,7 @@
   - name: State Person Address Period
     title: State Person Address Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person_address_period.address_city,
       state_person_address_period.address_country,
@@ -509,7 +509,7 @@
   - name: State Person Alias
     title: State Person Alias
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person_alias.alias_type,
       state_person_alias.alias_type_raw_text,
@@ -530,7 +530,7 @@
   - name: State Person External Id
     title: State Person External Id
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person_external_id.external_id,
       state_person_external_id.external_id_with_type,
@@ -555,7 +555,7 @@
   - name: State Person Housing Status Period
     title: State Person Housing Status Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person_housing_status_period.housing_status_end_date,
       state_person_housing_status_period.housing_status_start_date,
@@ -577,7 +577,7 @@
   - name: State Person Staff Relationship Period
     title: State Person Staff Relationship Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_person_staff_relationship_period.associated_staff_external_id,
       state_person_staff_relationship_period.associated_staff_external_id_type,
@@ -605,7 +605,7 @@
   - name: State Program Assignment
     title: State Program Assignment
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_program_assignment.discharge_date,
       state_program_assignment.external_id,
@@ -634,7 +634,7 @@
   - name: State Sentence
     title: State Sentence
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_sentence.conditions,
       state_sentence.county_code,
@@ -668,7 +668,7 @@
   - name: State Sentence Group
     title: State Sentence Group
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_sentence_group.external_id,
       state_sentence_group.sentence_group_id,
@@ -687,7 +687,7 @@
   - name: State Sentence Group Length
     title: State Sentence Group Length
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_sentence_group_length.group_update_datetime_date,
       state_sentence_group_length.parole_eligibility_date_external_date,
@@ -712,7 +712,7 @@
   - name: State Sentence Length
     title: State Sentence Length
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_sentence_length.earned_time_days,
       state_sentence_length.good_time_days,
@@ -741,7 +741,7 @@
   - name: State Sentence Status Snapshot
     title: State Sentence Status Snapshot
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_sentence_status_snapshot.sentence_id,
       state_sentence_status_snapshot.sentence_status_snapshot_id,
@@ -764,7 +764,7 @@
   - name: State Supervision Contact
     title: State Supervision Contact
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_supervision_contact.contact_date,
       state_supervision_contact.contact_method,
@@ -800,7 +800,7 @@
   - name: State Supervision Period
     title: State Supervision Period
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_supervision_case_type_entry.count,
       state_supervision_period.admission_reason,
@@ -839,7 +839,7 @@
   - name: State Supervision Sentence
     title: State Supervision Sentence
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_supervision_sentence.completion_date,
       state_supervision_sentence.conditions,
@@ -872,7 +872,7 @@
   - name: State Supervision Violation
     title: State Supervision Violation
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_supervision_violated_condition_entry.count,
       state_supervision_violation.external_id,
@@ -899,7 +899,7 @@
   - name: State Supervision Violation Response
     title: State Supervision Violation Response
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_supervision_violation_response.deciding_body_type,
       state_supervision_violation_response.deciding_body_type_raw_text,
@@ -932,7 +932,7 @@
   - name: State Task Deadline
     title: State Task Deadline
     explore: state_person
-    model: recidiviz-staging
+    model: "@{project_id}"
     type: looker_grid
     fields: [state_task_deadline.due_date,
       state_task_deadline.eligible_date,

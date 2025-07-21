@@ -1,12 +1,11 @@
 # This file was automatically generated using a pulse-data script.
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_dashboard_generator.py`.
 
-- dashboard: us_tn_raw_data_person_details_template
-  title: Tennessee Latest Raw Data Person Details Template
+- dashboard: us_tn_raw_data_person_details
+  title: Tennessee Raw Data Person Details
   description: For examining individuals in US_TN's raw data tables
   layout: newspaper
   load_configuration: wait
-  extension: required
 
   filters:
   - name: View Type
@@ -18,6 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
+    model: "@{project_id}"
     explore: us_tn_raw_data
     field: us_tn_OffenderName.view_type
 
@@ -30,6 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
+    model: "@{project_id}"
     explore: us_tn_raw_data
     field: us_tn_OffenderName.OffenderID
 
@@ -37,6 +38,7 @@
   - name: OffenderName
     title: OffenderName
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_OffenderName.primary_key,
       us_tn_OffenderName.OffenderID,
@@ -71,6 +73,7 @@
   - name: Address
     title: Address
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Address.primary_key,
       us_tn_Address.PersonID,
@@ -100,6 +103,7 @@
   - name: AssignedStaff
     title: AssignedStaff
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_AssignedStaff.primary_key,
       us_tn_AssignedStaff.StaffID,
@@ -130,6 +134,7 @@
   - name: CAFScore
     title: CAFScore
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_CAFScore.primary_key,
       us_tn_CAFScore.OffenderID,
@@ -169,6 +174,7 @@
   - name: CellBedAssignment
     title: CellBedAssignment
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_CellBedAssignment.primary_key,
       us_tn_CellBedAssignment.OffenderID,
@@ -207,6 +213,7 @@
   - name: Classification
     title: Classification
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Classification.primary_key,
       us_tn_Classification.OffenderID,
@@ -265,6 +272,7 @@
   - name: ContactNoteType
     title: ContactNoteType
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_ContactNoteType.primary_key,
       us_tn_ContactNoteType.OffenderID,
@@ -288,6 +296,7 @@
   - name: Disciplinary
     title: Disciplinary
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Disciplinary.primary_key,
       us_tn_Disciplinary.OffenderID,
@@ -336,6 +345,7 @@
   - name: DisciplinarySentence
     title: DisciplinarySentence
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_DisciplinarySentence.primary_key,
       us_tn_DisciplinarySentence.OffenderID,
@@ -366,6 +376,7 @@
   - name: Diversion
     title: Diversion
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Diversion.primary_key,
       us_tn_Diversion.OffenderID,
@@ -400,6 +411,7 @@
   - name: ISCRelatedSentence
     title: ISCRelatedSentence
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_ISCRelatedSentence.primary_key,
       us_tn_ISCRelatedSentence.OffenderID,
@@ -432,6 +444,7 @@
   - name: ISCSentence
     title: ISCSentence
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_ISCSentence.primary_key,
       us_tn_ISCSentence.OffenderID,
@@ -473,6 +486,7 @@
   - name: JOCharge
     title: JOCharge
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_JOCharge.primary_key,
       us_tn_JOCharge.OffenderID,
@@ -528,6 +542,7 @@
   - name: JOIdentification
     title: JOIdentification
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_JOIdentification.primary_key,
       us_tn_JOIdentification.OffenderID,
@@ -572,6 +587,7 @@
   - name: JOMiscellaneous
     title: JOMiscellaneous
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_JOMiscellaneous.primary_key,
       us_tn_JOMiscellaneous.OffenderID,
@@ -612,6 +628,7 @@
   - name: JOSentence
     title: JOSentence
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_JOSentence.primary_key,
       us_tn_JOSentence.OffenderID,
@@ -686,6 +703,7 @@
   - name: JOSpecialConditions
     title: JOSpecialConditions
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_JOSpecialConditions.primary_key,
       us_tn_JOSpecialConditions.OffenderID,
@@ -714,6 +732,7 @@
   - name: OffenderAttributes
     title: OffenderAttributes
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_OffenderAttributes.primary_key,
       us_tn_OffenderAttributes.OffenderID,
@@ -770,6 +789,7 @@
   - name: OffenderMovement
     title: OffenderMovement
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_OffenderMovement.primary_key,
       us_tn_OffenderMovement.OffenderID,
@@ -797,6 +817,7 @@
   - name: Sentence
     title: Sentence
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Sentence.primary_key,
       us_tn_Sentence.OffenderID,
@@ -879,6 +900,7 @@
   - name: SentenceAction
     title: SentenceAction
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_SentenceAction.primary_key,
       us_tn_SentenceAction.OffenderID,
@@ -908,6 +930,7 @@
   - name: SentenceMiscellaneous
     title: SentenceMiscellaneous
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_SentenceMiscellaneous.primary_key,
       us_tn_SentenceMiscellaneous.OffenderID,
@@ -943,6 +966,7 @@
   - name: SupervisionPlan
     title: SupervisionPlan
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_SupervisionPlan.primary_key,
       us_tn_SupervisionPlan.OffenderID,
@@ -1013,6 +1037,7 @@
   - name: Violations
     title: Violations
     explore: us_tn_raw_data
+    model: "@{project_id}"
     type: looker_grid
     fields: [us_tn_Violations.primary_key,
       us_tn_Violations.TriggerNumber,
