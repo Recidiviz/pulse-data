@@ -107,6 +107,9 @@ schema:
   - name: revert
     type: BOOLEAN
     mode: NULLABLE
+  - name: subsequent_status
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
