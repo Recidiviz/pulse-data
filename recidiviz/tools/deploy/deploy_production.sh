@@ -97,12 +97,12 @@ MINUTES=$((duration / 60))
 echo "Production deploy completed in ${MINUTES} minutes."
 echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
-echo "Generating release notes."
-GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat)
-run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes \
+echo "Checking for PRs open against the release branch"
+GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat) || exit_on_fail
+run_cmd_no_exiting_no_echo pipenv run  python -m recidiviz.tools.deploy.generate_release_notes \
   --previous_tag "${LAST_DEPLOYED_GIT_VERSION_TAG}" \
   --new_tag "${GIT_VERSION_TAG}" \
-  --github_token "${GITHUB_DEPLOY_BOT_TOKEN}"
+  --github_token "${GITHUB_DEPLOY_BOT_TOKEN}" || exit_on_fail
 
 
 script_prompt "Have you completed all Post-Deploy tasks for this PROD version in https://go/platform-deploy-log ?"

@@ -76,8 +76,9 @@ function run_cmd {
     exit_on_fail
 }
 
-# This is very similar to run_cmd except it allows for the user to decide how to exit when the command fails.
-function run_cmd_no_exiting {
+# This is very similar to run_cmd except it allows for the user to decide how to exit when the command fails and does
+# not echo the command to the console (important if the command includes secrets).
+function run_cmd_no_exiting_no_echo {
     # Runs the full array of arguments passed (similar to `run_cmd`) as a command, piping output to stdout so we can indent it.
     "$@" 2>&1 | indent_output
 }

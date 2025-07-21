@@ -85,10 +85,11 @@ fi
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
 
-GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat)
-run_cmd pipenv run  python -m recidiviz.tools.deploy.check_for_prs \
+echo "Generating release notes."
+GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat) || exit_on_fail
+run_cmd_no_exiting_no_echo pipenv run  python -m recidiviz.tools.deploy.check_for_prs \
   --base_branch "${RELEASE_CANDIDATE_BASE_BRANCH}" \
-  --github_token "${GITHUB_DEPLOY_BOT_TOKEN}"
+  --github_token "${GITHUB_DEPLOY_BOT_TOKEN}" || exit_on_fail
 
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH_SHORT}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
