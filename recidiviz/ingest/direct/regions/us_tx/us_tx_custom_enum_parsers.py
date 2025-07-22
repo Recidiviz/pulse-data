@@ -69,6 +69,12 @@ NOT_IN_CUSTODY_REGEX = re.compile(
 
 WARRANT_STATUSES = {"PENDING WARRANT CLOSURE", "PRE-REVOCATION - NOT IN CUSTODY"}
 
+INTAKE_STATUSES = {
+    "RELEASED - PENDING ARRIVAL",
+    "PENDING ARRIVAL FROM OOS",
+    "RELEASED, PENDING ARRIVAL TO OOS",
+}
+
 
 def parse_supervision_level(
     raw_text: str,
@@ -116,9 +122,15 @@ def parse_supervision_level(
     if assessment_level in ("MH", "H"):
         return StateSupervisionLevel.MAXIMUM
 
-    # This can happen when special_conditions, case_type, status, and
-    # assessment_level are all unknown for a given period.
-    # For example, TX creates periods for the XREF_UPDATE_DATE critical dt
-    # before establishing case_type from CTH_CREATION_DATE, status from
-    # OSTS_UPDATE_DATE, etc.
+    # If the case type and status do not match any conditions, but the
+    # status indicates an incoming client then label as INTAKE
+    if status in INTAKE_STATUSES:
+        return StateSupervisionLevel.INTAKE
+
+    # When assessment_level is NULL for a given period, then we mark as `UNASSIGNED`.
+    if assessment_level == "NONE":
+        return StateSupervisionLevel.UNASSIGNED
+
+    # Mark as INTERNAL_UNKNOWN if no other conditions are met. eg are seeing a new
+    # enum value for the first time.
     return StateSupervisionLevel.INTERNAL_UNKNOWN
