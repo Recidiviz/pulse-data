@@ -56,7 +56,6 @@ class Settings(BaseSettings):
     postgres_uri: URL = (
         SQLAlchemyEngineManager.get_server_postgres_instance_url(
             database_key=database_key,
-            secret_prefix_override=schema_type.value,
         )
         if in_gcp_staging() or in_gcp_production()
         else local_postgres_helpers.on_disk_postgres_db_url()
