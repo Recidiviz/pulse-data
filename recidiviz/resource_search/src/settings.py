@@ -54,12 +54,12 @@ class Settings(BaseSettings):
     schema_type: SchemaType = SchemaType.RESOURCE_SEARCH
     database_key: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(schema_type)
     postgres_uri: URL = (
-        local_postgres_helpers.on_disk_postgres_db_url()
-        if not in_gcp_staging() or not in_gcp_production()
-        else SQLAlchemyEngineManager.get_server_postgres_instance_url(
+        SQLAlchemyEngineManager.get_server_postgres_instance_url(
             database_key=database_key,
             secret_prefix_override=schema_type.value,
         )
+        if in_gcp_staging() or in_gcp_production()
+        else local_postgres_helpers.on_disk_postgres_db_url()
     )
 
     # Open AI is used by default by llama index

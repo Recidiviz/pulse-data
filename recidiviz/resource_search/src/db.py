@@ -39,7 +39,13 @@ async def initialize_global_engine() -> None:
     global _global_engine
     if _global_engine is None:
         db_url_to_use = (
-            local_postgres_helpers.async_on_disk_postgres_db_url(
+            SQLAlchemyAsyncEngineManager.get_server_postgres_asyncpg_instance_url(
+                database_key=SQLAlchemyDatabaseKey.for_schema(
+                    SchemaType.RESOURCE_SEARCH
+                ),
+            )
+            if in_gcp_staging() or in_gcp_production()
+            else local_postgres_helpers.async_on_disk_postgres_db_url(
                 username=get_secret_from_local_directory(
                     secret_id="resource_search_db_user"  # nosec
                 ),
@@ -51,12 +57,6 @@ async def initialize_global_engine() -> None:
                 ),
                 database=get_secret_from_local_directory(
                     secret_id="resource_search_db_host"  # nosec
-                ),
-            )
-            if not in_gcp_staging() or not in_gcp_production()
-            else SQLAlchemyAsyncEngineManager.get_server_postgres_asyncpg_instance_url(
-                database_key=SQLAlchemyDatabaseKey.for_schema(
-                    SchemaType.RESOURCE_SEARCH
                 ),
             )
         )
