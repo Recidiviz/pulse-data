@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  cleaned_book_id: STRING
+  SENTENCE_SEQ: STRING
+  PROBABLE_RELEASE_DATE: DATE
+  modified_dt: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: cleaned_book_id
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    task_deadlines:
+      - StateTaskDeadline:
+          eligible_date: PROBABLE_RELEASE_DATE
+          update_datetime: modified_dt
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          task_metadata:
+            $normalized_values_json_dict:
+              external_id:
+                # Sentence External ID
+                $concat:
+                  $values: [cleaned_book_id, SENTENCE_SEQ]
+                  $separator: "-"
+              sentence_type: $literal("INCARCERATION")

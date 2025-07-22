@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  SID: STRING
+  CASE_NUMBER: STRING
+  PAROLE_TO: STRING
+  RecDate: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    task_deadlines:
+      - StateTaskDeadline:
+          eligible_date: PAROLE_TO
+          update_datetime: RecDate
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+          task_metadata:
+            $normalized_values_json_dict:
+              external_id: CASE_NUMBER
+              sentence_type: $literal("SUPERVISION")
