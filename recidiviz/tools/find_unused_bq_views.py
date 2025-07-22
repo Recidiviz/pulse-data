@@ -87,6 +87,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_stable_person_external_ids import (
+    PRODUCT_STABLE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -492,6 +495,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     # TODO(#45499): Delete this once OC completion event is finished
     US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
         "Will be used for work-release eligibility in MO once we make more progress on validation for outside clearance (Akhil Ghanta, 7/18/2025)"
+    ),
+    PRODUCT_STABLE_PERSON_EXTERNAL_IDS_VIEW_BUILDER.address: (
+        "Will be used in a variety of product views shortly (Anna Geiduschek, 7/22/2025)"
     ),
 }
 
