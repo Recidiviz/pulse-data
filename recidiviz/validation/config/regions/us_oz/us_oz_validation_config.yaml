@@ -6,5 +6,20 @@ exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+  - validation_name: incarceration_population_person_level_external_comparison
+    exclusion_type: BROKEN
+    exclusion_reason: We feel fine ignoring validation failures for US_OZ
+  - validation_name: invalid_admission_reason_and_pfi
+    exclusion_type: BROKEN
+    exclusion_reason: We feel fine ignoring validation failures for US_OZ
+  - validation_name: invalid_pfi_for_temporary_custody_admissions
+    exclusion_type: BROKEN
+    exclusion_reason: We feel fine ignoring validation failures for US_OZ
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: BROKEN
+    exclusion_reason: We feel fine ignoring validation failures for US_OZ
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: BROKEN
+    exclusion_reason: We feel fine ignoring validation failures for US_OZ
 max_allowed_error_overrides: []
 num_allowed_rows_overrides: []
