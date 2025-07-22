@@ -29,7 +29,7 @@ Usage:
 python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
     --state-code US_PA --sandbox-dataset-prefix my_prefix \
     --source-bucket recidiviz-staging-my-test-bucket \
-    [--file-tag-filter-regex (tagA|otherTagB)] \
+    [--file-tag-filter-regex "tagA|otherTagB"] \
     [--allow-incomplete-configs False]
 """
 
