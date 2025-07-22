@@ -48,15 +48,17 @@ class TestRecidivizDataLookerSyncOrchestrator(unittest.TestCase):
 
     def test_sync_orchestrator_no_changes(self) -> None:
         self.mock_git_manager.has_changes.return_value = False
+        self.mock_git_manager.remote_branch_exists.return_value = False
 
         self.orchestrator.refresh_recidiviz_data_to_looker_sync_pr()
 
         self.mock_git_manager.commit_and_push_changes.assert_not_called()
         self.mock_github_manager.create_looker_pr_if_not_exists.assert_not_called()
-        self.mock_github_manager.comment_on_recidiviz_data_pr.assert_not_called()
+        self.mock_github_manager.upsert_recidiviz_data_pr_comment.assert_not_called()
 
     def test_sync_orchestrator_full_flow(self) -> None:
         self.mock_git_manager.has_changes.return_value = True
+        self.mock_git_manager.remote_branch_exists.return_value = True
         self.mock_github_manager.create_looker_pr_if_not_exists.return_value = (
             "http://github/pr"
         )
@@ -64,6 +66,25 @@ class TestRecidivizDataLookerSyncOrchestrator(unittest.TestCase):
         self.orchestrator.refresh_recidiviz_data_to_looker_sync_pr()
 
         self.mock_github_manager.create_looker_pr_if_not_exists.assert_called_once()
-        self.mock_github_manager.comment_on_recidiviz_data_pr.assert_called_once_with(
+        self.mock_github_manager.upsert_recidiviz_data_pr_comment.assert_called_once_with(
+            "http://github/pr"
+        )
+
+    def test_branch_exists_no_changes(self) -> None:
+        """Tests case where the workflow was cancelled in the middle of a run,
+        where the looker changes were committed but the PR was not created. In a
+        subsequent run, the branch already exists but there are no changes to commit.
+        However, we still want to create the PR if it doesn't already exist."""
+        self.mock_git_manager.has_changes.return_value = False
+        self.mock_git_manager.remote_branch_exists.return_value = True
+        self.mock_github_manager.create_looker_pr_if_not_exists.return_value = (
+            "http://github/pr"
+        )
+
+        self.orchestrator.refresh_recidiviz_data_to_looker_sync_pr()
+
+        self.mock_git_manager.commit_and_push_changes.assert_not_called()
+        self.mock_github_manager.create_looker_pr_if_not_exists.assert_called_once()
+        self.mock_github_manager.upsert_recidiviz_data_pr_comment.assert_called_once_with(
             "http://github/pr"
         )
