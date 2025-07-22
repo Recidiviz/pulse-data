@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # educat
     no_current_or_prior_excluded_offenses_work_release,
     no_escape_in_10_years_or_current_sentence,
     not_has_first_degree_arson_or_robbery_offenses,
+    not_on_work_release_assignment,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -91,10 +92,33 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
     },
 )
 
+# If someone is approved for work release already (which is captured by
+# `NOT_IN_WORK_RELEASE`) or has an active work-release assignment (which is captured by
+# `US_MO_NOT_ON_WORK_RELEASE_ASSIGNMENT`), they will not meet this group criterion. We
+# use this group to ensure that we only surface people who are not already authorized
+# for work release. Since not every facility records approvals/denials via the
+# work-release/outside-clearance requests table, we also check for active work-release
+# assignments in the `US_MO_NOT_ON_WORK_RELEASE_ASSIGNMENT` criterion as another way to
+# identify residents who are already on work release.
+NOT_ALREADY_ON_WORK_RELEASE_CRITERIA_GROUP = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="US_MO_NOT_IN_WORK_RELEASE_AND_NOT_ON_WORK_RELEASE_ASSIGNMENT",
+        sub_criteria_list=[
+            not_in_work_release.VIEW_BUILDER,
+            not_on_work_release_assignment.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    )
+)
+
 WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
     no_contraband_incarceration_incident_within_2_years.VIEW_BUILDER,
+    institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
+    mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
+    no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
     # For outside clearance, we check that someone is not eligible for work release,
     # because if eligible, they should show up in the work-release opportunity instead
     # of outside clearance. We include `NOT_IN_WORK_RELEASE` as a shared criterion with
@@ -102,10 +126,7 @@ WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     # be eligible for work release but could therefore show up in the outside-clearance
     # eligibility pool, but we don't want to surface them there if they're already on
     # work release.
-    not_in_work_release.VIEW_BUILDER,
-    institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
-    mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
-    no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
+    NOT_ALREADY_ON_WORK_RELEASE_CRITERIA_GROUP,
 ]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(

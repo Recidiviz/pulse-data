@@ -22,11 +22,12 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
+from recidiviz.task_eligibility.completion_events.general import (
     granted_institutional_worker_status,
 )
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_within_60_months_of_projected_full_term_completion_date_min,
+    not_on_institutional_worker_status,
 )
 
 # from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
@@ -54,6 +55,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # `US_MO_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_WORK_RELEASE` once we're ready to
         # make the opportunities mutually exclusive.
         # not_eligible_or_almost_eligible_for_work_release.VIEW_BUILDER,
+        # TODO(#44399): This criterion currently only captures people who have approved
+        # outside-clearance requests, but since not every facility records
+        # approvals/denials via the requests table, can we find another way to try to
+        # identify residents already on OC and exclude them from eligibility here?
+        not_on_institutional_worker_status.VIEW_BUILDER,
     ],
     # TODO(#44389): Make sure this completion event is pulling in the proper data from
     # upstream to capture outside-clearance events appropriately.

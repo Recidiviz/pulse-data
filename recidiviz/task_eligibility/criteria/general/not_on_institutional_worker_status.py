@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which residents are not
-in work release.
-"""
+"""Spans of time when someone is not on institutional worker status."""
+
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,34 +26,35 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NOT_IN_WORK_RELEASE"
+_CRITERIA_NAME = "NOT_ON_INSTITUTIONAL_WORKER_STATUS"
 
-_QUERY = f"""
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date_exclusive AS end_date,
-    FALSE AS meets_criteria,
-    TO_JSON(STRUCT(
-        start_date AS most_recent_work_release_start_date
-    )) AS reason,
-    start_date AS most_recent_work_release_start_date,
-FROM `{{project_id}}.{{sessions_dataset}}.work_release_sessions_materialized`
-WHERE start_date != {nonnull_end_date_clause('end_date_exclusive')}
+_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(
+            start_date AS most_recent_institutional_worker_status_start_date
+        )) AS reason,
+        start_date AS most_recent_institutional_worker_status_start_date,
+    FROM `{project_id}.{sessions_dataset}.institutional_worker_status_sessions_materialized`
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
     description=__doc__,
-    criteria_spans_query_template=_QUERY,
-    sessions_dataset=SESSIONS_DATASET,
+    # Set default to True because we only created spans of *ineligibility* in the query
+    # above, and we want to assume that folks are eligible by default otherwise.
     meets_criteria_default=True,
+    sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
-            name="most_recent_work_release_start_date",
+            name="most_recent_institutional_worker_status_start_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Date when a resident began their most recent work-release session",
+            description="Date when a resident began their most recent institutional-worker-status session",
         ),
     ],
 )
