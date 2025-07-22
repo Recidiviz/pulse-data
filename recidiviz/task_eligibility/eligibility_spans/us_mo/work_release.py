@@ -29,8 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     no_contraband_incarceration_incident_within_2_years,
     not_in_work_release,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # educational_score_1_while_incarcerated,
-    completed_12_months_outside_clearance,
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # educational_score_1_while_incarcerated,; completed_12_months_outside_clearance,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
@@ -63,11 +62,12 @@ NO_PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskC
 
 PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
-    criteria_name="US_MO_INCARCERATION_WITHIN_24_MONTHS_OF_PROJECTED_FULL_TERM_COMPLETION_DATE_MIN_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES_AND_HAS_12_MONTHS_OUTSIDE_CLEARANCE",
+    # TODO(#45499): Rename this subcriterion once OC completion is finished
+    criteria_name="US_MO_INCARCERATION_WITHIN_24_MONTHS_OF_PROJECTED_FULL_TERM_COMPLETION_DATE_MIN_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
     sub_criteria_list=[
         has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
         incarceration_within_24_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
-        completed_12_months_outside_clearance.VIEW_BUILDER,
+        # completed_12_months_outside_clearance.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 )

@@ -227,6 +227,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_mo.completed_12_months_outside_clearance import (
+    VIEW_BUILDER as US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.educational_score_1_while_incarcerated import (
     VIEW_BUILDER as US_MO_EDUCATIONAL_SCORE_1_WHILE_INCARCERATED,
 )
@@ -485,6 +488,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MO_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_WORK_RELEASE.address: (
         "Will be used for outside-clearance eligibility in MO once we make more progress on dev work & validation for work release & outside clearance (see #44404) (Maggie Hilderbran, 7/9/2025)"
+    ),
+    # TODO(#45499): Delete this once OC completion event is finished
+    US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
+        "Will be used for work-release eligibility in MO once we make more progress on validation for outside clearance (Akhil Ghanta, 7/18/2025)"
     ),
 }
 
