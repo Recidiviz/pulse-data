@@ -95,6 +95,24 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         self.context_patcher_fn.stop()
         super().tearDown()
 
+    @classmethod
+    def INGEST_VIEWS_TO_USE_ALL_RESULT_FIXTURES_AS_INPUT(cls) -> set[str]:
+        """
+        Returns a set of ingest view names. For each ingest view (name) in
+        this set, we will use the results of our ingest view tests as the input
+        for the integration test.
+
+        For example, if this set contains "sentence" in US_MO, then
+        the integration test will use all CSVs in
+        us_mo_ingest_view_results/sentence/ as the input to the test.
+        (before it would have pulled sentence.csv, a single file that wasn't
+        necessarily representative of the full set of data).
+
+        TODO(#36159) we can eliminate this method when
+        legacy_generate_ingest_view_results_for_one_date is removed.
+        """
+        return set()
+
     # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
     def legacy_generate_ingest_view_results_for_one_date(
         self,
@@ -104,6 +122,17 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         resource_labels: dict[str, str],
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
+        if (
+            ingest_view_builder.ingest_view_name
+            in self.INGEST_VIEWS_TO_USE_ALL_RESULT_FIXTURES_AS_INPUT()
+        ):
+            return self.generate_ingest_view_results_for_one_date(
+                ingest_view_builder,
+                raw_data_tables_to_upperbound_dates,
+                raw_data_source_instance,
+                resource_labels,
+            )
+
         return FakeGenerateIngestViewResults(
             ingest_view_builder,
             raw_data_tables_to_upperbound_dates,

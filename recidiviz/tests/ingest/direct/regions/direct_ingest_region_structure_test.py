@@ -655,91 +655,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                         f"[{project}]",
                     )
 
-    # TODO(#22059): Update integration test fixtures
-    def test_integration_test_ingest_view_result_fixture_files_have_corresponding_yaml(
-        self,
-    ) -> None:
-        """Fails if there are integration test fixture files that are no longer used but
-        have not been deleted.
-        """
-        for region_code in get_existing_direct_ingest_states():
-            region = direct_ingest_regions.get_direct_ingest_region(
-                region_code=region_code.value
-            )
-            ingest_view_manifest_collector = IngestViewManifestCollector(
-                region=region,
-                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-            )
-            fixtures_directory = os.path.join(
-                os.path.dirname(direct_ingest_fixtures.__file__),
-                region_code.value.lower(),
-            )
-            fixture_file_names = [
-                os.path.splitext(fixture_file)[0]
-                for fixture_file in os.listdir(fixtures_directory)
-                if fixture_file.endswith(".csv")
-            ]
-
-            ingest_view_names = (
-                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
-            )
-            extra_fixtures = set(fixture_file_names) - set(
-                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
-            )
-
-            self.assertSetEqual(
-                extra_fixtures,
-                set(),
-                f"Found fixtures in {fixtures_directory} with no corresponding "
-                f"ingest mappings (candidates for cleanup): {extra_fixtures}",
-            )
-
-            if not fixture_file_names and ingest_view_names:
-                integration_test_module = ModuleCollectorMixin.get_relative_module(
-                    regions_tests_module,
-                    [
-                        region_code.value.lower(),
-                        f"{region_code.value.lower()}_pipeline_integration_test",
-                    ],
-                )
-                integration_test = one(
-                    test_class
-                    for _cls_name, test_class in inspect.getmembers(
-                        integration_test_module, inspect.isclass
-                    )
-                    if issubclass(
-                        test_class, StateSpecificIngestPipelineIntegrationTestCase
-                    )
-                    and _cls_name
-                    != StateSpecificIngestPipelineIntegrationTestCase.__name__
-                )
-                test_method = one(
-                    t for t in dir(integration_test) if t.startswith("test_")
-                )
-                test_source = inspect.getsource(getattr(integration_test, test_method))
-                if (
-                    "self.run_legacy_test_state_pipeline_from_deprecated_fixtures"
-                    in test_source
-                ):
-                    raise ValueError(
-                        f"[{region_code.value}] Found no integration test fixture files "
-                        f"in [{fixtures_directory}] even though there are ingest views for "
-                        f"this state - is this test looking in the right place?"
-                        "Have you migrated this integration test to the new version?"
-                    )
-                if "self.run_state_ingest_pipeline_integration_test" in test_source:
-                    return
-                raise ValueError(
-                    "\n".join(
-                        [
-                            f"{integration_test}.{test_method} did not call expected test method.",
-                            "Expected one of: ",
-                            "self.run_legacy_test_state_pipeline_from_deprecated_fixtures",
-                            "self.run_state_ingest_pipeline_integration_test",
-                        ]
-                    )
-                )
-
 
 def get_all_ingest_tests_for_state(
     state_code: StateCode,
@@ -1094,3 +1009,124 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         raise ValueError(
             f"Found unused ingest mapping output fixtures:\n{_unused_printout}"
         )
+
+
+# TODO(#22059): Update integration test fixtures and consolidate tests in this file
+@pytest.mark.parametrize("state_code", get_existing_direct_ingest_states())
+def test_ingest_pipeline_integration_test_fixture_structure(
+    state_code: StateCode,
+) -> None:
+    """
+    Fails if:
+      - There are integration test fixtures for ingest views which do not exist
+      - There are integration test fixtures for views in INGEST_VIEWS_TO_USE_ALL_RESULT_FIXTURES
+      - There are no integration test fixtures, but the integration test is using the legacy test method
+      - Somehow the integration test defines the new and legacy methods.
+    """
+    region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
+    ingest_view_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+    )
+    fixtures_directory = os.path.join(
+        os.path.dirname(direct_ingest_fixtures.__file__),
+        state_code.value.lower(),
+    )
+    ingest_views_w_legacy_integration_input_fixture = set(
+        os.path.splitext(fixture_file)[0]
+        for fixture_file in os.listdir(fixtures_directory)
+        if fixture_file.endswith(".csv")
+    )
+
+    ingest_view_names = set(
+        ingest_view_manifest_collector.ingest_view_to_manifest.keys()
+    )
+    fixtures_for_non_existent_views = (
+        ingest_views_w_legacy_integration_input_fixture - ingest_view_names
+    )
+
+    if fixtures_for_non_existent_views:
+        raise ValueError(
+            "Found integration test fixtures for non-existent ingest views:\n"
+            + "-".join(
+                os.path.join(fixtures_directory, f"{fixture}.csv\n")
+                for fixture in fixtures_for_non_existent_views
+            )
+        )
+
+    # Get integration test and see if it is using the legacy or new integration test.
+    # The new test uses ingest view result fixture output as its input.
+    integration_test_module = ModuleCollectorMixin.get_relative_module(
+        regions_tests_module,
+        [
+            state_code.value.lower(),
+            f"{state_code.value.lower()}_pipeline_integration_test",
+        ],
+    )
+    integration_test = one(
+        test_class
+        for _cls_name, test_class in inspect.getmembers(
+            integration_test_module, inspect.isclass
+        )
+        if issubclass(test_class, StateSpecificIngestPipelineIntegrationTestCase)
+        and _cls_name != StateSpecificIngestPipelineIntegrationTestCase.__name__
+    )
+    test_method = one(t for t in dir(integration_test) if t.startswith("test_"))
+    test_source = inspect.getsource(getattr(integration_test, test_method))
+
+    is_legacy_test = (
+        "self.run_legacy_test_state_pipeline_from_deprecated_fixtures" in test_source
+    )
+    is_new_test = "self.run_state_ingest_pipeline_integration_test" in test_source
+
+    if is_legacy_test and is_new_test:
+        raise ValueError(
+            "\n".join(
+                [
+                    f"{integration_test}.{test_method} did not call expected test method.",
+                    "Expected one of: ",
+                    "self.run_legacy_test_state_pipeline_from_deprecated_fixtures",
+                    "self.run_state_ingest_pipeline_integration_test",
+                ]
+            )
+        )
+
+    if (
+        is_new_test
+        and any(ingest_views_w_legacy_integration_input_fixture)
+        and ingest_view_names
+    ):
+        raise ValueError(
+            f"[{state_code.value}] Found integration test fixture files in [{fixtures_directory}] "
+            "which are not used by the new integration test. Please remove these files.\n"
+            + "- ".join(
+                os.path.join(fixtures_directory, f"{fixture}.csv\n")
+                for fixture in ingest_views_w_legacy_integration_input_fixture
+            )
+        )
+
+    if is_legacy_test:
+        if (
+            not any(ingest_views_w_legacy_integration_input_fixture)
+            # At time of writing, US_ID did not have ingest views
+            and ingest_view_names
+        ):
+            raise ValueError(
+                f"[{state_code.value}] Found no integration test fixture files "
+                f"in [{fixtures_directory}] even though there are ingest views for "
+                f"this state - is this test looking in the right place?"
+                "Have you migrated this integration test to the new version?"
+            )
+        unused_legacy_fixtures = integration_test.INGEST_VIEWS_TO_USE_ALL_RESULT_FIXTURES_AS_INPUT().intersection(
+            ingest_views_w_legacy_integration_input_fixture
+        )
+        if unused_legacy_fixtures:
+            raise ValueError(
+                f"[{state_code.value}] Found integration test fixture files "
+                f"in [{fixtures_directory}] which are not used by the "
+                "legacy integration test. Please remove these files.\n"
+                + "- ".join(
+                    os.path.join(fixtures_directory, f"{fixture}.csv\n")
+                    for fixture in unused_legacy_fixtures
+                )
+            )
