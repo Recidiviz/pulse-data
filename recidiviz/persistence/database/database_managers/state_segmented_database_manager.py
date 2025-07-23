@@ -35,7 +35,12 @@ class StateSegmentedDatabaseManager:
 
     session_factories: Dict[str, sessionmaker]
 
-    def __init__(self, enabled_states: List[str], schema_type: SchemaType) -> None:
+    def __init__(
+        self,
+        enabled_states: List[str],
+        schema_type: SchemaType,
+        using_proxy: bool = False,
+    ) -> None:
         self.enabled_states = enabled_states
         self.schema_type = schema_type
 
@@ -46,13 +51,18 @@ class StateSegmentedDatabaseManager:
 
         # Initialize engines. Silently no-ops if engines have already been initialized,
         # but also silently fails if the engine can not be created.
-        SQLAlchemyEngineManager.attempt_init_engines_for_databases(
-            list(self.database_keys.values())
-        )
+        if not using_proxy:
+            SQLAlchemyEngineManager.attempt_init_engines_for_databases(
+                list(self.database_keys.values())
+            )
 
         self.session_factories = {
             state_code: sessionmaker(
                 bind=SQLAlchemyEngineManager.get_engine_for_database(database_key)
+                if not using_proxy
+                else SQLAlchemyEngineManager.get_engine_for_database_with_proxy(
+                    database_key=database_key
+                )
             )
             for state_code, database_key in self.database_keys.items()
         }
