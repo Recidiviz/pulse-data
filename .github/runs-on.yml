@@ -5,7 +5,7 @@ runners:
   arm64:
     image: py311-postgres-arm64
     family: ["m8g", "c8g", "c7g", "m7g"]
-    extras: ["s3-cache", "tmpfs"]
+    extras: ["s3-cache"]
     # Start the runner inside the private subnet and route egress through a static IP
     private: true
     # Disable SSH access to the runner instances
@@ -16,7 +16,7 @@ runners:
   x64:
     image: py311-postgres-x64
     family: ["c7i", "m7i"]
-    extras: ["s3-cache", "tmpfs"]
+    extras: ["s3-cache"]
     # Start the runner inside the private subnet and route egress through a static IP
     private: true
     # Disable SSH access to the runner instances

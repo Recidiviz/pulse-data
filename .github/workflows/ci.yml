@@ -52,7 +52,8 @@ jobs:
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
     # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16
+    # The tmpfs extra speeds up the pull and run of the emulator
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -79,7 +80,8 @@ jobs:
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
     # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16
+    # The tmpfs extra speeds up the pull and run of the emulator
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -120,7 +122,7 @@ jobs:
 
   pylint:
     name: Pylint
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=16
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -147,7 +149,7 @@ jobs:
 
   mypy:
     name: Mypy
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -164,7 +166,7 @@ jobs:
 
   black:
     name: Black
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
