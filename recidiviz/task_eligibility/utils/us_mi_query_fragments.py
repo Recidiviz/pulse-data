@@ -339,6 +339,12 @@ SELECT
     DATE_DIFF(DATE(pmi_sgt_min_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), h.start_date, DAY) AS metadata_days_in_solitary_session,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), hc.start_date, DAY) AS metadata_days_in_collapsed_solitary_session,
+    h.start_date AS metadata_solitary_session_start_date,
+    CASE WHEN h.housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT' THEN 'Administrative Segregation'
+            WHEN h.housing_unit_type = 'TEMPORARY_SOLITARY_CONFINEMENT' THEN 'Temporary Segregation'
+            WHEN h.housing_unit_type = 'DISCIPLINARY_SOLITARY_CONFINEMENT' THEN 'Detention'
+            ELSE 'Other Segregation Type'
+    END AS metadata_solitary_session_type,
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
     rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
