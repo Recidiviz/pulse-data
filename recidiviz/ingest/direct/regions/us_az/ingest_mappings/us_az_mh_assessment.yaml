@@ -9,6 +9,7 @@ input_columns:
   mh_score_description: STRING
   mh_code: STRING
   mh_code_simplified: STRING
+  SMI_C: STRING
   RECORD_USERID: STRING
 unused_columns: []
 output:
@@ -38,3 +39,4 @@ output:
             $normalized_values_json_dict:
               CODE_DESCRIPTION: mh_score_description
               FULL_CODE: mh_code
+              SMI_C: SMI_C
