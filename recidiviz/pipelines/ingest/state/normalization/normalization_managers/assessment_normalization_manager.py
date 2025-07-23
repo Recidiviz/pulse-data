@@ -215,6 +215,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.SPIN_W,
                 StateAssessmentType.STABLE,
                 StateAssessmentType.STATIC_99,
+                StateAssessmentType.TABE,
                 StateAssessmentType.TCU_DRUG_SCREEN,
                 StateAssessmentType.COMPAS,
                 StateAssessmentType.TX_CSST,

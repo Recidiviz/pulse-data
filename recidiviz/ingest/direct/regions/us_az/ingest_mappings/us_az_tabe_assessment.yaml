@@ -26,7 +26,7 @@ output:
                 - $literal("TABE")
           assessment_date: TABE_DATE
           assessment_class: $literal_enum(StateAssessmentClass.EDUCATION)
-          assessment_type: $literal_enum(StateAssessmentType.INTERNAL_UNKNOWN)
+          assessment_type: $literal_enum(StateAssessmentType.TABE)
           conducting_staff_external_id: CONDUCTING_STAFF_EXTERNAL_ID
           conducting_staff_external_id_type:
             $conditional:

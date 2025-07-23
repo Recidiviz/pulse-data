@@ -135,6 +135,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_static_99,
     state_enum_strings.state_assessment_type_strong_r,
     state_enum_strings.state_assessment_type_strong_r2,
+    state_enum_strings.state_assessment_type_tabe,
     state_enum_strings.state_assessment_type_tcu_drug_screen,
     state_enum_strings.state_assessment_type_oras_community_supervision,
     state_enum_strings.state_assessment_type_oras_community_supervision_screening,

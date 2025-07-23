@@ -511,7 +511,6 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
     ),
-    #TODO(#34752): Make mandatory literacy data pull more accurate
     manlit_prg_eval AS (
         SELECT
           pei.state_code,
@@ -563,6 +562,62 @@ def meets_mandatory_literacy(opp_name: str) -> str:
     WHERE (MEET_STANDARD = 'Yes')
     GROUP BY 1,2
     ),
+    tabe_qualification AS (
+        WITH
+        --  Find the earliest passing date for each section for each person
+        section_earliest_pass_date AS (
+            SELECT
+                person_id,
+                MIN(CASE WHEN passed_reading_flag = 1 THEN assessment_date ELSE NULL END) AS earliest_reading_pass_date,
+                MIN(CASE WHEN passed_language_flag = 1 THEN assessment_date ELSE NULL END) AS earliest_language_pass_date,
+                MIN(CASE WHEN passed_math_flag = 1 THEN assessment_date ELSE NULL END) AS earliest_math_pass_date
+            FROM (
+                SELECT
+                    sa.person_id,
+                    sa.assessment_date,
+                    -- Flags to indicate if the score is passing for each section
+                    CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.READING_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_reading_flag,
+                    CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.LANGUAGE_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_language_flag,
+                    CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.MATH_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_math_flag
+                FROM
+                    `{{project_id}}.{{normalized_state_dataset}}.state_assessment` sa
+                WHERE
+                    state_code = 'US_AZ'
+                    AND sa.assessment_class = 'EDUCATION'
+                    AND sa.assessment_type = 'TABE'
+            )
+            WHERE
+                -- Only consider rows where at least one section was passed
+                passed_reading_flag = 1 
+                OR passed_language_flag = 1 
+                OR passed_math_flag = 1
+            GROUP BY
+                person_id
+        )
+        SELECT
+            "US_AZ" AS state_code,
+            person_id, 
+            overall_all_sections_passed_date AS start_date,
+            CAST(NULL AS DATE) AS end_date,
+            TRUE AS meets_criteria,
+            overall_all_sections_passed_date AS latest_functional_literacy_date,
+            'DOC_EDUCATION_TABE' AS data_location,
+        FROM (
+            SELECT
+            person_id,
+            -- The latest of the earliest passing dates is the earliest date on which all sections were passed.
+            GREATEST(earliest_reading_pass_date, earliest_language_pass_date, earliest_math_pass_date) AS overall_all_sections_passed_date
+            FROM
+                section_earliest_pass_date
+            WHERE
+                -- Ensure all three sections have been passed
+                earliest_reading_pass_date IS NOT NULL
+                AND earliest_language_pass_date IS NOT NULL
+                AND earliest_math_pass_date IS NOT NULL
+            GROUP BY
+                1,2
+        )
+    ),
     union_cte AS (
         SELECT
           *
@@ -578,6 +633,11 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           *
         FROM
           manlit_priority_report 
+        UNION ALL
+        SELECT
+            *
+        FROM
+            tabe_qualification
     ),
     {create_sub_sessions_with_attributes('union_cte')}
     SELECT
