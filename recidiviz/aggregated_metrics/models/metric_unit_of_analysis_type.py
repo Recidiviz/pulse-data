@@ -119,7 +119,10 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
                     primary_key_columns=["state_code", "facility_counselor_id"],
-                    static_attribute_columns=["facility_counselor_name"],
+                    static_attribute_columns=[
+                        "facility_counselor_name",
+                        "facility_counselor_email_address",
+                    ],
                 )
             case MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY:
                 return MetricUnitOfAnalysis(
@@ -159,7 +162,11 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
                     primary_key_columns=["state_code", "officer_id"],
-                    static_attribute_columns=["officer_name"],
+                    static_attribute_columns=[
+                        "officer_name",
+                        "officer_email_address",
+                        "staff_id",
+                    ],
                 )
             case (
                 MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
@@ -167,7 +174,11 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
                     primary_key_columns=["state_code", "officer_id"],
-                    static_attribute_columns=["officer_name"],
+                    static_attribute_columns=[
+                        "officer_name",
+                        "officer_email_address",
+                        "staff_id",
+                    ],
                 )
             case MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD:
                 return MetricUnitOfAnalysis(
@@ -252,6 +263,7 @@ SELECT
     state_code,
     staff_id AS facility_counselor_id,
     full_name_clean AS facility_counselor_name,
+    LOWER(email) AS facility_counselor_email_address,
 FROM
     `{project_id}.reference_views.state_staff_with_names`
 """,
@@ -278,6 +290,8 @@ SELECT
     a.state_code,
     b.external_id AS officer_id,
     a.full_name_clean AS officer_name,
+    LOWER(email) AS officer_email_address,
+    staff_id,
 FROM
     `{project_id}.reference_views.state_staff_with_names` a
 INNER JOIN
@@ -290,6 +304,8 @@ SELECT
     a.state_code,
     b.external_id AS officer_id,
     a.full_name_clean AS officer_name,
+    LOWER(email) AS officer_email_address,
+    staff_id,
 FROM
     `{project_id}.reference_views.state_staff_with_names` a
 INNER JOIN
