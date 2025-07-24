@@ -163,6 +163,9 @@ output:
                       StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "ELECTRONIC_MONITORING"
                       StateSupervisionLevel.RESIDENTIAL_PROGRAM: "TRANSITIONAL_LIVING"
                       StateSupervisionLevel.UNSUPERVISED: "UNSUPERVISED"
+                      StateSupervisionLevel.INTERSTATE_COMPACT: "OTHER_STATE"
+                      StateSupervisionLevel.LIMITED: "NON_REPORTING"
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
                         - "NONE"
                         - "INACTIVE"
+                        - "ACTIVE_SUPERVISION"
