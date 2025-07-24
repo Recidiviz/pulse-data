@@ -43,6 +43,40 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.string_formatting import fix_indent
 
 
+def get_contact_info_for_compliance_builder() -> str:
+    """Returns a query that creates a contact_info table with the necessary fields
+    for the contact compliance builder."""
+    return """
+    SELECT 
+        person_id,
+        contact_date,
+        CASE
+            WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
+                THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
+            WHEN JSON_VALUE(supervision_contact_metadata, '$.VIRTUAL_FLAG') = "1"
+              AND contact_method_raw_text = 'OFFICE'
+              THEN 'SCHEDULED VIRTUAL OFFICE'
+            ELSE
+                CONCAT("SCHEDULED " || contact_method_raw_text)
+        END AS contact_type,
+        external_id,
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
+    WHERE state_code = "US_TX" AND status = "COMPLETED"
+      AND contact_type in ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
+
+    UNION ALL
+    
+    SELECT 
+        person_id,
+        contact_date,
+        "SCHEDULED COLLATERAL" AS contact_type,
+        external_id,
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
+    WHERE state_code = "US_TX" AND status = "COMPLETED"
+      AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
+    """
+
+
 def contact_compliance_builder(
     criteria_name: str,
     description: str,
@@ -70,29 +104,7 @@ def contact_compliance_builder(
 WITH
 -- Create contacts table by adding scheduled/unscheduled prefix
 contact_info AS (
-    SELECT 
-        person_id,
-        contact_date,
-        CASE
-            -- When we are looking at collateral contacts, look at contact type in 
-            -- state supervision contact as opposed to contact method
-            WHEN "{contact_type}" = "SCHEDULED COLLATERAL" 
-            AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
-                THEN "SCHEDULED COLLATERAL"
-            -- Consider all contacts with contact_method "Telephone" and "Virtual" as
-            -- Electronic Contacts.
-            WHEN contact_method in ("TELEPHONE", "VIRTUAL")
-            AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
-                THEN ("SCHEDULED ELECTRONIC")
-            -- When the contact reason has unscheduled in raw text, label as unscheduled
-            WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
-                THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
-            ELSE
-                CONCAT("SCHEDULED " || contact_method_raw_text)
-        END AS contact_type,
-        external_id,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
-    WHERE state_code = "US_TX" AND status = "COMPLETED"
+    {get_contact_info_for_compliance_builder()}
 ),
 contact_cadence_spans AS (
     {custom_contact_cadence_spans}
@@ -559,32 +571,15 @@ def contact_compliance_builder_type_agnostic(
               IF(CAST(SCHEDULED_FIELD_REQ AS INT64) != 0, SCHEDULED_FIELD_REQ, NULL) AS scheduled_field_due,
               IF(CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0, UNSCHEDULED_FIELD_REQ, NULL) AS unscheduled_field_due,
               IF(CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0, UNSCHEDULED_HOME_REQ, NULL) AS unscheduled_home_due,
-              IF(CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0, SCHEDULED_ELECTRONIC_REQ, NULL) AS scheduled_electronic_due,
+              IF(CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) != 0, SCHEDULED_VIRTUAL_OFFICE_REQ, NULL) AS scheduled_virtual_office_due,
               IF(CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0, SCHEDULED_OFFICE_REQ, NULL) AS scheduled_office_due
             )) AS types_and_amounts_due
         FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest`
 {where_clause}
     ),
-    -- Creates table of all contacts and adds scheduled/unscheculed prefix
+    -- Creates table of all contacts and adds scheduled/unscheduled prefix
     contact_info AS (
-        SELECT 
-            person_id,
-            contact_date,
-            CASE
-                -- Consider all contacts with contact_method "Telephone" and "Virtual" as
-                -- Electronic Contacts.
-                WHEN contact_method in ("TELEPHONE", "VIRTUAL")
-                AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
-                    THEN ("SCHEDULED ELECTRONIC")
-                -- When the contact reason has unscheduled in raw text, label as unscheduled
-                WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
-                    THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
-                ELSE
-                    CONCAT("SCHEDULED " || contact_method_raw_text)
-            END AS contact_type,
-            external_id,
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact`
-        WHERE status = "COMPLETED"
+        {get_contact_info_for_compliance_builder()}
     ),
     -- Creates a record of what contact types can be accepted for a given supervision period
     -- and calculates how long the person has been in supervision, and thus how many contact
@@ -742,7 +737,7 @@ def contact_compliance_builder_type_agnostic(
             SUM (case when contact_type = "SCHEDULED OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_office_count,
             SUM (case when contact_type = "SCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_field_count,
             SUM (case when contact_type = "UNSCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_home_count,
-            SUM (case when contact_type = "SCHEDULED ELECTRONIC" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_electronic_count,
+            SUM (case when contact_type = "SCHEDULED VIRTUAL OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_virtual_office_count,
             SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_field_count,
         FROM divided_periods_with_contacts
     ),
@@ -766,7 +761,7 @@ def contact_compliance_builder_type_agnostic(
                     THEN FALSE
                 WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) <= unscheduled_home_count AND CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0
                     THEN FALSE
-                WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) <= scheduled_electronic_count AND CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 
+                WHEN CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) <= scheduled_virtual_office_count AND CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) != 0 
                     THEN FALSE
                 WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) <= scheduled_office_count AND CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0  
                     THEN FALSE
@@ -777,7 +772,7 @@ def contact_compliance_builder_type_agnostic(
                 scheduled_field_count AS scheduled_field_done,
                 unscheduled_field_count AS unscheduled_field_done,
                 unscheduled_home_count AS unscheduled_home_done,
-                scheduled_electronic_count AS scheduled_electronic_done,
+                scheduled_virtual_office_count AS scheduled_virtual_office_done,
                 scheduled_office_count AS scheduled_office_done
             )) AS types_and_amounts_done,
             types_and_amounts_due,

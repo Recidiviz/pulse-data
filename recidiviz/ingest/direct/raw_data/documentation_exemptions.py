@@ -1529,16 +1529,4 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
             ]
         },
     },
-    StateCode.US_TX: {
-        "RECIDIVIZ_REFERENCE_ContactCadenceAgnostic": {
-            "Number of scheduled home contacts required.": [
-                "SCHEDULED_FIELD_REQ",
-                "UNSCHEDULED_HOME_REQ",
-                "SCHEDULED_HOME_REQ",
-                "SCHEDULED_ELECTRONIC_REQ",
-                "SCHEDULED_OFFICE_REQ",
-                "UNSCHEDULED_FIELD_REQ",
-            ]
-        },
-    },
 }
