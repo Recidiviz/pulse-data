@@ -77,19 +77,21 @@ output:
             $enum_mapping:
               $raw_text: SUP_TYPE
               $mappings:
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                StateSupervisionLevel.ABSCONSION:
                   - "ESC" # Absconder
+                StateSupervisionLevel.INTAKE:
+                  - "IAP" # Initial Assessment Phase
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "PSI" # Pre Sentence Investigation
+                StateSupervisionLevel.UNSUPERVISED:
+                  - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
                   - "LV1" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
                   - "LV2" # TODO(#45186): Find definition for this value, which started showing up on 7/9/25
                   - "LV3" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
                   - "ABS" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
                   - "NUS" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
                   - "PSN" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
-                StateSupervisionLevel.UNASSIGNED:
-                  - "IAP" # Initial Assessment Phase
-                  - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
-                  # The following codes are no longer used according to MO, but may appear in historical records
-                  - "PSI" # Pre Sentence Investigation
                 StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
                   - "EMP" # Electronic Monitoring
                 StateSupervisionLevel.MINIMUM:
