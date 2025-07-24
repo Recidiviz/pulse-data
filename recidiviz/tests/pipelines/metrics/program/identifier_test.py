@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order,protected-access
+# pylint: disable=protected-access
 """Tests for program/identifier.py."""
 
 import unittest
 from datetime import date
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Sequence, Union
 
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time

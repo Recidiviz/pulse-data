@@ -43,7 +43,6 @@ class ProgramMetricProducer(
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = ProgramMetric  # type: ignore
-        self.metrics_producer_delegate_classes = {}
 
     @property
     def result_class_to_metric_classes_mapping(

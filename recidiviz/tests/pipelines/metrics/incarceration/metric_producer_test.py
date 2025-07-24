@@ -16,8 +16,6 @@
 # =============================================================================
 """Tests for incarceration/metric_producer.py."""
 import datetime
-
-# pylint: disable=unused-import,wrong-import-order
 import unittest
 from collections import defaultdict
 from datetime import date
@@ -60,15 +58,6 @@ from recidiviz.pipelines.metrics.incarceration.metrics import (
     IncarcerationMetricType,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
-    StateSpecificIncarcerationMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
-    UsXxIncarcerationMetricsProducerDelegate,
-)
-from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
-    UsXxIncarcerationMetricsProducerDelegateForTests,
-)
 
 ALL_METRICS_INCLUSIONS = set(IncarcerationMetricType)
 
@@ -121,9 +110,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -187,9 +173,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -239,9 +222,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -288,9 +268,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -354,9 +331,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -400,9 +374,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -451,9 +422,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         self.assertEqual(0, len(metrics))
@@ -506,9 +474,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=36,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count([incarceration_event_include])
@@ -557,9 +522,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=37,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)
@@ -630,9 +592,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests()
-            },
         )
 
         expected_count = self.expected_metrics_count(incarceration_events)

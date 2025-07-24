@@ -89,7 +89,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person,
             program_events,
             ALL_METRICS_INCLUSIONS,
-            metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
@@ -137,7 +136,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person,
             program_events,
             ALL_METRICS_INCLUSIONS,
-            metrics_producer_delegates={},
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
@@ -184,7 +182,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person,
             program_events,
             ALL_METRICS_INCLUSIONS,
-            metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
@@ -238,7 +235,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person,
             program_events,
             ALL_METRICS_INCLUSIONS,
-            metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
         )

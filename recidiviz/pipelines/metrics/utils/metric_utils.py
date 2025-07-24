@@ -98,9 +98,6 @@ class PersonLevelMetric(BuildableAttr):
     # The external_id of StatePerson for person-specific metrics
     person_id: Optional[int] = attr.ib(default=None)
 
-    # The external_id of StatePerson for person-specific metrics
-    person_external_id: Optional[str] = attr.ib(default=None)
-
 
 @attr.s
 class AssessmentMetricMixin(BuildableAttr):

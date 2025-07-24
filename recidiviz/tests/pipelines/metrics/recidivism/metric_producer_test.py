@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for recidivism/metric_producer.py."""
 import datetime
 import unittest
@@ -50,18 +47,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
-    StateSpecificRecidivismMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_recidivism_metrics_producer_delegate import (
-    UsXxRecidivismMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_recidivism_metrics_producer_delegate import (
-    UsNdRecidivismMetricsProducerDelegate,
 )
 
 _PIPELINE_JOB_ID = "TEST_JOB_ID"
@@ -316,11 +301,6 @@ class TestStayLengthBucket(unittest.TestCase):
 _ALL_METRIC_INCLUSIONS = {MetricType.REINCARCERATION_RATE}
 
 
-_DEFAULT_METRICS_PRODUCER_CLASS: Dict[str, StateSpecificMetricsProducerDelegate] = {
-    StateSpecificRecidivismMetricsProducerDelegate.__name__: UsXxRecidivismMetricsProducerDelegate()
-}
-
-
 class TestProduceMetrics(unittest.TestCase):
     """Tests the produce_metrics function."""
 
@@ -384,7 +364,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -453,7 +432,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         # For the first event:
@@ -528,7 +506,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         # For the first event:
@@ -595,7 +572,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -667,7 +643,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         # For the first event:
@@ -730,7 +705,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -787,7 +761,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -844,7 +817,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -907,7 +879,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -972,7 +943,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1043,7 +1013,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1103,7 +1072,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
         expected_count = self.expected_metric_counts(release_events_by_cohort)
 
@@ -1162,7 +1130,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1223,7 +1190,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1279,7 +1245,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            _DEFAULT_METRICS_PRODUCER_CLASS,
         )
 
         assert all(
@@ -1341,9 +1306,6 @@ class TestProduceMetrics(unittest.TestCase):
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificRecidivismMetricsProducerDelegate.__name__: UsNdRecidivismMetricsProducerDelegate()
-            },
         )
 
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1355,7 +1317,7 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         for metric in metrics:
-            self.assertEqual("ABC", metric.person_external_id)
+            self.assertEqual(12345, metric.person_id)
 
 
 class TestReincarcerationsByPeriod(unittest.TestCase):

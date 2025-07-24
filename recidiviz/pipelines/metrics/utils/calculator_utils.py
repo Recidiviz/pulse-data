@@ -31,17 +31,12 @@ from recidiviz.common.date import (
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Event, IdentifierResult, Span
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
 
 RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
 
 
 def person_characteristics(
-    person: NormalizedStatePerson,
-    person_age: Optional[int],
-    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
+    person: NormalizedStatePerson, person_age: Optional[int]
 ) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics|
     dictionary. Adds the person's person_id and, if applicable,
@@ -55,15 +50,6 @@ def person_characteristics(
         characteristics["gender"] = person.gender
 
     characteristics["person_id"] = person.person_id
-
-    primary_person_external_id = person_external_id_to_include(
-        person.state_code,
-        person,
-        metrics_producer_delegate=metrics_producer_delegate,
-    )
-
-    if primary_person_external_id is not None:
-        characteristics["person_external_id"] = primary_person_external_id
 
     return characteristics
 
@@ -89,48 +75,6 @@ def age_at_date(
         - birthdate.year
         - ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
     )
-
-
-# TODO(#44763): Delete this once we don't output person_external_id from metrics
-#  pipelines
-def person_external_id_to_include(
-    state_code: str,
-    person: NormalizedStatePerson,
-    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
-) -> Optional[str]:
-    """Finds an external_id on the person that should be included in calculations for
-    person-level metrics in the given pipeline.
-    """
-    external_ids = person.external_ids
-
-    if not external_ids:
-        return None
-
-    if not metrics_producer_delegate:
-        return None
-
-    id_type_to_include = (
-        metrics_producer_delegate.primary_person_external_id_to_include()
-    )
-
-    if not id_type_to_include:
-        return None
-
-    external_ids_with_type = []
-    for external_id in external_ids:
-        if external_id.state_code != state_code:
-            raise ValueError(
-                f"Found unexpected state code [{external_id.state_code}] on external_id [{external_id.external_id}]. "
-                f"Expected state code: [{state_code}]."
-            )
-
-        if external_id.id_type == id_type_to_include:
-            external_ids_with_type.append(external_id.external_id)
-
-    if not external_ids_with_type:
-        return None
-
-    return sorted(external_ids_with_type)[0]
 
 
 def include_in_output(
@@ -202,7 +146,6 @@ def produce_standard_event_metrics(
     ],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
-    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> List[RecidivizMetricT]:
     """Produces metrics for pipelines with a standard mapping of event to metric
     type."""
@@ -245,7 +188,6 @@ def produce_standard_event_metrics(
                     "month": event_date.month,
                     **(additional_attributes or {}),
                 },
-                metrics_producer_delegate=metrics_producer_delegate,
             )
 
             metrics.append(metric)
@@ -261,10 +203,6 @@ def produce_standard_span_metrics(
         Sequence[Type[RecidivizMetricT]],
     ],
     pipeline_job_id: str,
-    metric_classes_to_producer_delegates: Mapping[
-        Type[RecidivizMetricT],
-        Optional[StateSpecificMetricsProducerDelegate],
-    ],
     additional_attributes: Optional[Dict[str, Any]] = None,
 ) -> List[RecidivizMetricT]:
     """Produces metrics for pipelines with a standard mapping of span to metric
@@ -302,9 +240,6 @@ def produce_standard_span_metrics(
                     person=person,
                     person_age=age,
                     pipeline_job_id=pipeline_job_id,
-                    metrics_producer_delegate=metric_classes_to_producer_delegates.get(
-                        metric_class
-                    ),
                     additional_attributes=additional_attributes,
                 )
 
@@ -320,16 +255,13 @@ def build_metric(
     person_age: Optional[int],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
-    metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> RecidivizMetricT:
     """Builds a RecidivizMetric of the defined metric_class using the provided
     information.
     """
     metric_attributes = attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
 
-    person_attributes = person_characteristics(
-        person, person_age, metrics_producer_delegate
-    )
+    person_attributes = person_characteristics(person, person_age)
 
     metric_cls_builder = metric_class.builder()
 

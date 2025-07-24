@@ -51,12 +51,6 @@ from recidiviz.pipelines.metrics.utils.calculator_utils import (
     get_calculation_month_upper_bound_date,
     include_in_output,
 )
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
-)
 
 
 class SupervisionMetricProducer(
@@ -72,10 +66,6 @@ class SupervisionMetricProducer(
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = SupervisionMetric  # type: ignore
-        self.metrics_producer_delegate_classes = {
-            # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
-            SupervisionMetric: StateSpecificSupervisionMetricsProducerDelegate  # type: ignore[type-abstract]
-        }
 
     @property
     def result_class_to_metric_classes_mapping(
@@ -100,7 +90,6 @@ class SupervisionMetricProducer(
         identifier_results: List[SupervisionEvent],
         metric_inclusions: Set[SupervisionMetricType],
         pipeline_job_id: str,
-        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[SupervisionMetric]:
         """Transforms SupervisionEvents and a NormalizedStatePerson into SupervisionMetrics.
@@ -127,15 +116,6 @@ class SupervisionMetricProducer(
         calculation_month_upper_bound = get_calculation_month_upper_bound_date()
         calculation_month_lower_bound = get_calculation_month_lower_bound_date(
             calculation_month_upper_bound, calculation_month_count
-        )
-
-        metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
-            self.metric_class
-        )
-        metrics_producer_delegate = (
-            metrics_producer_delegates.get(metrics_producer_delegate_class.__name__)
-            if metrics_producer_delegate_class
-            else None
         )
         event_to_metric_classes = self.result_class_to_included_metric_classes(
             metric_inclusions
@@ -182,7 +162,6 @@ class SupervisionMetricProducer(
                             "year": event_date.year,
                             "month": event_date.month,
                         },
-                        metrics_producer_delegate=metrics_producer_delegate,
                     )
 
                     if not isinstance(metric, SupervisionMetric):

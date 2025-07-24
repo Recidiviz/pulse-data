@@ -14,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for supervision_period_utils.py."""
 import unittest
 from datetime import date
@@ -28,7 +26,6 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -50,9 +47,6 @@ from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate impo
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_supervision_delegate import (
-    UsNdSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,

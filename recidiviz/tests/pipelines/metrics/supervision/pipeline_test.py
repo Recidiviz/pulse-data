@@ -101,12 +101,6 @@ from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import 
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
-    UsXxSupervisionMetricsProducerDelegate,
-)
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
@@ -152,15 +146,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.delegate_patchers = start_pipeline_delegate_getter_patchers(
             supervision_identifier
         )
-        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
-            return_value={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
-        )
-        self.mock_get_required_state_metrics_producer_delegate = (
-            self.state_specific_metrics_producer_delegate_patcher.start()
-        )
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def tearDown(self) -> None:
@@ -170,7 +155,6 @@ class TestSupervisionPipeline(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         for patcher in self.delegate_patchers:
             patcher.stop()
-        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_supervision_pipeline_data_dict(
         self, state_code: str, fake_person_id: int, fake_supervision_period_id: int
@@ -1100,16 +1084,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.delegate_patchers = start_pipeline_delegate_getter_patchers(
             supervision_identifier
         )
-        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
-        )
-        self.mock_state_specific_metrics_producer_delegate = (
-            self.state_specific_metrics_producer_delegate_patcher.start()
-        )
-        self.mock_state_specific_metrics_producer_delegate.return_value = {
-            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-        }
-
         self.metric_producer = pipeline.metric_producer.SupervisionMetricProducer()
 
         self.pipeline_parameters = MetricsPipelineParameters(
@@ -1127,7 +1101,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         for patcher in self.delegate_patchers:
             patcher.stop()
         self.job_id_patcher.stop()
-        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def testProduceSupervisionMetrics(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn."""
@@ -1176,7 +1149,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
@@ -1218,7 +1190,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
@@ -1244,7 +1215,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,

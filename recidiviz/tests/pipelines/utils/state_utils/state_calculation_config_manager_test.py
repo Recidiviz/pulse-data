@@ -20,9 +20,6 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.ingest.direct.external_id_type_helpers import (
-    external_id_types_by_state_code,
-)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -35,24 +32,18 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_per
     NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_metrics_producer_delegates,
     get_state_specific_assessment_normalization_delegate,
     get_state_specific_case_compliance_manager,
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_incarceration_delegate,
-    get_state_specific_incarceration_metrics_producer_delegate,
     get_state_specific_incarceration_period_normalization_delegate,
     get_state_specific_normalization_delegate,
     get_state_specific_sentence_normalization_delegate,
     get_state_specific_staff_role_period_normalization_delegate,
     get_state_specific_supervision_delegate,
-    get_state_specific_supervision_metrics_producer_delegate,
     get_state_specific_supervision_period_normalization_delegate,
     get_state_specific_violation_delegate,
     get_state_specific_violation_response_normalization_delegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     get_all_delegate_getter_fn_names,
@@ -75,31 +66,6 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 f"Missing a test for the following delegate getter functions: "
                 f"{missing_tests}"
             )
-
-    def test_get_required_state_specific_metrics_producer_delegates(self) -> None:
-        external_ids_by_state_code = external_id_types_by_state_code()
-        for state in get_existing_direct_ingest_states():
-            for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
-                delegates_map = get_required_state_specific_metrics_producer_delegates(
-                    state.value, {subclass}
-                )
-                for delegate in delegates_map.values():
-                    if isinstance(delegate, StateSpecificMetricsProducerDelegate):
-                        try:
-                            primary_external_id = (
-                                delegate.primary_person_external_id_to_include()
-                            )
-                        except NotImplementedError as e:
-                            raise NotImplementedError(
-                                f"Found missing method implementation for {type(delegate).__name__}"
-                            ) from e
-                        self.assertIn(
-                            primary_external_id,
-                            external_ids_by_state_code[state],
-                            f"Unexpected primary_person_external_id_to_include() "
-                            f"on delegate {type(delegate).__name__}: "
-                            f"{primary_external_id}",
-                        )
 
     def test_get_state_specific_staff_role_period_normalization_delegate(
         self,
@@ -207,19 +173,3 @@ class TestStateCalculationConfigManager(unittest.TestCase):
     ) -> None:
         for state_code in get_existing_direct_ingest_states():
             _ = get_state_specific_normalization_delegate(state_code.value)
-
-    def test_get_state_specific_supervision_metrics_producer_delegate(
-        self,
-    ) -> None:
-        for state_code in get_existing_direct_ingest_states():
-            _ = get_state_specific_supervision_metrics_producer_delegate(
-                state_code.value
-            )
-
-    def test_get_state_specific_incarceration_metrics_producer_delegate(
-        self,
-    ) -> None:
-        for state_code in get_existing_direct_ingest_states():
-            _ = get_state_specific_incarceration_metrics_producer_delegate(
-                state_code.value
-            )

@@ -50,9 +50,6 @@ from recidiviz.pipelines.utils.execution_utils import (
     person_and_kwargs_for_identifier,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_metrics_producer_delegates,
-)
 from recidiviz.utils import environment
 
 # Cached job_id value
@@ -155,7 +152,6 @@ class MetricPipeline(
                 project_id=self.pipeline_parameters.project,
                 region=self.pipeline_parameters.region,
                 job_name=self.pipeline_parameters.job_name,
-                state_code=state_code.value,
                 metric_types=metric_types,
                 calculation_month_count=self.pipeline_parameters.calculation_month_count,
                 metric_producer=self.metric_producer(),
@@ -217,7 +213,6 @@ class MetricPipeline(
     beam.typehints.Optional[str],
     beam.typehints.Optional[str],
     beam.typehints.Optional[str],
-    beam.typehints.Optional[str],
     beam.typehints.Optional[Set[RecidivizMetricType]],
     beam.typehints.Optional[int],
     beam.typehints.Optional[BaseMetricProducer],
@@ -239,7 +234,6 @@ class ProduceMetrics(beam.DoFn):
         project_id: str,
         region: str,
         job_name: str,
-        state_code: str,
         metric_types: Set[RecidivizMetricType],
         calculation_month_count: int,
         metric_producer: BaseMetricProducer,
@@ -262,20 +256,12 @@ class ProduceMetrics(beam.DoFn):
             job_name=job_name,
         )
 
-        metrics_producer_delegates = (
-            get_required_state_specific_metrics_producer_delegates(
-                state_code,
-                set(metric_producer.metrics_producer_delegate_classes.values()),
-            )
-        )
-
         metrics = metric_producer.produce_metrics(
             person=person,
             identifier_results=results,
             metric_inclusions=metric_types,
             pipeline_job_id=pipeline_job_id,
             calculation_month_count=calculation_month_count,
-            metrics_producer_delegates=metrics_producer_delegates,
         )
         yield from metrics
 

@@ -17,7 +17,6 @@
 """Tests for population_spans/metric_producer.py."""
 import unittest
 from datetime import date, datetime
-from typing import Dict
 
 import attr
 from freezegun import freeze_time
@@ -54,19 +53,6 @@ from recidiviz.pipelines.metrics.population_spans.metrics import (
 from recidiviz.pipelines.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
-    StateSpecificIncarcerationMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
-)
-from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
-    UsXxIncarcerationMetricsProducerDelegateForTests,
-    UsXxSupervisionMetricsProducerDelegateForTests,
 )
 
 ALL_METRICS_INCLUSIONS = set(PopulationSpanMetricType)
@@ -120,12 +106,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 )
             ],
         )
-        self.metrics_producer_delegates: Dict[
-            str, StateSpecificMetricsProducerDelegate
-        ] = {
-            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegateForTests(),
-            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegateForTests(),
-        }
 
     @freeze_time(CURRENT_DATETIME)
     def test_produce_incarceration_span_metrics(self) -> None:
@@ -150,7 +130,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -158,7 +137,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
@@ -198,7 +176,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -206,7 +183,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
@@ -222,7 +198,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=18,
@@ -238,7 +213,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=19,
@@ -275,7 +249,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -283,7 +256,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -317,7 +289,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -325,7 +296,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=36,
@@ -341,7 +311,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=37,
@@ -379,7 +348,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -387,7 +355,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
@@ -428,7 +395,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -436,7 +402,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
@@ -455,7 +420,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=18,
@@ -474,7 +438,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=19,
@@ -517,7 +480,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -525,7 +487,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -565,7 +526,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -573,7 +533,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -592,7 +551,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -643,7 +601,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             identifier_results=[incarceration_span, supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
-            metrics_producer_delegates=self.metrics_producer_delegates,
         )
 
         self.assertEqual(
@@ -651,7 +608,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             [
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=32,
@@ -667,7 +623,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=33,
@@ -683,7 +638,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 IncarcerationPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=34,
@@ -699,7 +653,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -718,7 +671,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -737,7 +689,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
@@ -756,7 +707,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
-                    person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,

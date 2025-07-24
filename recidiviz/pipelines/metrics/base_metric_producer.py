@@ -34,9 +34,6 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     RecidivizMetricType,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
 
 IdentifierResultT = TypeVar("IdentifierResultT", bound=IdentifierResult)
 IdentifierResultsT = TypeVar("IdentifierResultsT")
@@ -54,9 +51,6 @@ class BaseMetricProducer(
     """Base class for a metric producer for a metric calculation pipeline."""
 
     metric_class: Type[RecidivizMetricT] = attr.ib()
-    metrics_producer_delegate_classes: Dict[
-        Type[RecidivizMetricT], Type[StateSpecificMetricsProducerDelegate]
-    ] = attr.ib()
 
     @property
     @abc.abstractmethod
@@ -95,7 +89,6 @@ class BaseMetricProducer(
         identifier_results: IdentifierResultsT,
         metric_inclusions: Set[RecidivizMetricTypeT],
         pipeline_job_id: str,
-        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[RecidivizMetricT]:
         """Transforms the events and a NormalizedStatePerson into RecidivizMetrics.
@@ -104,22 +97,12 @@ class BaseMetricProducer(
             identifier_results: A list of IdentifierResults for the given NormalizedStatePerson.
             metric_inclusions: A dictionary where the keys are each Metric type and the values are boolean
                 flags for whether or not to include that metric type in the calculations.
+            pipeline_job_id: The job_id of the pipeline that is currently running.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
                 limit the monthly calculation output to. If set to -1, does not limit the calculations.
-            pipeline_job_id: The job_id of the pipeline that is currently running.
-            pipeline_name: The name of the pipeline producing these metrics
         Returns:
             A list of RecidivizMetrics
         """
-        metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
-            self.metric_class
-        )
-        metrics_producer_delegate = (
-            metrics_producer_delegates.get(metrics_producer_delegate_class.__name__)
-            if metrics_producer_delegate_class
-            else None
-        )
-
         metrics = produce_standard_event_metrics(
             person=person,
             identifier_results=identifier_results,  # type: ignore
@@ -128,7 +111,6 @@ class BaseMetricProducer(
                 metric_inclusions
             ),  # type: ignore
             pipeline_job_id=pipeline_job_id,
-            metrics_producer_delegate=metrics_producer_delegate,
         )
 
         metrics_of_class: List[RecidivizMetricT] = []

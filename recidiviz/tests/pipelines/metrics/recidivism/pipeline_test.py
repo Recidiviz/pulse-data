@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for recidivism/pipeline.py."""
 import datetime
 import unittest
@@ -76,12 +73,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
-from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
-    StateSpecificRecidivismMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_recidivism_metrics_producer_delegate import (
-    UsXxRecidivismMetricsProducerDelegate,
-)
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -120,21 +111,11 @@ class TestRecidivismPipeline(unittest.TestCase):
         )
 
         self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
-        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
-            return_value={
-                StateSpecificRecidivismMetricsProducerDelegate.__name__: UsXxRecidivismMetricsProducerDelegate()
-            },
-        )
-        self.mock_get_required_state_metrics_producer_delegate = (
-            self.state_specific_metrics_producer_delegate_patcher.start()
-        )
         self.pipeline_class = pipeline.RecidivismMetricsPipeline
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:
             patcher.stop()
-        self.state_specific_metrics_producer_delegate_patcher.stop()
         self.project_id_patcher.stop()
 
     def build_data_dict(self, fake_person_id: int) -> Dict[str, Iterable]:
@@ -679,16 +660,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         )
         self.mock_job_id = self.job_id_patcher.start()
         self.mock_job_id.return_value = "job_id"
-        self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
-        )
-        self.mock_state_specific_metrics_producer_delegate = (
-            self.state_specific_metrics_producer_delegate_patcher.start()
-        )
-        self.mock_state_specific_metrics_producer_delegate.return_value = {
-            StateSpecificRecidivismMetricsProducerDelegate.__name__: UsXxRecidivismMetricsProducerDelegate()
-        }
-
         self.metric_producer = pipeline.metric_producer.RecidivismMetricProducer()
 
         self.pipeline_parameters = MetricsPipelineParameters(
@@ -704,7 +675,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.job_id_patcher.stop()
-        self.state_specific_metrics_producer_delegate_patcher.stop()
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
     @freeze_time("2020-12-03 00:00:00-05:00")
@@ -779,7 +749,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
@@ -819,7 +788,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
@@ -843,7 +811,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.project,
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
-                self.pipeline_parameters.state_code,
                 {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,

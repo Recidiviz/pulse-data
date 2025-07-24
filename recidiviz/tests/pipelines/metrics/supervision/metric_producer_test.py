@@ -67,12 +67,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
-    UsXxSupervisionMetricsProducerDelegate,
-)
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
     start_pipeline_delegate_getter_patchers,
 )
@@ -149,9 +143,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -212,9 +203,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -276,9 +264,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -342,9 +327,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -414,9 +396,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -487,9 +466,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -568,9 +544,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -657,9 +630,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -733,9 +703,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -796,9 +763,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -866,9 +830,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -952,9 +913,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1003,9 +961,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1058,9 +1013,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1116,9 +1068,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count([termination_event])
@@ -1189,9 +1138,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1247,9 +1193,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1310,9 +1253,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1368,9 +1308,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1446,9 +1383,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 metric_inclusions,
                 calculation_month_count=12,
                 pipeline_job_id=_PIPELINE_JOB_ID,
-                metrics_producer_delegates={
-                    StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-                },
             )
 
     def test_produce_supervision_metrics_compliance_metrics(self) -> None:
@@ -1513,9 +1447,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)
@@ -1569,9 +1500,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1634,9 +1562,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(
@@ -1696,9 +1621,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = 0
@@ -1749,9 +1671,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = 0
@@ -1811,9 +1730,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
-            metrics_producer_delegates={
-                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
-            },
         )
 
         expected_count = expected_metrics_count(supervision_events)

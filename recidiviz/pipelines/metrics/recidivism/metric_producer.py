@@ -25,7 +25,7 @@ Attributes:
         recidivism over, from 1 to 10.
 """
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Set, Type
 
 from dateutil.relativedelta import relativedelta
 
@@ -43,12 +43,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.pipelines.metrics.utils.calculator_utils import age_at_date, build_metric
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
-    StateSpecificRecidivismMetricsProducerDelegate,
-)
 
 # We measure in 1-year follow up periods up to 10 years after date of release.
 FOLLOW_UP_PERIODS = range(1, 11)
@@ -68,10 +62,6 @@ class RecidivismMetricProducer(
         # TODO(python/mypy#5374): Remove the ignore type when abstract class
         #  assignments are supported.
         self.metric_class = ReincarcerationRecidivismMetric  # type: ignore
-        self.metrics_producer_delegate_classes = {
-            # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
-            ReincarcerationRecidivismMetric: StateSpecificRecidivismMetricsProducerDelegate  # type: ignore[type-abstract]
-        }
 
     @property
     def result_class_to_metric_classes_mapping(
@@ -88,7 +78,6 @@ class RecidivismMetricProducer(
         identifier_results: Dict[int, List[ReleaseEvent]],
         metric_inclusions: Set[ReincarcerationRecidivismMetricType],
         pipeline_job_id: str,
-        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[ReincarcerationRecidivismMetric]:
         """Transforms ReleaseEvents and a NormalizedStatePerson into
@@ -99,15 +88,6 @@ class RecidivismMetricProducer(
         """
         metrics: List[ReincarcerationRecidivismMetric] = []
         all_reincarcerations = self.reincarcerations(identifier_results)
-
-        metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
-            self.metric_class
-        )
-        metrics_producer_delegate = (
-            metrics_producer_delegates.get(metrics_producer_delegate_class.__name__)
-            if metrics_producer_delegate_class
-            else None
-        )
 
         if (
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
@@ -121,7 +101,6 @@ class RecidivismMetricProducer(
                             person=person,
                             all_reincarcerations=all_reincarcerations,
                             pipeline_job_id=pipeline_job_id,
-                            metrics_producer_delegate=metrics_producer_delegate,
                         )
                     )
 
@@ -287,9 +266,6 @@ class RecidivismMetricProducer(
         person: NormalizedStatePerson,
         all_reincarcerations: Dict[date, RecidivismReleaseEvent],
         pipeline_job_id: str,
-        metrics_producer_delegate: Optional[
-            StateSpecificMetricsProducerDelegate
-        ] = None,
     ) -> List[ReincarcerationRecidivismMetric]:
         """
         Returns all ReincarcerationRecidivismRateMetric for the release_event given the
@@ -328,7 +304,6 @@ class RecidivismMetricProducer(
                         "month": event_date.month,
                         **additional_attributes,
                     },
-                    metrics_producer_delegate=metrics_producer_delegate,
                 )
 
                 if not isinstance(metric, ReincarcerationRecidivismMetric):
@@ -359,7 +334,6 @@ class RecidivismMetricProducer(
                             "month": event_date.month,
                             **additional_attributes_copy,
                         },
-                        metrics_producer_delegate=metrics_producer_delegate,
                     )
 
                     if not isinstance(metric, ReincarcerationRecidivismMetric):

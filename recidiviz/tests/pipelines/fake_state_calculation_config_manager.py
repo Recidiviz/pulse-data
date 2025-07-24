@@ -194,13 +194,6 @@ def get_all_delegate_getter_fn_names() -> Set[str]:
     """Gets all delegate getter function names in state_calculation_config_manager.py."""
     fn_names = set()
     for fn_name in dir(state_calculation_config_manager):
-        # TODO(#30363): Delete this exemption once we make all getter functions public
-        #  in state_calculation_config_manager.py.
-        if fn_name.startswith("_"):
-            continue
-        # TODO(#30363): Delete this exemption once we delete this function
-        if fn_name == "get_required_state_specific_metrics_producer_delegates":
-            continue
         original_fn = getattr(state_calculation_config_manager, fn_name)
         if not isinstance(original_fn, FunctionType):
             continue

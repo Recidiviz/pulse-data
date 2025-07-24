@@ -18,7 +18,7 @@
 
 This contains the core logic for calculating population span metrics on a person-by-person
 basis. It transforms Spans into PopulationSpanMetrics."""
-from typing import Dict, List, Optional, Sequence, Set, Type
+from typing import Dict, List, Sequence, Set, Type
 
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
@@ -35,17 +35,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
     produce_standard_span_metrics,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Span
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
-    StateSpecificIncarcerationMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
-    StateSpecificMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
-    StateSpecificSupervisionMetricsProducerDelegate,
-)
 
 
 class PopulationSpanMetricProducer(
@@ -61,10 +51,6 @@ class PopulationSpanMetricProducer(
         self.event_to_metric_classes = {
             IncarcerationPopulationSpan: [IncarcerationPopulationSpanMetric],
             SupervisionPopulationSpan: [SupervisionPopulationSpanMetric],
-        }
-        self.metrics_producer_delegate_classes = {
-            IncarcerationPopulationSpanMetric: StateSpecificIncarcerationMetricsProducerDelegate,
-            SupervisionPopulationSpanMetric: StateSpecificSupervisionMetricsProducerDelegate,
         }
 
     @property
@@ -82,7 +68,6 @@ class PopulationSpanMetricProducer(
         identifier_results: Sequence[Span],
         metric_inclusions: Set[PopulationSpanMetricType],
         pipeline_job_id: str,
-        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[PopulationSpanMetric]:
         """Transforms the events and a NormalizedStatePerson into RecidivizMetrics.
@@ -97,18 +82,6 @@ class PopulationSpanMetricProducer(
         Returns:
             A list of RecidivizMetrics
         """
-        metric_classes_to_producer_delegates: Dict[
-            Type[RecidivizMetric[PopulationSpanMetricType]],
-            Optional[StateSpecificMetricsProducerDelegate],
-        ] = {}
-        for (
-            metric_class,
-            metric_producer_delegate_class,
-        ) in self.metrics_producer_delegate_classes.items():
-            metric_classes_to_producer_delegates[
-                metric_class
-            ] = metrics_producer_delegates.get(metric_producer_delegate_class.__name__)
-
         metrics = produce_standard_span_metrics(
             person=person,
             identifier_results=identifier_results,  # type: ignore
@@ -116,7 +89,6 @@ class PopulationSpanMetricProducer(
                 metric_inclusions
             ),
             pipeline_job_id=pipeline_job_id,
-            metric_classes_to_producer_delegates=metric_classes_to_producer_delegates,
         )
 
         metrics_of_class: List[PopulationSpanMetric] = []
