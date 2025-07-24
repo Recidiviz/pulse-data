@@ -70,6 +70,9 @@ COMMON_VESTIGES = [
     "spark_public_output_data.cost_avoidance_non_cumulative_estimate_raw",
     "spark_public_output_data.life_years_estimate_raw",
     "spark_public_output_data.population_estimate_raw",
+    # As of 7/23/25 this is unused, but we may still want to reference Day Zero info in
+    # the future.
+    "static_reference_tables.day_zero_reports",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph
