@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@google-cloud/firestore@^7.11.2":
-  version "7.11.2"
-  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-7.11.2.tgz#412b453a85dec3b568239f6ae49fd5e118820cc0"
-  integrity sha512-BQCSbjWJndCZ6bj8BSGhi4EM1TDFs9HgZXXsJ7d2kEPo+x64fB3OnQE8ffmn3vWADqeAmYBPaMPF/k6PHETXKA==
+"@google-cloud/firestore@^7.11.3":
+  version "7.11.3"
+  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-7.11.3.tgz#87cc3a58c5c297d6c9ca0e486fbf16b403585721"
+  integrity sha512-qsM3/WHpawF07SRVvEJJVRwhYzM7o9qtuksyuqnrMig6fxIrwWnsezECWsG/D5TyYru51Fv5c/RTqNDQ2yU+4w==
   dependencies:
     "@opentelemetry/api" "^1.3.0"
     fast-deep-equal "^3.1.1"
