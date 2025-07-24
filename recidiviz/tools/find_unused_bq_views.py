@@ -87,6 +87,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.most_severe_sentence_and_charge_spans import (
+    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -276,6 +279,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"
     ),
+    MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER.address: (
+        "This is a new table in the sentence_sessions dataset which will soon be used in "
+        "partners summit analysis (Andrew Gaidus, 2025-07-02)"
+    ),
     **{
         VIEW_BUILDER.address: (
             "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based "
@@ -288,6 +295,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "overlapping_sentence_serving_periods",
             "sentence_id_to_consecutive_sentence_id",
             "sentence_imposed_group_summary",
+            "most_severe_sentence_and_charge_spans",
         ]
     },
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (

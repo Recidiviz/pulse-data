@@ -318,7 +318,7 @@ def gen_cohort_status_df(
     time_unit: str = "months",
     last_day_of_data: Optional[datetime.datetime] = None,
     cohort_attribute_col: Optional[Union[str, List[str]]] = None,
-    status_attribute_col: Optional[str] = None,
+    status_attribute_col: Optional[Union[str, List[str]]] = None,
     full_observability: bool = False,
     suppress_full_observability_warning: bool = False,
 ) -> pd.DataFrame:
@@ -373,7 +373,7 @@ def gen_cohort_status_df(
         that the days at status metrics should be disaggregated by. If no list is specified, the
         metrics are calculated across all cohort starts.
 
-    status_attribute_col: Optional[str]
+    status_attribute_col: Optional[Union[str, List[str]]]
         Single field in `status_df` that represent attributes of the status
         that the days at status metrics should be disaggregated by. If no list is specified, the
         metrics are calculated across all statuses.
@@ -404,8 +404,10 @@ def gen_cohort_status_df(
 
     if not status_attribute_col:
         status_attribute_col_list = []
-    else:
+    elif isinstance(status_attribute_col, str):
         status_attribute_col_list = [status_attribute_col]
+    else:
+        status_attribute_col_list = status_attribute_col
 
     # Check that all necessary columns are present in cohort_df
     for var in [cohort_date_field] + join_field_list + cohort_attribute_col_list:
@@ -567,8 +569,13 @@ def gen_cohort_status_df(
             [["status_at_eval_date"], status_at_eval_date.columns]
         )
 
+        if isinstance(cohort_days_at_status.columns, pd.MultiIndex):
+            flattened_columns = cohort_days_at_status.columns.tolist()
+        else:
+            flattened_columns = cohort_days_at_status.columns
+
         cohort_days_at_status.columns = pd.MultiIndex.from_product(
-            [["days_at_status"], cohort_days_at_status.columns]
+            [["days_at_status"], flattened_columns]
         )
 
         cohort_days_at_status = cohort_days_at_status.join(status_at_eval_date)
