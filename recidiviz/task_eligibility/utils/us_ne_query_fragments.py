@@ -31,11 +31,7 @@ def supervision_oras_overrides_completion_event_query_template(
         SELECT
             state_code,
             person_id,
-            -- The date someone was reassessed. This may be earlier than the date they were
-            -- overridden, but the override is entered in place, so we use the date of the 
-            -- assessment itself.
-            -- TODO(#41785): Deprecate this NE-specific logic after ingesting override date
-            assessment_date AS completion_event_date,
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%E*S', JSON_EXTRACT_SCALAR(assessment_metadata, '$.DATE_OF_OVERRIDE')) AS DATE) AS completion_event_date,
         FROM `{{project_id}}.normalized_state.state_assessment`
         WHERE
             state_code = 'US_NE'
