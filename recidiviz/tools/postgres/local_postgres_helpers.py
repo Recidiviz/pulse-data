@@ -29,7 +29,10 @@ from typing import Dict, Optional
 from sqlalchemy.engine import URL
 
 from recidiviz.tests.test_setup_utils import get_pytest_worker_id
-from recidiviz.tools.utils.script_helpers import run_command
+from recidiviz.tools.utils.script_helpers import (
+    retry_on_exceptions_with_backoff,
+    run_command,
+)
 from recidiviz.utils import environment
 from recidiviz.utils.environment import in_ci
 
@@ -50,6 +53,33 @@ def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]) -> Non
 def _is_root_user() -> bool:
     """Returns True if we are currently running as root, otherwise False."""
     return os.getuid() == 0
+
+
+def _start_postgresql_server(
+    db_data_dir: str,
+    db_log_path: str,
+    port: int,
+    password_record: pwd.struct_passwd | None = None,
+) -> None:
+    assert_postgres_port_is_free(port)
+
+    try:
+        if in_ci():
+            # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
+            run_command(
+                f'pg_ctl -D {db_data_dir} -l {db_log_path} start -o "-h 0.0.0.0 -p {port}"',
+                as_user=password_record,
+            )
+        else:
+            run_command(
+                f'pg_ctl -D {db_data_dir} -l {db_log_path} start -o "-p {port}"',
+                as_user=password_record,
+            )
+    except RuntimeError as e:
+        with open(db_log_path, "r", encoding="utf-8") as log:
+            logging.error("Log below:")
+            logging.error(log.read())
+        raise e
 
 
 @environment.local_only
@@ -116,23 +146,18 @@ def start_on_disk_postgresql_database(
         as_user=password_record,
     )
 
-    try:
-        if in_ci():
-            # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
-            run_command(
-                f'pg_ctl -D {temp_db_data_dir} -l {temp_db_log_path} start -o "-h 0.0.0.0 -p {get_on_disk_postgres_port()}"',
-                as_user=password_record,
-            )
-        else:
-            run_command(
-                f'pg_ctl -D {temp_db_data_dir} -l {temp_db_log_path} start -o "-p {get_on_disk_postgres_port()}"',
-                as_user=password_record,
-            )
-    except RuntimeError as e:
-        with open(temp_db_log_path, "r", encoding="utf-8") as log:
-            logging.error("Log below:")
-            logging.error(log.read())
-        raise e
+    retry_on_exceptions_with_backoff(
+        lambda: _start_postgresql_server(
+            temp_db_data_dir,
+            temp_db_log_path,
+            get_on_disk_postgres_port(),
+            password_record,
+        ),
+        errors_to_retry=(RuntimeError, PostgresPortStillInUseError),
+        max_tries=4,
+        min_backoff_secs=1,
+        max_backoff_secs=2,
+    )
 
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
@@ -196,6 +221,27 @@ def is_port_in_use(port: int) -> int | None:
         return s.connect_ex(("localhost", port)) == 0
 
 
+class PostgresPortStillInUseError(TimeoutError):
+    pass
+
+
+def assert_postgres_port_is_free(port: int) -> None:
+    # Raise an error and print logs if the server did not stop
+    interval = 0.1
+    attempts = 0
+    max_tries = 30
+
+    while attempts < max_tries and is_port_in_use(port):
+        time.sleep(interval)
+        attempts += 1
+
+    if attempts == max_tries:
+        print_all_on_disk_postgresql_logs()
+        raise PostgresPortStillInUseError(
+            "Failed to stop postgres within the timeout period"
+        )
+
+
 def _stop_on_disk_postgresql_database(
     temp_db_data_dir: str, assert_success: bool = True
 ) -> None:
@@ -211,18 +257,7 @@ def _stop_on_disk_postgresql_database(
     )
 
     if assert_success:
-        # Raise an error and print logs if the server did not stop
-        interval = 0.1
-        attempts = 0
-        max_tries = 30
-
-        while attempts < max_tries and is_port_in_use(get_on_disk_postgres_port()):
-            time.sleep(interval)
-            attempts += 1
-
-        if attempts == max_tries:
-            print_all_on_disk_postgresql_logs()
-            raise TimeoutError("Failed to stop postgres within the timeout period")
+        assert_postgres_port_is_free(get_on_disk_postgres_port())
 
 
 def get_on_disk_postgres_port() -> int:

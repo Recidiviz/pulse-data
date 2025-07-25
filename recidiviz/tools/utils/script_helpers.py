@@ -21,6 +21,8 @@ import os
 import pwd
 import subprocess
 import sys
+import time
+import traceback
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional
 
@@ -292,3 +294,42 @@ class ANSI(enum.StrEnum):
 
 def color_text(color: ANSI, text: str) -> str:
     return f"{color.value}{text}{ANSI.ENDC.value}"
+
+
+def retry_on_exceptions_with_backoff(
+    lambda_fn: Callable,
+    errors_to_retry: tuple[type[BaseException], ...],
+    max_tries: int = 10,
+    min_backoff_secs: float = 0.5,
+    max_backoff_secs: float = 60.0,
+) -> Any:
+    """
+    Execute lambda function with retries and exponential backoff.
+
+    Args:
+        lambda_fn (Callable): Function to be called and output we want.
+        errors_to_retry (List[ErrorToRetry]): List of errors to retry.
+            At least one needs to be provided.
+        max_tries (int): Maximum number of tries, including the first. Defaults to 10.
+        min_backoff_secs (float): Minimum amount of backoff time between attempts.
+            Defaults to 0.5.
+        max_backoff_secs (float): Maximum amount of backoff time between attempts.
+            Defaults to 60.
+
+    """
+    if not errors_to_retry:
+        raise ValueError("At least one error to retry needs to be provided")
+
+    backoff_secs = min_backoff_secs
+    tries = 0
+
+    while True:
+        try:
+            return lambda_fn()
+        except errors_to_retry:
+            traceback.print_exc()
+            tries += 1
+            if tries >= max_tries:
+                raise
+            time.sleep(backoff_secs)
+            backoff_secs = min(backoff_secs * 2, max_backoff_secs)

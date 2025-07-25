@@ -122,7 +122,7 @@ jobs:
 
   pylint:
     name: Pylint
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -149,7 +149,7 @@ jobs:
 
   mypy:
     name: Mypy
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
@@ -166,7 +166,7 @@ jobs:
 
   black:
     name: Black
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
         with:
