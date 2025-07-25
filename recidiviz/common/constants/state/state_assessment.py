@@ -118,6 +118,7 @@ class StateAssessmentType(StateEntityEnum):
     TX_SRT = state_enum_strings.state_assessment_type_tx_srt
     TX_RT = state_enum_strings.state_assessment_type_tx_rt
     ACCAT = state_enum_strings.state_assessment_type_accat
+    ACUTE = state_enum_strings.state_assessment_type_acute
     RSLS = state_enum_strings.state_assessment_type_rsls
     CCRRA = state_enum_strings.state_assessment_type_ccrra
     AZ_GEN_RISK_LVL = state_enum_strings.state_assessment_type_az_gen_risk_lvl
@@ -195,6 +196,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.TX_SRT: "Supplementary Reentry Tool (SRT)",
     StateAssessmentType.TX_RT: "Reentry Tool (RT)",
     StateAssessmentType.ACCAT: "Arizona Community Corrections Assessment Tool",
+    StateAssessmentType.ACUTE: "Sex offense risk assessment for dynamic factors (ACUTE-2007)",
     StateAssessmentType.RSLS: "Reclassification Security Level Scoresheet (RSLS)",
     StateAssessmentType.CCRRA: "Arizona Community Corrections Risk Release Assessment",
     StateAssessmentType.AZ_GEN_RISK_LVL: "Arizona Community General Risk Level",
