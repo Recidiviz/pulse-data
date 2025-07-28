@@ -136,7 +136,7 @@ def execute_update_all_managed_views() -> None:
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         view_update_sandbox_context=None,
-        materialize_changed_views_only=False,
+        rematerialize_changed_views_only=False,
         allow_slow_views=False,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
     )

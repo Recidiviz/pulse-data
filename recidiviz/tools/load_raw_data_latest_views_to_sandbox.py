@@ -127,7 +127,7 @@ def _load_raw_data_latest_views_to_sandbox(
         input_source_table_dataset_overrides_dict=None,
         # We don't expect any of the latest views to be slow
         allow_slow_views=False,
-        materialize_changed_views_only=False,
+        rematerialize_changed_views_only=False,
         # We're loading a view graph of depth 1 -- let's load all views in order to
         # surface all errors we could run into
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,

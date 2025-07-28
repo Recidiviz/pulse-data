@@ -129,7 +129,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: set[str] | None,
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     view_update_sandbox_context: BigQueryViewUpdateSandboxContext | None = None,
     bq_region_override: str | None = None,
@@ -152,7 +152,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             process. If null, does not perform the cleanup step. If provided,
             will error if any dataset required for the |views_to_update| is not
             included in this set.
-        materialize_changed_views_only (bool): If true, only re-materialize views whose
+        rematerialize_changed_views_only (bool): If true, only re-materialize views whose
             view and all of its ancestors views have not be updated; otherwise, always
             re-materialize all views.
         failure_mode (BigQueryViewDagWalkerProcessingFailureMode): If set to FAIL_FAST,
@@ -209,10 +209,10 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
 
         return _create_managed_dataset_and_deploy_views(
             views_to_update=views_to_update,
-            bq_region_override=bq_region_override,
-            materialize_changed_views_only=materialize_changed_views_only,
             historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
+            rematerialize_changed_views_only=rematerialize_changed_views_only,
             default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
+            bq_region_override=bq_region_override,
             views_might_exist=views_might_exist,
             allow_slow_views=allow_slow_views,
             failure_mode=failure_mode,
@@ -259,10 +259,10 @@ def _create_all_datasets_if_necessary(
 def _create_managed_dataset_and_deploy_views(
     *,
     views_to_update: Iterable[BigQueryView],
-    bq_region_override: str | None,
-    materialize_changed_views_only: bool,
     historically_managed_datasets_to_clean: set[str] | None,
+    rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
+    bq_region_override: str | None,
     default_table_expiration_for_new_datasets: int | None,
     views_might_exist: bool,
     allow_slow_views: bool,
@@ -273,20 +273,20 @@ def _create_managed_dataset_and_deploy_views(
     Args:
         views_to_update (iterable[BigQueryView]): A list of view objects to be created
             or updated.
-        bq_region_override (str | None): The bq region to be passed to the BigQueryClient.
-        materialize_changed_views_only (bool): If true, only re-materialize views whose
-            view and all of its ancestors views have not be updated; otherwise, always
-            re-materialize all views.
         historically_managed_datasets_to_clean(set[str] | None): Set of datasets that have
             ever been managed if we should clean up unmanaged views in this deploy
             process. If null, does not perform the cleanup step. If provided,
             will error if any dataset required for the |views_to_update| is not
             included in this set.
+        rematerialize_changed_views_only (bool): If true, only re-materialize views whose
+            view and all of its ancestors views have not be updated; otherwise, always
+            re-materialize all views.
         failure_mode (BigQueryViewDagWalkerProcessingFailureMode): If set to FAIL_FAST,
             will hard fail at the first node processing failure. If set to FAIL_EXHAUSTIVELY,
             will catch processing failures and proceed processing all non-descendants of
             the errant nodes, re-raising all caught errors after all possible nodes have
             been processed.
+        bq_region_override (str | None): The bq region to be passed to the BigQueryClient.
         default_table_expiration_for_new_datasets (int | None): If not None, new datasets
             will be created with this default expiration length (in milliseconds).
         views_might_exist (bool): If set then we will optimistically try to update
@@ -328,7 +328,7 @@ def _create_managed_dataset_and_deploy_views(
             bq_client=bq_client,
             view=v,
             parent_results=parent_results,
-            materialize_changed_views_only=materialize_changed_views_only,
+            rematerialize_changed_views_only=rematerialize_changed_views_only,
             might_exist=views_might_exist,
         )
 
@@ -351,7 +351,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     bq_client: BigQueryClient,
     view: BigQueryView,
     parent_results: Dict[BigQueryView, CreateOrUpdateViewResult],
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     might_exist: bool,
 ) -> CreateOrUpdateViewResult:
     """Creates or updates the provided view in BigQuery and materializes that view into
@@ -417,7 +417,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     materialization_result = None
     if view.materialized_address:
         if (
-            not materialize_changed_views_only
+            not rematerialize_changed_views_only
             or view_changed
             or not bq_client.table_exists(view.materialized_address)
         ):

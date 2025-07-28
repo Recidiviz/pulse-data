@@ -133,7 +133,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -237,7 +237,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -363,7 +363,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -455,7 +455,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             view_source_table_datasets=self.view_source_table_datasets,
             historically_managed_datasets_to_clean=None,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -564,7 +564,7 @@ class ViewManagerTest(unittest.TestCase):
                 parent_address_formatter_provider=None,
             ),
             historically_managed_datasets_to_clean=None,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -665,7 +665,7 @@ class ViewManagerTest(unittest.TestCase):
         view_update_manager._create_managed_dataset_and_deploy_views(
             views_to_update=mock_views,
             bq_region_override="us-east1",
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             historically_managed_datasets_to_clean=None,
             default_table_expiration_for_new_datasets=None,
             views_might_exist=True,
@@ -815,7 +815,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=historically_managed_datasets,
-            materialize_changed_views_only=True,
+            rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
         self.mock_client.delete_dataset.assert_not_called()

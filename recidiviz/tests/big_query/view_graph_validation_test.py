@@ -485,8 +485,8 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             # are being rate-limited?), because it does not indicate that overall
             # view materialization has gotten too expensive for that view.
             allow_slow_views=True,
-            # None of the tables exist already, so always materialize
-            materialize_changed_views_only=False,
+            # None of the tables exist already, so always re-materialize
+            rematerialize_changed_views_only=False,
             # we want to try to surface as many failures as possible, so set mode to
             # fail exhaustively
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,

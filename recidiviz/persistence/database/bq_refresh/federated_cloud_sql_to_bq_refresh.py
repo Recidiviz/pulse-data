@@ -145,7 +145,7 @@ def _federated_bq_regional_dataset_refresh(
         view_builders_to_update=view_builders,
         view_update_sandbox_context=view_update_sandbox_context,
         bq_region_override=bq_region_override,
-        materialize_changed_views_only=False,
+        rematerialize_changed_views_only=False,
         historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
     )

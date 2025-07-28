@@ -179,7 +179,7 @@ def load_all_views_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
@@ -205,7 +205,7 @@ def load_all_views_to_sandbox(
             input_source_table_dataset_overrides_dict
         ),
         allow_slow_views=allow_slow_views,
-        materialize_changed_views_only=materialize_changed_views_only,
+        rematerialize_changed_views_only=rematerialize_changed_views_only,
         failure_mode=failure_mode,
     )
 
@@ -217,7 +217,7 @@ def _load_manually_filtered_views_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     view_ids_to_load: Optional[List[BigQueryAddress]],
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
@@ -316,7 +316,7 @@ Are you sure you still want to continue with `manual` mode?
         ),
         collected_builders=collected_builders,
         allow_slow_views=allow_slow_views,
-        materialize_changed_views_only=materialize_changed_views_only,
+        rematerialize_changed_views_only=rematerialize_changed_views_only,
         failure_mode=failure_mode,
     )
 
@@ -968,7 +968,7 @@ def load_views_changed_on_branch_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
     load_up_to_addresses: Optional[List[BigQueryAddress]],
@@ -999,7 +999,7 @@ def load_views_changed_on_branch_to_sandbox(
             input_source_table_dataset_overrides_dict
         ),
         allow_slow_views=allow_slow_views,
-        materialize_changed_views_only=materialize_changed_views_only,
+        rematerialize_changed_views_only=rematerialize_changed_views_only,
         collected_builders=collected_builders,
         failure_mode=failure_mode,
     )
@@ -1055,7 +1055,7 @@ def load_collected_views_to_sandbox(
     collected_builders: List[BigQueryViewBuilder],
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
-    materialize_changed_views_only: bool,
+    rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
@@ -1103,7 +1103,7 @@ def load_collected_views_to_sandbox(
             # Don't clean up datasets when running a sandbox script
             historically_managed_datasets_to_clean=None,
             allow_slow_views=allow_slow_views,
-            materialize_changed_views_only=materialize_changed_views_only,
+            rematerialize_changed_views_only=rematerialize_changed_views_only,
             failure_mode=failure_mode,
         )
     except exceptions.Forbidden as e:
@@ -1150,8 +1150,8 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--materialize_changed_views_only",
-        dest="materialize_changed_views_only",
+        "--rematerialize_changed_views_only",
+        dest="rematerialize_changed_views_only",
         action="store_true",
         default=False,
         help="If true, any given view will only be rematerialized as part of this "
@@ -1355,7 +1355,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
-                materialize_changed_views_only=args.materialize_changed_views_only,
+                rematerialize_changed_views_only=args.rematerialize_changed_views_only,
                 failure_mode=args.failure_mode,
             )
         elif args.chosen_mode == "manual":
@@ -1369,7 +1369,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
-                materialize_changed_views_only=args.materialize_changed_views_only,
+                rematerialize_changed_views_only=args.rematerialize_changed_views_only,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
                 update_ancestors=args.update_ancestors,
@@ -1387,7 +1387,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
-                materialize_changed_views_only=args.materialize_changed_views_only,
+                rematerialize_changed_views_only=args.rematerialize_changed_views_only,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
                 load_up_to_addresses=args.load_up_to_addresses,

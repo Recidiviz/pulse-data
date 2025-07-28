@@ -496,7 +496,7 @@ def load_end_to_end_sandbox(
                 allow_slow_views=True,
                 # Source table data may have changed so we always want to materialize
                 # everything.
-                materialize_changed_views_only=False,
+                rematerialize_changed_views_only=False,
                 collected_builders=view_builders_to_load,
                 # If we loading dataflow pipelines before this, we probably we want to
                 # surface all errors
