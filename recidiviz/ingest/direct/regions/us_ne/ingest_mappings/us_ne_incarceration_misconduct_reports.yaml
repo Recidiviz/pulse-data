@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_misconduct_report` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  MisconductReportId: STRING # This is used to connect all MR data
+  chargesId: STRING
+  MR_NUMBER: STRING # This is used internally in NDCS to identify the MR
+  chargeDesc: STRING
+  chargeCode: STRING
+  dateOfDiscovery: DATETIME
+  dateFiled: DATETIME
+  hearingDate: DATETIME
+  FACILITY_NAME: STRING
+  incidentLocation: STRING
+  actionDisposition: STRING # This is a comment field that contains the action taken on the MR
+  restrictionTypeCode: STRING
+  beginDate: DATETIME
+  endDate: DATETIME
+  sendTo: STRING
+  lossOfGoodTime: STRING
+  lossOfGoodSAmount: STRING
+  lossOfGoodCT: STRING
+  nonRestorable: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - MisconductReportId
+                - chargesId
+                - MR_NUMBER
+          incident_date: dateOfDiscovery
+          facility: FACILITY_NAME
+          location_within_facility: incidentLocation
+          incident_type:
+            $enum_mapping:
+              $raw_text: chargeDesc
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - "**Omitted 7/24/2023** POSSESSION OF UNAUTHORIZED ELECTRONIC COMMUNICATION DEVICES"
+                  - POSSESSION OR MANUFACTURE OF DANGEROUS CONTRABAND
+                  - DRUG PARAPHERNALIA
+                  - TOBACCO PRODUCTS
+                  - POSSESSING OR RECEIVING UNAUTHORIZED ARTICLES
+                  - POSSESSION OF UNAUTHORIZED ELECTRONIC COMMUNICATION DEVICES
+                  - ESCAPE PARAPHERNALIA
+                  - DRUG OR INTOXICANT ABUSE
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - SEXUAL ACTIVITIES
+                  - DISRUPTION
+                  - SWEARING, CURSING, OR USE OF ABUSIVE LANGUAGE OR GESTURES
+                  - FLARE OF TEMPERS/MINOR PHYSICAL CONTACT
+                  - GAMBLING OR PROMOTING GAMBLING
+                  - DISOBEYING AN ORDER
+                  - VIOLATION OF REGULATIONS
+                  - TATTOO ACTIVITIES
+                  - "SELLING, LOANING, OR GIVING ITEMS TO OTHERS"
+                  - SANITATION
+                  - "PIERCING, BRANDING OR MUTILATION"
+                  - MEDICATION ABUSE
+                  - USE OF THREATENING LANGUAGE OR GESTURES
+                  - EXTORTION
+                  - STALKING
+                  - SEXUAL HARASSMENT
+                StateIncarcerationIncidentType.ESCAPE:
+                  - ESCAPE
+                  - IMPROPER USE OF TRANSPORTATION
+                  - VIOLATION OF PASSES OR FURLOUGHS
+                  - Omitted 12/29/08 VIOLATION OF PASSES OR FURLOUGHS
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - UNAUTHORIZED AREAS
+                  - DESTRUCTION OF PROPERTY UNDER $100
+                  - DESTRUCTION OF PROPERTY VALUED BETWEEN $100 & $500
+                  - VIOLATION OF ANY SIGNED PROGRAM AGREEMENT
+                  - GANG/SECURITY THREAT GROUP ACTIVITY
+                  - Administrative Hearing
+                  - "**Omitted 12/29/08** VIOLATION OF MAIL OR TELEPHONE REGULATIONS"
+                  - "**Omitted 12/29/08** CONDUCT WITH A VISITOR IN VIOLATION OF REGULATIONS"
+                  - "**Omitted 7/24/2023** WORK STOPPAGE/WORK STRIKE"
+                StateIncarcerationIncidentType.REPORT:
+                  - REFUSING TO SUBMIT TO DNA TEST
+                  - FAILURE TO REPORT LAW ENFORCEMENT CONTACTS
+                  - FAILURE TO REPORT
+                  - INTERFERENCE WITH OR REFUSAL TO SUBMIT TO A SEARCH
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - ASSAULT
+                  - MURDER/MANSLAUGHTER
+                  - SEXUAL ASSAULT
+                  - FIGHTING
+                  - CRUELTY TO ANIMALS
+                  - MUTINOUS ACTIONS
+                StateIncarcerationIncidentType.INTERNAL_UNKNOWN:
+                  - VIOLATION OF SANCTIONS
+                  - BRIBERY
+                  - IMPROPERLY HANDLING FUNDS
+                  - FORGERY OR POSSESSION OF FORGED DOCUMENTS
+                  - MISUSE OF A COMPUTER
+                  - THEFT
+                  - Parole Violator
+                  - DESTRUCTION OF PROPERTY OVER $500
+                  - FALSE REPORTING
+                  - "**Omitted 12/29/08** POSSESS OFFICIAL GOVNT MONEY WITHOUT AUTHORIZATION"
+          incident_metadata:
+            $normalized_values_json_dict:
+              UDCorIDC: sendTo
+              lossOfGoodTime: lossOfGoodTime
+              lossOfGoodSAmount: lossOfGoodSAmount
+              lossOfGoodCT: lossOfGoodCT
+              nonRestorable: nonRestorable
+              actionDisposition: actionDisposition
+          incident_severity:
+            $enum_mapping:
+              $raw_text: chargeCode
+              $custom_parser: us_ne_custom_enum_parsers.parse_incident_severity
+
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - inmateNumber
+                      - MisconductReportId
+                      - chargesId
+                      - MR_NUMBER
+                hearing_date: hearingDate
+                date_effective: beginDate
+                projected_end_date: endDate
+                report_date: dateFiled
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: restrictionTypeCode
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                        - EXTRA DUTY
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - OTHER # see actionDisposition for more details - could be good time, financial penalty, warning, etc.
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - A&R # related to recreation time
+                        - CURFEW
+                        - YARD & GYM
+                        - YARD
+                        - VISITING
+                        - ROOM
+                        - BIG YARD
+                        - TV
+                        - CANTEEN
+                        - RADIO
+                        - PHONE
+                        - GYM
+                        - WEIGHT PILE
+                      StateIncarcerationIncidentOutcomeType.SOLITARY:
+                        - SEG
+                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                        - UDC ROOM
+                        - IDC ROOM

@@ -30,6 +30,9 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEndReason,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentSeverity,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
@@ -299,3 +302,22 @@ def parse_incarceration_type(
         return StateIncarcerationType.FEDERAL_PRISON
 
     return StateIncarcerationType.STATE_PRISON
+
+
+def parse_incident_severity(
+    raw_text: str,
+) -> Optional[StateIncarcerationIncidentSeverity]:
+    """
+    Uses ChargeCodeDesc to determine incident severity.
+    """
+
+    if raw_text.startswith("1"):
+        return StateIncarcerationIncidentSeverity.HIGHEST
+
+    if raw_text.startswith("2"):
+        return StateIncarcerationIncidentSeverity.SECOND_HIGHEST
+
+    if raw_text.startswith("3"):
+        return StateIncarcerationIncidentSeverity.THIRD_HIGHEST
+
+    return StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN

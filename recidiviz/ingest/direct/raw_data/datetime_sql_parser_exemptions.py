@@ -1630,18 +1630,12 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "MRRSAppealCharge": ["createdDate", "modifiedDate"],
         "MRRSAttorney": ["appealReceivedByLegalDate", "createdDate", "modifiedDate"],
         "MRRSBoardMember": ["createdDate", "modifiedDate"],
-        "MRRS_MisconductDisciplinaryCommittee": [
-            "dateAndTimeLog",
-            "dateOfSupportMisconductReport",
-            "lastUpdated",
-        ],
         "MRRS_Warden": [
             "createdDate",
             "firstSentCompletedDate",
             "lastSentBackDate",
             "lastUpdated",
         ],
-        "MRRS_charges": ["beginDate", "createdDate", "endDate", "lastUpdated"],
         "MRRS_investigationOfficer": [
             "dateOfDeliveredCopyToInmate",
             "dateOfDiscovery",
@@ -1649,12 +1643,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "investigationContinuedDate",
             "lastUpdated",
             "recommendedDateOfDisciplinaryCommitteeHearing",
-        ],
-        "MRRS_misconductReport": [
-            "dateFiled",
-            "dateOfDiscovery",
-            "dateReportWasWritten",
-            "modifiedDate",
         ],
         "PBABoardMember": ["createdDate", "endDate", "modifiedDate", "startDate"],
         "PBABoardMemberAttendance": ["createdDate", "modifiedDate"],
