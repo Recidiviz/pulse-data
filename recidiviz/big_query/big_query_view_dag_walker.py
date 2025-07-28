@@ -626,7 +626,7 @@ class BigQueryViewDagWalker:
         node: BigQueryViewDagNode,
         view_results: Dict[BigQueryView, ViewResultT],
         visited_set: Set[BigQueryAddress],
-        reverse: bool,
+        traversal_direction: TraversalDirection,
     ) -> Generator[
         Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT]], None, None
     ]:
@@ -636,7 +636,9 @@ class BigQueryViewDagWalker:
         """
 
         adjacent_addresses = (
-            node.parent_node_addresses if reverse else node.child_node_addresses
+            node.parent_node_addresses
+            if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS
+            else node.child_node_addresses
         )
         for adjacent_address in adjacent_addresses:
             adjacent_node = self.nodes_by_address[adjacent_address]
@@ -644,7 +646,7 @@ class BigQueryViewDagWalker:
             previous_level_results = {}
             previous_level_addresses = (
                 adjacent_node.child_node_addresses
-                if reverse
+                if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS
                 else adjacent_node.parent_node_addresses
             )
             for previous_level_address in previous_level_addresses:
@@ -716,7 +718,7 @@ class BigQueryViewDagWalker:
         view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
         synchronous: bool,
         perf_config: Optional[ProcessDagPerfConfig] = DEFAULT_PROCESS_DAG_PERF_CONFIG,
-        reverse: bool = False,
+        traversal_direction: TraversalDirection = TraversalDirection.ROOTS_TO_LEAVES,
     ) -> ProcessDagResult[ViewResultT]:
         """
         This method provides a level-by-level "breadth-first" traversal of a DAG and
@@ -734,8 +736,16 @@ class BigQueryViewDagWalker:
         to process than is allowed by the config.
         """
 
-        top_level_set = set(self.leaves) if reverse else set(self.roots)
-        bottom_level_set = set(self.roots) if reverse else set(self.leaves)
+        top_level_set = (
+            set(self.leaves)
+            if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS
+            else set(self.roots)
+        )
+        bottom_level_set = (
+            set(self.roots)
+            if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS
+            else set(self.leaves)
+        )
         processed: Set[BigQueryAddress] = set()
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
@@ -794,7 +804,7 @@ class BigQueryViewDagWalker:
                     node=node,
                     view_results=view_results,
                     visited_set=processed,
-                    reverse=reverse,
+                    traversal_direction=traversal_direction,
                 ):
                     entered_queue_time = time.perf_counter()
                     queue.enqueue(
@@ -976,7 +986,9 @@ class BigQueryViewDagWalker:
         # first.
 
         self.process_dag(
-            populate_node_descendants_sub_dag, synchronous=True, reverse=True
+            populate_node_descendants_sub_dag,
+            synchronous=True,
+            traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
         )
 
     def get_referenced_source_tables(self) -> set[BigQueryAddress]:

@@ -26,7 +26,10 @@ from typing import Dict, Optional, Set
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalker,
+    TraversalDirection,
+)
 from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.experiments_metadata.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
@@ -612,7 +615,9 @@ def _get_single_project_unused_addresses(
         return any(child_results.values())
 
     view_results = all_views_dag_walker.process_dag(
-        view_process_fn=is_view_used, reverse=True, synchronous=False
+        view_process_fn=is_view_used,
+        traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
+        synchronous=False,
     ).view_results
 
     return {

@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
     ProcessDagPerfConfig,
+    TraversalDirection,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -298,7 +299,9 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         }
 
         backwards_results = walker.process_dag(
-            processing_ordered_string, synchronous=self.synchronous, reverse=True
+            processing_ordered_string,
+            synchronous=self.synchronous,
+            traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
         )
         assert backwards_results.view_results == {
             view_6: [],
