@@ -22,6 +22,10 @@ output:
           violation_metadata:
             $normalized_values_json_dict:
               ViolationStatus: VIOLATION_STATUS
+          # TODO(#45651): Improve violation_type and response_type for supervision violations
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN)
           supervision_violation_responses:
             - $foreach:
                 $iterable:
@@ -44,6 +48,8 @@ output:
                       $json_extract:
                         $key: RESPONSE_DATE
                         $json: $iter_item
+                    # TODO(#45651): Improve violation_type and response_type for supervision violations
+                    response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
                     supervision_violation_response_decisions:
                       - StateSupervisionViolationResponseDecisionEntry:
                           decision:
