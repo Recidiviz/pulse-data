@@ -36,6 +36,7 @@ Usage:
 import argparse
 import datetime
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
@@ -72,7 +73,7 @@ US_NE_RAW_FILES_BUCKET = "recidiviz-ingest-us-ne-raw-files"
 US_NE_INGEST_PROJECT_ID = "recidiviz-ingest-us-ne"
 
 MAX_ROWS_PER_CURSOR_FETCH = 1000
-
+MAX_RETRIES = 3
 
 EXPORT_QUERY = "SELECT {columns} FROM {table_name}"
 BEGIN_TRANSACTION_QUERY = "BEGIN TRANSACTION"
@@ -148,23 +149,29 @@ class UsNeSqlServerConnectionManager:
             raise ValueError("Database connection is not open.")
 
         cursor: pymssql.Cursor | None = None
-        try:
-            cursor = self._db_connection.cursor()
-            cursor.execute(query)
+        retries = 0
+        while retries < MAX_RETRIES:
+            try:
+                cursor = self._db_connection.cursor()
+                cursor.execute(query)
 
-            # Get column descriptions for the caller
-            columns = [desc[0] for desc in cursor.description]
-            yield columns
+                # Get column descriptions for the caller
+                columns = [desc[0] for desc in cursor.description]
+                yield columns
 
-            # Fetch and yield batches of rows
-            while True:
-                rows = cursor.fetchmany(batch_size)
-                if not rows:
-                    break
-                yield rows
-        finally:
-            if cursor:
-                cursor.close()
+                # Fetch and yield batches of rows
+                while True:
+                    rows = cursor.fetchmany(batch_size)
+                    if not rows:
+                        break
+                    yield rows
+            except pymssql.OperationalError as e:
+                logging.error("OperationalError encountered: %s", e)
+                retries += 1
+                time.sleep(2**retries)
+            finally:
+                if cursor:
+                    cursor.close()
 
 
 @attr.define
@@ -241,8 +248,7 @@ class UsNeSqlTableToRawFileExporter:
             mode="w",
             newline="",
             encoding=export_task.encoding,
-            # TODO(#41296) once we fully migrate over to this export process
-            # we should export in utf-8 instead of windows-1252
+            # TODO(#45702) we should export in utf-8 instead of windows-1252
             errors="replace",  # Handle encoding errors by replacing problematic characters
         ) as f:
             # Process the results in batches
@@ -351,7 +357,6 @@ def process_us_ne_database_export(
     failed_exports: list[tuple[UsNeSqltoGCSExportTask, Exception]] = []
 
     def process_export_task(export_task: UsNeSqltoGCSExportTask) -> None:
-        # TODO(#41296): Add retry logic for transient errors
         try:
             logging.info(
                 "Exporting table [%s]",

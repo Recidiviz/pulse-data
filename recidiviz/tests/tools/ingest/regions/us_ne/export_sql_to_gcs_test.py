@@ -16,11 +16,8 @@
 # =============================================================================
 """Tests for the SQL to GCS export process."""
 import datetime
-import os
 import unittest
 from unittest.mock import MagicMock
-
-import pytest
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
@@ -29,7 +26,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs import (
+    UsNeGCSFileUploader,
     UsNeSqlServerConnectionManager,
+    UsNeSqlTableToRawFileExporter,
+    process_us_ne_database_export,
 )
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
     UsNeSqltoGCSExportTask,
@@ -39,23 +39,7 @@ from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
 class TestProcessUsNeDatabaseExport(unittest.TestCase):
     """Tests for the process_us_ne_database_export function."""
 
-    # there are two issues preventing this test from running locally -
-    # the binary form of pymssql is incorrectly linked on ARM on python 3.11 https://github.com/pymssql/pymssql/issues/769
-    # the workaround is to build the module locally
-    # which is also currently not working https://github.com/pymssql/pymssql/issues/937
-    # but there is active development on a fix
-    # TODO(#41296) Remove skipif
-    @pytest.mark.skipif(
-        os.getenv("CI") != "true", reason="ongoing pymssql issue on MAC"
-    )
     def test_process_database_export_failure(self) -> None:
-        # pylint: disable=import-outside-toplevel
-        from recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs import (
-            UsNeGCSFileUploader,
-            UsNeSqlTableToRawFileExporter,
-            process_us_ne_database_export,
-        )
-
         mock_exporter = MagicMock(spec=UsNeSqlTableToRawFileExporter)
         mock_exporter.dry_run = False
         mock_uploader = MagicMock(spec=UsNeGCSFileUploader)
@@ -97,17 +81,7 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         self.assertEqual(len(failed_exports), 1)
         self.assertEqual(failed_exports[0][0], export_tasks[1])
 
-    @pytest.mark.skipif(
-        os.getenv("CI") != "true", reason="ongoing pymssql issue on MAC"
-    )
     def test_process_database_export_dry_run(self) -> None:
-        # pylint: disable=import-outside-toplevel
-        from recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs import (
-            UsNeGCSFileUploader,
-            UsNeSqlTableToRawFileExporter,
-            process_us_ne_database_export,
-        )
-
         mock_connection_manager = MagicMock(spec=UsNeSqlServerConnectionManager)
         mock_exporter = UsNeSqlTableToRawFileExporter(
             connection_manager=mock_connection_manager, dry_run=True
