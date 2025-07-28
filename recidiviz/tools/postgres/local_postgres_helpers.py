@@ -200,7 +200,7 @@ def _clear_all_on_disk_postgresql_databases() -> None:
         if name.startswith(get_on_disk_postgres_temp_dir_prefix())
     ]
     for postgres_dir in postgres_dirs:
-        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=False)
+        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=True)
 
 
 @environment.local_only
