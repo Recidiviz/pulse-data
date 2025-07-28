@@ -6,8 +6,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
         uses: styfle/cancel-workflow-action@ce177499ccf9fd2aded3b0426c97e5434c2e8a73 # 0.6.0
@@ -21,8 +19,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Airflow Python Setup
         uses: ./.github/actions/airflow-python-setup
@@ -36,8 +32,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=16
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -56,8 +50,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -84,8 +76,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -108,8 +98,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
@@ -125,8 +113,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           # This clones the repo and checks out the SHA that triggered this action.
@@ -152,8 +138,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -169,8 +153,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -188,8 +170,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=2
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Yarn caching
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -220,8 +200,6 @@ jobs:
         working-directory: ./nodejs/asset-generation/
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
         with:
@@ -245,8 +223,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
       - run: npm install prettier
@@ -257,8 +233,6 @@ jobs:
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=1
     steps:
       - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-        with:
-          metrics: cpu,network,memory,disk,io
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: hashicorp/setup-terraform@bfaf33cd488dd9a148df9ea8868ffec802fc4a04 # v1
         with:
