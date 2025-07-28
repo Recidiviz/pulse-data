@@ -31,7 +31,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingError,
-    FailureMode,
+    BigQueryViewDagWalkerProcessingFailureMode,
     ProcessDagPerfConfig,
     TraversalDirection,
 )
@@ -1476,7 +1476,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 # whose parents are all complete before we are all finished with level 3
                 # nodes
                 synchronous=True,
-                failure_mode=FailureMode.FAIL_FAST,
+                failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
             )
 
         # because we don't process nodes of the same level deterministically, sometimes
@@ -1508,7 +1508,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             walker.process_dag(
                 _process_node_4_fails,
                 synchronous=self.synchronous,
-                failure_mode=FailureMode.FAIL_EXHAUSTIVELY,
+                failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
             )
 
         # we process 5, 7  and 9 after 4 fails, but not 6 or 8 because they are descendants
@@ -1551,7 +1551,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             walker.process_dag(
                 _process_node_4_and_9_fails,
                 synchronous=self.synchronous,
-                failure_mode=FailureMode.FAIL_EXHAUSTIVELY,
+                failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
             )
 
         # we process 5, 7 and 9 after 4 fails, but not 6 because it is a descendant of

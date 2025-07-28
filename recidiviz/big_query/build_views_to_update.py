@@ -37,6 +37,7 @@ def build_views_to_update(
     logging.info("Building [%s] views...", len(candidate_view_builders))
     views_to_builders = {}
     for view_builder in candidate_view_builders:
+        # TODO(#45650): move this check out of the view update into a test
         if view_builder.dataset_id in view_source_table_datasets:
             raise ValueError(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"

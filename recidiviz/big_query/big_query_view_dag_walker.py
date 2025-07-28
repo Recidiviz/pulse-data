@@ -71,8 +71,9 @@ class _Sentinel(Enum):
 _NO_RESULT = _Sentinel.NO_RESULT
 
 
-class FailureMode(Enum):
-    """Describes how we want the BigQueryViewDagNode.process_dag method to fail.
+class BigQueryViewDagWalkerProcessingFailureMode(Enum):
+    """Describes how we want the BigQueryViewDagWalker.process_dag method to fail when
+    processing a single BigQueryViewDagNode.
 
     FAIL_FAST: hard fails at the first node processing failure
     FAIL_EXHAUSTIVELY: catches processing failures and processes processing all
@@ -783,7 +784,7 @@ class BigQueryViewDagWalker:
     def _dag_view_process_fn_result(
         results_fn: Callable[[], Tuple[float, ViewResultT]],
         view: BigQueryView,
-        failure_mode: FailureMode,
+        failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     ) -> ViewResultMetadata:
         try:
             execution_sec, view_result = results_fn()
@@ -796,7 +797,7 @@ class BigQueryViewDagWalker:
                 f"Error processing [{view.address.to_str()}]"
             )
 
-            if failure_mode == FailureMode.FAIL_FAST:
+            if failure_mode == BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST:
                 raise created_e from caught_e
 
             # raising using from assigns the "from" Exception to the __cause__ attribute
@@ -816,7 +817,7 @@ class BigQueryViewDagWalker:
         synchronous: bool,
         perf_config: Optional[ProcessDagPerfConfig] = DEFAULT_PROCESS_DAG_PERF_CONFIG,
         traversal_direction: TraversalDirection = TraversalDirection.ROOTS_TO_LEAVES,
-        failure_mode: FailureMode = FailureMode.FAIL_FAST,
+        failure_mode: BigQueryViewDagWalkerProcessingFailureMode = BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
     ) -> ProcessDagResult[ViewResultT]:
         """This method provides a level-by-level "breadth-first" traversal of a DAG and
         executes |view_process_fn| on every node in level order.

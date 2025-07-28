@@ -658,6 +658,10 @@ class ViewManagerTest(unittest.TestCase):
             views_to_update=mock_views,
             bq_region_override="us-east1",
             materialize_changed_views_only=True,
+            historically_managed_datasets_to_clean=None,
+            default_table_expiration_for_new_datasets=None,
+            views_might_exist=True,
+            allow_slow_views=False,
         )
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
