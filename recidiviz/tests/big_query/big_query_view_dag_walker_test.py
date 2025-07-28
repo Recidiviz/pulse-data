@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ import re
 import threading
 import time
 import unittest
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -46,7 +46,7 @@ from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
-MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
+MOCK_VIEW_PROCESS_TIME_SECONDS = 0.02
 
 
 # View builders for views forming a DAG shaped like an X:
@@ -1574,396 +1574,770 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
 
     __test__ = True
 
+    def setUp(self) -> None:
+        if hasattr(super(), "setUp"):
+            super().setUp()
+
+        # Create test views for get_edges() tests with proper dependencies:
+        # view_one is a root view (no dependencies)
+        self.view_one = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="view_one",
+            description="First test view - root view",
+            view_query_template="SELECT 1 as col",
+        ).build()
+
+        # view_two depends on view_one
+        self.view_two = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="view_two",
+            description="Second test view that depends on view_one",
+            view_query_template="SELECT * FROM `{project_id}.view_dataset.view_one`",
+        ).build()
+
+        # view_three also depends on view_one
+        self.view_three = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="view_three",
+            description="Third test view that depends on view_one",
+            view_query_template="SELECT * FROM `{project_id}.view_dataset.view_one`",
+        ).build()
+
     @property
     def synchronous(self) -> bool:
         return True
 
-    def test_ancestors_dfs_tree_str(self) -> None:
-        view_builder_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+    def test_get_edges(self) -> None:
+        """Test basic get_edges functionality."""
+        dag_walker = BigQueryViewDagWalker(
+            [self.view_one, self.view_two, self.view_three]
         )
-        view_builder_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_builder_3 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
+        edges = dag_walker.get_edges()
+
+        # Convert to set of address tuples for easier comparison
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        expected_edges = {
+            (self.view_one.address, self.view_two.address),  # view_one -> view_two
+            (self.view_one.address, self.view_three.address),  # view_one -> view_three
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 2)
+
+    def test_get_edges_with_multiple_parents(self) -> None:
+        """Test get_edges with views that have multiple parent dependencies."""
+        # Create a view that depends on both view_one and view_two
+        view_with_multiple_parents = SimpleBigQueryViewBuilder(
+            dataset_id="multiple_parents_dataset",
+            view_id="view_with_multiple_parents",
+            description="A view with multiple parent dependencies",
             view_query_template="""
-            SELECT * FROM `{project_id}.dataset_1.table_1`
-            JOIN `{project_id}.dataset_2.table_2`
-            USING (col)""",
+            SELECT * FROM `{project_id}.view_dataset.view_one`
+            UNION ALL
+            SELECT * FROM `{project_id}.view_dataset.view_two`
+            """,
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker(
+            [self.view_one, self.view_two, view_with_multiple_parents]
         )
-        view_builder_4 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_builder_5 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_5",
-            view_id="table_5",
-            description="table_5 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        all_view_builders = [
-            view_builder_1,
-            view_builder_2,
-            view_builder_3,
-            view_builder_4,
-            view_builder_5,
-        ]
-        dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
+        edges = dag_walker.get_edges()
 
-        # Top level view
-        dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_5.build())
-        expected_tree = """dataset_5.table_5
-|--dataset_3.table_3
-|----dataset_1.table_1
-|------source_dataset.source_table
-|----dataset_2.table_2
-|------source_dataset.source_table_2
-"""
-        self.assertEqual(expected_tree, dfs_tree)
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
 
-        # Middle of tree
-        dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_3.build())
-        expected_tree = """dataset_3.table_3
-|--dataset_1.table_1
-|----source_dataset.source_table
-|--dataset_2.table_2
-|----source_dataset.source_table_2
-"""
-        self.assertEqual(expected_tree, dfs_tree)
+        expected_edges = {
+            (
+                self.view_one.address,
+                self.view_two.address,
+            ),  # view_one -> view_two (from our test setup)
+            (
+                self.view_one.address,
+                view_with_multiple_parents.address,
+            ),  # view_one -> view_with_multiple_parents
+            (
+                self.view_two.address,
+                view_with_multiple_parents.address,
+            ),  # view_two -> view_with_multiple_parents
+        }
 
-        # Custom formatted
-        def _custom_formatter(address: BigQueryAddress, is_truncated: bool) -> str:
-            formatted = f"custom_formatted_{address.dataset_id}_{address.table_id}"
-            if is_truncated:
-                formatted += " (....)"
-            return formatted
+        self.assertEqual(edge_addresses, expected_edges)
 
-        dfs_tree = dag_walker.ancestors_dfs_tree_str(
-            view_builder_3.build(),
-            custom_node_formatter=_custom_formatter,
-        )
+    def test_get_edges_complex_dag(self) -> None:
+        """Test get_edges with a complex DAG structure."""
+        dag_walker = BigQueryViewDagWalker(self.all_views)
+        edges = dag_walker.get_edges()
 
-        expected_tree = """custom_formatted_dataset_3_table_3
-|--custom_formatted_dataset_1_table_1
-|----custom_formatted_source_dataset_source_table
-|--custom_formatted_dataset_2_table_2
-|----custom_formatted_source_dataset_source_table_2
-"""
-        self.assertEqual(expected_tree, dfs_tree)
+        # Verify we have a substantial number of edges (complex DAG should have many)
+        self.assertGreater(len(edges), 100)
 
-        # Skip datasets
-        dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
-        dfs_tree = dag_walker.ancestors_dfs_tree_str(
-            view_builder_3.build(), datasets_to_skip={"dataset_1"}
-        )
-        expected_tree = """dataset_3.table_3
-|----source_dataset.source_table
-|--dataset_2.table_2
-|----source_dataset.source_table_2
-"""
-        self.assertEqual(expected_tree, dfs_tree)
+        # All edges should be between valid views in the DAG
+        all_addresses = {view.address for view in self.all_views}
+        for parent, child in edges:
+            self.assertIn(parent.address, all_addresses)
+            self.assertIn(child.address, all_addresses)
 
-    def test_ancestors_dfs_tree_str_complex(self) -> None:
-        views = [
-            *self.diamond_shaped_dag_views_list,
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_7",
-                view_id="table_7",
-                description="table_7 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_6.table_6`",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_8",
-                view_id="table_8",
-                description="table_8 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_6.table_6`",
-            ).build(),
-        ]
-        dag_walker = BigQueryViewDagWalker(views)
+    def test_get_edges_empty_dag(self) -> None:
+        """Test get_edges with a DAG that has no dependencies."""
+        isolated_view = SimpleBigQueryViewBuilder(
+            dataset_id="isolated_dataset",
+            view_id="isolated_view",
+            description="A view with no dependencies",
+            view_query_template="SELECT 1 as col1, 'isolated' as col2",
+        ).build()
 
-        # Top level view
-        ancestors_tree = dag_walker.ancestors_dfs_tree_str(view=views[-1])
+        dag_walker = BigQueryViewDagWalker([isolated_view])
+        edges = dag_walker.get_edges()
 
-        expected = """dataset_8.table_8
-|--dataset_6.table_6
-|----dataset_4.table_4
-|------dataset_3.table_3
-|--------dataset_1.table_1
-|----------source_dataset.source_table
-|--------dataset_2.table_2
-|----------source_dataset.source_table_2
-|----dataset_5.table_5
-|------dataset_3.table_3 (...)
-"""
-        self.assertEqual(expected, ancestors_tree)
+        # Should have no edges since there are no dependencies
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
 
-        # Custom formatted
-        def _custom_formatter(address: BigQueryAddress, is_truncated: bool) -> str:
-            formatted = f"custom_formatted_{address.dataset_id}_{address.table_id}"
-            if is_truncated:
-                formatted += " (....)"
-            return formatted + " <br/>"
+    def test_get_edges_single_view_no_dependencies(self) -> None:
+        """Test get_edges with a single view that has no dependencies."""
+        dag_walker = BigQueryViewDagWalker([self.view_one])
+        edges = dag_walker.get_edges()
 
-        ancestors_tree = dag_walker.ancestors_dfs_tree_str(
-            view=views[-1], custom_node_formatter=_custom_formatter
-        )
-        expected = """custom_formatted_dataset_8_table_8 <br/>
-|--custom_formatted_dataset_6_table_6 <br/>
-|----custom_formatted_dataset_4_table_4 <br/>
-|------custom_formatted_dataset_3_table_3 <br/>
-|--------custom_formatted_dataset_1_table_1 <br/>
-|----------custom_formatted_source_dataset_source_table <br/>
-|--------custom_formatted_dataset_2_table_2 <br/>
-|----------custom_formatted_source_dataset_source_table_2 <br/>
-|----custom_formatted_dataset_5_table_5 <br/>
-|------custom_formatted_dataset_3_table_3 (....) <br/>
-"""
-        self.assertEqual(expected, ancestors_tree)
+        # view_one has no dependencies in this isolated case
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
 
-    def test_descendants_dfs_tree_str(self) -> None:
-        view_builder_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_builder_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_builder_3 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_1.table_1`
-            JOIN `{project_id}.dataset_2.table_2`
-            USING (col)""",
-        )
-        view_builder_4 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_builder_5 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_5",
-            view_id="table_5",
-            description="table_5 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_builder_6 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_6",
-            view_id="table_6",
-            description="table_6 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_5.table_5`""",
-        )
-        all_builders = [
-            view_builder_1,
-            view_builder_2,
-            view_builder_3,
-            view_builder_4,
-            view_builder_5,
-            view_builder_6,
-        ]
-        all_views = [b.build() for b in all_builders]
-        dag_walker = BigQueryViewDagWalker(all_views)
-
-        # Top level view
-        descendant_tree = dag_walker.descendants_dfs_tree_str(
-            view=view_builder_2.build()
-        )
-        expected_tree = """dataset_2.table_2
-|--dataset_3.table_3
-|----dataset_4.table_4
-|----dataset_5.table_5
-|------dataset_6.table_6
-"""
-        self.assertEqual(expected_tree, descendant_tree)
-
-        # Descendants from middle of tree
-        descendant_tree = dag_walker.descendants_dfs_tree_str(
-            view=view_builder_3.build()
-        )
-        expected_tree = """dataset_3.table_3
-|--dataset_4.table_4
-|--dataset_5.table_5
-|----dataset_6.table_6
-"""
-        self.assertEqual(expected_tree, descendant_tree)
-
-    def test_descendants_dfs_tree_str_complex(self) -> None:
-        views = [
-            *self.diamond_shaped_dag_views_list,
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_7",
-                view_id="table_7",
-                description="table_7 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_6.table_6`",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_8",
-                view_id="table_8",
-                description="table_8 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_6.table_6`",
-            ).build(),
-        ]
-        dag_walker = BigQueryViewDagWalker(views)
-
-        # Top level view
-        descendant_tree = dag_walker.descendants_dfs_tree_str(view=views[0])
-        expected = """dataset_1.table_1
-|--dataset_3.table_3
-|----dataset_4.table_4
-|------dataset_6.table_6
-|--------dataset_7.table_7
-|--------dataset_8.table_8
-|----dataset_5.table_5
-|------dataset_6.table_6 (...)
-"""
-        self.assertEqual(expected, descendant_tree)
-
-        # Custom formatted
-        def _custom_formatter(address: BigQueryAddress, is_truncated: bool) -> str:
-            formatted = f"custom_formatted_{address.dataset_id}_{address.table_id}"
-            if is_truncated:
-                formatted += " (....)"
-            return formatted + " <br/>"
-
-        descendant_tree = dag_walker.descendants_dfs_tree_str(
-            view=views[0], custom_node_formatter=_custom_formatter
-        )
-        expected = """custom_formatted_dataset_1_table_1 <br/>
-|--custom_formatted_dataset_3_table_3 <br/>
-|----custom_formatted_dataset_4_table_4 <br/>
-|------custom_formatted_dataset_6_table_6 <br/>
-|--------custom_formatted_dataset_7_table_7 <br/>
-|--------custom_formatted_dataset_8_table_8 <br/>
-|----custom_formatted_dataset_5_table_5 <br/>
-|------custom_formatted_dataset_6_table_6 (....) <br/>
-"""
-        self.assertEqual(expected, descendant_tree)
-
-    def test_descendants_dfs_tree_str_many_paths_to_leaf(self) -> None:
-        r"""
-        Tests structure like:
-               1
-            /  |  \
-           2   3   4
-            \  |  /
-               5
+    def test_get_edges_x_shaped_dag(self) -> None:
+        r"""Test get_edges with X-shaped DAG structure:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
         """
-        view_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_1",
-                view_id="table_1",
-                description="table_1 description",
-                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_2",
-                view_id="table_2",
-                description="table_2 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_3",
-                view_id="table_3",
-                description="table_3 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_4",
-                view_id="table_4",
-                description="table_4 description",
-                view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_5",
-                view_id="table_5",
-                description="table_5 description",
-                view_query_template="""
-                    SELECT * FROM `{project_id}.dataset_2.table_2`
-                    UNION ALL
-                    SELECT * FROM `{project_id}.dataset_3.table_3`
-                    UNION ALL
-                    SELECT * FROM `{project_id}.dataset_4.table_4`
-                    """,
-            ),
+        dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+        edges = dag_walker.get_edges()
+
+        # Convert to set of address tuples for easier comparison
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        # Expected edges for X-shaped DAG:
+        # table_1 -> table_3, table_2 -> table_3, table_3 -> table_4, table_3 -> table_5
+        expected_edges = {
+            (
+                self.x_shaped_dag_views_list[0].address,
+                self.x_shaped_dag_views_list[2].address,
+            ),  # table_1 -> table_3
+            (
+                self.x_shaped_dag_views_list[1].address,
+                self.x_shaped_dag_views_list[2].address,
+            ),  # table_2 -> table_3
+            (
+                self.x_shaped_dag_views_list[2].address,
+                self.x_shaped_dag_views_list[3].address,
+            ),  # table_3 -> table_4
+            (
+                self.x_shaped_dag_views_list[2].address,
+                self.x_shaped_dag_views_list[4].address,
+            ),  # table_3 -> table_5
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 4)
+
+    def test_get_edges_diamond_shaped_dag(self) -> None:
+        r"""Test get_edges with diamond-shaped DAG structure:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #   \   /
+        #     6
+        """
+        dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        edges = dag_walker.get_edges()
+
+        # Convert to set of address tuples for easier comparison
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        # Expected edges for diamond-shaped DAG (includes all X-shaped edges plus diamond bottom):
+        expected_edges = {
+            (
+                self.diamond_shaped_dag_views_list[0].address,
+                self.diamond_shaped_dag_views_list[2].address,
+            ),  # table_1 -> table_3
+            (
+                self.diamond_shaped_dag_views_list[1].address,
+                self.diamond_shaped_dag_views_list[2].address,
+            ),  # table_2 -> table_3
+            (
+                self.diamond_shaped_dag_views_list[2].address,
+                self.diamond_shaped_dag_views_list[3].address,
+            ),  # table_3 -> table_4
+            (
+                self.diamond_shaped_dag_views_list[2].address,
+                self.diamond_shaped_dag_views_list[4].address,
+            ),  # table_3 -> table_5
+            (
+                self.diamond_shaped_dag_views_list[3].address,
+                self.diamond_shaped_dag_views_list[5].address,
+            ),  # table_4 -> table_6
+            (
+                self.diamond_shaped_dag_views_list[4].address,
+                self.diamond_shaped_dag_views_list[5].address,
+            ),  # table_5 -> table_6
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 6)
+
+        # Verify the diamond structure specifically - table_6 should have exactly 2 parents
+        table_6_parents = [
+            parent
+            for parent, child in edges
+            if child.address == self.diamond_shaped_dag_views_list[5].address
         ]
-        views = [vb.build() for vb in view_builders]
+        self.assertEqual(len(table_6_parents), 2)
+        parent_addresses = {parent.address for parent in table_6_parents}
+        expected_parent_addresses = {
+            self.diamond_shaped_dag_views_list[3].address,  # table_4
+            self.diamond_shaped_dag_views_list[4].address,  # table_5
+        }
+        self.assertEqual(parent_addresses, expected_parent_addresses)
+
+    def test_get_edges_materialized_views(self) -> None:
+        """Test get_edges with materialized views and their relationships."""
+        view_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            # References materialized view via the _materialized suffix
+            view_query_template="""
+                SELECT * FROM `{project_id}.dataset_1.table_1`
+                JOIN `{project_id}.dataset_2.table_2_materialized`
+                USING (col)""",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3])
+        edges = dag_walker.get_edges()
+
+        # Convert to set of address tuples for easier comparison
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        expected_edges = {
+            (view_1.address, view_3.address),  # view_1 -> view_3
+            (
+                view_2.address,
+                view_3.address,
+            ),  # view_2 -> view_3 (through materialized reference)
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 2)
+
+    def test_get_edges_materialized_with_custom_address(self) -> None:
+        """Test get_edges with materialized views that have custom addresses."""
+        view_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset_1", table_id="other_table_1"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset_2", table_id="other_table_2"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        ).build()
+        view_3 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_3",
+            view_id="table_3",
+            description="table_3 description",
+            view_query_template="""
+                SELECT * FROM `{project_id}.dataset_1.table_1`
+                JOIN `{project_id}.other_dataset_2.other_table_2`
+                USING (col)""",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3])
+        edges = dag_walker.get_edges()
+
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        expected_edges = {
+            (view_1.address, view_3.address),  # view_1 -> view_3
+            (
+                view_2.address,
+                view_3.address,
+            ),  # view_2 -> view_3 (through custom materialized address)
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 2)
+
+    def test_get_edges_complex_multi_level_dag(self) -> None:
+        """Test get_edges with a complex multi-level DAG structure that mimics real-world scenarios."""
+        # Build a more complex DAG representing a realistic data pipeline:
+        # Raw -> Ingest -> Normalized -> Validation
+        raw_view = SimpleBigQueryViewBuilder(
+            dataset_id="us_ca_raw_data_up_to_date_views",
+            view_id="movements_latest",
+            description="Latest movements from raw data",
+            view_query_template="SELECT * FROM `{project_id}.us_ca_raw_data.movements`",
+        ).build()
+
+        ingest_view = SimpleBigQueryViewBuilder(
+            dataset_id="us_ca_ingest_view_results",
+            view_id="incarceration_periods",
+            description="Processed incarceration periods",
+            view_query_template="SELECT * FROM `{project_id}.us_ca_raw_data_up_to_date_views.movements_latest`",
+        ).build()
+
+        normalized_view = SimpleBigQueryViewBuilder(
+            dataset_id="us_ca_normalized_state",
+            view_id="state_incarceration_period",
+            description="Normalized incarceration periods",
+            view_query_template="SELECT * FROM `{project_id}.us_ca_ingest_view_results.incarceration_periods`",
+        ).build()
+
+        validation_view = SimpleBigQueryViewBuilder(
+            dataset_id="validation_views",
+            view_id="incarceration_period_validation",
+            description="Validation checks for incarceration periods",
+            view_query_template="SELECT * FROM `{project_id}.us_ca_normalized_state.state_incarceration_period`",
+        ).build()
+
+        # Create another branch from normalized
+        metric_view = SimpleBigQueryViewBuilder(
+            dataset_id="aggregated_metrics",
+            view_id="incarceration_metrics",
+            description="Aggregated metrics from incarceration data",
+            view_query_template="SELECT * FROM `{project_id}.us_ca_normalized_state.state_incarceration_period`",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker(
+            [raw_view, ingest_view, normalized_view, validation_view, metric_view]
+        )
+        edges = dag_walker.get_edges()
+
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        expected_edges = {
+            (raw_view.address, ingest_view.address),
+            (ingest_view.address, normalized_view.address),
+            (normalized_view.address, validation_view.address),
+            (normalized_view.address, metric_view.address),
+        }
+
+        self.assertEqual(edge_addresses, expected_edges)
+        self.assertEqual(len(edges), 4)
+
+    def test_get_edges_all_deployed_views(self) -> None:
+        """Test get_edges with all deployed views - integration test."""
+        dag_walker = BigQueryViewDagWalker(self.all_views)
+        edges = dag_walker.get_edges()
+
+        # Should have edges for the complex DAG structure
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+
+        # Verify we have a substantial number of edges (complex DAG should have many)
+        self.assertGreater(len(edges), 100)
+
+        # All edges should be between valid views in the DAG
+        all_addresses = {view.address for view in self.all_views}
+        for parent, child in edges:
+            self.assertIn(
+                parent.address,
+                all_addresses,
+                f"Parent {parent.address} not found in deployed views",
+            )
+            self.assertIn(
+                child.address,
+                all_addresses,
+                f"Child {child.address} not found in deployed views",
+            )
+
+        # Verify edges are unique (no duplicates)
+        self.assertEqual(len(edges), len(edge_addresses))
+
+        # Verify consistency with get_number_of_edges()
+        self.assertEqual(len(edges), dag_walker.get_number_of_edges())
+
+    def test_get_edges_empty_views_list(self) -> None:
+        """Test get_edges with an empty list of views."""
+        dag_walker = BigQueryViewDagWalker([])
+        edges = dag_walker.get_edges()
+
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
+
+    def test_get_edges_single_view_with_source_dependencies(self) -> None:
+        """Test get_edges with a single view that has source table dependencies but no view dependencies."""
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="my_dataset",
+            view_id="my_view_id",
+            description="my view description",
+            view_query_template="""SELECT * FROM `{project_id}.some_dataset.some_table`
+            LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
+            USING (some_col);
+            """,
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view])
+        edges = dag_walker.get_edges()
+
+        # Should have no edges since source tables are not BigQueryView nodes
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
+
+        # But should have source addresses
+        node = dag_walker.node_for_view(view)
+        self.assertEqual(len(node.source_addresses), 2)
+        expected_sources = {
+            BigQueryAddress(dataset_id="some_dataset", table_id="some_table"),
+            BigQueryAddress(dataset_id="some_dataset", table_id="other_table"),
+        }
+        self.assertEqual(node.source_addresses, expected_sources)
+
+    def test_get_edges_returns_correct_tuple_format(self) -> None:
+        """Test that get_edges returns tuples in (parent, child) format consistently."""
+        dag_walker = BigQueryViewDagWalker([self.view_one, self.view_two])
+        edges = dag_walker.get_edges()
+
+        self.assertEqual(len(edges), 1)
+        parent, child = edges[0]
+
+        # Verify tuple format and types
+        self.assertIsInstance(parent, BigQueryView)
+        self.assertIsInstance(child, BigQueryView)
+
+        # Verify the relationship direction (parent -> child)
+        self.assertEqual(parent.address, self.view_one.address)
+        self.assertEqual(child.address, self.view_two.address)
+
+        # Verify parent is indeed referenced in child's query
+        self.assertIn(parent.address.to_str(), child.view_query)
+
+    def test_get_edges_deep_dag_chain(self) -> None:
+        """Test get_edges with a deep linear chain of dependencies."""
+        # Create a chain: view1 -> view2 -> view3 -> view4 -> view5
+        views = []
+        for i in range(1, 6):
+            if i == 1:
+                query = "SELECT 1 as col"
+            else:
+                prev_dataset = f"chain_dataset_{i-1}"
+                prev_view = f"chain_view_{i-1}"
+                query = f"SELECT * FROM `{{project_id}}.{prev_dataset}.{prev_view}`"
+
+            view = SimpleBigQueryViewBuilder(
+                dataset_id=f"chain_dataset_{i}",
+                view_id=f"chain_view_{i}",
+                description=f"Chain view {i}",
+                view_query_template=query,
+            ).build()
+            views.append(view)
+
         dag_walker = BigQueryViewDagWalker(views)
+        edges = dag_walker.get_edges()
 
-        # Top level view
-        descendant_tree = dag_walker.descendants_dfs_tree_str(view=views[0])
-        expected = """dataset_1.table_1
-|--dataset_2.table_2
-|----dataset_5.table_5
-|--dataset_3.table_3
-|----dataset_5.table_5
-|--dataset_4.table_4
-|----dataset_5.table_5
-"""
-        self.assertEqual(expected, descendant_tree)
+        # Should have 4 edges in the chain
+        self.assertEqual(len(edges), 4)
 
+        # Verify the chain order
+        edge_addresses = {(parent.address, child.address) for parent, child in edges}
+        for i in range(4):
+            parent_addr = views[i].address
+            child_addr = views[i + 1].address
+            self.assertIn(
+                (parent_addr, child_addr),
+                edge_addresses,
+                f"Missing edge from {parent_addr} to {child_addr}",
+            )
 
-class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
-    """
-    Run TestBigQueryViewDagWalkerBase unit tests for the
-    aysnchronous case, as well as all non-polymorphic unit tests
-    """
+    def test_get_edges_wide_dag_many_children(self) -> None:
+        """Test get_edges with a single parent having many children."""
+        # Create a parent view
+        parent_view = SimpleBigQueryViewBuilder(
+            dataset_id="parent_dataset",
+            view_id="parent_view",
+            description="Parent view with many children",
+            view_query_template="SELECT 1 as col, 'parent' as source",
+        ).build()
 
-    __test__ = True
+        # Create multiple child views
+        child_views = []
+        for i in range(10):  # 10 children
+            child_view = SimpleBigQueryViewBuilder(
+                dataset_id="child_dataset",
+                view_id=f"child_view_{i}",
+                description=f"Child view {i}",
+                view_query_template="SELECT * FROM `{project_id}.parent_dataset.parent_view`",
+            ).build()
+            child_views.append(child_view)
 
-    @property
-    def synchronous(self) -> bool:
-        return False
+        all_views = [parent_view] + child_views
+        dag_walker = BigQueryViewDagWalker(all_views)
+        edges = dag_walker.get_edges()
 
-    # Non-polymorphic tests
-    def test_dag_process_time(self) -> None:
-        num_views = len(self.all_views)
-        walker = BigQueryViewDagWalker(self.all_views)
+        # Should have 10 edges (one to each child)
+        self.assertEqual(len(edges), 10)
 
-        serial_processing_time_seconds = num_views * MOCK_VIEW_PROCESS_TIME_SECONDS
-        serial_processing_time = datetime.timedelta(
-            seconds=serial_processing_time_seconds
+        # All edges should have the parent view as the parent
+        self.assertTrue(
+            all(parent.address == parent_view.address for parent, _ in edges)
+        )
+        self.assertEqual(set(child_views), {child for _, child in edges})
+
+    def test_get_edges_consistency_with_node_relationships(self) -> None:
+        """Test that get_edges results are consistent with node parent/child relationships."""
+        dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        edges = dag_walker.get_edges()
+
+        # Convert edges to mappings for easier verification
+        parent_to_children: Dict[BigQueryView, Set[BigQueryView]] = {}
+        child_to_parents: Dict[BigQueryView, Set[BigQueryView]] = {}
+
+        for parent, child in edges:
+            if parent not in parent_to_children:
+                parent_to_children[parent] = set()
+            parent_to_children[parent].add(child)
+
+            if child not in child_to_parents:
+                child_to_parents[child] = set()
+            child_to_parents[child].add(parent)
+
+        # Verify consistency with node relationships
+        for view in self.diamond_shaped_dag_views_list:
+            node = dag_walker.node_for_view(view)
+
+            # Check child relationships
+            expected_children = {
+                dag_walker.view_for_address(addr) for addr in node.child_node_addresses
+            }
+            actual_children = parent_to_children.get(view, set())
+            self.assertEqual(
+                actual_children,
+                expected_children,
+                f"Child mismatch for view {view.address}",
+            )
+
+            # Check parent relationships
+            expected_parents = {
+                dag_walker.view_for_address(addr) for addr in node.parent_node_addresses
+            }
+            actual_parents = child_to_parents.get(view, set())
+            self.assertEqual(
+                actual_parents,
+                expected_parents,
+                f"Parent mismatch for view {view.address}",
+            )
+
+    def test_get_edges_to_source_tables_basic(self) -> None:
+        """Test basic get_edges_to_source_tables functionality."""
+        # Create a view that references a source table
+        view_with_source = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="view_with_source",
+            description="View that references source tables",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view_with_source])
+
+        # Mock source table addresses
+        source_table_addresses = {
+            BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
+            BigQueryAddress(dataset_id="other_dataset", table_id="other_table"),
+        }
+
+        edges = dag_walker.get_edges_to_source_tables(source_table_addresses)
+
+        # Should find edge from source_table to view_with_source
+        expected_edge = (
+            BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
+            view_with_source,
         )
 
-        def process_simple(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
-        ) -> BigQueryAddress:
-            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
-            return view.address
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0], expected_edge)
 
-        start = datetime.datetime.now()
-        result = walker.process_dag(process_simple, synchronous=self.synchronous)
-        end = datetime.datetime.now()
+    def test_get_edges_to_source_tables_multiple_sources(self) -> None:
+        """Test get_edges_to_source_tables with multiple source tables."""
+        # Create a view that references multiple source tables
+        view_multi_source = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="view_multi_source",
+            description="View that references multiple source tables",
+            view_query_template="""
+                SELECT * FROM `{project_id}.source_dataset.table1`
+                UNION ALL
+                SELECT * FROM `{project_id}.source_dataset.table2`
+            """,
+        ).build()
 
-        self.assertEqual(num_views, len(result.view_results))
+        dag_walker = BigQueryViewDagWalker([view_multi_source])
 
-        processing_time = end - start
+        # Mock source table addresses that include both tables referenced by the view
+        source_table_addresses = {
+            BigQueryAddress(dataset_id="source_dataset", table_id="table1"),
+            BigQueryAddress(dataset_id="source_dataset", table_id="table2"),
+            BigQueryAddress(
+                dataset_id="other_dataset", table_id="table3"
+            ),  # Not referenced
+        }
 
-        # We expect to see significant speedup over the processing time if we ran the
-        # process function for each view in series.
-        self.assertLess(processing_time * 3, serial_processing_time)
+        edges = dag_walker.get_edges_to_source_tables(source_table_addresses)
+
+        # Should find edges from both source tables to the view
+        expected_edges = {
+            (
+                BigQueryAddress(dataset_id="source_dataset", table_id="table1"),
+                view_multi_source,
+            ),
+            (
+                BigQueryAddress(dataset_id="source_dataset", table_id="table2"),
+                view_multi_source,
+            ),
+        }
+
+        edge_set = set(edges)
+        self.assertEqual(len(edges), 2)
+        self.assertEqual(edge_set, expected_edges)
+
+    def test_get_edges_to_source_tables_no_matches(self) -> None:
+        """Test get_edges_to_source_tables with no matching source tables."""
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="view_no_sources",
+            description="View with no source table dependencies",
+            view_query_template="SELECT 1 as col",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view])
+
+        # Provide source table addresses that don't match any dependencies
+        source_table_addresses = {
+            BigQueryAddress(dataset_id="unrelated_dataset", table_id="unrelated_table"),
+        }
+
+        edges = dag_walker.get_edges_to_source_tables(source_table_addresses)
+
+        # Should return empty list
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
+
+    def test_get_edges_to_source_tables_mixed_dependencies(self) -> None:
+        """Test get_edges_to_source_tables with views that have both view and source dependencies."""
+        # Create views where one references another view and a source table
+        root_view = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="root_view",
+            description="Root view",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.raw_table`",
+        ).build()
+
+        dependent_view = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="dependent_view",
+            description="View that depends on both another view and a source table",
+            view_query_template="""
+                SELECT a.* FROM `{project_id}.test_dataset.root_view` a
+                JOIN `{project_id}.source_dataset.lookup_table` b ON a.id = b.id
+            """,
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([root_view, dependent_view])
+
+        source_table_addresses = {
+            BigQueryAddress(dataset_id="source_dataset", table_id="raw_table"),
+            BigQueryAddress(dataset_id="source_dataset", table_id="lookup_table"),
+        }
+
+        edges = dag_walker.get_edges_to_source_tables(source_table_addresses)
+
+        # Should find edges from both source tables to their respective views
+        expected_edges = {
+            (
+                BigQueryAddress(dataset_id="source_dataset", table_id="raw_table"),
+                root_view,
+            ),
+            (
+                BigQueryAddress(dataset_id="source_dataset", table_id="lookup_table"),
+                dependent_view,
+            ),
+        }
+
+        edge_set = set(edges)
+        self.assertEqual(len(edges), 2)
+        self.assertEqual(edge_set, expected_edges)
+
+    def test_get_edges_to_source_tables_empty_input(self) -> None:
+        """Test get_edges_to_source_tables with empty source table addresses."""
+        dag_walker = BigQueryViewDagWalker([self.view_one, self.view_two])
+
+        edges = dag_walker.get_edges_to_source_tables(set())
+
+        # Should return empty list
+        self.assertEqual(len(edges), 0)
+        self.assertEqual(edges, [])
+
+    def test_get_number_of_edges_including_source_tables(self) -> None:
+        """Test get_number_of_edges_including_source_tables method."""
+        # Create a view that references a source table
+        view_with_source = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="view_with_source",
+            description="View that references source tables",
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        ).build()
+
+        # Create a view that depends on the first view
+        dependent_view = SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="dependent_view",
+            description="View that depends on another view",
+            view_query_template="SELECT * FROM `{project_id}.test_dataset.view_with_source`",
+        ).build()
+
+        dag_walker = BigQueryViewDagWalker([view_with_source, dependent_view])
+
+        # Mock the get_source_table_addresses function
+        with patch(
+            "recidiviz.big_query.big_query_view_dag_walker.get_source_table_addresses"
+        ) as mock_get_source_tables:
+            mock_get_source_tables.return_value = {
+                BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
+            }
+
+            # Get counts
+            view_to_view_edges = len(dag_walker.get_edges())
+            total_edges_including_sources = (
+                dag_walker.get_number_of_edges_including_source_tables()
+            )
+
+            # Should have 1 view-to-view edge (view_with_source -> dependent_view)
+            # Plus 1 source-to-view edge (source_table -> view_with_source)
+            self.assertEqual(view_to_view_edges, 1)
+            self.assertEqual(total_edges_including_sources, 2)
 
     def test_dag_init(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
@@ -2123,6 +2497,53 @@ class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 BigQueryAddress(dataset_id="some_dataset", table_id="other_table"),
             },
         )
+
+
+class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
+    """DAG walker tests run with asynchronous processing"""
+
+    __test__ = True
+
+    @property
+    def synchronous(self) -> bool:
+        return False
+
+    def test_dag_process_time(self) -> None:
+        """Test that DAG processing works correctly with timing verification."""
+        diamond_shaped_dag_views_list = [
+            b.build() for b in DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        ]
+
+        num_views = len(diamond_shaped_dag_views_list)
+        walker = BigQueryViewDagWalker(diamond_shaped_dag_views_list)
+
+        def process_simple(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
+            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
+            return view.address
+
+        start = datetime.datetime.now()
+        result = walker.process_dag(process_simple, synchronous=False)
+        end = datetime.datetime.now()
+
+        # Verify that all views were processed successfully
+        self.assertEqual(num_views, len(result.view_results))
+
+        # Verify the result contains all expected views
+        expected_addresses = {view.address for view in diamond_shaped_dag_views_list}
+        actual_addresses = set(result.view_results.values())
+        self.assertEqual(expected_addresses, actual_addresses)
+
+        processing_time = end - start
+
+        # Verify that processing completed in a reasonable time
+        # For 6 views with 0.02s each, even with overhead, should complete quickly
+        max_reasonable_time = datetime.timedelta(seconds=2.0)
+        self.assertLess(processing_time, max_reasonable_time)
+
+
+# Non-polymorphic tests
 
 
 class TestBigQueryViewDagNode(unittest.TestCase):

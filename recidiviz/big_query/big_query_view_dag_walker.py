@@ -47,7 +47,10 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.monitoring import trace
-from recidiviz.utils import environment, structured_logging
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_source_table_addresses,
+)
+from recidiviz.utils import environment, metadata, structured_logging
 
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
@@ -268,11 +271,11 @@ class ProcessDagResult(Generic[ViewResultT]):
         nodes_processed = len(self.view_results)
         processing_runtimes = []
         queued_wait_times = []
-        for view, metadata in self.view_processing_stats.items():
+        for view, view_metadata in self.view_processing_stats.items():
             processing_runtimes.append(
-                (metadata.view_processing_runtime_sec, view.address)
+                (view_metadata.view_processing_runtime_sec, view.address)
             )
-            queued_wait_times.append(metadata.queue_wait_time_sec)
+            queued_wait_times.append(view_metadata.queue_wait_time_sec)
 
         avg_wait_time = max(
             0.0, round(sum(queued_wait_times) / len(queued_wait_times), 2)
@@ -1131,234 +1134,42 @@ class BigQueryViewDagWalker:
         )
         return referenced_source_tables
 
-    def ancestors_dfs_tree_str(
-        self,
-        view: BigQueryView,
-        custom_node_formatter: Optional[Callable[[BigQueryAddress, bool], str]] = None,
-        datasets_to_skip: Optional[Set[str]] = None,
-    ) -> str:
-        r"""
-        Generate a string representing the dependency graph for ancestors.
-        The graph begins at the given view, and ascends through ancestors
-        in reverse sorted order with additional indentation at each level.
-        Generally, the graph will terminate at a source table (which is not
-        a node of the graph itself, but is calculated by taking the difference
-        between all parent addresses and the parent addresses found from the
-        process_dag parent results).
+    def get_edges(self) -> List[Tuple[BigQueryView, BigQueryView]]:
+        """Get all parent-child relationships in the DAG.
 
-        For example, given node C in the graph
-
-        A     B
-         \   /
-           C
-           |
-           D
-         /   \
-        E     F
-         \   /
-           G
-          ...
-        the ancestor tree representation may look something like:
-        C
-        |-- B
-        |---- Source
-        |-- A
-        |---- Source
-
-        If a node has already been fully explored in a previous section of the tree
-        printout, it is not included twice. For example, the printout for node G in the
-        same graph above would be structured like:
-
-        G
-        |-- E
-        |---- D
-        |------ C
-        |-------- A
-        |---------- Source
-        |-------- B
-        |---------- Source
-        |-- F
-        |---- D (...)
+        Returns:
+            List of tuples (parent_view, child_view) representing all edges in the DAG.
         """
-        return self._build_dfs_str(
-            traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
-            start_address=view.address,
-            custom_node_formatter=custom_node_formatter,
-            datasets_to_skip=datasets_to_skip,
-        )
+        edges = []
+        for child_node in self.nodes_by_address.values():
+            child_view = child_node.view
+            # Identify the parent views for the current child view
+            for parent_address in child_node.parent_node_addresses:
+                # If the parent address is in the DAG, add the edge
+                if parent_address in self.nodes_by_address:
+                    parent_view = self.nodes_by_address[parent_address].view
+                    # Append the edge (parent_view, child_view) to the edges list
+                    edges.append((parent_view, child_view))
+        return edges
 
-    def descendants_dfs_tree_str(
-        self,
-        view: BigQueryView,
-        custom_node_formatter: Optional[Callable[[BigQueryAddress, bool], str]] = None,
-        datasets_to_skip: Optional[Set[str]] = None,
-    ) -> str:
-        r"""
-        Generate a string representing the dependency graph for descendants.
-        The graph begins at the given view, and descends through descendants
-        in sorted order with additional indentation at each level.
+    def get_edges_to_source_tables(
+        self, source_table_addresses: Set[BigQueryAddress]
+    ) -> List[Tuple[BigQueryAddress, BigQueryView]]:
+        """Get all edges from source tables to views in the DAG.
 
-        For example, given node D in the graph
-           A
-         /   \
-        B     C
-         \   /
-           D
-           |
-           E
-         /   \
-        F     G
-        the descendant tree representation may look something like:
-        D
-        |-- E
-        |---- F
-        |---- G
+        Args:
+            source_table_addresses: Set of BigQueryAddresses representing source tables.
 
-        If a node has already been fully explored in a previous section of the tree
-        printout, it is not included twice. For example, the printout for node A in the
-        same graph above would be structured like:
-        A
-        |-- B
-        |---- D
-        |------ E
-        |-------- F
-        |-------- G
-        |-- C
-        |---- D (...)
+        Returns:
+            List of tuples (source_table_address, child_view) representing edges from
+            source tables to views in the DAG.
         """
-        return self._build_dfs_str(
-            traversal_direction=TraversalDirection.ROOTS_TO_LEAVES,
-            start_address=view.address,
-            custom_node_formatter=custom_node_formatter,
-            datasets_to_skip=datasets_to_skip,
-        )
-
-    def _build_dfs_str(
-        self,
-        *,
-        start_address: BigQueryAddress,
-        traversal_direction: TraversalDirection,
-        custom_node_formatter: Optional[Callable[[BigQueryAddress, bool], str]],
-        datasets_to_skip: Optional[Set[str]],
-    ) -> str:
-        r"""
-        Generate a string representing the dependency graph for the sub-DAG starting
-        at the provided |start_address| and traversing in the direction denoted by
-        |traversal_direction|.
-        """
-        # List of paths with whether that path was truncated
-        sorted_paths: List[Tuple[List[BigQueryAddress], bool]] = sorted(
-            self._get_unique_paths_from_address(start_address, traversal_direction)
-        )
-
-        result_rows = []
-        for path_index, (path, is_truncated) in enumerate(sorted_paths):
-            if path_index == 0:
-                previous_path = None
-            else:
-                previous_path = sorted_paths[path_index - 1][0]
-
-            for address_index, address in enumerate(path):
-                if datasets_to_skip and address.dataset_id in datasets_to_skip:
-                    continue
-                is_last_in_path = len(path) - 1 == address_index
-
-                if (
-                    previous_path
-                    and len(previous_path) > address_index
-                    and previous_path[address_index] == address
-                    and not is_last_in_path
-                ):
-                    # Don't print out elements that are exactly the same as the previous
-                    # path. This makes the printout like a tree.
-                    continue
-                if address_index:
-                    indent = "|" + ("--" * address_index)
-                else:
-                    indent = ""
-
-                is_pruned_at_address = is_truncated and is_last_in_path
-                if custom_node_formatter:
-                    formatted_address = custom_node_formatter(
-                        address, is_pruned_at_address
-                    )
-                else:
-                    formatted_address = address.to_str()
-                    if is_pruned_at_address:
-                        formatted_address += " (...)"
-                result_rows.append(f"{indent}{formatted_address}")
-
-        return "\n".join(result_rows) + "\n"
-
-    def _get_unique_paths_from_address(
-        self,
-        start_address: BigQueryAddress,
-        traversal_direction: TraversalDirection,
-    ) -> List[Tuple[List[BigQueryAddress], bool]]:
-        r"""Returns a list of all from |start_address| to either a root or leaf node
-        (as determined by |traversal_direction|). Each path is accompanied by a boolean
-        that tells us whether the path has been truncated or not. A path may be
-        truncated if we reach a node whose children have already been fully explored by
-        previous paths. If this is the case the path ends early.
-
-        Example:
-           A
-         /   \
-        B     C
-         \   /
-           D
-         /   \
-        E     F
-
-        _get_unique_paths_from_address(A, TraversalDirection.ROOTS_TO_LEAVES) =>
-            [
-              ([A, B, D, E], False),
-              ([A, B, D, F], False),
-              ([A, C, D], True)
-            ]
-
-        """
-        # List of paths with whether that path was truncated
-        paths: List[Tuple[List[BigQueryAddress], bool]] = []
-
-        stack = [(start_address, [start_address])]
-        visited = set()
-        while stack:
-            (current_address, path) = stack.pop()
-
-            if current_address not in self.nodes_by_address:
-                # The current_address is a source table and we have reached the end of
-                # the path.
-                paths.append((path, False))
-                continue
-
-            current_node: BigQueryViewDagNode = self.nodes_by_address[current_address]
-
-            adjacent_addresses = (
-                current_node.child_node_addresses
-                if traversal_direction == TraversalDirection.ROOTS_TO_LEAVES
-                else current_node.parent_node_addresses
-            )
-            if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS:
-                adjacent_addresses = adjacent_addresses | current_node.source_addresses
-
-            if not adjacent_addresses:
-                # The current_address is a leave/root node and we have reached the end
-                # of the path.
-                paths.append((path, False))
-                continue
-
-            if current_address in visited:
-                # We have already visited this adjacent address so the remainder of
-                # this path is redundant. We just add the path with the child and
-                # mark it as truncated.
-                paths.append((path, True))
-                continue
-
-            for adjacent_address in reversed(sorted(adjacent_addresses)):
-                stack.append((adjacent_address, path + [adjacent_address]))
-            visited.add(current_address)
-        return paths
+        return [
+            (source_address, child_node.view)
+            for child_node in self.nodes_by_address.values()
+            for source_address in child_node.source_addresses
+            if source_address in source_table_addresses
+        ]
 
     def related_ancestor_addresses(
         self, address: BigQueryAddress, terminating_datasets: Optional[Set[str]] = None
@@ -1421,7 +1232,12 @@ class BigQueryViewDagWalker:
         )
 
     def get_number_of_edges(self) -> int:
-        """Returns the number of unique edges for this DAG"""
-        return sum(
-            len(node.parent_node_addresses) for node in self.nodes_by_address.values()
+        """Returns the number of unique edges for this DAG, not including edges to source tables"""
+        return len(self.get_edges())
+
+    def get_number_of_edges_including_source_tables(self) -> int:
+        """Returns the number of unique edges for this DAG, including edges to source tables"""
+        source_table_addresses = get_source_table_addresses(metadata.project_id())
+        return len(self.get_edges()) + len(
+            self.get_edges_to_source_tables(source_table_addresses)
         )
