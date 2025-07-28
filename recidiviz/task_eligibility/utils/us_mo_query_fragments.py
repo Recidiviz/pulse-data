@@ -211,6 +211,12 @@ def current_bed_stay_cte() -> str:
     Ideally this should show the person's de facto unit and cell.
     """
 
+    # TODO(#45647): Once housing units are ingested in MO, can we use ingested data here
+    # instead of the `us_mo_housing_stays_preprocessed` view? If we still need to pull
+    # data that can't be ingested right now (e.g., bed number, room number), can we at
+    # least use ingested data as much as possible so that we can ensure that what we're
+    # pulling here draws upon / mimics the logic used in ingest?
+
     return """current_bed_stay AS (
         SELECT DISTINCT
             person_id,
@@ -223,7 +229,6 @@ def current_bed_stay_cte() -> str:
             FIRST_VALUE(facility_code) OVER w as facility,
         FROM `{project_id}.sessions.us_mo_housing_stays_preprocessed`
         WHERE end_date_exclusive IS NULL
-        -- TODO(#18852): Refine this confinement_type_raw_text dedup logic
         WINDOW w AS (
             PARTITION BY person_id, state_code
             ORDER BY
