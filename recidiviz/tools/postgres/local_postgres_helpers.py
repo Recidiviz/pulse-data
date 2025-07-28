@@ -22,6 +22,7 @@ import os
 import pwd
 import shutil
 import socket
+import subprocess
 import tempfile
 import time
 from typing import Dict, Optional
@@ -55,13 +56,29 @@ def _is_root_user() -> bool:
     return os.getuid() == 0
 
 
+def _kill_process_on_port(port: int) -> None:
+    # Find the process using the port and kill it
+    try:
+        out = subprocess.check_output(
+            f"lsof -t -i:{port}", shell=True
+        )  # nosec B607 B603 B602 B404 B608
+        pids = out.decode().strip().split("\n")
+        for pid in pids:
+            os.kill(int(pid), 9)
+    except subprocess.CalledProcessError:
+        pass  # No process is using the port
+
+
 def _start_postgresql_server(
     db_data_dir: str,
     db_log_path: str,
     port: int,
     password_record: pwd.struct_passwd | None = None,
 ) -> None:
-    assert_postgres_port_is_free(port)
+    try:
+        assert_postgres_port_is_free(port)
+    except PostgresPortStillInUseError:
+        _kill_process_on_port(port)
 
     try:
         if in_ci():
@@ -200,7 +217,7 @@ def _clear_all_on_disk_postgresql_databases() -> None:
         if name.startswith(get_on_disk_postgres_temp_dir_prefix())
     ]
     for postgres_dir in postgres_dirs:
-        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=True)
+        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=False)
 
 
 @environment.local_only
