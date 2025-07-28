@@ -76,12 +76,12 @@ class _AssertRaisesGroupException:
 
         if not issubclass(exc_type, BaseExceptionGroup):
             raise ValueError(
-                f"Expected [{BaseException.__name__}] but found [{exc_type.__name__}]"
+                f"Expected [{BaseExceptionGroup.__name__}] but found [{exc_type.__name__}]"
             )
 
         if not isinstance(exc_val, BaseExceptionGroup):
             raise ValueError(
-                f"Expected [{BaseException.__name__}] but found [{exc_type.__name__}]"
+                f"Expected [{BaseExceptionGroup.__name__}] but found [{exc_type.__name__}]"
             )
 
         if not self.message_regex.search(str(exc_val)):

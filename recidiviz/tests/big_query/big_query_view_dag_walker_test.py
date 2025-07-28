@@ -30,6 +30,8 @@ from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewB
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
+    BigQueryViewDagWalkerProcessingError,
+    FailureMode,
     ProcessDagPerfConfig,
     TraversalDirection,
 )
@@ -39,6 +41,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
+from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -317,33 +320,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             == backwards_results.get_distinct_paths_to_leaf_nodes()
             == 4
         )
-
-    def test_dag_exception_handling(self) -> None:
-        """Test that exceptions during processing propagate properly."""
-
-        class TestDagWalkException(ValueError):
-            pass
-
-        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-
-        def process_throws(
-            _view: BigQueryView, _parent_results: Dict[BigQueryView, None]
-        ) -> None:
-            raise TestDagWalkException()
-
-        with self.assertRaises(TestDagWalkException):
-            walker.process_dag(process_throws, synchronous=self.synchronous)
-
-        def process_throws_after_root(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
-        ) -> BigQueryAddress:
-            node = walker.node_for_view(view)
-            if not node.is_root:
-                raise TestDagWalkException()
-            return node.view.address
-
-        with self.assertRaises(TestDagWalkException):
-            walker.process_dag(process_throws_after_root, synchronous=self.synchronous)
 
     def test_dag_with_cycle_at_root_with_other_valid_dag(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(
@@ -1430,6 +1406,167 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             ).get_distinct_paths_to_leaf_nodes()
             == 15
         )
+
+    def test_failure_mode(self) -> None:
+        # in a DAG like
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #  |     |
+        #  6     7
+        #   \   / \
+        #     8     9
+        views_for_path = [
+            *X_SHAPED_DAG_VIEW_BUILDERS_LIST.copy(),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_6",
+                view_id="table_6",
+                description="table_6 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_4.table_4`""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_7",
+                view_id="table_7",
+                description="table_7 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_5.table_5`""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_8",
+                view_id="table_8",
+                description="table_8 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_7.table_7`
+            JOIN `{project_id}.dataset_8.table_8`
+            USING (col)""",
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_9",
+                view_id="table_9",
+                description="table_9 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_7.table_7`""",
+            ),
+        ]
+
+        walker = BigQueryViewDagWalker([v.build() for v in views_for_path])
+
+        processed = set()
+
+        def _process_node_4_fails(
+            view: BigQueryView, _parent_results: dict[BigQueryView, None]
+        ) -> None:
+            nonlocal processed
+            processed.add(view.view_id)
+            if view.view_id == "table_4":
+                raise ValueError("Failed to do 4")
+
+        with self.assertRaisesRegex(
+            BigQueryViewDagWalkerProcessingError,
+            r"Error processing \[dataset_4\.table_4\]",
+        ):
+            walker.process_dag(
+                _process_node_4_fails,
+                # set to synchronous to make node level processing order deterministic --
+                # asynchronous=True will return the set of all nodes that are processed
+                # (all nodes at any deque time) which means we may process level 4 nodes
+                # whose parents are all complete before we are all finished with level 3
+                # nodes
+                synchronous=True,
+                failure_mode=FailureMode.FAIL_FAST,
+            )
+
+        # because we don't process nodes of the same level deterministically, sometimes
+        # we process 5 before we process 4 -- both are technically correct so we
+        # subtract 5 from processed to account for this
+        assert processed - {"table_5"} == {
+            "table_1",
+            "table_2",
+            "table_3",
+            "table_4",
+            # "table_5",  will process, only sometimes
+            # "table_6",  will wont process as is on the next level from 4
+            # "table_7",  will wont process as is on the next level from 4
+            # "table_8",  will wont process as is on the next level from 4
+            # "table_9",  will wont process as is on the next level from 4
+        }
+
+        processed = set()
+
+        with assert_group_contains_regex(
+            r"DAG processing failed with the following errors\:",
+            [
+                (
+                    BigQueryViewDagWalkerProcessingError,
+                    r"Error processing \[dataset_4\.table_4\]",
+                )
+            ],
+        ):
+            walker.process_dag(
+                _process_node_4_fails,
+                synchronous=self.synchronous,
+                failure_mode=FailureMode.FAIL_EXHAUSTIVELY,
+            )
+
+        # we process 5, 7  and 9 after 4 fails, but not 6 or 8 because they are descendants
+        # of 4
+        assert processed == {
+            "table_1",
+            "table_2",
+            "table_3",
+            "table_4",
+            "table_5",
+            # "table_6",  we don't process 6 because it is a descendant of 4
+            "table_7",
+            # "table_8",  we don't process 8 because it is a descendant of 6
+            "table_9",
+        }
+
+        def _process_node_4_and_9_fails(
+            view: BigQueryView, _parent_results: dict[BigQueryView, None]
+        ) -> None:
+            nonlocal processed
+            processed.add(view.view_id)
+            if view.view_id in ("table_4", "table_9"):
+                raise ValueError("Failed to process")
+
+        processed = set()
+
+        with assert_group_contains_regex(
+            r"DAG processing failed with the following errors\:",
+            [
+                (
+                    BigQueryViewDagWalkerProcessingError,
+                    r"Error processing \[dataset_4\.table_4\]",
+                ),
+                (
+                    BigQueryViewDagWalkerProcessingError,
+                    r"Error processing \[dataset_9\.table_9\]",
+                ),
+            ],
+        ):
+            walker.process_dag(
+                _process_node_4_and_9_fails,
+                synchronous=self.synchronous,
+                failure_mode=FailureMode.FAIL_EXHAUSTIVELY,
+            )
+
+        # we process 5, 7 and 9 after 4 fails, but not 6 because it is a descendant of
+        # of 4
+        assert processed == {
+            "table_1",
+            "table_2",
+            "table_3",
+            "table_4",
+            "table_5",
+            # "table_6",  we don't process 6 because it is a descendant of 4
+            "table_7",
+            # "table_8",  we don't process 8 because it is a descendant of 6
+            "table_9",
+        }
 
 
 class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):

@@ -54,9 +54,96 @@ ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
 
 
+class BigQueryViewDagWalkerProcessingError(Exception):
+    """Exception that wraps around the underlying processing error that provides the
+    BigQueryView name that failed in case it is not included in the output.
+    """
+
+
+class _Sentinel(Enum):
+    """Object used as a 'sentinel' indicating that no value was provided when the other
+    type could validly be None; inherits from Enum because mypy knows that there only
+    one member of this class when we type hint.
+    """
+
+    NO_RESULT = object()
+
+
+_NO_RESULT = _Sentinel.NO_RESULT
+
+
+class FailureMode(Enum):
+    """Describes how we want the BigQueryViewDagNode.process_dag method to fail.
+
+    FAIL_FAST: hard fails at the first node processing failure
+    FAIL_EXHAUSTIVELY: catches processing failures and processes processing all
+        non-descendants of the errant nodes, re-raising all caught errors after all
+        nodes without a parent failure have been processed.
+    """
+
+    FAIL_FAST = auto()
+    FAIL_EXHAUSTIVELY = auto()
+
+
 class TraversalDirection(Enum):
+    """Direction specification how we want the BigQueryViewDagWalker.process_dag method
+    to process BigQueryViewDagNodes.
+
+    ROOTS_TO_LEAVES: processes nodes starting at "root" nodes of the views provided to the
+        DagWalker; typically used for building views in BigQuery.
+    LEAVES_TO_ROOTS: processes nodes starting at "leaf" nodes of the views provided to the
+        DagWalker; typically used when reasoning about how views are related to each other.
+    """
+
     ROOTS_TO_LEAVES = auto()
     LEAVES_TO_ROOTS = auto()
+
+
+@attr.s(auto_attribs=True, kw_only=True)
+class ViewResultMetadata(Generic[ViewResultT]):
+    """Store result and metadata about a view result.
+
+    maybe_view_processing_error (Exception | None): error encountered when processing the
+        BigQueryView, if one was encountered; if the execution was successful, will None.
+    maybe_successful_view_result (ViewResultT | _Sentinel): successful view result, if
+        the view processed successfully; if no view result was found, defaults to
+        a default sentinel value that can be distinguished from ViewResultT that can
+        validly be of any time (specifically None).
+    maybe_successful_execution_sec (float | None): execution time for this BigQueryView,
+        if the execution was successful; if the execution failed, will be None.
+    """
+
+    maybe_view_processing_error: Exception | None = attr.ib()
+    maybe_successful_view_result: ViewResultT | _Sentinel = attr.ib(default=_NO_RESULT)
+    maybe_successful_execution_sec: float | None = attr.ib(default=None)
+
+    @property
+    def successful_execution_sec(self) -> float:
+        if self.maybe_view_processing_error:
+            raise ValueError(
+                "Cannot fetch execution time for a failed that failed to process"
+            ) from self.maybe_view_processing_error
+
+        if self.maybe_successful_execution_sec is None:
+            raise ValueError(
+                "Cannot fetch execution time, as none was provided or view failed to process"
+            )
+
+        return self.maybe_successful_execution_sec
+
+    @property
+    def successful_view_result(self) -> ViewResultT:
+        if self.maybe_view_processing_error:
+            raise ValueError(
+                "Cannot fetch view result for a view that failed to process"
+            ) from self.maybe_view_processing_error
+
+        if self.maybe_successful_view_result is _NO_RESULT:
+            raise ValueError(
+                "Cannot fetch view result, as none was provided or view failed to process"
+            )
+
+        return self.maybe_successful_view_result
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -630,9 +717,8 @@ class BigQueryViewDagWalker:
     ) -> Generator[
         Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT]], None, None
     ]:
-        """
-        Generates an iterable of tuples, adjacent nodes and parent results,
-        which are adjacent to the given node
+        """Builds an iterator of tuples, adjacent nodes and parent results,
+        which are adjacent to the given node.
         """
 
         adjacent_addresses = (
@@ -702,16 +788,32 @@ class BigQueryViewDagWalker:
     def _dag_view_process_fn_result(
         results_fn: Callable[[], Tuple[float, ViewResultT]],
         view: BigQueryView,
-    ) -> Tuple[float, ViewResultT]:
+        failure_mode: FailureMode,
+    ) -> ViewResultMetadata:
         try:
             execution_sec, view_result = results_fn()
-        except Exception as e:
+        except Exception as caught_e:
             logging.error(
                 "Exception found fetching results for for address: [%s]",
                 view.address,
             )
-            raise e
-        return execution_sec, view_result
+            created_e = BigQueryViewDagWalkerProcessingError(
+                f"Error processing [{view.address.to_str()}]"
+            )
+
+            if failure_mode == FailureMode.FAIL_FAST:
+                raise created_e from caught_e
+
+            # raising using from assigns the "from" Exception to the __cause__ attribute
+            # but we can just assign it here manually to be attached to each other
+            # at raise time
+            created_e.__cause__ = caught_e
+            return ViewResultMetadata(maybe_view_processing_error=created_e)
+        return ViewResultMetadata(
+            maybe_successful_view_result=view_result,
+            maybe_successful_execution_sec=execution_sec,
+            maybe_view_processing_error=None,
+        )
 
     def process_dag(
         self,
@@ -719,9 +821,9 @@ class BigQueryViewDagWalker:
         synchronous: bool,
         perf_config: Optional[ProcessDagPerfConfig] = DEFAULT_PROCESS_DAG_PERF_CONFIG,
         traversal_direction: TraversalDirection = TraversalDirection.ROOTS_TO_LEAVES,
+        failure_mode: FailureMode = FailureMode.FAIL_FAST,
     ) -> ProcessDagResult[ViewResultT]:
-        """
-        This method provides a level-by-level "breadth-first" traversal of a DAG and
+        """This method provides a level-by-level "breadth-first" traversal of a DAG and
         executes |view_process_fn| on every node in level order.
 
         Callers are required to choose between asynchronous/multi-threaded and
@@ -730,10 +832,14 @@ class BigQueryViewDagWalker:
         waiting for completion. CPU-intensive view processing functions may perform better
         with synchronous execution.
 
-        Will throw if a node execution time exceeds |max_node_process_time_sec|.
-
         If a |perf_config| is provided, processing will fail if any node takes longer
-        to process than is allowed by the config.
+        to process than is allowed by the config if running locally; if running in
+        GCP, will only log due to higher resource contention.
+
+        If |failure_mode| is set to FAIL_FAST, will hard fail at the first node processing
+        failure. If |failure_mode| is set to FAIL_EXHAUSTIVELY, will catch processing
+        failures and proceed processing all non-descendants of the errant nodes, re-raising
+        all caught errors after all possible nodes have been processed.
         """
 
         top_level_set = (
@@ -746,9 +852,13 @@ class BigQueryViewDagWalker:
             if traversal_direction == TraversalDirection.LEAVES_TO_ROOTS
             else set(self.leaves)
         )
-        processed: Set[BigQueryAddress] = set()
-        view_results: Dict[BigQueryView, ViewResultT] = {}
-        view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
+
+        failed_view_exceptions: list[Exception] = []
+        successfully_processed_addresses: Set[BigQueryAddress] = set()
+        successful_processed_view_results: Dict[BigQueryView, ViewResultT] = {}
+        successfully_processed_view_stats: Dict[
+            BigQueryView, ViewProcessingMetadata
+        ] = {}
         dag_processing_start = time.perf_counter()
         queue: _ProcessNodeQueueT = (
             _SyncProcessNodeQueue(view_process_fn=view_process_fn)
@@ -758,6 +868,7 @@ class BigQueryViewDagWalker:
         with queue:
             for node in top_level_set:
                 queue.enqueue((node, {}, dag_processing_start))
+
             while queue:
                 parent_results: Dict[BigQueryView, ViewResultT]
                 (
@@ -766,53 +877,70 @@ class BigQueryViewDagWalker:
                     parent_results,
                     entered_queue_time,
                 ) = queue.dequeue()
-                if node.view.address in processed:
+                if node.view.address in successfully_processed_addresses:
                     raise ValueError(
                         "Unexpected situation where node has already "
                         f"been processed: {node.view.address}"
                     )
                 end = time.perf_counter()
-                execution_sec, view_result = self._dag_view_process_fn_result(
-                    results_fn=view_result_fn,
-                    view=node.view,
+
+                view_processing_result = self._dag_view_process_fn_result(
+                    results_fn=view_result_fn, view=node.view, failure_mode=failure_mode
                 )
+
+                if view_processing_result.maybe_view_processing_error:
+                    failed_view_exceptions.append(
+                        view_processing_result.maybe_view_processing_error
+                    )
+                    # by not adding this view to view_results and processed, all child
+                    # views will not be added to the queue
+                    continue
+
                 if perf_config:
                     self._check_processing_time(
                         perf_config=perf_config,
                         view=node.view,
-                        processing_time=execution_sec,
+                        processing_time=view_processing_result.successful_execution_sec,
                     )
+
                 view_stats = ViewProcessingMetadata.from_result_and_previous_metadata(
                     view=node.view,
-                    processing_time=execution_sec,
+                    processing_time=view_processing_result.successful_execution_sec,
                     queue_time=end - entered_queue_time,
                     parents=parent_results.keys(),
-                    ancestor_metadata=view_processing_stats,
+                    ancestor_metadata=successfully_processed_view_stats,
                 )
-                view_results[node.view] = view_result
-                view_processing_stats[node.view] = view_stats
-                processed.add(node.view.address)
+                successful_processed_view_results[
+                    node.view
+                ] = view_processing_result.successful_view_result
+                successfully_processed_view_stats[node.view] = view_stats
+                successfully_processed_addresses.add(node.view.address)
                 logging.debug(
                     "Completed processing of [%s]. Duration: [%s] seconds.",
                     node.view.address.to_str(),
-                    execution_sec,
+                    view_processing_result.successful_execution_sec,
                 )
                 for (
                     adjacent_node,
                     previous_level_results,
                 ) in self._adjacent_dag_vertices(
                     node=node,
-                    view_results=view_results,
-                    visited_set=processed,
+                    view_results=successful_processed_view_results,
+                    visited_set=successfully_processed_addresses,
                     traversal_direction=traversal_direction,
                 ):
                     entered_queue_time = time.perf_counter()
                     queue.enqueue(
                         (adjacent_node, previous_level_results, entered_queue_time)
                     )
+        if failed_view_exceptions:
+            raise ExceptionGroup(
+                "DAG processing failed with the following errors:",
+                failed_view_exceptions,
+            )
         return ProcessDagResult(
-            view_results=view_results,
-            view_processing_stats=view_processing_stats,
+            view_results=successful_processed_view_results,
+            view_processing_stats=successfully_processed_view_stats,
             total_runtime=(time.perf_counter() - dag_processing_start),
             leaf_nodes=bottom_level_set,
         )
