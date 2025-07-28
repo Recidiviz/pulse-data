@@ -25,6 +25,9 @@ from sqlalchemy import Table
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import (
     BigQueryViewUpdateSandboxContext,
@@ -144,6 +147,7 @@ def _federated_bq_regional_dataset_refresh(
         bq_region_override=bq_region_override,
         materialize_changed_views_only=False,
         historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
+        failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
     )
 
 

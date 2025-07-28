@@ -28,6 +28,9 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -131,6 +134,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
@@ -234,6 +238,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
@@ -359,6 +364,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
@@ -450,6 +456,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             historically_managed_datasets_to_clean=None,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
@@ -558,6 +565,7 @@ class ViewManagerTest(unittest.TestCase):
             ),
             historically_managed_datasets_to_clean=None,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         dataset_ids = [override_dataset_id, override_materialized_dataset_id]
@@ -662,6 +670,7 @@ class ViewManagerTest(unittest.TestCase):
             default_table_expiration_for_new_datasets=None,
             views_might_exist=True,
             allow_slow_views=False,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
@@ -807,6 +816,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=historically_managed_datasets,
             materialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()

@@ -54,6 +54,9 @@ from tabulate import tabulate
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -495,6 +498,9 @@ def load_end_to_end_sandbox(
                 # everything.
                 materialize_changed_views_only=False,
                 collected_builders=view_builders_to_load,
+                # If we loading dataflow pipelines before this, we probably we want to
+                # surface all errors
+                failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
             )
 
         if export_names:

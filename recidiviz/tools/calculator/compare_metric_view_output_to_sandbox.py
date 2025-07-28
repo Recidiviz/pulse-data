@@ -79,6 +79,9 @@ from more_itertools import peekable
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_all_views_to_sandbox
@@ -134,8 +137,9 @@ def compare_metric_view_output_to_sandbox(
     allow_schema_changes: bool,
     dataset_id_filters: Optional[List[str]],
 ) -> None:
-    """Compares the output of all deployed metric views to the output of the corresponding views in the sandbox
-    dataset."""
+    """Compares the output of all deployed metric views to the output of the
+    corresponding views in the sandbox dataset.
+    """
     if load_sandbox_views:
         logging.info(
             "Loading views into sandbox datasets prefixed with %s",
@@ -148,6 +152,7 @@ def compare_metric_view_output_to_sandbox(
             input_source_table_dataset_overrides_dict=None,
             allow_slow_views=False,
             materialize_changed_views_only=False,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
         )
 
     bq_client = BigQueryClientImpl()

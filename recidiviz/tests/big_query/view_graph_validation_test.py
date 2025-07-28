@@ -31,7 +31,10 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
 )
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalker,
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.view_update_manager import (
     CreateOrUpdateViewStatus,
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -457,6 +460,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         return repository.source_table_collections
 
     def run_view_graph_test(self) -> None:
+        """Runs an end-to-end test of our view graph"""
         skipped_views = _preprocess_views_to_load_to_emulator(
             self._view_builders_to_update
         )
@@ -483,6 +487,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             allow_slow_views=True,
             # None of the tables exist already, so always materialize
             materialize_changed_views_only=False,
+            # we want to try to surface as many failures as possible, so set mode to
+            # fail exhaustively
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
         self._run_view_schema_checks()
 

@@ -23,6 +23,9 @@ import pytz
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
@@ -135,6 +138,7 @@ def execute_update_all_managed_views() -> None:
         view_update_sandbox_context=None,
         materialize_changed_views_only=False,
         allow_slow_views=False,
+        failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
     )
     success_time = datetime.datetime.now(tz=pytz.UTC)
     runtime_sec = int((success_time - start_time).total_seconds())

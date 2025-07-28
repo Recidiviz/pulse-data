@@ -81,8 +81,8 @@ class BigQueryViewDagWalkerProcessingFailureMode(Enum):
         nodes without a parent failure have been processed.
     """
 
-    FAIL_FAST = auto()
-    FAIL_EXHAUSTIVELY = auto()
+    FAIL_FAST = "FAIL_FAST"
+    FAIL_EXHAUSTIVELY = "FAIL_EXHAUSTIVELY"
 
 
 class TraversalDirection(Enum):

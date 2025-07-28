@@ -36,6 +36,7 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
+    BigQueryViewDagWalkerProcessingFailureMode,
     ProcessDagResult,
 )
 from recidiviz.big_query.big_query_view_sandbox_context import (
@@ -129,6 +130,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: set[str] | None,
     materialize_changed_views_only: bool,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     view_update_sandbox_context: BigQueryViewUpdateSandboxContext | None = None,
     bq_region_override: str | None = None,
     default_table_expiration_for_new_datasets: int | None = None,
@@ -153,6 +155,11 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
         materialize_changed_views_only (bool): If true, only re-materialize views whose
             view and all of its ancestors views have not be updated; otherwise, always
             re-materialize all views.
+        failure_mode (BigQueryViewDagWalkerProcessingFailureMode): If set to FAIL_FAST,
+            will hard fail at the first node processing failure. If set to FAIL_EXHAUSTIVELY,
+            will catch processing failures and proceed processing all non-descendants of
+            the errant nodes, re-raising all caught errors after all possible nodes have
+            been processed.
         view_update_sandbox_context (BigQueryViewUpdateSandboxContext | None): Sandbox
             context that provides a set of address overrides for a collection of views.
         bq_region_override (str | None): The bq region to be passed to the BigQueryClient.
@@ -208,6 +215,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
             views_might_exist=views_might_exist,
             allow_slow_views=allow_slow_views,
+            failure_mode=failure_mode,
         )
     except Exception as e:
         get_monitoring_instrument(CounterInstrumentKey.VIEW_UPDATE_FAILURE).add(
@@ -254,6 +262,7 @@ def _create_managed_dataset_and_deploy_views(
     bq_region_override: str | None,
     materialize_changed_views_only: bool,
     historically_managed_datasets_to_clean: set[str] | None,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     default_table_expiration_for_new_datasets: int | None,
     views_might_exist: bool,
     allow_slow_views: bool,
@@ -273,6 +282,11 @@ def _create_managed_dataset_and_deploy_views(
             process. If null, does not perform the cleanup step. If provided,
             will error if any dataset required for the |views_to_update| is not
             included in this set.
+        failure_mode (BigQueryViewDagWalkerProcessingFailureMode): If set to FAIL_FAST,
+            will hard fail at the first node processing failure. If set to FAIL_EXHAUSTIVELY,
+            will catch processing failures and proceed processing all non-descendants of
+            the errant nodes, re-raising all caught errors after all possible nodes have
+            been processed.
         default_table_expiration_for_new_datasets (int | None): If not None, new datasets
             will be created with this default expiration length (in milliseconds).
         views_might_exist (bool): If set then we will optimistically try to update
@@ -306,17 +320,17 @@ def _create_managed_dataset_and_deploy_views(
     def process_fn(
         v: BigQueryView, parent_results: Dict[BigQueryView, CreateOrUpdateViewResult]
     ) -> CreateOrUpdateViewResult:
-        """Returns True if this view or any of its parents were updated."""
-        try:
-            return _create_or_update_view_and_materialize_if_necessary(
-                bq_client=bq_client,
-                view=v,
-                parent_results=parent_results,
-                materialize_changed_views_only=materialize_changed_views_only,
-                might_exist=views_might_exist,
-            )
-        except Exception as e:
-            raise ValueError(f"Error creating or updating view [{v.address}]") from e
+        """Attempts to create or update |v|, returning a CreateOrUpdateViewResult object
+        that details the status of the attempt, as well as metadata about the view's
+        materialization, if it was materialized.
+        """
+        return _create_or_update_view_and_materialize_if_necessary(
+            bq_client=bq_client,
+            view=v,
+            parent_results=parent_results,
+            materialize_changed_views_only=materialize_changed_views_only,
+            might_exist=views_might_exist,
+        )
 
     perf_config = (
         None if allow_slow_views else get_deployed_view_dag_update_perf_config()
@@ -325,6 +339,7 @@ def _create_managed_dataset_and_deploy_views(
         process_fn,
         synchronous=False,
         perf_config=perf_config,
+        failure_mode=failure_mode,
     )
     results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 

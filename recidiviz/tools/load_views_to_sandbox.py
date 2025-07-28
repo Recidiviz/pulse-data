@@ -75,6 +75,16 @@ views after we've discovered all the views to be loaded to the sandbox. For exam
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --prompt auto
 
+For any of the above commands, you can add `--failure-mode` argument BEFORE the
+auto/manual/all keyword. If you specify FAIL_FAST (default), the sandbox load will fail 
+the first time it hits a failing view. If you specify FAIL_EXHAUSTIVELY, the sandbox 
+load will catch all errors and load as many views as possible before raising them all 
+at the end. For example:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
+       --failure-mode FAIL_EXHAUSTIVELY \
+        auto
+
 To view more info on arguments that can be used with any of the sub-commands (i.e. auto,
 manual, all), run:
    python -m recidiviz.tools.load_views_to_sandbox --help
@@ -116,7 +126,10 @@ from recidiviz.big_query.big_query_address_formatter import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalker,
+    BigQueryViewDagWalkerProcessingFailureMode,
+)
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
@@ -167,6 +180,7 @@ def load_all_views_to_sandbox(
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
     materialize_changed_views_only: bool,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
     prompt_for_confirmation(
@@ -192,6 +206,7 @@ def load_all_views_to_sandbox(
         ),
         allow_slow_views=allow_slow_views,
         materialize_changed_views_only=materialize_changed_views_only,
+        failure_mode=failure_mode,
     )
 
 
@@ -207,6 +222,7 @@ def _load_manually_filtered_views_to_sandbox(
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
     update_descendants: bool,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix.
 
@@ -301,6 +317,7 @@ Are you sure you still want to continue with `manual` mode?
         collected_builders=collected_builders,
         allow_slow_views=allow_slow_views,
         materialize_changed_views_only=materialize_changed_views_only,
+        failure_mode=failure_mode,
     )
 
 
@@ -957,6 +974,7 @@ def load_views_changed_on_branch_to_sandbox(
     load_up_to_addresses: Optional[List[BigQueryAddress]],
     load_up_to_datasets: Optional[List[str]],
     load_changed_views_only: bool,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
     to the current project (usually staging).
@@ -983,6 +1001,7 @@ def load_views_changed_on_branch_to_sandbox(
         allow_slow_views=allow_slow_views,
         materialize_changed_views_only=materialize_changed_views_only,
         collected_builders=collected_builders,
+        failure_mode=failure_mode,
     )
 
 
@@ -1037,6 +1056,7 @@ def load_collected_views_to_sandbox(
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
     materialize_changed_views_only: bool,
+    failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
     if not collected_builders:
@@ -1084,6 +1104,7 @@ def load_collected_views_to_sandbox(
             historically_managed_datasets_to_clean=None,
             allow_slow_views=allow_slow_views,
             materialize_changed_views_only=materialize_changed_views_only,
+            failure_mode=failure_mode,
         )
     except exceptions.Forbidden as e:
         if "Permission denied while getting Drive credentials" in str(e):
@@ -1147,6 +1168,16 @@ def parse_arguments() -> argparse.Namespace:
         help="If true, the script will prompt and ask if you want to continue after "
         "the full list of views that will be loaded has been printed to the "
         "console.",
+    )
+
+    parser.add_argument(
+        "--failure-mode",
+        dest="failure_mode",
+        type=BigQueryViewDagWalkerProcessingFailureMode,
+        choices=list(BigQueryViewDagWalkerProcessingFailureMode),
+        default=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
+        help=BigQueryViewDagWalkerProcessingFailureMode.__doc__,
+        required=False,
     )
 
     parser.add_argument(
@@ -1325,6 +1356,7 @@ if __name__ == "__main__":
                 ),
                 allow_slow_views=args.allow_slow_views,
                 materialize_changed_views_only=args.materialize_changed_views_only,
+                failure_mode=args.failure_mode,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
@@ -1342,6 +1374,7 @@ if __name__ == "__main__":
                 dataset_ids_to_load=args.dataset_ids_to_load,
                 update_ancestors=args.update_ancestors,
                 update_descendants=args.update_descendants,
+                failure_mode=args.failure_mode,
             )
         elif args.chosen_mode == "auto":
             load_views_changed_on_branch_to_sandbox(
@@ -1360,6 +1393,7 @@ if __name__ == "__main__":
                 load_up_to_addresses=args.load_up_to_addresses,
                 load_up_to_datasets=args.load_up_to_datasets,
                 load_changed_views_only=args.load_changed_views_only,
+                failure_mode=args.failure_mode,
             )
         else:
             raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")
