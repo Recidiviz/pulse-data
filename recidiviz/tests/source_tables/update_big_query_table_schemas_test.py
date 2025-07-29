@@ -1817,6 +1817,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_ingest_view_results.diversion_sentence",
     "us_tn_ingest_view_results.isc_sentence",
     "us_tn_ingest_view_results.sentence_and_charge",
+    "us_tn_ingest_view_results.sentence_length",
     "us_tn_ingest_view_results.sentence_status",
     "us_tn_normalized_state.state_assessment",
     "us_tn_normalized_state.state_charge",

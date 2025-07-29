@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_length` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  # Form the unique ID for sentences.
+  OffenderID: STRING
+  ConvictionCounty: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+
+  # TODO(#44999) Understand StreetTime and other credit concepts
+  # There may be other critical dates to consider
+  SentenceChangedDate: DATE
+  ReleaseEligibilityDate: DATE
+  ExpirationDate: DATE
+  FullExpirationDate: DATE
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - ConvictionCounty
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: SentenceChangedDate
+                # All of these can change over time and can be null
+                parole_eligibility_date_external: ReleaseEligibilityDate
+                projected_completion_date_min_external: ExpirationDate
+                projected_completion_date_max_external: FullExpirationDate
