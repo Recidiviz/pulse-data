@@ -180,18 +180,6 @@ from recidiviz.calculator.query.state.views.user_metrics.workflows_facilities_us
 from recidiviz.calculator.query.state.views.user_metrics.workflows_supervision_user_available_actions import (
     WORKFLOWS_SUPERVISION_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
-    ALL_FUNNEL_EVENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.clients_milestones_congratulated_another_way import (
-    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
-    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.milestones_funnel import (
-    MILESTONES_FUNNEL_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.person_record import (
     PERSON_RECORD_VIEW_BUILDER,
 )
@@ -252,6 +240,7 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
+    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker
     SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
@@ -414,9 +403,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER.address: (
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
     ),
-    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER.address: (
-        "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/11/24)"
-    ),
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER.address: (
         "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
     ),
@@ -425,15 +411,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER.address: (
         "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
-    ),
-    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER.address: (
-        "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/29/24)"
-    ),
-    ALL_FUNNEL_EVENTS_VIEW_BUILDER.address: (
-        "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 4/23/24)"
-    ),
-    MILESTONES_FUNNEL_VIEW_BUILDER.address: (
-        "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 5/22/24)"
     ),
     RECIDIVISM_EVENT_VIEW_BUILDER.address: (
         "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
@@ -446,10 +423,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
         "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
-    ),
-    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address: (
-        "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
-        "details (see looker#616) (Jenna Bellassai 11/18/2024)"
     ),
     OFFICER_MONTHLY_USAGE_REPORT_VIEW_BUILDER.address: (
         "Referenced by the Usage by User connected sheet which is shared with DOC leadership monthly"
