@@ -33,6 +33,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
     not_homeless_in_release_plan,
     not_serving_ineligible_offense_for_admin_supervision,
+    not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
     oras_has_substance_use_issues,
     oras_risk_level_is_medium_or_lower,
@@ -79,9 +80,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
         # 1.6 Mental Health Score of 3 or below.
         mental_health_score_3_or_below.VIEW_BUILDER,
-        # 1.7 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
+        # 1.7 Not SMI-C
+        not_severely_mentally_ill.VIEW_BUILDER,
+        # 1.8 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
         oras_has_substance_use_issues.VIEW_BUILDER,
-        # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
+        # 1.9 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
