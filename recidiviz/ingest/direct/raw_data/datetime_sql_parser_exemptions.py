@@ -1733,11 +1733,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "dateOn",
             "lastUpdatedDateTime",
         ],
-        "PIMSLSOAssessment": [
-            "assessmentDate",
-            "createdDateTime",
-            "lastUpdatedDateTime",
-        ],
         "PIMSResidenceContact": ["creationDateTime", "lastUpdatedDateTime"],
         "PIMSReviewHearingRoster": [
             "createdDateTime",

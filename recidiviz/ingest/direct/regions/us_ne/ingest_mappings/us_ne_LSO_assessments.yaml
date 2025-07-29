@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_ORAS_assessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  pk_reviewId: STRING
+  inmateNumber: STRING
+  assessmentType: STRING
+  riskTotal: STRING
+  riskLevel: STRING
+  assessmentDate: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - pk_reviewId
+          assessment_class: $literal_enum(StateAssessmentClass.SEX_OFFENSE)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: assessmentType
+              $mappings:
+                StateAssessmentType.STABLE:
+                  - stable2007
+                StateAssessmentType.ACUTE:
+                  - acute2007-1
+                StateAssessmentType.STATIC_99:
+                  - static99
+          assessment_date: assessmentDate
+          assessment_score: riskTotal
+          assessment_level:
+            $enum_mapping:
+              $raw_text: riskLevel
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - Very Low Risk
+                StateAssessmentLevel.LOW:
+                  - Low
+                  - Below Average Risk
+                StateAssessmentLevel.LOW_MODERATE:
+                  - Moderate-Low
+                StateAssessmentLevel.MODERATE:
+                  - Average Risk
+                  - Moderate
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - Moderate-High
+                StateAssessmentLevel.HIGH:
+                  - High
+                  - Above Average Risk
+                StateAssessmentLevel.VERY_HIGH:
+                  - Well Above Average Risk

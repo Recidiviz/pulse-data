@@ -1378,6 +1378,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_state.state_supervision_violation_response_decision_entry",
     "us_nd_state.state_supervision_violation_type_entry",
     "us_nd_state.state_task_deadline",
+    "us_ne_ingest_view_results.LSO_assessments",
     "us_ne_ingest_view_results.ORAS_assessments",
     "us_ne_ingest_view_results.address_periods",
     "us_ne_ingest_view_results.employment_periods",
