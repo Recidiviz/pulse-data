@@ -17,10 +17,26 @@ module "postgresql" {
   database_version            = "POSTGRES_13"
   tier                        = "db-custom-1-3840"
 
-  enable_default_user = true
-  user_name           = data.google_secret_manager_secret_version.db_user.secret_data
-  user_password       = data.google_secret_manager_secret_version.db_password.secret_data
- 
+  enable_default_user         = true
+  user_name                   = data.google_secret_manager_secret_version.db_user.secret_data
+  user_password               = data.google_secret_manager_secret_version.db_password.secret_data
+  additional_databases        = [
+    {
+      name      = "us_az"
+      charset   = "UTF8"
+      collation = "en_US.UTF8"
+    },
+    {
+      name      = "us_id"
+      charset   = "UTF8"
+      collation = "en_US.UTF8"
+    },
+    {
+      name      = "us_ut"
+      charset   = "UTF8"
+      collation = "en_US.UTF8"
+    }
+  ]
   backup_configuration = {
     enabled                        = var.is_backup_enabled
     start_time                     = "04:00" # UTC
@@ -208,6 +224,8 @@ resource "google_bigquery_table" "resource" {
       mode = "NULLABLE"
     },
   ])
+  
+  clustering = ["state"]
 }
 
 resource "google_bigquery_table" "resource_score" {
