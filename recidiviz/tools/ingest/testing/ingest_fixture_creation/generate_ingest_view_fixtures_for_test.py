@@ -342,6 +342,7 @@ def main() -> None:
         file_tag,
         dependency,
     ) in view_builder.raw_table_dependency_configs_by_file_tag.items():
+        print("Processing file tag:", file_tag)
         query = queries[file_tag]
         if query == _SKIP_CODE_FILE_MESSAGE:
             continue

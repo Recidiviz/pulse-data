@@ -7,69 +7,14 @@ input_columns:
   BY_CYC: STRING
   BY_VSN: STRING
   BY_VE: STRING
-  BY_VWI: STRING
   BY_VRT: STRING
-  BY_VSI: STRING
-  BY_VPH: STRING
-  BY_VBG: STRING
-  BY_VA: STRING
-  BY_VIC: STRING
-  BY_DAX: STRING
-  BY_VC: STRING
-  BY_VD: STRING
-  BY_VIH: STRING
-  BY_VIM: STRING
-  BY_VIL: STRING
   BY_VOR: STRING
-  BY_PIN: STRING
-  BY_PLN: STRING
-  BY_PON: STRING
-  BY_RCA: STRING
   BY_VTY: STRING
   BY_DV: DATETIME
-  BY_UID: STRING
-  BY_UIU: STRING
   VIOLATED_CONDITIONS: STRING
-  CZ_DOC: STRING
-  CZ_CYC: STRING
-  CZ_SEO: STRING
-  CZ_FSO: STRING
   FINAL_FORMED_CREATE_DATE: STRING
-  FINAL_FORMED_UPDATE_DATE: STRING
   BDGNO: STRING
-  CLSTTL: STRING
-  LNAME: STRING
-  FNAME: STRING
-  MINTL: STRING
-unused_columns:
-  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - BY_VWI # Unused - Violation warrant flag
-  - BY_VSI # Unused - Advised of Statements
-  - BY_VPH # Unused - Preliminary hearing
-  - BY_VBG # Unused - Given booklet
-  - BY_VA # Unused - Absconsion warrant date
-  - BY_VIC # Unused - Custody flag
-  - BY_DAX # Unused - Detainer cross reference
-  - BY_VC # Unused - Custody date
-  - BY_VD # Unused - Interview date
-  - BY_VIH # Unused - Interview hour
-  - BY_VIM # Unused - Interview minute
-  - BY_VIL # Unused - Interview location
-  - BY_PIN # Unused - Designated DOC location
-  - BY_PLN # Unused - DOC location acronym
-  - BY_PON # Unused - Duplicate of BDGNO
-  - BY_RCA # Unused - Requires court action
-  - BY_UID
-  - BY_UIU
-  - CZ_DOC # Duplicate of BY_DOC
-  - CZ_CYC # Duplicate of BY_CYC
-  - CZ_SEO # Sentence Key Sequence Number
-  - CZ_FSO # Field Sentence Sequence Number
-  - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
-  - CLSTTL
-  - LNAME
-  - FNAME
-  - MINTL
+unused_columns: []
 output:
   StatePerson:
     external_ids:

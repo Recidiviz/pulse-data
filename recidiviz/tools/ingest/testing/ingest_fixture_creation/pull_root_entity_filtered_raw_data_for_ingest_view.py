@@ -74,6 +74,7 @@ def _join_table_to_external_id_table(
     table_queue: Queue[TableJoin] = Queue()
     # The very first table has no previous JOIN clauses
     table_queue.put(TableJoin(config, ""))
+    seen_tables = set()
     while not table_queue.empty():
         table, previous_join = table_queue.get()
         for relationship in table.table_relationships:
@@ -81,6 +82,9 @@ def _join_table_to_external_id_table(
             if relationship.foreign_table not in all_dependencies:
                 continue
             f_table = all_dependencies[relationship.foreign_table].raw_file_config
+            # If we've already joined to a table, don't join to it again
+            if f_table.file_tag in seen_tables:
+                continue
             join_clause = " ".join(
                 [
                     previous_join,
@@ -88,6 +92,7 @@ def _join_table_to_external_id_table(
                     relationship.join_sql(),
                 ]
             ).strip()
+            seen_tables.add(f_table.file_tag)
             if id_col := f_table.get_external_id_col_with_type(external_id_type):
                 return (
                     join_clause

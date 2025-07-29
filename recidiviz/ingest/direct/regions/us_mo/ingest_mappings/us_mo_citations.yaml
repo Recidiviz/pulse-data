@@ -8,17 +8,8 @@ input_columns:
   JT_CSQ: STRING
   VIOLATED_CONDITIONS: STRING
   MAX_DATE: STRING
-  JS_DOC: STRING
-  JS_CYC: STRING
-  JS_SEO: STRING
-  JS_FSO: STRING
   FINAL_FORMED_CREATE_DATE: STRING
-unused_columns:
-  # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - JS_DOC # Duplicate of JT_DOC
-  - JS_CYC # Duplicate of JT_CYC
-  - JS_SEO # Sentence Key Sequence Number
-  - JS_FSO # Field Sentence Sequence Number
+unused_columns: []
 output:
   StatePerson:
     external_ids:

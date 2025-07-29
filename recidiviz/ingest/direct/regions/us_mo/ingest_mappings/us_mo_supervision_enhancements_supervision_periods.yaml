@@ -14,18 +14,8 @@ input_columns:
   LOCATION_ACRONYM: STRING
   CASE_TYPE_LIST: STRING
   BDGNO: STRING
-  CLSTTL: STRING
-  DEPCLS: STRING
-  LNAME: STRING
-  FNAME: STRING
-  MINTL: STRING
   SUP_TYPE: STRING
-unused_columns:
-  - CLSTTL
-  - DEPCLS # Unused - Employee Job Code
-  - LNAME
-  - FNAME
-  - MINTL
+unused_columns: []
 output:
   StatePerson:
     external_ids:

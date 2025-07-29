@@ -112,14 +112,6 @@ YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
     r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
 )
 UNTESTED_INGEST_VIEWS = {
-    StateCode.US_MO: {
-        # TODO(#19825): Write tests for this view and remove exemption
-        "tak028_tak042_tak076_tak024_violation_reports",
-        # TODO(#19826): Write tests for this view and remove exemption
-        "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
-        # TODO(#19827): Write tests for this view and remove exemption
-        "tak291_tak292_tak024_citations",
-    },
     StateCode.US_PA: {
         # TODO(#19828): Write tests for this view and remove exemption
         "board_action",

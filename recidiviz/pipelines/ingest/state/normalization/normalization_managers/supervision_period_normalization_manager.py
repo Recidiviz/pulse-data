@@ -232,14 +232,12 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     self._incarceration_periods,
                 )
             )
-
             # Process fields on final supervision period set
             mid_processing_periods = (
                 self._process_fields_on_final_supervision_period_set(
                     mid_processing_periods
                 )
             )
-
             self._normalized_supervision_periods_and_additional_attributes = (
                 mid_processing_periods,
                 self.additional_attributes_map_for_normalized_sps(
