@@ -171,9 +171,9 @@ def start_on_disk_postgresql_database(
             password_record,
         ),
         errors_to_retry=(RuntimeError, PostgresPortStillInUseError),
-        max_tries=4,
+        max_tries=5,
         min_backoff_secs=1,
-        max_backoff_secs=2,
+        max_backoff_secs=3,
     )
 
     # Create a user and database within postgres.

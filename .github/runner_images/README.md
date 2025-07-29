@@ -27,7 +27,7 @@ brew install hashicorp/tap/packer
 
 Build an image:
 ```bash
-# From runner_images directory, run:
+# From runner_images/python311-postgres13 directory, run:
 packer init templates/python311-postgres13.pkr.hcl
 # To build the image, ensure the AWS CLI is configured with credentials from AdministratorAccess, run:
 # SUBNET_ID may be any subnet from our AWS account

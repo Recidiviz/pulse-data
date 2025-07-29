@@ -30,7 +30,7 @@ variable "helper_script_folder" {
 
 data "amazon-ami" "runs-on-ami-x64" {
   filters = {
-    name                = "runs-on-v2.2-ubuntu22-full-x64-*"
+    name                = "runs-on-v2.2-ubuntu24-stepsecurity-x64-*"
     root-device-type    = "ebs"
     virtualization-type = "hvm"
   }
@@ -38,19 +38,19 @@ data "amazon-ami" "runs-on-ami-x64" {
   most_recent = true
   # Runs-On owns the AMIs, so we use the owner ID to filter
   #https://runs-on.com/guides/building-custom-ami-with-packer/
-  owners = ["135269210855"]
+  owners = ["135269210855"]  # RunsOn account
   region      = "${var.region}"
 }
 
 
 data "amazon-ami" "runs-on-ami-arm64" {
   filters = {
-    name                = "runs-on-v2.2-ubuntu22-full-arm64-*"
+    name                = "runs-on-v2.2-ubuntu24-stepsecurity-arm64-*"
     root-device-type    = "ebs"
     virtualization-type = "hvm"
   }
   most_recent = true
-  owners = ["135269210855"]
+  owners = ["135269210855"] # RunsOn account
   region      = "${var.region}"
 }
 
