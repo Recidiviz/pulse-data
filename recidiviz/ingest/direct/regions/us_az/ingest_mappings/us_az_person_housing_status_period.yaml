@@ -5,12 +5,17 @@ manifest_language: 1.0.0
 input_columns:
   person_id: STRING
   location_id: STRING
-  start_date: DATETIME
-  end_date: DATETIME
-  housing_status_type: STRING
-  street_name: STRING
+  start_date: DATE
+  end_date: DATE
+  address_type: STRING
+  address_line_1: STRING
+  address_line_2: STRING
+  zipcode: STRING
+  city: STRING
+  state: STRING
+  county: STRING
+  country: STRING
 unused_columns:
-  - street_name
   - location_id
 output:
   StatePerson:
@@ -24,13 +29,42 @@ output:
           housing_status_end_date: end_date
           housing_status_type:
             $enum_mapping:
-              $raw_text: housing_status_type
+              $raw_text: address_type
               $mappings:
                 StatePersonHousingStatusType.UNHOUSED:
-                  - "unhoused"
+                  - "homeless"
                 StatePersonHousingStatusType.FACILITY:
                   - "facility"
                 StatePersonHousingStatusType.PERMANENT_RESIDENCE:
                   - "permanent_residence"
                 StatePersonHousingStatusType.EXTERNAL_UNKNOWN:
                   - "external_unknown"
+    address_periods:
+      - $conditional:
+          - $if:
+              $not:
+                $equal:
+                  - address_line_1
+                  - $literal("UNKNOWN")
+            $then:
+              StatePersonAddressPeriod:
+                address_start_date: start_date
+                address_end_date: end_date
+                address_line_1: address_line_1
+                address_line_2: address_line_2
+                address_city: city
+                address_state: state
+                address_country: country
+                address_zip: zipcode
+                address_county: county
+                address_type:
+                  $enum_mapping:
+                    $raw_text: address_type
+                    $mappings:
+                      StatePersonAddressType.PHYSICAL_RESIDENCE:
+                        - "permanent_residence"
+                      StatePersonAddressType.PHYSICAL_OTHER:
+                        - "facility"
+                        - "homeless"
+                      StatePersonAddressType.EXTERNAL_UNKNOWN:
+                        - "external_unknown"
