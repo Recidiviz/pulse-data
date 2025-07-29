@@ -101,9 +101,3 @@ num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 9
     override_reason: TODO(#23965) Just a few cases, to investigate later
-  - validation_name: current_impact_funnel_status_duplicate_external_ids
-    hard_num_allowed_rows_override: 2000
-    override_reason:
-      Consequence of migrating LSU JII to the TES almost eligible infrastructure.
-      See comment here (https://github.com/Recidiviz/pulse-data/issues/32322#issuecomment-2286728820).
-      The underlying view is going to be deprecated so it's not really important to fix this.

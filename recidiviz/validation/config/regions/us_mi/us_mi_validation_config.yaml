@@ -80,11 +80,6 @@ num_allowed_rows_overrides:
       As of 7/12/24, failing at 1379 rows because we fixed the sorting coming out of normalization (which had previous led to some failing rows not being flagged).
       No immediate impact because the most recent row it's failing for is a period from 2020, and our tools don't use data that far back.
       TODO(#26444)
-  - validation_name: current_impact_funnel_status_duplicate_external_ids
-    hard_num_allowed_rows_override: 5000
-    override_reason:
-      This validation is failing due to the way task eligibility spans are structured for MI.
-      Bumping threshold for now until it's determined whether this is an issue or not.  See #25100
   - validation_name: officer_monthly_usage_report_actions_without_logins
     hard_num_allowed_rows_override: 5
     override_reason: Will be resolved with the Polaris segment ad blocker work around

@@ -308,12 +308,6 @@ from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_
 from recidiviz.validation.views.state.workflows.client_record_duplicate_person_external_ids import (
     CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.current_impact_funnel_status_duplicate_external_ids import (
-    CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.workflows.current_impact_funnel_status_no_records import (
-    CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
     FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
@@ -511,14 +505,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

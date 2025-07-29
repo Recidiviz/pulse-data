@@ -51,9 +51,6 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_fu
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
-    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import (
     automatic_raw_data_pruning_enabled_for_state_and_instance,
@@ -378,7 +375,6 @@ class ViewDagInvariantTests(unittest.TestCase):
         #  ALL view is allowed.
         allowed_union_all_view_children = {
             # These views produce generic analysis based on all TES spans.
-            CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
             WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             # TODO(#29291): Revisit whether we need to have these observations views
             #  that look at all tasks.

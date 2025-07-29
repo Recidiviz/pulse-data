@@ -189,11 +189,11 @@ from recidiviz.calculator.query.state.views.workflows.clients_milestones_congrat
 from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
-    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.milestones_funnel import (
     MILESTONES_FUNNEL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.person_record import (
+    PERSON_RECORD_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -252,7 +252,6 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
-    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker
     SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
@@ -261,6 +260,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    # TODO(Recidiviz/looker#589): Delete this view once it has been deleted out of
+    #  Looker (as of 7/28/25, it is currently referenced in an unused LookML view that
+    #  can be deleted.
+    PERSON_RECORD_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
