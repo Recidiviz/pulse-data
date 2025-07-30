@@ -207,6 +207,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "MandatoryMinimumStartDate",
             "StayExecutionDate",
         ],
+        "Offender": ["ArchiveDate", "LastUpdateDate", "NotInCustodyDate", "PostedDate"],
         "OffenderAttributes": [
             "DeathDate",
             "DisposalDate",
@@ -1167,7 +1168,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
             "RecommendedFutureActionDate",
         ],
         "IncompatiblePair": ["LastUpdateDate", "PostedDate", "SourceDate"],
-        "Offender": ["ArchiveDate", "LastUpdateDate", "NotInCustodyDate", "PostedDate"],
         "OffenderAccounts": ["AccountStartDate", "AccountStatusDate", "LastUpdateDate"],
         "OffenderExemptions": ["EndDate", "LastUpdateDate", "StartDate", "VoidedDate"],
         "OffenderInvoices": ["InvoiceDate", "LastUpdateDate", "VoidedDate"],
