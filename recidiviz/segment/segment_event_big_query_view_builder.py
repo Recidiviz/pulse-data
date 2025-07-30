@@ -139,12 +139,7 @@ FROM (
 -- inner join to filter out recidiviz users and others unidentified (if any)
 INNER JOIN
     `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
-ON
-    events.user_id = rdu.user_id
-    -- TODO(#43067): Remove this logic once historical views have been migrated to the current user_id format
-    OR (STARTS_WITH(rdu.user_id, "_")
-        AND STARTS_WITH(events.user_id, "/")
-        AND SUBSTR(rdu.user_id, 2) = SUBSTR(events.user_id, 2))
+USING(user_id)
 {person_id_join_type} JOIN
     `{{project_id}}.workflows_views.person_id_to_pseudonymized_id_materialized`
 USING
