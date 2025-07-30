@@ -990,3 +990,14 @@ def statute_code_is_like(title: str, statute_code: str) -> str:
     OR ({title} = 30 AND statute LIKE '%FB{statute_code}%') -- fishing & boating
     OR ({title} = 42 AND statute LIKE '%JC{statute_code}%')) -- judicial code
     """
+
+
+def contains_nae(column: str) -> str:
+    """helper function to determine if a string value contains NAE (not admin eligible) not surrounded by other letters.
+    This helps ensure we include NAE but not names like SHANAE, which sometimes end up in notes fields"""
+    return f"""
+    ((REGEXP_CONTAINS(UPPER({column}),  r'NAE')
+        AND NOT REGEXP_CONTAINS(UPPER({column}),  r'NAE[A-Z]')
+        AND NOT REGEXP_CONTAINS(UPPER({column}),  r'[A-Z]NAE'))
+    OR UPPER({column}) LIKE '%NOT ADMIN ELIG%')
+    """
