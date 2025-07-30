@@ -246,7 +246,7 @@ resource "google_cloud_run_service" "application-data-import" {
 
   template {
     spec {
-      timeout_seconds = 1800
+      timeout_seconds = 3600
 
       container_concurrency = 8
 
