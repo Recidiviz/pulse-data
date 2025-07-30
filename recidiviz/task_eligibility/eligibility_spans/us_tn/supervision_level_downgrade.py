@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible to have supervision level downgrade.
+someone in TN is eligible to have their supervision level downgraded.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     supervision_level_downgrade,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_intake,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_unassigned,
@@ -38,17 +39,14 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in TN may be eligible to have their supervision
-level downgraded.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="SUPERVISION_LEVEL_DOWNGRADE",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
+        supervision_level_is_not_intake.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
