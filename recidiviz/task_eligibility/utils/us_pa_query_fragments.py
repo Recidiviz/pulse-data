@@ -160,6 +160,7 @@ def us_pa_supervision_super_sessions() -> str:
 
 
 def offense_is_violent() -> str:
+    """custom PA function to determine whether an offense is violent per 42 PA. C.S. §9714(g)"""
     # TODO(#33754) -  Move ineligible offense flags upstream
     return f"""
 /* Policy note: This list of violent crimes is taken from 42 PA. C.S. §9714(g), which is a sentencing guideline for cases 
@@ -202,47 +203,39 @@ these offenses. */
       OR ({description_refers_to_assault()} AND description LIKE '%AG%' AND description LIKE '%UNB%'))
 
 -- 18 Pa.C.S. § 2702(a)(1) or (2) Aggravated Assault- Serious Bodily Injury
-    OR ({statute_code_is_like('18', '2702A1')}
-      OR {statute_code_is_like('18', '2702.A1')}
-      OR {statute_code_is_like('18', '2702AI')}
-      OR {statute_code_is_like('18', '2702A2')}
-      OR {statute_code_is_like('18', '2702.A2')}
-      OR {statute_code_is_like('18', '2702AII')}
+    OR ({statute_code_is_like('18', '2702', 'A1')}
+      OR {statute_code_is_like('18', '2702', 'A2')}
       OR ((description LIKE '%AG%' OR description LIKE '%AA%')
           AND {description_refers_to_serious_bodily_injury()}
           AND description NOT LIKE '%FEAR%' -- fear of serious bodily injury is not included)
           AND description NOT LIKE '%ANIMAL%')) -- agg cruelty to animals is not included
 
 -- 18 Pa.C.S. § 2702.1(a)(1) Assault of Law Enforcement Officer
-    OR ({statute_code_is_like('18', '27021A1')}
-      OR {statute_code_is_like('18', '2702.1.A1')}
-      OR statute LIKE '%CC2702.1%'
-        -- seems like people are just using CC2702.1 statute rather than specifying A/B most of the time
-        -- just going to air on the side of including all of these since there are no instances of 2702.1(b) being used at all
+    OR ({statute_code_is_like('18', '2702', '1A1')}
       OR ({description_refers_to_assault()} AND description LIKE '%OFFICER%'))
         
 -- 18 Pa.C.S. § 2716(b) Use of Weapons of Mass Destruction
-    OR ({statute_code_is_like('18', '2716B')}
-      OR {statute_code_is_like('18', '2716.B')}
+    OR ({statute_code_is_like('18', '2716', 'B')}
       OR (description LIKE '%WEAP%' AND description LIKE '%MASS%' AND description LIKE '%CAUS%'))
 
 -- 18 Pa.C.S. § 2717(b)(2) Terrorism When Graded as a Felony in the First Degree  -- there don't seem to be any examples of this actually being used
-    OR ({statute_code_is_like('18', '2717B2')}
-      OR {statute_code_is_like('18', '2717.B2')})
+    OR ({statute_code_is_like('18', '2717', 'B2')})
+    -- not pulling in additional grade information here because B2 is explicitly specified as a first degree felony
 
 -- 18 Pa.C.S. § 2718 Strangulation When Graded as a Felony
--- in this case, we can pull strangulation charges but we don't know whether they were graded as felonies
--- this is now flagged in case notes, see spc_case_notes_helper fxn in us_pa_query_fragments
+-- What we check: all strangulation cases unless explicitly specified as a misdemeanor 
+    OR (({statute_code_is_like('18','2718')} 
+        OR description LIKE '%STRANG%')
+        AND (classification_type <> 'MISDEMEANOR' AND classification_subtype NOT LIKE 'M%'))
+    #TODO(#45723) to fix cases where the classification type is populated but the type is not 
 
 -- 18 Pa.C.S. § 3011 Trafficking of Persons When Graded as a Felony of the First Degree
 -- 3011.A1 & A2 are specified as felonies of the first degree, 3011.B relates to sentencing of 3011.A1 & A2 when the victim is a minor
-    OR ({statute_code_is_like('18', '3011.A1')} -- sexual servitude
-      OR {statute_code_is_like('18', '3011A1')}
-      OR {statute_code_is_like('18', '3011.A2')} -- financial benefit
-      OR {statute_code_is_like('18', '3011A2')}
-      OR {statute_code_is_like('18', '3011.B')} -- trafficking in minors
-      OR {statute_code_is_like('18', '3011B')}
+    OR ({statute_code_is_like('18', '3011', 'A1')} -- sexual servitude
+      OR {statute_code_is_like('18', '3011', 'A2')} -- financial benefit
+      OR {statute_code_is_like('18', '3011', 'B')} -- trafficking in minors
       OR (description LIKE '%TRAFFICK%' AND (description LIKE '%SEX%' OR description LIKE '%FINANCIAL%' OR description LIKE '%MINOR%')))
+    -- not pulling in additional grade information here because A1, A2, & B are explicitly specified as a first degree felonies
 
 -- 18 Pa.C.S. § 3121 Rape
     OR ({statute_code_is_like('18', '3121')}
@@ -263,30 +256,26 @@ these offenses. */
 
 -- What the policy says: 18 Pa.C.S. § 3124.1 Sexual Assault
 -- What we're going to check for: 18 Pa.C.S. § 3124.1 Sexual Assault, 3124.2 Institutional Sexual Assault, 3124.3 Sexual assault by sports official, volunteer or employee of nonprofit association.
-    OR({statute_code_is_like('18','3124.1')}
-      OR {statute_code_is_like('18','31241')}
+    OR({statute_code_is_like('18','3124', '1')}
       OR ({description_refers_to_assault()}
           AND description LIKE '%SEX%'
           AND description NOT LIKE '%STAT%')) -- stat sexual assault is covered in 3122
 
 -- 18 Pa.C.S. § 3301(a) OR 18 Pa.C.S. §3301(a.1) Arson Endangering Persons OR Aggravated Arson
-    OR ((({statute_code_is_like('18','3301A')} OR {statute_code_is_like('18','3301.A')}) 
-            AND (statute NOT LIKE '%A.2%' AND statute NOT LIKE '%A.11%'))
+    OR ({statute_code_is_like('18','3301', 'A')}
       OR ((description LIKE '%ARSON%' OR description LIKE '%ARSN%')
           AND ((description LIKE '%END%' AND (description like '%PER%' or description like '%PRSN%') AND description NOT LIKE '%PROP%') -- endangering person 3301(a)
             OR (description like '%INJ%' OR description LIKE '%DEA%' OR description LIKE '%DTH%')))) -- places another person in danger of death or bodily injury 3301(a)(1)(i)
 
 -- 18 Pa.C.S. § 3311(b)(3) Ecoterrorism
-    OR ({statute_code_is_like('18','3311B3')}
-      OR {statute_code_is_like('18','3311.B3')}) -- no examples of this actually occurring
+    OR ({statute_code_is_like('18','3311', 'B3')}) -- no examples of this actually occurring
 
 -- 18 Pa.C.S § 2901 Kidnapping
     OR({statute_code_is_like('18','2901')} --kidnapping
       OR description LIKE '%KID%')
 
 -- 18 Pa.C.S. § 3502(a)(1) Burglary- Adapted for Overnight Accommodation and Person Present (Felony of the First Degree)
-    OR ({statute_code_is_like('18','3502A1')}
-      OR {statute_code_is_like('18','3502.A1')}
+    OR ({statute_code_is_like('18','3502', 'A1')}
       OR ((description LIKE '%BURG%'
           AND (REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONPERSONPRESENT%'
               OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONSPERSONPRESENT%' 
@@ -295,15 +284,12 @@ these offenses. */
           AND description NOT LIKE '%NO%')))
 
 -- 18 Pa.C.S. § 3701(a)(1)(i), (ii) or (iii) Robbery- Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree (Felony of the First Degree)
-   OR ((({statute_code_is_like('18','3701A1I')} AND NOT {statute_code_is_like('18','3701A1IV')})
-      OR {statute_code_is_like('18','3701A1II')}
-      OR {statute_code_is_like('18','3701A1III')}
-      OR ({statute_code_is_like('18','3701.A1I')} AND NOT {statute_code_is_like('18','3701.A1IV')})
-      OR {statute_code_is_like('18','3701.A1II')}
-      OR {statute_code_is_like('18','3701.A1II')}
+   OR ({statute_code_is_like('18','3701', 'A11')}
+      OR {statute_code_is_like('18','3701', 'A12')}
+      OR {statute_code_is_like('18','3701', 'A13')}
       OR ((description LIKE '%ROB%' AND description NOT LIKE '%PROB%') -- refers to robbery
           AND ({description_refers_to_serious_bodily_injury()} -- 3701(a)(1)(i) & (ii) refer to serious bodily injury
-              OR description LIKE '%FEL%')))) -- 3701(a)(1)(iii) refers to committing or threatening to commit a felony
+              OR description LIKE '%FEL%'))) -- 3701(a)(1)(iii) refers to committing or threatening to commit a felony
 
 -- 18 Pa.C.S. § 3702 Robbery of a Motor Vehicle
     OR ({statute_code_is_like('18','3702')}
@@ -320,17 +306,16 @@ these offenses. */
 
 
 def offense_is_admin_ineligible() -> str:
+    """custom PA function to determine whether an offense is ineligible for admin supervision per form 402"""
     # TODO(#33754) -  Move ineligible offense flags upstream
     return f"""(
-    /* defines offenses that are ineligible for admin supervision per form 402 */
             --18 Pa. C.S. Ch. 25 relating to Crim. Homicide
             --Per Ch 25, criminal homicide includes murder, voluntary manslaughter, & involuntary manslaughter
             ({statute_code_is_like('18', '2501')} --criminal homicide
                 OR {statute_code_is_like('18', '2502')} --murder
                 OR {statute_code_is_like('18', '2503')}--voluntary manslaughter
                 OR {statute_code_is_like('18', '2504')} --involuntary manslaughter
-                OR {statute_code_is_like('18', '2505A')} --causing suicide as criminal homicide
-                OR {statute_code_is_like('18', '2505.A')}
+                OR {statute_code_is_like('18', '2505', 'A')} --causing suicide as criminal homicide
                 OR {statute_code_is_like('18', '2506')} -- drug delivery resulting in death
                 OR {statute_code_is_like('18', '2507')} --criminal homicide of law enforcement officer
             OR (((description LIKE '%HOM%' AND description NOT LIKE '%HOME%' AND description NOT LIKE '%WHOM%')
@@ -346,14 +331,13 @@ def offense_is_admin_ineligible() -> str:
                 AND description NOT LIKE '%FAIL%')) -- does not include failure to register vehicle following death of owner or failure to report death
                 
             -- 18 Pa. C.S. Ch. 27 rel. to Assault
-            OR ((({statute_code_is_like('18','2701')} --simple assault
+            OR (({statute_code_is_like('18','2701')} --simple assault
                 OR {statute_code_is_like('18','2702')} --aggravated assault
-                OR {statute_code_is_like('18','2703')} --assault by prisoner
+                OR ({statute_code_is_like('18','2703')} AND (subsection IS NULL OR subsection NOT LIKE '1%')) --assault by prisoner (2703.1 refers to harassment not assault)
                 OR {statute_code_is_like('18','2704')} --assault by life prisoner
                 OR {statute_code_is_like('18','2711')} --domestic violence 
                 OR {statute_code_is_like('18','2712')} --assault on a sports official 
                 OR {statute_code_is_like('18','2718')}) --strangulation
-                AND (statute NOT LIKE '%27031%' AND statute NOT LIKE '%2703.1%')) -- 2703.1 refers to harassment not assault
                 OR (({description_refers_to_assault()}
                 OR description LIKE 'AA%' -- agg assault
                 OR description LIKE '%AGG AS%'
@@ -453,9 +437,7 @@ def offense_is_admin_ineligible() -> str:
             -- this is now flagged in case notes, see adm_case_notes_helper fxn in us_pa_query_fragments
 
             -- 75 Pa.C.S. 3732 Relating to Homicide by Vehicle
-            OR (({statute_code_is_like('75','3732')}
-                AND NOT {statute_code_is_like('75','3732.1')}
-                AND NOT {statute_code_is_like('75','37321')}) -- 3732.1 is technically assault, not homicide
+            OR (({statute_code_is_like('75','3732')} AND (subsection IS NULL OR subsection NOT LIKE '1%')) -- 3732.1 is technically assault, not homicide
               OR (description LIKE '%HOMI%' AND description LIKE '%VEH%'))
 
             -- 75 Pa.C.S. 3735 Relating to Homicide by Vehicle while DUI
@@ -475,10 +457,10 @@ def offense_is_admin_ineligible() -> str:
             -- 30 Pa.C.S. § 5502.2 Relating to homicide by watercraft
             -- 30 Pa.C.S. § 5502.3 Relating to aggravated assault by watercraft while operating under the influence.
             -- 30 Pa.C.S. § 5502.4 Relating to aggravated assault by watercraft.
-            OR ({statute_code_is_like('30','5502.1')}
-              OR {statute_code_is_like('30','5502.2')}
-              OR {statute_code_is_like('30','5502.3')}
-              OR {statute_code_is_like('30','5502.4')}
+            OR ({statute_code_is_like('30','5502', '1')}
+              OR {statute_code_is_like('30','5502', '2')}
+              OR {statute_code_is_like('30','5502', '3')}
+              OR {statute_code_is_like('30','5502', '4')}
               OR ((description LIKE '%HOM%' OR {description_refers_to_assault()}) AND description LIKE '%WATER%'))
               
             -- 18 Pa. C.S. 4302 Incest
@@ -490,20 +472,15 @@ def offense_is_admin_ineligible() -> str:
               OR (description LIKE '%OPEN%' AND description LIKE '%LEWD%'))
     
             -- 18 Pa. C.S. 5902(b) Prostitution
-            OR({statute_code_is_like('18','5902B')} 
-                OR {statute_code_is_like('18','5902.B')}
-              OR (description LIKE '%PROM%' AND description LIKE '%PROST%' AND (statute IS NULL OR NOT {statute_code_is_like('18','5902.A')})))
+            OR({statute_code_is_like('18','5902', 'B')} 
+              OR (description LIKE '%PROM%' AND description LIKE '%PROST%' AND subsection NOT LIKE 'A%'))
               -- for some reason there are records where the statute is 5902.A (engaging in prostitution) but the description is promoting prostitution (which should be 5902.B)
               
             -- 18 Pa. C.S. 5903(4)(5)(6) obscene/sexual material/performance where the victim is minor
             -- 5903A4 & 5903A5 can be perpetrated against a non-minor (i) or a minor (ii), 5903A6 always relates to minors
-            -- if (i) or (ii) is not specified, we flag in case notes - see adm_case_notes_helper fxn in us_pa_query_fragments
-            OR (({statute_code_is_like('18','5903.A4II')}  -- write/print/publish obscene materials/performance
-                OR {statute_code_is_like('18','5903A4II')}
-                OR {statute_code_is_like('18','59023.A5II')}  -- produce/present/direct obscene materials/performance
-                OR {statute_code_is_like('18','5903A5II')}
-                OR {statute_code_is_like('18','5903.A6')}  -- hire/employ/use minor child
-                OR {statute_code_is_like('18','5903A6')})
+            OR (({statute_code_is_like('18','5903', 'A42')}-- write/print/publish obscene materials/performance
+                OR {statute_code_is_like('18','5903', 'A52')} -- produce/present/direct obscene materials/performance
+                OR {statute_code_is_like('18','5903', 'A6')})  -- hire/employ/use minor child
               OR (description LIKE '%MINOR%' AND description like '%OBSCENE%' AND (description LIKE '%WRITE%' OR description LIKE '%PRODUCE%' OR description LIKE '%HIRE%')))
                 
             -- 18 Pa. C.S. Ch. 76 Internet Child Pornography
@@ -525,16 +502,13 @@ def offense_is_admin_ineligible() -> str:
             -- 9799.14 lists tiers of sexual offenses, and 9799.55 lists sexual offenses which require Megan's Law registration. 
             -- Most of the listed offenses are already excluded because they fall under previously listed
             -- chapters, but I'm including the few remaining ones here as well as any reference to Megan's Law 
-            OR ({statute_code_is_like('18','5903.A3II')}  -- 18 Pa.C.S. § 5903(a)(3)(ii) (relating to obscene and other sexual materials and performances).
-                OR {statute_code_is_like('18','5903A3II')}
+            OR ({statute_code_is_like('18','5903', 'A32')}  -- 18 Pa.C.S. § 5903(a)(3)(ii) (relating to obscene and other sexual materials and performances)
                 OR (description LIKE 'MINOR' AND description like '%OBSCENE%' AND description LIKE '%DESIGN%')
-                OR {statute_code_is_like('18','6301.A1II')} -- 18 Pa.C.S. § 6301(a)(1)(ii) (relating to corruption of minors).
-                OR {statute_code_is_like('18','6301A1II')}
-                OR {statute_code_is_like('18','7507.1')}  -- 18 Pa.C.S. § 7507.1. (relating to invasion of privacy)
-                OR {statute_code_is_like('18','75071')}
+                OR {statute_code_is_like('18','6301', 'A12')} -- 18 Pa.C.S. § 6301(a)(1)(ii) (relating to corruption of minors).
+                OR {statute_code_is_like('18','7507', '1')}  -- 18 Pa.C.S. § 7507.1. (relating to invasion of privacy)
                 OR (description LIKE '%INVASION%' AND description LIKE '%PRIVACY%')
                 OR description LIKE '%MEGAN%'
-                OR {statute_code_is_like('18','4915')} OR {statute_code_is_like('42','979')})  -- not listed specifically but relates to sex offender registration requirements
+                OR {statute_code_is_like('18','4915')} OR {statute_code_is_like('42','979%')})-- not listed specifically but relates to sex offender registration requirements
 
             -- 18 Pa. C.S. 6312 Sexual Abuse of Children
             OR ({statute_code_is_like('18','6312')}
@@ -558,7 +532,7 @@ def offense_is_admin_ineligible() -> str:
             OR(description LIKE '%ENH%' AND (description LIKE '%WPN%' OR description LIKE '%WEA%'))
 
             -- 18 Pa. C.S. Firearms or Dangerous Articles
-            OR (({statute_code_is_like('18','61')})
+            OR (({statute_code_is_like('18','61%')})
               OR ((description LIKE '%FIREARM%'
                 OR (description LIKE '%GUN%' AND description NOT LIKE '%PAINT%')
                 OR description LIKE '%F/A%'
@@ -594,27 +568,42 @@ def offense_is_admin_ineligible() -> str:
 """
 
 
-def sentences_and_charges_cte() -> str:
-    # combine sentences preprocessed (to get correct date info) and state charge (to get status of individual charges)
-    return """SELECT
-            sen.state_code,
-            sen.person_id,
-            sen.date_imposed,
-            sen.projected_completion_date_max,
-            sen.statute,
-            sen.description,
-            sen.offense_type,
-            sc.status,
-        FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc
-            USING(person_id, charge_id)
-        WHERE sen.state_code = 'US_PA'"""
+def clean_and_split_statute(table: str) -> str:
+    # TODO(#45629) Move cleaning & splitting of statute codes upstream
+    """custom PA logic to clean statute codes and split them into title, section, and subsection(s)
+    for example, a statute code of 18.2702(b) will get split into title = 18, section = 2702, and subsection = b"""
+    return f"""
+        WITH clean_statute AS (
+            SELECT *, 
+                REGEXP_REPLACE(statute_split, r"\\.|-|\\*", '') AS statute_clean, -- remove periods, hyphens, and asterisks
+            FROM {table}
+            LEFT JOIN UNNEST(SPLIT(REPLACE(statute, ',', ';'), ';')) AS statute_split -- split on commas and semicolons
+        )
+        SELECT *,
+            SUBSTR(statute_clean, 0, 2) AS title,
+            SUBSTR(statute_clean, 3, 4) AS section,
+            {convert_roman_numerals('SUBSTR(statute_clean, 7)')} AS subsection,
+        FROM clean_statute
+    """
 
 
 def adm_form_information_helper() -> str:
-    # this pulls information used to complete form 402a, the drug addendum for admin supervision
-    return f"""
-        WITH sentences_and_charges AS ({sentences_and_charges_cte()})
+    """this pulls information used to complete form 402a, the drug addendum for admin supervision"""
+    return """
+        WITH sentences_and_charges AS (
+        /* combine sentences preprocessed (to get correct date info) and state charge (to get status of individual charges) */
+            SELECT sen.state_code,
+                sen.person_id,
+                sen.date_imposed,
+                sen.statute,
+                sen.description,
+                sen.offense_type,
+                sc.status,
+            FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
+            LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc
+                USING(person_id, charge_id)
+            WHERE sen.state_code = 'US_PA'
+        )
         SELECT person_id,
         (offense_type = 'DRUGS' 
             OR(offense_type IS NULL AND (description LIKE '%DRUG%'
@@ -676,6 +665,8 @@ def adm_form_information_helper() -> str:
 
 
 def case_notes_helper() -> str:
+    """custom PA function that returns case notes for admin and special circ opportunities related to special conditions,
+    treatment, and employment"""
     return f"""
     /* pull special conditions for the current supervision period related to treatment, evaluations, and enhanced supervision.
         also display previous conditions related to treatment, evaluations, and enhanced supervision IF the client has a 
@@ -803,30 +794,16 @@ def case_notes_helper() -> str:
 
 
 def dui_indicator() -> str:
+    """custom PA function that returns whether an offense relates to DUI"""
     return f"""({statute_code_is_like('75','3731')}
-            OR {statute_code_is_like('75','38')}
+            OR {statute_code_is_like('75','38%')}
             OR description LIKE '%DUI%'
             OR description LIKE '%DWI%'
             OR (description LIKE '%DRI%' AND description LIKE '%INF%'))"""
 
 
-def obsc_materials_indicator() -> str:
-    return f"""(({statute_code_is_like('18','5903.A3')}
-            OR {statute_code_is_like('18','5903A3')}
-            OR {statute_code_is_like('18','5903.A4')}
-            OR {statute_code_is_like('18','5903A4')}
-            OR {statute_code_is_like('18','5903.A5')}
-            OR {statute_code_is_like('18','5903A5')})
-        AND NOT ({statute_code_is_like('18','5903.A3I')} -- only include if convicted of 5903(3), but we don't know whether it's 3(i) non-minor or 3(ii) minor victim
-            OR {statute_code_is_like('18','5903A3I')}
-            OR {statute_code_is_like('18','5903.A4I')}
-            OR {statute_code_is_like('18','5903A4I')}
-            OR {statute_code_is_like('18','5903.A5I')}
-            OR {statute_code_is_like('18','5903A5I')}))"""
-
-
 def adm_case_notes_helper() -> str:
-    # this pulls all pa case notes and adds a few that should only be displayed for the admin supervision opportunity
+    """this pulls all pa case notes and adds a few that should only be displayed for the admin supervision opportunity"""
     return f"""
     SELECT * FROM ({case_notes_helper()})
     
@@ -835,35 +812,27 @@ def adm_case_notes_helper() -> str:
     /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
     we don't have all the information we need to determine whether it should change eligibility */
     
+    (WITH sentences AS (
+        SELECT * 
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        WHERE state_code = 'US_PA'
+    ), sentences_clean AS (
+        {clean_and_split_statute('sentences')}
+    )
     SELECT DISTINCT pei.external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DUI' AS note_title,
       'This reentrant has a DUI charge on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
       sc.date_imposed AS event_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
+    FROM sentences_clean sc
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON sc.person_id = pei.person_id
       AND sc.state_code = pei.state_code
       AND id_type = 'US_PA_PBPP'
     WHERE sc.state_code = 'US_PA' 
       AND {dui_indicator()}
-    
-    UNION ALL 
-    
-    (WITH sentences_and_charges AS ({sentences_and_charges_cte()})
-    SELECT DISTINCT pei.external_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'OBSCENE MATERIALS' AS note_title,
-      'This reentrant has 18 C.S. 5903(3)(4)(5) relating to obscene materials on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.' AS note_body,
-      sc.date_imposed AS event_date,
-    FROM sentences_and_charges sc
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON sc.person_id = pei.person_id
-      AND sc.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP'
-    WHERE sc.state_code = 'US_PA' 
-      AND {obsc_materials_indicator()})
-      
+    )
+
     UNION ALL 
 
     SELECT DISTINCT pei.external_id,
@@ -889,62 +858,61 @@ def adm_case_notes_helper() -> str:
        note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality */
     (
     WITH pending_charges AS (
+    /* pull all pending charges */
         SELECT Parole_No AS external_id,
           UPPER(code) AS statute,
           UPPER(description) AS description,
           'Pending' AS status,
           DATE(Disposition_Date) AS event_date,
+          CAST(NULL AS STRING) AS classification_type,
+          Grade AS classification_subtype,
         FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr    
         WHERE Disposition = 'Active Case'
+    ), pending_charges_clean AS (
+    /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
+        which offenses are admin-ineligible later */ 
+        SELECT external_id,
+            statute,
+            description,
+            status,
+            event_date,
+            classification_type,
+            classification_subtype,
+            title,
+            section,
+            subsection,
+        FROM ({clean_and_split_statute('pending_charges')})
+    ), pending_charges_with_admin_indicator AS (
+    /* pulls whether the pending charge is admin-ineligible */
+        SELECT *,
+            {offense_is_admin_ineligible()} AS is_admin_ineligible
+        FROM pending_charges_clean
     )
     SELECT DISTINCT
       pc.external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'PENDING CHARGE' AS note_title,
-      CASE WHEN {offense_is_admin_ineligible()} THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
+      CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
         ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have new pending charges
         END AS note_body,
       event_date,
-    FROM pending_charges pc
+    FROM pending_charges_with_admin_indicator pc
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON pc.external_id = pei.external_id
       AND pei.state_code = 'US_PA'
       AND id_type = 'US_PA_PBPP'
     LEFT JOIN ({us_pa_supervision_super_sessions()}) ss
       ON ss.person_id = pei.person_id
-    WHERE {offense_is_admin_ineligible()}
+    WHERE is_admin_ineligible
       OR event_date >= release_date -- only include admin ineligible charges OR newly incurred charges while on supervision
     )
     """
 
 
 def spc_case_notes_helper() -> str:
-    # this pulls all pa case notes and adds one that should only be displayed for the special circumstances opportunity
+    """this pulls all pa case notes and adds one that should only be displayed for the special circumstances opportunity"""
     return f"""
     SELECT * FROM ({case_notes_helper()})
-
-    UNION ALL
-
-    /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
-    we don't have all the information we need to determine whether it should change eligibility */
-    SELECT DISTINCT pei.external_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'STRANGULATION' AS note_title,
-      'This reentrant has 18 C.S. 2718 relating to strangulation on their criminal record. Check criminal history: if this charge was graded as a felony, the reentrant is considered a violent case and must serve 5 years rather than 3 years on supervision before becoming eligible' AS note_body,
-      date_imposed AS event_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON sc.person_id = pei.person_id
-      AND sc.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP'
-    INNER JOIN `{{project_id}}.{{criteria_dataset}}.meets_special_circumstances_criteria_for_time_served_materialized` crit
-      ON sc.person_id = crit.person_id
-      AND sc.state_code = crit.state_code 
-      AND CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')} 
-    WHERE sc.state_code = 'US_PA' 
-      AND ({statute_code_is_like('18','2718')} OR sc.description LIKE '%STRANG%')
-      AND JSON_EXTRACT_SCALAR(crit.reason, "$.case_type") = 'non-life sentence (non-violent case)' -- only pull cases that would otherwise be considered non-violent
-      
      
     UNION ALL 
     
@@ -952,13 +920,16 @@ def spc_case_notes_helper() -> str:
        note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality */
     (
     WITH pending_charges AS (
+        /* pull all pending charges */
         SELECT Parole_No AS external_id,
           UPPER(code) AS statute,
           UPPER(description) AS description,
           'Pending' AS status,
           DATE(Disposition_Date) AS event_date,
+          CAST(NULL AS STRING) AS classification_type,
+          Grade AS classification_subtype,
           JSON_EXTRACT_SCALAR(crit.reason, "$.case_type") AS case_type, -- pull whether they are currently considered a violent or non-violent case according to SPC criteria 
-        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr    
+        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
           ON cr.Parole_No = pei.external_id
           AND id_type = 'US_PA_PBPP'
@@ -967,29 +938,33 @@ def spc_case_notes_helper() -> str:
           AND pei.state_code = crit.state_code 
           AND CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')} 
         WHERE Disposition = 'Active Case'
-    )
+    ), pending_charges_clean AS (
+        /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
+        which offenses are violent later */ 
+        SELECT external_id,
+            statute,
+            description,
+            status,
+            event_date,
+            classification_type,
+            classification_subtype,
+            case_type,
+            title,
+            section,
+            subsection,
+        FROM ({clean_and_split_statute('pending_charges')})
+    ) 
     SELECT DISTINCT
       external_id,
       'Potential Barriers to Eligibility' AS criteria,
       'PENDING CHARGE' AS note_title,
       CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If the reentrant is found guilty of this offense, they could be considered a violent case and must serve 5 years rather than 3 years on supervision before being eligible for special circumstances.') AS note_body,
       event_date,
-    FROM pending_charges
+    FROM pending_charges_clean
     WHERE {offense_is_violent()}
         AND case_type = 'non-life sentence (non-violent case)' -- only pull cases with a violent pending charge that would otherwise be considered non-violent
     )
 """
-
-
-def statute_code_is_like(title: str, statute_code: str) -> str:
-    return f"""
-    (statute LIKE '{title}.{statute_code}%'
-    OR statute LIKE '{title}{statute_code}%'
-    OR ({title} = 18 AND (statute LIKE '%CC{statute_code}%' OR statute LIKE '%CS{statute_code}%')) -- different prefixes are used for offense codes depending on the title. title 18 = criminal offenses = CC or CS 
-    OR ({title} = 75 AND statute LIKE '%VC{statute_code}%') -- vehicle
-    OR ({title} = 30 AND statute LIKE '%FB{statute_code}%') -- fishing & boating
-    OR ({title} = 42 AND statute LIKE '%JC{statute_code}%')) -- judicial code
-    """
 
 
 def contains_nae(column: str) -> str:
@@ -1001,3 +976,45 @@ def contains_nae(column: str) -> str:
         AND NOT REGEXP_CONTAINS(UPPER({column}),  r'[A-Z]NAE'))
     OR UPPER({column}) LIKE '%NOT ADMIN ELIG%')
     """
+
+
+def statute_code_is_like(
+    title: str,
+    section: str,
+    subsection: str = "",
+) -> str:
+    """Custom PA function that checks for a match in the title, section, and subsection(s) of statute codes
+    Note about checking subsections: this gets tricky because there can be multiple layers of subsections and we
+    want to match as much we can, but also default to including offenses when we are missing information (per user feedback).
+    We achieve this by truncating the input subsection and the actual subsection to the same length.
+    Some examples of how this works:
+        1. the policy states 4502(a)(1)(iv), but the data only says 4502(a). We truncate to 4502(a) = 4502(a) and determine this is a match
+        2. the policy states 4502(a)(1)(iv), but the data says 4502(a)(2). We truncate to 4502(a)(1) != 4502(a)(2) and determine this is not a match
+        3.  the policy states 4502(a)(1), but the data says 4502(a)(1)(i). We truncate to 4502(a)(1) = 4502(a)(1) and determine this is a match"""
+    return f"""(
+    /* check that title is correct */ 
+    CASE WHEN '{title}' = '18' THEN title IN ('18', 'CC', 'CS') -- different prefixes are used for offense codes depending on the title. title 18 = criminal offenses = CC or CS 
+        WHEN '{title}' = '75' THEN title IN ('75', 'VC') -- vehicle
+        WHEN '{title}' = '30' THEN title IN ('30', 'FB') -- fishing & boating
+        WHEN '{title}' = '42' THEN title IN ('42', 'JC') -- judicial code
+    END
+    /* check that section is correct */
+    AND section LIKE '{section}'
+    /* optional: check that subsection is correct */
+    AND CASE WHEN COALESCE('{subsection}', '') = '' THEN TRUE -- if no subsection is input, return true
+        WHEN COALESCE(subsection, '') = '' THEN TRUE -- if no subsection is present in the data, return true
+        ELSE SUBSTR('{subsection}', 0, LEAST(LENGTH('{subsection}'), LENGTH(subsection)))
+             = SUBSTR(subsection, 0, LEAST(LENGTH('{subsection}'), LENGTH(subsection))) -- else check that subsection matches per above logic
+    END
+    )"""
+
+
+# TODO(#45075) replace this with an actual helper function
+def convert_roman_numerals(string: str) -> str:
+    """extremely hacky function to replace roman numerals with actual numbers for values of I, II, III & IV"""
+    return f"""REGEXP_REPLACE(UPPER({string}), r'IV|III|II|I',
+                    CASE WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'IV' THEN '4'
+                        WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'III' THEN '3'
+                        WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'II' THEN '2'
+                        WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'I' THEN '1'
+                        ELSE '' END)"""
