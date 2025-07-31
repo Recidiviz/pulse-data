@@ -220,6 +220,7 @@ output:
                         - Level 0 - Not Available for Supervision
                       StateSupervisionLevel.LIMITED:
                         - Level 1
+                        - Level 1 - No Early Discharge - Owes Fines and Fees
                       StateSupervisionLevel.MINIMUM:
                         - Level 2
                       StateSupervisionLevel.MEDIUM:
