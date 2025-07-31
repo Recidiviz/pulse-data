@@ -94,6 +94,8 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
         "RECIDIVIZ_REFERENCE_leadership_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "ADH_OFFENDER_SENTENCE": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "ADH_LEGAL_ORDER": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "COMS_Security_Classification": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "ADH_OFFENDER_ASSESSMENT": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_AR: {
         "INTERVENTSANCTION": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,

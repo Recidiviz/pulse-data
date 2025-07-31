@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_security_classification_assessments` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Security_Classification_Id: STRING
+  Offender_Number: STRING
+  Confinement_Level_Assessment_Result: STRING
+  Management_Level_Assessment_Result: STRING
+  True_Security_Level_Assessment_Result: STRING
+  Actual_Placement_Level_Assessment_Result: STRING
+  calculated_score: INTEGER
+  calculated_result: STRING
+  assessment_date: DATE
+  assessment_update_count: INTEGER
+  sc_type: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("SECURITY")
+                - Security_Classification_Id
+                - assessment_update_count
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.MI_SECURITY_CLASS)
+          assessment_date: assessment_date
+          assessment_score: calculated_score
+          assessment_level:
+            $enum_mapping:
+              $raw_text: True_Security_Level_Assessment_Result
+              $mappings:
+                StateAssessmentLevel.VERY_HIGH:
+                  - "V"
+                StateAssessmentLevel.HIGH:
+                  - "IV"
+                StateAssessmentLevel.MEDIUM:
+                  - "II"
+                StateAssessmentLevel.LOW:
+                  - "I"
+          assessment_metadata:
+            $normalized_values_json_dict:
+              Confinement_Level_Assessment_Result: Confinement_Level_Assessment_Result
+              Management_Level_Assessment_Result: Management_Level_Assessment_Result
+              True_Security_Level_Assessment_Result: True_Security_Level_Assessment_Result
+              Actual_Placement_Level_Assessment_Result: Actual_Placement_Level_Assessment_Result
+              assessment_update_count: assessment_update_count
+              calculated_score: calculated_score
+              calculated_result: calculated_result
+              screen_type: sc_type

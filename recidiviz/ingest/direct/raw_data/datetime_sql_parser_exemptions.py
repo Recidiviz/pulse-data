@@ -156,6 +156,12 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "ADH_OFFENDER_SENTENCE": ["last_update_date"],
         "COMS_Modifiers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Specialties": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_Security_Classification": [
+            "Actual_Placement_Level_Assessment_Result_Entered_Date",
+            "Confinement_Level_Assessment_Result_Entered_Date",
+            "Management_Level_Assessment_Result_Entered_Date",
+            "True_Security_Level_Assessment_Result_Entered_Date",
+        ],
     },
     StateCode.US_MO: {
         "LBAKRDTA_TAK015": ["BL_IC"],
@@ -1117,12 +1123,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
             "Effective_Date",
             "Entered_Date",
             "Expiration_Date",
-        ],
-        "COMS_Security_Classification": [
-            "Actual_Placement_Level_Assessment_Result_Entered_Date",
-            "Confinement_Level_Assessment_Result_Entered_Date",
-            "Management_Level_Assessment_Result_Entered_Date",
-            "True_Security_Level_Assessment_Result_Entered_Date",
         ],
         "COMS_Supervision_Schedule_Activities": [
             "Completed_Date",

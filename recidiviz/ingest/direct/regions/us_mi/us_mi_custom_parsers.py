@@ -274,3 +274,23 @@ def period_before_COMS_migration(period_start_date: str) -> bool:
     if parsedDate is not None and parsedDate < datetime.datetime(2023, 8, 14):
         return True
     return False
+
+
+def convert_sc_level_to_int(sc_level: str) -> str:
+    """Converts security classification level from roman numerals to an integer."""
+
+    if sc_level == "I":
+        return "1"
+
+    if sc_level == "II":
+        return "2"
+
+    if sc_level == "IV":
+        return "4"
+
+    if sc_level == "V":
+        return "5"
+
+    raise ValueError(
+        f"This parser is being called on an invalid security classification level: {sc_level}"
+    )

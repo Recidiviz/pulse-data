@@ -116,6 +116,8 @@ state_assessment_type_mo_classification_v = "MO_CLASSIFICATION_V"
 state_assessment_type_mo_classification_i = "MO_CLASSIFICATION_I"
 state_assessment_type_mo_classification_p = "MO_CLASSIFICATION_P"
 state_assessment_type_mo_1270 = "MO_1270"
+state_assessment_type_mi_csj_481 = "MI_CSJ_481"
+state_assessment_type_mi_security_class = "MI_SECURITY_CLASS"
 
 state_assessment_level_minimum = "MINIMUM"
 state_assessment_level_low = "LOW"
