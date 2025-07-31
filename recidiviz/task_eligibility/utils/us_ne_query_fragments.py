@@ -49,22 +49,35 @@ def us_ne_state_specific_contact_types_query_fragment() -> str:
     Compiles data on supervision contacts completed in NE
     """
     return """
-        SELECT 
-            person_id,
-            contact_date,
-            CASE 
-              WHEN contact_type_raw_text = "PERSONAL"
-              -- only code contact as PO personal contact if it's NOT an LE check
-                AND JSON_EXTRACT_SCALAR(supervision_contact_metadata, '$.lawEnforcement') != '1' 
-                THEN "PERSONAL"
-              WHEN contact_type_raw_text = "COLLATERAL" OR contact_type_raw_text = "PERSONAL/COLLATERAL" 
-                THEN "COLLATERAL"
-              WHEN contact_type_raw_text = "LE/NCJIS CHECK" 
-                THEN "NCJIS"
-                ELSE NULL 
-            END AS contact_type,
-            external_id AS contact_external_id,
-            state_code,
-        FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
-        WHERE state_code = "US_NE" AND status = "COMPLETED"
-        """
+    -- initial CTE: pull out LE indicator, expand "PERSONAL/COLLATERAL" contacts into two rows: PERSONAL and COLLATERAL
+    WITH events_expanded AS (
+     SELECT
+        state_code,
+        person_id,
+        external_id AS contact_external_id,
+        contact_date,
+        JSON_EXTRACT_SCALAR(supervision_contact_metadata, '$.lawEnforcement') AS is_law_enforcement,
+        contact_type_raw_text_split
+     FROM
+        `{project_id}.{normalized_state_dataset}.state_supervision_contact`,
+        UNNEST(CASE
+                WHEN contact_type_raw_text LIKE '%/%' AND contact_type_raw_text != 'LE/NCJIS CHECK' THEN SPLIT(contact_type_raw_text, '/')
+                ELSE [contact_type_raw_text]
+            END) AS contact_type_raw_text_split
+     WHERE
+        state_code = "US_NE"
+        AND status = "COMPLETED")
+    -- final CTE: recode contact_type_raw_text now that "PERSONAL/COLLATERAL" is separated out
+    SELECT
+     state_code,
+     person_id,
+     contact_external_id,
+     contact_date,
+     CASE
+        WHEN contact_type_raw_text_split = "PERSONAL" AND is_law_enforcement != '1' THEN "PERSONAL"
+        WHEN contact_type_raw_text_split = "COLLATERAL" AND is_law_enforcement != '1' THEN "COLLATERAL"
+        WHEN contact_type_raw_text_split = "LE/NCJIS CHECK" THEN "NCJIS"
+        ELSE NULL
+        END AS contact_type
+    FROM events_expanded
+    """
