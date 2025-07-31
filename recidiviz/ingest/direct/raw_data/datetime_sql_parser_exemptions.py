@@ -1773,12 +1773,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "Effective_Start_Date",
             "Modified_Date",
         ],
-        "Person_Inmate_Map": [
-            "Created_Date",
-            "Effective_End_Date",
-            "Effective_Start_Date",
-            "Modified_Date",
-        ],
         "Person_vw_Projected_Release_Date": ["Projected_Release_Date"],
         "RECIDIVIZ_REFERENCE_agent_districts": ["date_received"],
         "SAPPHIRE_COMPLETED_DC108AS": ["DATE_FORM_SUBMITTED"],
