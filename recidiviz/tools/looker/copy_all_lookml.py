@@ -39,10 +39,6 @@ from recidiviz.tools.looker.constants import (
 )
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
-EXCLUDED_PATHS = [
-    "dashboards/",
-]
-
 
 def _parse_arguments() -> argparse.Namespace:
     """Parses the required arguments."""
@@ -69,14 +65,6 @@ def copy_with_overwrite(source_root: str, target_root: str) -> int:
         source_dir = Path(root)
 
         rel_path = source_dir.relative_to(source_root)
-        # TODO(#36190) I had to make manual changes in these files because I implemented the autogeneration
-        # for the multiple looker project world we are trying to move to.
-        # so for now don't sync these files and remove this once multiple looker projects are set up
-        if any(
-            str(rel_path).startswith(excluded_path) for excluded_path in EXCLUDED_PATHS
-        ):
-            continue
-
         target_dir = target_root / rel_path
 
         if files:

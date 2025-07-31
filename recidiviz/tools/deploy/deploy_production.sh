@@ -90,6 +90,8 @@ pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_C
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
 
+"${BASH_SOURCE_DIR}/deploy_looker_production.sh" "$GIT_VERSION_TAG" || exit_on_fail
+
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
 duration=$SECONDS

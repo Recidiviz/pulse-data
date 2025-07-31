@@ -98,10 +98,11 @@ the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${RELEASE_VERSION_TAG}" \
   -c "${COMMIT_HASH}" \
   -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
-# TODO(#36190) Uncomment the following lines to deploy to Looker staging.
-# "${BASH_SOURCE_DIR}/deploy_looker_staging.sh" -v "${RELEASE_VERSION_TAG}" \
-#  -c "${COMMIT_HASH}" \
-#  -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
+"${BASH_SOURCE_DIR}/deploy_looker_staging.sh" -v "${RELEASE_VERSION_TAG}" \
+  -c "${COMMIT_HASH}" \
+  -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
+
+LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR" rev-parse HEAD) || exit_on_fail
 
 # Create and push a new releases branch
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
@@ -113,10 +114,9 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
 
     NEW_RELEASE_BRANCH="releases/v${NEW_MAJOR}.${NEW_MINOR}-rc"
 
-    # TODO(#36190) Uncomment the following line to create a release branch in Looker.
     # We want this branch to be created before the pulse-data branch so the looker generated version
     # check in pulse-data can pass.
-    # create_looker_release_branch "${NEW_RELEASE_BRANCH}" "${RELEASE_VERSION_TAG}" "${COMMIT_HASH}"
+    create_looker_release_branch "${NEW_RELEASE_BRANCH}" "${RELEASE_VERSION_TAG}" "${LOOKER_COMMIT_HASH}"
 
     echo "Checking out new release branch [$NEW_RELEASE_BRANCH]"
     run_cmd git checkout -b "${NEW_RELEASE_BRANCH}"

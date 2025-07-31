@@ -23,6 +23,8 @@ if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
+echo "Deploying Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."
+
 clone_looker_repo_to_temp_dir
 
 echo "Fetching all tags"
