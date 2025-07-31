@@ -17,8 +17,8 @@
 """A script for building a set of LookML views, explores and dashboards
 for raw data tables and writing them to files.
 
-Run the following to write files to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.raw_data_person_details_lookml_generator [--looker-repo-root [DIR]]
+Example usage:
+python -m recidiviz.tools.looker.top_level_generators.raw_data_person_details_lookml_generator
 
 If you are running this for new states, you will also have to add the following lines
 into the `models/recidiviz-123.model.lkml` and `models/recidiviz-staging.model.lkml`
@@ -30,6 +30,7 @@ explore: us_xx_raw_data {
 """
 
 
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH
 from recidiviz.tools.looker.raw_data.person_details_dashboard_generator import (
     generate_lookml_dashboards,
 )
@@ -39,7 +40,6 @@ from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
 )
-from recidiviz.tools.looker.script_helpers import parse_and_validate_output_dir_arg
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -61,5 +61,5 @@ class RawDataPersonDetailsLookMLGenerator(LookMLGenerator):
 
 if __name__ == "__main__":
     RawDataPersonDetailsLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
+        output_dir=GENERATED_LOOKML_ROOT_PATH
     )

@@ -17,9 +17,8 @@
 """A script for building and writing a set of LookML views that support custom breadth and depth metrics
 in Looker.
 
-Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.breadth_and_depth_lookml_generator [--looker-repo-root [DIR]]
-
+Example usage:
+python -m recidiviz.tools.looker.top_level_generators.breadth_and_depth_lookml_generator
 """
 
 import argparse
@@ -38,10 +37,8 @@ from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     liquid_wrap_json_field,
 )
-from recidiviz.tools.looker.script_helpers import (
-    get_generated_views_path,
-    parse_and_validate_output_dir_arg,
-)
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH
+from recidiviz.tools.looker.script_helpers import get_generated_views_path
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -675,5 +672,5 @@ class BreadthAndDepthLookMLGenerator(LookMLGenerator):
 
 if __name__ == "__main__":
     BreadthAndDepthLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
+        output_dir=GENERATED_LOOKML_ROOT_PATH
     )

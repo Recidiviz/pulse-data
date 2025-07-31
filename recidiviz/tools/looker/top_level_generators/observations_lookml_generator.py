@@ -17,8 +17,8 @@
 """A script for building and writing a set of LookML views that allow access to
 observations at all units of observation.
 
-Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.observations_lookml_generator [--looker-repo-root [DIR]]
+Example usage:
+python -m recidiviz.tools.looker.top_level_generators.observations_lookml_generator
 """
 
 import os
@@ -45,10 +45,8 @@ from recidiviz.observations.observation_type_utils import (
     date_column_names_for_observation_type,
 )
 from recidiviz.observations.span_type import SpanType
-from recidiviz.tools.looker.script_helpers import (
-    get_generated_views_path,
-    parse_and_validate_output_dir_arg,
-)
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH
+from recidiviz.tools.looker.script_helpers import get_generated_views_path
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -200,6 +198,4 @@ class ObservationsLookMLGenerator(LookMLGenerator):
 
 
 if __name__ == "__main__":
-    ObservationsLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
-    )
+    ObservationsLookMLGenerator.generate_lookml(output_dir=GENERATED_LOOKML_ROOT_PATH)

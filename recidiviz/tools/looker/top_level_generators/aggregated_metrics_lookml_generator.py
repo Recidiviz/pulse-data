@@ -20,8 +20,7 @@ populations.
 
 To generate lookml view files for incarceration, supervision, and justice-involved
 populations, run:
-    python -m recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator \
-       [--looker-repo-root [DIR]]
+    python -m recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator
 """
 from typing import List, Optional, Tuple
 
@@ -68,10 +67,8 @@ from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils i
     get_metric_value_measure,
     measure_for_metric,
 )
-from recidiviz.tools.looker.script_helpers import (
-    get_generated_views_path,
-    parse_and_validate_output_dir_arg,
-)
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH
+from recidiviz.tools.looker.script_helpers import get_generated_views_path
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -285,5 +282,5 @@ class AggregatedMetricsLookMLGenerator(LookMLGenerator):
 
 if __name__ == "__main__":
     AggregatedMetricsLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
+        output_dir=GENERATED_LOOKML_ROOT_PATH
     )

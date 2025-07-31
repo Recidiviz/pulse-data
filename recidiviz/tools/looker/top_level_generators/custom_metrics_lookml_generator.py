@@ -17,8 +17,8 @@
 """A script for building and writing a set of LookML views that support custom metrics
 in Looker for all configured packages
 
-Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.custom_metrics_lookml_generator [--looker-repo-root [DIR]]
+Example usage:
+python -m recidiviz.tools.looker.top_level_generators.custom_metrics_lookml_generator
 """
 
 import os
@@ -60,10 +60,8 @@ from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configur
     WORKFLOWS_IMPACT_LOOKER_METRICS,
     WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
-from recidiviz.tools.looker.script_helpers import (
-    get_generated_views_path,
-    parse_and_validate_output_dir_arg,
-)
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH
+from recidiviz.tools.looker.script_helpers import get_generated_views_path
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -166,6 +164,4 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
 
 
 if __name__ == "__main__":
-    CustomMetricsLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
-    )
+    CustomMetricsLookMLGenerator.generate_lookml(output_dir=GENERATED_LOOKML_ROOT_PATH)

@@ -16,12 +16,8 @@
 # =============================================================================
 """A script for writing a set of LookML views for the `state` and `normalized_state` datasets
 
-Run the following to write files to the specified directory DIR:
-python -m recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator [--looker-repo-root [DIR]]
-
-ex:
-python -m recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator --looker-repo-root /Users/emilyturner/Recidiviz/looker
-
+Example usage:
+python -m recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator
 """
 import os
 from types import ModuleType
@@ -40,7 +36,12 @@ from recidiviz.persistence.entity.root_entity_utils import (
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.tools.looker.constants import DASHBOARDS_DIR, EXPLORES_DIR, VIEWS_DIR
+from recidiviz.tools.looker.constants import (
+    DASHBOARDS_DIR,
+    EXPLORES_DIR,
+    GENERATED_LOOKML_ROOT_PATH,
+    VIEWS_DIR,
+)
 from recidiviz.tools.looker.entity.entity_dashboard_builder import (
     EntityLookMLDashboardBuilder,
 )
@@ -50,10 +51,7 @@ from recidiviz.tools.looker.entity.entity_explore_builder import (
 from recidiviz.tools.looker.entity.entity_views_builder import (
     generate_entity_lookml_views,
 )
-from recidiviz.tools.looker.script_helpers import (
-    parse_and_validate_output_dir_arg,
-    remove_lookml_files_from,
-)
+from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
     LookMLGenerator,
 )
@@ -124,6 +122,4 @@ class StateDatasetLookMLGenerator(LookMLGenerator):
 
 
 if __name__ == "__main__":
-    StateDatasetLookMLGenerator.generate_lookml(
-        output_dir=parse_and_validate_output_dir_arg()
-    )
+    StateDatasetLookMLGenerator.generate_lookml(output_dir=GENERATED_LOOKML_ROOT_PATH)
