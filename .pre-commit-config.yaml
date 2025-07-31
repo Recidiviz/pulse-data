@@ -119,7 +119,8 @@ repos:
         name: generate_lookml
         entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
+        # If you modify this list, also update LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX mapping in generate_all_lookml.py
         files:
           ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|
           ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/
-        pass_filenames: false
+        exclude: ^recidiviz/tools/looker/generated_version_hash|^recidiviz/tools/looker/generated/
