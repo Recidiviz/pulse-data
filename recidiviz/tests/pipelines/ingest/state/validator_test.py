@@ -688,7 +688,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
 
         # Multiple parents, invalid
-        child_sentence.parent_sentence_external_id_array = "NOT-REAL,NOT-HERE"
+        child_sentence.parent_sentence_external_id_array = "NOT-REAL||NOT-HERE"
         self.state_person.sentences = [child_sentence]
         errors = validate_root_entity(self.state_person)
         self.assertEqual(

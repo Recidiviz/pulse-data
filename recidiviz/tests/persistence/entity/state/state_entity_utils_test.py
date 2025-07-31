@@ -67,12 +67,12 @@ class ConsecutiveSentenceGraphTest(unittest.TestCase):
         assert graph.topological_order == ["B", "C", "A"]
 
     def test_topological_order_two_parents(self) -> None:
-        self.sentence_A.parent_sentence_external_id_array = "B,C"
+        self.sentence_A.parent_sentence_external_id_array = "B||C"
         graph = ConsecutiveSentenceGraph.from_person(self.person)
         assert graph.topological_order == ["B", "C", "A"]
 
         # They array order doesn't matter, but we still get all parents first
-        self.sentence_A.parent_sentence_external_id_array = "C,B"
+        self.sentence_A.parent_sentence_external_id_array = "C||B"
         graph = ConsecutiveSentenceGraph.from_person(self.person)
         assert graph.topological_order == ["B", "C", "A"]
 

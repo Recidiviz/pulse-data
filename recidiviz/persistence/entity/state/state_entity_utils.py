@@ -22,13 +22,19 @@ that can be used in multiple places.
 # This stores all annotations as strings and resolves them at runtime, so handy!
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import networkx
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 
+if TYPE_CHECKING:
+    from recidiviz.persistence.entity.state import entities as state_entities
+    from recidiviz.persistence.entity.state import normalized_entities
+
+
+PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR = "||"
 
 # TODO(#32690) Update this when PK PK generation is consistent across
 # HasExternalId entities. This allows us to have a unique mandatory field for now

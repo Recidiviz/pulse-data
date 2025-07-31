@@ -172,6 +172,9 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     SequencedEntityMixin,
 )
+from recidiviz.persistence.entity.state.state_entity_utils import (
+    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
+)
 from recidiviz.utils.types import assert_type
 
 ##### VALIDATORS #####
@@ -1358,11 +1361,25 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
         validator=attr_validators.is_list_of(NormalizedStateSentenceLength),
     )
 
+    def __attrs_post_init__(self) -> None:
+        if len(self.parent_sentence_external_ids) != len(
+            set(self.parent_sentence_external_ids)
+        ):
+            raise ValueError(
+                f"{self.limited_pii_repr()} cannot have duplicate parent_sentence_external_ids"
+            )
+        if self.external_id in self.parent_sentence_external_ids:
+            raise ValueError(
+                f"{self.limited_pii_repr()} cannot list itself in its own parent_sentence_external_id_array"
+            )
+
     @property
     def parent_sentence_external_ids(self) -> list[str]:
         """Returns the list of parent sentence external ids, or an empty list if there are none."""
         if self.parent_sentence_external_id_array:
-            return self.parent_sentence_external_id_array.split(",")
+            return self.parent_sentence_external_id_array.split(
+                PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR
+            )
         return []
 
     @property

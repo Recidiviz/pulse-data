@@ -87,7 +87,7 @@ def normalize_sentence_status_snapshots(
 
         parent_sentence_snapshots = []
         if sentence.parent_sentence_external_id_array:
-            for _id in sentence.parent_sentence_external_id_array.split(","):
+            for _id in sentence.parent_sentence_external_ids:
                 parent_sentence_snapshots.append(normalized_snapshots[_id])
 
         normalized_snapshots[external_id] = normalize_snapshots_for_single_sentence(

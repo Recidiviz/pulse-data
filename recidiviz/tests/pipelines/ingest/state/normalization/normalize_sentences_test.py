@@ -48,6 +48,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentence,
     NormalizedStateSentenceStatusSnapshot,
 )
+from recidiviz.persistence.entity.state.state_entity_utils import (
+    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
@@ -1047,8 +1050,10 @@ class TestSentenceV2Normalization(unittest.TestCase):
         parent_one_sentence = self._new_sentence(1)
         parent_two_sentence = self._new_sentence(2)
         child_sentence = self._new_sentence(3)
-        child_sentence.parent_sentence_external_id_array = ",".join(
-            [parent_one_sentence.external_id, parent_two_sentence.external_id]
+        child_sentence.parent_sentence_external_id_array = (
+            PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR.join(
+                [parent_one_sentence.external_id, parent_two_sentence.external_id]
+            )
         )
 
         parent_one_ends_on = self.start_dt + datetime.timedelta(days=90)
