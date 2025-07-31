@@ -486,7 +486,7 @@ def get_recent_denials_query() -> str:
     WITH recent_denials AS (
       SELECT 
           sn.state_code,
-          sn.person_external_id,
+          sn.person_id,
           SAFE_CAST(sn.start_date AS DATE) AS marked_ineligible_date,
           SAFE_CAST(sn.end_date_scheduled AS DATE) AS snoozed_until_date,
           sn.snoozed_by AS denied_by_email,
@@ -497,7 +497,7 @@ def get_recent_denials_query() -> str:
           AND sn.opportunity_type = 'usNdTransferToMinFacility'
           AND CURRENT_DATE('US/Eastern') BETWEEN SAFE_CAST(sn.start_date AS DATE) AND SAFE_CAST(sn.end_date_scheduled AS DATE)
       GROUP BY 1,2,3,4,5
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sn.state_code, sn.person_external_id ORDER BY marked_ineligible_date DESC) = 1
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sn.state_code, sn.person_id ORDER BY marked_ineligible_date DESC) = 1
 )"""
 
 
