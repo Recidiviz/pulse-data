@@ -212,6 +212,9 @@ output:
                           external_id:
                             $concat:
                               $values:
+                                - $json_extract:
+                                    $key: source
+                                    $json: $iter_item
                                 - curr_inmate_num
                                 - type_number
                                 - $json_extract:

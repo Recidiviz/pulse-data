@@ -22,7 +22,7 @@ variables:
         external_id:
           $concat:
             $values:
-              - $literal("CHARGE")
+              - $literal("CRIM_HIST")
               - $variable(charge_external_id)
               - seq_no
         # The view filters out unconvicted charges
@@ -95,7 +95,7 @@ output:
                 external_id:
                   $concat:
                     $values:
-                      - $literal("CHARGE")
+                      - $literal("CRIM_HIST")
                       - Inmate_No
                       - seq_no
                 status:
@@ -121,7 +121,7 @@ output:
                 external_id:
                   $concat:
                     $values:
-                      - $literal("CHARGE")
+                      - $literal("CRIM_HIST")
                       - Parole_No
                       - seq_no
                 status:
