@@ -23,7 +23,8 @@ input_columns:
   minimumTerm: STRING
   jailTimeDays: STRING
   determinantSentence: STRING
-unused_columns: []
+unused_columns:
+  - determinantSentence
 variables:
   # county is in the offense table so we must use offenseid for extneral ID to avoid entity merging errors
   # since the county is used to determine the sentencing authority
@@ -85,10 +86,13 @@ output:
             $equal:
               - minimumTerm
               - $literal("DTH") # Death
-          parole_possible:
-            $equal:
-              - determinantSentence
-              - $literal("0")
+          # TODO(#45811): look into adding back if parole_possible does not have to be static
+          # Removing because someones parole eligibility can change which causes the ingest
+          # pipeline to fail because there are previous parole eligibility dates
+          # parole_possible:
+          #   $equal:
+          #     - determinantSentence
+          #     - $literal("0")
           sentencing_authority:
             $conditional:
               - $if:
