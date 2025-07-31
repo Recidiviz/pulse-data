@@ -311,7 +311,7 @@ from recidiviz.validation.views.state.workflows.client_record_duplicate_person_e
 from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
     FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.person_record_missing_opportunities import (
+from recidiviz.validation.views.state.workflows.opportunites_without_person_records import (
     OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff import (
