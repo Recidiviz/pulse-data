@@ -55,6 +55,16 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_RISK_SCORE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_AZ_ELIGIBLE_RISK_LEVEL",
+    sub_criteria_list=[
+        risk_release_assessment_level_is_minimum.VIEW_BUILDER,
+        oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="TRANSFER_TO_ADMINISTRATIVE_SUPERVISION",
@@ -63,15 +73,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_level_is_not_limited.VIEW_BUILDER,
         # 1.1 ORAS score Medium or Below OR Risk Release Assessment Minimum or Below
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_AZ_ELIGIBLE_RISK_LEVEL",
-            sub_criteria_list=[
-                risk_release_assessment_level_is_minimum.VIEW_BUILDER,
-                oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
-        ),
+        _RISK_SCORE_CRITERIA,
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
         # 1.4 Not classified as homeless in their home release plan
@@ -87,9 +89,17 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1.9 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
+            criteria_name="US_AZ_ANY_RISK_OR_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
             sub_criteria_list=[
-                not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+                StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+                    logic_type=TaskCriteriaGroupLogicType.OR,
+                    criteria_name="US_AZ_ANY_RISK_OR_INELIG_OFFENSE",
+                    sub_criteria_list=[
+                        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+                        _RISK_SCORE_CRITERIA,
+                    ],
+                    allowed_duplicate_reasons_keys=[],
+                ),
                 StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
                     logic_type=TaskCriteriaGroupLogicType.AND,
                     criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
