@@ -101,6 +101,8 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
     },
     StateCode.US_UT: {
         "hrchy": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "est_dt": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "est_dt_hist": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
 }
 
