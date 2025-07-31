@@ -76,7 +76,7 @@ class TestSpider(unittest.IsolatedAsyncioTestCase):
         """Set up the test web application and start a real server."""
         self.app = Quart(__name__)
         self.server = None
-        self.port = 9000
+        self.port = 9100
 
         def html_structure(sections: str) -> str:
             return f"""
