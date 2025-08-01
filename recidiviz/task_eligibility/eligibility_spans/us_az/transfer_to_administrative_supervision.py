@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
-    not_homeless_in_release_plan,
+    no_ineligible_offense_conviction_for_admin_supervision,
     not_serving_ineligible_offense_for_admin_supervision,
     not_severely_mentally_ill,
     oras_employed_disabled_retired_or_student,
@@ -65,6 +65,16 @@ _RISK_SCORE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
 )
 
+_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
+    criteria_name="US_AZ_NO_INELIGIBLE_CURRENT_OR_PRIOR_OFFENSE",
+    sub_criteria_list=[
+        no_ineligible_offense_conviction_for_admin_supervision.VIEW_BUILDER,
+        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="TRANSFER_TO_ADMINISTRATIVE_SUPERVISION",
@@ -76,8 +86,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         _RISK_SCORE_CRITERIA,
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
-        # 1.4 Not classified as homeless in their home release plan
-        not_homeless_in_release_plan.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
         oras_employed_disabled_retired_or_student.VIEW_BUILDER,
         # 1.6 Mental Health Score of 3 or below.
@@ -95,7 +103,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     logic_type=TaskCriteriaGroupLogicType.OR,
                     criteria_name="US_AZ_ANY_RISK_OR_INELIG_OFFENSE",
                     sub_criteria_list=[
-                        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+                        _INELIGIBLE_OFFENSE_CRITERIA,
                         _RISK_SCORE_CRITERIA,
                     ],
                     allowed_duplicate_reasons_keys=[],
@@ -116,10 +124,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=not_homeless_in_release_plan.VIEW_BUILDER,
-                description="Missing ORAS-assessed homelessness criteria",
-            ),
             NotEligibleCriteriaCondition(
                 criteria=oras_employed_disabled_retired_or_student.VIEW_BUILDER,
                 description="Missing ORAS-assessed employment criteria",
