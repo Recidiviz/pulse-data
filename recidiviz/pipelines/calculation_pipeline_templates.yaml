@@ -56,6 +56,9 @@ metric_pipelines:
     metric_types:
       INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION
       INCARCERATION_RELEASE
+  - pipeline: violation_metrics
+    state_code: US_AR
+    metric_types: VIOLATION
     machine_type: c4a-highcpu-32
 
   # Full US_ND calculations with no time limit
@@ -293,6 +296,10 @@ metric_pipelines:
       INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION
       INCARCERATION_RELEASE
     machine_type: c4a-highcpu-32
+  - pipeline: violation_metrics
+    state_code: US_AZ
+    metric_types: VIOLATION
+    machine_type: c4a-highcpu-32
 
   # Full US_TX calculations with no time limit
   - pipeline: population_span_metrics
@@ -323,6 +330,10 @@ metric_pipelines:
       INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION
       INCARCERATION_RELEASE
     machine_type: c4a-highcpu-32
+  - pipeline: violation_metrics
+    state_code: US_IA
+    metric_types: VIOLATION
+    machine_type: c4a-highcpu-32
 
   # Full US_UT supervision calculations with no time limit
   - pipeline: population_span_metrics
@@ -338,6 +349,10 @@ metric_pipelines:
     metric_types:
       INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION
       INCARCERATION_RELEASE
+    machine_type: c4a-highcpu-32
+  - pipeline: violation_metrics
+    state_code: US_UT
+    metric_types: VIOLATION
     machine_type: c4a-highcpu-32
 
 supplemental_dataset_pipelines:
