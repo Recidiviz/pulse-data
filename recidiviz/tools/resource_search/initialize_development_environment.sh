@@ -21,7 +21,7 @@ function write_to_file {
 run_cmd mkdir -p recidiviz/local/gsm/
 
 # Database secrets
-write_to_file 'postgres' recidiviz/local/gsm/resource_search_db_host
+write_to_file 'us_id' recidiviz/local/gsm/resource_search_db_host
 write_to_file 'resource_user' recidiviz/local/gsm/resource_search_db_user
 write_to_file 'example' recidiviz/local/gsm/resource_search_db_password
 write_to_file '5440' recidiviz/local/gsm/resource_search_db_port

@@ -20,6 +20,7 @@ This script initializes logging and Sentry error tracking, then runs the asynchr
 It uses the scrape_resources coroutine to collect resource data and save it to the database. This script is intended to be run as a standalone entry point for scraping resources as part of the resource search pipeline.
 """
 
+import argparse
 import asyncio
 import logging
 
@@ -31,7 +32,21 @@ from recidiviz.resource_search.src.constants import RESOURCE_SEARCH_SENTRY_DSN
 logger = logging.getLogger(__name__)
 
 
+def create_parser() -> argparse.ArgumentParser:
+    """Returns an argument parser for the script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--db_name",
+        choices=["us_az", "us_id", "us_ut"],
+        help="Used to select which state DB to scrape and save for",
+        required=True,
+    )
+
+    return parser
+
+
 if __name__ == "__main__":
+    args = create_parser().parse_args()
     logging.basicConfig(level=logging.INFO)
     sentry_sdk.init(
         dsn=RESOURCE_SEARCH_SENTRY_DSN,
@@ -41,6 +56,6 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(scrape_resources())
+        loop.run_until_complete(scrape_resources(args.db_name))
     finally:
         loop.close()

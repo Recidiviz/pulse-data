@@ -31,7 +31,9 @@ from recidiviz.resource_search.src.typez.handlers.text_search import (
 )
 
 
-async def text_search_handler(body: TextSearchBodyParams) -> list[schema.Resource]:
+async def text_search_handler(
+    body: TextSearchBodyParams, db_name: str
+) -> list[schema.Resource]:
     """Store a search result as a resource"""
     validate_subcategory(body.category, body.subcategory)
 
@@ -50,4 +52,6 @@ async def text_search_handler(body: TextSearchBodyParams) -> list[schema.Resourc
     logging.debug("Found %s resources", len(resource_candidates))
     if not resource_candidates:
         return []
-    return await process_and_store_candidates(body, resource_candidates)
+    return await process_and_store_candidates(
+        body, resource_candidates, db_name=db_name
+    )

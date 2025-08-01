@@ -38,7 +38,7 @@ from recidiviz.resource_search.src.typez.handlers.parameter_search import (
 
 
 async def parameter_search_handler(
-    body: ParameterSearchBodyParams,
+    body: ParameterSearchBodyParams, db_name: str
 ) -> list[schema.Resource]:
     """Search for resources from external APIs"""
     validate_subcategory(body.category, body.subcategory)
@@ -84,7 +84,9 @@ async def parameter_search_handler(
     logging.debug("Found %s resources candidates", len(resource_candidates))
     if not resource_candidates:
         return []
-    resources = await process_and_store_candidates(body, resource_candidates)
+    resources = await process_and_store_candidates(
+        body, resource_candidates, db_name=db_name
+    )
     logging.debug("Saved %s resources candidates", len(resource_candidates))
 
     if body.mode:

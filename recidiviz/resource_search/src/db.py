@@ -34,7 +34,7 @@ from recidiviz.utils.secrets import get_secret_from_local_directory
 _global_engine: Optional[AsyncEngine] = None
 
 
-async def initialize_global_engine() -> None:
+async def initialize_global_engine(db_name: str) -> None:
     """Initializes the global AsyncEngine once."""
     global _global_engine
     if _global_engine is None:
@@ -55,9 +55,7 @@ async def initialize_global_engine() -> None:
                 password=get_secret_from_local_directory(
                     secret_id="resource_search_db_password"  # nosec
                 ),
-                database=get_secret_from_local_directory(
-                    secret_id="resource_search_db_host"  # nosec
-                ),
+                database=db_name,
             )
         )
         _global_engine = (
@@ -79,11 +77,11 @@ async def dispose_global_engine() -> None:
 
 
 @asynccontextmanager
-async def transaction_session() -> AsyncGenerator[AsyncSession, None]:
+async def transaction_session(db_name: str) -> AsyncGenerator[AsyncSession, None]:
     """Provide a transactional scope around a series of operations."""
     # Ensure the engine is initialized before creating a session
     if _global_engine is None:
-        await initialize_global_engine()
+        await initialize_global_engine(db_name=db_name)
 
     session = AsyncSession(_global_engine)  # Use the global engine
     async with session.begin() as transaction:

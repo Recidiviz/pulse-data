@@ -33,11 +33,9 @@ from recidiviz.resource_search.src.typez.handlers.text_search import (
 )
 
 
-def parse_input_directory(
-    input_directory: str = "recidiviz/resource_search/scraper/scraper_input",
-) -> List[ScraperInput]:
+def parse_input_directory(db_name: str) -> List[ScraperInput]:
     """Parse the input directory where each json file represents a separate spider input."""
-
+    input_directory = "recidiviz/resource_search/scraper/scraper_input/" + db_name
     files = os.listdir(input_directory)
 
     inputs = []
@@ -50,8 +48,8 @@ def parse_input_directory(
     return inputs
 
 
-async def scrape_resources() -> None:
-    inputs = parse_input_directory()
+async def scrape_resources(db_name: str) -> None:
+    inputs = parse_input_directory(db_name=db_name)
     async for resource_candidates in run_scraper(inputs):
         print(f"{'-' * 10}Got new batch; length {len(resource_candidates)}{'-' * 10}")
         try:
@@ -63,6 +61,7 @@ async def scrape_resources() -> None:
                     category=resource_candidates[0].category, textSearch=""
                 ),
                 resource_candidates,
+                db_name,
             )
         except ValueError as err:
             logging.error("Error while storing resources: %s", err)
@@ -70,12 +69,3 @@ async def scrape_resources() -> None:
         except asyncio.CancelledError as err:
             logging.error("CancelledError: Error while storing resources: %s", err)
             continue
-
-
-if __name__ == "__scrape_resources__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(scrape_resources())
-    finally:
-        loop.close()

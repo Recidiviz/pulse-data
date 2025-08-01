@@ -145,7 +145,7 @@ services:
     environment:
       POSTGRES_USER: resource_user
       POSTGRES_PASSWORD: example
-      POSTGRES_DB: postgres
+      POSTGRES_DB: us_id
     ports:
       - "5440:5432"
     volumes:
@@ -162,7 +162,7 @@ services:
     environment:
       - IS_DEV=true
       - SQLALCHEMY_DB_HOST=resource_search_db
-      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_DB_NAME=us_id
       - SQLALCHEMY_DB_USER=resource_user
       - SQLALCHEMY_DB_PASSWORD=example
       - SQLALCHEMY_USE_SSL=0

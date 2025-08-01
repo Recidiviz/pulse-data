@@ -20,7 +20,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from .items import CategoryMapperType, FieldTypes
+from recidiviz.resource_search.scraper.engine.items import (
+    CategoryMapperType,
+    FieldTypes,
+)
 
 
 class SelectorMethod(Enum):

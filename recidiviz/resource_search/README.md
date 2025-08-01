@@ -41,11 +41,38 @@ docker build . -f Dockerfile.recidiviz-base -t us-docker.pkg.dev/recidiviz-stagi
 docker compose build resource_search_db
 ```
 
-3. Run the Justice Counts Docker image using the following command:
+3. Start the local PostgreSQL database:
 
 ```bash
 pipenv run docker-resource-search
 ```
+
+This command starts both the PostgreSQL database container (`resource_search_db`) and runs any pending migrations. The database will be available on port 5440.
+
+### Running Migrations
+
+To create and apply database schema changes, use the Alembic migration system:
+
+After making schema changes, run:
+```bash
+pipenv run migrate-resource-search --message "description_of_changes"
+```
+
+### Migration Troubleshooting
+
+If you encounter PostgreSQL version conflicts or connection issues:
+
+1. **Clean up existing containers and volumes**:
+```bash
+docker compose down -v
+```
+
+2. **Restart the database**:
+```bash
+pipenv run docker-resource-search
+```
+
+The `-v` flag removes volumes, which clears any existing database data that might be incompatible with the current PostgreSQL version.
 
 ## Databases
 
@@ -55,16 +82,21 @@ pipenv run docker-resource-search
 2. In the window that opens, run `psql --dbname postgres -U resource_user`
 3. You should now be able to type psql commands and interact directly with your local database! For example, the `\dt` command will show all of the tables within the database.
 
+Alternatively, you can connect from your local machine using:
+```bash
+psql -h localhost -p 5440 -U resource_user -d postgres
+```
 
 ## Running Locally
 
 1. Make sure you've followed the steps above to build our Docker image.
 
-2. Run the Justice Counts Docker image using the following command:
+2. Start the local database:
 
 ```bash
 pipenv run docker-resource-search
 ```
+
 3. Run the webscraping job with:
 
 ```bash

@@ -23,7 +23,7 @@ from scrapy.http import Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.spiders import Spider
 
-from .input import (
+from recidiviz.resource_search.scraper.engine.input import (
     InputSelector,
     PaginationSelector,
     ScraperInput,
@@ -31,7 +31,7 @@ from .input import (
     ScraperNodeType,
     SelectorMethod,
 )
-from .items import FieldTypes, OutputItem
+from recidiviz.resource_search.scraper.engine.items import FieldTypes, OutputItem
 
 
 class RootSpider(Spider):

@@ -19,9 +19,8 @@ from typing import List, Optional
 
 from scrapy import Spider
 
+from recidiviz.resource_search.scraper.engine.items import OutputItem
 from recidiviz.resource_search.src.typez.crud.resources import ResourceCandidate
-
-from .items import OutputItem
 
 
 class OutputItemPipeline:

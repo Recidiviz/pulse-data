@@ -86,6 +86,7 @@ async def get_search_results(
 async def process_and_store_candidates(
     body: Union[TextSearchBodyParams, ParameterSearchBodyParams],
     resource_candidates: list[ResourceCandidate],
+    db_name: str,
 ) -> list[schema.Resource]:
     """Process and store API search results"""
     resources_with_uris = backfill_resource_uri(resource_candidates)
@@ -136,7 +137,7 @@ async def process_and_store_candidates(
         else:
             logging.warning("No coordinates found for %s", candidate.uri)
 
-    async with transaction_session() as session:
+    async with transaction_session(db_name=db_name) as session:
         logging.debug("Storing %s resources", len(validated_candidates))
         resources = await upsert_resources(session, resources_to_create)
 
