@@ -99,6 +99,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_tx_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
+            # TODO(#45831): remove once this is referenced in downstream views that currently reference workflows_launch_metadata
+            "google_sheet_backed_tables.launch_metadata",
             *COMMON_VESTIGES,
         ]
     },
@@ -117,6 +119,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_nd_supervision_tasks_record_archive",
             "export_archives.us_ne_supervision_tasks_record_archive",
             "export_archives.us_tx_supervision_tasks_record_archive",
+            # TODO(#45831): remove once this is referenced in downstream views that currently reference workflows_launch_metadata
+            "google_sheet_backed_tables.launch_metadata",
             *COMMON_VESTIGES,
         ]
     },

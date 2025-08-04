@@ -1,0 +1,59 @@
+address:
+  dataset_id: google_sheet_backed_tables
+  table_id: launch_metadata
+description:
+  "This table contains information about each full or partially launched tool
+  across all Recidiviz states. Tools that are not fully launched will have a
+  null launch_date. This table should be updated by the launch owner (PM, GTM,
+  etc.) for a product and state."
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+    description: State code (e.g. US_XX)
+  - name: tool_display_name
+    type: STRING
+    mode: NULLABLE
+    description: Display name of the tool (e.g. "Supervision Level Mismatch")
+  - name: product_type
+    type: STRING
+    mode: NULLABLE
+    description: Type of product (e.g. "WORKFLOWS"), should match ProductType enum.
+  - name: system_type
+    type: STRING
+    mode: NULLABLE
+    description:
+      Type of system (e.g. "INCARCERATION", "SUPERVISION"), should match
+      WorkflowsSystemType enum.
+  - name: completion_event_type
+    type: STRING
+    mode: NULLABLE
+    description:
+      Type of completion event (e.g. "SUPERVISION_LEVEL_DOWNGRADE"), should
+      match TaskCompletionEventType enum. This field will only be hydrated for
+      Workflows tools.
+  - name: is_live
+    type: STRING
+    mode: NULLABLE
+    description:
+      Whether the tool is currently live in the state. False if tool has been
+      deprecated.
+  - name: is_fully_launched
+    type: BOOLEAN
+    mode: NULLABLE
+    description: Whether the tool has been fully launched in the state.
+  - name: launch_date
+    type: DATE
+    mode: NULLABLE
+    description: Date of full-state launch.
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1r2IFebOPwK5pWhX9Ei-r8acmEhScmK8wJnSlmRPmMXk
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  compression: NONE
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
+  googleSheetsOptions:
+    skipLeadingRows: "3"
