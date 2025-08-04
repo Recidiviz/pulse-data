@@ -601,8 +601,11 @@ class TestUniqueConstraintValid(unittest.TestCase):
     def test_equal_schema_uniqueness_constraint(self) -> None:
         expected_missing_schema_constraints: Dict[Type[Entity], List[str]] = {
             state_entities.StateTaskDeadline: [
-                "state_task_deadline_unique_per_person_update_date_type"
-            ]
+                "state_task_deadline_unique_per_person_update_date_type",
+            ],
+            state_entities.StateStaff: [
+                "staff_emails_unique_within_region",
+            ],
         }
         all_entities = get_all_entity_classes_in_module(entities_schema)
         for entity in sorted(all_entities, key=lambda e: e.__name__):

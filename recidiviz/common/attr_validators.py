@@ -385,6 +385,10 @@ def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
 is_dict = attr.validators.instance_of(dict)
 is_opt_dict = is_opt(dict)
 
+# Tuple field validators
+is_tuple = attr.validators.instance_of(tuple)
+is_opt_tuple = is_opt(tuple)
+
 
 # Set field validators
 is_set = attr.validators.instance_of(set)

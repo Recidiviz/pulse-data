@@ -16,8 +16,10 @@
 # =============================================================================
 """Tests for validating ingested root entities."""
 from datetime import date, datetime
+from unittest.mock import patch
 
 import apache_beam as beam
+import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -143,6 +145,179 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
         )
         assert_that(output, matches_all(entities))
         self.test_pipeline.run()
+
+    def test_multiple_staff_with_different_emails(self) -> None:
+        """Test that staff with different emails are allowed (no error thrown)."""
+        entities_without_backedges = [
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1001,
+                email="alice@example.com",
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20001,
+                        state_code="US_DD",
+                        external_id="STAFF1",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1002,
+                email="bob@example.com",
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20002,
+                        state_code="US_DD",
+                        external_id="STAFF2",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1003,
+                email="carol@example.com",
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20003,
+                        state_code="US_DD",
+                        external_id="STAFF3",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+        ]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+        output = input_entities | RunValidations(
+            expected_output_entity_classes=[
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
+            ],
+            state_code=self.state_code(),
+            entities_module=state_entities,
+        )
+        assert_that(output, matches_all(entities))
+        self.test_pipeline.run()
+
+    def test_validate_staff_with_same_email_case_insensitive(self) -> None:
+        """Test that staff with emails differing only by case triggers a validation
+        error.
+        """
+        entities_without_backedges = [
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1001,
+                email="alice@example.com",
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20001,
+                        state_code="US_DD",
+                        external_id="STAFF1",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1002,
+                email="ALICE@example.com",  # Same as above, different case
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20002,
+                        state_code="US_DD",
+                        external_id="STAFF2",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+        ]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+        _ = input_entities | RunValidations(
+            expected_output_entity_classes=[
+                state_entities.StateStaff,
+                state_entities.StateStaffExternalId,
+            ],
+            state_code=self.state_code(),
+            entities_module=state_entities,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"More than one StateStaff entity found with \(state_code=US_DD, "
+            r"email=alice@example\.com\). Referencing root entities: "
+            r"\[\(1001, 'state_staff'\), \(1002, 'state_staff'\)\]",
+        ):
+            self.test_pipeline.run()
+
+    def test_validate_staff_with_same_email_exempt_state(self) -> None:
+        """Test that staff with same email (case-insensitive) do NOT trigger error if
+        state is exempt.
+        """
+        entities_without_backedges = [
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1001,
+                email="alice@example.com",
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20001,
+                        state_code="US_DD",
+                        external_id="STAFF1",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+            StateStaff(
+                state_code="US_DD",
+                staff_id=1002,
+                email="ALICE@example.com",  # Same as above, different case
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=20002,
+                        state_code="US_DD",
+                        external_id="STAFF2",
+                        id_type="EMAIL",
+                    )
+                ],
+            ),
+        ]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
+
+        # Patch global_unique_constraints so that US_DD is exempt from this constraint
+        with patch.object(
+            state_entities.StateStaff,
+            "global_unique_constraints",
+            return_value=[
+                attr.evolve(
+                    constraint,
+                    exempt_states={
+                        StateCode.US_DD,
+                    },
+                    transforms=constraint.transforms_dict,
+                )
+                for constraint in StateStaff.global_unique_constraints()
+            ],
+        ):
+            input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+                entities
+            )
+            output = input_entities | RunValidations(
+                expected_output_entity_classes=[
+                    state_entities.StateStaff,
+                    state_entities.StateStaffExternalId,
+                ],
+                state_code=self.state_code(),
+                entities_module=state_entities,
+            )
+            assert_that(output, matches_all(entities))
+            self.test_pipeline.run()
 
     def test_validate_mixed_root_entities(self) -> None:
         entities_without_backedges = [

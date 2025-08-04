@@ -24,23 +24,73 @@ from more_itertools import one
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateOrDateTime
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
 
-def _list_to_tuple_converter(list_of_strings: list[str]) -> tuple[str, ...]:
+def _list_of_strings_to_tuple_converter(list_of_strings: list[str]) -> tuple[str, ...]:
     return tuple(list_of_strings)
 
 
-@attr.define(frozen=True)
+def _set_of_state_code_to_tuple_converter(
+    set_of_state_code: set[StateCode],
+) -> tuple[StateCode, ...]:
+    return tuple(set_of_state_code)
+
+
+def _dict_to_tuple_of_tuples_converter(
+    d: dict[str, Callable]
+) -> tuple[tuple[str, Callable], ...]:
+    return tuple((k, v) for k, v in d.items())
+
+
+@attr.define(frozen=True, kw_only=True)
 class UniqueConstraint:
-    name: str
+    """Defines a uniqueness constraint that will be validated across all entities at the
+    end of each ingest pipeline run.
+    """
+
+    name: str = attr.ib(validator=attr_validators.is_str)
     fields: tuple[str, ...] = attr.ib(
+        validator=attr_validators.is_tuple,
         # Convert to an immutable tuple but expect a list as input (nicer, less
         # error-prone syntax).
-        converter=_list_to_tuple_converter
+        converter=_list_of_strings_to_tuple_converter,
     )
+
+    # For fields that can be null, if this is True, we will ignore rows that overlap
+    # because there is a null value in one of those fields.
+    ignore_nulls: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+
+    # Mapping of field -> transform function that will be applied to that field before
+    # we assess uniqueness. Allows us to, for example, lowercase a value so we are
+    # checking for uniqueness in a case-insensitive way. This is stored in immutable
+    # tuple form to keep this class hashable.
+    transforms: tuple[tuple[str, Callable], ...] = attr.ib(
+        validator=attr_validators.is_tuple,
+        # Convert to an immutable tuple but expect a dict as input (nicer, less
+        # error-prone syntax).
+        converter=_dict_to_tuple_of_tuples_converter,
+        factory=dict,  # type: ignore[arg-type]
+    )
+
+    # States that are known to violate this uniqueness constraint and for whom
+    # constraint errors will not fail. THIS SHOULD ONLY BE USED IN CASES WHERE WE WANT
+    # TO INTRODUCE NEW CONSTRAINTS MOVING FORWARD THAT ARE NOT YET TRUE FOR ALL LEGACY
+    # STATES.
+    exempt_states: tuple[StateCode, ...] = attr.ib(
+        validator=attr_validators.is_tuple,
+        # Convert to an immutable tuple but expect a set as input (nicer, less
+        # error-prone syntax).
+        converter=_set_of_state_code_to_tuple_converter,
+        factory=set,  # type: ignore[arg-type]
+    )
+
+    @property
+    def transforms_dict(self) -> dict[str, Callable]:
+        return dict(self.transforms)
 
 
 @attr.s(eq=False)

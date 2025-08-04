@@ -161,6 +161,8 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
                     self._generate_root_entity_key(d),
                 )
             )
+            | "Filter out keys where the constraint does not apply (e.g. constraints with nulls)"
+            >> beam.Filter(self._should_include_constraint_key)
             | "Group constraint keys to find all referencing root entities"
             >> beam.GroupByKey()
             | "Filter down to keys with more than one reference"
@@ -178,7 +180,14 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
         constraint, in the same order as the fields are listed in the constraint
         definition.
         """
-        return tuple(entity_fields[field] for field in self.unique_constraint.fields)
+        key_values = []
+        for field in self.unique_constraint.fields:
+            key_value = entity_fields[field]
+            if field in self.unique_constraint.transforms_dict:
+                key_value = self.unique_constraint.transforms_dict[field](key_value)
+            key_values.append(key_value)
+
+        return tuple(key_values)
 
     def _generate_root_entity_key(
         self, entity_fields: EntityCriticalFieldsDict
@@ -191,6 +200,22 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
             assert_type(entity_fields[CRITICAL_FIELDS_ROOT_ENTITY_ID], int),
             self.root_entity_cls.get_entity_name(),
         )
+
+    def _should_include_constraint_key(
+        self, element: Tuple[UniqueConstraintKey, RootEntityPrimaryKey]
+    ) -> bool:
+        """Returns True if we should not skip uniqueness constraint checks on all
+        elements with the given key. We use this to allow multiple rows to have a NULL
+        value in a field that is otherwise unique.
+        """
+        constraint_key, _ = element
+        if self.unique_constraint.ignore_nulls and any(
+            k is None for k in constraint_key
+        ):
+            return False
+
+        # Proceed with uniqueness constraint checks for this key
+        return True
 
     @staticmethod
     def _has_more_than_one_reference(
@@ -236,12 +261,13 @@ class RunValidations(beam.PTransform):
         }
         self.entities_module = entities_module
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
-            self.expected_output_entity_classes, entities_module
+            state_code, self.expected_output_entity_classes, entities_module
         )
         self.state_code = state_code
 
     @staticmethod
     def _get_constraints_by_entity_type(
+        state_code: StateCode,
         expected_output_entity_classes: List[type[Entity]],
         entities_module: ModuleType,
     ) -> Dict[EntityClassName, List[UniqueConstraint]]:
@@ -255,9 +281,15 @@ class RunValidations(beam.PTransform):
             if entity_cls not in expected_output_entity_classes:
                 continue
 
-            constraints_by_entity_type[entity_cls.get_entity_name()] = list(
-                entity_cls.global_unique_constraints()
-            ) + [
+            unique_constraints_for_state = [
+                c
+                for c in entity_cls.global_unique_constraints()
+                if state_code not in c.exempt_states
+            ]
+
+            constraints_by_entity_type[
+                entity_cls.get_entity_name()
+            ] = unique_constraints_for_state + [
                 UniqueConstraint(
                     name=f"{entity_cls.get_entity_name()}_primary_keys_unique",
                     fields=[entity_cls.get_primary_key_column_name()],

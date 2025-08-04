@@ -537,7 +537,8 @@ state_staff:
   fields:
     email: >-
       The staff member's official email. The value in this field may change over
-      time if the staff member's official email changes.
+      time if the staff member's official email changes. We enforce that this value is unique
+      across all state_staff rows (case-insensitive).
     full_name: >-
       The staff member's full name. The value in this field may change over
       time as the staff member's name changes.

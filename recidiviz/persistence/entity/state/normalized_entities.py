@@ -160,6 +160,7 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseSeverity,
+    email_to_lower,
 )
 from recidiviz.persistence.entity.state.entity_field_validators import (
     EntityBackedgeValidator,
@@ -3941,3 +3942,50 @@ class NormalizedStateStaff(
     @classmethod
     def back_edge_field_name(cls) -> str:
         return "staff"
+
+    @classmethod
+    def global_unique_constraints(cls) -> list[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_emails_unique_within_region",
+                fields=["state_code", "email"],
+                # Allow multiple staff with NULL email but otherwise enforce that emails
+                # are unique.
+                ignore_nulls=True,
+                # Make this constraint case-insensitive, i.e. will fail if one row has
+                # Foo@Bar.com and one has foo@BAR.com.
+                transforms={"email": email_to_lower},
+                exempt_states={
+                    # TODO(#45910): As of 8/1/25 there are 68 distinct emails across 137
+                    #  staff which violate this constraint for US_AR. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_AR,
+                    # TODO(#45911): As of 8/1/25 there are 373 distinct emails across 40774
+                    #  staff which violate this constraint for US_AZ. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_AZ,
+                    # TODO(#45912): As of 8/1/25 there are 173 distinct emails across 367
+                    #  staff which violate this constraint for US_IA. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_IA,
+                    # TODO(#45913): As of 8/1/25 there are 4 distinct emails across 8
+                    #  staff which violate this constraint for US_NE. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_NE,
+                    # TODO(#45914): As of 8/1/25 there are 28 distinct emails across 56
+                    #  staff which violate this constraint for US_TX. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_TX,
+                    # TODO(#45915): As of 8/1/25 there are 71 distinct emails across 144
+                    #  staff which violate this constraint for US_UT. We should fix
+                    #  ingest so there are no longer duplicate emails across multiple
+                    #  staff and remove this exemption.
+                    StateCode.US_UT,
+                },
+            )
+        ]
