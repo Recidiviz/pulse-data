@@ -65,7 +65,7 @@ _RISK_SCORE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
 )
 
-_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+_MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_AZ_NO_INELIGIBLE_CURRENT_OR_PRIOR_OFFENSE",
     sub_criteria_list=[
@@ -75,15 +75,62 @@ _INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder
     allowed_duplicate_reasons_keys=[],
 )
 
+_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE = (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
+        sub_criteria_list=[
+            no_supervision_violation_within_15_months.VIEW_BUILDER,
+            on_supervision_at_least_15_months.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    )
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="TRANSFER_TO_ADMINISTRATIVE_SUPERVISION",
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        # 1.1 Risk and needs assessment shows a risk determination of moderate or lower,
+        # unless the client qualifies for administrative supervision under section 8.1.9.
+        # 1.9 15 consecutive months of supervision with no formal sanctions or interventions.
+        # If a person has a HIGH risk score and has been on supervision for 2 months, they will
+        # not be eligible under this criteria.
+        # If a person has a HIGH risk score and has been on supervision and violation-free for 3 years,
+        # they will be eligible under this criteria.
+        # If a person has a risk score of medium or lower, as outlined in the policy,
+        # they will be eligible regardless of how long they have been on supervision.
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_AZ_ANY_RISK_SCORE_BUT_15_MONTHS_VIOLATION_FREE",
+            sub_criteria_list=[
+                _RISK_SCORE_CRITERIA,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
+        # 1.2 No current or prior convictions of a registerable sex offense or felony
+        # domestic violence offense, or current convictions of felony arson or murder,
+        # unless the client qualifies for administrative supervision under section 8.1.9.
+        # 1.9 15 consecutive months of supervision with no formal sanctions or interventions.
+        # If a person has an ineligible offense and has been on supervision for 2 months, they will
+        # not be eligible under this criteria.
+        # If a person has an ineligible offense and has been on supervision and violation-free for 3 years,
+        # they will be eligible under this criteria.
+        # If a person does not have an ineligible offense, as outlined in the policy,
+        # they will be eligible regardless of how long they have been on supervision.
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
+            sub_criteria_list=[
+                _MEET_INELIGIBLE_OFFENSE_CRITERIA,
+                _15_MONTHS_ON_SUPERVISION_VIOLATION_FREE,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
         supervision_level_is_not_limited.VIEW_BUILDER,
-        # 1.1 ORAS score Medium or Below OR Risk Release Assessment Minimum or Below
-        _RISK_SCORE_CRITERIA,
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
@@ -94,32 +141,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_severely_mentally_ill.VIEW_BUILDER,
         # 1.8 Not currently dealing with substance use issues, as assessed in ORAS Question 5.4
         oras_has_substance_use_issues.VIEW_BUILDER,
-        # 1.9 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_AZ_ANY_RISK_OR_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
-            sub_criteria_list=[
-                StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-                    logic_type=TaskCriteriaGroupLogicType.OR,
-                    criteria_name="US_AZ_ANY_RISK_OR_INELIG_OFFENSE",
-                    sub_criteria_list=[
-                        _INELIGIBLE_OFFENSE_CRITERIA,
-                        _RISK_SCORE_CRITERIA,
-                    ],
-                    allowed_duplicate_reasons_keys=[],
-                ),
-                StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
-                    logic_type=TaskCriteriaGroupLogicType.AND,
-                    criteria_name="15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
-                    sub_criteria_list=[
-                        no_supervision_violation_within_15_months.VIEW_BUILDER,
-                        on_supervision_at_least_15_months.VIEW_BUILDER,
-                    ],
-                    allowed_duplicate_reasons_keys=[],
-                ),
-            ],
-            allowed_duplicate_reasons_keys=[],
-        ),
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
@@ -136,6 +157,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_n_conditions_true=1,
     ),
 )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
