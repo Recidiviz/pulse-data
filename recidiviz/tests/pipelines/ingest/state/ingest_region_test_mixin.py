@@ -121,10 +121,13 @@ class IngestRegionTestMixin(abc.ABC):
             region_code=self.state_code().value,
             file_name=f"{test_name}.csv",
         ).full_path()
-        df = load_dataframe_from_path(
-            fixture_path,
-            fixture_columns,
-        )
-        df[MATERIALIZATION_TIME_COL_NAME] = datetime.now().isoformat()
-        df[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
-        return df.to_dict("records")
+        try:
+            df = load_dataframe_from_path(
+                fixture_path,
+                fixture_columns,
+            )
+            df[MATERIALIZATION_TIME_COL_NAME] = datetime.now().isoformat()
+            df[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
+            return df.to_dict("records")
+        except Exception as ex:
+            raise ValueError(f"Failed to read fixture file at {fixture_path}") from ex
