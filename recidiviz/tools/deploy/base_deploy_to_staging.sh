@@ -222,6 +222,7 @@ fi
 if [[ -n ${PROMOTE} ]]; then
     verify_hash "$COMMIT_HASH"
     pre_deploy_configure_infrastructure "$PROJECT_ID" "${DOCKER_IMAGE_TAG}" "$COMMIT_HASH"
+    "${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -b "${BRANCH_NAME}" -p || exit_on_fail
 else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi

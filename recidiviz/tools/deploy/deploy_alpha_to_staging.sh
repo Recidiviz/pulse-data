@@ -27,7 +27,6 @@ script_prompt "Will create tag and deploy version [$NEW_VERSION] at commit [${CO
 tip of branch [main]. Continue?"
 
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${NEW_VERSION}" -c "${COMMIT_HASH}" -b main -p || exit_on_fail
-"${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${NEW_VERSION}" -c "${COMMIT_HASH}" -b main -p || exit_on_fail
 
 NEW_ALPHA_DEPLOY_BRANCH="alpha/${NEW_VERSION}"
 

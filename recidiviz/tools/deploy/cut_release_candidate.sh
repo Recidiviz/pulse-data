@@ -98,9 +98,6 @@ the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 "${BASH_SOURCE_DIR}/base_deploy_to_staging.sh" -v "${RELEASE_VERSION_TAG}" \
   -c "${COMMIT_HASH}" \
   -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
-"${BASH_SOURCE_DIR}/deploy_looker_staging.sh" -v "${RELEASE_VERSION_TAG}" \
-  -c "${COMMIT_HASH}" \
-  -b "${RELEASE_CANDIDATE_BASE_BRANCH}" "${STAGING_PUSH_PROMOTE_FLAG}" || exit_on_fail
 
 LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR" rev-parse HEAD) || exit_on_fail
 
