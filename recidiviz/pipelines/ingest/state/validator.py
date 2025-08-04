@@ -73,6 +73,14 @@ STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS = {
     StateCode.US_ND.value,
 }
 
+SENTENCE_TYPES_THAT_ALLOW_REVOCATIONS = [
+    StateSentenceType.PAROLE,
+    StateSentenceType.PROBATION,
+    # Split sentences contain a supervision component, and this component can be revoked
+    StateSentenceType.SPLIT,
+    StateSentenceType.TREATMENT,
+]
+
 
 def _external_id_checks(
     root_entity: RootEntityT | NormalizedRootEntityT,
@@ -213,19 +221,15 @@ def _check_sentence_status_snapshots(
         sentence.sentence_status_snapshots,
     ):
         yield err
+
     for snapshot in sentence.sentence_status_snapshots:
         if (
             snapshot.status == StateSentenceStatus.REVOKED
-            and sentence.sentence_type
-            not in {
-                StateSentenceType.PAROLE,
-                StateSentenceType.PROBATION,
-                StateSentenceType.TREATMENT,
-            }
+            and sentence.sentence_type not in SENTENCE_TYPES_THAT_ALLOW_REVOCATIONS
         ):
             yield (
                 f"Found person {state_person.limited_pii_repr()} with REVOKED status on {sentence.sentence_type} sentence."
-                " REVOKED statuses are only allowed on PROBATION and PAROLE type sentences."
+                f" REVOKED statuses are only allowed on sentences with one of the following types: {', '.join(str(t) for t in SENTENCE_TYPES_THAT_ALLOW_REVOCATIONS)}."
             )
 
 

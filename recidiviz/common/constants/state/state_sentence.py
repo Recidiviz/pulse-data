@@ -236,7 +236,14 @@ _STATE_SENTENCE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
         "Inmate Financial Responsibility Program. Through this program, a percentage of the person's prison wages "
         "is applied to his or her restitution obligations."
     ),
-    StateSentenceType.SPLIT: "Used when a person has been sentenced by the court with a split sentence.",
+    StateSentenceType.SPLIT: (
+        "Used when a person has been sentenced by the court with a "
+        "sentence that will be served in two parts, one incarceration and the other "
+        "supervision. This should only be used when the state represents  this sentence "
+        "structure with a single sentence external id. In many states, this  type of sentence "
+        "can be represented as an INCARCERATION sentence followed by a consecutive "
+        "PROBATION/PAROLE sentence."
+    ),
     StateSentenceType.TREATMENT: "Used when a person has been sentenced by the court to a treatment program.",
     StateSentenceType.INTERNAL_UNKNOWN: "Used when the type of sentence is unknown to us, Recidiviz.",
     StateSentenceType.EXTERNAL_UNKNOWN: "Used when the type of sentence is unknown to the state.",

@@ -1045,8 +1045,10 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
                 "Found person StatePerson(person_id=1, "
                 "external_ids=[StatePersonExternalId(external_id='1', "
                 "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) with REVOKED "
-                "status on StateSentenceType.STATE_PRISON sentence. REVOKED statuses are only "
-                "allowed on PROBATION and PAROLE type sentences."
+                "status on StateSentenceType.STATE_PRISON sentence. REVOKED statuses are "
+                "only allowed on sentences with one of the following types: "
+                "StateSentenceType.PAROLE, StateSentenceType.PROBATION, "
+                "StateSentenceType.SPLIT, StateSentenceType.TREATMENT."
             ),
         )
 
