@@ -264,6 +264,9 @@ output:
                 StateSupervisionLevel.FURLOUGH:
                   - MDF # Medical Furlough
 
+                StateSupervisionLevel.INTAKE:
+                  - 7SN # INTAKE SEX OFFENDER
+
                 # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
                   - 5T1 # TREATMENT ORIENTED PHASE1 - New as of 4/1/2023
