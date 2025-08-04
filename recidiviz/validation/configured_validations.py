@@ -314,6 +314,12 @@ from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
 from recidiviz.validation.views.state.workflows.opportunites_without_person_records import (
     OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_missing_ids import (
+    PSEUDONYMIZED_ID_TO_PERSON_ID_MISSING_IDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_valid_primary_key import (
+    PSEUDONYMIZED_ID_TO_PERSON_ID_VALID_PRIMARY_KEY_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff import (
     WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
 )
@@ -803,6 +809,14 @@ def get_all_validations() -> List[DataValidationCheck]:
             hard_max_allowed_error=0.0,
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PSEUDONYMIZED_ID_TO_PERSON_ID_MISSING_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PSEUDONYMIZED_ID_TO_PERSON_ID_VALID_PRIMARY_KEY_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         # External comparison validations
         SamenessDataValidationCheck(

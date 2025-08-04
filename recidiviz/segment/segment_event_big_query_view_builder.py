@@ -141,7 +141,7 @@ INNER JOIN
     `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
 USING(user_id)
 {person_id_join_type} JOIN
-    `{{project_id}}.workflows_views.person_id_to_pseudonymized_id_materialized`
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized`
 USING
     (state_code, pseudonymized_id)
 -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
