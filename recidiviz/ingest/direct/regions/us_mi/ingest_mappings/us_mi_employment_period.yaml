@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# This file associates the columns outputted from the query in `view_employment_period` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -38,7 +38,7 @@ output:
                   - "629" # Unknown
                 StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
                   - "630" # Disability
-                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE:
                   - "5105" # Retired
                 StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
                   - "14347" # Proposed
