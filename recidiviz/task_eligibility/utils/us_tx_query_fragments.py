@@ -30,9 +30,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_intersection_spans,
 )
-from recidiviz.calculator.query.state.views.tasks.state_specific_tasks_criteria_builders import (
-    contact_compliance_builder,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -62,7 +59,7 @@ def get_contact_info_for_compliance_builder() -> str:
             ELSE
                 CONCAT("SCHEDULED " || contact_method_raw_text)
         END AS contact_type,
-        external_id as contact_external_id
+        external_id,
     FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
     WHERE state_code = "US_TX" AND status = "COMPLETED"
       AND contact_type in ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
@@ -80,7 +77,7 @@ def get_contact_info_for_compliance_builder() -> str:
     """
 
 
-def us_tx_contact_compliance_builder(
+def contact_compliance_builder(
     criteria_name: str,
     description: str,
     contact_type: str,
@@ -100,14 +97,207 @@ def us_tx_contact_compliance_builder(
             is applicable to the person. If not provided, the default query will
             pull from the `contact_cadence_spans_materialized` table.
     """
+    if not custom_contact_cadence_spans:
+        custom_contact_cadence_spans = "SELECT * FROM `{project_id}.analyst_data.us_tx_contact_cadence_spans_materialized`"
 
-    return contact_compliance_builder(
+    criteria_query = f"""
+WITH
+-- Create contacts table by adding scheduled/unscheduled prefix
+contact_info AS (
+    {get_contact_info_for_compliance_builder()}
+),
+contact_cadence_spans AS (
+    {custom_contact_cadence_spans}
+)
+,
+-- Looks back to connect contacts to a given contact period they were completed in
+lookback_cte AS
+(
+ SELECT
+        p.person_id,
+        p.case_type,
+        p.contact_type,
+        p.supervision_level,
+        p.frequency_in_months,
+        ci.contact_date,
+        month_start,
+        month_end,
+        quantity,
+    FROM contact_cadence_spans p
+    LEFT JOIN contact_info ci
+        ON p.person_id = ci.person_id
+        AND ci.contact_type = p.contact_type
+        AND ci.contact_date BETWEEN p.month_start and p.month_end 
+    WHERE p.contact_type = "{contact_type}"
+),
+-- Union all critical dates (start date, end date, contact dates)
+critical_dates as (
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        frequency_in_months,
+        month_start as critical_date,
+    FROM lookback_cte
+    UNION DISTINCT 
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        frequency_in_months,
+        month_end as critical_date,
+    FROM lookback_cte
+    UNION DISTINCT
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        frequency_in_months,
+        contact_date as critical_date,
+    FROM lookback_cte
+    WHERE contact_date IS NOT NULL
+), 
+divided_periods as (
+    SELECT
+        month_start,
+        month_end,
+        person_id,
+        contact_type,
+        quantity,
+        frequency_in_months,
+        critical_date as period_start,
+        LEAD (critical_date) OVER (PARTITION BY month_start, person_id ORDER BY critical_date) AS period_end,
+    FROM critical_dates
+),
+divided_periods_with_contacts as (
+    SELECT
+        p.person_id,
+        COUNT(ci.external_id) AS contact_count,
+        period_start,
+        period_end,
+        month_start,
+        p.contact_type,
+        month_end,
+        quantity,
+        frequency_in_months,
+    FROM divided_periods p
+    LEFT JOIN contact_info ci
+        ON p.person_id = ci.person_id
+        AND ci.contact_date BETWEEN p.month_start and DATE_SUB(p.period_end, INTERVAL 1 DAY)
+        AND ci.contact_type = "{contact_type}"
+    WHERE period_end is not null
+    GROUP BY p.person_id, month_start, month_end, period_start, period_end, contact_type, quantity, frequency_in_months
+),
+-- Creates periods of time in which a person is compliance given a contact and it's cadence
+compliance_periods as (
+    SELECT 
+        person_id,
+        contact_type,
+        contact_count,
+        period_start,
+        period_end,
+        month_start,
+        month_end,
+        quantity,
+        frequency_in_months,
+    FROM divided_periods_with_contacts
+),
+-- Creates final periods of compliance
+periods AS (
+    SELECT 
+        lc.person_id,
+        "US_TX" as state_code,
+        lc.contact_type as type_of_contact,
+        contact_count < quantity AS meets_criteria,
+        contact_count < quantity AND CURRENT_DATE > month_end AS overdue_flag,
+        CASE
+            WHEN period_start = month_start
+                THEN "start"
+            WHEN period_end = month_end
+                THEN "end"
+            ELSE "contact"
+        END AS period_type,
+        month_end AS contact_due_date,
+        contact_count,
+        period_start as start_date,
+        period_end as end_date,
+        max(contact_date) as last_contact_date,
+        CASE 
+            WHEN frequency_in_months = 1 
+                THEN "1 MONTH"
+            ELSE
+                CONCAT(frequency_in_months, " MONTHS") 
+        END AS frequency,
+    FROM compliance_periods lc
+    LEFT JOIN contact_info ci
+        ON lc.person_id = ci.person_id
+        AND ci.contact_type = lc.contact_type
+        AND ci.contact_date < period_end
+    GROUP BY person_id, month_start, month_end, lc.contact_type, contact_count, quantity, period_start, period_end, frequency_in_months
+)
+SELECT 
+  *,
+  TO_JSON(STRUCT(
+    last_contact_date,
+    contact_due_date,
+    type_of_contact,
+    overdue_flag,
+    contact_count,
+    period_type,
+    frequency
+  )) AS reason,
+FROM periods
+"""
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         description=description,
-        contact_type=contact_type,
-        custom_contact_events=get_contact_info_for_compliance_builder(),
-        custom_contact_cadence_spans=custom_contact_cadence_spans,
         state_code=StateCode.US_TX,
+        criteria_spans_query_template=criteria_query,
+        normalized_state_dataset="us_tx_normalized_state",
+        reasons_fields=[
+            ReasonsField(
+                name="last_contact_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the last contact.",
+            ),
+            ReasonsField(
+                name="contact_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Due date of the contact.",
+            ),
+            ReasonsField(
+                name="type_of_contact",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of contact due.",
+            ),
+            ReasonsField(
+                name="overdue_flag",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Flag that indicates whether contact was missed.",
+            ),
+            ReasonsField(
+                name="contact_count",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Number of contacts done within the overall period.",
+            ),
+            ReasonsField(
+                name="period_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of period.",
+            ),
+            ReasonsField(
+                name="frequency",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Contact cadence.",
+            ),
+        ],
     )
 
 
@@ -133,7 +323,7 @@ def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
 
     criteria_query = f"""
 WITH has_monthly_home_contact_requirement AS (
-    SELECT * FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_materialized`
+    SELECT * FROM `{{project_id}}.analyst_data.us_tx_contact_cadence_spans_materialized`
     WHERE frequency_in_months = 1
     AND contact_type = "{contact_type}"
 )
@@ -194,7 +384,7 @@ needs_contact AS (
     FROM
         `{{project_id}}.task_eligibility_criteria_us_tx.{standard_policy_criteria_name}_materialized`
     WHERE
-        JSON_EXTRACT_SCALAR(reason_v2, "$.contact_cadence") = "1 EVERY MONTH"
+        JSON_EXTRACT_SCALAR(reason_v2, "$.frequency") = "1 MONTH"
 )
 ,
 -- Intersect the compliant month ranges with the original monthly contact
@@ -308,7 +498,7 @@ FROM intersection_spans_with_critical_understaffing
                 description="Type of period.",
             ),
             ReasonsField(
-                name="contact_cadence",
+                name="frequency",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Contact cadence.",
             ),
