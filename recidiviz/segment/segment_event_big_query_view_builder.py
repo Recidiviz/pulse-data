@@ -105,7 +105,6 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         template = f"""
 SELECT
     state_code,
-    user_external_id AS user_id,
     LOWER(rdu.email) AS email,
     DATETIME(timestamp, "US/Eastern") AS event_ts,
     person_id,

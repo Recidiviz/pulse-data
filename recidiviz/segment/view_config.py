@@ -53,7 +53,6 @@ def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
         return f"""
 SELECT
     state_code,
-    user_id,
     email,
     "{vb.segment_event_name}" AS event,
     event_ts,
