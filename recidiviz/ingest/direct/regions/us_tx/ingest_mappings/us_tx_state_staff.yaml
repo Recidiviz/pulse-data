@@ -6,7 +6,6 @@ input_columns:
   FirstName: STRING
   MiddleName: STRING
   LastName: STRING
-  email_list: STRING
   staff_id_list: STRING
   latest_staff_email: STRING
 unused_columns: []
@@ -19,12 +18,6 @@ output:
             StateStaffExternalId:
               external_id: $iter_item
               id_type: $literal("US_TX_STAFF_ID")
-      - $foreach:
-          $iterable: email_list
-          $result:
-            StateStaffExternalId:
-              external_id: $iter_item
-              id_type: $literal("US_TX_EMAIL")
     full_name:
       $person_name:
         $given_names: FirstName
