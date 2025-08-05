@@ -430,6 +430,7 @@ def get_minimum_housing_referals_query(
                 mr.evaluation_result,
                 mr.assess_comment_text,
                 mr.committee_comment_text,
+                mr.evaluation_date,
                 mr.start_date,
                 mr.next_review_date,
                 -- We use the next_review_date as the end date if it exists
@@ -448,7 +449,7 @@ def get_minimum_housing_referals_query(
                     AND mr.start_date <= ce.completion_event_date
                     AND mr.evaluation_result = '{evaluation_result}'
                     AND mr.state_code = ce.state_code
-            GROUP BY 1,2,3,4,5,6,7,8,9
+            GROUP BY 1,2,3,4,5,6,7,8,9,10
         )"""
 
     return f"""WITH min_referrals AS (
@@ -466,6 +467,7 @@ min_referrals_with_external_id AS (
         mr.assess_comment_text,
         mr.committee_comment_text,
         mr.evaluation_date AS start_date,
+        mr.evaluation_date,
         mr.next_review_date,
         mr.referral_facility,
     FROM min_referrals mr
@@ -666,6 +668,8 @@ def eligible_and_almost_eligible_minus_referrals(
             recent referrals to minimum housing. If False, includes all individuals
             regardless of recent referrals.
     """
+    INELIGIBLE_EVALUATION_RESULTS = ("NOT REFERRED", "NOT APPROVED", "RESCINDED")
+
     return f"""
     SELECT 
         eae.* EXCEPT (reasons),
@@ -676,7 +680,11 @@ def eligible_and_almost_eligible_minus_referrals(
                 nrr.reason AS reason
             ))]
         )) AS reasons,
-        IF(nrr.meets_criteria IS FALSE, 'REFERRAL_SUBMITTED', NULL) AS metadata_tab_name,
+        CASE
+            WHEN nrr.meets_criteria IS FALSE AND UPPER(JSON_EXTRACT_SCALAR(nrr.reason, '$.evaluation_result')) IN {INELIGIBLE_EVALUATION_RESULTS} THEN 'MARKED_INELIGIBLE'
+            WHEN nrr.meets_criteria IS FALSE AND UPPER(JSON_EXTRACT_SCALAR(nrr.reason, '$.evaluation_result')) NOT IN {INELIGIBLE_EVALUATION_RESULTS} THEN 'REFERRAL_SUBMITTED'
+            ELSE NULL
+        END AS metadata_tab_name,
     FROM eligible_and_almost_eligible eae
     LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized` nrr
         ON eae.person_id = nrr.person_id
