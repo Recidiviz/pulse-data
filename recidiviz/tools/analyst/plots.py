@@ -577,7 +577,8 @@ def line_labels(
     if ax is None:
         ax = plt.gca()
 
-    ax.get_legend().remove()
+    if legend := ax.get_legend():
+        legend.remove()
 
     logy = ax.get_yscale() == "log"
 
