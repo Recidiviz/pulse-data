@@ -343,7 +343,8 @@ SELECT
     CASE WHEN h.housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT' THEN 'Administrative Segregation'
             WHEN h.housing_unit_type = 'TEMPORARY_SOLITARY_CONFINEMENT' THEN 'Temporary Segregation'
             WHEN h.housing_unit_type = 'DISCIPLINARY_SOLITARY_CONFINEMENT' THEN 'Detention'
-            ELSE 'Other Segregation Type'
+            WHEN h.housing_unit_type = 'MENTAL_HEALTH_SOLITARY_CONFINEMENT' THEN 'Observation'
+            ELSE 'Other Segregation'
     END AS metadata_solitary_session_type,
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
