@@ -14,10 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-/* Tests sending email reminders - each of these functions will send the emails 
-   to DESTINATION_EMAIL and write to a new sheet in the connected spreadsheet. */
+/**
+ * How to use this file:
+ *
+ * Manually run these functions from the Apps Script UI at
+ * script.google.com/home/projects/<script ID>
+ * There is a dropdown to select a function to run.
+ *
+ * If you want to run a test only for certain state code(s), change the list of states
+ * at the top of the appropriate file Send[*]EmailReminders.gs and save that file (cmd+S).
+ *
+ * The testing functions:
+ * - testReal[*]Emails: Runs the script to send emails to real users, but instead of
+ *    actually sending the emails, writes the email text to the connected spreadsheet.
+ *    These functions only take the first 100 people returned by the query so that
+ *    they stop in a reasonable amount of time.
+ *    You can use this function to test that the script works end-to-end and to check
+ *    what emails will be sent to real users.
+ * - testSend[*]Emails: Sends emails with fake testing data to the currently logged-in user.
+ *    Usually, this is the apps-script@ email account.
+ *    You can use this function to check how email HTML is formatted in Gmail.
+ * - testRun[*]Query: Prints the result of the BQ query that we run to collect
+ *    the list of users we might email.
+ *    You can use this function to preview the query or test how data is parsed into Apps Script land.
+ *
+ * The remaining functions are tests for the corresponding helper functions in EmailReminderHelpers.
+ * */
 
-// Testing emails will be sent to the currently logged-in user.
 const TEST_DESTINATION_EMAIL = Session.getActiveUser().getEmail();
 
 const TESTING_NAME = "Firstname Lastname";
@@ -29,16 +52,16 @@ const TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES = 20;
 const TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY = [
   { opportunityName: "Early Discharge", numClients: 6 },
   { opportunityName: "Supervision Level Mismatch", numClients: 2 },
-  { opportunityName: "Classification Review", numClients: 5},
+  { opportunityName: "Classification Review", numClients: 5 },
 ];
 const TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY = [
   { opportunityName: "Early Discharge", numClients: 3 },
   { opportunityName: "Supervision Level Mismatch", numClients: 4 },
-  { opportunityName: "Minimum Telephone Reporting", numClients: 1},
+  { opportunityName: "Minimum Telephone Reporting", numClients: 1 },
 ];
 const TEST_URGENT_CLIENTS_BY_OPPORTUNITY = [
   { opportunityName: "Early Discharge", numClients: 2 },
-  { opportunityName: "Classification Review", numClients: 3},
+  { opportunityName: "Classification Review", numClients: 3 },
 ];
 
 const BASE_INFO = {
@@ -51,14 +74,15 @@ const BASE_INFO = {
   eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
   almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
   eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
-  almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+  almostEligibleClientsByOpportunity:
+    TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
   urgentClientsByOpportunity: [],
 };
 
 const TEST_USERS = [
   {
     testName: "NO_LOGIN_NO_URGENT",
-    ...BASE_INFO
+    ...BASE_INFO,
   },
   {
     testName: "NO_LOGIN_URGENT",
@@ -71,7 +95,8 @@ const TEST_USERS = [
     eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
     almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
     eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
-    almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    almostEligibleClientsByOpportunity:
+      TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
     urgentClientsByOpportunity: TEST_URGENT_CLIENTS_BY_OPPORTUNITY,
   },
   {
@@ -85,24 +110,58 @@ const TEST_USERS = [
     eligibleOpportunities: TEST_NUM_ELIGIBLE_OPPORTUNITIES,
     almostEligibleOpportunities: TEST_NUM_ALMOST_ELIGIBLE_OPPORTUNITIES,
     eligibleClientsByOpportunity: TEST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
-    almostEligibleClientsByOpportunity: TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
+    almostEligibleClientsByOpportunity:
+      TEST_ALMOST_ELIGIBLE_CLIENTS_BY_OPPORTUNITY,
     urgentClientsByOpportunity: TEST_URGENT_CLIENTS_BY_OPPORTUNITY,
   },
-]
+];
 
 const SUPERVISION_LINESTAFF_USER_MAPPING = {
-  "US_IX": "NO_LOGIN_NO_URGENT",
-  "US_ME": "NO_LOGIN_NO_URGENT",
-  "US_MI": "NO_LOGIN_URGENT",
-  "US_ND": "NO_LOGIN_URGENT",
-  "US_PA": "LOGIN_URGENT",
-  "US_TN": "LOGIN_URGENT",
+  US_IX: "NO_LOGIN_NO_URGENT",
+  US_ME: "NO_LOGIN_NO_URGENT",
+  US_MI: "NO_LOGIN_URGENT",
+  US_ND: "NO_LOGIN_URGENT",
+  US_NE: "NO_LOGIN_NO_URGENT",
+  US_PA: "LOGIN_URGENT",
+  US_TN: "LOGIN_URGENT",
+};
+
+const TEST_SETTINGS = {
+  ...EMAIL_SETTINGS,
+  IS_TESTING: true,
+};
+
+function testRealFacilitiesLinestaffEmails() {
+  sendAllLoginReminders(
+    FACILITIES_LINESTAFF,
+    FACILITIES_LINESTAFF_QUERY,
+    TEST_SETTINGS,
+    FACILITIES_LINESTAFF_INCLUDED_STATES
+  );
+}
+
+function testRealSupervisionLinestaffEmails() {
+  sendAllLoginReminders(
+    SUPERVISION_LINESTAFF,
+    SUPERVISION_LINESTAFF_QUERY,
+    TEST_SETTINGS,
+    SUPERVISION_LINESTAFF_INCLUDED_STATES
+  );
+}
+
+function testRealSupervisorsEmails() {
+  sendAllLoginReminders(
+    SUPERVISORS,
+    SUPERVISOR_QUERY,
+    TEST_SETTINGS,
+    SUPERVISOR_INCLUDED_STATES
+  );
 }
 
 function testSendFacilitiesLinestaffEmails() {
   sendTestEmails_(
     "[TESTING] Sent Emails to Facilities Linestaff",
-    EMAIL_SETTINGS,
+    TEST_SETTINGS,
     FACILITIES_LINESTAFF_INCLUDED_STATES,
     FACILITIES_LINESTAFF
   );
@@ -111,7 +170,7 @@ function testSendFacilitiesLinestaffEmails() {
 function testSendSupervisionLinestaffEmails() {
   sendTestEmails_(
     "[TESTING] Sent Emails to Supervision Linestaff",
-    EMAIL_SETTINGS,
+    TEST_SETTINGS,
     SUPERVISION_LINESTAFF_INCLUDED_STATES,
     SUPERVISION_LINESTAFF,
     SUPERVISION_LINESTAFF_USER_MAPPING
@@ -121,7 +180,7 @@ function testSendSupervisionLinestaffEmails() {
 function testSendSupervisorEmails() {
   sendTestEmails_(
     "[TESTING] Sent Emails to Supervisors",
-    EMAIL_SETTINGS,
+    TEST_SETTINGS,
     SUPERVISOR_INCLUDED_STATES,
     SUPERVISORS
   );
@@ -187,7 +246,13 @@ function testParseClientsByOpportunity() {
 // Private functions, indicated by the underscore at the end of the name, will not
 // show up in the Apps Script UI.
 
-function sendTestEmails_(sheetName, settings, stateCodesToTest, userType, userMapping = null) {
+function sendTestEmails_(
+  sheetName,
+  settings,
+  stateCodesToTest,
+  userType,
+  userMapping = null
+) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet();
   let sentEmailsSheet = sheet.getSheetByName(sheetName);
   if (!sentEmailsSheet) {
@@ -196,25 +261,24 @@ function sendTestEmails_(sheetName, settings, stateCodesToTest, userType, userMa
   }
 
   for (stateCode of stateCodesToTest) {
-    const testSettings = {
-      ...settings,
-      IS_TESTING: true,
-    };
-
     let userInfo;
     if (userMapping) {
       if (userMapping[stateCode]) {
-        userInfo = TEST_USERS.find((user) => user.testName === userMapping[stateCode]);
+        userInfo = TEST_USERS.find(
+          (user) => user.testName === userMapping[stateCode]
+        );
       } else {
-        throw new Error(`State "${stateCode}" not found in userMapping. Please specify a user for this state.`);
+        throw new Error(
+          `State "${stateCode}" not found in userMapping. Please specify a user for this state.`
+        );
       }
     } else {
       userInfo = BASE_INFO;
     }
-    
+
     const info = { ...userInfo, stateCode };
-    const body = buildLoginReminderBody(info, userType, testSettings);
-    sendLoginReminder(info, body, sentEmailsSheet, testSettings);
+    const body = buildLoginReminderBody(info, userType, settings);
+    sendLoginReminder(info, body, sentEmailsSheet, settings);
   }
   console.log(
     `Sent test emails to ${TEST_DESTINATION_EMAIL} and logged sent emails in spreadsheet "${sheetName}"`

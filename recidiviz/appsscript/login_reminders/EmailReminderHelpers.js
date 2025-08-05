@@ -152,7 +152,12 @@ function parseClientsByOpportunity(stateCode, structArray) {
  * }
  */
 function pluralize(count, additionalVerbs = [], noun = "client") {
-  const pluralNoun = count === 1 ? noun : `${noun}s`;
+  let pluralNoun;
+  if (noun === "opportunity") {
+    pluralNoun = count === 1 ? "opportunity" : "opportunities";
+  } else {
+    pluralNoun = count === 1 ? noun : `${noun}s`;
+  }
 
   const result = {
     is: count === 1 ? "is" : "are",
@@ -276,36 +281,41 @@ function stateSpecificText(
     urgentClientsByOpportunity
   );
 
+  const clients = pluralize(totalOpportunities, [], "client");
+  const opps = pluralize(totalOpportunities, [], "opportunity");
+  const officers = pluralize(totalOutliers, [], "officer");
+  const inmates = pluralize(almostEligibleOpportunities, [], "inmate"); // Special case for Arizona
+
   // Note: Many states are in multiple timezones. We use the zone with more people.
   switch (stateCode) {
     case "US_IX":
       return {
         toolName: "the P&P Assistant Tool",
         timeZone: "America/Boise",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} potential opportunities for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
+        supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} potential ${opps.pluralNoun} for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
         supervisionOpportunitySpecificText,
-        outliersText: `${totalOutliers} of your officers have been flagged as having very high absconsion or incarceration rates.`,
+        outliersText: `${totalOutliers} of your officers ${officers.has} been flagged as having very high absconsion or incarceration rates.`,
       };
     case "US_ME":
       return {
         toolName: "the Recidiviz tool",
         timeZone: "America/New_York",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
+        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision eligible for early termination.`,
         supervisionOpportunitySpecificText,
       };
     case "US_MI":
       return {
         toolName: "Recidiviz",
         timeZone: "America/Detroit",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as early discharge or classification review.`,
+        supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your supervision, such as early discharge or classification review.`,
         supervisionOpportunitySpecificText,
-        outliersText: `${totalOutliers} of your agents have been flagged as having very high absconder warrant or incarceration rates.`,
+        outliersText: `${totalOutliers} of your agents ${officers.has} been flagged as having very high absconder warrant or incarceration rates.`,
       };
     case "US_ND":
       return {
         toolName: "the Recidiviz early termination tool",
         timeZone: "America/Chicago",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for early termination.`,
+        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision eligible for early termination.`,
         supervisionOpportunitySpecificText,
       };
     case "US_NE":
@@ -318,21 +328,21 @@ function stateSpecificText(
       return {
         toolName: "the Recidiviz Supervision Assistant",
         timeZone: "America/New_York",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} clients under your supervision eligible for Admin Supervision or Special Circumstances Supervision.`,
+        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision eligible for Admin Supervision or Special Circumstances Supervision.`,
         supervisionOpportunitySpecificText,
       };
     case "US_TN":
       return {
         toolName: "the Compliant Reporting Recidiviz Tool",
         timeZone: "America/Chicago",
-        supervisionOpportunitiesText: `There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as compliant reporting or supervision level downgrade.`,
+        supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your supervision, such as compliant reporting or supervision level downgrade.`,
         supervisionOpportunitySpecificText,
       };
     case "US_AZ":
       return {
         toolName: "the Recidiviz tool",
         timeZone: "America/Phoenix",
-        facilitiesOpportunitiesText: `There are ${almostEligibleOpportunities} inmates on your caseload who are almost eligible for transition release. Log into Recidiviz now to see what actions you can take to prepare for their release!`,
+        facilitiesOpportunitiesText: `There ${inmates.is} ${almostEligibleOpportunities} ${inmates.pluralNoun} on your caseload who ${inmates.is} almost eligible for transition release. Log into Recidiviz now to see what actions you can take to prepare for their release!`,
       };
   }
 }
@@ -348,11 +358,11 @@ function stateSpecificText(
  */
 function generateIntroText(toolName, currentMonth, urgentClients, loggedIn) {
   if (urgentClients.length && loggedIn) {
-    return `We hope you're doing well! We noticed some of your clients in the tool have been eligible for over 30 days whom you haven’t reviewed yet. Clients can be resolved by either marking them as submitted for the opportunity or ineligible for the opportunity. Here’s what you might’ve missed:<br><br>`;
+    return `We hope you're doing well! We noticed some of your clients in ${toolName} have been eligible for over 30 days whom you haven’t reviewed yet. Clients can be resolved by either marking them as submitted or ineligible for the opportunity. Here’s what you might’ve missed:<br><br>`;
   }
 
   if (urgentClients.length) {
-    return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted for the opportunity or ineligible for the opportunity.<br><br>`;
+    return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}. Some of your clients in the tool have been eligible for over 30 days that you haven’t yet resolved by either marking them as submitted or ineligible for the opportunity.<br><br>`;
   }
 
   return `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>`;
@@ -496,20 +506,30 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
 
   // Add a record of this email to the sent emails spreadsheet
   const formattedTimestamp = new Date().toISOString();
-  sentEmailsSheet.appendRow([
+  const emailRecord = [
     stateCode,
     name,
     emailAddress,
     district,
     formattedTimestamp,
-  ]);
+  ];
+  if (IS_TESTING) {
+    emailRecord.push(...[emailSubject, body]);
+  }
+  sentEmailsSheet.appendRow(emailRecord);
 
-  // Send the email from the appropriate alias
-  GmailApp.sendEmail(emailAddress, emailSubject, "", {
-    htmlBody: body,
-    from: EMAIL_FROM_ALIAS,
-    replyTo: FEEDBACK_EMAIL,
-  });
+  // Only send a real email if we are not testing or we're sending to a recidiviz email address.
+  const isSendingToRecidivizEmail = emailAddress
+    .toLowerCase()
+    .includes("recidiviz.org");
+  if (!IS_TESTING || isSendingToRecidivizEmail) {
+    // Send the email from the appropriate alias
+    GmailApp.sendEmail(emailAddress, emailSubject, "", {
+      htmlBody: body,
+      from: EMAIL_FROM_ALIAS,
+      replyTo: FEEDBACK_EMAIL,
+    });
+  }
 }
 
 /**
@@ -527,11 +547,6 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
     urgentClientsByOpportunity,
     lastLogin,
   } = info;
-  const hasOutliersOrOpportunities = checkOutliers
-    ? outliers || totalOpportunities
-    : totalOpportunities;
-  const { EXCLUDED_DISTRICTS } = settings;
-  const hasAlmostEligibleOpportunities = almostEligibleOpportunities > 0;
   const loggedIn = loggedInThisMonth(lastLogin);
 
   // We don't want to email non-supervision line staff who have logged in
@@ -550,22 +565,31 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
   }
 
   // For Arizona, we only want to email staff who have almost eligible opportunities
+  const hasAlmostEligibleOpportunities = almostEligibleOpportunities > 0;
   if (stateCode === "US_AZ" && !hasAlmostEligibleOpportunities) {
     return false;
   }
 
-  // For all other states, only email staff who have outliers/opportunities
-  // AND whose district & state are known and not excluded
-  return (
-    hasOutliersOrOpportunities &&
-    district &&
-    !EXCLUDED_DISTRICTS.includes(district)
-  );
+  // If the staff's district is known and excluded, don't email them
+  const { EXCLUDED_DISTRICTS } = settings;
+  if (district && EXCLUDED_DISTRICTS.includes(district)) {
+    return false;
+  }
+
+  // If we have text to display for outliers, email staff who have available outliers or opportunities
+  if (checkOutliers) {
+    return Boolean(outliers || totalOpportunities);
+  }
+
+  // Otherwise, only email staff who have any available opportunities, urgent or not
+  return Boolean(totalOpportunities);
 }
 
 /**
- * Send login reminder emails to all people surfaced by the provided query.
+ * This function is the main entry point to this script and is called externally to
+ * send login reminder emails to all people surfaced by the provided query.
  * Creates a new sheet within the connected sheet to track what emails were sent.
+ *
  * @param {string} userType determines if the email is for FACILITIES_LINESTAFF,
  * SUPERVISION_LINESTAFF, or SUPERVISORS
  * @param {string} query a BigQuery query collecting all people eligible for emails.
@@ -575,6 +599,8 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
  * @param {object} settings settings describing the email to be sent:
  *                          contains RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL,
  *                          EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
+ *                          and has IS_TESTING set to true if this is a test environment
+ * @param {string[]} stateCodes the list of state codes we'll attempt to email
  */
 function sendAllLoginReminders(userType, query, settings, stateCodes) {
   if (!VALID_USER_TYPES.includes(userType)) {
@@ -584,13 +610,16 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
       )}.`
     );
   }
+  const { IS_TESTING } = settings;
+
   console.log(`Getting list of all ${userType} from BigQuery...`);
-  const data = RecidivizHelpers.runQuery(query);
-  if (!data) {
+  const queryResult = RecidivizHelpers.runQuery(query);
+  if (!queryResult) {
     console.log(`Failed to send emails: found no ${userType} to email.`);
     return;
   }
-  console.log(`Found ${data.length} ${userType}.`);
+  console.log(`Found ${queryResult.length} ${userType}.`);
+  const data = IS_TESTING ? queryResult.slice(0, 100) : queryResult;
 
   // Make the sheet to log sent emails in if it doesn't already exist, and extract any
   // addresses we already sent to so that we don't re-email anyone
@@ -599,25 +628,31 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     month: "long",
     year: "numeric",
   });
-  const sheetName = `${currentMonthYear} Sent Emails to ${userType}`;
+  const testingPrefix = IS_TESTING ? `[TESTING] ` : "";
+  const sheetName = `${testingPrefix}${currentMonthYear} Sent Emails to ${userType}`;
   const activeSheet = SpreadsheetApp.getActiveSpreadsheet();
   let sentEmailsSheet = activeSheet.getSheetByName(sheetName);
   if (!sentEmailsSheet) {
     sentEmailsSheet = activeSheet.insertSheet(sheetName);
-    sentEmailsSheet.appendRow([
+    const headerRow = [
       "State Code",
       "Name",
       "Email",
       "District",
       "Email Sent At",
-    ]);
+    ];
+    if (IS_TESTING) {
+      headerRow.push(...["Email Subject, Email Body"]);
+    }
+    sentEmailsSheet.appendRow(headerRow);
   }
   const emailData = sentEmailsSheet.getDataRange();
   const emailsAlreadySent = emailData.getValues().map((row) => row[2]);
 
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
-
+  const isSupervisionLinestaff = userType === SUPERVISION_LINESTAFF;
+  const isSupervisors = userType === SUPERVISORS;
   const dataByEmail = Object.fromEntries(
     data.map((row) => [
       row[3].toLowerCase(), // email address, case normalized
@@ -630,23 +665,24 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
         eligibleOpportunities: parseInt(row[6]),
         almostEligibleOpportunities: parseInt(row[7]),
         outliers: isSupervisors ? parseInt(row[8]) : 0,
-        eligibleClientsByOpportunity: isSupervisors
-          ? []
-          : parseClientsByOpportunity(row[0], row[8]),
-        almostEligibleClientsByOpportunity: isSupervisors
-          ? []
-          : parseClientsByOpportunity(row[0], row[9]),
-        urgentClientsByOpportunity: isSupervisors
-          ? []
-          : parseClientsByOpportunity(row[0], row[10]),
+        eligibleClientsByOpportunity: isSupervisionLinestaff
+          ? parseClientsByOpportunity(row[0], row[8])
+          : [],
+        almostEligibleClientsByOpportunity: isSupervisionLinestaff
+          ? parseClientsByOpportunity(row[0], row[9])
+          : [],
+        urgentClientsByOpportunity: isSupervisionLinestaff
+          ? parseClientsByOpportunity(row[0], row[10])
+          : [],
       },
     ])
   );
+
   const emails = Object.keys(dataByEmail);
   const hasOutliersTextConfigured = Object.fromEntries(
     stateCodes.map((stateCode) => [
       stateCode,
-      !!stateSpecificText(stateCode, -1, -1).outliersText,
+      !!stateSpecificText(stateCode, -1, -1, -1, [], [], []).outliersText,
     ])
   );
 
@@ -657,7 +693,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   console.log("Sending emails...");
 
   for (const [email, lastLogin] of Object.entries(userLoginInfo)) {
-    if (emailsAlreadySent.includes(email)) {
+    if (!IS_TESTING && emailsAlreadySent.includes(email)) {
       console.log("Skipping person we already emailed:", email);
       continue;
     }
@@ -684,6 +720,10 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     `Done! Emails sent were written to the spreadsheet "${sheetName}".`
   );
 }
+
+/************************************************************************************
+ * Functions related to getting user login info from auth0
+ ************************************************************************************/
 
 /**
  * Fetch and return an Auth0 Management API access token using the client ID
@@ -760,6 +800,10 @@ function getUserLoginInfoByBatch(batch, authToken) {
     lastLogin: new Date(o.last_login),
   }));
 }
+
+/************************************************************************************
+ * Functions for creating user-friendly menu items within the email-sending spreadsheet
+ ************************************************************************************/
 
 /**
  * Adds a custom menu that allows users to send reminder emails from the spreadsheet

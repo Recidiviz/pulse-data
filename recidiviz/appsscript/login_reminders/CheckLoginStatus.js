@@ -77,11 +77,11 @@ function writeLoginStatusToSheet_(sheet, authToken) {
     const { rowIndex, emailSentTimestamp } = emailToRow[email];
     if (lastLogin > new Date(emailSentTimestamp)) {
       loginsAfterEmailSent++;
-      // Write the login time to the 6th column of the sheet
-      // (rows and columns for getRange are 1-indexed)
-      const formattedDateTime = lastLogin.toISOString();
-      sheet.getRange(rowIndex + 1, colToWrite).setValue(formattedDateTime);
     }
+    // Write the login time to the 6th column of the sheet
+    // (rows and columns for getRange are 1-indexed)
+    const formattedDateTime = lastLogin.toISOString();
+    sheet.getRange(rowIndex + 1, colToWrite).setValue(formattedDateTime);
   }
 
   // Print summary and write header to sheet
