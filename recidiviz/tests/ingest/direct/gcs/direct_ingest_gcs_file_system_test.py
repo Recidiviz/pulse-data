@@ -79,7 +79,9 @@ class TestDirectIngestGcsFileSystem(TestCase):
         unprocessed = self.fs.get_unprocessed_raw_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(unprocessed), 0)
 
-        self.fs.mv_raw_file_to_storage(processed_path, self.STORAGE_DIR_PATH)
+        self.fs.mv_unprocessed_path_to_processed_path_in_storage(
+            processed_path, self.STORAGE_DIR_PATH
+        )
 
         processed = self.fs.get_processed_file_paths(self.INGEST_DIR_PATH)
         self.assertEqual(len(processed), 0)

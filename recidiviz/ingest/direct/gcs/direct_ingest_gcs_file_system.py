@@ -21,8 +21,6 @@ manipulating files and filenames expected by direct ingest.
 import datetime
 import logging
 import os
-import tempfile
-import uuid
 from contextlib import contextmanager
 from enum import Enum
 from typing import IO, Callable, Dict, Generic, Iterator, List, Optional, TypeVar, Union
@@ -307,16 +305,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             path
         ) or DirectIngestGCSFileSystem.is_processed_file(path)
 
-    def get_unnormalized_file_paths(
-        self, directory_path: GcsfsDirectoryPath
-    ) -> List[GcsfsFilePath]:
-        """Returns all paths in the given directory without normalized paths."""
-        paths = self._ls_with_file_prefix(
-            directory_path, "", filter_type=self._FilterType.UNNORMALIZED_ONLY
-        )
-
-        return [path for path in paths if not self.is_normalized_file_path(path)]
-
     def get_unprocessed_raw_file_paths(
         self, directory_path: GcsfsDirectoryPath
     ) -> List[GcsfsFilePath]:
@@ -380,21 +368,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         )
         self.mv(path, processed_path)
         return processed_path
-
-    def mv_raw_file_to_storage(
-        self, path: GcsfsFilePath, storage_directory_path: GcsfsDirectoryPath
-    ) -> None:
-        """Moves a normalized path to it's appropriate storage location based on the
-        date and file type information embedded in the file name.
-        """
-        storage_path = self._raw_file_storage_path(storage_directory_path, path)
-
-        logging.info(
-            "Moving [%s] to storage path [%s].",
-            path.abs_path(),
-            storage_path.abs_path(),
-        )
-        self.mv(path, storage_path)
 
     def mv_unprocessed_path_to_processed_path_in_storage(
         self, path: GcsfsFilePath, storage_directory_path: GcsfsDirectoryPath
@@ -512,12 +485,3 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         raise ValueError(
             f"Could not find valid storage path for file {path.file_name}."
         )
-
-    @classmethod
-    def generate_random_temp_path(cls) -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), "direct_ingest")
-
-        if not os.path.exists(temp_dir):
-            os.mkdir(temp_dir)
-
-        return os.path.join(temp_dir, str(uuid.uuid4()))
