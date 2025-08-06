@@ -33,6 +33,10 @@ def no_retries_predicate(_exception: Exception) -> bool:
     return False
 
 
+class FakeError(Exception):
+    pass
+
+
 class TestGcsFileSystem(TestCase):
     """Tests for the GCSFileSystem."""
 
@@ -100,6 +104,47 @@ class TestGcsFileSystem(TestCase):
             ]
         )
 
+    def test_copy_with_failure(self) -> None:
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "src.txt")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "dst.txt")
+
+        mock_src_blob = create_autospec(Blob)
+        mock_dst_blob = create_autospec(Blob)
+
+        mock_dst_blob.rewrite.side_effect = [
+            # -- first try
+            ("rewrite-token-1", 100, 200),
+            (None, 200, 200),
+            # -- second try
+            ("rewrite-token-2", 100, 200),
+            (None, 200, 200),
+        ]
+        mock_dst_bucket = create_autospec(Bucket)
+
+        mock_dst_bucket.get_blob.side_effect = [
+            # -- first try
+            mock_src_blob,
+            None,  # this is why we fail -- no new file!
+            # -- second try
+            mock_src_blob,
+            mock_dst_blob,
+        ]
+
+        mock_dst_bucket.blob.return_value = mock_dst_blob
+
+        self.mock_storage_client.bucket.return_value = mock_dst_bucket
+
+        self.fs.copy(src_path=src_path, dst_path=dst_path)
+        mock_dst_blob.rewrite.assert_has_calls(
+            calls=[
+                call(mock_src_blob, token=None),
+                call(mock_src_blob, "rewrite-token-1"),
+                call(mock_src_blob, token=None),
+                call(mock_src_blob, "rewrite-token-2"),
+            ]
+        )
+
     # Disable retries for "transient" errors to make test easier to mock / follow.
     @patch(
         "recidiviz.cloud_storage.gcs_file_system_impl.retry.if_transient_error",
@@ -122,14 +167,11 @@ class TestGcsFileSystem(TestCase):
         mock_dst_blob.name = dst_path.blob_name
         mock_dst_blob.bucket = mock_dst_bucket
 
-        def mock_get_blob(blob_name: str) -> Blob:
-            if blob_name == src_path.file_name:
-                return mock_src_blob
-            if blob_name == dst_path.file_name:
-                return mock_dst_blob
-            raise ValueError(f"Unexpected blob: {blob_name}")
-
-        mock_dst_bucket.get_blob.side_effect = mock_get_blob
+        mock_dst_bucket.get_blob.side_effect = [
+            mock_src_blob,
+            mock_dst_blob,
+            None,  # call for if the deleted path that we *tried* to make still exists
+        ]
         mock_dst_bucket.blob.return_value = mock_dst_blob
 
         self.mock_storage_client.bucket.return_value = mock_dst_bucket
@@ -234,7 +276,14 @@ class TestGcsFileSystem(TestCase):
         mock_blob = create_autospec(Blob)
         mock_blob.exists.return_value = True
         mock_dst_bucket = create_autospec(Bucket)
-        mock_dst_bucket.get_blob.return_value = mock_blob
+        mock_dst_bucket.get_blob.side_effect = [
+            mock_blob,
+            None,
+            mock_blob,
+            mock_blob,
+            mock_blob,
+            None,
+        ]
         self.mock_storage_client.bucket.return_value = mock_dst_bucket
 
         with self.assertRaisesRegex(
@@ -244,7 +293,6 @@ class TestGcsFileSystem(TestCase):
             self.fs.mv_file_to_directory_safe(src_path, dest_bucket)
 
         mock_dst_bucket.blob.return_value = mock_blob
-        mock_blob.exists.return_value = False
         mock_blob.rewrite.return_value = (None, 200, 200)
 
         self.fs.mv_file_to_directory_safe(src_path, dest_bucket)

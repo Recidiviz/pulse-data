@@ -17,7 +17,7 @@
 """
 Script for copying all files in production storage for a region to state storage for a
 region. Should be used when we want to sync raw data between prod and staging. Will
-almost always be followed by `move_raw_state_files_from_storage` to actaully move
+almost always be followed by `move_raw_state_files_from_storage` to actually move
 the files to the ingest bucket for processing.
 
 When run in dry-run mode (the default), will only log copies, but will not execute them.

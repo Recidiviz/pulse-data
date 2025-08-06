@@ -45,6 +45,10 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 )
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 
+# how many times we try to rename files that have an duplicate file in storage before
+# giving up
+STORAGE_RENAME_RETRIES = 5
+
 
 def _build_raw_file_name(
     *,
@@ -482,7 +486,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             f"{parts.utc_upload_datetime.day:02}",
         )
 
-        for file_num in range(self._RENAME_RETRIES):
+        for file_num in range(STORAGE_RENAME_RETRIES):
             name, ext = path.file_name.split(".")
             actual_file_name = (
                 path.file_name if file_num == 0 else f"{name}-({file_num}).{ext}"

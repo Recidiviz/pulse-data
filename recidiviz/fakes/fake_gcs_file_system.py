@@ -289,6 +289,10 @@ class FakeGCSFileSystem(GCSFileSystem):
                     # re-raising
                     pass
 
+    def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
+        self.copy(src_path, dst_path)
+        self.delete(src_path)
+
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:

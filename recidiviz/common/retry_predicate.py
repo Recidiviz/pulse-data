@@ -39,7 +39,9 @@ def google_api_retry_predicate(
 
 
 def ssl_error_retry_predicate(exc: BaseException) -> bool:
-    """Unexpected SSL EOF Errors may occur when working with threaded requests, this predicate will retry them"""
+    """Unexpected SSL EOF Errors may occur when working with threaded requests, this
+    predicate will retry them
+    """
     return isinstance(exc, SSLError)
 
 
@@ -55,5 +57,6 @@ def rate_limit_retry_predicate(exc: Exception) -> bool:
 def bad_request_retry_predicate(exc: Exception) -> bool:
     """Retries google client errors and bad request errors.
     In general, bad request errors should not be retried, but there are some cases
-    where google returns a 400 due to some underlying rate limiting."""
+    where google returns a 400 due to some underlying rate limiting.
+    """
     return google_api_retry_predicate(exc) or isinstance(exc, exceptions.BadRequest)

@@ -47,6 +47,26 @@ from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 
 
+class GcsfsFileNotCopied(Exception):
+    """Raised when a copy google API operation has completed without there being a file
+    created at the destination path.
+    """
+
+
+class GcsfsFileNotDeleted(Exception):
+    """Raised when a delete Google API operation has completed without hte file being
+    deleted from the supposedly deleted path.
+    """
+
+
+def gcsfs_copy_retry(exc: Exception) -> bool:
+    return google_api_retry_predicate(exc) or isinstance(exc, GcsfsFileNotCopied)
+
+
+def gcsfs_delete_retry(exc: Exception) -> bool:
+    return google_api_retry_predicate(exc) or isinstance(exc, GcsfsFileNotDeleted)
+
+
 def generate_random_temp_path(filename: Optional[str] = None) -> str:
     temp_dir = os.path.join(tempfile.gettempdir(), "gcs_temp_files")
     os.makedirs(temp_dir, exist_ok=True)
@@ -118,11 +138,6 @@ class GCSFileSystemImpl(GCSFileSystem):
             bucket = self.storage_client.bucket(path.bucket_name)
             blob = bucket.get_blob(path.blob_name)
         except NotFound as error:
-            logging.warning(
-                "Blob at [%s] does not exist - might have already been deleted",
-                path.uri(),
-            )
-
             raise GCSBlobDoesNotExistError(
                 f"Blob at [{path.uri()}] does not exist"
             ) from error
@@ -198,22 +213,22 @@ class GCSFileSystemImpl(GCSFileSystem):
         self.mv(src_path, dst_path)
         return dst_path
 
-    @retry.Retry(predicate=google_api_retry_predicate)
+    @retry.Retry(predicate=gcsfs_copy_retry)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         src_blob = self._get_blob(src_path)
 
         dst_bucket = self.storage_client.bucket(dst_path.bucket_name)
 
         if isinstance(dst_path, GcsfsFilePath):
-            dst_blob_name = dst_path.blob_name
+            dst_file_path = dst_path
         elif isinstance(dst_path, GcsfsDirectoryPath):
-            dst_blob_name = GcsfsFilePath.from_directory_and_file_name(
+            dst_file_path = GcsfsFilePath.from_directory_and_file_name(
                 dst_path, src_path.file_name
-            ).blob_name
+            )
         else:
             raise ValueError(f"Unexpected path type [{type(dst_path)}]")
 
-        dest_blob = dst_bucket.blob(dst_blob_name)
+        dest_blob = dst_bucket.blob(dst_file_path.blob_name)
 
         # We copy using rewrite instead of copy_blob to avoid this error: 'Copy spanning
         # locations and/or storage classes could not complete within 30 seconds. Please
@@ -257,20 +272,37 @@ class GCSFileSystemImpl(GCSFileSystem):
             self.delete(dest_blob_path)
             raise e
 
-    @retry.Retry(predicate=google_api_retry_predicate)
+        # TODO(#45956) consider using preconditions here
+        if not self.exists(dst_file_path):
+            raise GcsfsFileNotCopied(
+                f"After file copy, no destination file found at [{dst_path.uri()}]"
+            )
+
+    @retry.Retry(predicate=gcsfs_delete_retry)
     def delete(self, path: GcsfsFilePath) -> None:
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f"Unexpected path type [{type(path)}]")
 
         try:
             blob = self._get_blob(path)
-
-            blob.delete(self.storage_client)
         except GCSBlobDoesNotExistError:
             logging.info("Did not delete path because it did not exist: %s", path.uri())
             return
 
+        # TODO(#45956) consider using preconditions here to make sure we are deleting
+        # the blob we think we are
+        blob.delete(self.storage_client)
+
+        if self.exists(path):
+            raise GcsfsFileNotDeleted(
+                f"Attempted to delete path, but blob still exists at [{path.uri()}]"
+            )
+
         logging.info("Finished deleting path: %s", path.uri())
+
+    def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
+        self.copy(src_path, dst_path)
+        self.delete(src_path)
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def download_to_temp_file(

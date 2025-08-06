@@ -39,16 +39,13 @@ class GCSBlobDoesNotExistError(ValueError):
 class GCSFileSystem:
     """An abstraction for manipulating files on the Google Cloud Storage File System"""
 
-    _RENAME_RETRIES = 5
-
+    @abc.abstractmethod
     def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         """Moves object from bucket 1 to bucket 2 with optional rename. Note:
         this is *not* an atomic move - there is a failure case where you'd end
         up with a copied version of the file at |dst_path| but it has not been
         deleted from the original location.
         """
-        self.copy(src_path, dst_path)
-        self.delete(src_path)
 
     @abc.abstractmethod
     def mv_file_to_directory_safe(
@@ -64,7 +61,7 @@ class GCSFileSystem:
 
     @abc.abstractmethod
     def delete(self, path: GcsfsFilePath) -> None:
-        """Deletes object at |path|."""
+        """Idempotent deletion of the object at |path|."""
 
     @abc.abstractmethod
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
@@ -76,22 +73,21 @@ class GCSFileSystem:
 
     @abc.abstractmethod
     def get_crc32c(self, path: GcsfsFilePath) -> Optional[str]:
-        """
-        Returns the base64 encoded string representation of the big-endian ordered CRC32C checksum
-        for the specified file if it exists in the fs, None otherwise.
+        """Returns the base64 encoded string representation of the big-endian ordered
+        CRC32C checksum for the specified file if it exists in the fs; otherwise, it
+        returns None.
         """
 
     @abc.abstractmethod
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
-        """
-        Returns the metadata for the object at the given path if it exists in the fs, None otherwise. Returns
-        Dict[str, str] instead of Dict[str, Any] because all values of the dictionary are typed casted to strings.
+        """Returns the metadata for the object at the given path if it exists in the fs,
+        returning None if it does not exits. Returns Dict[str, str] instead of Dict[str, Any]
+        because all values of the dictionary are typed casted to strings.
         """
 
     def clear_metadata(self, path: GcsfsFilePath) -> None:
-        """
-        Clears all of the custom metadata and sets it to None at the given path if it exists in the fs, returns
-        None even if the path does not exist.
+        """Clears all of the custom metadata and sets it to None at the given path if
+        it exists in the fs. Will not throw if the path does not exist.
         """
 
     @abc.abstractmethod
@@ -100,28 +96,26 @@ class GCSFileSystem:
         path: GcsfsFilePath,
         new_metadata: Dict[str, str],
     ) -> None:
-        """
-        Updates the custom metadata for the object at the given path if it exists in the fs. If there are preexisting keys
-        in the metadata that match the new_metadata keys those keys will be overriden. If custom metadata has keys that new_metadata
-        does not those keys will still exist in the custom metadata. To clear preexisiting keys not in new_metadata
-        call clear_metadata() before updating.
+        """Updates the custom metadata for the object at the given path if it exists in
+        the fs. If there are preexisting keys in the metadata that match the new_metadata
+        keys those keys will be overriden. If custom metadata has keys that new_metadata
+        does not those keys will still exist in the custom metadata. To clear preexisiting
+        keys not in new_metadata call clear_metadata() before updating.
 
-        Required to pass in Dict[str, str] since gcs appears to just type cast non string values of dicts to strings. Recommended
-        to call json.dumps() prior to calling update_metadata.
+        Required to pass in Dict[str, str] since gcs appears to just type cast non string
+        values of dicts to strings. Recommended to call json.dumps() prior to calling
+        update_metadata.
         """
 
     @abc.abstractmethod
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
-        """
-        Downloads object contents from the given path to a string,
-        decoding it from the specified `encoding` (default UTF-8)
+        """Downloads object contents from the given path to a string, decoding it from
+        the specified `encoding` (default UTF-8)
         """
 
     @abc.abstractmethod
     def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
-        """
-        Downloads object contents from the given path to bytes.
-        """
+        """Downloads object contents from the given path to bytes."""
 
     @abc.abstractmethod
     def download_to_temp_file(
