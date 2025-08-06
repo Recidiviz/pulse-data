@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
+from recidiviz.calculator.query.state.views.analyst_data.global_provisioned_user_sessions import (
+    GLOBAL_PROVISIONED_USER_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -430,6 +433,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     # TODO(#45499): Delete this once OC completion event is finished
     US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
         "Will be used for work-release eligibility in MO once we make more progress on validation for outside clearance (Akhil Ghanta, 7/18/2025)"
+    ),
+    GLOBAL_PROVISIONED_USER_SESSIONS_VIEW_BUILDER.address: (
+        "Will be incorporated into metrics in Looker (Mayuka 07/25/2025)"
     ),
 }
 
