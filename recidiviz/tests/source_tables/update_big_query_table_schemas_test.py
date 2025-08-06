@@ -960,6 +960,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_me_state.state_task_deadline",
     "us_mi_ingest_view_results.LEGACY_sentences",
     "us_mi_ingest_view_results.LEGACY_state_charge",
+    "us_mi_ingest_view_results.assaultive_risk_assessments",
     "us_mi_ingest_view_results.assessments_v3",
     "us_mi_ingest_view_results.employment_period",
     "us_mi_ingest_view_results.employment_period_coms",

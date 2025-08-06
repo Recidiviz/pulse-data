@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_assaultive_risk_assessments`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Offender_Number: STRING
+  assessed_date: DATE
+  score: STRING
+  risk_level: STRING
+  sequence_number: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ASSAULTIVE")
+                - Offender_Number
+                - sequence_number
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.MI_CSJ_353)
+          assessment_date: assessed_date
+          assessment_score: score
+          assessment_level:
+            $enum_mapping:
+              $raw_text: risk_level
+              $mappings:
+                StateAssessmentLevel.MAXIMUM:
+                  - "Very High Assault Risk"
+                StateAssessmentLevel.VERY_HIGH: # Based on the numeric score, this category falls between very high and high
+                  - "Middle (Potential Very High) Assault Risk"
+                StateAssessmentLevel.HIGH:
+                  - "High Assault Risk"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "Middle (Potential High) Assault Risk"
+                StateAssessmentLevel.MEDIUM:
+                  - "Middle Assault Risk"
+                StateAssessmentLevel.LOW:
+                  - "Low Assault Risk"
+                StateAssessmentLevel.MINIMUM:
+                  - "Very Low Assault Risk"

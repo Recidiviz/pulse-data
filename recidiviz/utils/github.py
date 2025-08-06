@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Helpers for talking to the Github API"""
+import logging
 
 from github import Github
 from more_itertools import one
@@ -55,6 +56,12 @@ def open_pr_if_not_exists(
     """Opens a pull request with the given title, body, head, and base branch
     if a pull request with the same head and base branch doesn't already exist.
     Returns the URL of the pull request."""
+    logging.info(
+        "Attempting to open PR with head_branch_name [%s] and base_branch_name [%s] against repo [%s]",
+        head_branch_name,
+        base_branch_name,
+        repo,
+    )
     repo_obj = github_client.get_repo(repo)
     existing_prs = repo_obj.get_pulls(
         state="open",
@@ -62,7 +69,14 @@ def open_pr_if_not_exists(
         base=base_branch_name,
     )
     if existing_prs and existing_prs.totalCount > 0:
-        return one(existing_prs).html_url
+        existing_pr = one(existing_prs)
+        pr_url = existing_pr.html_url
+        logging.info(
+            "Found existing PR [%s] with [%s] commits - returning",
+            pr_url,
+            existing_pr.commits,
+        )
+        return pr_url
 
     body_length_safe = truncate_string_if_necessary(
         body, max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH
@@ -73,6 +87,7 @@ def open_pr_if_not_exists(
         head=head_branch_name,
         base=base_branch_name,
     )
+    logging.info("Opened new PR [%s] with [%s] commits", pr.html_url, pr.commits)
     return pr.html_url
 
 

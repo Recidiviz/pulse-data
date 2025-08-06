@@ -154,6 +154,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_acute,
     state_enum_strings.state_assessment_type_rsls,
     state_enum_strings.state_assessment_type_ccrra,
+    state_enum_strings.state_assessment_type_mi_csj_353,
     state_enum_strings.state_assessment_type_az_gen_risk_lvl,
     state_enum_strings.state_assessment_type_az_vlnc_risk_lvl,
     state_enum_strings.state_assessment_type_mo_classification_e,

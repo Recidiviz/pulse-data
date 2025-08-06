@@ -121,6 +121,7 @@ class StateAssessmentType(StateEntityEnum):
     ACUTE = state_enum_strings.state_assessment_type_acute
     RSLS = state_enum_strings.state_assessment_type_rsls
     CCRRA = state_enum_strings.state_assessment_type_ccrra
+    MI_CSJ_353 = state_enum_strings.state_assessment_type_mi_csj_353
     AZ_GEN_RISK_LVL = state_enum_strings.state_assessment_type_az_gen_risk_lvl
     AZ_VLNC_RISK_LVL = state_enum_strings.state_assessment_type_az_vlnc_risk_lvl
     MO_CLASSIFICATION_E = state_enum_strings.state_assessment_type_mo_classification_e
@@ -200,6 +201,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.ACUTE: "Sex offense risk assessment for dynamic factors (ACUTE-2007)",
     StateAssessmentType.RSLS: "Reclassification Security Level Scoresheet (RSLS)",
     StateAssessmentType.CCRRA: "Arizona Community Corrections Risk Release Assessment",
+    StateAssessmentType.MI_CSJ_353: "Michigan Assaultive Risk Screen (CSJ-353)",
     StateAssessmentType.AZ_GEN_RISK_LVL: "Arizona Community General Risk Level",
     StateAssessmentType.AZ_VLNC_RISK_LVL: "Arizona Community Violence Risk Level",
     StateAssessmentType.MO_CLASSIFICATION_E: "Missouri “E” (Education) Assessment",

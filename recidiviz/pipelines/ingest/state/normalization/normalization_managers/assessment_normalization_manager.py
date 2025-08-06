@@ -225,6 +225,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.ACCAT,
                 StateAssessmentType.RSLS,
                 StateAssessmentType.CCRRA,
+                StateAssessmentType.MI_CSJ_353,
                 StateAssessmentType.AZ_GEN_RISK_LVL,
                 StateAssessmentType.AZ_VLNC_RISK_LVL,
                 StateAssessmentType.MO_CLASSIFICATION_E,

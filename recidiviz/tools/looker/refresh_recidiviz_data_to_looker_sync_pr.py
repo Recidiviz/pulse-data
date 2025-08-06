@@ -113,11 +113,25 @@ class LookerGitManager:
         run_command(f"git clone {looker_repo_url} {self.looker_repo_root}")
 
         if self.remote_branch_exists(self.config.looker_branch_name):
+            logging.info(
+                "Checking out branch [%s] which already exists on remote.",
+                self.config.looker_branch_name,
+            )
             cmd = f"git checkout {self.config.looker_branch_name}"
         else:
+            logging.info("Creating new branch [%s].", self.config.looker_branch_name)
             cmd = f"git checkout -b {self.config.looker_branch_name}"
 
         self._run_in_looker_repo(cmd)
+
+        head_commit = self._run_in_looker_repo("git rev-parse HEAD")
+
+        logging.info(
+            "Successfully cloned the Looker repo and checked out branch "
+            "[%s] at hash [%s].",
+            self.config.looker_branch_name,
+            head_commit,
+        )
 
     def _run_in_looker_repo(self, cmd: str) -> Optional[str]:
         """Execute a command in the Looker repository directory."""
