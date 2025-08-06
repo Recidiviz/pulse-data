@@ -59,7 +59,6 @@ resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
 
     headers = {
       "Content-Type" = "application/json"
-      "User-Agent"   = "Google-Cloud-Scheduler"
     }
 
     oauth_token {

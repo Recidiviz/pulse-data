@@ -80,6 +80,7 @@ resource "google_cloud_run_service" "admin_panel" {
       annotations = {
         "run.googleapis.com/cloudsql-instances" : local.joined_connection_string
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.us_central_redis_vpc_connector.name
+        "run.googleapis.com/vpc-access-egress" : "private-ranges-only"
         # This services serves endpoints that are used during the Auth0 login flow, so we want to minimize cold starts
         "autoscaling.knative.dev/minScale" : 1
         "autoscaling.knative.dev/maxScale" : 4
