@@ -160,6 +160,8 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__tasks_primary_user_event",
     "observations__tasks_primary_user_span",
     "observations__tasks_provisioned_user_span",
+    "observations__global_provisioned_user_span",
+    "observations__global_provisioned_user_event",
     "reentry",
     "segment_events__case_note_search",
     "segment_events__client_page",

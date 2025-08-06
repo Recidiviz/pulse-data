@@ -43,6 +43,7 @@ from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.observations.span_selector import SpanSelector
+from recidiviz.segment.product_type import ProductType
 
 # Dictionary of queries define periods of assignment of a unit of observation to a unit of analysis
 _UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: dict[
@@ -569,6 +570,10 @@ FROM
         MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
     ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.TASKS_PRIMARY_USER.short_name}_materialized`",
     (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER.short_name}_materialized`",
+    (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
     ): """SELECT
@@ -846,6 +851,135 @@ FROM
     `{project_id}.analyst_data.tasks_provisioned_user_registration_sessions_materialized`
 WHERE
     system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive, 
+    TRUE AS in_signed_state,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.FACILITY,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS facility,
+    FROM
+        `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+    WHERE
+        system_type = "INCARCERATION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.LOCATION,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    location_name,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_id AS facility_counselor_id,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+WHERE
+    system_type = "INCARCERATION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.PRODUCT_ACCESS,
+    ): f"""SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    {list_to_query_string([f"is_provisioned_{product_type.pretty_name}" for product_type in ProductType])},
+    {list_to_query_string([f"is_primary_user_{product_type.pretty_name}" for product_type in ProductType])},
+FROM
+    `{{project_id}}.analyst_data.global_provisioned_user_sessions_materialized`
 """,
 }
 

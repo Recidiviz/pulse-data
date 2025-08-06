@@ -33,6 +33,7 @@ class EventType(Enum):
     EARLY_DISCHARGE_REQUEST_DECISION = "EARLY_DISCHARGE_REQUEST_DECISION"
     EMPLOYMENT_PERIOD_START = "EMPLOYMENT_PERIOD_START"
     EMPLOYMENT_STATUS_CHANGE = "EMPLOYMENT_STATUS_CHANGE"
+    GLOBAL_USER_LOGIN = "GLOBAL_USER_LOGIN"
     HOUSING_UNIT_TYPE_END = "HOUSING_UNIT_TYPE_END"
     HOUSING_UNIT_TYPE_START = "HOUSING_UNIT_TYPE_START"
     INCARCERATION_INCIDENT = "INCARCERATION_INCIDENT"
@@ -164,6 +165,8 @@ class EventType(Enum):
             EventType.TASKS_ACTIVE_USAGE_EVENT,
         ]:
             return MetricUnitOfObservationType.TASKS_PRIMARY_USER
+        if self in [EventType.GLOBAL_USER_LOGIN]:
+            return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"

@@ -604,6 +604,7 @@ def main() -> int:
                 "recidiviz.pipelines.supplemental.dataset_config",
                 "recidiviz.workflows",
                 "recidiviz.persistence",
+                "recidiviz.segment.product_type",
                 "recidiviz.tools.jii.hydrate_test_data",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",
@@ -649,6 +650,7 @@ def main() -> int:
                 "recidiviz.observations",
                 "recidiviz.outliers",
                 "recidiviz.workflows",
+                "recidiviz.segment.product_type",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
@@ -678,6 +680,7 @@ def main() -> int:
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
                 "recidiviz.reporting",
+                "recidiviz.segment.product_type",
                 "recidiviz.server_config",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
@@ -714,6 +717,7 @@ def main() -> int:
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
                 "recidiviz.reporting",
+                "recidiviz.segment.product_type",
                 "recidiviz.task_eligibility",
                 "recidiviz.tools.archive",
                 "recidiviz.utils",

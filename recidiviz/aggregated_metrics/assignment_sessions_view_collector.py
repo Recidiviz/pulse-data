@@ -81,6 +81,8 @@ def relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
                 MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
                 MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
+                MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
+                MetricUnitOfAnalysisType.PRODUCT_ACCESS,
             ]
 
 
@@ -369,6 +371,35 @@ def _get_tasks_primary_user_population_selector(
             )
 
 
+def _get_global_provisioned_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return SpanSelector(
+                span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+                span_conditions_dict={"system_type": ["INCARCERATION"]},
+            )
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+                span_conditions_dict={"system_type": ["SUPERVISION"]},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+
+
 def get_standard_population_selector_for_unit_of_observation(
     population_type: MetricPopulationType,
     unit_of_observation_type: MetricUnitOfObservationType,
@@ -397,6 +428,8 @@ def get_standard_population_selector_for_unit_of_observation(
             return _get_tasks_primary_user_population_selector(population_type)
         case MetricUnitOfObservationType.TASKS_PROVISIONED_USER:
             return _get_tasks_provisioned_user_population_selector(population_type)
+        case MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER:
+            return _get_global_provisioned_user_population_selector(population_type)
 
 
 def collect_assignment_sessions_view_builders() -> list[SimpleBigQueryViewBuilder]:

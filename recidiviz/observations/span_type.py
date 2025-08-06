@@ -36,6 +36,7 @@ class SpanType(Enum):
     CUSTODY_LEVEL_SESSION = "CUSTODY_LEVEL_SESSION"
     EMPLOYMENT_PERIOD = "EMPLOYMENT_PERIOD"
     EMPLOYMENT_STATUS_SESSION = "EMPLOYMENT_STATUS_SESSION"
+    GLOBAL_PROVISIONED_USER_SESSION = "GLOBAL_PROVISIONED_USER_SESSION"
     HOUSING_TYPE_SESSION = "HOUSING_TYPE_SESSION"
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION = (
         "HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION"
@@ -146,5 +147,7 @@ class SpanType(Enum):
             return MetricUnitOfObservationType.TASKS_PRIMARY_USER
         if self in [SpanType.TASKS_PROVISIONED_USER_SESSION]:
             return MetricUnitOfObservationType.TASKS_PROVISIONED_USER
+        if self in [SpanType.GLOBAL_PROVISIONED_USER_SESSION]:
+            return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")

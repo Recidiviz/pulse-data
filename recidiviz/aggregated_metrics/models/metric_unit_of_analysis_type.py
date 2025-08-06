@@ -20,6 +20,8 @@ from typing import Dict, List, Optional
 
 import attr
 
+from recidiviz.segment.product_type import ProductType
+
 
 class MetricUnitOfAnalysisType(Enum):
     """A unit of analysis is the entity that you wish to say something about at the end
@@ -50,6 +52,8 @@ class MetricUnitOfAnalysisType(Enum):
     WORKFLOWS_PROVISIONED_USER = "WORKFLOWS_PROVISIONED_USER"
     INSIGHTS_PROVISIONED_USER = "INSIGHTS_PROVISIONED_USER"
     OFFICER_OUTLIER_USAGE_COHORT = "OFFICER_OUTLIER_USAGE_COHORT"
+    GLOBAL_PROVISIONED_USER = "GLOBAL_PROVISIONED_USER"
+    PRODUCT_ACCESS = "PRODUCT_ACCESS"
 
     @property
     def short_name(self) -> str:
@@ -224,13 +228,13 @@ class MetricUnitOfAnalysis:
                 )
             case MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
-                    type=MetricUnitOfAnalysisType.ALL_STATES,
+                    type=MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
                     primary_key_columns=["state_code", "email_address"],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
-                    type=MetricUnitOfAnalysisType.ALL_STATES,
+                    type=MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
                     primary_key_columns=["state_code", "email_address"],
                     static_attribute_columns=[],
                 )
@@ -242,6 +246,28 @@ class MetricUnitOfAnalysis:
                         "cohort_month_end_date",
                         "metric_id",
                         "outlier_usage_cohort",
+                    ],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
+                    primary_key_columns=["state_code", "email_address"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.PRODUCT_ACCESS:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.PRODUCT_ACCESS,
+                    primary_key_columns=[
+                        "state_code",
+                        *[
+                            f"is_provisioned_{product_type.pretty_name}"
+                            for product_type in ProductType
+                        ],
+                        *[
+                            f"is_primary_user_{product_type.pretty_name}"
+                            for product_type in ProductType
+                        ],
                     ],
                     static_attribute_columns=[],
                 )
