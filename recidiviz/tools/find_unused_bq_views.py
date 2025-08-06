@@ -60,12 +60,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
-    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_supervisors import (
-    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
 )
@@ -77,9 +71,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
-    SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
@@ -370,19 +361,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be referenced for zero grants impact tracking (see #34607) (Gina Valderrama 10/29/24)"
     ),
     SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER.address: (
-        "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
+        "Referenced in validations that detect major changes in officer counts (Alexa Batino 8/5/25)"
     ),
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER.address: (
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
-    ),
-    SUPERVISION_USAGE_METRICS_VIEW_BUILDER.address: (
-        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
-    ),
-    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER.address: (
-        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
-    ),
-    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER.address: (
-        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
     ),
     RECIDIVISM_EVENT_VIEW_BUILDER.address: (
         "Referenced by PSI Case Insights BigQuery writer (see #30876) (Ben Packer 7/9/24) "
