@@ -55,6 +55,7 @@ IN_CUSTODY_REGEX = re.compile(
             "IN CUSTODY",
             "REVOKED",
             "PRE-REVOCATION",
+            "RETURNED TO TDCJ-ID - SNOW CASE/PREVIOUS CHARGE",
         ]
     )
 )
