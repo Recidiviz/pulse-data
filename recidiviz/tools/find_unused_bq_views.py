@@ -45,12 +45,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     IMPACT_REPORTS_DATASET_ID,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
-from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
-    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
-    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -237,6 +231,8 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
+    OFFICER_ASSIGNMENTS_VIEW_BUILDER.address,
+    STATE_ASSIGNMENTS_VIEW_BUILDER.address,
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker
     SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
@@ -298,31 +294,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a generic view that helps understand LSI-R scoring which may be "
         "useful for future analysis. (Anna 5/16/24)"
     ),
-    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
-        "This view aggregates early discharge stats at the officer-level. It is used "
-        "to generate reports that can be used by supervisors to identify officers who "
-        "are not completing early discharges in a timely manner. These only include "
-        "information for the most recent complete months. (Hugo S 12/21/23)"
-    ),
-    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER.address: (
-        "View of early_discharge_sessions with additional information related to"
-        "1) the officer who supervised the individual during the early discharge, and"
-        "2) the supervisor who supervised the officer during the early discharge (Hugo S 12/21/23)"
-    ),
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER.address: (
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
-    ),
-    OFFICER_ASSIGNMENTS_VIEW_BUILDER.address: (
-        "These views are still referenced by existing looker infra and will likely become relevant "
-        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
-        "pieces of tooling requested by DA's (mayukas 12/21/23)"
-    ),
-    STATE_ASSIGNMENTS_VIEW_BUILDER.address: (
-        "These views are still referenced by existing looker infra and will likely become relevant "
-        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
-        "pieces of tooling requested by DA's (mayukas 12/21/23)"
     ),
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER.address: (
         "Not currently referenced but captures state-specific logic that may eventually be relevant to "

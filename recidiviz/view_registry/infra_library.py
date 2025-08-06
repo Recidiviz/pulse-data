@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state.views.reference.incarceration_location_ids
 from recidiviz.calculator.query.state.views.reference.location_metadata.location_metadata import (
     LOCATION_METADATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.state_staff_and_most_recent_supervisor_with_names import (
-    STATE_STAFF_AND_MOST_RECENT_SUPERVISOR_WITH_NAMES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_staff_with_names import (
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
 )
@@ -208,7 +205,6 @@ def is_view_part_of_infra_library_2025(view_address: BigQueryAddress) -> bool:
 
     reference_views_library_views: set[BigQueryAddress] = {
         STATE_STAFF_WITH_NAMES_VIEW_BUILDER.address,
-        STATE_STAFF_AND_MOST_RECENT_SUPERVISOR_WITH_NAMES_VIEW_BUILDER.address,
         LOCATION_METADATA_VIEW_BUILDER.address,
         get_completion_event_metadata_view_builder().address,
         SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER.address,
