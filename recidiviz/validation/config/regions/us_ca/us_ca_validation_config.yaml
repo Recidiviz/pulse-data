@@ -31,6 +31,13 @@ max_allowed_error_overrides:
   - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: .05
     override_reason: This is likely expected variation.
+  - validation_name: outlier_status_percent_change_exceeded
+    hard_max_allowed_error_override: .55
+    override_reason: >-
+      Our ARMS programming data sometimes includes records from the past, which can
+      cause rather large swings in the outliers metric. TODO(#45967) We also only
+      receive data once a month, which can also contribute to instability in this
+      metric. TODO(#45965)
 num_allowed_rows_overrides:
   - validation_name: product_roster_upcoming_blocks
     hard_num_allowed_rows_override: 15
@@ -39,3 +46,11 @@ num_allowed_rows_overrides:
       have a name change (in which case a new staff member with the new email is
       introduced). There seem to be about 10 typically on any given week. Filtering out
       weeks with lower than 15 blocks to reduce noise.
+  - validation_name: parole_agent_badge_number_changes
+    hard_num_allowed_rows_override: 45
+    override_reason: >-
+      This validation doesn't currently have any impact on product. See more information
+      at https://go/ca-badge-numbers. It's possible that we should turn this off.
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 15
+    override_reason: Low level of validations, will fix later! TODO(#46026)
