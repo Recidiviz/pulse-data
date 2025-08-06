@@ -157,13 +157,13 @@ schema:
     type: BOOLEAN
     mode: NULLABLE
   - name: feature_variants_case_note_search_active_date
-    type: DATETIME
+    type: TIMESTAMP
     mode: NULLABLE
   - name: feature_variants_supervisor_homepage_active_date
-    type: DATETIME
+    type: TIMESTAMP
     mode: NULLABLE
   - name: feature_variants_supervisor_homepage_workflows_active_date
-    type: DATETIME
+    type: TIMESTAMP
     mode: NULLABLE
 clustering_fields: null
 time_partitioning:
