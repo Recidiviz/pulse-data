@@ -17,6 +17,11 @@
 """Enum representing a type of product or product component that may have its own set of
 tool features and/or functionality."""
 from enum import Enum
+from typing import List, Optional
+
+from recidiviz.common.constants.auth import RosterPredefinedRoles
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import snake_to_camel, snake_to_title
 
 
 class ProductType(Enum):
@@ -52,6 +57,10 @@ class ProductType(Enum):
     @property
     def pretty_name(self) -> str:
         return self.value.lower()
+
+    @property
+    def display_name(self) -> str:
+        return snake_to_title(self.value)
 
     def context_page_filter_query_fragment(
         self, context_page_url_col_name: str = "context_page_path"
@@ -104,3 +113,192 @@ class ProductType(Enum):
         ]:
             return ["opportunity_type"]
         return []
+
+    @property
+    def supported_states(self) -> list[StateCode] | None:
+        """Returns the list of states that support this product type. If None, this
+        product is ungated for all states."""
+        if self == ProductType.MILESTONES:
+            return [StateCode.US_CA]
+        return None
+
+    @property
+    def auth_routes(self) -> list[str]:
+        """Returns the routes that should be used to identify users who are provisioned
+        to access this product type via auth tables. All routes should be in snake_case."""
+
+        if self == ProductType.CLIENT_PAGE:
+            return [
+                "workflows",
+                "workflows_supervision",
+                "workflows_facilities",
+                "tasks",
+            ]
+        if self == ProductType.MILESTONES:
+            return ["workflows", "workflows_supervision"]
+        if self == ProductType.PSI_CASE_INSIGHTS:
+            return ["psi"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
+            return ["insights"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
+            return ["insights"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
+            return ["insights"]
+        if self == ProductType.TASKS:
+            return ["tasks"]
+        if self == ProductType.WORKFLOWS:
+            return ["workflows", "workflows_supervision", "workflows_facilities"]
+        if self == ProductType.VITALS:
+            return ["operations"]
+        return []
+
+    @property
+    def product_roster_routes(self) -> list[str]:
+        """Returns the routes that should be used to identify users who are provisioned
+        to access this product type via product roster. Converts the auth0 routes to camelCase
+        to match the product roster schema.
+
+        Note that auth0 actually derives its routes from the product roster routes,
+        but we convert routes in this direction because of relative ease of
+        snake -> camel conversion."""
+
+        return [snake_to_camel(route) for route in self.auth_routes]
+
+    @property
+    def auth_feature_variants(self) -> list[str]:
+        """Returns the feature variants that should be used to identify users who are provisioned
+        to access this product type via auth0 tables. All feature variants should be in snake_case."""
+
+        if self == ProductType.CASE_NOTE_SEARCH:
+            return ["case_note_search"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
+            return ["supervisor_homepage_workflows"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
+            return ["supervisor_homepage"]
+        # Note: Supervisor homepage outcomes module has an associated feature variant
+        # (`outcomesModule`) but this variant is not granted via admin panel, so it is
+        # not observable in auth0 tables. We just assume that users who are provisioned
+        # based on routes will receive this feature variant in the frontend.
+        return []
+
+    @property
+    def primary_role_types(self) -> list[str]:
+        """Returns the primary role types for this product type in the product roster."""
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
+            return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
+            return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
+            return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
+        if self == ProductType.WORKFLOWS:
+            return [
+                RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value.lower(),
+                "supervision_officer",
+                "supervision_staff",
+                "facilities_line_staff",
+                "facilities_staff",
+            ]
+        if self == ProductType.TASKS:
+            return [
+                RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value.lower(),
+            ]
+        return []
+
+    @property
+    def product_roster_feature_variants(self) -> list[str]:
+        """Returns the feature variants that should be used to identify users who are provisioned
+        to access this product type via product roster. Converts the auth0 feature variants to camelCase
+        to match the product roster schema."""
+
+        return [snake_to_camel(route) for route in self.auth_feature_variants]
+
+    def get_product_roster_filter_query_fragment(
+        self, table_prefix: Optional[str] = None
+    ) -> str:
+        """Returns the query fragment that identifies the whether a user in the
+        product roster matches the permissions for a given product type, based on
+        the product roster routes and feature variants defined for that product type."""
+
+        table_prefix_str = f"{table_prefix}." if table_prefix else ""
+        conditions = []
+        if self.supported_states:
+            supported_states_str = ", ".join(
+                [f"'{state.value}'" for state in self.supported_states]
+            )
+            conditions.append(
+                f"{table_prefix_str}state_code IN ({supported_states_str})"
+            )
+        # Append conditions for product roster routes and feature variants
+        # Prioritize override routes over default routes
+        if self.product_roster_routes:
+            conditions.append(
+                " OR ".join(
+                    [
+                        f"COALESCE(JSON_EXTRACT_SCALAR({table_prefix_str}override_routes, '$.{route}') = 'true', JSON_EXTRACT_SCALAR({table_prefix_str}default_routes, '$.{route}') = 'true')"
+                        for route in self.product_roster_routes
+                    ]
+                )
+            )
+        if self.product_roster_feature_variants:
+            conditions.append(
+                " OR ".join(
+                    [
+                        f"JSON_EXTRACT_SCALAR({table_prefix_str}default_feature_variants, '$.{fv}') = 'true'"
+                        for fv in self.product_roster_feature_variants
+                    ]
+                )
+            )
+        if not conditions:
+            raise ValueError(
+                f"No product roster routes or feature variants defined for product type: {self}"
+            )
+        return f"({' AND '.join(conditions)})"
+
+    def get_auth_filter_query_fragment(
+        self,
+        table_prefix: Optional[str] = None,
+        dummy_routes: Optional[List[str]] = None,
+    ) -> str:
+        """Returns the query fragment that identifies the whether a user in the
+        auth0 tables matches the permissions for a given product type, based on
+        the auth0 routes and feature variants defined for that product type.
+        Indicate routes that are not present in an auth0 table by passing them into
+        dummy_routes."""
+
+        table_prefix_str = f"{table_prefix}." if table_prefix else ""
+        conditions = []
+        if self.supported_states:
+            supported_states_str = ", ".join(
+                [f"'{state.value}'" for state in self.supported_states]
+            )
+            conditions.append(
+                f"{table_prefix_str}state_code IN ({supported_states_str})"
+            )
+
+        # Append conditions for product roster routes and feature variants
+        if self.auth_routes:
+            routes_query_fragment = " OR ".join(
+                [
+                    f"{table_prefix_str}routes_{route}"
+                    for route in self.auth_routes
+                    if route not in (dummy_routes or [])
+                ]
+            )
+            conditions.append(
+                routes_query_fragment if routes_query_fragment else "FALSE"
+            )
+        if self.auth_feature_variants:
+            conditions.append(
+                " OR ".join(
+                    [
+                        f"{table_prefix_str}feature_variants_{fv}_active_date IS NOT NULL"
+                        for fv in self.auth_feature_variants
+                    ]
+                )
+            )
+
+        if not conditions:
+            raise ValueError(
+                f"No auth0 routes or feature variants defined for product type: {self}"
+            )
+        return f"({' AND '.join(conditions)})"

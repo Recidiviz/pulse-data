@@ -190,7 +190,7 @@ WHERE is_supervision_officer
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     TRUE AS in_signed_state,
@@ -204,7 +204,7 @@ WHERE
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -217,7 +217,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        workflows_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
@@ -233,7 +233,7 @@ WHERE
         MetricUnitOfAnalysisType.FACILITY,
     ): """SELECT
         state_code,
-        workflows_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS facility,
@@ -249,7 +249,7 @@ WHERE
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     location_name,
@@ -263,7 +263,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -278,7 +278,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -293,7 +293,7 @@ WHERE
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_id AS facility_counselor_id,
@@ -308,7 +308,7 @@ WHERE
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
     TRUE AS in_signed_state,
@@ -320,7 +320,7 @@ FROM
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -331,7 +331,7 @@ FROM
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        workflows_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
@@ -345,7 +345,7 @@ FROM
         MetricUnitOfAnalysisType.FACILITY,
     ): """SELECT
         state_code,
-        workflows_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS facility,
@@ -359,7 +359,7 @@ FROM
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     location_name,
@@ -371,7 +371,7 @@ FROM
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -385,7 +385,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -399,7 +399,7 @@ WHERE
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_id AS facility_counselor_id,
@@ -421,12 +421,12 @@ WHERE
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    insights_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
     TRUE AS in_signed_state,
 FROM
-    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 WHERE
     is_registered
     AND is_primary_user""",
@@ -435,11 +435,11 @@ WHERE
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    insights_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
-    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 WHERE
     is_registered
     AND is_primary_user""",
@@ -448,12 +448,12 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
     WHERE
         is_registered
         AND is_primary_user
@@ -463,12 +463,12 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         staff_id AS unit_supervisor,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
     WHERE
         is_registered
         AND is_primary_user
@@ -478,59 +478,59 @@ WHERE
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    insights_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
     TRUE AS in_signed_state,
 FROM
-    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    insights_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
-    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         staff_id AS unit_supervisor,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         staff_external_id AS officer_id,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.PERSON_ID,
@@ -573,22 +573,22 @@ FROM
         MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
         MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
     ): """SELECT
         state_code,
-        insights_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
     FROM
-        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
     WHERE
         is_registered
         AND is_primary_user
@@ -598,7 +598,7 @@ FROM
         MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -609,7 +609,7 @@ FROM
         MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
     ): """SELECT
     state_code,
-    workflows_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -623,7 +623,7 @@ WHERE
         MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
     ): """SELECT
     users.state_code,
-    users.workflows_user_email_address AS email_address,
+    users.email_address,
     staff_external.supervising_officer_external_id AS officer_id,
     users.start_date,
     users.end_date_exclusive, 
@@ -632,7 +632,7 @@ FROM
 INNER JOIN
     `{project_id}.normalized_state.state_staff` staff
 ON
-    users.workflows_user_email_address = staff.email
+    users.email_address = staff.email
     AND users.state_code = staff.state_code
 INNER JOIN
     `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff_external
@@ -688,7 +688,7 @@ ON
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     TRUE AS in_signed_state,
@@ -702,7 +702,7 @@ WHERE
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -715,7 +715,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        tasks_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
@@ -731,7 +731,7 @@ WHERE
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     location_name,
@@ -745,7 +745,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -760,7 +760,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -775,7 +775,7 @@ WHERE
         MetricUnitOfAnalysisType.ALL_STATES,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
     TRUE AS in_signed_state,
@@ -787,7 +787,7 @@ FROM
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive, 
 FROM
@@ -798,7 +798,7 @@ FROM
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
-        tasks_user_email_address AS email_address,
+        email_address,
         start_date,
         end_date_exclusive,
         location_id AS district,
@@ -812,7 +812,7 @@ FROM
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     location_name,
@@ -824,7 +824,7 @@ FROM
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
@@ -838,7 +838,7 @@ WHERE
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """SELECT
     state_code,
-    tasks_user_email_address AS email_address,
+    email_address,
     start_date,
     end_date_exclusive,
     staff_external_id AS officer_id,
