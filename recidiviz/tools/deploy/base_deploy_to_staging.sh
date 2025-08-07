@@ -229,8 +229,8 @@ fi
 echo "Deploying $VERSION_TAG to Looker staging project..."
 
 FLAGS=""
-[ "$PROMOTE" = "true" ] && FLAGS+=" -p"
-[ "$NO_PROMOTE" = "true" ] && FLAGS+=" -n"
+[ "$PROMOTE" = "true" ] && FLAGS+="-p"
+[ "$NO_PROMOTE" = "true" ] && FLAGS+="-n"
 [ -n "$DEBUG_BUILD_NAME" ] && FLAGS+=" -d $DEBUG_BUILD_NAME"
 
 "${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -b "${BRANCH_NAME}" "${FLAGS}" || exit_on_fail
