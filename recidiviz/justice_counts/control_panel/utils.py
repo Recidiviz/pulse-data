@@ -126,6 +126,7 @@ def get_auth0_user_id(request_dict: Dict[str, Any]) -> str:
     return auth0_user_id
 
 
+# pylint: disable=too-many-positional-arguments
 def write_data_to_spreadsheet(
     google_credentials: Credentials,
     spreadsheet_id: str,
@@ -136,6 +137,7 @@ def write_data_to_spreadsheet(
     df: Optional[pd.DataFrame] = None,
     columns: Optional[List[str]] = None,
     overwrite_sheets: Optional[bool] = False,
+    value_input_option: Optional[str] = "RAW",
 ) -> int:
     """Writes data to the spreadsheet specified by the spreadsheet_id and
     returns sheet_id where the data was written.
@@ -186,7 +188,7 @@ def write_data_to_spreadsheet(
     spreadsheet_service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
         range=range_name,
-        valueInputOption="RAW",
+        valueInputOption=value_input_option,
         body=body,
     ).execute()
 

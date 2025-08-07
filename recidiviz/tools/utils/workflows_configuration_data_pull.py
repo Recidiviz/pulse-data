@@ -25,6 +25,7 @@ python -m recidiviz.tools.utils.workflows_configuration_data_pull --credentials=
 """
 import argparse
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from google.oauth2 import service_account
@@ -93,8 +94,8 @@ def get_format_requests_for_sheet(sheet_id: int) -> List[Dict[str, Any]]:
             "range": {
                 "sheetId": sheet_id,
                 "startRowIndex": 1,
-                "startColumnIndex": 0,
-                "endColumnIndex": 6,
+                "startColumnIndex": 1,
+                "endColumnIndex": 7,
             },
             "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
             "fields": "userEnteredFormat.textFormat.bold",
@@ -127,8 +128,8 @@ def get_format_requests_for_sheet(sheet_id: int) -> List[Dict[str, Any]]:
             "range": {
                 "sheetId": sheet_id,
                 "startRowIndex": 1,
-                "startColumnIndex": 1,
-                "endColumnIndex": 2,
+                "startColumnIndex": 2,
+                "endColumnIndex": 3,
             },
             "cell": {"userEnteredFormat": {"horizontalAlignment": "RIGHT"}},
             "fields": "userEnteredFormat.horizontalAlignment",
@@ -205,16 +206,16 @@ def get_heading_and_opportunity_page_explainer(
     explainer data for the given opportunity config.
     """
     result = []
-    heading_row = ["" for _ in range(7)]
-    heading_row[5] = "Heading"
-    heading_row[6] = (
+    heading_row = ["" for _ in range(8)]
+    heading_row[6] = "Heading"
+    heading_row[7] = (
         opportunity_config.initial_header
         if opportunity_config and opportunity_config.initial_header
         else "null"
     )
-    opportunity_page_explainer_row = ["" for _ in range(7)]
-    opportunity_page_explainer_row[5] = "OpportunityPageExplainer"
-    opportunity_page_explainer_row[6] = (
+    opportunity_page_explainer_row = ["" for _ in range(8)]
+    opportunity_page_explainer_row[6] = "OpportunityPageExplainer"
+    opportunity_page_explainer_row[7] = (
         opportunity_config.subheading
         if opportunity_config and opportunity_config.subheading
         else "null"
@@ -232,25 +233,25 @@ def get_workflows_caseload_tabs(
     caseload tabs for a given opportunity config.
     """
     result = []
-    workflows_caseload_tabs_header = ["" for _ in range(6)]
-    workflows_caseload_tabs_header[5] = "WorkflowsCaseloadTabs:"
+    workflows_caseload_tabs_header = ["" for _ in range(7)]
+    workflows_caseload_tabs_header[6] = "WorkflowsCaseloadTabs:"
     result.append(workflows_caseload_tabs_header)
     # for spacing to seperate the workflows caseload tabs rows with whatever are the next rows
     empty_row: List[str] = []
     # if no config or no .tab_groups for an existing config
     if not opportunity_config or not opportunity_config.tab_groups:
-        null_row = ["" for _ in range(6)]
-        null_row[5] = "null"
+        null_row = ["" for _ in range(7)]
+        null_row[6] = "null"
         result.append(null_row)
         result.append(empty_row)
         return result
     # there are tabs
     workflows_caseload_tabs = opportunity_config.tab_groups
     for workflows_caseload_tab_option in workflows_caseload_tabs:
-        workflow_tab_row = ["" for _ in range(7)]
+        workflow_tab_row = ["" for _ in range(8)]
         # ELIGIBILITY_STATUS, GENDER, GENDER - Transgender Only, etc
-        workflow_tab_row[5] = workflows_caseload_tab_option["key"]
-        workflow_tab_row[6] = str(workflows_caseload_tab_option["tabs"])
+        workflow_tab_row[6] = workflows_caseload_tab_option["key"]
+        workflow_tab_row[7] = str(workflows_caseload_tab_option["tabs"])
         result.append(workflow_tab_row)
     result.append(empty_row)
     return result
@@ -264,30 +265,30 @@ def get_eligible_and_ineligble_criteria_rows(
     criteria data for the given opportunity config.
     """
     result = []
-    eligible_row = ["" for _ in range(7)]
-    eligible_row[5] = "CriteriaList__eligible_criteria"
+    eligible_row = ["" for _ in range(8)]
+    eligible_row[6] = "CriteriaList__eligible_criteria"
     result.append(eligible_row)
     eligible_criteria_rows = []
 
     if opportunity_config:
         for criteria in opportunity_config.eligible_criteria_copy:
-            new_row = ["" for _ in range(9)]
+            new_row = ["" for _ in range(10)]
             # criteria["key"] and criteria["text"] can be None, we assign the string "null" if that's the case
-            new_row[7] = criteria["key"] if criteria["key"] else "null"
-            new_row[8] = criteria["text"] if criteria["text"] else "null"
+            new_row[8] = criteria["key"] if criteria["key"] else "null"
+            new_row[9] = criteria["text"] if criteria["text"] else "null"
             eligible_criteria_rows.append(new_row)
     result.extend(eligible_criteria_rows)
 
-    non_eligible_row = ["" for _ in range(7)]
-    non_eligible_row[5] = "CriteriaList__non_eligible_criteria"
+    non_eligible_row = ["" for _ in range(8)]
+    non_eligible_row[6] = "CriteriaList__non_eligible_criteria"
     result.append(non_eligible_row)
     non_eligible_criteria_rows = []
     if opportunity_config:
         for criteria in opportunity_config.ineligible_criteria_copy:
-            new_row = ["" for _ in range(9)]
+            new_row = ["" for _ in range(10)]
             # criteria["key"] and criteria["text"] can be None, we assign the string "null" if that's the case
-            new_row[7] = criteria["key"] if criteria["key"] else "null"
-            new_row[8] = criteria["text"] if criteria["text"] else "null"
+            new_row[8] = criteria["key"] if criteria["key"] else "null"
+            new_row[9] = criteria["text"] if criteria["text"] else "null"
             non_eligible_criteria_rows.append(new_row)
     result.extend(non_eligible_criteria_rows)
     return result
@@ -299,8 +300,8 @@ def get_denials(opportunity_config: Optional[FullOpportunityConfig]) -> List[Lis
     denial reason code, and denial reason display copy for the given opportunity config.
     """
     result = []
-    denied_tab_title_row = ["" for _ in range(10)]
-    denied_tab_title_row[9] = (
+    denied_tab_title_row = ["" for _ in range(11)]
+    denied_tab_title_row[10] = (
         opportunity_config.denied_tab_title
         if opportunity_config and opportunity_config.denied_tab_title
         else "null"
@@ -309,9 +310,9 @@ def get_denials(opportunity_config: Optional[FullOpportunityConfig]) -> List[Lis
     denial_reason_codes_rows = []
     if opportunity_config:
         for denial_reason in opportunity_config.denial_reasons:
-            new_row = ["" for _ in range(12)]
-            new_row[10] = denial_reason["key"]
-            new_row[11] = denial_reason["text"]
+            new_row = ["" for _ in range(13)]
+            new_row[11] = denial_reason["key"]
+            new_row[12] = denial_reason["text"]
             denial_reason_codes_rows.append(new_row)
         result.extend(denial_reason_codes_rows)
     return result
@@ -340,6 +341,7 @@ def get_opportunity_data(
     """
     result = []
     top_row = [
+        "",  # Placeholder for "Date Exported" value, added later
         str(opportunity.system_type.name),
         str(opportunity.homepage_position),
         opportunity.opportunity_type,
@@ -417,6 +419,7 @@ def write_to_workflows_sheet(
     An example of a return value can be border_data_by_sheet_title = {"US_AR" : [20, 32, 87], "US_TX" : [8], "US_OR" : []}
     """
     header_data = [
+        "Date Exported",
         "System Type",
         "Home Page Position",
         "Opportunity",
@@ -432,6 +435,10 @@ def write_to_workflows_sheet(
     ]
 
     border_data_by_sheet_title: Dict[str, List[int]] = {}
+    # We calculate datetime here once, instead of once for each opportunity in get_opportunity_data for readibility reasons
+    # Since it's more clean to get the datetime once and apply it to all the opportunities in the state than to get it once
+    # for each opportunity in that state.
+    export_date = datetime.now().strftime("%Y-%m-%d")
 
     for index, state_code in enumerate(state_codes):
         # 1. Get the data grouped in blocks
@@ -440,18 +447,24 @@ def write_to_workflows_sheet(
         )
 
         if not opportunity_blocks:
-            # Handle states with no opportunities if necessary
-            # For now, we can just write the header
-            sheet_data_to_write = [header_data]
+            # Handle states with no opportunities by writing a single row with the date and "null".
+            no_opp_row = [export_date, "null"]
+            sheet_data_to_write = [header_data, no_opp_row]
             border_data_by_sheet_title[state_code] = []
         else:
-            # 2. Calculate border indices from the blocks
+            # 2. Add the export date to the first row of each opportunity block.
+            for block in opportunity_blocks:
+                # Ensure the block and its first row exist before modifying.
+                if block and block[0]:
+                    block[0][0] = export_date
+
+            # 3. Calculate border indices from the blocks
             border_indices = calculate_border_indices(
                 opportunity_blocks, header_row_count=len([header_data])
             )
             border_data_by_sheet_title[state_code] = border_indices
 
-            # 3. Flatten the blocks into a single list for writing
+            # 4. Flatten the blocks into a single list for writing
             flattened_opportunities = [
                 row for block in opportunity_blocks for row in block
             ]
@@ -467,6 +480,7 @@ def write_to_workflows_sheet(
             index,
             data_to_write=sheet_data_to_write,
             overwrite_sheets=True,
+            value_input_option="USER_ENTERED",
         )
 
     return border_data_by_sheet_title
