@@ -46,6 +46,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
+        # TODO(#45994): Do we need to update this criterion to consider the right set of
+        # release dates in MO? What date(s) are we using right now for this criterion?
         incarceration_within_60_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
         # TODO(#44399): This criterion currently only captures people who have approved
         # outside-clearance requests, but since not every facility records

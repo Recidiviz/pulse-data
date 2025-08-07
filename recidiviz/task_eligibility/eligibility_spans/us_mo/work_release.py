@@ -141,6 +141,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         educational_score_1.VIEW_BUILDER,
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
+        # TODO(#45994): Do we need to update the criteria going into this group to
+        # consider the right set of release dates in MO? What date(s) are we using right
+        # now for the sub-criteria in this group?
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,
     ],
     # TODO(#43358): Make sure this completion event is pulling in the proper data from
