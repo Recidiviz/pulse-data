@@ -18,9 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.metrics.export.view_export_manager import (
-    METRIC_VIEW_DATA_EXPORT_TRACKER_ADDRESS,
-)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -45,7 +42,7 @@ view_update_exports AS (
       WHEN state_code IS NULL THEN "STATE_AGNOSTIC"  -- some exports are for all states, label them as state agnostic
       ELSE UPPER(state_code) -- some of the older state_codes are lower case
     END AS state_code 
-  FROM `{{project_id}}.{{view_update_metadata_dataset}}.{{metric_view_data_export_tracker_table_id}}`
+  FROM `{{project_id}}.{{view_update_metadata_dataset}}.metric_view_data_export_tracker`
   WHERE
     destination_override IS NULL
     AND sandbox_dataset_prefix IS NULL
@@ -141,7 +138,6 @@ STALE_METRIC_EXPORT_SPANS_BY_STATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=STALE_METRIC_EXPORT_SPANS_BY_STATE_VIEW_ID,
     description=STALE_METRIC_EXPORT_SPANS_BY_STATE_DESCRIPTION,
     view_update_metadata_dataset=VIEW_UPDATE_METADATA_DATASET,
-    metric_view_data_export_tracker_table_id=METRIC_VIEW_DATA_EXPORT_TRACKER_ADDRESS.table_id,
     should_materialize=True,
 )
 
