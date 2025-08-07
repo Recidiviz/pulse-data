@@ -42,6 +42,9 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 def parse_sentencing_authority(
@@ -321,3 +324,18 @@ def parse_incident_severity(
         return StateIncarcerationIncidentSeverity.THIRD_HIGHEST
 
     return StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN
+
+
+def parse_supervision_type(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """
+    Uses startReason to determine supervision type.
+    All supervision data in Nebraska is parole, which is why we only change
+    the type if the supervision period is an absconsion.
+    """
+
+    if raw_text == "ABSCOND":
+        return StateSupervisionPeriodSupervisionType.ABSCONSION
+
+    return StateSupervisionPeriodSupervisionType.PAROLE

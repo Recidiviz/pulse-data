@@ -30,7 +30,10 @@ output:
               $values:
                 - inmateNumber
                 - periodId
-          supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
+          supervision_type:
+            $enum_mapping:
+              $raw_text: startReason
+              $custom_parser: us_ne_custom_enum_parsers.parse_supervision_type
           start_date: startDate
           termination_date: endDate
           county_code: countyParoledTo
@@ -51,6 +54,8 @@ output:
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                   - Supervision Level Change # Recidiviz-made to indicate period changes due to supervision level change
                   - Parole Officer Change # Recidiviz-made to indicate new periods from parole office changes
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - ABSCOND
           termination_reason:
             $enum_mapping:
               $raw_text: endReason
@@ -59,7 +64,8 @@ output:
                   - RETURNED TO SENDING STATE
                   - PV PICKED UP BY SENDING STATE
                 StateSupervisionPeriodTerminationReason.ABSCONSION:
-                  - ABSCOND (ENDED SUERVISION)
+                  - ABSCOND (ENDED SUERVISION) # This closes out the supervision period, only used when non NE case absconds
+                  - ABSCOND # Recidiviz-made to indicate someone absconded from supervision
                 StateSupervisionPeriodTerminationReason.VACATED:
                   - SENTENCE VACATED
                 StateSupervisionPeriodTerminationReason.DEATH:
