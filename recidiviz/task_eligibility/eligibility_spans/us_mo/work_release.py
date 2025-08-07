@@ -29,7 +29,8 @@ from recidiviz.task_eligibility.criteria.general import (
     no_contraband_incarceration_incident_within_2_years,
     not_in_work_release,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # educational_score_1_while_incarcerated,; completed_12_months_outside_clearance,
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,
+    educational_score_1,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
@@ -138,11 +139,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     # TODO(#42982): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
-        # TODO(#45315): Un-comment line for
-        # `US_MO_EDUCATIONAL_SCORE_1_WHILE_INCARCERATED` (or just delete the
-        # criterion) once we decide what we're going to do with it, pending feedback
-        # from TTs.
-        # educational_score_1_while_incarcerated.VIEW_BUILDER,
+        educational_score_1.VIEW_BUILDER,
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,
     ],

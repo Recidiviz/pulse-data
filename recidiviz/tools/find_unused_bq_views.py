@@ -209,9 +209,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.completed_12_months_outside_clearance import (
     VIEW_BUILDER as US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo.educational_score_1_while_incarcerated import (
-    VIEW_BUILDER as US_MO_EDUCATIONAL_SCORE_1_WHILE_INCARCERATED,
-)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.configured_validations import get_all_validations
@@ -423,9 +420,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     WORKFLOWS_FACILITIES_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Ryan Guan 05/07/2025)"
-    ),
-    US_MO_EDUCATIONAL_SCORE_1_WHILE_INCARCERATED.address: (
-        "Pending feedback from TTs, may be used for work-release & outside-clearance eligibility in MO or will be deleted if unnecessary (see #42982) (Maggie Hilderbran, 7/11/2025)"
     ),
     # TODO(#45499): Delete this once OC completion event is finished
     US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
