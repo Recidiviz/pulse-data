@@ -829,8 +829,7 @@ output:
                     $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
               # if this period is an OTHER_STATE period, supervision level is null, and
               # we wouldn't be imputing it based on most recent supervision level, then
-              # let's set supervision level to INTERNAL_UNKNOWN so that they won't be
-              # excluded from the workflows candidate population query due to NULL supervision level
+              # let's parse it as INTERSTATE_COMPACT
               - $else_if:
                   $and:
                     - $is_null: supervision_level_id
@@ -848,7 +847,7 @@ output:
                           - $literal("OTHER_STATE")
                           - specialties
                         $separator: "##"
-                    $custom_parser: us_mi_custom_enum_parsers.map_internal_unknown_level
+                    $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
               - $else_if:
                   $and:
                     - $in:

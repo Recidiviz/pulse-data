@@ -184,7 +184,8 @@ maximum_levels = [
     "7315",  # CRP - EMS Employed
     "2288",  # CRP EMS
     "7173",  # CRP EMS Combination Office
-    "7171",  # CRP - EMS Waiver- "13567", # VO/SA Parole EMS Employed
+    "7171",  # CRP - EMS Waiver
+    "13567",  # VO/SA Parole EMS Employed
     "13827",  # VO Parole GPS Unemployed
     "13610",  # VO Parole SAI (Team) EMS Employed
     "13824",  # Probation GPS Unemployed
@@ -401,6 +402,9 @@ def parse_supervision_level(
     if re.search(r"MINIMUM IN-PERSON|MINIMUM LOW", supervision_level_value):
         return StateSupervisionLevel.MINIMUM
 
+    if re.search(r"OTHER_STATE|OUT OF STATE", supervision_level_value):
+        return StateSupervisionLevel.INTERSTATE_COMPACT
+
     # If values fall into none of these categories
     if supervision_level_value:
         return StateSupervisionLevel.INTERNAL_UNKNOWN
@@ -602,13 +606,5 @@ def map_in_custody_level(raw_text: str) -> Optional[StateSupervisionLevel]:
 
     if raw_text:
         return StateSupervisionLevel.IN_CUSTODY
-
-    return None
-
-
-def map_internal_unknown_level(raw_text: str) -> Optional[StateSupervisionLevel]:
-
-    if raw_text:
-        return StateSupervisionLevel.INTERNAL_UNKNOWN
 
     return None
