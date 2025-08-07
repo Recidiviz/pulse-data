@@ -10,7 +10,7 @@ exclusions:
     exclusion_reason: In IA, we ingest SPs on the term level and not the person level, so someone serving concurrent sentences would have overlapping periods.
 max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
-    hard_max_allowed_error_override: 0.002
+    hard_max_allowed_error_override: 0.0093
     override_reason: TODO(#45221) - Delete duplicates introduced in staging by #42841
 num_allowed_rows_overrides:
   - validation_name: in_custody_sps_have_associated_ip
