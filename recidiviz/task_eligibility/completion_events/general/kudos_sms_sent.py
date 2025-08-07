@@ -14,14 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Kudos SMS sent thorugh the milestones dashboard for California.
+"""Kudos SMS sent through the milestones dashboard for any person across all states
+with the milestones dashboard.
 """
-from recidiviz.calculator.query.state.dataset_config import (
-    PULSE_DASHBOARD_SEGMENT_DATASET,
-)
-from recidiviz.calculator.query.state.views.workflows.user_event_template import (
-    user_event_template,
-)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -29,32 +24,20 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all custody level downgrade events
-for any person, across all states.
-"""
-
-_QUERY_TEMPLATE = f"""
-WITH milestones_congratulations AS (
-  {user_event_template(
-        "frontend_milestones_congratulations_sent", 
-        should_check_client_id=False, 
-        should_lookup_user_from_staff_record=False
-    )}
-)
+_QUERY_TEMPLATE = """
 SELECT
     DISTINCT
     mc.state_code,
     mc.person_id,
-    SAFE_CAST(mc.timestamp AS DATE) AS completion_event_date
-FROM milestones_congratulations mc
+    SAFE_CAST(mc.event_ts AS DATE) AS completion_event_date
+FROM `{project_id}.segment_events__milestones.frontend_milestones_congratulations_sent_materialized` mc
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder(
         completion_event_type=TaskCompletionEventType.KUDOS_SMS_SENT,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
-        segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
     )
 )
 
