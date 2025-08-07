@@ -16,8 +16,11 @@
 # =============================================================================
 """Tests for the SQL to GCS export process."""
 import datetime
+import tempfile
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock, patch
+
+import pymssql
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
@@ -31,7 +34,11 @@ from recidiviz.tools.ingest.regions.us_ne.export_sql_to_gcs import (
     UsNeSqlTableToRawFileExporter,
     process_us_ne_database_export,
 )
+from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_config import (
+    UsNeDatabaseConnectionConfigProvider,
+)
 from recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks import (
+    UsNeDatabaseName,
     UsNeSqltoGCSExportTask,
 )
 
@@ -117,3 +124,106 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
 
         self.assertEqual(successful_exports, export_tasks)
         self.assertEqual(failed_exports, [])
+
+
+class TestUsNeSqlServerConnectionManager(unittest.TestCase):
+    """Tests for the UsNeSqlServerConnectionManager."""
+
+    def test_execute_query_with_batched_fetch(self) -> None:
+        mock_connection = MagicMock(spec=pymssql.Connection)
+        mock_cursor = MagicMock()
+        mock_cursor.description = [["column1"], ["column2"]]
+        mock_cursor.fetchmany.side_effect = [
+            [
+                (1, "data1"),
+                (2, "data2"),
+            ],
+            [],
+        ]
+        mock_connection.cursor.return_value = mock_cursor
+        manager = UsNeSqlServerConnectionManager(
+            db_name=UsNeDatabaseName.DCS_WEB,
+            db_connection=mock_connection,
+            db_connection_config=UsNeDatabaseConnectionConfigProvider(
+                project_id="test_project"
+            ),
+        )
+
+        result_generator = manager.execute_query_with_batched_fetch(
+            query="SELECT * FROM test_table",
+            batch_size=2,
+        )
+        columns = next(result_generator, None)
+        self.assertEqual(columns, ["column1", "column2"])
+
+        for rows in result_generator:
+            self.assertEqual(rows, [(1, "data1"), (2, "data2")])
+
+
+class TestUsNeSqlTableToRawFileExporter(unittest.TestCase):
+    """Tests for the UsNeSqlTableToRawFileExporter."""
+
+    def test_export_data_to_csv(self) -> None:
+        mock_connection_manager = MagicMock(spec=UsNeSqlServerConnectionManager)
+        mock_connection_manager.execute_query_with_batched_fetch.return_value = iter(
+            [["column1", "column2"], [(1, "data1"), (2, "data2")]]
+        )
+        exporter = UsNeSqlTableToRawFileExporter(
+            connection_manager=mock_connection_manager, dry_run=False
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks.UsNeSqltoGCSExportTask.file_name",
+            new_callable=PropertyMock,
+        ) as mock_file_name:
+            mock_file_name.return_value = f"{temp_dir}/test_table.csv"
+            export_task = UsNeSqltoGCSExportTask.for_qualified_table_name(
+                qualified_table_name="DCS_WEB.test_table",
+                update_datetime=datetime.datetime(2023, 1, 1),
+                region_raw_file_config=DirectIngestRegionRawFileConfig(
+                    StateCode.US_NE.value
+                ),
+            )
+            mock_connection_manager.execute_query_with_batched_fetch.return_value = (
+                iter([["column1", "column2"], [(1, "data1"), (2, "data2")]])
+            )
+
+            file_name = exporter.export_data_to_csv(export_task)
+
+            # assert file was created and contains expected data
+            with open(file_name, "r", encoding="windows-1252") as f:
+                content = f.read()
+                self.assertEqual("column1‡column2†1‡data1†2‡data2†", content)
+
+    def test_export_data_to_csv_retry_success(self) -> None:
+        mock_connection_manager = MagicMock(spec=UsNeSqlServerConnectionManager)
+        mock_connection_manager.execute_query_with_batched_fetch.side_effect = [
+            pymssql.OperationalError("Temporary failure"),
+            iter([["column1", "column2"], [(1, "data1"), (2, "data2")]]),
+        ]
+        exporter = UsNeSqlTableToRawFileExporter(
+            connection_manager=mock_connection_manager, dry_run=False
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "recidiviz.tools.ingest.regions.us_ne.sql_to_gcs_export_tasks.UsNeSqltoGCSExportTask.file_name",
+            new_callable=PropertyMock,
+        ) as mock_file_name:
+            mock_file_name.return_value = f"{temp_dir}/test_table.csv"
+            export_task = UsNeSqltoGCSExportTask.for_qualified_table_name(
+                qualified_table_name="DCS_WEB.test_table",
+                update_datetime=datetime.datetime(2023, 1, 1),
+                region_raw_file_config=DirectIngestRegionRawFileConfig(
+                    StateCode.US_NE.value
+                ),
+            )
+            mock_connection_manager.execute_query_with_batched_fetch.return_value = (
+                iter([["column1", "column2"], [(1, "data1"), (2, "data2")]])
+            )
+
+            file_name = exporter.export_data_to_csv(export_task)
+
+            # assert file was created and contains expected data
+            with open(file_name, "r", encoding="windows-1252") as f:
+                content = f.read()
+                self.assertEqual("column1‡column2†1‡data1†2‡data2†", content)

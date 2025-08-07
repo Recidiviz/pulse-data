@@ -36,6 +36,7 @@ Usage:
 import argparse
 import datetime
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, nullcontext
@@ -149,29 +150,23 @@ class UsNeSqlServerConnectionManager:
             raise ValueError("Database connection is not open.")
 
         cursor: pymssql.Cursor | None = None
-        retries = 0
-        while retries < MAX_RETRIES:
-            try:
-                cursor = self._db_connection.cursor()
-                cursor.execute(query)
+        try:
+            cursor = self._db_connection.cursor()
+            cursor.execute(query)
 
-                # Get column descriptions for the caller
-                columns = [desc[0] for desc in cursor.description]
-                yield columns
+            # Get column descriptions for the caller
+            columns = [desc[0] for desc in cursor.description]
+            yield columns
 
-                # Fetch and yield batches of rows
-                while True:
-                    rows = cursor.fetchmany(batch_size)
-                    if not rows:
-                        break
-                    yield rows
-            except pymssql.OperationalError as e:
-                logging.error("OperationalError encountered: %s", e)
-                retries += 1
-                time.sleep(2**retries)
-            finally:
-                if cursor:
-                    cursor.close()
+            # Fetch and yield batches of rows
+            while True:
+                rows = cursor.fetchmany(batch_size)
+                if not rows:
+                    break
+                yield rows
+        finally:
+            if cursor:
+                cursor.close()
 
 
 @attr.define
@@ -243,51 +238,75 @@ class UsNeSqlTableToRawFileExporter:
             table_name=export_task.table_name,
         )
 
-        with open(
-            output_path,
-            mode="w",
-            newline="",
-            encoding=export_task.encoding,
-            # TODO(#45702) we should export in utf-8 instead of windows-1252
-            errors="replace",  # Handle encoding errors by replacing problematic characters
-        ) as f:
-            # Process the results in batches
-            result_generator = self.connection_manager.execute_query_with_batched_fetch(
-                query
-            )
-
-            # First row of the exported CSV will always contain column headers
-            columns = next(result_generator, None)
-            if not columns:
-                raise ValueError(
-                    f"Found no columns in the exported file for file [{export_task.file_tag}]. Expected every file to at least have a columns row."
+        def write_csv_file() -> None:
+            """Writes the query results to a CSV file."""
+            with open(
+                output_path,
+                mode="w",
+                newline="",
+                encoding=export_task.encoding,
+                errors="replace",
+            ) as f:
+                # Process the results in batches
+                result_generator = (
+                    self.connection_manager.execute_query_with_batched_fetch(query)
                 )
 
-            def format_field(field: Any) -> str:
-                """Format fields to match previous CSV export behavior."""
-                if field is None:
-                    return ""
-                if isinstance(field, bool):
-                    return "1" if field else "0"
-                if isinstance(field, datetime.datetime):
-                    # Format with three-digit millisecond precision
-                    return field.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-                return str(field)
+                # First row contains column headers
+                columns = next(result_generator, None)
+                if not columns:
+                    raise ValueError(
+                        f"Found no columns in the exported file for file [{export_task.file_tag}]. "
+                        "Expected every file to at least have a columns row."
+                    )
 
-            def write_csv_row(row: list[Any]) -> None:
-                """Write a single row to the CSV file using the export_task's delimiter and line terminator.
-                Using a simple write here because the csv module escapes quotes and newlines when using csv.QUOTE_NONE,
-                which we don't want"""
-                f.write(
-                    export_task.delimiter.join(format_field(field) for field in row)
-                    + export_task.line_terminator
-                )
+                def format_field(field: Any) -> str:
+                    """Format fields to match previous CSV export behavior."""
+                    if field is None:
+                        return ""
+                    if isinstance(field, bool):
+                        return "1" if field else "0"
+                    if isinstance(field, datetime.datetime):
+                        # Format with three-digit millisecond precision
+                        return field.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                    return str(field)
 
-            write_csv_row(columns)
+                def write_csv_row(row: list[Any]) -> None:
+                    """Write a single row to the CSV file."""
+                    f.write(
+                        export_task.delimiter.join(format_field(field) for field in row)
+                        + export_task.line_terminator
+                    )
 
-            for rows in result_generator:
-                for row in rows:
-                    write_csv_row(row)
+                write_csv_row(columns)
+
+                for rows in result_generator:
+                    for row in rows:
+                        write_csv_row(row)
+
+        retries = 0
+        while retries < MAX_RETRIES:
+            try:
+                write_csv_file()
+                break
+            except pymssql.OperationalError as e:
+                logging.error("OperationalError on attempt %d: %s", retries + 1, e)
+                retries += 1
+
+                if retries >= MAX_RETRIES:
+                    raise
+
+                # Clear the file if it exists (will be recreated on next attempt)
+                if os.path.exists(output_path):
+                    try:
+                        os.remove(output_path)
+                    except OSError as remove_error:
+                        logging.warning(
+                            "Failed to remove partial file %s: %s",
+                            output_path,
+                            remove_error,
+                        )
+                time.sleep(2**retries)
 
         return str(output_path)
 
