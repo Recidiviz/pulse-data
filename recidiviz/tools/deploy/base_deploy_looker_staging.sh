@@ -172,3 +172,5 @@ if [[ -n ${PROMOTE} ]]; then
   echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
   deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
 fi
+
+echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."

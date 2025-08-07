@@ -222,10 +222,18 @@ fi
 if [[ -n ${PROMOTE} ]]; then
     verify_hash "$COMMIT_HASH"
     pre_deploy_configure_infrastructure "$PROJECT_ID" "${DOCKER_IMAGE_TAG}" "$COMMIT_HASH"
-    "${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -b "${BRANCH_NAME}" -p || exit_on_fail
 else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
+
+echo "Deploying $VERSION_TAG to Looker staging project..."
+
+FLAGS=""
+[ "$PROMOTE" = "true" ] && FLAGS+=" -p"
+[ "$NO_PROMOTE" = "true" ] && FLAGS+=" -n"
+[ -n "$DEBUG_BUILD_NAME" ] && FLAGS+=" -d $DEBUG_BUILD_NAME"
+
+"${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -b "${BRANCH_NAME}" "${FLAGS}" || exit_on_fail
 
 if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
