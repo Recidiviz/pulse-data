@@ -56,4 +56,4 @@ external_data_configuration:
   # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
   ignoreUnknownValues: true
   googleSheetsOptions:
-    skipLeadingRows: "3"
+    skipLeadingRows: "1"
