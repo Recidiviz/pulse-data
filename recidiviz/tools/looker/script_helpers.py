@@ -17,15 +17,12 @@
 """Helpers for LookML generation scripts."""
 import hashlib
 import os
+from pathlib import Path
 
-from recidiviz.tools.looker.constants import (
-    GENERATED_LOOKML_ROOT_PATH,
-    GENERATED_SUBDIR_NAME,
-    VIEWS_DIR,
-)
+from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH, VIEWS_DIR
 
 
-def hash_directory(path: str) -> str:
+def hash_directory(path: Path) -> str:
     """
     Computes a SHA-256 hash for the contents of a directory, including file paths
     and file contents. This ensures that changes such as renames, moves, or content
@@ -35,7 +32,6 @@ def hash_directory(path: str) -> str:
     Returns:
         str: The hexadecimal representation of the SHA-256 hash of the directory.
     """
-
     hash_obj = hashlib.sha256()
 
     for root, _dirs, files in sorted(os.walk(path)):
@@ -52,7 +48,7 @@ def hash_directory(path: str) -> str:
     return hash_obj.hexdigest()
 
 
-def hash_generated_directory() -> str:
+def hash_recidiviz_data_generated_lookml_directory() -> str:
     """
     Computes and returns a hash value for the contents of the directory
     specified by the `GENERATED_ROOT_PATH` constant. This function utilizes
@@ -60,7 +56,7 @@ def hash_generated_directory() -> str:
     Returns:
         str: A string representation of the hash value for the directory contents.
     """
-    return hash_directory(path=GENERATED_LOOKML_ROOT_PATH)
+    return hash_directory(path=Path(GENERATED_LOOKML_ROOT_PATH))
 
 
 def remove_lookml_files_from(directory: str) -> None:
@@ -70,14 +66,16 @@ def remove_lookml_files_from(directory: str) -> None:
     for path, _, filenames in os.walk(directory):
         for file in filenames:
             if file.endswith(".lkml") or file.endswith(".lookml"):
-                os.remove(os.path.join(path, file))
+                try:
+                    os.remove(os.path.join(path, file))
+                except FileNotFoundError:
+                    # File might have been deleted by another process, ignore this error
+                    pass
 
 
 def get_generated_views_path(output_dir: str, module_name: str) -> str:
     """
     Returns the path to the generated views directory for a given module name.
     "module" is a loose term and can be any string that represents a logical grouping.
-    TODO(#45676) Refactor looker repo so that all generated files have a common generated/ root
-    directory. ex `views/{module_name}/generated/` -> `generated/views/{module_name}/`
     """
-    return os.path.join(output_dir, VIEWS_DIR, module_name, GENERATED_SUBDIR_NAME)
+    return os.path.join(output_dir, VIEWS_DIR, module_name)

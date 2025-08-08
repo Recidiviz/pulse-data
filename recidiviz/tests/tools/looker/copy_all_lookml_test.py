@@ -49,7 +49,7 @@ class TestCopyWithOverwrite(unittest.TestCase):
             )
 
             copied_files_count = copy_with_overwrite(
-                source_root=source_root, target_root=target_root
+                source_root=source_root_path, target_root=target_root_path
             )
 
             assert copied_files_count == 2, "Expected 2 files to be copied"
@@ -71,6 +71,7 @@ class TestCopyWithOverwrite(unittest.TestCase):
     def test_copy_raises_on_unexpected_files(self) -> None:
         with tempfile.TemporaryDirectory() as source_root, tempfile.TemporaryDirectory() as target_root:
             source_root_path = Path(source_root)
+            target_root_path = Path(target_root)
 
             (source_root_path / "dir1").mkdir()
             (source_root_path / "dir1" / "file1.lookml").write_text("File 1 content")
@@ -79,4 +80,6 @@ class TestCopyWithOverwrite(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(ValueError, "Unexpected file type"):
-                copy_with_overwrite(source_root=source_root, target_root=target_root)
+                copy_with_overwrite(
+                    source_root=source_root_path, target_root=target_root_path
+                )

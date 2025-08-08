@@ -28,14 +28,10 @@ EXPLORES_DIR = "explores"
 RECIDIVIZ_ROOT = os.path.dirname(recidiviz.__file__)
 LOOKER_TOOLS_ROOT = "tools/looker"
 
-GENERATED_SUBDIR_NAME = "generated"
-GENERATED_VERSION_FILE_NAME = "generated_version_hash"
+GENERATED_SUBDIR_NAME = "__generated__"
 
 LOOKML_TOOLS_ROOT_PATH = os.path.join(RECIDIVIZ_ROOT, LOOKER_TOOLS_ROOT)
 GENERATED_LOOKML_ROOT_PATH = os.path.join(LOOKML_TOOLS_ROOT_PATH, GENERATED_SUBDIR_NAME)
-GENERATED_VERSION_FILE_PATH = os.path.join(
-    LOOKML_TOOLS_ROOT_PATH, GENERATED_VERSION_FILE_NAME
-)
 
 # Reference to project_id variable defined in looker manifest.yml
 PROJECT_ID_VAR_STRING = '"@{project_id}"'

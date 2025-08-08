@@ -388,11 +388,15 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
         # If no assignment table has been defined, create a dummy assignment table with all NULL fields
         placeholder_columns_query_string = ", ".join(
             [
-                f"NULL AS {col}"
-                if col in ["person_id", "facility_counselor_id"]
-                else f"CAST(NULL AS DATE) AS {col}"
-                if col == "cohort_month_end_date"
-                else f"CAST(NULL AS STRING) AS {col}"
+                (
+                    f"NULL AS {col}"
+                    if col in ["person_id", "facility_counselor_id"]
+                    else (
+                        f"CAST(NULL AS DATE) AS {col}"
+                        if col == "cohort_month_end_date"
+                        else f"CAST(NULL AS STRING) AS {col}"
+                    )
+                )
                 for col in shared_columns
             ]
         )
@@ -637,7 +641,7 @@ ON
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[periods_since_assignment_dimension],
         included_paths=[
-            f"/views/aggregated_metrics/generated/{lookml_views_package_name}/subqueries/*",
+            f"/__generated__/views/aggregated_metrics/{lookml_views_package_name}/subqueries/*",
         ],
         extended_views=extended_views,
     )
@@ -731,9 +735,11 @@ def _generate_single_observation_type_aggregated_metric_lookml_query_template(
                 f"[{observation_type}]"
             )
     compatible_json_field_filters = [
-        field
-        if field in attribute_cols_for_observation_type(observation_type)
-        else f"CAST(NULL AS STRING) AS {field}"
+        (
+            field
+            if field in attribute_cols_for_observation_type(observation_type)
+            else f"CAST(NULL AS STRING) AS {field}"
+        )
         for field in json_field_filters
     ]
 
@@ -1126,7 +1132,7 @@ CROSS JOIN
         ],
         table=LookMLViewSourceTable.derived_table(query_template),
         included_paths=[
-            f"/views/aggregated_metrics/generated/{lookml_views_package_name}/subqueries/*",
+            f"/__generated__/views/aggregated_metrics/{lookml_views_package_name}/subqueries/*",
         ],
         extended_views=sorted(set(extended_views)),
     )

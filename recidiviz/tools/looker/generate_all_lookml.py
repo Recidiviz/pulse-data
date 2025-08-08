@@ -31,13 +31,10 @@ import os
 import re
 import sys
 
-from recidiviz.common.constants.encoding import UTF_8
 from recidiviz.tools.looker.constants import (
     GENERATED_LOOKML_ROOT_PATH,
-    GENERATED_VERSION_FILE_PATH,
     LOOKML_TOOLS_ROOT_PATH,
 )
-from recidiviz.tools.looker.script_helpers import hash_generated_directory
 from recidiviz.tools.looker.top_level_generators.aggregated_metrics_lookml_generator import (
     AggregatedMetricsLookMLGenerator,
 )
@@ -139,10 +136,6 @@ def main(output_dir: str) -> None:
     for generator in generators:
         logging.info("Generating LookML using [%s]", generator.__name__)
         generator.generate_lookml(output_dir=output_dir)
-
-    version_hash = hash_generated_directory()
-    with open(GENERATED_VERSION_FILE_PATH, "w", encoding=UTF_8) as version_file:
-        version_file.write(f"{version_hash}\n")
 
 
 if __name__ == "__main__":

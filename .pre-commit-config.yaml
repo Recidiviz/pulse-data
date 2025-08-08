@@ -123,4 +123,4 @@ repos:
         files:
           ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|
           ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/
-        exclude: ^recidiviz/tools/looker/generated_version_hash|^recidiviz/tools/looker/generated/
+        exclude: ^recidiviz/tools/looker/__generated__/

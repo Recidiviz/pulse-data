@@ -81,22 +81,6 @@ if [[ -n ${PROMOTE} && -n ${DEBUG_BUILD_NAME} ]]; then
     run_cmd exit 1
 fi
 
-RECIDIVIZ_DATA_REPO_ROOT=$(git rev-parse --show-toplevel) || exit_on_fail
-
-
-# TODO(#44644) This should be moved to a post-merge CI job in the pulse-data repo.
-function looker_generated_versions_match {
-  verify_hash "$LOOKER_COMMIT_HASH" "$TEMP_LOOKER_DIR"
-  LOOKER_HASH_FILE="${TEMP_LOOKER_DIR}/generated_version_hash"
-  LOOKER_HASH=$(cat "$LOOKER_HASH_FILE") || exit_on_fail
-
-  verify_hash "$RECIDIVIZ_DATA_COMMIT_HASH" "$RECIDIVIZ_DATA_REPO_ROOT"
-  RECIDIVIZ_DATA_HASH_FILE="${RECIDIVIZ_DATA_REPO_ROOT}/recidiviz/tools/looker/generated_version_hash"
-  RECIDIVIZ_DATA_HASH=$(cat "$RECIDIVIZ_DATA_HASH_FILE") || exit_on_fail
-
-  [[ "$RECIDIVIZ_DATA_HASH" == "$LOOKER_HASH" ]]
-}
-
 clone_looker_repo_to_temp_dir
 
 run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR" 
@@ -112,50 +96,6 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
   if ! version_less_than "$LAST_DEPLOYED_GIT_VERSION_TAG" "$VERSION_TAG"; then
       echo_error "Deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
       run_cmd exit 1
-  fi
-fi
-
-if looker_generated_versions_match; then
-  echo "Looker generated code is already up-to-date. Skipping sync."
-else 
-  echo "Looker generated code has changed. Proceeding to sync..."
-  # TODO(#44644): This should be done in a separate script that is a part of the
-  # pulse-data PR CI suite.
-
-  verify_hash "$RECIDIVIZ_DATA_COMMIT_HASH" "$RECIDIVIZ_DATA_REPO_ROOT"
-  run_cmd check_running_in_pipenv_shell
-
-  run_cmd python -m recidiviz.tools.looker.copy_all_lookml --looker-repo-root "$TEMP_LOOKER_DIR"
-
-  UPDATE_BRANCH_NAME="update-generated-files-$(date +%Y%m%d%H%M%S)"
-
-  looker_git checkout -b "$UPDATE_BRANCH_NAME"
-  looker_git add .
-  looker_git commit -m "Sync generated Looker files from pulse-data@${VERSION_TAG}"
-  looker_git push --set-upstream origin "$UPDATE_BRANCH_NAME"
-
-  PR_URL="https://github.com/Recidiviz/looker/compare/${BRANCH_NAME}...${UPDATE_BRANCH_NAME}?expand=1"
-  # TODO(#44643) Add lookml validation as part of looker repo CI.
-  echo "Opening pull request: $PR_URL"
-
-  open "$PR_URL"
-
-  RECONSTRUCTED_CMD="./recidiviz/tools/deploy/base_deploy_looker_staging.sh"
-  [ -n "$BRANCH_NAME" ] && RECONSTRUCTED_CMD+=" -b $BRANCH_NAME"
-  [ -n "$VERSION_TAG" ] && RECONSTRUCTED_CMD+=" -v $VERSION_TAG"
-  [ -n "$RECIDIVIZ_DATA_COMMIT_HASH" ] && RECONSTRUCTED_CMD+=" -c $RECIDIVIZ_DATA_COMMIT_HASH"
-  [ "$PROMOTE" = "true" ] && RECONSTRUCTED_CMD+=" -p"
-  [ "$NO_PROMOTE" = "true" ] && RECONSTRUCTED_CMD+=" -n"
-  [ -n "$DEBUG_BUILD_NAME" ] && RECONSTRUCTED_CMD+=" -d $DEBUG_BUILD_NAME"
-  [ -n "$LOOKER_PROJECT_ID" ] && RECONSTRUCTED_CMD+=" -r $LOOKER_PROJECT_ID"
-
-  script_prompt "Has the pull request been merged? If the script was accidentally terminated, you can retry by running the following after the PR is merged:\n\t${RECONSTRUCTED_CMD}"
-
-  run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR"
-  LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR"  rev-parse HEAD) || exit_on_fail
-  if ! looker_generated_versions_match; then
-    echo_error "Looker generated code is still not up-to-date after syncing. Please check the PR and retry by running:\n\t${RECONSTRUCTED_CMD}"
-    run_cmd exit 1
   fi
 fi
 

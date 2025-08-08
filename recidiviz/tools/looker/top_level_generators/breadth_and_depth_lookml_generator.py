@@ -588,7 +588,7 @@ USING
 
     return LookMLView(
         view_name="transitions_depth_metric",
-        included_paths=[f"/views/{view_name}/generated/*"],
+        included_paths=[f"/__generated__/views/{view_name}/*"],
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         drill_fields=[
             "person_id",

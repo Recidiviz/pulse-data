@@ -18,6 +18,7 @@
 import os
 import tempfile
 import unittest
+from pathlib import Path
 
 from recidiviz.tools.looker.script_helpers import (
     hash_directory,
@@ -55,26 +56,28 @@ class LookMLScriptHelpersTest(unittest.TestCase):
             with open(file2, "w", encoding="UTF-8") as f:
                 f.write("Another file content.")
 
+            tmp_dir_path = Path(tmp_dir)
+
             # Generate hash for the directory
-            initial_hash = hash_directory(tmp_dir)
+            initial_hash = hash_directory(tmp_dir_path)
 
             # Ensure the hash remains the same if no changes are made
-            self.assertEqual(initial_hash, hash_directory(tmp_dir))
+            self.assertEqual(initial_hash, hash_directory(tmp_dir_path))
 
             # Modify one file and check that the hash changes
             with open(file1, "w", encoding="UTF-8") as f:
                 f.write("Modified content.")
-            modified_hash = hash_directory(tmp_dir)
+            modified_hash = hash_directory(tmp_dir_path)
             self.assertNotEqual(initial_hash, modified_hash)
 
             # Add a new file and check that the hash changes
-            new_file = os.path.join(tmp_dir, "new_file.txt")
+            new_file = os.path.join(tmp_dir_path, "new_file.txt")
             with open(new_file, "w", encoding="UTF-8") as f:
                 f.write("New file content.")
-            new_hash = hash_directory(tmp_dir)
+            new_hash = hash_directory(tmp_dir_path)
             self.assertNotEqual(modified_hash, new_hash)
 
             # Remove a file and check that the hash changes
             os.remove(file2)
-            final_hash = hash_directory(tmp_dir)
+            final_hash = hash_directory(tmp_dir_path)
             self.assertNotEqual(new_hash, final_hash)

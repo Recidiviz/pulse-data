@@ -18,8 +18,8 @@
 import unittest
 from unittest import mock
 
+from recidiviz.tools.looker.looker_git_manager import LookerGitManager
 from recidiviz.tools.looker.refresh_recidiviz_data_to_looker_sync_pr import (
-    LookerGitManager,
     RecidivizDataLookerSyncConfig,
     RecidivizDataLookerSyncGitHubManager,
     RecidivizDataLookerSyncOrchestrator,
