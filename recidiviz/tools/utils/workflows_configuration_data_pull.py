@@ -25,6 +25,7 @@ python -m recidiviz.tools.utils.workflows_configuration_data_pull --credentials=
 """
 import argparse
 import logging
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -405,6 +406,72 @@ def get_state_code_opportunities(
     return opportunity_data_blocks
 
 
+def get_state_code_to_sheet_id(
+    google_spreadsheet_service: Resource, spreadsheet_id: str
+) -> Dict[str, int]:
+    """
+    Returns a dictionary mapping each state code (sheet title) to its corresponding sheet ID.
+    This is used to quickly look up a sheet's ID when its title is known.
+    This function calls the google sheets api once everytime it's used.
+    """
+    hash_map = defaultdict(str)
+    rsp = (
+        google_spreadsheet_service.spreadsheets()
+        .get(spreadsheetId=spreadsheet_id, fields="sheets/properties(sheetId,title)")
+        .execute()
+    )
+
+    for sheet in rsp["sheets"]:
+        sheet_id = sheet["properties"]["sheetId"]
+        sheet_title = sheet["properties"]["title"]
+        hash_map[sheet_title] = sheet_id
+    return hash_map
+
+
+def get_top_row_request(sheet_id: int, num_rows: int) -> List[Any]:
+    """
+    Returns the API request body for inserting new rows at the top of a specified sheet.
+    The number of rows to insert is based on the number of new rows to add.
+    """
+    requests = [
+        {
+            "insertDimension": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "dimension": "ROWS",
+                    "startIndex": 0,
+                    "endIndex": num_rows + 1,  # +1 for some extra spacing
+                },
+                "inheritFromBefore": False,
+            }
+        }
+    ]
+    return requests
+
+
+def add_rows_to_top_of_sheet(
+    google_spreadsheet_service: Resource,
+    spreadsheet_id: str,
+    sheet_id: int,
+    state_code: str,
+    logger: logging.Logger,
+    num_rows: int,
+) -> None:
+    """
+    Adds a specified number of new rows to the top of an existing sheet.
+    This is a helper function used before writing new data to the spreadsheet.
+    This function calls the google sheets api once everytime it's used.
+    """
+    add_top_row_request = get_top_row_request(sheet_id, num_rows)
+    google_spreadsheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={
+            "requests": add_top_row_request,
+        },
+    ).execute()
+    logger.info(f"{num_rows} have been added to the top of {state_code}'s sheet")
+
+
 def write_to_workflows_sheet(
     spreadsheet_id: str,
     credentials: Credentials,
@@ -413,9 +480,10 @@ def write_to_workflows_sheet(
 ) -> Dict[str, List[int]]:
     """
     Writes opportunity info for each workflows-enabled state into the Workflows
-    Configuration Spreadsheet. This function makes one API call per state. It returns
-    a dictionary mapping each state code to a list of row indices where borders
-    should be placed, facilitating subsequent formatting.
+    Configuration Spreadsheet. This function makes one initial API call to get all sheet IDs. It then makes up to
+    two additional API calls per state: one to either create a new sheet or add rows to an existing one, and one to write the data. It returns
+    a dictionary mapping each state code to a list of row indices where borders should be placed, facilitating subsequent formatting.
+
     An example of a return value can be border_data_by_sheet_title = {"US_AR" : [20, 32, 87], "US_TX" : [8], "US_OR" : []}
     """
     header_data = [
@@ -439,6 +507,11 @@ def write_to_workflows_sheet(
     # Since it's more clean to get the datetime once and apply it to all the opportunities in the state than to get it once
     # for each opportunity in that state.
     export_date = datetime.now().strftime("%Y-%m-%d")
+
+    google_spreadsheet_service = build("sheets", "v4", credentials=credentials)
+    state_code_to_sheet_id = get_state_code_to_sheet_id(
+        google_spreadsheet_service, spreadsheet_id
+    )
 
     for index, state_code in enumerate(state_codes):
         # 1. Get the data grouped in blocks
@@ -472,6 +545,22 @@ def write_to_workflows_sheet(
             sheet_data_to_write = [header_data]
             sheet_data_to_write.extend(flattened_opportunities)
 
+        # add rows to the beginning of the sheet so that the new opportunity data can go there
+        num_rows_to_add = len(sheet_data_to_write)
+        sheet_id = state_code_to_sheet_id[state_code]
+        create_new_sheet = True
+        # aka if there is already a sheet for this state
+        if sheet_id:
+            add_rows_to_top_of_sheet(
+                google_spreadsheet_service,
+                spreadsheet_id,
+                sheet_id,
+                state_code,
+                logger,
+                num_rows_to_add,
+            )
+            create_new_sheet = False
+
         write_data_to_spreadsheet(
             credentials,
             spreadsheet_id,
@@ -479,8 +568,9 @@ def write_to_workflows_sheet(
             state_code,
             index,
             data_to_write=sheet_data_to_write,
-            overwrite_sheets=True,
+            overwrite_sheets=False,
             value_input_option="USER_ENTERED",
+            create_new_sheet=create_new_sheet,
         )
 
     return border_data_by_sheet_title

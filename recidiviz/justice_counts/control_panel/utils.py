@@ -138,6 +138,7 @@ def write_data_to_spreadsheet(
     columns: Optional[List[str]] = None,
     overwrite_sheets: Optional[bool] = False,
     value_input_option: Optional[str] = "RAW",
+    create_new_sheet: Optional[bool] = True,
 ) -> int:
     """Writes data to the spreadsheet specified by the spreadsheet_id and
     returns sheet_id where the data was written.
@@ -168,13 +169,12 @@ def write_data_to_spreadsheet(
                 ).execute()
                 logger.info("Old '%s' Sheet Deleted", new_sheet_title)
                 break
-
-    # Create new sheet
-    spreadsheet_service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id, body={"requests": [request]}
-    ).execute()
-
-    logger.info("New Sheet Created")
+    if create_new_sheet:
+        # Create new sheet
+        spreadsheet_service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id, body={"requests": [request]}
+        ).execute()
+        logger.info("New Sheet Created")
 
     # Format data to fit Google API specifications.
     # Google API spec requires a list of lists,
