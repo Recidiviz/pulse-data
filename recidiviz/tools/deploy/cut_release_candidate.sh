@@ -5,6 +5,8 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
+source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 PROJECT="recidiviz-staging"
 
 # Used to track total time required to cut release candidate.
