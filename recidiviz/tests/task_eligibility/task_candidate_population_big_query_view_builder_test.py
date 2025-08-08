@@ -84,6 +84,7 @@ class TestStateSpecificTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view = builder.build(sandbox_context=sandbox_context)
 
@@ -205,6 +206,7 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view = builder.build(sandbox_context=sandbox_context)
 

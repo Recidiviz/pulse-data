@@ -98,6 +98,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     output_sandbox_dataset_prefix="test_prefix",
                     parent_address_overrides=None,
                     parent_address_formatter_provider=None,
+                    state_code_filter=None,
                 ),
             ),
             result_details=SamenessPerRowValidationResultDetails(

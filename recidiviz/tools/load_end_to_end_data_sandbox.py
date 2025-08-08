@@ -532,6 +532,7 @@ def load_end_to_end_sandbox(
                     parent_address_overrides=sandbox_address_overrides,
                     parent_address_formatter_provider=None,
                     output_sandbox_dataset_prefix=output_sandbox_prefix,
+                    state_code_filter=state_code,
                 )
                 for export_name in export_names:
                     export_view_data_to_cloud_storage(

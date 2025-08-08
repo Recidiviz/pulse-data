@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -241,6 +242,7 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -249,6 +251,102 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
 UNION ALL
 SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_prefix_my_union_dataset", table_id="my_union_all_view"
+            ),
+            view.address,
+        )
+
+    def test_build_with_overrides_and_state_code_filter_state_agnostic_parents(
+        self,
+    ) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
+        )
+
+        address_overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
+            .register_sandbox_override_for_entire_dataset("parent_dataset_1")
+            .build()
+        )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
+            output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=StateCode.US_XX,
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(sandbox_context=sandbox_context)
+
+        # We keep both parents because they are state-angostic tables
+        expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
+UNION ALL
+SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_prefix_my_union_dataset", table_id="my_union_all_view"
+            ),
+            view.address,
+        )
+
+    def test_build_with_overrides_and_state_code_filter_state_specific_parents(
+        self,
+    ) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parents=[
+                SimpleBigQueryViewBuilder(
+                    dataset_id="us_xx_parent_dataset",
+                    view_id="parent_table_1",
+                    description="parent_table_1 description",
+                    view_query_template="SELECT * FROM `{project_id}.my_dataset.table_foo`",
+                    should_materialize=True,
+                ),
+                SimpleBigQueryViewBuilder(
+                    dataset_id="us_yy_parent_dataset",
+                    view_id="parent_table_2",
+                    description="parent_table_2 description",
+                    view_query_template="SELECT * FROM `{project_id}.my_dataset.table_bar`",
+                    should_materialize=True,
+                ),
+            ],
+            clustering_fields=["state_code"],
+        )
+
+        address_overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
+            .register_sandbox_override_for_entire_dataset("us_xx_parent_dataset")
+            .register_sandbox_override_for_entire_dataset("us_yy_parent_dataset")
+            .build()
+        )
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
+            output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=StateCode.US_XX,
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(sandbox_context=sandbox_context)
+
+        # We keep only the US_XX parent table
+        expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_us_xx_parent_dataset.parent_table_1_materialized`"""
         self.assertEqual(
             expected_view_query,
             view.view_query,
@@ -281,6 +379,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -300,94 +399,3 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             ),
             view.address,
         )
-
-    def test_build_with_parent_filter(self) -> None:
-        builder = UnionAllBigQueryViewBuilder(
-            dataset_id="my_union_dataset",
-            view_id="my_union_all_view",
-            description="All data together",
-            parents=self.view_builders[0:2],
-            clustering_fields=["state_code"],
-        )
-
-        builder.set_parent_address_filter(
-            parent_address_filter={self.view_builders[0].address}
-        )
-
-        address_overrides = (
-            BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
-            .register_sandbox_override_for_entire_dataset("parent_dataset_1")
-            .build()
-        )
-        sandbox_context = BigQueryViewSandboxContext(
-            parent_address_overrides=address_overrides,
-            parent_address_formatter_provider=None,
-            output_sandbox_dataset_prefix="my_prefix",
-        )
-
-        with local_project_id_override("recidiviz-456"):
-            view = builder.build(sandbox_context=sandbox_context)
-
-        expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`"""
-        self.assertEqual(
-            expected_view_query,
-            view.view_query,
-        )
-
-    def test_build_with_parent_filter_no_overlap(self) -> None:
-        builder = UnionAllBigQueryViewBuilder(
-            dataset_id="my_union_dataset",
-            view_id="my_union_all_view",
-            description="All data together",
-            parents=self.view_builders[0:2],
-            clustering_fields=["state_code"],
-        )
-
-        builder.set_parent_address_filter(
-            parent_address_filter={
-                BigQueryAddress(dataset_id="some_other_dataset", table_id="some_view"),
-            }
-        )
-
-        address_overrides = (
-            BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
-            .register_sandbox_override_for_entire_dataset("parent_dataset_1")
-            .build()
-        )
-        sandbox_context = BigQueryViewSandboxContext(
-            parent_address_overrides=address_overrides,
-            parent_address_formatter_provider=None,
-            output_sandbox_dataset_prefix="my_prefix",
-        )
-
-        with local_project_id_override("recidiviz-456"):
-            view = builder.build(sandbox_context=sandbox_context)
-
-        # If the filter does not overlap with any of the queried views, we default to
-        # querying all views.
-        expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
-UNION ALL
-SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
-        self.assertEqual(
-            expected_view_query,
-            view.view_query,
-        )
-
-    def test_build_with_parent_filter_no_overrides(self) -> None:
-        builder = UnionAllBigQueryViewBuilder(
-            dataset_id="my_union_dataset",
-            view_id="my_union_all_view",
-            description="All data together",
-            parents=self.view_builders[0:2],
-            clustering_fields=["state_code"],
-        )
-
-        builder.set_parent_address_filter(
-            parent_address_filter={self.view_builders[0].address}
-        )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "Cannot set a UNION ALL query filter unless loading views into a sandbox.",
-        ):
-            _ = builder.build()

@@ -553,6 +553,7 @@ class ViewManagerTest(unittest.TestCase):
             ),
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="test_prefix",
+            state_code_filter=None,
         )
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
@@ -562,6 +563,7 @@ class ViewManagerTest(unittest.TestCase):
                 output_sandbox_dataset_prefix="test_prefix",
                 input_source_table_overrides=BigQueryAddressOverrides.empty(),
                 parent_address_formatter_provider=None,
+                state_code_filter=None,
             ),
             historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,

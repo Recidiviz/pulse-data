@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_address_formatter import (
     BigQueryAddressFormatterProvider,
 )
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 
 
 @attr.define(kw_only=True)
@@ -32,6 +33,13 @@ class BigQueryViewSandboxContext:
     """Object that provides a set of address overrides for a *single BigQueryView* that
     will be loaded into a sandbox.
     """
+
+    # The state code that this sandbox should return results for. When set,
+    # UnionAllBigQueryViewBuilder views will filter to just parents that are either a)
+    # state agnostic views or b) state-specific views for this state.
+    state_code_filter: StateCode | None = attr.ib(
+        validator=attr_validators.is_opt(StateCode)
+    )
 
     # Address overrides for any parent tables this view may query.
     parent_address_overrides: BigQueryAddressOverrides | None = attr.ib(

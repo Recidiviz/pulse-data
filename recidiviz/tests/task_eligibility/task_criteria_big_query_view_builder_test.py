@@ -131,6 +131,7 @@ WHERE state_code = 'US_XX'
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view = builder.build(sandbox_context=sandbox_context)
 
@@ -331,6 +332,7 @@ FROM _aggregated
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view = builder.build(sandbox_context=sandbox_context)
 

@@ -79,6 +79,7 @@ def _load_raw_data_latest_views_to_sandbox(
         parent_address_overrides=None,
         parent_address_formatter_provider=None,
         output_sandbox_dataset_prefix=sandbox_dataset_prefix,
+        state_code_filter=state_code,
     )
 
     print("Filtering tables that don't exist or can't produce a valid query...")

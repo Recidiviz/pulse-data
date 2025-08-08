@@ -52,6 +52,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
 from recidiviz.utils import structured_logging
@@ -75,6 +76,13 @@ class BigQueryViewUpdateSandboxContext:
     """Object that provides a set of address overrides for a *collection of views* that
     will be loaded into a sandbox.
     """
+
+    # The state code that this sandbox should return results for. When set,
+    # UnionAllBigQueryViewBuilder views will filter to just parents that are either a)
+    # state agnostic views or b) state-specific views for this state.
+    state_code_filter: StateCode | None = attr.ib(
+        validator=attr_validators.is_opt(StateCode)
+    )
 
     # Address overrides for any parent source tables views in this view update may
     # query. May be empty (BigQueryAddressOverrides.empty()) if the update should read
@@ -198,6 +206,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             output_sandbox_dataset_prefix=view_update_sandbox_context.output_sandbox_dataset_prefix,
             parent_address_formatter_provider=view_update_sandbox_context.parent_address_formatter_provider,
             parent_address_overrides=merged_overrides,
+            state_code_filter=view_update_sandbox_context.state_code_filter,
         )
 
     try:

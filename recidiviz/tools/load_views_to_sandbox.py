@@ -1094,6 +1094,7 @@ def load_collected_views_to_sandbox(
                 if state_code_filter
                 else None
             ),
+            state_code_filter=state_code_filter,
         )
     try:
         create_managed_dataset_and_deploy_views_for_view_builders(

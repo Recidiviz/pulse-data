@@ -69,6 +69,7 @@ class WithMetadataBigQueryViewTest(unittest.TestCase):
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_override",
+            state_code_filter=None,
         )
 
         view = WithMetadataQueryBigQueryViewBuilder(

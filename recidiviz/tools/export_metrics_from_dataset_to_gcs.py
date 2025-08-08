@@ -35,6 +35,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants import states
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -66,6 +67,7 @@ def export_metrics_from_dataset_to_gcs(
             parent_address_overrides=sandbox_address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix=sandbox_dataset_prefix,
+            state_code_filter=StateCode(state_code) if state_code else None,
         )
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)

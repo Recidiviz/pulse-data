@@ -18,7 +18,7 @@
 tables together.
 """
 import logging
-from typing import Callable, Dict, Optional, Sequence, Set
+from typing import Callable, Dict, Optional, Sequence
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
@@ -103,12 +103,6 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             should_materialize=True,
         )
         self.projects_to_deploy = None
-        self.parent_address_filter: Optional[Set[BigQueryAddress]] = None
-
-    def set_parent_address_filter(
-        self, parent_address_filter: Set[BigQueryAddress]
-    ) -> None:
-        self.parent_address_filter = parent_address_filter
 
     @staticmethod
     def _get_address(
@@ -134,13 +128,6 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         If parent_address_filter has been set via set_parent_address_filter(), then
         the resulting view will only union results from the tables in that filter set.
         """
-
-        if self.parent_address_filter and not sandbox_context:
-            raise ValueError(
-                "Cannot set a UNION ALL query filter unless loading views into a "
-                "sandbox."
-            )
-
         select_queries = []
         query_format_args: Dict[str, str] = {}
 
@@ -157,12 +144,15 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 f"[{self.address.to_str()}]"
             )
 
-        filtered_parents = [
-            parent
-            for parent in parents_in_project
-            if self.parent_address_filter is None
-            or self._get_address(parent) in self.parent_address_filter
-        ]
+        if sandbox_context is None or sandbox_context.state_code_filter is None:
+            filtered_parents = parents_in_project
+        else:
+            filtered_parents = [
+                parent
+                for parent in parents_in_project
+                if self._get_address(parent).state_code_for_address()
+                == sandbox_context.state_code_filter
+            ]
 
         if not filtered_parents:
             logging.warning(
@@ -170,7 +160,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 "list of view filters. Selecting ALL parents.",
                 self.address.to_str(),
             )
-            filtered_parents = list(self.parents)
+            filtered_parents = parents_in_project
 
         # Sort view builders by address so we produce a query with deterministic order
         for parent in sorted(filtered_parents, key=self._get_address):

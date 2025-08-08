@@ -73,6 +73,7 @@ FROM `test-project.dataset.source_table`
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view_with_overrides = view_builder.build(sandbox_context=sandbox_context)
 
@@ -140,6 +141,7 @@ FROM (
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
+            state_code_filter=None,
         )
         view_with_overrides = view_builder.build(sandbox_context=sandbox_context)
 

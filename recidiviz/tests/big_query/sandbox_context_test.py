@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.common.constants.states import StateCode
 
 
 class BigQueryViewSandboxContextTest(unittest.TestCase):
@@ -41,6 +42,7 @@ class BigQueryViewSandboxContextTest(unittest.TestCase):
             output_sandbox_dataset_prefix="outputs_prefix",
             parent_address_overrides=overrides,
             parent_address_formatter_provider=None,
+            state_code_filter=StateCode.US_XX,
         )
 
         self.assertEqual(

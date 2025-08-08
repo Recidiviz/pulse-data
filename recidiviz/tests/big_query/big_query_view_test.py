@@ -275,6 +275,7 @@ class BigQueryViewTest(unittest.TestCase):
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_override",
+            state_code_filter=None,
         )
 
         view_materialized_no_override = SimpleBigQueryViewBuilder(
@@ -354,6 +355,7 @@ class BigQueryViewTest(unittest.TestCase):
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_outputs_prefix",
+            state_code_filter=None,
         )
 
         view_materialized_no_parent_override = SimpleBigQueryViewBuilder(
@@ -447,6 +449,7 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
         sandbox_context = BigQueryViewSandboxContext(
+            state_code_filter=StateCode.US_XX,
             parent_address_overrides=address_overrides,
             parent_address_formatter_provider=StateFilteringBigQueryAddressFormatterProvider(
                 state_code_filter=StateCode.US_XX,
@@ -509,6 +512,7 @@ class BigQueryViewTest(unittest.TestCase):
                 pseudocolumns_by_address={},
             ),
             output_sandbox_dataset_prefix="my_outputs_prefix",
+            state_code_filter=StateCode.US_XX,
         )
 
         view = SimpleBigQueryViewBuilder(

@@ -1028,6 +1028,7 @@ class TestFetchValidations(TestCase):
                 parent_address_overrides=parent_address_overrides,
                 parent_address_formatter_provider=None,
                 output_sandbox_dataset_prefix="prefix",
+                state_code_filter=None,
             ),
         )
 

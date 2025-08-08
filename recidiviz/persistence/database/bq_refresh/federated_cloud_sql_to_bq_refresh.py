@@ -138,6 +138,7 @@ def _federated_bq_regional_dataset_refresh(
             output_sandbox_dataset_prefix=dataset_override_prefix,
             input_source_table_overrides=BigQueryAddressOverrides.empty(),
             parent_address_formatter_provider=None,
+            state_code_filter=None,
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
