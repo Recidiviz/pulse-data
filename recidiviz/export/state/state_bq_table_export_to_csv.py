@@ -27,7 +27,6 @@ python -m recidiviz.export.state.state_bq_table_export_to_csv --project-id recid
 import argparse
 import datetime
 import logging
-from typing import cast
 
 from google.cloud import bigquery
 
@@ -47,11 +46,10 @@ def gcs_export_directory(
     gs://{bucket_name}/ingested_state_data/{state_code}/{YYYY}/{MM}/{DD}
     """
 
-    path = GcsfsDirectoryPath.from_bucket_and_blob_name(
+    return GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=bucket_name,
         blob_name=f"ingested_{input_dataset}_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/",
     )
-    return cast(GcsfsDirectoryPath, path)
 
 
 def run_export(

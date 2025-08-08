@@ -41,6 +41,11 @@ def normalize_relative_path(relative_path: str) -> str:
     return f"{no_slash_relative_path}/" if relative_path else ""
 
 
+def is_file(path: str) -> bool:
+    _, ext = os.path.splitext(path)
+    return not bool(ext)
+
+
 @attr.s(frozen=True)
 class GcsfsPath:
     """
@@ -101,6 +106,15 @@ class GcsfsDirectoryPath(GcsfsPath):
 
     relative_path: str = attr.ib(default="", converter=strip_forward_slash)
 
+    def __attrs_post_init__(self) -> None:
+        if self.relative_path and not is_file(self.relative_path):
+            raise ValueError(
+                f"Expected the last part of GcsfsDirectoryPath to not be a file, but found "
+                f"[{self.relative_path}] If this is a file, please use GcsfsFilePath."
+            )
+
+        super().__attrs_post_init__()
+
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.relative_path)
 
@@ -150,17 +164,30 @@ class GcsfsDirectoryPath(GcsfsPath):
             relative_path=normalize_relative_path(relative_path),
         )
 
+    @classmethod
+    def from_bucket_and_blob_name(
+        cls, bucket_name: str, blob_name: str
+    ) -> "GcsfsDirectoryPath":
+        return GcsfsDirectoryPath(bucket_name=bucket_name, relative_path=blob_name)
+
+    @classmethod
+    def from_blob(cls, blob: storage.Blob) -> "GcsfsDirectoryPath":
+        return GcsfsDirectoryPath.from_bucket_and_blob_name(
+            bucket_name=unquote(blob.bucket.name), blob_name=unquote(blob.name)
+        )
+
 
 @attr.s(frozen=True)
 class GcsfsBucketPath(GcsfsDirectoryPath):
     """Represents a path to a bucket in Google Cloud Storage."""
 
     def __attrs_post_init__(self) -> None:
-        super().__attrs_post_init__()
         if self.relative_path:
             raise ValueError(
                 f"Bucket relative path must be empty. Found [{self.relative_path}]."
             )
+
+        super().__attrs_post_init__()
 
     def abs_path(self) -> str:
         return self.bucket_name
@@ -179,6 +206,15 @@ class GcsfsFilePath(GcsfsPath):
 
     # Relative path to a blob (file) in Cloud Storage.
     blob_name: str = attr.ib(converter=strip_forward_slash)
+
+    def __attrs_post_init__(self) -> None:
+        if self.blob_name.endswith("/"):
+            raise ValueError(
+                f"Expected GcsFilePath to not end with a '/', but found [{self.blob_name}]. If this "
+                "is a directory, please use GcsfsDirectoryPath."
+            )
+
+        super().__attrs_post_init__()
 
     @property
     def relative_dir(self) -> str:
@@ -239,6 +275,20 @@ class GcsfsFilePath(GcsfsPath):
             raise ValueError(f"Relative path of of [{path_str}] unexpectedly empty.")
 
         return GcsfsFilePath(bucket_name=unquote(split[0]), blob_name=unquote(split[1]))
+
+    @classmethod
+    def from_bucket_and_blob_name(
+        cls, bucket_name: str, blob_name: str
+    ) -> "GcsfsFilePath":
+        return GcsfsFilePath(bucket_name=bucket_name, blob_name=blob_name)
+
+    @classmethod
+    def from_blob(cls, blob: storage.Blob) -> "GcsfsFilePath":
+        # storage.Blob and storage.Bucket names are url-escaped, we want to
+        # convert back to unescaped strings.
+        return GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name=unquote(blob.bucket.name), blob_name=unquote(blob.name)
+        )
 
     def sharded(self) -> "GcsfsFilePath":
         """Builds a Google Cloud Storage URI (e.g. the absolute path with 'gs://'

@@ -15,9 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for classes in gcsfs_path.py"""
+import re
 import unittest
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+    GcsfsPath,
+)
+from recidiviz.utils.types import assert_type
 
 
 class TestGcsfsPath(unittest.TestCase):
@@ -52,3 +59,69 @@ class TestGcsfsPath(unittest.TestCase):
 
         self.assertEqual("my_file.txt", path.file_name)
         self.assertEqual("my_file", path.base_file_name)
+
+    def test_overload_construction(self) -> None:
+        file_path = "this/is/a/file/path.csv"
+        folder_path = "this/is/a/folder/path/"
+
+        # for GcsfsFilePath, a file path will succeed and always return a GcsfsFilePath
+        # but a folder path will throw an error
+        assert_type(
+            GcsfsFilePath.from_bucket_and_blob_name("bucket", file_path), GcsfsFilePath
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected GcsFilePath to not end with a \'\/\', but found \[.*\]\. If this is a directory, please use GcsfsDirectoryPath\.",
+        ):
+            GcsfsFilePath.from_bucket_and_blob_name("bucket", folder_path)
+
+        # for GcsfsDirectoryPath, a folder path will succeed and always return a
+        # GcsfsDirectoryPath but a file path will throw an error
+        assert_type(
+            GcsfsDirectoryPath.from_bucket_and_blob_name("bucket", folder_path),
+            GcsfsDirectoryPath,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected the last part of GcsfsDirectoryPath to not be a file, but found \[.*\] If this is a file, please use GcsfsFilePath.",
+        ):
+            GcsfsDirectoryPath.from_bucket_and_blob_name("bucket", file_path)
+
+        # for GcsfsPath, we dont know what kind of path it is so it will bifurcate --
+        # a folder path will succeed and return a GcsfsDirectoryPath and a file
+        # path will succeed and return a GcsfsFilePath
+        assert_type(
+            GcsfsPath.from_bucket_and_blob_name("bucket", folder_path),
+            GcsfsDirectoryPath,
+        )
+        assert_type(
+            GcsfsPath.from_bucket_and_blob_name("bucket", file_path),
+            GcsfsFilePath,
+        )
+
+    def test_invariants(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected GcsFilePath to not end with a \'\/\', but found \[.*\]\. If this is a directory, please use GcsfsDirectoryPath\.",
+        ):
+            GcsfsFilePath(bucket_name="bucket", blob_name="this/is/a/path/")
+
+        GcsfsFilePath(bucket_name="bucket", blob_name="this/is/a/blob/a")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape("Bucket relative path must be empty. Found [aaaaaaa]."),
+        ):
+            GcsfsBucketPath(bucket_name="bucket", relative_path="aaaaaaa")
+
+        GcsfsBucketPath(bucket_name="bucket", relative_path="")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected the last part of GcsfsDirectoryPath to not be a file, but found \[.*\] If this is a file, please use GcsfsFilePath.",
+        ):
+            GcsfsDirectoryPath(
+                bucket_name="bucket", relative_path="this/is/a/path/to/file.csv"
+            )
+
+        GcsfsDirectoryPath(bucket_name="bucket", relative_path="this/is/a/path/")

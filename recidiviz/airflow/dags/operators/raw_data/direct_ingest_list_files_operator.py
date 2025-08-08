@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom operators that wrap google's GCSListObjectsOperator to provide some extra 
+"""Custom operators that wrap google's GCSListObjectsOperator to provide some extra
 filtering
 """
 from typing import Any, List
@@ -22,13 +22,12 @@ from typing import Any, List
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from airflow.utils.context import Context
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import is_path_normalized
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     DIRECT_INGEST_PROCESSED_PREFIX,
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
-from recidiviz.utils.types import assert_type
 
 
 class DirectIngestListNormalizedFileOperator(GCSListObjectsOperator):
@@ -39,10 +38,7 @@ class DirectIngestListNormalizedFileOperator(GCSListObjectsOperator):
     def execute(self, context: Context) -> List[str]:
         file_paths = super().execute(context)
         gcsfs_file_paths = [
-            assert_type(
-                GcsfsPath.from_bucket_and_blob_name(self.bucket, file_path),
-                GcsfsFilePath,
-            )
+            GcsfsFilePath.from_bucket_and_blob_name(self.bucket, file_path)
             for file_path in file_paths
         ]
 

@@ -296,7 +296,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        prefix = GcsfsFilePath.from_bucket_and_blob_name(bucket_name, blob_prefix)
+        prefix = GcsfsPath.from_bucket_and_blob_name(bucket_name, blob_prefix)
         with self.mutex:
             results: List[Union[GcsfsDirectoryPath, GcsfsFilePath]] = []
             for abs_path, entry in self.files.items():

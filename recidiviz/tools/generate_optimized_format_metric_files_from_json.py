@@ -26,7 +26,7 @@ import json
 import logging
 import sys
 from random import randint
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 from unittest.mock import create_autospec
 
 from google.cloud import bigquery
@@ -129,12 +129,9 @@ def export_from_table(
 ) -> None:
     mock_validator = create_autospec(OptimizedMetricBigQueryViewExportValidator)
     view_exporter = OptimizedMetricBigQueryViewExporter(bq_client, mock_validator)
-    output_path = cast(
-        GcsfsDirectoryPath,
-        GcsfsDirectoryPath.from_bucket_and_blob_name(
-            bucket_name=file.bucket_name,
-            blob_name=get_blob_name_without_filename(file.blob_name),
-        ),
+    output_path = GcsfsDirectoryPath.from_bucket_and_blob_name(
+        bucket_name=file.bucket_name,
+        blob_name=get_blob_name_without_filename(file.blob_name),
     )
     export_config = ExportBigQueryViewConfig(
         view=MetricBigQueryViewBuilder(

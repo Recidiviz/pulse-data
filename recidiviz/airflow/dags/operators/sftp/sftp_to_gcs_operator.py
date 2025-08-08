@@ -40,7 +40,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
-from recidiviz.utils.types import assert_type
 
 
 class RecidivizSftpToGcsOperator(BaseOperator):
@@ -82,14 +81,11 @@ class RecidivizSftpToGcsOperator(BaseOperator):
         normalized_file_path = os.path.normpath(self.remote_file_path)
         base_directory = os.path.basename(os.path.dirname(normalized_file_path))
         base_file_name = os.path.basename(normalized_file_path)
-        return assert_type(
-            GcsfsFilePath.from_bucket_and_blob_name(
-                bucket_name=self.bucket.bucket_name,
-                blob_name=os.path.join(
-                    sftp_timestamp_subdir, base_directory, base_file_name
-                ),
+        return GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name=self.bucket.bucket_name,
+            blob_name=os.path.join(
+                sftp_timestamp_subdir, base_directory, base_file_name
             ),
-            GcsfsFilePath,
         )
 
     # pylint: disable=unused-argument
