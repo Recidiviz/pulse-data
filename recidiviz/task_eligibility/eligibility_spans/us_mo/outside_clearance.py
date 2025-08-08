@@ -49,14 +49,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#45994): Do we need to update this criterion to consider the right set of
         # release dates in MO? What date(s) are we using right now for this criterion?
         incarceration_within_60_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
-        # TODO(#44399): This criterion currently only captures people who have approved
+        # TODO(#45980): This criterion currently only captures people who have approved
         # outside-clearance requests, but since not every facility records
         # approvals/denials via the requests table, can we find another way to try to
-        # identify residents already on OC and exclude them from eligibility here?
+        # identify residents already on OC and exclude them from eligibility here? Is
+        # there anything we can do with work assignments from `LBAKRDTA_TAK032`?
         not_on_institutional_worker_status.VIEW_BUILDER,
     ],
-    # TODO(#44389): Make sure this completion event is pulling in the proper data from
-    # upstream to capture outside-clearance events appropriately.
+    # TODO(#45922): Revisit this and see if we want to adjust how we're capturing OC
+    # approvals.
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
 )
 

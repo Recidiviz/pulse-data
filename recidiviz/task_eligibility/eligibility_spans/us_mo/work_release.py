@@ -146,8 +146,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # now for the sub-criteria in this group?
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,
     ],
-    # TODO(#43358): Make sure this completion event is pulling in the proper data from
-    # upstream to capture work-release events appropriately.
+    # TODO(#45922): Revisit this and see if we want to adjust how we're capturing WR
+    # approvals.
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
 
