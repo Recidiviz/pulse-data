@@ -76,7 +76,9 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
 )
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
+from recidiviz.validation.views.view_config import (
+    build_validation_metadata_view_builders,
+)
 
 RemapColumns = Dict[str, Dict[Any, Any]]
 
@@ -271,7 +273,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Validation metadata views for admin panel
     ExportViewCollectionConfig(
-        view_builders_to_export=VALIDATION_METADATA_BUILDERS,
+        view_builders_to_export=build_validation_metadata_view_builders(),
         output_directory_uri_template=VALIDATION_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="VALIDATION_METADATA",
     ),
