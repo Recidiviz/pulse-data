@@ -327,6 +327,36 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             filter_type=self._FilterType.NORMALIZED_ONLY,
         )
 
+    def mv_storage_file_to_ingest_bucket(
+        self, path: GcsfsFilePath, ingest_bucket_path: GcsfsBucketPath
+    ) -> GcsfsFilePath:
+        dest_path = self.build_ingest_destination_path_for_storage_path(
+            path, ingest_bucket_path
+        )
+        self.mv(path, dest_path)
+        return dest_path
+
+    def cp_storage_file_to_ingest_bucket(
+        self, path: GcsfsFilePath, ingest_bucket_path: GcsfsBucketPath
+    ) -> GcsfsFilePath:
+        dest_path = self.build_ingest_destination_path_for_storage_path(
+            path, ingest_bucket_path
+        )
+        self.copy(path, dest_path)
+        return dest_path
+
+    @staticmethod
+    def build_ingest_destination_path_for_storage_path(
+        path: GcsfsFilePath, ingest_bucket_path: GcsfsBucketPath
+    ) -> GcsfsFilePath:
+        path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
+            path.uri()
+        )
+
+        _, file_name = os.path.split(path_as_unprocessed)
+
+        return GcsfsFilePath.from_directory_and_file_name(ingest_bucket_path, file_name)
+
     def mv_raw_file_to_normalized_path(
         self, path: GcsfsFilePath, dt: Optional[datetime.datetime] = None
     ) -> GcsfsFilePath:

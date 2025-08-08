@@ -48,16 +48,17 @@ for the duration of the re-import.
 
 import argparse
 import logging
-import os
 import re
-from typing import Callable, List, Optional, Tuple
+from typing import List, Optional
 
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path_from_normalized_path,
+    DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
@@ -72,12 +73,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawDataResourceLock,
 )
+from recidiviz.tools.deploy.logging import redirect_logging_to_file
 from recidiviz.tools.gsutil_shell_helpers import (
-    GSUTIL_DEFAULT_TIMEOUT_SEC,
-    gsutil_cp,
     gsutil_get_storage_subdirs_containing_raw_files,
-    gsutil_ls,
-    gsutil_mv,
 )
 from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directories_controller import (
     IngestFilesOperationType,
@@ -141,8 +139,10 @@ class OperateOnRawStorageFilesController:
             project_id=self.destination_project_id,
         )
 
-        self.successful_operations_list: List[Tuple[str, str]] = []
-        self.failed_operations_list: List[Tuple[str, str]] = []
+        self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+
+        self.successful_operations_list: List[tuple[GcsfsFilePath, GcsfsFilePath]] = []
+        self.failed_operations_list: List[GcsfsFilePath] = []
 
         self.lock_manager = DirectIngestRawDataResourceLockManager(
             region_code=self.region,
@@ -156,14 +156,6 @@ class OperateOnRawStorageFilesController:
             date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
             dry_run=dry_run,
         )
-
-    @property
-    def file_operation_fn(self) -> Callable[[str, str], None]:
-        match self.operation_type:
-            case IngestFilesOperationType.COPY:
-                return gsutil_cp
-            case IngestFilesOperationType.MOVE:
-                return gsutil_mv
 
     def run(self) -> None:
         """Main method of script - executes operations, or runs a dry run of the
@@ -217,8 +209,8 @@ class OperateOnRawStorageFilesController:
             else:
                 logging.info(
                     "%s complete! See results in [%s].\n",
-                    self.log_output_path,
                     self.operation_type.value.title(),
+                    self.log_output_path,
                 )
         finally:
             if self.dry_run:
@@ -229,13 +221,16 @@ class OperateOnRawStorageFilesController:
                     self.lock_manager.release_lock_by_id(lock.lock_id)
 
     def get_date_subdir_paths(self) -> List[str]:
+        # TODO(#45991) migrate this to use GcsFileSystem
         return gsutil_get_storage_subdirs_containing_raw_files(
             storage_bucket_path=self.source_storage_bucket,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
 
-    def collect_files_to_operate_on(self, date_subdir_paths: List[str]) -> List[str]:
+    def collect_files_to_operate_on(
+        self, date_subdir_paths: List[str]
+    ) -> List[GcsfsFilePath]:
         """Searches the given list of directory paths for files directly in those directories
         that should be moved /copied to the ingest directory and returns a list of string
         paths to those files.
@@ -246,16 +241,13 @@ class OperateOnRawStorageFilesController:
             work_items=date_subdir_paths,
             work_fn=self.get_files_to_operate_on_from_path,
             progress_bar_message=f"{msg_prefix} Gathering paths to {self.operation_type.value.lower()}...",
-            # Add a timeout that is generously longer than the timeout for the
-            # GSUTIL ls call
-            single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
-            # 4 hour timeout
-            overall_timeout_sec=60 * 60 * 4,
+            single_work_item_timeout_sec=60 * 20,  # 20 minute timeout
+            overall_timeout_sec=60 * 60 * 4,  # 4 hour timeout
         )
 
         return [f for _subdir, sublist in result.successes for f in sublist]
 
-    def execute_operations(self, files_to_operate_on: List[str]) -> None:
+    def execute_operations(self, files_to_operate_on: List[GcsfsFilePath]) -> None:
         """Executes file operations on |files_to_operate_on| from storage to the ingest
         bucket, changing the prefix to 'unprocessed' as necessary.
 
@@ -271,85 +263,80 @@ class OperateOnRawStorageFilesController:
             unprocessed_2019-09-24T09:01:20:039807_elite_offendersentenceterms.csv
         """
         msg_prefix = "[DRY RUN] " if self.dry_run else ""
-        result = map_fn_with_progress_bar_results(
-            work_items=[
-                (
-                    original_file_path,
-                    self.build_destination_file_path(original_file_path),
-                )
-                for original_file_path in files_to_operate_on
-            ],
-            work_fn=self.execute_operation,
-            progress_bar_message=f"{msg_prefix} {self.operation_type.present_participle().title()} files...",
-            # Add a timeout that is generously longer than the timeout for the
-            # GSUTIL mv call
-            single_work_item_timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC + 10,
-            # 4 hour timeout
-            overall_timeout_sec=60 * 60 * 4,
-        )
+        with redirect_logging_to_file(self.log_output_path):
+            result = map_fn_with_progress_bar_results(
+                work_items=files_to_operate_on,
+                work_fn=self.execute_operation,
+                progress_bar_message=f"{msg_prefix} {self.operation_type.present_participle().title()} files...",
+                single_work_item_timeout_sec=60 * 20,  # 20 minute timeout
+                overall_timeout_sec=60 * 60 * 4,  # 4 hour timeout
+            )
 
-        self.successful_operations_list.extend(paths for paths, _ in result.successes)
+        self.successful_operations_list.extend(
+            (input_path, output_path) for input_path, output_path in result.successes
+        )
         self.failed_operations_list.extend(paths for paths, _ in result.exceptions)
 
-    def get_files_to_operate_on_from_path(self, gs_dir_path: str) -> List[str]:
+    def get_files_to_operate_on_from_path(
+        self, gs_dir_path: str
+    ) -> List[GcsfsFilePath]:
         """Returns files in the provided |gs_dir_path| that should be moved/copied back
         into the ingest bucket.
         """
-        file_paths = gsutil_ls(gs_dir_path)
-
         result = []
-        for file_path in file_paths:
-            _, file_name = os.path.split(file_path)
-            if re.match(self.FILE_TO_OPERATE_ON_RE, file_name):
-                if not self.file_filter or re.search(self.file_filter, file_name):
-                    result.append(file_path)
+        dir_path = GcsfsDirectoryPath.from_absolute_path(gs_dir_path)
+        for file_path in self.fs.ls_with_blob_prefix(
+            bucket_name=dir_path.bucket_name, blob_prefix=dir_path.relative_path
+        ):
+            if isinstance(file_path, GcsfsDirectoryPath):
+                continue
+            # continue if the
+            # - path conforms to our naming conventions
+            # - matches the provided file filter regex, if one exists
+            if self.fs.is_normalized_file_path(file_path) and (
+                not self.file_filter or re.search(self.file_filter, file_path.file_name)
+            ):
+                result.append(file_path)
         return result
 
-    def execute_operation(self, original_and_new_file_paths: tuple[str, str]) -> None:
+    def execute_operation(self, src_path: GcsfsFilePath) -> GcsfsFilePath:
         """Executes the operation on a file at the given path into the ingest bucket,
         updating the name to always have an prefix of 'unprocessed'. The result of the
         file operation will later be written to a log file.
 
         If in dry_run mode, merely logs the operation, but does not execute it.
         """
-        original_file_path, new_file_path = original_and_new_file_paths
         if not self.dry_run:
-            self.file_operation_fn(original_file_path, new_file_path)
-
-    def build_destination_file_path(self, original_file_path: str) -> str:
-        """Builds the desired path for the given file in the ingest bucket, changing the
-        prefix to 'unprocessed' as is necessary.
-        """
-
-        path_as_unprocessed = to_normalized_unprocessed_file_path_from_normalized_path(
-            original_file_path
-        )
-
-        _, file_name = os.path.split(path_as_unprocessed)
-
-        if not re.match(self.FILE_TO_OPERATE_ON_RE, file_name):
-            raise ValueError(f"Invalid file name {file_name}")
-
-        return os.path.join(
-            "gs://", self.destination_ingest_bucket.abs_path(), file_name
-        )
+            match self.operation_type:
+                case IngestFilesOperationType.COPY:
+                    return self.fs.cp_storage_file_to_ingest_bucket(
+                        src_path, self.destination_ingest_bucket
+                    )
+                case IngestFilesOperationType.MOVE:
+                    return self.fs.mv_storage_file_to_ingest_bucket(
+                        src_path, self.destination_ingest_bucket
+                    )
+        else:
+            return self.fs.build_ingest_destination_path_for_storage_path(
+                src_path, self.destination_ingest_bucket
+            )
 
     def write_operations_to_log_file(self) -> None:
         self.successful_operations_list.sort()
         self.failed_operations_list.sort()
-        with open(self.log_output_path, "w", encoding="utf-8") as f:
+        with open(self.log_output_path, "a", encoding="utf-8") as f:
             if self.dry_run:
                 prefix = f"[DRY RUN] Would {self.operation_type.value.lower()}"
             else:
-                prefix = self.operation_type.past_participle().title()
+                prefix = f"Successfully {self.operation_type.past_participle().lower()}"
 
             f.writelines(
-                f"{prefix} {original_path} -> {new_path}\n"
-                for original_path, new_path in self.successful_operations_list
+                f"{prefix} {source_path.uri()} -> {dest_path.uri()}\n"
+                for source_path, dest_path in self.successful_operations_list
             )
             f.writelines(
-                f"⚠️⚠️⚠️FAILED TO {self.operation_type.value} {original_path} -> {new_path}\n"
-                for original_path, new_path in self.failed_operations_list
+                f"⚠️⚠️⚠️FAILED TO {self.operation_type.value} {original_path.uri()} \n"
+                for original_path in self.failed_operations_list
             )
 
 
