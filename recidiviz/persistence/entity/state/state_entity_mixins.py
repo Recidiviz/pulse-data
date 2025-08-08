@@ -75,7 +75,13 @@ class LedgerEntityMixin(SequencedEntityMixin):
         partition_string = "-".join(
             str(getattr(self, field)) for field in self.ledger_partition_columns
         )
-        return f"{self.ledger_datetime_field.isoformat()}-{self.sequence_num}-{partition_string}"
+        # We pad sequence_num to  3 digits to ensure sorting works correctly.
+        seq_num_str = (
+            f"{self.sequence_num:03}" if self.sequence_num is not None else "None"
+        )
+        return (
+            f"{self.ledger_datetime_field.isoformat()}-{seq_num_str}-{partition_string}"
+        )
 
 
 LedgerEntityMixinT = TypeVar("LedgerEntityMixinT", bound=LedgerEntityMixin)

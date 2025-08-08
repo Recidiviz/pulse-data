@@ -862,7 +862,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=self.start_dt,
                 status_end_datetime=datetime.datetime(2022, 1, 1, 14, 30),
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=9071361184583469418,
+                sentence_status_snapshot_id=9063267154884190927,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -870,7 +870,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=datetime.datetime(2022, 1, 1, 14, 30),
                 status_end_datetime=datetime.datetime(2022, 1, 1, 17, 30),
                 status=StateSentenceStatus.INTERNAL_UNKNOWN,
-                sentence_status_snapshot_id=9046814330294127925,
+                sentence_status_snapshot_id=9030057592676408596,
                 sequence_num=2,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -878,7 +878,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=datetime.datetime(2022, 1, 1, 17, 30),
                 status_end_datetime=second_dt,
                 status=StateSentenceStatus.SERVING,
-                sentence_status_snapshot_id=9001769904833200496,
+                sentence_status_snapshot_id=9042425316723517513,
                 sequence_num=3,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -886,7 +886,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status_update_datetime=second_dt,
                 status_end_datetime=None,
                 status=StateSentenceStatus.COMPLETED,
-                sentence_status_snapshot_id=9004940053723796659,
+                sentence_status_snapshot_id=9012613784097560816,
                 sequence_num=4,
             ),
         ]
@@ -1118,7 +1118,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
                 status_raw_text=None,
                 sentence=normalized_copy,
-                sentence_status_snapshot_id=9015625368581535695,
+                sentence_status_snapshot_id=9022466683579038142,
                 sequence_num=1,
             ),
             NormalizedStateSentenceStatusSnapshot(
@@ -1128,7 +1128,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
                 status=StateSentenceStatus.SERVING,
                 status_raw_text="Created during normalization from parent sentences' final terminating statuses",
                 sentence=normalized_copy,
-                sentence_status_snapshot_id=9031313153086874328,
+                sentence_status_snapshot_id=9014303076568968154,
                 sequence_num=2,
             ),
         ]

@@ -265,7 +265,27 @@ class StateTaskDeadlineTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         self.assertEqual(
             ledger.partition_key,
-            "2023-01-01T00:00:00-1-StateTaskType.DISCHARGE_FROM_SUPERVISION-SUB-META",
+            "2023-01-01T00:00:00-001-StateTaskType.DISCHARGE_FROM_SUPERVISION-SUB-META",
+        )
+        first = entities.StateTaskDeadline(
+            update_datetime=self.ledger_time,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            state_code=self.state_code,
+            sequence_num=9,
+            task_subtype="SUB",
+            task_metadata="META",
+        )
+        second = entities.StateTaskDeadline(
+            update_datetime=self.ledger_time,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            state_code=self.state_code,
+            sequence_num=10,
+            task_subtype="SUB",
+            task_metadata="META",
+        )
+        self.assertEqual(
+            sorted([second, first], key=lambda x: x.partition_key),
+            [first, second],
         )
 
     @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
@@ -317,7 +337,7 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
             state_code=self.state_code,
             sequence_num=0,
         )
-        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-0-")
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-000-")
 
     @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
