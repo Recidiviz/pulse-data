@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that can be used to collect view builders of types
-SegmentEventBigQueryViewBuilder.
+SegmentProductEventBigQueryViewBuilder.
 """
 import itertools
 from types import ModuleType
@@ -28,22 +28,22 @@ from recidiviz.big_query.big_query_view_collector import (
 )
 from recidiviz.segment import views as segment_views
 from recidiviz.segment.product_type import ProductType
-from recidiviz.segment.segment_event_big_query_view_builder import (
-    SegmentEventBigQueryViewBuilder,
+from recidiviz.segment.segment_product_event_big_query_view_builder import (
+    SegmentProductEventBigQueryViewBuilder,
 )
 from recidiviz.utils.types import assert_type_list
 
 
 class SegmentEventBigQueryViewCollector(
-    BigQueryViewCollector[SegmentEventBigQueryViewBuilder]
+    BigQueryViewCollector[SegmentProductEventBigQueryViewBuilder]
 ):
     """A class that can be used to collect view builders of types
-    SegmentEventBigQueryViewBuilder.
+    SegmentProductEventBigQueryViewBuilder.
     """
 
     def collect_view_builders(
         self,
-    ) -> list[SegmentEventBigQueryViewBuilder]:
+    ) -> list[SegmentProductEventBigQueryViewBuilder]:
         return list(
             itertools.chain.from_iterable(
                 self.collect_segment_event_view_builders_by_product().values()
@@ -52,7 +52,7 @@ class SegmentEventBigQueryViewCollector(
 
     def collect_segment_event_view_builders_by_product(
         self,
-    ) -> dict[ProductType, list[SegmentEventBigQueryViewBuilder]]:
+    ) -> dict[ProductType, list[SegmentProductEventBigQueryViewBuilder]]:
 
         builders_by_unit = {}
         for product_module in self.get_submodules(
@@ -61,11 +61,11 @@ class SegmentEventBigQueryViewCollector(
             product_type = self._product_type_from_module(product_module)
             builders = assert_type_list(
                 self.collect_view_builders_in_module(
-                    builder_type=SegmentEventBigQueryViewBuilder,
+                    builder_type=SegmentProductEventBigQueryViewBuilder,
                     view_dir_module=product_module,
                     validate_builder_fn=self._get_view_builder_validator(product_type),
                 ),
-                SegmentEventBigQueryViewBuilder,
+                SegmentProductEventBigQueryViewBuilder,
             )
 
             builders_by_unit[product_type] = list(builders)
@@ -89,7 +89,7 @@ class SegmentEventBigQueryViewCollector(
         ) -> None:
             filename_matches_view_id_validator(builder, view_module)
 
-            if not isinstance(builder, SegmentEventBigQueryViewBuilder):
+            if not isinstance(builder, SegmentProductEventBigQueryViewBuilder):
                 raise ValueError(f"Unexpected builder type [{type(builder)}]")
 
             if not product_type == builder.product_type:

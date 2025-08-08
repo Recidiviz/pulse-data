@@ -27,7 +27,7 @@ from recidiviz.segment.product_type import ProductType
 FIRST_IX_EXPORT_DATE = "2023-01-17"
 
 
-class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
+class SegmentProductEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """View builder that can be used to encode events tracked in Segment"""
 
     def __init__(

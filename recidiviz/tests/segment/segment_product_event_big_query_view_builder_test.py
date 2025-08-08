@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for segment_event_big_query_view_builder.py"""
+"""Tests for segment_product_event_big_query_view_builder.py"""
 import unittest
 
 from recidiviz.segment.segment_event_big_query_view_collector import (
@@ -25,7 +25,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 )
 
 
-class SegmentEventBigQueryViewBuilderTest(unittest.TestCase):
+class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
     def test_segment_event_source_table_is_valid_source_table_address(self) -> None:
         """Test that the segment_event_source_table is a valid source table address for all segment event builders."""
         for builder in SegmentEventBigQueryViewCollector().collect_view_builders():

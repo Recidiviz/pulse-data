@@ -21,16 +21,16 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.segment.segment_event_big_query_view_builder import (
-    SegmentEventBigQueryViewBuilder,
-    list_to_query_string,
-)
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.segment.segment_event_big_query_view_collector import (
     SegmentEventBigQueryViewCollector,
 )
+from recidiviz.segment.segment_product_event_big_query_view_builder import (
+    SegmentProductEventBigQueryViewBuilder,
+)
 
 
-def _get_shared_columns_statement(vb: SegmentEventBigQueryViewBuilder) -> str:
+def _get_shared_columns_statement(vb: SegmentProductEventBigQueryViewBuilder) -> str:
     """Generates a SQL statement for shared columns in unioned segment event views
     that fills in NULL for columns not present in the specific segment event view."""
 
@@ -49,7 +49,7 @@ def _get_shared_columns_statement(vb: SegmentEventBigQueryViewBuilder) -> str:
 def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
     """Generates a list of UnionAllBigQueryViewBuilder instances for each product type"""
 
-    def _select_statement(vb: SegmentEventBigQueryViewBuilder) -> str:
+    def _select_statement(vb: SegmentProductEventBigQueryViewBuilder) -> str:
         return f"""
 SELECT
     state_code,
