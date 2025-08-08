@@ -266,9 +266,7 @@ def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, s
         gcs_file_system = GcsfsFactory.build()
         paths = [
             path
-            for path in gcs_file_system.ls_with_blob_prefix(
-                bucket_name, blob_prefix=batch_id_path
-            )
+            for path in gcs_file_system.ls(bucket_name, blob_prefix=batch_id_path)
             if isinstance(path, GcsfsFilePath)
         ]
     except Exception:

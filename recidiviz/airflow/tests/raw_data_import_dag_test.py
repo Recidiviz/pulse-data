@@ -2538,9 +2538,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
     def _return_unprocessed_paths(self, operator: Any, _context: Any) -> List[str]:
         return [
             file.abs_path()
-            for file in self.fs.ls_with_blob_prefix(
-                operator.kwargs["bucket"], "unprocessed"
-            )
+            for file in self.fs.ls(operator.kwargs["bucket"], blob_prefix="unprocessed")
         ]
 
     def _fake_k8s_operator_wrapper(self, *args: Any, **kwargs: Any) -> OperatorPartial:

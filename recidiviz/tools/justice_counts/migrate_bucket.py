@@ -70,9 +70,7 @@ def migrate_files(source_bucket: str, destination_bucket: str, dry_run: bool) ->
     gcs_file_system = GcsfsFactory.build()
     logging.info("Moving files from %s to %s", source_bucket, destination_bucket)
     counter = 0
-    for blob in gcs_file_system.ls_with_blob_prefix(
-        bucket_name=source_bucket, blob_prefix=""
-    ):
+    for blob in gcs_file_system.ls(bucket_name=source_bucket):
         if isinstance(blob, GcsfsFilePath):
             source_path = GcsfsFilePath.from_absolute_path(
                 f"{source_bucket}/{blob.file_name}"

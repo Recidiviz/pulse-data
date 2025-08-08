@@ -148,9 +148,11 @@ class KubernetesPodOperatorTaskOutputHandler:
         """Reads serialized mapped task output from GCS."""
         file_paths = [
             path
-            for path in self.fs.ls_with_blob_prefix(
+            for path in self.fs.ls(
                 self.file_path_handler.bucket_name,
-                self.file_path_handler.output_file_subdirectory_path_prefix(task_id),
+                blob_prefix=self.file_path_handler.output_file_subdirectory_path_prefix(
+                    task_id
+                ),
             )
             if isinstance(path, GcsfsFilePath)
         ]
@@ -180,9 +182,11 @@ class KubernetesPodOperatorTaskOutputHandler:
         """Deletes mapped task output from GCS."""
         file_paths = [
             path
-            for path in self.fs.ls_with_blob_prefix(
+            for path in self.fs.ls(
                 self.file_path_handler.bucket_name,
-                self.file_path_handler.output_file_subdirectory_path_prefix(task_id),
+                blob_prefix=self.file_path_handler.output_file_subdirectory_path_prefix(
+                    task_id
+                ),
             )
             if isinstance(path, GcsfsFilePath)
         ]

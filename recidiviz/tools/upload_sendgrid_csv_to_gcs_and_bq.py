@@ -111,7 +111,7 @@ def main(*, project_id: str, local_filepath: str, backfill: bool) -> None:
             filter_clause="WHERE TRUE",
         )
         # For each file in table, load into BQ
-        for blob in fs.ls_with_blob_prefix(f"{project_id}{BUCKET_SUFFIX}", ""):
+        for blob in fs.ls(f"{project_id}{BUCKET_SUFFIX}"):
             if isinstance(blob, GcsfsFilePath):
                 logging.info(
                     "Back filling from blob [%s] in bucket [%s]",

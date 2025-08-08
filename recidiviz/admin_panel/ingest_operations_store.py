@@ -334,9 +334,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         files_in_bucket = [
             p
-            for p in self.fs.ls_with_blob_prefix(
-                bucket_name=ingest_bucket_path.bucket_name, blob_prefix=""
-            )
+            for p in self.fs.ls(bucket_name=ingest_bucket_path.bucket_name)
             if isinstance(p, GcsfsFilePath)
         ]
 

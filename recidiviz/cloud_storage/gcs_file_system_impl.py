@@ -369,8 +369,8 @@ class GCSFileSystemImpl(GCSFileSystem):
             )
 
     @retry.Retry(predicate=google_api_retry_predicate)
-    def ls_with_blob_prefix(
-        self, bucket_name: str, blob_prefix: str
+    def ls(
+        self, bucket_name: str, *, blob_prefix: str | None = None
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
         return [GcsfsPath.from_blob(blob) for blob in blobs]
@@ -387,7 +387,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             directory = GcsfsDirectoryPath.from_absolute_path(path)
             # If the directory is empty, has_dir will have 1 entry, which is the Blob representing the directory
             # Otherwise, if the directory doesn't exist on GCS, has_dir will return an empty list
-            has_dir = self.ls_with_blob_prefix(
+            has_dir = self.ls(
                 bucket_name=directory.bucket_name, blob_prefix=directory.relative_path
             )
             return len(has_dir) > 0

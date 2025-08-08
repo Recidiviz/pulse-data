@@ -285,7 +285,7 @@ class OperateOnRawStorageFilesController:
         """
         result = []
         dir_path = GcsfsDirectoryPath.from_absolute_path(gs_dir_path)
-        for file_path in self.fs.ls_with_blob_prefix(
+        for file_path in self.fs.ls(
             bucket_name=dir_path.bucket_name, blob_prefix=dir_path.relative_path
         ):
             if isinstance(file_path, GcsfsDirectoryPath):

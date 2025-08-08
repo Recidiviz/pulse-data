@@ -64,7 +64,7 @@ def get_metric_files(
     bucket = GcsfsDirectoryPath.from_absolute_path(metric_file_bucket)
     return [
         f
-        for f in gcsfs_client.ls_with_blob_prefix(
+        for f in gcsfs_client.ls(
             bucket_name=bucket.bucket_name,
             blob_prefix=bucket.relative_path,
         )

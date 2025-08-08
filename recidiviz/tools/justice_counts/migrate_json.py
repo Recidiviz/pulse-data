@@ -80,9 +80,7 @@ def migrate_json(dry_run: bool) -> None:
                 production_bucket_name,
             )
             count_files_moved = 0
-            for blob in gcs_file_system.ls_with_blob_prefix(
-                bucket_name=staging_bucket_name, blob_prefix=""
-            ):
+            for blob in gcs_file_system.ls(bucket_name=staging_bucket_name):
                 if not isinstance(blob, GcsfsFilePath):
                     continue
                 spreadsheet_name = blob.file_name.replace(".json", ".xlsx")

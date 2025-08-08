@@ -256,10 +256,10 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             path, contents_handle, content_type, timeout, metadata
         )
 
-    def ls_with_blob_prefix(
-        self, bucket_name: str, blob_prefix: str
+    def ls(
+        self, bucket_name: str, *, blob_prefix: str | None = None
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        return self.gcs_file_system.ls_with_blob_prefix(bucket_name, blob_prefix)
+        return self.gcs_file_system.ls(bucket_name, blob_prefix=blob_prefix)
 
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         return self.gcs_file_system.set_content_type(path, content_type)
@@ -440,8 +440,8 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     ) -> List[GcsfsFilePath]:
         """Returns absolute paths of files in the directory with the given |file_prefix|."""
         blob_prefix = os.path.join(*[directory_path.relative_path, file_prefix])
-        blob_paths = self.gcs_file_system.ls_with_blob_prefix(
-            directory_path.bucket_name, blob_prefix
+        blob_paths = self.gcs_file_system.ls(
+            directory_path.bucket_name, blob_prefix=blob_prefix
         )
 
         result = []

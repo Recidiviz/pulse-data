@@ -31,7 +31,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 def delete_state_records(bucket_name: str, state_code: str) -> None:
     gcsfs = GcsfsFactory.build()
-    files = gcsfs.ls_with_blob_prefix(bucket_name, "")
+    files = gcsfs.ls(bucket_name)
     for file in files:
         if not isinstance(file, GcsfsFilePath):
             continue

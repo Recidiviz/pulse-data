@@ -293,10 +293,10 @@ class FakeGCSFileSystem(GCSFileSystem):
         self.copy(src_path, dst_path)
         self.delete(src_path)
 
-    def ls_with_blob_prefix(
-        self, bucket_name: str, blob_prefix: str
+    def ls(
+        self, bucket_name: str, *, blob_prefix: str | None = None
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        prefix = GcsfsPath.from_bucket_and_blob_name(bucket_name, blob_prefix)
+        prefix = GcsfsPath.from_bucket_and_blob_name(bucket_name, blob_prefix or "")
         with self.mutex:
             results: List[Union[GcsfsDirectoryPath, GcsfsFilePath]] = []
             for abs_path, entry in self.files.items():
@@ -315,7 +315,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def is_dir(self, path: str) -> bool:
         try:
             directory = GcsfsDirectoryPath.from_absolute_path(path)
-            has_dir = self.ls_with_blob_prefix(
+            has_dir = self.ls(
                 bucket_name=directory.bucket_name, blob_prefix=directory.relative_path
             )
             return len(has_dir) > 0

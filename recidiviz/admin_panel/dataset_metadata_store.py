@@ -88,8 +88,8 @@ class DatasetMetadataCountsStore(AdminPanelStore):
 
         file_paths = [
             f
-            for f in self.gcs_fs.ls_with_blob_prefix(
-                f"{metadata.project_id()}-{self.dataset_nickname}-metadata", ""
+            for f in self.gcs_fs.ls(
+                f"{metadata.project_id()}-{self.dataset_nickname}-metadata",
             )
             if isinstance(f, GcsfsFilePath)
         ]

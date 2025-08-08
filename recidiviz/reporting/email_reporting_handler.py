@@ -126,7 +126,7 @@ class EmailReportingHandler:
         report_type: ReportType,
     ) -> List[Dict[str, Any]]:
         """Returns a sorted list of batch id numbers from the a specific state bucket from GCS"""
-        buckets = self.monthly_reports_gcsfs.ls_with_blob_prefix(
+        buckets = self.monthly_reports_gcsfs.ls(
             bucket_name=f"{self.project_id}-report-html",
             blob_prefix=state_code.value,
         )

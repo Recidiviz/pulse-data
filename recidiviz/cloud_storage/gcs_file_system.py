@@ -146,10 +146,12 @@ class GCSFileSystem:
         """Uploads contents in handle via a file stream to a file path."""
 
     @abc.abstractmethod
-    def ls_with_blob_prefix(
-        self, bucket_name: str, blob_prefix: str
+    def ls(
+        self, bucket_name: str, *, blob_prefix: str | None = None
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        """Returns absolute paths of objects in the bucket with the given |relative_path|."""
+        """Returns absolute paths of objects in the bucket, optionally filtering by
+        |blob_prefix|, if one is provided.
+        """
 
     @abc.abstractmethod
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:

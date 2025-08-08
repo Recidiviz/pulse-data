@@ -115,7 +115,7 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
         self.mock_fs.upload_from_string.assert_called_once()
 
     def test_read_mapped_task_output(self) -> None:
-        self.mock_fs.ls_with_blob_prefix.return_value = [
+        self.mock_fs.ls.return_value = [
             GcsfsFilePath("test-bucket", "output_0.json"),
             GcsfsFilePath("test-bucket", "output_2.json"),
         ]
@@ -128,7 +128,7 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
         self.assertEqual(result, ["task-output-0", "task-output-1"])
 
     def test_read_mapped_task_output_no_files(self) -> None:
-        self.mock_fs.ls_with_blob_prefix.return_value = []
+        self.mock_fs.ls.return_value = []
 
         with self.assertRaisesRegex(
             ValueError, "No mapped task output found for task_id"
@@ -154,7 +154,7 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
         self.mock_fs.delete.assert_called_once()
 
     def test_delete_mapped_task_output(self) -> None:
-        self.mock_fs.ls_with_blob_prefix.return_value = [
+        self.mock_fs.ls.return_value = [
             GcsfsFilePath("test-bucket", "output_0.json"),
             GcsfsFilePath("test-bucket", "output_1.json"),
         ]
@@ -178,7 +178,7 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
         self.mock_fs.delete.assert_called_once()
 
     def test_delete_mapped_file_doesnt_exist(self) -> None:
-        self.mock_fs.ls_with_blob_prefix.return_value = [
+        self.mock_fs.ls.return_value = [
             GcsfsFilePath("test-bucket", "output_0.json"),
             GcsfsFilePath("test-bucket", "output_1.json"),
         ]
