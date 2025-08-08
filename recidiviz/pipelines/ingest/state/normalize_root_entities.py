@@ -18,6 +18,8 @@
 StateStaff and StatePerson) and transforms those to normalized RootEntity (i.e.
 NormalizeStateStaff and NormalizedStatePerson).
 """
+from typing import Callable, Generic, Type
+
 import apache_beam as beam
 from more_itertools import one
 
@@ -29,10 +31,12 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateStaff,
 )
+from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
     CreatePersonIdToStaffIdMapping,
     PersonId,
     StaffExternalIdToIdMap,
+    StaffId,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_state_person import (
     build_normalized_state_person,
@@ -42,8 +46,102 @@ from recidiviz.pipelines.ingest.state.normalization.normalize_state_staff import
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 
-PRE_NORMALIZATION_PERSONS_BY_PERSON_ID_KEY = "pre_normalization_persons_by_person_id"
-PERSON_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY = "person_id_to_staff_external_ids_map"
+
+class _NormalizeRootEntitiesOfType(
+    beam.PTransform, Generic[RootEntityT, NormalizedRootEntityT]
+):
+    """
+    A PTransform to normalize a specific group of entities. Accepts two PCollections as
+    inputs:
+        * A PCollection containing the entities to normalize
+        * A PCollection containing a mapping of root entity primary key to a dictionary
+          with info about other staff referenced by that root entity.
+    """
+
+    PRE_NORMALIZATION_ENTITIES_BY_ROOT_ENTITY_ID_KEY = (
+        "pre_normalization_entities_by_root_entity_id"
+    )
+    ROOT_ENTITY_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY = (
+        "root_entity_id_to_staff_external_ids_map"
+    )
+
+    def __init__(
+        self,
+        root_entity_cls: Type[RootEntityT],
+        normalized_root_entity_cls: Type[NormalizedRootEntityT],
+        root_entity_normalization_fn: Callable[
+            [RootEntityT, StaffExternalIdToIdMap, set[type[Entity]]],
+            NormalizedRootEntityT,
+        ],
+        expected_output_entity_classes: set[type[Entity]],
+    ) -> None:
+        super().__init__()
+        self.root_entity_normalization_fn: Callable[
+            [RootEntityT, StaffExternalIdToIdMap, set[type[Entity]]],
+            NormalizedRootEntityT,
+        ] = root_entity_normalization_fn
+        self.root_entity_cls: Type[RootEntityT] = root_entity_cls
+        self.normalized_root_entity_cls: Type[
+            NormalizedRootEntityT
+        ] = normalized_root_entity_cls
+        self.root_entity_pk_column_name = root_entity_cls.get_primary_key_column_name()
+        self.expected_output_entity_classes: set[
+            type[Entity]
+        ] = expected_output_entity_classes
+
+    def expand(
+        self,
+        input_or_inputs: tuple[
+            beam.PCollection[RootEntityT],
+            beam.PCollection[tuple[PersonId | StaffId, StaffExternalIdToIdMap]],
+        ],
+    ) -> beam.PCollection[RootEntityT]:
+        (
+            pre_normalization_root_entities,
+            root_entity_to_related_staff_map,
+        ) = input_or_inputs
+
+        # Key root entities by their primary key
+        pre_normalization_root_entities_by_pk = (
+            pre_normalization_root_entities
+            | f"Key root_entities by {self.root_entity_pk_column_name}"
+            >> beam.Map(lambda e: (e.get_id(), e))
+        )
+
+        # Create tuples of (root_entity, staff_id_map, expected_output_classes)
+        entities_with_id_mappings = (
+            {
+                self.ROOT_ENTITY_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY: root_entity_to_related_staff_map,
+                self.PRE_NORMALIZATION_ENTITIES_BY_ROOT_ENTITY_ID_KEY: pre_normalization_root_entities_by_pk,
+            }
+            | "CoGroupByKey" >> beam.CoGroupByKey()
+            | "Create (entity, staff_external_ids_map) tuples"
+            >> beam.MapTuple(
+                lambda _id, grouped_items: (
+                    one(
+                        grouped_items[
+                            self.PRE_NORMALIZATION_ENTITIES_BY_ROOT_ENTITY_ID_KEY
+                        ]
+                    ),
+                    (
+                        one(id_map_values)
+                        if (
+                            id_map_values := grouped_items[
+                                self.ROOT_ENTITY_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY
+                            ]
+                        )
+                        else {}
+                    ),
+                    self.expected_output_entity_classes,
+                )
+            )
+        )
+
+        return (
+            entities_with_id_mappings
+            | f"Build {self.normalized_root_entity_cls.__name__}"
+            >> beam.MapTuple(self.root_entity_normalization_fn)
+        )
 
 
 class NormalizeRootEntities(beam.PTransform):
@@ -74,7 +172,7 @@ class NormalizeRootEntities(beam.PTransform):
 
         normalized_staff: beam.PCollection[
             NormalizedStateStaff
-        ] = pre_normalization_staff | "Build NormalizedStateStaff" >> beam.Map(
+        ] = pre_normalization_staff | "Normalize StateStaff" >> beam.Map(
             build_normalized_state_staff
         )
 
@@ -89,43 +187,17 @@ class NormalizeRootEntities(beam.PTransform):
             | "Create person_id to staff_id mapping" >> CreatePersonIdToStaffIdMapping()
         )
 
-        pre_normalization_persons_by_person_id: beam.PCollection[
-            tuple[PersonId, state_entities.StatePerson]
-        ] = pre_normalization_persons | "Key people by person_id" >> beam.Map(
-            lambda p: (p.person_id, p)
-        )
-
-        persons_with_staff_id_mappings: beam.PCollection[
-            tuple[state_entities.StatePerson, StaffExternalIdToIdMap, set[type[Entity]]]
-        ] = (
-            {
-                PERSON_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY: person_id_to_staff_external_ids_map,
-                PRE_NORMALIZATION_PERSONS_BY_PERSON_ID_KEY: pre_normalization_persons_by_person_id,
-            }
-            | beam.CoGroupByKey()
-            | "Create (person, staff_external_ids_map) tuples"
-            >> beam.MapTuple(
-                lambda _person_id, grouped_items: (
-                    one(grouped_items[PRE_NORMALIZATION_PERSONS_BY_PERSON_ID_KEY]),
-                    (
-                        one(person_id_to_staff_external_ids_maps)
-                        if (
-                            person_id_to_staff_external_ids_maps := grouped_items[
-                                PERSON_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY
-                            ]
-                        )
-                        else {}
-                    ),
-                    self.expected_output_entity_classes,
-                )
-            )
-        )
-
+        # Normalize persons
         normalized_persons: beam.PCollection[NormalizedStatePerson] = (
-            persons_with_staff_id_mappings
-            | "Build NormalizedStatePerson"
-            >> beam.MapTuple(build_normalized_state_person)
+            pre_normalization_persons,
+            person_id_to_staff_external_ids_map,
+        ) | "Normalize StatePerson" >> _NormalizeRootEntitiesOfType(
+            root_entity_cls=state_entities.StatePerson,
+            normalized_root_entity_cls=normalized_entities.NormalizedStatePerson,
+            root_entity_normalization_fn=build_normalized_state_person,
+            expected_output_entity_classes=self.expected_output_entity_classes,
         )
+
         normalized_root_entities: beam.PCollection[RootEntity] = (
             [
                 normalized_staff,
