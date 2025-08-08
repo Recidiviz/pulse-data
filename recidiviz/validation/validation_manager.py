@@ -329,11 +329,11 @@ def _fetch_validation_jobs_to_perform(
 
 
 def _handle_tickets_for_validations(
-    validation_results: dict[ValidationResultStatus, list[DataValidationJobResult]]
+    validation_results: dict[ValidationResultStatus, list[DataValidationJobResult]],
 ) -> None:
     """Files GitHub tickets for failed validations that do not already have an associated
     ticket, and closes GitHub tickets for validations that have an open ticket but are
-    no longer in a failing status.
+    no longer in a failing state.
     """
 
     logging.info("Filing GitHub tickets for failed validations")

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for validation distinct hard failures """
+"""Tests for validation distinct hard failures"""
 import os
 from datetime import date, datetime
 from typing import Any
@@ -36,7 +36,7 @@ from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
 )
-from recidiviz.validation.validation_outputs import (
+from recidiviz.validation.validation_output_views import (
     VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
 )
 

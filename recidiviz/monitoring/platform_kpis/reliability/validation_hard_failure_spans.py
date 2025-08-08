@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Logic to compute hard failure spans, or time windows during which a validation was 
+"""Logic to compute hard failure spans, or time windows during which a validation was
 in a state of hard failure.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -25,7 +25,7 @@ from recidiviz.source_tables.externally_managed.datasets import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_models import ValidationResultStatus
-from recidiviz.validation.validation_outputs import (
+from recidiviz.validation.validation_output_views import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
     VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
 )

@@ -61,7 +61,9 @@ from recidiviz.validation.configured_validations import (
     get_all_deployed_validations_by_name,
 )
 from recidiviz.validation.validation_models import DataValidationJobResultDetails
-from recidiviz.validation.validation_outputs import VALIDATION_RESULTS_BIGQUERY_ADDRESS
+from recidiviz.validation.validation_output_views import (
+    VALIDATION_RESULTS_BIGQUERY_ADDRESS,
+)
 
 # TODO(#8687): Remove the extra case statements with the old result detail class names.
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET

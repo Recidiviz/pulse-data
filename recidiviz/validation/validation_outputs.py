@@ -20,7 +20,6 @@ import logging
 
 import pytz
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common.constants.states import StateCode
@@ -28,19 +27,13 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     build_source_table_repository_for_externally_managed_tables,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    VALIDATION_RESULTS_DATASET_ID,
-)
 from recidiviz.utils import environment, metadata
+from recidiviz.validation.validation_output_views import (
+    VALIDATION_RESULTS_BIGQUERY_ADDRESS,
+    VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
+)
 from recidiviz.validation.validation_result_for_storage import (
     ValidationResultForStorage,
-)
-
-VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
-    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validation_results"
-)
-VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS = BigQueryAddress(
-    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validations_completion_tracker"
 )
 
 

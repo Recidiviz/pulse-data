@@ -33,7 +33,7 @@ from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
 )
 from recidiviz.validation.validation_models import ValidationResultStatus
-from recidiviz.validation.validation_outputs import (
+from recidiviz.validation.validation_output_views import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
     VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
 )

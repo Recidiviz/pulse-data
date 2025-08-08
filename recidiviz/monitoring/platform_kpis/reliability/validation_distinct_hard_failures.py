@@ -23,10 +23,12 @@ from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATA
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
     VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.source_tables.externally_managed.datasets import (
+    VALIDATION_RESULTS_DATASET_ID,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.validation_outputs import (
-    VALIDATION_RESULTS_DATASET_ID,
+from recidiviz.validation.validation_output_views import (
     VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
 )
 

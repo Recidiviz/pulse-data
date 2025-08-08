@@ -762,6 +762,66 @@ def main() -> int:
         explicitly_invalid_package_dependencies=["apache_beam"],
     )
 
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.view_registry.deployed_views",
+        valid_module_prefixes=make_module_matcher(
+            {
+                # general bq things and utils
+                "recidiviz.big_query",
+                "recidiviz.cloud_resources",
+                "recidiviz.cloud_storage.gcsfs_path",
+                "recidiviz.common",
+                "recidiviz.utils",
+                # dataset or const imports where we want to be strict-ish
+                "recidiviz.case_triage.views.dataset_config",
+                "recidiviz.datasets.static_data.config",
+                "recidiviz.pipelines.dataflow_config",
+                "recidiviz.pipelines.ingest.dataset_config",
+                "recidiviz.pipelines.supplemental.dataset_config",
+                "recidiviz.source_tables.externally_managed.datasets",
+                "recidiviz.source_tables.yaml_managed.datasets",
+                "recidiviz.validation.views.dataset_config",
+                "recidiviz.view_registry",
+                # view code
+                "recidiviz.aggregated_metrics",
+                "recidiviz.calculator.query",
+                "recidiviz.ingest.views",
+                "recidiviz.ingest.direct",
+                "recidiviz.monitoring.platform_kpis",
+                "recidiviz.observations",
+                "recidiviz.segment",
+                "recidiviz.task_eligibility",
+                "recidiviz.validation.views",
+                "recidiviz.outcome_metrics",
+                # code pulled in by above views that we want to be strict-ish
+                "recidiviz.persistence.entity",
+                "recidiviz.persistence.database",
+                "recidiviz.persistence.errors",
+                "recidiviz.pipelines.utils.identifier_models",
+                "recidiviz.outliers.constants",
+                "recidiviz.outliers.outliers_configs",
+                "recidiviz.outliers.types",
+                "recidiviz.validation.checks",
+                "recidiviz.validation.config",
+                "recidiviz.validation.validation_models",
+                "recidiviz.validation.validation_output_views",
+                "recidiviz.validation.validation_config",
+                "recidiviz.validation.configured_validations",
+                "recidiviz.workflows.types",
+                #   - by most_recent_dataflow_population_span_to_single_day_metrics
+                "recidiviz.metrics.export.products.product_configs",
+                "recidiviz.metrics.metric_big_query_view",
+                #   - by invalid_null_pfi_in_metrics validation
+                #     # TODO(#46066) consider refactoring pipelines.metrics to be safer
+                #       and not allow bringing beam in
+                "recidiviz.pipelines.metrics",
+                "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration",
+                "recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration",
+            },
+        ),
+        explicitly_invalid_package_dependencies=["apache_beam"],
+    )
+
     return 0 if success else 1
 
 
