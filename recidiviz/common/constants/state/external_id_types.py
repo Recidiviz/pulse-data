@@ -72,6 +72,9 @@ US_CO_PID = "US_CO_PID"
 US_NE_ID_NBR = "US_NE_ID_NBR"
 # Parole Officer IDs
 US_NE_PAROLE_STAFF_ID = "US_NE_PAROLE_STAFF_ID"
+# NE STAFF EMAIL
+US_NE_STAFF_EMAIL = "US_NE_STAFF_EMAIL"
+
 
 # ND Elite ID - tracks someone across all incarceration stays
 US_ND_ELITE = "US_ND_ELITE"
