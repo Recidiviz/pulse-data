@@ -601,6 +601,7 @@ def main() -> int:
                 "recidiviz.monitoring",
                 "recidiviz.observations",
                 "recidiviz.outliers",
+                "recidiviz.pipelines.ingest.dataset_config",
                 "recidiviz.pipelines.supplemental.dataset_config",
                 "recidiviz.workflows",
                 "recidiviz.persistence",

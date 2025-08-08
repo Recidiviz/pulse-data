@@ -32,9 +32,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.task_eligibility.dataset_config import (
-    task_eligibility_spans_state_specific_dataset,
-)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
@@ -82,7 +79,7 @@ def scc_form(
     query_template = f"""
     WITH eligible_and_almost_eligible AS (
 {join_current_task_eligibility_spans_with_external_id(
-    state_code="'US_MI'",
+    state_code=StateCode.US_MI,
     tes_task_query_view=task_name,
     id_type="'US_MI_DOC'",
     additional_columns='tes.start_date',
@@ -400,9 +397,6 @@ LEFT JOIN array_case_notes_cte a
         description=description,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
-        task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
-            StateCode.US_MI
-        ),
         us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
         ),
