@@ -122,6 +122,13 @@ explore: us_tn_raw_data_template {
     view_label: "us_tn_JOSpecialConditions"
   }
 
+  join: us_tn_Offender {
+    sql_on: ${us_tn_OffenderName.OffenderID} = ${us_tn_Offender.OffenderID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_tn_Offender"
+  }
+
   join: us_tn_OffenderAttributes {
     sql_on: ${us_tn_OffenderName.OffenderID} = ${us_tn_OffenderAttributes.OffenderID};;
     type: full_outer

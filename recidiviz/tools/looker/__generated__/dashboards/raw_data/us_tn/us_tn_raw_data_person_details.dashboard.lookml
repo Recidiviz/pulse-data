@@ -729,6 +729,52 @@
     width: 24
     height: 6
 
+  - name: Offender
+    title: Offender
+    explore: us_tn_raw_data
+    model: "@{project_id}"
+    type: looker_grid
+    fields: [us_tn_Offender.primary_key,
+      us_tn_Offender.OffenderID,
+      us_tn_Offender.AssignedSiteID,
+      us_tn_Offender.AssignedUnitID,
+      us_tn_Offender.AssignedCellID,
+      us_tn_Offender.AssignedBedID,
+      us_tn_Offender.ActualUnitID,
+      us_tn_Offender.ActualCellID,
+      us_tn_Offender.ActualBedID,
+      us_tn_Offender.CustodyLevel,
+      us_tn_Offender.NumberOffenderVisitor,
+      us_tn_Offender.EscapeFlag,
+      us_tn_Offender.EscapeHistoryFlag,
+      us_tn_Offender.Jurisdication,
+      us_tn_Offender.ArchiveDate__raw,
+      us_tn_Offender.AbscondedParoleFlag,
+      us_tn_Offender.AbscondedProbationFlag,
+      us_tn_Offender.AbscondedCommunityCorrectionFlag,
+      us_tn_Offender.ParoleOfficeID,
+      us_tn_Offender.ProbationOfficeID,
+      us_tn_Offender.CommunityCorrectionOfficeID,
+      us_tn_Offender.NotInCustodyDate__raw,
+      us_tn_Offender.NotIncustoryReason,
+      us_tn_Offender.VisitorRelationshipResetDate,
+      us_tn_Offender.PostedByStaffID,
+      us_tn_Offender.PostedDate__raw,
+      us_tn_Offender.LastUpdateUserID,
+      us_tn_Offender.LastUpdateDate__raw,
+      us_tn_Offender.file_id,
+      us_tn_Offender.is_deleted]
+    sorts: [us_tn_Offender.ArchiveDate__raw]
+    note_display: hover
+    note_text: "This table contains one occurrence for each person in the TOMIS system. It contains location information used throughout the system. It is the \"parent\" table for associated person tables."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+    row: 102
+    col: 0
+    width: 24
+    height: 6
+
   - name: OffenderAttributes
     title: OffenderAttributes
     explore: us_tn_raw_data
@@ -781,7 +827,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 102
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -809,7 +855,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 108
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -892,7 +938,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -922,7 +968,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -958,7 +1004,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1029,7 +1075,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1054,7 +1100,7 @@
     listen: 
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
