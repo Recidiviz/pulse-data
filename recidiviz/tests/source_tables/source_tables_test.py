@@ -91,7 +91,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "pulse_dashboard_segment_metrics.pages",
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
-            "export_archives.case_insights_record_archive",
+            "sentencing_views.case_insights_record_archive_flattened",
+            "sentencing_views.case_insights_record_flattened",
             # Daily archives of tasks_record exports. Will be used for impact tracking.
             "export_archives.us_ix_supervision_tasks_record_archive",
             "export_archives.us_nd_supervision_tasks_record_archive",
@@ -111,7 +112,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "pulse_dashboard_segment_metrics.pages",
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
-            "export_archives.case_insights_record_archive",
+            "sentencing_views.case_insights_record_archive_flattened",
+            "sentencing_views.case_insights_record_flattened",
             # Daily archives of tasks_record exports. Will be used for impact tracking.
             "export_archives.us_ix_supervision_tasks_record_archive",
             "export_archives.us_nd_supervision_tasks_record_archive",
