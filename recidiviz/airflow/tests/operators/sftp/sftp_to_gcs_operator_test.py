@@ -30,10 +30,10 @@ from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
     FakeUsXxSftpDownloadDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 @patch.object(

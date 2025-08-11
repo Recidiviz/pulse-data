@@ -76,7 +76,6 @@ from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
 from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     RawDataChunkNormalizationEntrypoint,
 )
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
@@ -100,6 +99,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RequiresPreImportNormalizationFile,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,

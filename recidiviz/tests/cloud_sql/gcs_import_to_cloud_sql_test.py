@@ -40,7 +40,6 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionClientEvent,
     SupervisionOfficer,
@@ -56,6 +55,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.auth.helpers import add_entity_to_database_session
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.insights import fixtures as insights_fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 

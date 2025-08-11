@@ -36,10 +36,10 @@ from recidiviz.big_query.with_metadata_query_big_query_view import (
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):

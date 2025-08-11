@@ -45,8 +45,8 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.types import assert_type
 

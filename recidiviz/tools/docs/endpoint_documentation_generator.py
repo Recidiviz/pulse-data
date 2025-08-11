@@ -32,7 +32,7 @@ from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.common.file_system import delete_files, get_all_files_recursive
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -113,9 +113,11 @@ class EndpointDocumentationGenerator:
         if len(endpoint_parts) == 1:
             return endpoint_parts[0]
         branch = [
-            self._get_path_parameter_name(endpoint_part)
-            if self._is_path_parameter(endpoint_part)
-            else endpoint_part
+            (
+                self._get_path_parameter_name(endpoint_part)
+                if self._is_path_parameter(endpoint_part)
+                else endpoint_part
+            )
             for endpoint_part in endpoint_parts
         ]
         return os.path.join("", *branch[:-1])

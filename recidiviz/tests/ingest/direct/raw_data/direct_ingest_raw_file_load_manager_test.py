@@ -27,7 +27,6 @@ from google.cloud.bigquery import LoadJob, LoadJobConfig, TableReference
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import (
     DirectIngestRawFileLoadManager,
@@ -50,6 +49,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.ingest.direct.raw_data import load_manager_fixtures

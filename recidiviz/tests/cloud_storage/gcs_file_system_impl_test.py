@@ -25,7 +25,7 @@ from mock.mock import call, patch
 
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl, unzip
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
 

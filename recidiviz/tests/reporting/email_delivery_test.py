@@ -21,7 +21,6 @@ from unittest.mock import MagicMock, Mock, call, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting import email_delivery
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
@@ -29,6 +28,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constan
     SUBJECT_LINE_KEY,
 )
 from recidiviz.reporting.email_reporting_utils import Batch
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class EmailDeliveryTest(TestCase):

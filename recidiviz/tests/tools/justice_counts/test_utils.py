@@ -19,7 +19,7 @@
 import os
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 def gcs_path(filepath: str) -> GcsfsFilePath:

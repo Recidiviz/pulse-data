@@ -29,7 +29,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
 NO_TRAILING_LINE_TERMINATOR_FILENAME = (

@@ -28,7 +28,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader import (
     GcsfsCsvReaderDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.encoding import to_python_standard
 

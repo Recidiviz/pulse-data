@@ -22,7 +22,7 @@ from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.pathways.generate_demo_data import (
     LAST_UPDATED_BEGIN_DATE,
     generate_row,

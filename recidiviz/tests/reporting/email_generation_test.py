@@ -23,7 +23,6 @@ from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.types import (
     OfficerSupervisorReportData,
     OutliersProductConfiguration,
@@ -43,6 +42,7 @@ from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.email_generation import generate
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class EmailGenerationTests(TestCase):

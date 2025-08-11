@@ -24,10 +24,10 @@ from unittest.mock import MagicMock, Mock, patch
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 _MOCK_PROJECT_ID = "RECIDIVIZ_TEST"
 

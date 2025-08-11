@@ -23,15 +23,15 @@ from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
     move_successfully_imported_paths_to_storage,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import (
-    FakeGCSFileSystem,
-    FakeGCSFileSystemDelegate,
-)
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import (
+    FakeGCSFileSystem,
+    FakeGCSFileSystemDelegate,
+)
 
 
 class RenameAndMoveFilesTest(TestCase):

@@ -33,7 +33,7 @@ from recidiviz.common.constants.csv import (
     DEFAULT_CSV_QUOTE_CHAR,
     DEFAULT_CSV_SEPARATOR,
 )
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
 NORMALIZED_FILE = "normalized_file.csv"

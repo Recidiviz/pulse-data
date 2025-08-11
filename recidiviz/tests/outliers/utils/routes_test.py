@@ -24,8 +24,8 @@ from flask import Flask
 from freezegun import freeze_time
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestOutliersUtilsRoutes(unittest.TestCase):

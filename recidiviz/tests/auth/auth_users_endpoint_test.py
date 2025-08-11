@@ -39,7 +39,6 @@ from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
@@ -51,6 +50,7 @@ from recidiviz.tests.auth.helpers import (
     generate_fake_rosters,
     generate_fake_user_overrides,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.metadata import CloudRunMetadata
 

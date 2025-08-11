@@ -26,7 +26,7 @@ from recidiviz.big_query.export.big_query_view_export_validator import (
 )
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class BigQueryViewExportValidatorTestCase(TestCase):

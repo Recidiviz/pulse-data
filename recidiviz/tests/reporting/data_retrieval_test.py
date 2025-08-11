@@ -22,7 +22,6 @@ from unittest.mock import patch
 import pytest
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.types import (
     OfficerSupervisorReportData,
     OutliersProductConfiguration,
@@ -35,6 +34,7 @@ from recidiviz.reporting.data_retrieval import filter_recipients, start
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 @pytest.mark.uses_db

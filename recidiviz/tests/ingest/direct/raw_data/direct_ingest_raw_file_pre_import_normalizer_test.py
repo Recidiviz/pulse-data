@@ -25,7 +25,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.codec_error_handler import ExceededDecodingErrorThreshold
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
 )
@@ -42,6 +41,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RequiresPreImportNormalizationFileChunk,
 )
 from recidiviz.tests.cloud_storage import fixtures
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions
 
 WINDOWS_FILE = "windows_file.csv"

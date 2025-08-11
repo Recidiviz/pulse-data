@@ -19,7 +19,6 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
     INCARCERATION_STARTS,
@@ -39,6 +38,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixture
     target_fixture_adverse,
 )
 from recidiviz.reporting.data_retrieval import start
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 @patch(

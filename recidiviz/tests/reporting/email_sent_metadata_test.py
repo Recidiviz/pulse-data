@@ -24,13 +24,13 @@ from unittest.mock import patch
 import attr
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
     Batch,
     gcsfs_path_for_batch_metadata,
 )
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata, EmailSentResult
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestEmailSentMetadata(TestCase):

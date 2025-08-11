@@ -22,7 +22,6 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -40,6 +39,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.pathways.load_fixtures import (
     import_pathways_from_gcs,
     reset_pathways_fixtures,
