@@ -24,7 +24,6 @@ my_enum_field:
 """
 from typing import Optional
 
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
@@ -166,21 +165,6 @@ def parse_sentence_status(
         return StateSentenceStatus.VACATED
 
     return StateSentenceStatus.COMPLETED
-
-
-def parse_supervision_case_type(
-    raw_text: str,
-) -> StateSupervisionCaseType:
-    """
-    Determine supervision case type from supervisedLevel field
-    """
-    if "SO:" in raw_text:
-        return StateSupervisionCaseType.SEX_OFFENSE
-
-    if "DV:" in raw_text:
-        return StateSupervisionCaseType.DOMESTIC_VIOLENCE
-
-    return StateSupervisionCaseType.GENERAL
 
 
 def parse_housing_unit_type(

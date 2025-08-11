@@ -6,6 +6,7 @@ input_columns:
   inmateNumber: STRING
   periodId: INTEGER
   supervisedLevel: STRING
+  caseType: STRING
   paroleOfficerID: STRING
   countyParoledTo: STRING
   inOutStateIndicator1Code: STRING
@@ -127,5 +128,11 @@ output:
             - StateSupervisionCaseTypeEntry:
                 case_type:
                   $enum_mapping:
-                    $raw_text: supervisedLevel
-                    $custom_parser: us_ne_custom_enum_parsers.parse_supervision_case_type
+                    $raw_text: caseType
+                    $mappings:
+                      StateSupervisionCaseType.DOMESTIC_VIOLENCE:
+                        - DV
+                      StateSupervisionCaseType.SEX_OFFENSE:
+                        - SO
+                      StateSupervisionCaseType.GENERAL:
+                        - GENERAL
