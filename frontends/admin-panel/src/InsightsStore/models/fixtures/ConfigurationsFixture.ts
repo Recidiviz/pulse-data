@@ -73,7 +73,6 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     atOrAboveRateLabel: "At or above statewide rate",
     outliersHover:
       "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
-    docLabel: "DOC",
     actionStrategyCopy: ACTION_STRATEGIES_DEFAULT_COPY,
   },
   {
@@ -106,7 +105,6 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     atOrAboveRateLabel: "At or above statewide rate",
     outliersHover:
       "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
-    docLabel: "DOC",
     actionStrategyCopy: ACTION_STRATEGIES_DEFAULT_COPY,
   },
   {
@@ -139,7 +137,6 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     atOrAboveRateLabel: "At or above statewide rate",
     outliersHover:
       "Has a rate on any metric significantly higher/lower than peers - over 1 Interquartile Range above/below the statewide rate.",
-    docLabel: "DOC",
     actionStrategyCopy: ACTION_STRATEGIES_DEFAULT_COPY,
   },
 ];

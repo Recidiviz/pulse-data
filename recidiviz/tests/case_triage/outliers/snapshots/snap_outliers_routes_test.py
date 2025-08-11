@@ -644,7 +644,6 @@ See more details on this and other action strategies [here](https://www.recidivi
             {"displayName": "General + Other Caseloads", "id": "NOT_SEX_OFFENSE"},
         ],
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
-        "docLabel": "DOC",
         "exclusionReasonDescription": "description",
         "featureVariant": None,
         "learnMoreUrl": "https://recidiviz.org",

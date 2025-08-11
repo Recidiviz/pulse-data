@@ -340,7 +340,6 @@ class Configuration(InsightsBase):
         nullable=False,
         server_default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
     )
-    doc_label = Column(String, nullable=False, server_default="DOC")
     # Be sure to add this column to the below:
     #     - recidiviz/admin_panel/line_staff_tools/outliers_api_schemas.py::ConfigurationSchema
     #     - recidiviz/outliers/types.py::OutliersProductConfiguration

@@ -377,18 +377,6 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
-        <Form.Item
-          name="docLabel"
-          label="DOC Label"
-          rules={[
-            {
-              required: true,
-              message: `Please input the string for how to refer to the government agency as a whole, e.g. DOC`,
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
         <Heading>Action Strategy Copy</Heading>
         <div>
           Both the prompt and body copy are in{" "}
