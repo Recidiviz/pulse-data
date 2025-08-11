@@ -23,6 +23,6 @@ output:
                 - StaffId
                 - period_seq_num
           supervisor_staff_external_id: Supervisor
-          supervisor_staff_external_id_type: $literal("US_OZ_AGEID_STAFF_ID")
+          supervisor_staff_external_id_type: $literal("US_OZ_AGEID_USER_ID")
           start_date: start_date
           end_date: end_date
