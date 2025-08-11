@@ -211,7 +211,8 @@ pyarrow = "*"
 auth0-python = "*"
 sentry-sdk = { extras = ["flask"], version = "*" }
 beautifulsoup4 = "*"
-paramiko = "*"
+# TODO(#46131): Unpin this when https://github.com/pahaz/sshtunnel/issues/299 is resolved.
+paramiko = "==3.5.1"
 tqdm = "*"
 linearmodels = "*"
 jsonschema = "*"
@@ -243,7 +244,8 @@ sqlglot = { extras = ["rs"], version = "==23.11.2" }
 tabulate = "*"
 tenacity="*"
 pgvector = "*"
-sshtunnel = "*"
+# TODO(#46131): Unpin this when https://github.com/pahaz/sshtunnel/issues/299 is resolved.
+sshtunnel = "==0.4.0"
 scrapy = "*"
 scrapy-playwright = "*"
 usaddress = "*"
