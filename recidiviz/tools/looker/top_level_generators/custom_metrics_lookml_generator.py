@@ -41,6 +41,10 @@ from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObserv
 from recidiviz.tools.looker.aggregated_metrics.custom_aggregated_metrics_configurations import (
     ASSIGNMENT_NAME_TO_TYPES,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurations import (
+    GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
+    GLOBAL_IMPACT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configurations import (
     INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
     INSIGHTS_IMPACT_LOOKER_METRICS,
@@ -153,12 +157,21 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             json_field_filters_with_suggestions={},
         )
 
-        # TASKS
+        # Tasks
         collect_and_build_custom_metrics_views_for_package(
             lookml_views_package_name="tasks_impact_metrics",
             output_directory=output_subdir,
             metrics=TASKS_IMPACT_LOOKER_METRICS,
             assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # Global usage
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="global_impact_metrics",
+            output_directory=output_subdir,
+            metrics=GLOBAL_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         )
 

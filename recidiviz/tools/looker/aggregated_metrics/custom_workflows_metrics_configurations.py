@@ -85,6 +85,10 @@ WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
         MetricPopulationType.INCARCERATION,
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ),
+    "WORKFLOWS_PROVISIONED_USER": (
+        MetricPopulationType.JUSTICE_INVOLVED,
+        MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+    ),
 }
 
 WORKFLOWS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS = {

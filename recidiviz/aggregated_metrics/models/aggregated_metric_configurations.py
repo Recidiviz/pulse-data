@@ -2529,6 +2529,46 @@ FIRST_TOOL_ACTIONS = EventCountMetric(
     event_segmentation_columns=["task_type"],
 )
 
+DISTINCT_GLOBAL_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_global_provisioned_users",
+    display_name="Distinct Global Provisioned Users",
+    description="Number of distinct users who are provisioned to have tool access (regardless of role type) across all tools",
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_REGISTERED_GLOBAL_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_global_provisioned_users",
+    display_name="Distinct Registered Global Provisioned Users",
+    description=(
+        "Number of distinct users who are provisioned to have tool access (regardless of role type) across all tools "
+        "who have signed up/logged into any tool at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+DISTINCT_LOGGED_IN_GLOBAL_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_global_users",
+    display_name="Distinct Logged In Global Users",
+    description="Number of distinct users who logged into any tool",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+LOGINS_GLOBAL_USER = EventCountMetric(
+    name="logins_global_user",
+    display_name="Logins, Global Users",
+    description="Number of logins performed by all users across all tools",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
