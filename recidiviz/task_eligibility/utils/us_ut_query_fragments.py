@@ -88,3 +88,42 @@ def assessment_scores_with_first_score_ctes(
         AND ass.assessment_class = 'RISK'
     )
 """
+
+
+def termination_reports_query(only_include_et_reports: bool = True) -> str:
+    """
+    Generates a SQL query to retrieve termination reports for individuals in Utah.
+
+    This query fetches distinct state codes, person IDs, and report dates from the
+    `wf_rpt_latest` table, joining with subject and type code tables to filter
+    specific report types. By default, it includes only early termination (ET) reports.
+
+    Args:
+        only_include_et_reports (bool): If True, filters the query to include only
+            early termination reports based on specific subject and type codes.
+            If False, no such filtering is applied.
+
+    Returns:
+        str: A SQL query string to retrieve the desired termination reports.
+    """
+
+    et_reports_where_clause = """
+    -- Subject is SUPERVISION GUIDELINE - EARLY TERMINATION REVIEW
+    WHERE IFNULL(rpt_sbjct_id, '') = '11'
+    -- Type is TERMINATION OF PAROLE REQUEST
+        OR IFNULL(rpt_typ_id, '') = '9'"""
+
+    return f"""SELECT
+        DISTINCT
+            peid.state_code,
+            peid.person_id,
+            SAFE_CAST(LEFT(r.rpt_dt, 10) AS DATE) AS report_date,
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_rpt_latest` r
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_sbjct_cd_latest`
+        USING(rpt_sbjct_id)
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_typ_cd_latest`
+        USING(rpt_typ_id)
+    INNER JOIN `{{project_id}}.us_ut_normalized_state.state_person_external_id` peid
+    ON peid.external_id = r.ofndr_num
+        AND peid.state_code = 'US_UT'
+        AND peid.id_type = 'US_UT_DOC' {et_reports_where_clause if only_include_et_reports else ''}"""
